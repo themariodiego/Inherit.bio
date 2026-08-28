@@ -1,0 +1,9 @@
+##fileformat=MyHeritage
+##format=MHv1.0
+##timestamp=2026-08-28 10:00:00 UTC
+#This file contains raw genotype data.
+RSID,CHROMOSOME,POSITION,RESULT
+"rs4477212","1","82154","AA"
+"rs762551","15","75041917","CA"
+"rs123456","X","1000000","--"
+"rs11575897","Y","2655180","GG"
