@@ -18,9 +18,20 @@ interface FixturePayload {
 }
 
 function authorized(request: Request): boolean {
-  const secret = process.env.JOBS_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  const auth = request.headers.get("authorization");
+  // Manual/operator calls use JOBS_SECRET; Vercel Cron sends CRON_SECRET.
+  for (const secret of [process.env.JOBS_SECRET, process.env.CRON_SECRET]) {
+    if (secret && auth === `Bearer ${secret}`) return true;
+  }
+  return false;
+}
+
+// Vercel Cron invokes with GET; live mode only (no fixture body).
+export async function GET(request: Request) {
+  if (!authorized(request)) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  return runRefresh(null);
 }
 
 // Scheduled research-library job (Vercel Cron in production, callable
@@ -31,11 +42,15 @@ export async function POST(request: Request) {
   if (!authorized(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
-
-  const admin = createAdminClient();
   const body = (await request.json().catch(() => null)) as
     | { fixture?: FixturePayload }
     | null;
+  return runRefresh(body?.fixture ?? null);
+}
+
+async function runRefresh(fixture: FixturePayload | null) {
+  const admin = createAdminClient();
+  const body = fixture ? { fixture } : null;
 
   const results: Record<string, unknown>[] = [];
 
