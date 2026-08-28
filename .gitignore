@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# committed on purpose: public NEXT_PUBLIC_* defaults for the demo deployment
+# and the env template — never put secrets in either.
+!.env.production
+!.env.example
 
 # vercel
 .vercel
