@@ -1,0 +1,263 @@
+[
+  {
+    "slug": "obesity-fto-rs9939609",
+    "category": "metabolic-obesity",
+    "title": "Body weight tendency · FTO",
+    "summary": "The FTO intron-1 variant rs9939609 is the most robustly replicated common variant for body weight. Each copy of the A allele is associated on average with about 0.4 kg/m2 higher BMI (roughly 1-1.5 kg for an average-height adult) and about 1.3x the odds of obesity. Physical activity and overall diet quality substantially attenuate this association.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 9939609,
+        "gene": "FTO",
+        "chrom": 16,
+        "pos38": 53786615,
+        "ref": "T",
+        "alt": "A",
+        "interpretations": {
+          "TT": "Two copies of the T allele, the genotype not associated with the FTO weight effect. On average, TT carriers weigh about 3 kg less than AA carriers. Body weight remains overwhelmingly shaped by energy balance, environment, and hundreds of other variants.",
+          "AT": "One copy of the A allele, associated on average with roughly 0.4 kg/m2 higher BMI and about 1.3x the odds of obesity compared with TT. The effect is modest and is smaller in physically active people in most studies.",
+          "AA": "Two copies of the A allele, carried by roughly 16% of people of European ancestry. Associated on average with about 3 kg higher body weight and roughly 1.7x the odds of obesity compared with TT. This shifts average tendency, not destiny: many AA carriers are lean, and the association weakens with regular physical activity."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17434869", "label": "Frayling et al., Science 2007" }
+    ]
+  },
+  {
+    "slug": "obesity-mc4r-rs17782313",
+    "category": "metabolic-obesity",
+    "title": "Body weight tendency · MC4R region",
+    "summary": "Common variation near MC4R, a brain receptor central to appetite regulation, is the second most consistent common-variant signal for body weight after FTO. Each copy of the C allele at rs17782313 is associated on average with about 0.2 kg/m2 higher BMI and roughly 1.1x the odds of obesity, with some studies also reporting slightly higher snacking and hunger scores.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 17782313,
+        "gene": "MC4R",
+        "chrom": 18,
+        "pos38": 60183864,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Two copies of the T allele, the common genotype not associated with the MC4R-region weight effect. This locus contributes only a small slice of the overall genetic influence on body weight.",
+          "CT": "One copy of the C allele, found in roughly a third of people of European ancestry. Associated on average with about 0.2 kg/m2 higher BMI, a small effect equivalent to well under 1 kg for most adults.",
+          "CC": "Two copies of the C allele. Associated on average with about 0.4-0.5 kg/m2 higher BMI and modestly higher odds of obesity compared with TT. This is a small average shift in appetite-related weight regulation, one factor among many hundreds."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18454148", "label": "Loos et al., Nat Genet 2008" }
+    ]
+  },
+  {
+    "slug": "type-2-diabetes-tcf7l2-rs7903146",
+    "category": "metabolic-obesity",
+    "title": "Type 2 diabetes · TCF7L2",
+    "summary": "TCF7L2 rs7903146 is the strongest common genetic variant for type 2 diabetes known, acting mainly through reduced insulin secretion. Each copy of the T allele is associated on average with roughly 1.4x the odds of type 2 diabetes; two copies with roughly 2x. Lifestyle factors such as weight, diet, and activity still dominate absolute risk.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 7903146,
+        "gene": "TCF7L2",
+        "chrom": 10,
+        "pos38": 112998590,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C allele, the genotype with the lowest average type 2 diabetes odds at this locus. This does not remove risk from other genetic and lifestyle factors, which together matter far more than any single variant.",
+          "CT": "One copy of the T risk allele, carried by roughly 40% of people of European ancestry. Associated on average with about 1.4x the odds of type 2 diabetes compared with CC, largely via modestly reduced insulin secretion. In diabetes-prevention trials, lifestyle change was effective across all genotypes at this locus.",
+          "TT": "Two copies of the T risk allele, found in roughly 8-10% of people of European ancestry. Associated on average with about double the odds of type 2 diabetes compared with CC. This is the largest common-variant effect known for the condition, yet it remains probabilistic: most TT carriers do not develop diabetes, and weight and lifestyle strongly modify absolute risk."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "16415884", "label": "Grant et al., Nat Genet 2006" }
+    ]
+  },
+  {
+    "slug": "type-2-diabetes-pparg-pro12ala",
+    "category": "metabolic-obesity",
+    "title": "Type 2 diabetes · PPARG Pro12Ala",
+    "summary": "PPARG encodes a master regulator of fat-cell development and insulin sensitivity, and Pro12Ala (rs1801282) was one of the first reproducibly confirmed type 2 diabetes variants. The common proline (C) allele is associated with modestly higher diabetes odds; the alanine (G) allele is associated with roughly 15% lower odds per copy and slightly better insulin sensitivity on average.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 1801282,
+        "gene": "PPARG",
+        "chrom": 3,
+        "pos38": 12351626,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Two copies of the common proline (C) allele, carried by roughly 75-80% of people of European ancestry. Associated on average with modestly higher odds of type 2 diabetes (about 1.25x) relative to alanine carriers. Because the genotype is so common, its individual contribution to risk is small.",
+          "CG": "One proline and one alanine allele. The alanine (G) copy is associated on average with about 15% lower odds of type 2 diabetes and slightly better insulin sensitivity. This is a small protective shift, not a safeguard.",
+          "GG": "Two copies of the alanine (G) allele, an uncommon genotype (about 1-2% of people of European ancestry). Associated on average with the lowest type 2 diabetes odds at this locus and modestly better insulin sensitivity. Other genetic and lifestyle factors remain far more influential overall."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "10973253", "label": "Altshuler et al., Nat Genet 2000" }
+    ]
+  },
+  {
+    "slug": "type-2-diabetes-kcnj11-e23k",
+    "category": "metabolic-obesity",
+    "title": "Type 2 diabetes · KCNJ11 E23K",
+    "summary": "KCNJ11 encodes part of the potassium channel that triggers insulin release from pancreatic beta cells. The E23K variant (rs5219) subtly reduces insulin secretion: each copy of the lysine (K) allele — the T allele on the GRCh38 forward strand — is associated on average with roughly 1.15x the odds of type 2 diabetes.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 5219,
+        "gene": "KCNJ11",
+        "chrom": 11,
+        "pos38": 17388025,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "CC": "Two copies of the C allele (glutamate, E23), the most common genotype. Not associated with the modest reduction in insulin secretion linked to the K variant at this locus.",
+          "CT": "One copy of the T allele (lysine, K23), carried by roughly 45% of people of European ancestry. Associated on average with about 1.15x the odds of type 2 diabetes compared with CC — a small effect, dwarfed by weight, age, and family history.",
+          "TT": "Two copies of the T allele (lysine, K23), found in roughly 12% of people of European ancestry. Associated on average with about 1.3x the odds of type 2 diabetes compared with CC, via subtly reduced insulin secretion. This is one small factor within a highly polygenic and lifestyle-sensitive condition."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12540637", "label": "Gloyn et al., Diabetes 2003" }
+    ]
+  },
+  {
+    "slug": "fasting-glucose-mtnr1b-rs10830963",
+    "category": "metabolic-obesity",
+    "title": "Fasting glucose · MTNR1B",
+    "summary": "MTNR1B encodes a melatonin receptor expressed in pancreatic beta cells, linking circadian signaling to insulin release. Each copy of the G allele at rs10830963 is associated on average with about 1.3 mg/dL (0.07 mmol/L) higher fasting glucose and roughly 1.1x the odds of type 2 diabetes.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 10830963,
+        "gene": "MTNR1B",
+        "chrom": 11,
+        "pos38": 92975544,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Two copies of the C allele, the common genotype, not associated with the MTNR1B fasting-glucose effect. Fasting glucose is shaped by many dozens of loci plus weight, sleep, and diet.",
+          "CG": "One copy of the G allele, carried by roughly 40% of people of European ancestry. Associated on average with about 1.3 mg/dL higher fasting glucose and slightly higher odds of type 2 diabetes — a small shift well within normal day-to-day variation, measurable only across large populations.",
+          "GG": "Two copies of the G allele. Associated on average with about 2.5 mg/dL higher fasting glucose and roughly 1.2x the odds of type 2 diabetes compared with CC. A routine blood test tells far more about actual glucose regulation than this genotype does."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19060907", "label": "Prokopenko et al., Nat Genet 2009" }
+    ]
+  },
+  {
+    "slug": "insulin-resistance-irs1-rs2943641",
+    "category": "metabolic-obesity",
+    "title": "Insulin resistance · IRS1 region",
+    "summary": "IRS1 encodes insulin receptor substrate 1, a central relay in insulin signaling within muscle and fat. The common C allele at rs2943641, near IRS1, is associated on average with insulin resistance, higher fasting insulin, and roughly 1.2x the odds of type 2 diabetes per copy — unusually, acting through insulin action rather than insulin secretion.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 2943641,
+        "gene": "IRS1",
+        "chrom": 2,
+        "pos38": 226229029,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Two copies of the T allele, found in roughly 14% of people of European ancestry. This genotype is associated on average with better insulin sensitivity and the lowest type 2 diabetes odds at this locus.",
+          "CT": "One copy of each allele. The C allele is associated on average with slightly reduced insulin sensitivity and modestly higher fasting insulin; the effect per copy is small relative to the impact of weight and physical activity on insulin action.",
+          "CC": "Two copies of the C allele, the most common genotype (roughly 40% of people of European ancestry). Associated on average with reduced insulin sensitivity and about 1.2x the odds of type 2 diabetes per C allele relative to TT. Because it is so common, this genotype describes the population average more than an elevated state."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19734900", "label": "Rung et al., Nat Genet 2009" }
+    ]
+  },
+  {
+    "slug": "adiponectin-adipoq-rs17300539",
+    "category": "metabolic-obesity",
+    "title": "Adiponectin levels · ADIPOQ",
+    "summary": "Adiponectin is a hormone secreted by fat tissue that improves insulin sensitivity; lower levels accompany obesity and type 2 diabetes. The A allele of the ADIPOQ promoter variant rs17300539 (-11391G>A) is one of the strongest common-variant influences on circulating adiponectin, associated with higher average levels per copy.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 17300539,
+        "gene": "ADIPOQ",
+        "chrom": 3,
+        "pos38": 186841671,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G allele, the common genotype (roughly 85% of people of European ancestry), associated with average adiponectin levels for the population. Adiponectin also varies substantially with body composition and can be measured directly in blood.",
+          "AG": "One copy of the A allele, associated on average with measurably higher circulating adiponectin. Higher adiponectin generally tracks with better insulin sensitivity, but the downstream effect of this single promoter variant on metabolic outcomes is modest and less consistently replicated than its effect on hormone levels.",
+          "AA": "Two copies of the A allele, a rare genotype (about 1% of people of European ancestry). Associated on average with the highest adiponectin levels at this locus. This describes an average hormonal tendency; an actual adiponectin or metabolic panel is far more informative for any individual."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18776141", "label": "Hivert et al., Diabetes 2008" }
+    ]
+  },
+  {
+    "slug": "saturated-fat-bmi-apoa2-rs5082",
+    "category": "metabolic-obesity",
+    "title": "Saturated fat and body weight · APOA2",
+    "summary": "The APOA2 promoter variant -265T>C (rs5082) is a widely cited example of gene-diet interaction. In three US populations, people homozygous for the promoter C allele — reported as GG on the GRCh38 forward strand, since APOA2 is read from the reverse strand — had roughly 1.8x the odds of obesity, but only when saturated-fat intake was high (about 22 g/day or more). At lower intakes, genotypes did not differ.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 5082,
+        "gene": "APOA2",
+        "chrom": 1,
+        "pos38": 161223893,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele (the TT promoter genotype in the original studies), carried by roughly 40% of people of European ancestry. No interaction between saturated-fat intake and body weight was observed for this genotype.",
+          "AG": "One copy of each allele (TC promoter genotype). Behaved like AA in the interaction studies: no detectable difference in obesity odds by saturated-fat intake. Reported associations at this locus apply mainly to the homozygous GG group.",
+          "GG": "Two copies of the G allele, corresponding to the CC promoter genotype studied in the literature (roughly 10-15% of people). Associated with about 1.8x the odds of obesity compared with other genotypes, but only among people consuming high amounts of saturated fat; at lower intakes no difference was seen. Gene-diet interaction findings like this are intriguing but harder to replicate than direct associations, so this is best read as an early-stage signal."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19901143", "label": "Corella et al., Arch Intern Med 2009" }
+    ]
+  },
+  {
+    "slug": "weight-loss-diet-response-gipr-rs2287019",
+    "category": "metabolic-obesity",
+    "title": "Diet response and body weight · GIPR",
+    "summary": "GIPR encodes the receptor for GIP, a gut hormone released after eating that stimulates insulin secretion. The C allele at rs2287019 is associated with slightly higher BMI in large population studies, while in the 2-year POUNDS LOST trial the T allele was associated with greater weight loss and larger improvements in fasting glucose and insulin resistance among people assigned to low-fat diets.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 2287019,
+        "gene": "GIPR",
+        "chrom": 19,
+        "pos38": 45698914,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C allele, the most common genotype (roughly 65% of people of European ancestry). Associated on average with very slightly higher BMI in population studies. In the POUNDS LOST trial this genotype showed smaller average improvements on low-fat diets than T carriers — a single-trial finding that needs replication.",
+          "CT": "One copy of the T allele. In the POUNDS LOST diet trial, T-allele carriers assigned to low-fat diets showed on average about 1% greater weight loss at 6 months and larger improvements in fasting glucose and insulin resistance; no genotype difference appeared on high-fat diets. Diet-response genetics is an early field, and this result is suggestive rather than definitive.",
+          "TT": "Two copies of the T allele, an uncommon genotype (about 4% of people of European ancestry). Associated on average with slightly lower BMI in population studies, and in one diet trial with the largest average metabolic improvements on a low-fat diet. These are averages from a single trial arm and should be read as a weak prior, not a prescription."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "20935630", "label": "Speliotes et al., Nat Genet 2010" },
+      { "pmid": "22237064", "label": "Qi et al., Am J Clin Nutr 2012" }
+    ]
+  }
+]
