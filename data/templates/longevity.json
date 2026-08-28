@@ -1,0 +1,279 @@
+[
+  {
+    "slug": "longevity-foxo3-rs2802292",
+    "category": "longevity",
+    "title": "Exceptional longevity · FOXO3",
+    "summary": "FOXO3 is one of the two most consistently replicated human longevity genes. The G allele at rs2802292 is enriched among centenarians across Japanese, German, and other cohorts; GG homozygotes had roughly 1.5-2.7x the odds of reaching very old age in the original studies. The effect is on probability of long survival, not a guarantee for any individual.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 2802292,
+        "gene": "FOXO3",
+        "chrom": 6,
+        "pos38": 108587315,
+        "ref": "G",
+        "alt": "T",
+        "interpretations": {
+          "GG": "Two copies of the longevity-associated G allele. In studies of long-lived people, this genotype was found more often than expected — roughly 1.5-2.7x the odds of reaching exceptional old age compared with TT. This shifts probability modestly; lifestyle and chance still dominate individual lifespan.",
+          "GT": "One copy of the longevity-associated G allele. Intermediate on average between the two homozygous groups, with a smaller enrichment among the very long-lived. This is one small probabilistic factor among many influences on lifespan.",
+          "TT": "No copies of the longevity-associated G allele. This is a common genotype and simply lacks the modest statistical advantage seen for G carriers in longevity cohorts. Plenty of centenarians carry this genotype; the variant explains only a small slice of survival differences."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18765803", "label": "Willcox et al., Proc Natl Acad Sci USA 2008" },
+      { "pmid": "19196970", "label": "Flachsbart et al., Proc Natl Acad Sci USA 2009" }
+    ]
+  },
+  {
+    "slug": "longevity-apoe-e2-e4",
+    "category": "longevity",
+    "title": "Longevity · APOE (e2/e3/e4)",
+    "summary": "APOE is the strongest common genetic factor for human lifespan found so far. The two variants below combine to define the e2, e3, and e4 forms of the gene: e4 (rs429358 C) is consistently underrepresented among centenarians, while e2 (rs7412 T) is modestly enriched. Even so, many e4 carriers live very long lives — this is a shift in odds, not a destiny.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 429358,
+        "gene": "APOE",
+        "chrom": 19,
+        "pos38": 44908684,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "No e4-defining C allele at this position. Combined with rs7412, this genotype corresponds to the e2 or e3 forms of APOE, which are not associated with the reduced odds of reaching extreme old age seen for e4.",
+          "CT": "One C allele, which usually corresponds to one copy of APOE e4. On average, each e4 copy is associated with lower odds of surviving to extreme old age (roughly 30-50% lower odds of centenarian status in various cohorts). This is a statistical shift; many e4 carriers reach their 90s and beyond.",
+          "CC": "Two C alleles, which usually corresponds to APOE e4/e4 — carried by 2-3% of people. This genotype shows the clearest underrepresentation among the very long-lived. It remains one factor among many; overall health, lifestyle, and chance strongly shape actual lifespan."
+        }
+      },
+      {
+        "rsid": 7412,
+        "gene": "APOE",
+        "chrom": 19,
+        "pos38": 44908822,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No e2-defining T allele at this position. Together with rs429358 this corresponds to the e3 or e4 forms of APOE, without the modest longevity enrichment reported for e2 carriers.",
+          "CT": "One T allele, usually corresponding to one copy of APOE e2. Centenarian studies find e2 modestly overrepresented, consistent with slightly higher average odds of very long survival. The effect is small compared with lifestyle and other genetic factors.",
+          "TT": "Two T alleles, usually corresponding to APOE e2/e2 — rare, about 1 in 200 people. Associated on average with the favorable longevity pattern reported for e2, though data on e2/e2 specifically are limited because of its rarity."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "8136829", "label": "Schächter et al., Nat Genet 1994" },
+      { "pmid": "31413261", "label": "Deelen et al., Nat Commun 2019" }
+    ]
+  },
+  {
+    "slug": "longevity-cetp-i405v-rs5882",
+    "category": "longevity",
+    "title": "Longevity · CETP I405V",
+    "summary": "In Ashkenazi Jewish families with exceptional longevity, homozygosity for the valine form of CETP I405V (GG here) was enriched among centenarians and associated with larger HDL and LDL particle sizes and lower CETP levels. Replication in other populations has been mixed, so this remains a tentative association.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 5882,
+        "gene": "CETP",
+        "chrom": 16,
+        "pos38": 56982180,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A (isoleucine) allele. This genotype did not show the longevity enrichment reported for VV homozygotes in the Ashkenazi study. Given mixed replication elsewhere, any true effect of this variant on lifespan is likely small.",
+          "AG": "One valine (G) and one isoleucine (A) allele. Intermediate on average for the lipoprotein-particle-size differences linked to this variant; the longevity enrichment in the original study was specific to VV homozygotes. A modest, unconfirmed factor at most.",
+          "GG": "Two copies of the valine (G) allele — the VV genotype that was about 3x more frequent in Ashkenazi centenarians than in younger controls, and associated with larger lipoprotein particles. Other cohorts have not always replicated this, so it is best read as an interesting but unproven association."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "14559957", "label": "Barzilai et al., JAMA 2003" }
+    ]
+  },
+  {
+    "slug": "longevity-igf1r-rs2229765",
+    "category": "longevity",
+    "title": "Longevity · IGF1R",
+    "summary": "Reduced insulin/IGF-1 signaling extends lifespan in worms, flies, and mice. In a small Italian study, the A allele of IGF1R rs2229765 was associated with lower circulating IGF-1 levels and was more frequent among long-lived people, hinting that the same pathway matters in humans. Evidence remains thin and awaits large-scale replication.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 2229765,
+        "gene": "IGF1R",
+        "chrom": 15,
+        "pos38": 98934996,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele, which in the original study was associated with lower average plasma IGF-1 and was more common among long-lived individuals. This comes from a small cohort and should be read as a preliminary signal, not an established effect.",
+          "AG": "One copy of the A allele. Carriers showed lower average IGF-1 levels than GG homozygotes in the original study. Any lifespan effect from this single variant is likely small and is not yet firmly established.",
+          "GG": "No copies of the A allele. This genotype was associated with somewhat higher average IGF-1 levels and was not enriched among the long-lived in the original study. IGF-1 levels are shaped by many genes plus nutrition and health status, so genotype alone says little."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12843179", "label": "Bonafè et al., J Clin Endocrinol Metab 2003" }
+    ]
+  },
+  {
+    "slug": "longevity-sirt1-rs7895833",
+    "category": "longevity",
+    "title": "Longevity · SIRT1",
+    "summary": "SIRT1 is the human counterpart of sirtuin genes that influence lifespan in model organisms. One small Turkish study found SIRT1 protein levels rise with age and reported that elderly carriers of the AG genotype at rs7895833 had the highest SIRT1 levels, suggesting a possible link to longevity. This is an early, unreplicated finding.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 7895833,
+        "gene": "SIRT1",
+        "chrom": 10,
+        "pos38": 67863299,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele. Data on this variant and human lifespan come from small studies with inconsistent results; no reliable per-genotype effect on longevity has been established for this genotype.",
+          "AG": "One copy of each allele. In the single small study available, older AG carriers showed the highest SIRT1 protein levels, which the authors interpreted as a possible longevity link. This remains a hypothesis-generating observation, not a replicated effect.",
+          "GG": "Two copies of the G allele. Current evidence is too limited to attach any confident lifespan association to this genotype; sirtuin biology in humans is an active research area and larger studies may change the picture."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "25785999", "label": "Kilic et al., PLoS One 2015" }
+    ]
+  },
+  {
+    "slug": "longevity-telomere-tert-rs2736100",
+    "category": "longevity",
+    "title": "Telomere length · TERT",
+    "summary": "Telomeres — the protective caps on chromosome ends — shorten with age, and average telomere length is partly heritable. Common variation in TERT, the gene for telomerase's catalytic subunit, shifts mean telomere length: the C allele at rs2736100 is associated with slightly longer average telomeres. The per-allele effect is small (a fraction of a standard deviation).",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 2736100,
+        "gene": "TERT",
+        "chrom": 5,
+        "pos38": 1286401,
+        "ref": "C",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele, associated with slightly shorter average leukocyte telomere length. The genotype effect is small compared with the wide natural spread of telomere length between people of the same age, and measured length also reflects lifestyle and chance.",
+          "AC": "One copy of each allele, associated with intermediate average telomere length. Interestingly, the longer-telomere C allele has also been linked to slightly higher odds of some cancers, so longer is not simply better — this locus illustrates a biological trade-off.",
+          "CC": "Two copies of the C allele, associated with modestly longer average telomeres. This is a statistical shift of tens to a couple hundred base pairs on average, not a distinct biological state, and its net effect on lifespan appears small."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013" }
+    ]
+  },
+  {
+    "slug": "longevity-telomere-terc-rs10936599",
+    "category": "longevity",
+    "title": "Telomere length · TERC region",
+    "summary": "The TERC gene encodes the RNA template that telomerase uses to extend telomeres. rs10936599, near TERC, is one of the strongest common-variant influences on mean telomere length: the C allele is associated with longer average telomeres and the T allele with shorter. Effects are small relative to person-to-person variation.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 10936599,
+        "gene": "MYNN",
+        "chrom": 3,
+        "pos38": 169774313,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C allele, the most common genotype, associated with slightly longer average telomere length at this locus. Telomere length still varies widely between individuals with the same genotype.",
+          "CT": "One copy of each allele, associated with intermediate average telomere length. The per-allele shift is on the order of 75-100 base pairs — meaningful at a population level but small for any one person.",
+          "TT": "Two copies of the T allele, associated with slightly shorter average telomeres. Shorter measured telomere length correlates statistically with some age-related conditions, but this single variant contributes only a small fraction of that variation."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "23535734", "label": "Codd et al., Nat Genet 2013" }
+    ]
+  },
+  {
+    "slug": "longevity-klotho-kl-vs-rs9536314",
+    "category": "longevity",
+    "title": "Longevity · Klotho KL-VS",
+    "summary": "Klotho is an aging-related hormone; mice lacking it age prematurely and mice overexpressing it live longer. The KL-VS variant (rs9536314, F352V) shows an unusual pattern in human studies: carrying one copy has been associated with better survival and cognition, while two copies may lose or reverse that advantage. Replication has been mixed.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 9536314,
+        "gene": "KL",
+        "chrom": 13,
+        "pos38": 33054001,
+        "ref": "T",
+        "alt": "G",
+        "interpretations": {
+          "GG": "Two copies of the KL-VS (G) allele — rare, roughly 2-3% of people. In the original study this genotype was underrepresented at older ages, suggesting the variant's possible advantage applies to heterozygotes only. Data on GG specifically are sparse, so confidence is low.",
+          "GT": "One copy of the KL-VS (G) allele, the configuration linked in several studies to a modest survival advantage and, separately, to slightly better average cognitive performance. Other cohorts have not always replicated this, so it remains a tentative association.",
+          "TT": "No KL-VS allele — the most common genotype, serving as the reference group in klotho studies. Absence of the variant carries no reported disadvantage; it simply lacks the possible heterozygote advantage, which itself remains unconfirmed."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "11792841", "label": "Arking et al., Proc Natl Acad Sci USA 2002" },
+      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014" }
+    ]
+  },
+  {
+    "slug": "longevity-tp53-pro72-rs1042522",
+    "category": "longevity",
+    "title": "Survival at older ages · TP53 codon 72",
+    "summary": "The p53 protein guards against cancer by triggering the death of damaged cells, but stronger p53 activity may come at a cost to tissue maintenance. At codon 72, the proline form (G allele here) has weaker apoptotic activity; in a Danish cohort of 9,219 people, Pro/Pro homozygotes showed about 6% higher 12-year survival — roughly 3 years of median survival — than Arg/Arg. This is an intriguing but still-debated association.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1042522,
+        "gene": "TP53",
+        "chrom": 17,
+        "pos38": 7676154,
+        "ref": "G",
+        "alt": "C",
+        "interpretations": {
+          "CC": "Two copies of the C (arginine-72) allele, the most common genotype in European populations. In the Danish study this group served as the reference and had somewhat lower 12-year survival than Pro/Pro homozygotes. The absolute difference was modest and other cohorts have reported mixed results.",
+          "CG": "One arginine and one proline allele. Heterozygotes in the Danish cohort showed about 3% higher 12-year survival than Arg/Arg homozygotes — a small average difference within an overall pattern that still needs confirmation in other populations.",
+          "GG": "Two copies of the G (proline-72) allele. Associated in the Danish cohort with about 6% higher 12-year survival and roughly 3 years longer median survival than Arg/Arg, possibly via better survival after serious illness. This is one small, still-debated factor in lifespan, not a prediction for any individual."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17535973", "label": "Ørsted et al., J Exp Med 2007" },
+      { "pmid": "15732191", "label": "van Heemst et al., Exp Gerontol 2005" }
+    ]
+  },
+  {
+    "slug": "longevity-il6-rs1800795",
+    "category": "longevity",
+    "title": "Inflammation and aging · IL6 -174",
+    "summary": "Chronic low-grade inflammation ('inflammaging') tracks with many age-related conditions, and interleukin-6 is one of its central signals. The IL6 promoter variant -174G/C (rs1800795) influences IL-6 expression in some settings; a Danish study found GG homozygotes modestly overrepresented at older ages, but the wider literature on this variant is contradictory.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1800795,
+        "gene": "IL6",
+        "chrom": 7,
+        "pos38": 22727026,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Two copies of the -174C allele. Studies of this genotype's effect on IL-6 levels and survival disagree with one another; no consistent lifespan association has emerged. At most this is a very small factor within the broader biology of inflammation and aging.",
+          "CG": "One copy of each allele. Intermediate in most models of this promoter variant's effect on IL-6 expression. Given the contradictory literature, no confident statement about longevity can be attached to this genotype.",
+          "GG": "Two copies of the -174G allele. In one Danish cohort this genotype became modestly more frequent with age, suggesting a possible survival advantage, but other studies have found no effect or the opposite direction, so any longevity link remains unproven."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "15130757", "label": "Christiansen et al., Mech Ageing Dev 2004" }
+    ]
+  }
+]
