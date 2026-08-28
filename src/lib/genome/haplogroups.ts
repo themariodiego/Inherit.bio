@@ -7,8 +7,8 @@
 // count. Support labels are honest: sparse data (fewer than 3 markers tested
 // overall) is reported as 'insufficient', not guessed.
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import mtdnaTree from "../../../data/ref/haplogroups/mtdna.json";
+import yTree from "../../../data/ref/haplogroups/y.json";
 
 export type Lineage = "mtDNA" | "Y";
 
@@ -45,22 +45,17 @@ export interface HaplogroupCall {
 /** Returns the sample's base at (chrom, pos), or null when not covered. */
 export type GetBase = (chrom: number, pos: number) => string | null;
 
-const DATA_FILES: Record<Lineage, string> = {
-  mtDNA: "data/ref/haplogroups/mtdna.json",
-  Y: "data/ref/haplogroups/y.json",
-};
-
 const CHROM: Record<Lineage, number> = { mtDNA: 25, Y: 24 };
 
-const cache: Partial<Record<Lineage, HaplogroupNode[]>> = {};
+// Trees are bundled as static imports (not runtime reads), so they ship
+// cleanly in the serverless function without whole-project tracing.
+const TREES: Record<Lineage, HaplogroupNode[]> = {
+  mtDNA: mtdnaTree as HaplogroupNode[],
+  Y: yTree as HaplogroupNode[],
+};
 
 export function loadTree(lineage: Lineage): HaplogroupNode[] {
-  const cached = cache[lineage];
-  if (cached) return cached;
-  const raw = readFileSync(join(process.cwd(), DATA_FILES[lineage]), "utf8");
-  const tree = JSON.parse(raw) as HaplogroupNode[];
-  cache[lineage] = tree;
-  return tree;
+  return TREES[lineage];
 }
 
 interface Candidate {
