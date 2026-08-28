@@ -1,0 +1,1203 @@
+[
+ {
+  "slug": "23andme",
+  "name": "23andMe",
+  "website": "https://www.23andme.org",
+  "checkout_url": "https://www.23andme.org/compare-dna-tests/",
+  "privacy_policy_url": "https://www.23andme.org/legal/privacy/",
+  "data_practices_note": "Opt-in research model: deidentified data pooled for research only if you consent, opt-out anytime; now operated by nonprofit TTAM/23andMe Research Institute (policy last updated 2026-05-19).",
+  "products": [
+   {
+    "name": "Basic Ancestry",
+    "depth": "array",
+    "price": "$79 USD (reg. $99, Labor Day sale thru Sep 7, 2026)",
+    "formats_returned": [
+     "array-txt (zipped .txt raw genotype download)"
+    ],
+    "turnaround": "~4-6 weeks processing after lab receives sample",
+    "notes": "One-time purchase, no membership."
+   },
+   {
+    "name": "Premium Ancestry",
+    "depth": "array",
+    "price": "$149 USD",
+    "formats_returned": [
+     "array-txt (zipped .txt raw genotype download)"
+    ],
+    "turnaround": "~4-6 weeks processing after lab receives sample",
+    "notes": "Membership renews at $69/yr."
+   },
+   {
+    "name": "Premium Ancestry + Health",
+    "depth": "array",
+    "price": "$80 USD (reg. $199, Labor Day sale thru Sep 7, 2026)",
+    "formats_returned": [
+     "array-txt (zipped .txt raw genotype download)"
+    ],
+    "turnaround": "~4-6 weeks processing after lab receives sample",
+    "notes": "Membership renews at $99/yr; adds health/carrier/pharmacogenetics reports."
+   },
+   {
+    "name": "Premium Ancestry + Total Health",
+    "depth": "array + exome",
+    "price": "$399 USD (reg. $499, 20% off)",
+    "formats_returned": [
+     "array-txt (zipped .txt raw genotype download)"
+    ],
+    "turnaround": "~4-6 weeks for array; exome timeline not stated",
+    "notes": "Renews $199/yr. Clinician-ordered exome sequencing (interpretation of 100+ genes), biannual blood testing, clinical care. Exome raw-data download availability/format NOT verified on support pages. Blood/clinical features unavailable in NY, NJ, RI, HI, OK and US territories."
+   }
+  ],
+  "raw_formats": [
+   "array-txt (zipped .txt raw genotype download)"
+  ],
+  "ships_to": "US store serves US only (incl. some territories); separate Canada, UK, EU and International stores serve Canada, UK, select European countries and others",
+  "us_state_exclusions": [
+   "NY",
+   "NJ",
+   "RI",
+   "HI",
+   "OK"
+  ],
+  "us_state_exclusion_notes": [
+   "NY (Total Health blood/clinical only)",
+   "NJ (Total Health blood/clinical only)",
+   "RI (Total Health blood/clinical only)",
+   "HI (Total Health blood/clinical only)",
+   "OK (Total Health blood/clinical only)"
+  ],
+  "turnaround": "~4-6 weeks processing after lab receives sample",
+  "gating": "None for array kits (FDA OTC). Total Health tier's exome sequencing and blood testing are clinician-ordered (arranged by 23andMe, no external prescription needed).",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.23andme.org/",
+   "https://www.23andme.org/compare-dna-tests",
+   "https://www.23andme.org/total-health/",
+   "https://www.23andme.org/legal/privacy/",
+   "https://customercare.23andme.com/hc/en-us/articles/212196868-Accessing-Your-Raw-Genetic-Data",
+   "https://customercare.23andme.com/hc/en-us/articles/115004310067-Navigating-Your-Raw-Data",
+   "https://customercare.23andme.com/hc/en-us/articles/202904740-When-Will-My-DNA-Test-Results-Be-Ready",
+   "https://customercare.23andme.com/hc/en-us/articles/360000145307-What-Countries-Do-You-Ship-To",
+   "https://customercare.23andme.com/hc/en-us/articles/18680166647191-About-Premium-Ancestry-Total-Health",
+   "https://mediacenter.23andme.com/press-releases/ttam-research-institute-nonprofit-public-benefit-corporation/",
+   "https://www.npr.org/2025/06/30/nx-s1-5451398/23andme-sale-approved-dna-data"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live on 2026-08-28: 23andMe operates under the nonprofit TTAM/23andMe Research Institute (post-bankruptcy sale completed July 2025; 23andme.com now 301-redirects to 23andme.org) and consumers can order array kits today \u2014 four tiers from $79 to $399 USD were priced on the live site during an active Labor Day promotion. Raw array data downloads (zipped .txt genotype file) are confirmed via official support pages, but customercare.23andme.com is Cloudflare-gated, so raw-data format, 4-6 week turnaround, and Total Health state exclusions (NY/NJ/RI/HI/OK, blood/clinical features only) were verified from search snippets of those official pages; exome raw-data download for Total Health could not be verified. Base array kits have no US state exclusions (NY/MD restrictions were lifted in 2015)."
+ },
+ {
+  "slug": "24genetics",
+  "name": "24Genetics",
+  "website": "https://24genetics.com",
+  "checkout_url": "https://24genetics.com/shop/",
+  "privacy_policy_url": "https://24genetics.com/protection-of-genetic-data/",
+  "data_practices_note": "GDPR-governed (Spain/EU lab); states it does not sell customer data; anonymized internal research use only with the customer's opt-in choice at informed consent.",
+  "products": [
+   {
+    "name": "All in One Pack (7 reports)",
+    "depth": "array",
+    "price": "\u20ac299 (list \u20ac399)",
+    "turnaround": "3-6 weeks from sample receipt",
+    "formats_returned": [
+     "array raw data (CSV/TXT)"
+    ],
+    "notes": "Illumina genotyping array (~700k markers); Ancestry, Health, Nutrigenetics, Pharmacogenetics, Sports, Skin Care, Talent & Personality reports. Sale price indexed from live shop page, Aug 2026."
+   },
+   {
+    "name": "All in One Plus Pack (7 reports + Microbiota)",
+    "depth": "array",
+    "price": "\u20ac399 (list \u20ac499)",
+    "turnaround": "3-6 weeks from sample receipt",
+    "formats_returned": [
+     "array raw data (CSV/TXT)"
+    ],
+    "notes": "Adds oral microbiota analysis to the 7 genetic reports."
+   },
+   {
+    "name": "Health Plus Pack (Health + Nutrigenetics + Pharmacogenetics + Ancestry)",
+    "depth": "array",
+    "price": "\u20ac249",
+    "formats_returned": [
+     "array raw data (CSV/TXT)"
+    ],
+    "notes": "Price indexed from live product page, Aug 2026."
+   },
+   {
+    "name": "Wellness Pack (Skin + Nutrigenetics + Sport + Ancestry)",
+    "depth": "array",
+    "price": "\u20ac249",
+    "formats_returned": [
+     "array raw data (CSV/TXT)"
+    ],
+    "notes": "Price indexed from live product page, Aug 2026."
+   },
+   {
+    "name": "Reports from uploaded raw data (per-report, e.g. Ancestry)",
+    "depth": "array",
+    "price": "from \u20ac49",
+    "notes": "Analysis of existing 23andMe/AncestryDNA/MyHeritage/FTDNA raw data uploads; no kit or new sample. AI All in One subscription also listed at \u20ac19/month or \u20ac199/year."
+   }
+  ],
+  "raw_formats": [
+   "array raw data (CSV/TXT)"
+  ],
+  "ships_to": "Worldwide (100+ countries); free shipping+collection on orders \u2265\u20ac249 (\u20ac25 below), always free in Spain",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "3-6 weeks from sample receipt",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://24genetics.com/shop/",
+   "https://24genetics.com/all-in-one/",
+   "https://24genetics.com/all-in-one-plus-pack-en/",
+   "https://24genetics.com/health-plus-pack-health-nutrigenetics-pharmacogenetics-ancestry/",
+   "https://24genetics.com/wellness-pack-skin-nutrigenetics-sport-ancestry/",
+   "https://24genetics.com/faqs-frequently-asked-questions/",
+   "https://24genetics.com/general-terms-and-conditions/",
+   "https://24genetics.com/protection-of-genetic-data/",
+   "https://24genetics.com/whole-genome-sequencing/",
+   "https://www.dnaweekly.com/reviews/24genetics/",
+   "https://nebula.org/blog/24genetics-review/",
+   "https://www.lovecoupons.com/24genetics",
+   "https://dnatestingchoice.com/health-testing/provider/24genetics/5569"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Operating as of 2026-08: the site is live and selling direct-to-consumer array kits worldwide (DNAWeekly review updated 2026-05-14; coupon coverage updated 2026-08-21), but 24genetics.com sits behind an anti-bot challenge that blocked direct page fetches, so prices/products were verified via Google-indexed snapshots of the live shop and product pages rather than rendered pages \u2014 treat exact sale prices (\u20ac299 All in One, \u20ac399 All in One Plus, \u20ac249 packs) as high-confidence but not screen-verified. Important caveats: this is an array (~700k-marker) provider, not WGS \u2014 its WGS/WES offering (\u20ac1,999/\u20ac999 circa 2021) was removed from the store per Nebula's review and no purchasable WGS/WES product with a price could be verified today (only informational pages remain); raw data is delivered as array-format CSV/TXT, no FASTQ/BAM/VCF. No US state exclusions (NY/NJ/RI/MD) were found in accessible FAQ/terms excerpts, but the full terms page could not be fetched directly, so absence is not fully confirmed; the \"GENERAL PRIVACY POLICY\" page URL likewise could not be confirmed, so the verified Protection of Genetic Data page is given instead."
+ },
+ {
+  "slug": "ancestrydna",
+  "name": "AncestryDNA",
+  "website": "https://www.ancestry.com/dna/",
+  "checkout_url": "https://www.ancestry.com/checkout/mli?direct=1&offers=O-29007&quantities=1&rtype=85&flow=3",
+  "privacy_policy_url": "https://www.ancestry.com/c/legal/privacystatement",
+  "data_practices_note": "Genetic data used for research only under a separate opt-in Informed Consent to Research (some partners may have financial interests); Ancestry does not voluntarily give user data to law enforcement and offers opt-out of ad-tracking sharing/selling.",
+  "products": [
+   {
+    "name": "AncestryDNA kit",
+    "depth": "array",
+    "price": "$34 USD (Labor Day sale, reg. $99; ends 2026-09-08, excl. shipping)",
+    "turnaround": "6 weeks regular / 4 weeks priority after lab receives sample",
+    "formats_returned": [
+     "array-txt (zipped tab-separated AncestryDNA.txt: rsid, chromosome, position, 2 alleles)"
+    ],
+    "notes": "Autosomal microarray surveying 700,000+ genome locations; saliva sample. Some features (Traits, DNA by Parent) require an Ancestry subscription."
+   },
+   {
+    "name": "AncestryDNA + World Explorer Membership (3 mo)",
+    "depth": "array",
+    "price": "$35 USD (sale, reg. $100)",
+    "turnaround": "6 weeks regular / 4 weeks priority",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Membership auto-renews at $99.95/3 months; Traits included while subscription active."
+   },
+   {
+    "name": "AncestryDNA + All Access Membership (3 mo)",
+    "depth": "array",
+    "price": "$44 USD (sale, reg. $199)",
+    "turnaround": "6 weeks regular / 4 weeks priority",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Membership auto-renews at $149/3 months."
+   },
+   {
+    "name": "AncestryDNA + Traits",
+    "depth": "array",
+    "price": "unverified (checkout offer O-29008 exists on live site; price renders only at signed-in checkout)",
+    "turnaround": "6 weeks regular / 4 weeks priority",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Same array plus 100+ trait reports; listed as a Buy-now option but price not visible without login \u2014 not invented."
+   }
+  ],
+  "raw_formats": [
+   "array-txt",
+   "array-txt (zipped tab-separated AncestryDNA.txt: rsid, chromosome, position, 2 alleles)"
+  ],
+  "ships_to": "Available for purchase online to residents of 100+ countries (per Ancestry FAQ)",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "6 weeks regular / 4 weeks priority after lab receives sample",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.ancestry.com/dna/",
+   "https://www.ancestry.com/c/legal/faq",
+   "https://www.ancestry.com/c/legal/privacystatement",
+   "https://support.ancestry.com/s/article/Downloading-DNA-Data",
+   "https://www.ancestry.com/c/dna/bundle",
+   "https://www.quanome.com/blog/how-to-download-your-ancestrydna-raw-data/",
+   "https://genomeinsight.org/blog/how-to-download-ancestrydna-raw-data"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live on ancestry.com on 2026-08-28: consumers can order today, with a Labor Day sale (ends 2026-09-08) pricing the base array kit at $34 (reg. $99) and membership bundles at $35/$44; the test is a ~700K-marker autosomal microarray available in 100+ countries with 4-6 week advertised turnaround. Customers get raw data only as a zipped genotype text file (no FASTQ/BAM/VCF); download steps come from Ancestry's support article, whose JS-rendered body was corroborated via recent third-party guides. No NY/NJ/RI/MD or other US state exclusions were found in the FAQ or privacy statement (state restrictions applied to the discontinued AncestryHealth product, not the ancestry array); AncestryDNA + Traits standalone pricing could not be verified without a signed-in checkout."
+ },
+ {
+  "slug": "circledna",
+  "name": "CircleDNA",
+  "website": "https://circledna.com",
+  "checkout_url": "https://circledna.com/products/premium-dna-test",
+  "privacy_policy_url": "https://circledna.com/pages/privacy",
+  "data_practices_note": "Prenetics-owned; data shared only within Prenetics entities/contracted processors, no third-party sale stated; third-party research and research-database use are explicit opt-ins per informed consent.",
+  "products": [
+   {
+    "name": "Premium DNA Test",
+    "depth": "exome",
+    "price": "US$505 (sale, reg. US$629; HK$3,999/HK$4,990 on HK store)",
+    "turnaround": "~18 business days lab time; 4-6 weeks end-to-end",
+    "formats_returned": [
+     "app/portal reports only; raw data sold separately"
+    ],
+    "notes": "500+ reports incl. drug response, cancer/disease risk, ancestry; multi-kit bundles $439/$379/$315 per kit. Marketed as NGS '3M+ data points'; 'whole exome' wording no longer on product page."
+   },
+   {
+    "name": "Vital DNA Test",
+    "depth": "exome",
+    "price": "US$349",
+    "turnaround": "~18 business days lab time; 4-6 weeks end-to-end",
+    "formats_returned": [
+     "app/portal reports only"
+    ],
+    "notes": "Diet/fitness/wellness subset; Vital Upgrade to Premium sold for HK$1,029."
+   },
+   {
+    "name": "Raw Data Extraction (add-on)",
+    "depth": "exome",
+    "price": "US$51 (HK$389)",
+    "turnaround": "",
+    "formats_returned": [
+     "format not stated on official pages; third-party 2021 account reports zipped .txt variant file; VCF/FASTQ/BAM unverified"
+    ],
+    "notes": "https://circledna.com/products/raw-data-extraction"
+   }
+  ],
+  "raw_formats": [
+   "app/portal reports only",
+   "app/portal reports only; raw data sold separately",
+   "format not stated on official pages; third-party 2021 account reports zipped .txt variant file; VCF/FASTQ/BAM unverified"
+  ],
+  "ships_to": "80+ countries: US, Canada, UK, EU/EEA, Australia/NZ, HK, SG, JP, KR, India, Middle East (GCC, Israel), parts of Africa and Latin America",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "~18 business days lab time; 4-6 weeks end-to-end",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://circledna.com/",
+   "https://circledna.com/products/premium-dna-test",
+   "https://circledna.com/products/vital-dna-test",
+   "https://circledna.com/products/raw-data-extraction",
+   "https://circledna.com/products.json",
+   "https://circledna.gorgias.help/en-US/do-you-deliver-to-my-country-1222017",
+   "https://circledna.gorgias.help/en-US/how-long-will-it-take-to-receive-my-circledna-results-2498461",
+   "https://circledna.gorgias.help/en-US/who-is-circledna-1214095",
+   "https://circledna.com/pages/privacy",
+   "https://circledna.com/pages/consent",
+   "https://circledna.com/pages/terms",
+   "https://www.hagan.me/CircleDNA.html"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating on 2026-08-28: live Shopify store with working checkout, Premium DNA Test at US$505 (sale, reg. US$629) and Vital at US$349; ships to 80+ countries including the US with no state exclusions found in terms or FAQ. Raw data is a paid US$51 add-on, but the delivered file format is not stated on any official page (a 2021 customer account says zipped txt; exome VCF unconfirmed). Current marketing says NGS \"3M+ data points\" rather than explicitly \"whole exome sequencing\" \u2014 the exome depth label reflects historical claims and reviews."
+ },
+ {
+  "slug": "dante-labs",
+  "name": "Dante Labs",
+  "website": "https://dantelabs.com/",
+  "checkout_url": "https://dantelabs.com/checkout/?product=genome&tier=premium",
+  "privacy_policy_url": "https://dantelabs.com/privacy/",
+  "data_practices_note": "Does not sell genetic data; research use is opt-in via separate Research Consent; GDPR-compliant with user-initiated deletion of data and sample (policy dated 2026-04-12)",
+  "products": [
+   {
+    "name": "Genome Test \u2014 Premium",
+    "depth": "30x",
+    "price": "$449 USD (\u20ac399 / \u00a3345)",
+    "turnaround": "6\u20138 weeks from sample arrival at lab; kit ships within 48 hours",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "30X WGS with core reports (hereditary risk, rare disease, carrier status, proactive health); raw data included; price verified from live Stripe-backed /api/prices endpoint"
+   },
+   {
+    "name": "Genome Test \u2014 Premium + All Reports",
+    "depth": "30x",
+    "price": "$599 USD (\u20ac549 / \u00a3469)",
+    "turnaround": "6\u20138 weeks",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Adds all 200+ clinical reports unlocked plus one year of new reports/updates"
+   },
+   {
+    "name": "Genome Test \u2014 Premium + All Reports + 3 Year Updates",
+    "depth": "30x",
+    "price": "$849 USD (\u20ac749 / \u00a3649)",
+    "turnaround": "6\u20138 weeks",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Adds three years of report updates, AI Genome Chat, and Polygenic Risk Score reports"
+   },
+   {
+    "name": "Complete RNA Profile",
+    "depth": "RNA transcriptome (not DNA)",
+    "price": "$449 USD (\u20ac399 / \u00a3345)",
+    "turnaround": "4 weeks",
+    "formats_returned": [],
+    "notes": "Blood-sample gene-expression test (42,000 biomarkers); listed for completeness, not a genome/array DNA test"
+   }
+  ],
+  "raw_formats": [
+   "BAM",
+   "FASTQ",
+   "VCF"
+  ],
+  "ships_to": "Worldwide (100+ countries), free shipping with prepaid return kit",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "6\u20138 weeks from sample arrival at lab; kit ships within 48 hours",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://dantelabs.com/",
+   "https://dantelabs.com/genome/",
+   "https://dantelabs.com/whole-genome-sequencing/",
+   "https://dantelabs.com/faq/",
+   "https://dantelabs.com/privacy/",
+   "https://dantelabs.com/terms/",
+   "https://dantelabs.com/api/prices",
+   "https://dantelabs.com/checkout/?product=genome&tier=premium"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08-28: Dante Labs sells 30X WGS direct to consumer with no prescription or clinician gating (\"You can order your kit without a prescription or referral\" per their FAQ), in three tiers at $449/$599/$849 USD confirmed via both on-page JSON-LD and their live Stripe pricing API. Customers get FASTQ, BAM, and VCF raw data (CRAM not mentioned), 6-8 week turnaround, worldwide shipping to 100+ countries, and no US state exclusions were found in FAQ or terms (NY appears only as governing law). Caveat: on-page prices render via JS from Stripe so scraped display prices were blank, and one third-party mention of a \"$199 entry price\" contradicts the live API, which was treated as authoritative."
+ },
+ {
+  "slug": "dna-complete",
+  "name": "DNA Complete",
+  "website": "https://dnacomplete.com",
+  "checkout_url": "https://dnacomplete.com/shop",
+  "privacy_policy_url": "https://dnacomplete.com/privacy-policy",
+  "data_practices_note": "Policy (updated 2026-05-11) says genetic data is not sold, research sharing is strictly opt-in with explicit prior consent, no disclosure to insurers/employers, deletion on account closure \u2014 but Nebula's blockchain/user-held-key model did NOT carry over (per genomereviews.com).",
+  "products": [
+   {
+    "name": "Essential \u2013 1x WGS DNA Test",
+    "depth": "1x",
+    "price": "$245 USD (list $395)",
+    "formats_returned": [
+     "CRAM",
+     "VCF"
+    ],
+    "turnaround": "8\u201312 weeks (company claim per genomereviews.com; not stated on site FAQ)",
+    "notes": "175+ health reports, basic ancestry, raw data download; first year of membership included; renewal price not disclosed on site"
+   },
+   {
+    "name": "Pro \u2013 30x WGS DNA Test",
+    "depth": "30x",
+    "price": "$595 USD (list $895)",
+    "formats_returned": [
+     "CRAM",
+     "VCF"
+    ],
+    "turnaround": "8\u201312 weeks (company claim per genomereviews.com; not stated on site FAQ)",
+    "notes": "250+ health reports, advanced ancestry, genome browser; first year of membership included. Marked 'Most Popular'"
+   },
+   {
+    "name": "Elite \u2013 100x WGS DNA Test",
+    "depth": "100x",
+    "price": "$1,295 USD (list $1,795)",
+    "formats_returned": [
+     "CRAM",
+     "VCF"
+    ],
+    "turnaround": "8\u201312 weeks (company claim per genomereviews.com; not stated on site FAQ)",
+    "notes": "350+ health reports, rare-mutation detection, genetic-counseling discount, bundled Oral Microbiome Test; first year of membership included"
+   }
+  ],
+  "raw_formats": [
+   "CRAM",
+   "VCF"
+  ],
+  "ships_to": "US (free shipping); international orders accepted but customer pays sample return shipping and possible added shipping charges per Terms \u2014 no verified country list",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "8\u201312 weeks (company claim per genomereviews.com; not stated on site FAQ)",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://dnacomplete.com/",
+   "https://dnacomplete.com/shop",
+   "https://dnacomplete.com/privacy-policy",
+   "https://dnacomplete.com/terms-of-use",
+   "https://genomereviews.com/reviews/dnacomplete",
+   "https://genomereviews.com/articles/20260328-nebula-shutdown"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live and orderable (2026-08-28): DNA Complete, operated by DNA Complete Inc. / Nebula Genomics, a wholly owned subsidiary of ProPhase Labs (Delaware corp., Uniondale NY), sells three direct-to-consumer WGS tiers (1x $245, 30x $595, 100x $1,295 USD, sale prices) with no clinician gating and no US state exclusions found in FAQ or Terms. Site FAQ confirms CRAM and VCF downloads (a third-party review claims FASTQ/BAM/VCF \u2014 discrepancy unresolved); no raw-data download/transfer fee could be verified either way, and the 8\u201312 week turnaround comes from reputable secondary coverage, not the site itself. Post-first-year membership renewal pricing is not disclosed on the site."
+ },
+ {
+  "slug": "familytreedna",
+  "name": "FamilyTreeDNA",
+  "website": "https://www.familytreedna.com",
+  "checkout_url": "https://www.familytreedna.com/products/big-y",
+  "privacy_policy_url": "https://www.familytreedna.com/legal/privacy-statement",
+  "data_practices_note": "States it does not sell/trade genetic data; research sharing requires separate express consent; law-enforcement (investigative genetic genealogy) matching is opt-OUT for US customers by default.",
+  "products": [
+   {
+    "name": "Family Finder",
+    "depth": "array",
+    "price": "$39 USD (sale through Aug 31; standard $79)",
+    "turnaround": "6-8 weeks",
+    "formats_returned": [
+     "array-txt (Build 37 CSV, gzipped)",
+     "Y-SNP CSV (males)"
+    ],
+    "notes": "Autosomal SNP array incl. X; myOrigins ethnicity + matching. Raw data download requires 2FA."
+   },
+   {
+    "name": "Big Y-700",
+    "depth": "Y-DNA NGS (700+ STRs, 500k+ SNPs)",
+    "price": "$399 USD (sale through Aug 31; standard $449)",
+    "turnaround": "6-10 weeks advertised (currently 8-10 weeks per Aug 26, 2026 status)",
+    "formats_returned": [
+     "VCF",
+     "BED (bundled in VCF zip)",
+     "CSV (named/private variants, matches)",
+     "BAM (paid add-on via 'Buy Raw Data', delivered up to 72 hrs)"
+    ],
+    "notes": "BAM was decoupled from test price; VCF/BED and CSVs are free downloads. No FASTQ offered."
+   },
+   {
+    "name": "mtFull Sequence",
+    "depth": "mtDNA (full mitochondrial sequence)",
+    "price": "$129 USD (sale through Aug 31; standard $159)",
+    "turnaround": "6-8 weeks",
+    "formats_returned": [
+     "FASTA",
+     "CSV (mutations, matches)"
+    ],
+    "notes": "Full mtDNA sequence with haplogroup and matching."
+   },
+   {
+    "name": "Y-37",
+    "depth": "Y-DNA (37 STR markers)",
+    "price": "$79 USD (sale through Aug 31; standard $119)",
+    "turnaround": "3-6 weeks standard (delays noted Aug 2026: 6-10 weeks)",
+    "formats_returned": [
+     "CSV (STR results)"
+    ],
+    "notes": "Entry-level paternal STR test."
+   },
+   {
+    "name": "Y-111",
+    "depth": "Y-DNA (111 STR markers)",
+    "price": "$189 USD (sale through Aug 31; standard $249)",
+    "turnaround": "3-6 weeks standard (delays noted Aug 2026: 6-10 weeks)",
+    "formats_returned": [
+     "CSV (STR results)"
+    ],
+    "notes": "Higher-resolution paternal STR test; upgrades to Big Y-700 available ($239)."
+   }
+  ],
+  "raw_formats": [
+   "BAM (paid add-on via 'Buy Raw Data', delivered up to 72 hrs)",
+   "BED (bundled in VCF zip)",
+   "CSV (STR results)",
+   "CSV (mutations, matches)",
+   "CSV (named/private variants, matches)",
+   "FASTA",
+   "VCF",
+   "Y-SNP CSV (males)",
+   "array-txt (Build 37 CSV, gzipped)"
+  ],
+  "ships_to": "Worldwide except Belarus, Cuba, France, Iran, Kosovo, Russia, Somalia, Sudan, Ukraine, Yemen (kits ship from Houston, TX)",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "6-8 weeks",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.familytreedna.com/products",
+   "https://www.familytreedna.com/products/big-y",
+   "https://help.familytreedna.com/hc/en-us/articles/11497996806543-Test-and-Upgrade-Prices",
+   "https://help.familytreedna.com/hc/en-us/articles/9446830633999-Big-Y-Data-Downloads",
+   "https://help.familytreedna.com/hc/en-us/articles/14860944283407-Downloading-Your-Family-Finder-Data",
+   "https://help.familytreedna.com/hc/en-us/articles/4476988137487-Downloading-mtDNA-Data",
+   "https://help.familytreedna.com/hc/en-us/articles/4660569658895-Test-Results-Processing-Times",
+   "https://help.familytreedna.com/hc/en-us/articles/4419298544655-Where-are-FamilyTreeDNA-Tests-Available",
+   "https://help.familytreedna.com/hc/en-us/articles/4414456260879-Frequently-Asked-Shipping-Questions",
+   "https://www.familytreedna.com/legal/privacy-statement"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating on 2026-08-28: all five core tests are in-cart purchasable on the live site with a summer sale through Aug 31 (Family Finder $39, mtFull $129, Y-37 $79, Y-111 $189, Big Y-700 $399 USD; standard prices confirmed in the help center price list updated 2026-08-18). Raw data formats confirmed from official help articles: Family Finder returns gzipped Build-37 CSV array data; Big Y returns free VCF+BED and CSVs but the BAM is a separate paid \"Buy Raw Data\" add-on (historically $100 \u2014 current add-on price not verifiable without an account); mtFull returns FASTA. No FASTQ for any product. No US state exclusions found in shipping FAQs/availability pages (NY/NJ/RI/MD not mentioned \u2014 genealogy-only testing); country-level exclusions listed. Law-enforcement matching default and its US/EU split is per the privacy statement and secondary coverage \u2014 the full policy text is behind a JS app and could not be fetched directly."
+ },
+ {
+  "slug": "geneplanet",
+  "name": "GenePlanet",
+  "website": "https://geneplanet.com",
+  "checkout_url": "https://geneplanet.com/eu/products/premium-pack",
+  "privacy_policy_url": "https://geneplanet.com/eu/privacy-policy",
+  "data_practices_note": "GDPR-based, consent-driven model: unused DNA/sample data is stored and used for internal research in aggregated, anonymised form; no release to third parties without express consent; samples analysed in own labs (Ljubljana, Zagreb) and partner labs (Copenhagen, Hoddesdon UK).",
+  "products": [
+   {
+    "name": "Premium Pack (MyLifestyle + MyHealth, WGS)",
+    "depth": "WGS (coverage not disclosed)",
+    "price": "\u20ac449 EUR (EU shop); $519 USD (US); \u00a3379 GBP (UK)",
+    "turnaround": "~5 weeks after lab receives sample",
+    "formats_returned": [],
+    "notes": "Verified salable via the live pricing API that powers geneplanet.com checkout (partner-scoped productConfigurations endpoint). One-time price; a subscription variant exists but was flagged non-salable in the API on 2026-08-28."
+   },
+   {
+    "name": "MyHealth DNA test",
+    "depth": "WGS (coverage not disclosed)",
+    "price": "\u20ac299 EUR (EU); $349 USD (US); \u00a3249 GBP (UK)",
+    "turnaround": "~5 weeks after lab receives sample",
+    "formats_returned": [],
+    "notes": "Health/disease-risk report tier; WGS-based per site technology page."
+   },
+   {
+    "name": "MyLifestyle DNA test",
+    "depth": "WGS (coverage not disclosed)",
+    "price": "\u20ac299 EUR (EU); $349 USD (US); \u00a3249 GBP (UK)",
+    "turnaround": "~5 weeks after lab receives sample",
+    "formats_returned": [],
+    "notes": "Nutrition/sport/sleep report tier; WGS-based."
+   },
+   {
+    "name": "MyAncestry DNA test",
+    "depth": "WGS incl. mtDNA maternal-line analysis (coverage not disclosed)",
+    "price": "\u20ac169 EUR (EU); $199 USD (US); \u00a3149 GBP (UK)",
+    "turnaround": "~5 weeks after lab receives sample",
+    "formats_returned": [],
+    "notes": "Ancestry composition, Neanderthal share, maternal lineage via mitochondrial genome."
+   }
+  ],
+  "raw_formats": [],
+  "ships_to": "Regional shops: EU (EUR; DE/HR/RO/SI/SK localized), UK (GBP), Switzerland (CHF), US (USD), Poland (PLN); Italy shop disabled. Company claims presence in 35-50+ markets; kits shipped via DHL, delivery 4-6 business days.",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "~5 weeks after lab receives sample",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://geneplanet.com/eu/products/premium-pack",
+   "https://geneplanet.com/eu/products/my-health",
+   "https://geneplanet.com/eu/products/my-lifestyle",
+   "https://geneplanet.com/eu/products/my-ancestry",
+   "https://api.geneplanet.com/api/productConfigurations?partnerId=449901c4-50c0-45e2-b7db-8bd7f229dbea",
+   "https://api.geneplanet.com/api/productConfigurations?partnerId=0cf04f85-e64f-4e04-889e-8aa10171b541",
+   "https://api.geneplanet.com/api/productConfigurations?partnerId=c8101a07-becd-4548-a0fa-fd62954f374d",
+   "https://geneplanet.com/assets/i18n/website/en.json",
+   "https://geneplanet.com/assets/i18n/shop/en.json",
+   "https://geneplanet.com/sitemap.xml",
+   "https://geneplanet.com/eu/privacy-policy",
+   "https://geneplanet.com/eu/data-privacy",
+   "https://hub.geneplanet.com/en/wgs-test-once-benefit-for-life/",
+   "https://nebula.org/blog/geneplanet-review/",
+   "https://www.trustpilot.com/review/www.geneplanet.com",
+   "https://www.startupreporter.eu/geneplanet-lauxera-blackpeak-genomics-slovenia-2026/"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08-28: geneplanet.com runs live regional shops (EU/UK/CH/US/PL) with Stripe/PayPal checkout, and its live pricing API confirms four directly purchasable consumer WGS-based tests (Premium \u20ac449, MyHealth \u20ac299, MyLifestyle \u20ac299, MyAncestry \u20ac169 in the EU shop); Trustpilot shows purchases and results delivered within the past week, and the company took Lauxera Capital investment in April 2026. Caveats: the site is a JS SPA so prices were verified from the same API the checkout uses (embedded JSON-LD prices on-page are stale); sequencing coverage/depth is not disclosed anywhere on the site; GenePlanet does NOT return raw data files (no FASTQ/BAM/VCF download \u2014 confirmed by absence in all site/shop copy and by third-party reviews stating raw data is not released). No US state exclusions (NY/NJ/RI/MD) were found in accessible site copy, but full T&C text loads dynamically and could not be fully retrieved, so treat that as unconfirmed rather than affirmatively none."
+ },
+ {
+  "slug": "living-dna",
+  "name": "Living DNA",
+  "website": "https://livingdna.com",
+  "checkout_url": "https://livingdna.com/kit/ancestry-dna-test",
+  "privacy_policy_url": "https://livingdna.com/legal/Privacy-Policy",
+  "data_practices_note": "States it does not sell customer data to third parties; research participation is strictly opt-in (revocable); genetic and personal data stored separately under random barcodes.",
+  "products": [
+   {
+    "name": "Your Ancestry",
+    "depth": "array",
+    "price": "$99 USD (sale, from $124) + shipping from $9.95",
+    "turnaround": "6-8 weeks from lab receipt",
+    "formats_returned": [
+     "array-txt (tab-delimited; autosomal + mtDNA + Y-DNA)"
+    ],
+    "notes": "Ancestry with sub-regional breakdown plus mtDNA and Y-DNA haplogroups; free raw data download."
+   },
+   {
+    "name": "Your Ancestry & Neanderthal",
+    "depth": "array",
+    "price": "$135 USD + shipping",
+    "turnaround": "6-8 weeks from lab receipt",
+    "formats_returned": [
+     "array-txt (tab-delimited; autosomal + mtDNA + Y-DNA)"
+    ],
+    "notes": "Ancestry kit plus Neanderthal report."
+   },
+   {
+    "name": "Your Ancestry & Wellbeing",
+    "depth": "array",
+    "price": "$169 USD (sale, from $225) + shipping",
+    "turnaround": "6-8 weeks from lab receipt",
+    "formats_returned": [
+     "array-txt (tab-delimited; autosomal + mtDNA + Y-DNA)"
+    ],
+    "notes": "Adds vitamin response, food metabolism, and exercise/recovery trait reports."
+   }
+  ],
+  "raw_formats": [
+   "array-txt (tab-delimited; autosomal + mtDNA + Y-DNA)"
+  ],
+  "ships_to": "Worldwide (\"ship to any location\"); regional storefronts for UK, US/International, EU, CA, AU, NZ. Prepaid return shipping only from UK, US, and some EU regions.",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "6-8 weeks from lab receipt",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://livingdna.com/",
+   "https://livingdna.com/kit/ancestry-dna-test",
+   "https://livingdna.com/kit/wellbeing-and-ancestry-kit",
+   "https://livingdna.com/privacy-centre",
+   "https://livingdna.com/legal/living-dna-terms-of-service",
+   "https://support.livingdna.com/hc/en-us/articles/360011384960-How-do-I-download-my-raw-data",
+   "https://support.livingdna.com/hc/en-us/articles/360028382892-How-do-I-interpret-my-raw-data"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08-28: livingdna.com is live with an active summer sale and three purchasable array-based kits ($99/$135/$169 USD on the US storefront) with no clinician gating; results advertised in 6-8 weeks. Raw data (autosomal, mtDNA, Y-DNA) is downloadable free as a tab-delimited SNP text file per their support center \u2014 no FASTQ/BAM/VCF since this is genotyping array, not sequencing. Caveats: the $135 Neanderthal kit price was seen only on the homepage (its product page was not fetched separately); the support center blocks direct fetching (Cloudflare), so raw-data details come from indexed support-article content; terms of service reference \"approved jurisdictions as listed on our Website\" but name no US state exclusions, and none (NY/NJ/RI/MD) were found \u2014 ancestry-only tests are typically not clinically regulated."
+ },
+ {
+  "slug": "mapmygenome",
+  "name": "Mapmygenome",
+  "website": "https://mapmygenome.in",
+  "checkout_url": "https://mapmygenome.in/products/genomepatri",
+  "privacy_policy_url": "https://mapmygenome.in/policies/privacy-policy",
+  "data_practices_note": "Generic e-commerce policy: discloses personal info to service providers and business/marketing partners; no explicit genetic-data research-sharing, sale, or research opt-in/opt-out language found in the policy.",
+  "products": [
+   {
+    "name": "Genomepatri",
+    "depth": "array",
+    "price": "Rs. 7,999 INR",
+    "turnaround": "3 weeks",
+    "formats_returned": [],
+    "notes": "Wellness panel (disease risk, drug response, nutrition, fitness) via microarray or NGS genotyping; includes genetic counseling. Raw-data return to customer not stated on product page \u2014 unverified. Shopify variant shows available:true (in stock)."
+   },
+   {
+    "name": "Whole Genome Sequencing \u2014 Without Raw Data",
+    "depth": "30x",
+    "price": "Rs. 89,000 INR",
+    "turnaround": "56 days",
+    "formats_returned": [],
+    "notes": "Clinical-grade 30x NGS WGS; reports + counseling only, no raw files. Shopify variant available:true."
+   },
+   {
+    "name": "Whole Genome Sequencing \u2014 With Raw Data",
+    "depth": "30x",
+    "price": "Rs. 99,000 INR",
+    "turnaround": "56 days",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Same 30x WGS plus raw genomic data (FASTQ, BAM, VCF) delivered via secure storage, per product page. Shopify variant available:true."
+   }
+  ],
+  "raw_formats": [
+   "BAM",
+   "FASTQ",
+   "VCF"
+  ],
+  "ships_to": "India (free pan-India shipping, 2-5 business days); separate international store advertised with $50 USD one-way shipping fee, customer pays return shipping",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "3 weeks",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://mapmygenome.in/",
+   "https://mapmygenome.in/products/genomepatri",
+   "https://mapmygenome.in/products/whole-genome-sequencing",
+   "https://mapmygenome.in/products/whole-genome-sequencing.js",
+   "https://mapmygenome.in/products/genomepatri.js",
+   "https://mapmygenome.in/policies/privacy-policy",
+   "https://mapmygenome.in/policies/shipping-policy"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live on 2026-08-28 from mapmygenome.in: Genomepatri (array-based wellness panel, Rs. 7,999) and 30x WGS (Rs. 89,000 without / Rs. 99,000 with FASTQ+BAM+VCF raw data) are in stock per the site's Shopify inventory endpoints, with no clinician gating. Caveats: the rendered WGS page briefly showed \"sold out\" but the store's product JSON confirms both variants available:true; raw-data return for the Genomepatri array itself is not documented; India-focused shipping with a thinly documented international store, and no US state exclusions found in policies."
+ },
+ {
+  "slug": "myheritage",
+  "name": "MyHeritage DNA",
+  "website": "https://www.myheritage.com/dna",
+  "checkout_url": "https://www.myheritage.com/dna/order",
+  "privacy_policy_url": "https://www.myheritage.com/privacy-policy",
+  "data_practices_note": "Pledges genetic data \"will never be sold or licensed to third parties, including insurance companies\"; internal research use is opt-in via a separate DNA Informed Consent Agreement, revocable anytime.",
+  "products": [
+   {
+    "name": "MyHeritage DNA kit (ancestry + DNA matching)",
+    "depth": "array",
+    "price": "$29 USD (promo, list $89 USD)",
+    "turnaround": "3-4 weeks after sample arrives at lab",
+    "formats_returned": [
+     "array-txt (CSV, MyHeritage_raw_dna_data.csv delivered in a ZIP)"
+    ],
+    "notes": "Autosomal genotyping array (Illumina GSA chip). Optional 'Complete' subscription bundle at same $29 with 30-day free trial, then $149/yr. Shipping $5 standard / $19 expedited; free shipping with Complete trial add-on. Raw download available only for kits tested at MyHeritage (not uploads) and only by the kit manager."
+   }
+  ],
+  "raw_formats": [
+   "array-txt (CSV, MyHeritage_raw_dna_data.csv delivered in a ZIP)"
+  ],
+  "ships_to": "Worldwide (extensive country list at checkout); test not available in France, Israel, Iran, Libya, Sudan, Somalia, North Korea, Lebanon, Russia, Syria. 18+ only.",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "3-4 weeks after sample arrives at lab",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.myheritage.com/dna",
+   "https://www.myheritage.com/FP/order.php?initialProductId=900&context=MhDna.Partners",
+   "https://www.myheritage.com/help/en/articles/13130458-who-is-eligible-to-take-a-myheritage-dna-test",
+   "https://www.myheritage.com/help/en/articles/12852232-how-long-will-it-take-until-i-get-dna-test-results",
+   "https://www.myheritage.com/help-center/en/article/how-do-i-download-my-raw-dna-data-file-from-myheritage",
+   "https://www.myheritage.com/dna/privacy",
+   "https://www.quanome.com/blog/how-to-download-your-myheritage-dna-raw-data/",
+   "https://www.yourdnaguide.com/download-myheritage"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live on 2026-08-28: consumers can order the MyHeritage DNA autosomal array kit right now at a $29 USD promotional price (list $89) with checkout functional and $5 standard shipping. Turnaround is 3-4 weeks from lab receipt per the official help center; raw data is returned as an array-text CSV in a ZIP (official FAQ confirms download but not the format name \u2014 CSV confirmed via reputable 2026 guides). No US state exclusions for the core ancestry kit; the state restrictions often cited (NY, NJ, RI, WA, NV) applied only to the DNA Health upgrade, and the core test is unavailable in France, Israel, and several sanctioned countries."
+ },
+ {
+  "slug": "nucleus-genomics",
+  "name": "Nucleus Genomics",
+  "website": "https://mynucleus.com",
+  "checkout_url": "https://mynucleus.com/health/shop",
+  "privacy_policy_url": "https://mynucleus.com/privacy-policy",
+  "data_practices_note": "States it does not sell/share genetic data with third parties (incl. insurers, employers, public databases) unless the user explicitly asks or law requires; HIPAA/SOC 2 Type II; policy (updated 2026-08-24) describes no research-sharing program.",
+  "products": [
+   {
+    "name": "Nucleus Health (whole-genome kit)",
+    "depth": "30x",
+    "price": "$499 USD + $39/yr membership (US); $699 + $59/yr + $29 shipping international",
+    "turnaround": "4-6 weeks from order; results ~4-5 weeks after lab receives sample",
+    "formats_returned": [
+     "FASTQ",
+     "CRAM",
+     "VCF",
+     "SV",
+     "CNV"
+    ],
+    "notes": "First-year membership bundled at checkout ($538 US total). $25/kit discount on 2+ kits. Reports on 2,000+ conditions incl. polygenic scores. Prices verified from the site's live Prices JS module."
+   },
+   {
+    "name": "Nucleus Embryo",
+    "depth": "30x",
+    "price": "$9,999 USD",
+    "turnaround": "1-2 weeks",
+    "formats_returned": [],
+    "notes": "Embryo WGS for IVF patients; coordinated through the customer's IVF clinic \u2014 not a standalone consumer kit. IVF+ program listed at $9,999/month for 4 months ($39,996)."
+   }
+  ],
+  "raw_formats": [
+   "CNV",
+   "CRAM",
+   "FASTQ",
+   "SV",
+   "VCF"
+  ],
+  "ships_to": "US (free shipping), plus Canada, Czech Republic, Germany, India, Ireland, Italy, New Zealand, Spain, Switzerland, UAE, UK",
+  "us_state_exclusions": [
+   "NY"
+  ],
+  "us_state_exclusion_notes": [],
+  "turnaround": "4-6 weeks from order; results ~4-5 weeks after lab receives sample",
+  "gating": "None for the buyer \u2014 consumer orders directly online; terms state US tests are \"physician-ordered and reviewed\" via Nucleus's arranged clinician network, not the customer's own doctor",
+  "affiliate": false,
+  "source_urls": [
+   "https://mynucleus.com",
+   "https://mynucleus.com/health/shop",
+   "https://mynucleus.com/faq",
+   "https://mynucleus.com/terms-of-service",
+   "https://mynucleus.com/privacy-policy",
+   "https://framerusercontent.com/sites/Bdtqjw5BNSOKxOMrxTV72/Prices.CJG9UAu5.mjs",
+   "https://optimizebiomarkers.com/dna-providers/nucleus-genomics"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live 2026-08-28 from mynucleus.com (note: the operating domain is mynucleus.com, not nucleus.com). Consumers can order the 30x WGS \"Nucleus Health\" kit today at $499 + $39/yr membership (US; exact prices extracted from the site's own live pricing module after the rendered pages showed placeholders); raw data downloads in FASTQ/CRAM/VCF/SV/CNV are confirmed from their FAQ, contradicting a third-party review claiming no raw data. Caveats: no NY sample collection, terms say US tests are physician-ordered behind the scenes, and the company has pivoted marketing heavily toward IVF/embryo products though the consumer WGS kit remains purchasable."
+ },
+ {
+  "slug": "selfdecode",
+  "name": "SelfDecode",
+  "website": "https://selfdecode.com",
+  "checkout_url": "https://selfdecode.com/shop/dna-kits/dna-kit/",
+  "privacy_policy_url": "https://selfdecode.com/en/privacy-policy/",
+  "data_practices_note": "No sharing of individual-level genetic data with third parties without explicit consent; anonymized/aggregated data used for research and product development, with withdrawable consent via privacy@selfdecode.com",
+  "products": [
+   {
+    "name": "DNA Kit (genotyping array)",
+    "depth": "array",
+    "price": "$99 USD",
+    "turnaround": "3-6 weeks",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Kit only (cheek swab); reports/subscription purchased separately. Raw file downloadable from My Account page. SelfDecode imputes up to ~83M variants from the array file."
+   },
+   {
+    "name": "Essential bundle",
+    "depth": "array",
+    "price": "$499 USD",
+    "turnaround": "3-6 weeks",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "DNA kit + 1,500+ reports + AI coach, as listed on homepage 2026-08."
+   },
+   {
+    "name": "Essential+ bundle",
+    "depth": "array",
+    "price": "$799 USD",
+    "turnaround": "3-6 weeks",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Adds 35+ health topics, 130+ condition reports."
+   },
+   {
+    "name": "Ultimate bundle",
+    "depth": "array",
+    "price": "$899 USD (listed as marked down from $1,199)",
+    "turnaround": "3-6 weeks",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Adds pathway reports, medication check, carrier status, ancestry. Promo pricing with countdown timers on site."
+   },
+   {
+    "name": "30x Whole Genome Sequencing (sequencing only)",
+    "depth": "30x",
+    "price": "$399 USD",
+    "turnaround": "8-12 weeks",
+    "formats_returned": [
+     "VCF"
+    ],
+    "notes": "US-based lab; HSA/FSA eligible. Site says 'Download your complete genome as a VCF anytime'; FASTQ/BAM/CRAM delivery NOT verified anywhere on site or FAQ."
+   },
+   {
+    "name": "30x WGS Advanced package",
+    "depth": "30x",
+    "price": "$1,499 USD",
+    "turnaround": "8-12 weeks",
+    "formats_returned": [
+     "VCF"
+    ],
+    "notes": "WGS + report/subscription package."
+   },
+   {
+    "name": "30x WGS Ultimate package",
+    "depth": "30x",
+    "price": "$1,999 USD",
+    "turnaround": "8-12 weeks",
+    "formats_returned": [
+     "VCF"
+    ],
+    "notes": "Top WGS package."
+   },
+   {
+    "name": "Upload Your DNA plan (no kit)",
+    "depth": "array",
+    "price": "$319 USD",
+    "turnaround": "immediate after upload",
+    "formats_returned": [],
+    "notes": "Analyzes existing raw files from 23andMe, AncestryDNA, Dante Labs, Nebula, MyHeritage, Sequencing.com and ~15 other providers; WGS uploads must be gzipped VCF (.vcf.gz)."
+   }
+  ],
+  "raw_formats": [
+   "VCF",
+   "array-txt"
+  ],
+  "ships_to": "Most countries worldwide (all 50 US states); excluded: France, Russia, Ukraine/Crimea, Belarus, South Korea, Vietnam, Serbia, Montenegro, North Macedonia, Albania, Kosovo, and sanctioned countries (Iran, North Korea, Cuba, Syria, etc.); India served via manual email order",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "3-6 weeks",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://selfdecode.com/",
+   "https://selfdecode.com/shop/dna-kits/dna-kit/",
+   "https://selfdecode.com/en/whole-genome-sequencing-wgs/",
+   "https://selfdecode.com/en/upload-dna-file/",
+   "https://selfdecode.com/en/privacy-policy/",
+   "https://selfdecode.helpscoutdocs.com/article/29-do-we-offer-world-wide-shipping",
+   "https://selfdecode.helpscoutdocs.com/article/21-how-to-download-your-raw-dna-file",
+   "https://selfdecode.helpscoutdocs.com/article/980-what-is-whole-genome-scanning-wgs",
+   "https://selfdecode.helpscoutdocs.com/article/24-what-file-formats-does-selfdecode-accept",
+   "https://www.innerbody.com/selfdecode-reviews"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08-28: selfdecode.com has a live checkout selling a $99 array kit, array bundles ($499-$899), 30x WGS from $399, and a $319 upload plan, shipping to most countries with no US state exclusions found in FAQ/shipping docs (NY/NJ/RI/MD not restricted). Raw data access verified: array raw file download from account page, and WGS genome \"downloadable as a VCF\" \u2014 FASTQ/BAM/CRAM return could not be verified from their site and should not be assumed. Caveats: site uses heavy promo/urgency pricing so listed prices fluctuate, and an annual subscription (~$9.99/mo billed yearly per their resources pages) is required for ongoing report access but its exact current price was not confirmed on a primary checkout page."
+ },
+ {
+  "slug": "sequencing-com",
+  "name": "Sequencing.com",
+  "website": "https://sequencing.com",
+  "checkout_url": "https://sequencing.com/marketplace/whole-genome-sequencing-30x",
+  "privacy_policy_url": "https://sequencing.com/policies/privacy-policy",
+  "data_practices_note": "States it never sells, rents, or shares genetic data with third parties (incl. pharma/insurers/law enforcement); research or app access to data is explicit opt-in per feature, withdrawable anytime; HIPAA-compliant.",
+  "products": [
+   {
+    "name": "30x Whole Genome Sequencing (Standard bundle)",
+    "depth": "30x",
+    "price": "$399 USD (list $539)",
+    "turnaround": "7-8 weeks standard; 4-6 weeks +$50; 2-3 weeks +$200",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Self-order, clinical-grade 30x WGS with health reports, ancestry, and app marketplace access; HSA/FSA eligible. Third-party guides note BAM may require a support request to appear in the download list."
+   },
+   {
+    "name": "30x WGS Professional bundle",
+    "depth": "30x",
+    "price": "$799 USD (list $1,449)",
+    "turnaround": "7-8 weeks (expedite options available)",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Same 30x sequencing with expanded reports/membership tier."
+   },
+   {
+    "name": "Ultra Rapid Whole Genome Sequencing bundle",
+    "depth": "30x",
+    "price": "$1,999 USD (list $4,519)",
+    "turnaround": "2-3 weeks sequencing time",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "30x (up to ~40x achieved) GRCh38-aligned; includes annual premium genome plan; buy link sequencing.com/order/ultra-rapid-ultimate-health-screen-wgs-bundle."
+   },
+   {
+    "name": "DNA data upload (no kit purchase)",
+    "depth": "array",
+    "price": "$0 USD (upload free; apps priced separately)",
+    "turnaround": "Immediate after upload processing",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "CRAM",
+     "VCF",
+     "array-txt"
+    ],
+    "notes": "Accepts uploads of FASTQ, FASTA, BAM, SAM, CRAM, VCF and consumer array files (e.g. 23andMe/Ancestry) for use with marketplace apps."
+   }
+  ],
+  "raw_formats": [
+   "BAM",
+   "CRAM",
+   "FASTQ",
+   "VCF",
+   "array-txt"
+  ],
+  "ships_to": "Worldwide (free shipping; prepaid return shipping on US kits)",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "7-8 weeks standard; 4-6 weeks +$50; 2-3 weeks +$200",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://get.sequencing.com/comprehensive-health-screen/",
+   "https://get.sequencing.com/ultra-rapid-whole-genome-sequencing-wgs-bundle/",
+   "https://sequencing.com/marketplace/whole-genome-sequencing-30x",
+   "https://sequencing.com/policies/privacy-policy",
+   "https://sequencing.com/policies/shipping-fees",
+   "https://sequencing.com/knowledge-center/faqs/privacy-first-policy",
+   "https://sequencing.com/knowledge-center/faqs/do-you-sell-or-share-my-data-anyone",
+   "https://sequencing.com/knowledge-center/getting-started/uploading-genetic-data",
+   "https://sequencing.com/blog/post/how-to-use-genome-sequencing-data-files",
+   "https://knowyourdna.com/sequencing-review/",
+   "https://www.dnaweekly.com/reviews/sequencing-com/",
+   "https://chronosgenomics.com/compare/cheapest-whole-genome-sequencing-2026"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08: consumer self-order 30x WGS is purchasable today at $399 USD via the provider's own live landing/checkout pages (no clinician gating), with FASTQ/BAM/VCF raw data included and worldwide shipping with no state exclusions found in the shipping policy. Caveats: sequencing.com's main domain blocks automated fetching, so bundle details were verified from the provider's live get.sequencing.com pages plus search-indexed sequencing.com pages and Aug-2026 third-party reviews (one comparison lists $379, suggesting promo pricing fluctuates). A currently purchasable 100x/ultra-deep tier could NOT be verified and is omitted."
+ },
+ {
+  "slug": "tellmegen",
+  "name": "tellmeGen",
+  "website": "https://www.tellmegen.com/en",
+  "checkout_url": "https://shop.tellmegen.com/en-us/products/ultra-wgs-dna-kit",
+  "privacy_policy_url": "https://www.tellmegen.com/en/privacy-policy",
+  "data_practices_note": "Spanish GDPR-regulated company (GENELINK S.L., Valencia); states it does not sell personal data; research sharing only with explicit consent using pseudonymized/anonymized data; explicit-consent basis for genetic processing; EU-U.S. DPF safeguards for US providers.",
+  "products": [
+   {
+    "name": "Starter Kit",
+    "depth": "array",
+    "price": "$94.99 USD",
+    "turnaround": "4-6 weeks after sample received at lab; kit ships in 2-4 business days",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Genotyping array (~750,000 variants, ~13M imputed); 130+ reports (ancestry, traits, wellness). Raw data as .csv download (rsid/chromosome/position/genotype, GRCh37)."
+   },
+   {
+    "name": "Advanced Kit",
+    "depth": "array",
+    "price": "$159.99 USD",
+    "turnaround": "4-6 weeks after sample received at lab; kit ships in 2-4 business days",
+    "formats_returned": [
+     "array-txt"
+    ],
+    "notes": "Same 750k array as Starter; 420+ reports incl. health and pharmacogenetics (pharmacogenetics section not available in US). Raw data as .csv."
+   },
+   {
+    "name": "Ultra (WGS 30x)",
+    "depth": "30x",
+    "price": "$329.99 USD",
+    "turnaround": "4-6 weeks after sample received at lab; kit ships in 2-4 business days",
+    "formats_returned": [
+     "FASTQ",
+     "CRAM",
+     "VCF",
+     "array-txt"
+    ],
+    "notes": "Short-read 30x WGS; 530+ reports; includes 3 months tellmeGen+ subscription. Downloads: FASTQ, CRAM (not BAM), VCF, plus MyVariants CSV. 3 free downloads/year, then EUR/USD 4.99 each. Duo and family multi-kit bundles also sold."
+   }
+  ],
+  "raw_formats": [
+   "CRAM",
+   "FASTQ",
+   "VCF",
+   "array-txt"
+  ],
+  "ships_to": "Worldwide (\"practically any country,\" per FAQ) via UPS/DHL; sample must be returned from the country of purchase; possible restrictions/delays in remote or island regions. Ships to the US.",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "4-6 weeks after sample received at lab; kit ships in 2-4 business days",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.tellmegen.com/en/",
+   "https://shop.tellmegen.com/en-us/products/ultra-wgs-dna-kit",
+   "https://shop.tellmegen.com/en-us/products/advanced-dna-kit",
+   "https://shop.tellmegen.com/en-us/products/starter-dna-kit",
+   "https://shop.tellmegen.com/en/blogs/tools-and-advice/what-are-raw-data-files-what-information-do-they-contain-and-how-are-they-used",
+   "https://shop.tellmegen.com/en/blogs/before-buying/can-i-take-the-tellmegen-genetic-analysis-from-any-country-what-shipping-options-are-available",
+   "https://shop.tellmegen.com/en/blogs/purchase-registration-and-analysis/when-will-my-results-be-available",
+   "https://shop.tellmegen.com/en/policies/shipping-policy",
+   "https://www.tellmegen.com/en/privacy-policy",
+   "https://shop.tellmegen.com/en/policies/privacy-policy"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified operating as of 2026-08-28: all three tiers (Starter array $94.99, Advanced array $159.99, Ultra WGS 30x $329.99 USD) show InStock with working add-to-cart on the en-US Shopify store; a SUMMEREND10 -10% promo runs until Sep 15. Raw-data formats confirmed from tellmeGen's own support article (updated Apr 2026): CSV for array kits; FASTQ, CRAM, VCF and CSV for Ultra (BAM is NOT offered; 3 free downloads/year then ~$4.99 each). No US state exclusions (NY/NJ/RI/MD) found anywhere in their FAQ, shipping policy, or terms; the only US-specific restriction found is that the pharmacogenetics report section is unavailable in the US. Prices are region-dependent (EUR on EU storefront); USD prices quoted are from the en-US store today."
+ },
+ {
+  "slug": "yseq",
+  "name": "YSEQ",
+  "website": "https://www.yseq.net/",
+  "checkout_url": "https://www.yseq.net/product_info.php?cPath=29&products_id=129554",
+  "privacy_policy_url": "https://www.yseq.net/privacy.php",
+  "data_practices_note": "Will not sell or rent personal info; research sharing is opt-in via separate consent forms (anonymized/aggregated with research partners), though consent once given cannot be revoked; some data processing occurs in the US.",
+  "products": [
+   {
+    "name": "WGS (45 Gbases)",
+    "depth": "15x",
+    "price": "359.00 EUR",
+    "turnaround": "approx. 5-7 months (per FAQ, current WGS turnaround)",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "100/150bp paired-end reads; free BAM download; Y-SNPs annotated to VCF from Ybrowse; all raw data downloadable free or on 128GB microSD (+60 EUR). ~half stated coverage on Y chromosome."
+   },
+   {
+    "name": "WGS+ (90 Gbases)",
+    "depth": "30x",
+    "price": "399.00 EUR",
+    "turnaround": "approx. 5-7 months (per FAQ, current WGS turnaround)",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Same deliverables as WGS at 30x autosomal coverage; optional Sanger confirmation of up to 10 novel Y-SNPs (+100 EUR)."
+   },
+   {
+    "name": "WGS++ (150 Gbases)",
+    "depth": "50x",
+    "price": "699.00 EUR",
+    "turnaround": "approx. 5-7 months (per FAQ, current WGS turnaround)",
+    "formats_returned": [
+     "FASTQ",
+     "BAM",
+     "VCF"
+    ],
+    "notes": "Highest-coverage tier, ~50x autosomal."
+   },
+   {
+    "name": "mtComplete",
+    "depth": "mtDNA (full mitochondrial sequence)",
+    "price": "149.00 EUR",
+    "turnaround": "under 5 weeks for 95% of non-WGS tests (per FAQ)",
+    "formats_returned": [],
+    "notes": "Full mtDNA sequence; ships free. Per-product raw formats not itemized on page fetched."
+   },
+   {
+    "name": "Individual Y-SNP tests",
+    "depth": "Y-DNA (single SNP, Sanger)",
+    "price": "from 19.00 EUR",
+    "turnaround": "under 5 weeks for 95% of non-WGS tests (per FAQ)",
+    "formats_returned": [],
+    "notes": "Catalog of 414,000+ single Y-SNPs; Y-SNP panels from 95 EUR, Y-STR panels from 65 EUR, mtDNA beginner tests from 25 EUR."
+   }
+  ],
+  "raw_formats": [
+   "BAM",
+   "FASTQ",
+   "VCF"
+  ],
+  "ships_to": "Worldwide (kits ship from Berlin, Germany lab; free standard shipping on orders over 100 EUR)",
+  "us_state_exclusions": [],
+  "us_state_exclusion_notes": [],
+  "turnaround": "approx. 5-7 months (per FAQ, current WGS turnaround)",
+  "gating": "",
+  "affiliate": false,
+  "source_urls": [
+   "https://www.yseq.net/",
+   "https://www.yseq.net/index.php?cPath=29",
+   "https://www.yseq.net/product_info.php?cPath=29&products_id=42468",
+   "https://www.yseq.net/product_info.php?cPath=29&products_id=129554",
+   "https://www.yseq.net/product_info.php?cPath=29&products_id=129555",
+   "https://www.yseq.net/faq.php",
+   "https://www.yseq.net/shipping.php",
+   "https://www.yseq.net/privacy.php",
+   "https://www.yseq.net/conditions.php",
+   "https://isogg.org/wiki/YSEQ"
+  ],
+  "last_verified_at": "2026-08-28",
+  "status": "operating",
+  "verification_summary": "Verified live on 2026-08-28 directly from yseq.net (shop shows 2026 copyright, August 2026 featured products, working cart/checkout): consumers can order WGS at 15x (359 EUR), 30x (399 EUR), and 50x (699 EUR) plus Y-DNA/mtDNA tests with no clinician gating. Customer receives all raw data for free download (free BAM explicitly listed; FASTQ and Y-SNP-annotated VCF per product descriptions), optionally on microSD; ships worldwide from Berlin with no US state exclusions found in FAQ, shipping, or conditions pages. Caveat: FAQ states WGS turnaround is currently approx. 5-7 months (vs under 5 weeks for other tests), and the per-product raw-format list for non-WGS tests was not itemized on the pages fetched."
+ }
+]

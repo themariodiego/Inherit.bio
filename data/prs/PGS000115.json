@@ -1,0 +1,2023 @@
+{
+ "pgs_id": "PGS000115",
+ "name": "LDL-C_20",
+ "trait": "LDL cholesterol",
+ "n_variants": 223,
+ "citation": {
+  "pmid": 32049305,
+  "doi": "10.1001/jamacardio.2019.5954",
+  "label": "Trinder M et al. JAMA Cardiol (2020). doi:10.1001/jamacardio.2019.5954"
+ },
+ "source_url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000115/ScoringFiles/Harmonized/PGS000115_hmPOS_GRCh38.txt.gz",
+ "license_note": "PGS Catalog default license (per this score's metadata): 'PGS obtained from the Catalog should be cited appropriately, and used in accordance with any licensing restrictions set by the authors. See EBI Terms of Use (https://www.ebi.ac.uk/about/terms-of-use/) for additional details.' Note: PGS Catalog scoring files are not blanket CC BY 4.0; the default is the EMBL-EBI Terms of Use, and individual scores may carry author-set licenses. This score carries the default license.",
+ "ancestry_note": "Source GWAS ancestry (PGS Catalog): 72.4% European, 19.3% African, 8.3% Hispanic/Latin American. Predominantly European-ancestry training data; performance and percentile calibration are expected to degrade for individuals of other ancestries.",
+ "variants": [
+  {
+   "rsid": 6511720,
+   "chrom": 19,
+   "pos38": 11091630,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.211427,
+   "effect_af": 0.1075
+  },
+  {
+   "rsid": 4420638,
+   "chrom": 19,
+   "pos38": 44919689,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.16801,
+   "effect_af": 0.1797
+  },
+  {
+   "rsid": 629301,
+   "chrom": 1,
+   "pos38": 109275684,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.157518,
+   "effect_af": 0.7742
+  },
+  {
+   "rsid": 2328223,
+   "chrom": 20,
+   "pos38": 17865277,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.14,
+   "effect_af": 0.2244
+  },
+  {
+   "rsid": 1367117,
+   "chrom": 2,
+   "pos38": 21041028,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.105,
+   "effect_af": 0.2844
+  },
+  {
+   "rsid": 1801689,
+   "chrom": 17,
+   "pos38": 66214462,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.104,
+   "effect_af": 0.02673
+  },
+  {
+   "rsid": 10401969,
+   "chrom": 19,
+   "pos38": 19296909,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.089559,
+   "effect_af": 0.08456
+  },
+  {
+   "rsid": 4299376,
+   "chrom": 2,
+   "pos38": 43845437,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.0703,
+   "effect_af": 0.7127
+  },
+  {
+   "rsid": 2000999,
+   "chrom": 16,
+   "pos38": 72074194,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.06302,
+   "effect_af": 0.2003
+  },
+  {
+   "rsid": 9987289,
+   "chrom": 8,
+   "pos38": 9325848,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.056878,
+   "effect_af": 0.8993
+  },
+  {
+   "rsid": 10490626,
+   "chrom": 2,
+   "pos38": 118078265,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.053409,
+   "effect_af": 0.06783
+  },
+  {
+   "rsid": 174546,
+   "chrom": 11,
+   "pos38": 61802358,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.05333,
+   "effect_af": 0.3121
+  },
+  {
+   "rsid": 2954029,
+   "chrom": 8,
+   "pos38": 125478730,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": -0.0476,
+   "effect_af": 0.4468
+  },
+  {
+   "rsid": 1564348,
+   "chrom": 6,
+   "pos38": 160157828,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.047474,
+   "effect_af": 0.1517
+  },
+  {
+   "rsid": 2479409,
+   "chrom": 1,
+   "pos38": 55038977,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.046614,
+   "effect_af": 0.6582
+  },
+  {
+   "rsid": 2131925,
+   "chrom": 1,
+   "pos38": 62560271,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.044479,
+   "effect_af": 0.6477
+  },
+  {
+   "rsid": 1800562,
+   "chrom": 6,
+   "pos38": 26092913,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.044136,
+   "effect_af": 0.0479
+  },
+  {
+   "rsid": 11220462,
+   "chrom": 11,
+   "pos38": 126374057,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.042734,
+   "effect_af": 0.1453
+  },
+  {
+   "rsid": 4722551,
+   "chrom": 7,
+   "pos38": 25952206,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.03991,
+   "effect_af": 0.1577
+  },
+  {
+   "rsid": 6882076,
+   "chrom": 5,
+   "pos38": 156963286,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.039039,
+   "effect_af": 0.626
+  },
+  {
+   "rsid": 964184,
+   "chrom": 11,
+   "pos38": 116778201,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": -0.03699,
+   "effect_af": 0.8478
+  },
+  {
+   "rsid": 3780181,
+   "chrom": 9,
+   "pos38": 2640759,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.036964,
+   "effect_af": 0.07446
+  },
+  {
+   "rsid": 1169288,
+   "chrom": 12,
+   "pos38": 120978847,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.0366,
+   "effect_af": 0.3325
+  },
+  {
+   "rsid": 6029526,
+   "chrom": 20,
+   "pos38": 41043978,
+   "effect_allele": "A",
+   "other_allele": "T",
+   "weight": 0.035212,
+   "effect_af": 0.5095
+  },
+  {
+   "rsid": 3177928,
+   "chrom": 6,
+   "pos38": 32444658,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0349,
+   "effect_af": 0.1409
+  },
+  {
+   "rsid": 3757354,
+   "chrom": 6,
+   "pos38": 16127176,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.03343,
+   "effect_af": 0.24403
+  },
+  {
+   "rsid": 7640978,
+   "chrom": 3,
+   "pos38": 32491518,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0331,
+   "effect_af": 0.09258
+  },
+  {
+   "rsid": 12670798,
+   "chrom": 7,
+   "pos38": 21567734,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.032799,
+   "effect_af": 0.2471
+  },
+  {
+   "rsid": 3764261,
+   "chrom": 16,
+   "pos38": 56959412,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.03244,
+   "effect_af": 0.3127
+  },
+  {
+   "rsid": 10102164,
+   "chrom": 8,
+   "pos38": 54509054,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0309521,
+   "effect_af": 0.202
+  },
+  {
+   "rsid": 12748152,
+   "chrom": 1,
+   "pos38": 26811902,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0306381,
+   "effect_af": 0.07209
+  },
+  {
+   "rsid": 2255141,
+   "chrom": 10,
+   "pos38": 112174128,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.02792,
+   "effect_af": 0.7281
+  },
+  {
+   "rsid": 2081687,
+   "chrom": 8,
+   "pos38": 58476006,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0276358,
+   "effect_af": 0.6624
+  },
+  {
+   "rsid": 12027135,
+   "chrom": 1,
+   "pos38": 25449242,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": 0.0272454,
+   "effect_af": 0.5089
+  },
+  {
+   "rsid": 11065987,
+   "chrom": 12,
+   "pos38": 111634620,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.02598,
+   "effect_af": 0.3804
+  },
+  {
+   "rsid": 11136341,
+   "chrom": 8,
+   "pos38": 143969375,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0256472,
+   "effect_af": 0.3768
+  },
+  {
+   "rsid": 5763662,
+   "chrom": 22,
+   "pos38": 29982714,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0254959,
+   "effect_af": 0.03132
+  },
+  {
+   "rsid": 267733,
+   "chrom": 1,
+   "pos38": 150986360,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0253057,
+   "effect_af": 0.1366
+  },
+  {
+   "rsid": 8017377,
+   "chrom": 14,
+   "pos38": 24414681,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.02263,
+   "effect_af": 0.4228
+  },
+  {
+   "rsid": 4942486,
+   "chrom": 13,
+   "pos38": 32379251,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0215512,
+   "effect_af": 0.5158
+  },
+  {
+   "rsid": 314253,
+   "chrom": 17,
+   "pos38": 7188331,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.01959,
+   "effect_af": 0.3507
+  },
+  {
+   "rsid": 364585,
+   "chrom": 20,
+   "pos38": 12982070,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0187598,
+   "effect_af": 0.6361
+  },
+  {
+   "rsid": 17404153,
+   "chrom": 3,
+   "pos38": 132444356,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.0182777,
+   "effect_af": 0.1261
+  },
+  {
+   "rsid": 4253772,
+   "chrom": 22,
+   "pos38": 46231706,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.018203,
+   "effect_af": 0.09758
+  },
+  {
+   "rsid": 4530754,
+   "chrom": 5,
+   "pos38": 123519722,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0169497,
+   "effect_af": 0.5536
+  },
+  {
+   "rsid": 2030746,
+   "chrom": 2,
+   "pos38": 120551912,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.01389,
+   "effect_af": 0.4127
+  },
+  {
+   "rsid": 6831256,
+   "chrom": 4,
+   "pos38": 3471412,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.01266,
+   "effect_af": 0.4412
+  },
+  {
+   "rsid": 77375493,
+   "chrom": 9,
+   "pos38": 5073770,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.2952,
+   "effect_af": 0.001137
+  },
+  {
+   "rsid": 201596848,
+   "chrom": 19,
+   "pos38": 42080806,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.2553608,
+   "effect_af": 0.001363
+  },
+  {
+   "rsid": 201148465,
+   "chrom": 6,
+   "pos38": 27867515,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.2098,
+   "effect_af": 0.001378
+  },
+  {
+   "rsid": 6054,
+   "chrom": 4,
+   "pos38": 154568456,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0910444,
+   "effect_af": 0.003804
+  },
+  {
+   "rsid": 147032017,
+   "chrom": 16,
+   "pos38": 88514388,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0906348,
+   "effect_af": 0.006487
+  },
+  {
+   "rsid": 28929474,
+   "chrom": 14,
+   "pos38": 94378610,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.08124,
+   "effect_af": 0.01536
+  },
+  {
+   "rsid": 635634,
+   "chrom": 9,
+   "pos38": 133279427,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0773341,
+   "effect_af": 0.1904
+  },
+  {
+   "rsid": 2758873,
+   "chrom": 6,
+   "pos38": 39279080,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0738191,
+   "effect_af": 0.237758
+  },
+  {
+   "rsid": 3846663,
+   "chrom": 5,
+   "pos38": 75359901,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0656162,
+   "effect_af": 0.3977
+  },
+  {
+   "rsid": 61754230,
+   "chrom": 12,
+   "pos38": 71785666,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0573498,
+   "effect_af": 0.01507
+  },
+  {
+   "rsid": 41274050,
+   "chrom": 10,
+   "pos38": 50814012,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0570591,
+   "effect_af": 0.007148
+  },
+  {
+   "rsid": 1800961,
+   "chrom": 20,
+   "pos38": 44413724,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.05428,
+   "effect_af": 0.03085
+  },
+  {
+   "rsid": 17173637,
+   "chrom": 7,
+   "pos38": 150832361,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0457748,
+   "effect_af": 0.1449
+  },
+  {
+   "rsid": 13315871,
+   "chrom": 3,
+   "pos38": 58395560,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0383928,
+   "effect_af": 0.08472
+  },
+  {
+   "rsid": 13107325,
+   "chrom": 4,
+   "pos38": 102267552,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0345177,
+   "effect_af": 0.05057
+  },
+  {
+   "rsid": 7515577,
+   "chrom": 1,
+   "pos38": 92543881,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0302476,
+   "effect_af": 0.8166
+  },
+  {
+   "rsid": 492602,
+   "chrom": 19,
+   "pos38": 48703160,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.028327,
+   "effect_af": 0.4502
+  },
+  {
+   "rsid": 67710536,
+   "chrom": 9,
+   "pos38": 19376257,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.0282728,
+   "effect_af": 0.1111
+  },
+  {
+   "rsid": 72836561,
+   "chrom": 17,
+   "pos38": 43848758,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.02729,
+   "effect_af": 0.02753
+  },
+  {
+   "rsid": 11871606,
+   "chrom": 17,
+   "pos38": 47655408,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.0271453,
+   "effect_af": 0.5019
+  },
+  {
+   "rsid": 2642438,
+   "chrom": 1,
+   "pos38": 220796686,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.02622,
+   "effect_af": 0.7619
+  },
+  {
+   "rsid": 11694172,
+   "chrom": 2,
+   "pos38": 202667581,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0254615,
+   "effect_af": 0.1548
+  },
+  {
+   "rsid": 9376090,
+   "chrom": 6,
+   "pos38": 135090090,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0251724,
+   "effect_af": 0.2377
+  },
+  {
+   "rsid": 10128711,
+   "chrom": 11,
+   "pos38": 18611437,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.02502,
+   "effect_af": 0.6911
+  },
+  {
+   "rsid": 2125345,
+   "chrom": 17,
+   "pos38": 75786110,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0242084,
+   "effect_af": 0.3126
+  },
+  {
+   "rsid": 1883025,
+   "chrom": 9,
+   "pos38": 104902020,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.02412,
+   "effect_af": 0.2623
+  },
+  {
+   "rsid": 7261862,
+   "chrom": 20,
+   "pos38": 35528453,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.023574,
+   "effect_af": 0.1768
+  },
+  {
+   "rsid": 1260326,
+   "chrom": 2,
+   "pos38": 27508073,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.02315,
+   "effect_af": 0.6287
+  },
+  {
+   "rsid": 976002,
+   "chrom": 4,
+   "pos38": 68477569,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.022859,
+   "effect_af": 0.2259
+  },
+  {
+   "rsid": 4883201,
+   "chrom": 12,
+   "pos38": 8929985,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.02204,
+   "effect_af": 0.115
+  },
+  {
+   "rsid": 1495741,
+   "chrom": 8,
+   "pos38": 18415371,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.021635,
+   "effect_af": 0.7527
+  },
+  {
+   "rsid": 704,
+   "chrom": 17,
+   "pos38": 28367840,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0214349,
+   "effect_af": 0.4864
+  },
+  {
+   "rsid": 2290159,
+   "chrom": 3,
+   "pos38": 12587421,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": -0.0212431,
+   "effect_af": 0.204
+  },
+  {
+   "rsid": 2287623,
+   "chrom": 2,
+   "pos38": 168973645,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0208912,
+   "effect_af": 0.5921
+  },
+  {
+   "rsid": 1062062,
+   "chrom": 2,
+   "pos38": 101011463,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.02069,
+   "effect_af": 0.1234
+  },
+  {
+   "rsid": 1891110,
+   "chrom": 10,
+   "pos38": 122850511,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0205575,
+   "effect_af": 0.5487
+  },
+  {
+   "rsid": 3198697,
+   "chrom": 16,
+   "pos38": 15036083,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.02055,
+   "effect_af": 0.3988
+  },
+  {
+   "rsid": 7241918,
+   "chrom": 18,
+   "pos38": 49634583,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.0204613,
+   "effect_af": 0.8481
+  },
+  {
+   "rsid": 1016988,
+   "chrom": 5,
+   "pos38": 132408882,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.019644,
+   "effect_af": 0.2223
+  },
+  {
+   "rsid": 9646133,
+   "chrom": 14,
+   "pos38": 70629627,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.0189208,
+   "effect_af": 0.3263
+  },
+  {
+   "rsid": 11080150,
+   "chrom": 17,
+   "pos38": 31302308,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0188852,
+   "effect_af": 0.3257
+  },
+  {
+   "rsid": 2076674,
+   "chrom": 22,
+   "pos38": 40774059,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0183521,
+   "effect_af": 0.3538
+  },
+  {
+   "rsid": 17189743,
+   "chrom": 2,
+   "pos38": 54255416,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.01822,
+   "effect_af": 0.02832
+  },
+  {
+   "rsid": 2239619,
+   "chrom": 6,
+   "pos38": 52588422,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0180313,
+   "effect_af": 0.619
+  },
+  {
+   "rsid": 1997243,
+   "chrom": 7,
+   "pos38": 1044141,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.01803,
+   "effect_af": 0.1426
+  },
+  {
+   "rsid": 351855,
+   "chrom": 5,
+   "pos38": 177093242,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.01803,
+   "effect_af": 0.292
+  },
+  {
+   "rsid": 738409,
+   "chrom": 22,
+   "pos38": 43928847,
+   "effect_allele": "G",
+   "other_allele": "C",
+   "weight": -0.01796,
+   "effect_af": 0.2313
+  },
+  {
+   "rsid": 3812594,
+   "chrom": 9,
+   "pos38": 136474501,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0178008,
+   "effect_af": 0.2375
+  },
+  {
+   "rsid": 7901016,
+   "chrom": 10,
+   "pos38": 72877568,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0177426,
+   "effect_af": 0.06978
+  },
+  {
+   "rsid": 13379043,
+   "chrom": 14,
+   "pos38": 73783423,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0177218,
+   "effect_af": 0.3053
+  },
+  {
+   "rsid": 2814982,
+   "chrom": 6,
+   "pos38": 34578783,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0167865,
+   "effect_af": 0.1196
+  },
+  {
+   "rsid": 10761731,
+   "chrom": 10,
+   "pos38": 63267850,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": 0.01674,
+   "effect_af": 0.4199
+  },
+  {
+   "rsid": 4129767,
+   "chrom": 17,
+   "pos38": 78407903,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0165082,
+   "effect_af": 0.4879
+  },
+  {
+   "rsid": 2068888,
+   "chrom": 10,
+   "pos38": 93079885,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0163534,
+   "effect_af": 0.4701
+  },
+  {
+   "rsid": 2247056,
+   "chrom": 6,
+   "pos38": 31297713,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.016079,
+   "effect_af": 0.765
+  },
+  {
+   "rsid": 737337,
+   "chrom": 19,
+   "pos38": 11236817,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.015796,
+   "effect_af": 0.1197
+  },
+  {
+   "rsid": 10885997,
+   "chrom": 10,
+   "pos38": 116638460,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0154428,
+   "effect_af": 0.4093
+  },
+  {
+   "rsid": 138777,
+   "chrom": 22,
+   "pos38": 35315105,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.01544,
+   "effect_af": 0.6172
+  },
+  {
+   "rsid": 4809330,
+   "chrom": 20,
+   "pos38": 63718234,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0152932,
+   "effect_af": 0.7005
+  },
+  {
+   "rsid": 1077514,
+   "chrom": 1,
+   "pos38": 23439740,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0149723,
+   "effect_af": 0.8219
+  },
+  {
+   "rsid": 2293889,
+   "chrom": 8,
+   "pos38": 115586972,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": -0.0149623,
+   "effect_af": 0.6204
+  },
+  {
+   "rsid": 4745,
+   "chrom": 1,
+   "pos38": 155133751,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": -0.0148197,
+   "effect_af": 0.4876
+  },
+  {
+   "rsid": 874628,
+   "chrom": 19,
+   "pos38": 18193890,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0145906,
+   "effect_af": 0.2609
+  },
+  {
+   "rsid": 13146272,
+   "chrom": 4,
+   "pos38": 186199057,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.01453,
+   "effect_af": 0.6231
+  },
+  {
+   "rsid": 7941030,
+   "chrom": 11,
+   "pos38": 122651667,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.01445,
+   "effect_af": 0.38
+  },
+  {
+   "rsid": 4870044,
+   "chrom": 6,
+   "pos38": 151580274,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0143991,
+   "effect_af": 0.3408
+  },
+  {
+   "rsid": 6062343,
+   "chrom": 20,
+   "pos38": 64064578,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0143458,
+   "effect_af": 0.4322
+  },
+  {
+   "rsid": 871841,
+   "chrom": 17,
+   "pos38": 8313150,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0140764,
+   "effect_af": 0.5191
+  },
+  {
+   "rsid": 17145738,
+   "chrom": 7,
+   "pos38": 73568544,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0138548,
+   "effect_af": 0.1149
+  },
+  {
+   "rsid": 10282707,
+   "chrom": 7,
+   "pos38": 17871415,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0136602,
+   "effect_af": 0.4261
+  },
+  {
+   "rsid": 3927680,
+   "chrom": 9,
+   "pos38": 16887368,
+   "effect_allele": "A",
+   "other_allele": "T",
+   "weight": -0.0131538,
+   "effect_af": 0.5178
+  },
+  {
+   "rsid": 1106766,
+   "chrom": 12,
+   "pos38": 57415673,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.01311,
+   "effect_af": 0.2121
+  },
+  {
+   "rsid": 76116020,
+   "chrom": 16,
+   "pos38": 69351738,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0130922,
+   "effect_af": 0.03279
+  },
+  {
+   "rsid": 1689800,
+   "chrom": 1,
+   "pos38": 182199750,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0129118,
+   "effect_af": 0.3391
+  },
+  {
+   "rsid": 12678919,
+   "chrom": 8,
+   "pos38": 19986711,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0123,
+   "effect_af": 0.09741
+  },
+  {
+   "rsid": 8014204,
+   "chrom": 14,
+   "pos38": 74856091,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0121151,
+   "effect_af": 0.5702
+  },
+  {
+   "rsid": 626913,
+   "chrom": 8,
+   "pos38": 60635935,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.01188,
+   "effect_af": 0.5191
+  },
+  {
+   "rsid": 6734238,
+   "chrom": 2,
+   "pos38": 113083453,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.01183,
+   "effect_af": 0.3909
+  },
+  {
+   "rsid": 10904908,
+   "chrom": 10,
+   "pos38": 17218291,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.011618,
+   "effect_af": 0.4456
+  },
+  {
+   "rsid": 970548,
+   "chrom": 10,
+   "pos38": 45517829,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.0113847,
+   "effect_af": 0.2421
+  },
+  {
+   "rsid": 7157785,
+   "chrom": 14,
+   "pos38": 63768838,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.01136,
+   "effect_af": 0.1773
+  },
+  {
+   "rsid": 7679,
+   "chrom": 20,
+   "pos38": 45947863,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0110928,
+   "effect_af": 0.1685
+  },
+  {
+   "rsid": 7400722,
+   "chrom": 13,
+   "pos38": 113824865,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0108984,
+   "effect_af": 0.4203
+  },
+  {
+   "rsid": 645040,
+   "chrom": 3,
+   "pos38": 136207780,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.0106915,
+   "effect_af": 0.7818
+  },
+  {
+   "rsid": 4759375,
+   "chrom": 12,
+   "pos38": 123311691,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0103686,
+   "effect_af": 0.1087
+  },
+  {
+   "rsid": 10871454,
+   "chrom": 16,
+   "pos38": 31036758,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0100139,
+   "effect_af": 0.369
+  },
+  {
+   "rsid": 11708067,
+   "chrom": 3,
+   "pos38": 123346931,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0097741,
+   "effect_af": 0.2068
+  },
+  {
+   "rsid": 2862954,
+   "chrom": 10,
+   "pos38": 100152307,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0096841,
+   "effect_af": 0.405
+  },
+  {
+   "rsid": 2785990,
+   "chrom": 1,
+   "pos38": 219514090,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0095037,
+   "effect_af": 0.6852
+  },
+  {
+   "rsid": 11603023,
+   "chrom": 11,
+   "pos38": 118615352,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.009488,
+   "effect_af": 0.5788
+  },
+  {
+   "rsid": 2070863,
+   "chrom": 17,
+   "pos38": 1745208,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0094815,
+   "effect_af": 0.2128
+  },
+  {
+   "rsid": 9686661,
+   "chrom": 5,
+   "pos38": 56565959,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0094768,
+   "effect_af": 0.1869
+  },
+  {
+   "rsid": 35665085,
+   "chrom": 22,
+   "pos38": 17145025,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0091775,
+   "effect_af": 0.04979
+  },
+  {
+   "rsid": 2274159,
+   "chrom": 9,
+   "pos38": 114403966,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0090078,
+   "effect_af": 0.48
+  },
+  {
+   "rsid": 28932178,
+   "chrom": 5,
+   "pos38": 177210575,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.008877,
+   "effect_af": 0.1679
+  },
+  {
+   "rsid": 16928809,
+   "chrom": 11,
+   "pos38": 2915722,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.008583,
+   "effect_af": 0.08745
+  },
+  {
+   "rsid": 442177,
+   "chrom": 4,
+   "pos38": 87109109,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.008547,
+   "effect_af": 0.5731
+  },
+  {
+   "rsid": 78074706,
+   "chrom": 16,
+   "pos38": 4705107,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.008417,
+   "effect_af": 0.02152
+  },
+  {
+   "rsid": 998584,
+   "chrom": 6,
+   "pos38": 43790159,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.008065,
+   "effect_af": 0.4824
+  },
+  {
+   "rsid": 1801274,
+   "chrom": 1,
+   "pos38": 161509955,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0079908,
+   "effect_af": 0.4842
+  },
+  {
+   "rsid": 702485,
+   "chrom": 7,
+   "pos38": 6409641,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0078124,
+   "effect_af": 0.4633
+  },
+  {
+   "rsid": 2923084,
+   "chrom": 11,
+   "pos38": 10367235,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.007712,
+   "effect_af": 0.2006
+  },
+  {
+   "rsid": 12801636,
+   "chrom": 11,
+   "pos38": 65623846,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.007643,
+   "effect_af": 0.2339
+  },
+  {
+   "rsid": 7255436,
+   "chrom": 19,
+   "pos38": 8368312,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0075534,
+   "effect_af": 0.5207
+  },
+  {
+   "rsid": 181362,
+   "chrom": 22,
+   "pos38": 21577779,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.007346,
+   "effect_af": 0.254
+  },
+  {
+   "rsid": 7946,
+   "chrom": 17,
+   "pos38": 17506246,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.00721,
+   "effect_af": 0.6667
+  },
+  {
+   "rsid": 146179438,
+   "chrom": 3,
+   "pos38": 48187876,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.007085,
+   "effect_af": 0.01984
+  },
+  {
+   "rsid": 581080,
+   "chrom": 9,
+   "pos38": 15305380,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": 0.0068168,
+   "effect_af": 0.7968
+  },
+  {
+   "rsid": 41302559,
+   "chrom": 20,
+   "pos38": 57565383,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0067475,
+   "effect_af": 0.002059
+  },
+  {
+   "rsid": 2303108,
+   "chrom": 19,
+   "pos38": 47086638,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.006731,
+   "effect_af": 0.6653
+  },
+  {
+   "rsid": 900399,
+   "chrom": 3,
+   "pos38": 157080943,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.006631,
+   "effect_af": 0.3824
+  },
+  {
+   "rsid": 4731702,
+   "chrom": 7,
+   "pos38": 130748625,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.006628,
+   "effect_af": 0.4596
+  },
+  {
+   "rsid": 7136716,
+   "chrom": 12,
+   "pos38": 7538538,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.00607,
+   "effect_af": 0.1502
+  },
+  {
+   "rsid": 340874,
+   "chrom": 1,
+   "pos38": 213985913,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0059034,
+   "effect_af": 0.5061
+  },
+  {
+   "rsid": 11776767,
+   "chrom": 8,
+   "pos38": 10826419,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": -0.0058878,
+   "effect_af": 0.3719
+  },
+  {
+   "rsid": 35169799,
+   "chrom": 11,
+   "pos38": 64263769,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.005833,
+   "effect_af": 0.05893
+  },
+  {
+   "rsid": 7134594,
+   "chrom": 12,
+   "pos38": 109562388,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.005685,
+   "effect_af": 0.5261
+  },
+  {
+   "rsid": 9816226,
+   "chrom": 3,
+   "pos38": 186116710,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": 0.005662,
+   "effect_af": 0.8257
+  },
+  {
+   "rsid": 1832007,
+   "chrom": 10,
+   "pos38": 5212884,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0056006,
+   "effect_af": 0.1381
+  },
+  {
+   "rsid": 3136441,
+   "chrom": 11,
+   "pos38": 46721697,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0052327,
+   "effect_af": 0.1514
+  },
+  {
+   "rsid": 2972146,
+   "chrom": 2,
+   "pos38": 226235982,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.0052182,
+   "effect_af": 0.67
+  },
+  {
+   "rsid": 4765127,
+   "chrom": 12,
+   "pos38": 123975620,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.005202,
+   "effect_af": 0.3294
+  },
+  {
+   "rsid": 8077889,
+   "chrom": 17,
+   "pos38": 43800798,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": -0.005101,
+   "effect_af": 0.2017
+  },
+  {
+   "rsid": 605066,
+   "chrom": 6,
+   "pos38": 139508529,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.004976,
+   "effect_af": 0.5692
+  },
+  {
+   "rsid": 6450176,
+   "chrom": 5,
+   "pos38": 54002195,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.004588,
+   "effect_af": 0.2703
+  },
+  {
+   "rsid": 797486,
+   "chrom": 13,
+   "pos38": 50647482,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0043901,
+   "effect_af": 0.8709
+  },
+  {
+   "rsid": 1121980,
+   "chrom": 16,
+   "pos38": 53775335,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0040968,
+   "effect_af": 0.4278
+  },
+  {
+   "rsid": 8099014,
+   "chrom": 18,
+   "pos38": 58442627,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.0040945,
+   "effect_af": 0.7115
+  },
+  {
+   "rsid": 11553746,
+   "chrom": 2,
+   "pos38": 272203,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.003969,
+   "effect_af": 0.3288
+  },
+  {
+   "rsid": 1011731,
+   "chrom": 1,
+   "pos38": 172377408,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.003828,
+   "effect_af": 0.5598
+  },
+  {
+   "rsid": 13133548,
+   "chrom": 4,
+   "pos38": 88818977,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.003702,
+   "effect_af": 0.4835
+  },
+  {
+   "rsid": 2606736,
+   "chrom": 3,
+   "pos38": 11358775,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.003689,
+   "effect_af": 0.599
+  },
+  {
+   "rsid": 12328675,
+   "chrom": 2,
+   "pos38": 164684290,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0036588,
+   "effect_af": 0.1197
+  },
+  {
+   "rsid": 38855,
+   "chrom": 7,
+   "pos38": 116717990,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.003534,
+   "effect_af": 0.4624
+  },
+  {
+   "rsid": 7134375,
+   "chrom": 12,
+   "pos38": 20320824,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0033477,
+   "effect_af": 0.4116
+  },
+  {
+   "rsid": 13326165,
+   "chrom": 3,
+   "pos38": 52498102,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0032941,
+   "effect_af": 0.8052
+  },
+  {
+   "rsid": 2602836,
+   "chrom": 4,
+   "pos38": 99093654,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.003104,
+   "effect_af": 0.5796
+  },
+  {
+   "rsid": 2745353,
+   "chrom": 6,
+   "pos38": 127131790,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0030394,
+   "effect_af": 0.5253
+  },
+  {
+   "rsid": 2925979,
+   "chrom": 16,
+   "pos38": 81501185,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.002986,
+   "effect_af": 0.698
+  },
+  {
+   "rsid": 4976033,
+   "chrom": 5,
+   "pos38": 68418419,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.002944,
+   "effect_af": 0.4248
+  },
+  {
+   "rsid": 11869286,
+   "chrom": 17,
+   "pos38": 39657603,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": 0.0029173,
+   "effect_af": 0.6304
+  },
+  {
+   "rsid": 26008,
+   "chrom": 5,
+   "pos38": 131672501,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.002729,
+   "effect_af": 0.9195
+  },
+  {
+   "rsid": 2412710,
+   "chrom": 15,
+   "pos38": 42391589,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.002442,
+   "effect_af": 0.0214
+  },
+  {
+   "rsid": 12055786,
+   "chrom": 6,
+   "pos38": 153109990,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0023762,
+   "effect_af": 0.4369
+  },
+  {
+   "rsid": 17782313,
+   "chrom": 18,
+   "pos38": 60183864,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.002343,
+   "effect_af": 0.2441
+  },
+  {
+   "rsid": 4983559,
+   "chrom": 14,
+   "pos38": 104810872,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.002315,
+   "effect_af": 0.5689
+  },
+  {
+   "rsid": 7248104,
+   "chrom": 19,
+   "pos38": 7224420,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0022646,
+   "effect_af": 0.403
+  },
+  {
+   "rsid": 4650994,
+   "chrom": 1,
+   "pos38": 178546177,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.002208,
+   "effect_af": 0.4916
+  },
+  {
+   "rsid": 499974,
+   "chrom": 11,
+   "pos38": 75743976,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": -0.002109,
+   "effect_af": 0.184
+  },
+  {
+   "rsid": 2305637,
+   "chrom": 3,
+   "pos38": 47004356,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0020226,
+   "effect_af": 0.1581
+  },
+  {
+   "rsid": 5756931,
+   "chrom": 22,
+   "pos38": 38150026,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": -0.0019876,
+   "effect_af": 0.3691
+  },
+  {
+   "rsid": 4871137,
+   "chrom": 8,
+   "pos38": 120856311,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": -0.001985,
+   "effect_af": 0.6404
+  },
+  {
+   "rsid": 10483776,
+   "chrom": 14,
+   "pos38": 65448149,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0018306,
+   "effect_af": 0.1638
+  },
+  {
+   "rsid": 1037378,
+   "chrom": 11,
+   "pos38": 14830944,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0017962,
+   "effect_af": 0.5357
+  },
+  {
+   "rsid": 17695224,
+   "chrom": 19,
+   "pos38": 51820963,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.001773,
+   "effect_af": 0.2508
+  },
+  {
+   "rsid": 12145743,
+   "chrom": 1,
+   "pos38": 156730859,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": -0.0016557,
+   "effect_af": 0.3121
+  },
+  {
+   "rsid": 3947,
+   "chrom": 8,
+   "pos38": 11844866,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": -0.0016426,
+   "effect_af": 0.2313
+  },
+  {
+   "rsid": 4917014,
+   "chrom": 7,
+   "pos38": 50266267,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": -0.001572,
+   "effect_af": 0.2985
+  },
+  {
+   "rsid": 838880,
+   "chrom": 12,
+   "pos38": 124777047,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0014224,
+   "effect_af": 0.6334
+  },
+  {
+   "rsid": 3769823,
+   "chrom": 2,
+   "pos38": 201258272,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.001299,
+   "effect_af": 0.6897
+  },
+  {
+   "rsid": 16942887,
+   "chrom": 16,
+   "pos38": 67894139,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0012499,
+   "effect_af": 0.1336
+  },
+  {
+   "rsid": 731839,
+   "chrom": 19,
+   "pos38": 33408159,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.001228,
+   "effect_af": 0.6336
+  },
+  {
+   "rsid": 4660293,
+   "chrom": 1,
+   "pos38": 39562508,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0009698,
+   "effect_af": 0.208
+  },
+  {
+   "rsid": 7076938,
+   "chrom": 10,
+   "pos38": 114029616,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": -0.0009664,
+   "effect_af": 0.7253
+  },
+  {
+   "rsid": 2929282,
+   "chrom": 15,
+   "pos38": 43953733,
+   "effect_allele": "T",
+   "other_allele": "A",
+   "weight": 0.0009448,
+   "effect_af": 0.06708
+  },
+  {
+   "rsid": 10968576,
+   "chrom": 9,
+   "pos38": 28414341,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": -0.0008863,
+   "effect_af": 0.2891
+  },
+  {
+   "rsid": 10861661,
+   "chrom": 12,
+   "pos38": 106780868,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.0008568,
+   "effect_af": 0.2332
+  },
+  {
+   "rsid": 2074158,
+   "chrom": 17,
+   "pos38": 42105145,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0008413,
+   "effect_af": 0.1867
+  },
+  {
+   "rsid": 138358301,
+   "chrom": 13,
+   "pos38": 45396012,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0007869,
+   "effect_af": 0.003473
+  },
+  {
+   "rsid": 746463,
+   "chrom": 11,
+   "pos38": 110125219,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0007307,
+   "effect_af": 0.6892
+  },
+  {
+   "rsid": 7613875,
+   "chrom": 3,
+   "pos38": 49934081,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0006262,
+   "effect_af": 0.4941
+  },
+  {
+   "rsid": 3803357,
+   "chrom": 15,
+   "pos38": 40459356,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.0004181,
+   "effect_af": 0.5429
+  },
+  {
+   "rsid": 622082,
+   "chrom": 11,
+   "pos38": 68936491,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.0003493,
+   "effect_af": 0.3102
+  },
+  {
+   "rsid": 386000,
+   "chrom": 19,
+   "pos38": 54288907,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": -0.0002399,
+   "effect_af": 0.2189
+  },
+  {
+   "rsid": 1532085,
+   "chrom": 15,
+   "pos38": 58391167,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.000173,
+   "effect_af": 0.5907
+  },
+  {
+   "rsid": 4846914,
+   "chrom": 1,
+   "pos38": 230159944,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0001637,
+   "effect_af": 0.5506
+  }
+ ]
+}

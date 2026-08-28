@@ -16,6 +16,8 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",
     "@ai-sdk/openai": "^4.0.50",
+    "@ai-sdk/openai-compatible": "^3.0.39",
+    "@ai-sdk/react": "^4.0.86",
     "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
