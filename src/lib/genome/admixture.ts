@@ -100,7 +100,9 @@ export function estimateAdmixture(
           next[k] += (2 - dosage) * ((q[k] * (1 - freqs[k])) / pRef);
         }
       }
-      const total = 2 * obs.length;
+      // Analytically sum(next) = 2 * obs.length, but renormalizing by the
+      // actual sum keeps floating-point drift from compounding across iterations.
+      const total = next.reduce((a, b) => a + b, 0);
       let delta = 0;
       for (let k = 0; k < K; k++) {
         next[k] /= total;

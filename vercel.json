@@ -3,6 +3,10 @@
     {
       "path": "/api/jobs/research-refresh",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/jobs/annotation-refresh",
+      "schedule": "30 6 * * *"
     }
   ]
 }
