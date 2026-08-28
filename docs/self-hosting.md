@@ -69,9 +69,14 @@ material).
 ### Local LLM copilot (the privacy-preferred setup)
 
 Run [Ollama](https://ollama.com) (`ollama pull llama3.1 && ollama serve`).
-In **Settings → Copilot provider** choose *OpenAI-compatible*, base URL
-`http://localhost:11434/v1`, model `llama3.1`. Local endpoints need no
-consent grant (nothing leaves your infrastructure) and the chat shows a
+First, because the copilot fetches the endpoint server-side, set
+`ALLOW_PRIVATE_LLM_ENDPOINTS=true` in `.env.local` and restart `pnpm dev` —
+this opts your self-hosted deployment into reaching a local/private model
+(it stays off by default so a shared deployment can't be used to reach
+internal addresses; cloud-metadata and link-local addresses are always
+refused). Then in **Settings → Copilot provider** choose *OpenAI-compatible*,
+base URL `http://localhost:11434/v1`, model `llama3.1`. Local endpoints need
+no consent grant (nothing leaves your infrastructure) and the chat shows a
 data-flow indicator saying exactly that.
 
 ### Tests
