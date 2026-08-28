@@ -31,9 +31,13 @@ export function FileRowActions({
           onClick={async () => {
             setBusy(true);
             setError(null);
+            // The route flips status to "parsing" as it starts; refresh
+            // early so the badge reflects that while the run continues.
+            const earlyRefresh = setTimeout(() => router.refresh(), 1500);
             const res = await fetch(`/api/files/${fileId}/process`, {
               method: "POST",
             }).catch(() => null);
+            clearTimeout(earlyRefresh);
             if (!res?.ok) {
               const detail = res ? await res.text().catch(() => "") : "";
               setError(
@@ -45,7 +49,7 @@ export function FileRowActions({
             router.refresh();
           }}
         >
-          {status === "failed" ? "Retry" : "Process"}
+          {busy ? "Processing…" : status === "failed" ? "Retry" : "Process"}
         </Button>
       ) : null}
       <Button
