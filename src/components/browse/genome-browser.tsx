@@ -39,14 +39,15 @@ export function GenomeBrowser({
       );
       const { variants } = (await res.json()) as { variants: RegionVariant[] };
 
-      // igv ships an ESM build (default export) and a UMD `browser`-field
-      // build (flat exports); bundlers resolve either, so accept both shapes.
+      // Import igv's ESM build by subpath: the package's `browser` field
+      // points at the UMD build, whose AMD-or-global dispatch leaves the
+      // bundled module namespace empty (no createBrowser anywhere).
       interface IgvApi {
         createBrowser(el: HTMLElement, config: unknown): Promise<unknown>;
       }
-      const igvModule = (await import("igv")) as unknown as IgvApi & {
+      const igvModule = (await import("igv/dist/igv.esm.js")) as unknown as {
         default?: IgvApi;
-      };
+      } & IgvApi;
       const igv = igvModule.default ?? igvModule;
       if (disposed) return;
       el.innerHTML = "";
