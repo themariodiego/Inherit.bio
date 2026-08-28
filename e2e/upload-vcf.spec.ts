@@ -37,7 +37,9 @@ test("GIAB VCF subset: upload → parse → annotate through the real uploader U
 
   await page.reload();
   await expect(page.getByText("Processed", { exact: true })).toBeVisible();
-  await expect(page.getByText(/GRCh38/)).toBeVisible();
+  // Match the metadata line ("vcf · 5 MB · GRCh38 · 187,130"), not the
+  // filename, which also contains "GRCh38".
+  await expect(page.getByText(/GRCh38 · [\d,]+/)).toBeVisible();
   await expect(page.getByText(/sha256/)).toBeVisible();
   // Honest measured processing time now exists.
   await expect(page.getByText(/median \d+(\.\d+)?s/)).toBeVisible();

@@ -74,9 +74,10 @@ test("BAM uploads resumably (interrupted + resumed), is hashed, listed, and re-d
   await expect(page.getByText("Stored (Tier 2)")).toBeVisible();
   await expect(page.getByText(/sha256/)).toBeVisible();
 
-  // Re-download and compare bytes.
+  // Re-download and compare bytes. (The Download control is an anchor to
+  // /api/files/[id]/download — role "link", not "button".)
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download" }).click();
+  await page.getByRole("link", { name: "Download" }).click();
   const download = await downloadPromise;
   const downloaded = await download.path();
   const original = fs.readFileSync(FIXTURE);

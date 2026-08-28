@@ -31,6 +31,27 @@ audits returned clean. Every finding is dispositioned below.
 | Low | Clean-room | Node prereq (20.9) vs worker needing 22+. | **Fixed** the doc to note the worker's Node 22+ requirement. |
 | Info | Clean-room | `SERVER_URL` (legal gate's optional rendered-page mode) undocumented. | **Accepted**: it is an optional CI/dev override; the gate falls back to a source scan, and it is documented in the gate script's header comment. |
 
+## Residual / accepted risk
+
+- **SSRF guard is hostname-based.** `ssrfReasonForBaseUrl` blocks literal
+  internal IPs, loopback, and `.local`/`.internal` names — it does not resolve
+  DNS, so a hostname that resolves to an internal address (DNS rebinding) is
+  not caught. This covers the realistic BYOK vectors the audit raised (cloud
+  metadata at `169.254.169.254`, `localhost`, RFC-1918). Full protection would
+  require resolve-and-pin on the outbound socket; accepted as a residual given
+  the authenticated-user threat model and the opt-in `ALLOW_PRIVATE_LLM_ENDPOINTS`
+  escape hatch for the legitimate local-model case.
+
+## Clean-room re-verification (A1)
+
+After the fixes above, a second context-free agent re-ran the self-hosting
+guide statically and found one further deviation **introduced by the SSRF fix
+itself**: the local-LLM setup section pointed users at `localhost:11434`
+without mentioning the new `ALLOW_PRIVATE_LLM_ENDPOINTS` opt-in, so a
+self-hoster would have every local-copilot message refused. Fixed in
+`docs/self-hosting.md`; the guide re-verified clean otherwise (all scripts,
+env vars, file paths, and worker setup match the repo).
+
 ## Audits that returned clean
 
 - **Privacy data-flow**: no genome-derived data leaves the deployment absent a

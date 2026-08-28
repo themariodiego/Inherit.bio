@@ -39,7 +39,15 @@ export function GenomeBrowser({
       );
       const { variants } = (await res.json()) as { variants: RegionVariant[] };
 
-      const igv = (await import("igv")).default;
+      // igv ships an ESM build (default export) and a UMD `browser`-field
+      // build (flat exports); bundlers resolve either, so accept both shapes.
+      interface IgvApi {
+        createBrowser(el: HTMLElement, config: unknown): Promise<unknown>;
+      }
+      const igvModule = (await import("igv")) as unknown as IgvApi & {
+        default?: IgvApi;
+      };
+      const igv = igvModule.default ?? igvModule;
       if (disposed) return;
       el.innerHTML = "";
       // igv's TS types don't model the chromsizes reference format or
@@ -68,10 +76,7 @@ export function GenomeBrowser({
           },
         ],
       };
-      browserRef = await igv.createBrowser(
-        el,
-        config as unknown as Parameters<typeof igv.createBrowser>[1],
-      );
+      browserRef = await igv.createBrowser(el, config);
     }
 
     const el = containerRef.current;
