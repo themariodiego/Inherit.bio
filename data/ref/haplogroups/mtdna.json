@@ -1,0 +1,797 @@
+[
+ {
+  "haplogroup": "L0",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 1048,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 5442,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 9042,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 12720,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L1",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3666,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 7055,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 13789,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 14178,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L2",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 2416,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 8206,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 9221,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 13590,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L3",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 769,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 1018,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L4",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 195,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 5460,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 16362,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L5",
+  "parent": null,
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3423,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 7972,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 12432,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 12950,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "M",
+  "parent": "L3",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 489,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 10400,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 14783,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 15043,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "N",
+  "parent": "L3",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 8701,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 9540,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 10873,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "C",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3552,
+    "anc": "T",
+    "der": "A"
+   },
+   {
+    "pos": 9545,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 13263,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 14318,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "Z",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 6752,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 9090,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 15784,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 16185,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "D",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 5178,
+    "anc": "C",
+    "der": "A"
+   },
+   {
+    "pos": 16362,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "E",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3027,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 3705,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 7598,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 13626,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "G",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 709,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 4833,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 5108,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "Q",
+  "parent": "M",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 4117,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 5843,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 8790,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 12940,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "A",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 663,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 1736,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 4824,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 8794,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "I",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 10034,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 16129,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "W",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 1243,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 3505,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 8994,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 11947,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "X",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 6221,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 6371,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 13966,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 14470,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "Y",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 5417,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 8392,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 14693,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 16231,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "R",
+  "parent": "N",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 12705,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 16223,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "B",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 8281,
+    "anc": "C",
+    "der": "-"
+   },
+   {
+    "pos": 16217,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "F",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3970,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 6392,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 10310,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 13928,
+    "anc": "G",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "P",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 15607,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "HV",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 73,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 14766,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "V",
+  "parent": "HV",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 72,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 4580,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 16298,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "H",
+  "parent": "HV",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 2706,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 7028,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "H1",
+  "parent": "H",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 3010,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "J",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 295,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 11251,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 12612,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 13708,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 16069,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "J1",
+  "parent": "J",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 462,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 3010,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "T",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 4917,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 11251,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 13368,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 14905,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 15607,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "T2",
+  "parent": "T",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 11812,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 14233,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "U",
+  "parent": "R",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 11467,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 12308,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 12372,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "U5",
+  "parent": "U",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 16192,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "pos": 16270,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "K",
+  "parent": "U",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 9055,
+    "anc": "G",
+    "der": "A"
+   },
+   {
+    "pos": 10550,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "pos": 11299,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 14798,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 16224,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "K1",
+  "parent": "K",
+  "lineage": "mtDNA",
+  "markers": [
+   {
+    "pos": 1189,
+    "anc": "T",
+    "der": "C"
+   },
+   {
+    "pos": 10398,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ }
+]

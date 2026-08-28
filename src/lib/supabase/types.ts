@@ -196,6 +196,8 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id: string
           original_name: string
+          processing_finished_at: string | null
+          processing_started_at: string | null
           sha256: string | null
           size_bytes: number
           status: Database["public"]["Enums"]["genome_file_status"]
@@ -211,6 +213,8 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           original_name: string
+          processing_finished_at?: string | null
+          processing_started_at?: string | null
           sha256?: string | null
           size_bytes: number
           status?: Database["public"]["Enums"]["genome_file_status"]
@@ -226,6 +230,8 @@ export type Database = {
           file_type?: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           original_name?: string
+          processing_finished_at?: string | null
+          processing_started_at?: string | null
           sha256?: string | null
           size_bytes?: number
           status?: Database["public"]["Enums"]["genome_file_status"]
@@ -312,13 +318,15 @@ export type Database = {
           privacy_policy_url: string | null
           products: Json
           raw_formats: string[]
+          shipping: Json
           ships_to: string
-          ships_to_countries: string[]
           slug: string
           source_urls: string[]
           status: string
           turnaround: string | null
+          us_state_exclusion_notes: string[]
           us_state_exclusions: string[]
+          verification_summary: string | null
           website: string
         }
         Insert: {
@@ -331,13 +339,15 @@ export type Database = {
           privacy_policy_url?: string | null
           products?: Json
           raw_formats?: string[]
+          shipping?: Json
           ships_to: string
-          ships_to_countries?: string[]
           slug: string
           source_urls?: string[]
           status?: string
           turnaround?: string | null
+          us_state_exclusion_notes?: string[]
           us_state_exclusions?: string[]
+          verification_summary?: string | null
           website: string
         }
         Update: {
@@ -350,13 +360,15 @@ export type Database = {
           privacy_policy_url?: string | null
           products?: Json
           raw_formats?: string[]
+          shipping?: Json
           ships_to?: string
-          ships_to_countries?: string[]
           slug?: string
           source_urls?: string[]
           status?: string
           turnaround?: string | null
+          us_state_exclusion_notes?: string[]
           us_state_exclusions?: string[]
+          verification_summary?: string | null
           website?: string
         }
         Relationships: []
@@ -435,33 +447,6 @@ export type Database = {
           },
         ]
       }
-      ref_aims: {
-        Row: {
-          alt: string
-          chrom: number
-          freqs: Json
-          pos38: number
-          ref: string
-          rsid: number
-        }
-        Insert: {
-          alt: string
-          chrom: number
-          freqs: Json
-          pos38: number
-          ref: string
-          rsid: number
-        }
-        Update: {
-          alt?: string
-          chrom?: number
-          freqs?: Json
-          pos38?: number
-          ref?: string
-          rsid?: number
-        }
-        Relationships: []
-      }
       ref_genes: {
         Row: {
           chrom: number | null
@@ -486,39 +471,6 @@ export type Database = {
           start_pos?: number | null
           summary?: string | null
           symbol?: string
-        }
-        Relationships: []
-      }
-      ref_haplogroup_markers: {
-        Row: {
-          ancestral: string
-          chrom: number
-          derived: string
-          haplogroup: string
-          id: number
-          lineage: string
-          marker_name: string | null
-          pos38: number
-        }
-        Insert: {
-          ancestral: string
-          chrom: number
-          derived: string
-          haplogroup: string
-          id?: number
-          lineage: string
-          marker_name?: string | null
-          pos38: number
-        }
-        Update: {
-          ancestral?: string
-          chrom?: number
-          derived?: string
-          haplogroup?: string
-          id?: number
-          lineage?: string
-          marker_name?: string | null
-          pos38?: number
         }
         Relationships: []
       }
@@ -639,6 +591,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_prs: {
+        Row: {
+          computed_at: string
+          coverage: number
+          file_id: string
+          id: string
+          matched: number
+          percentile: number | null
+          pgs_id: string
+          raw_score: number
+          user_id: string
+          zscore: number | null
+        }
+        Insert: {
+          computed_at?: string
+          coverage: number
+          file_id: string
+          id?: string
+          matched: number
+          percentile?: number | null
+          pgs_id: string
+          raw_score: number
+          user_id: string
+          zscore?: number | null
+        }
+        Update: {
+          computed_at?: string
+          coverage?: number
+          file_id?: string
+          id?: string
+          matched?: number
+          percentile?: number | null
+          pgs_id?: string
+          raw_score?: number
+          user_id?: string
+          zscore?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_prs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "genome_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_prs_pgs_id_fkey"
+            columns: ["pgs_id"]
+            isOneToOne: false
+            referencedRelation: "prs_scores"
+            referencedColumns: ["pgs_id"]
+          },
+        ]
+      }
       user_variants: {
         Row: {
           alt: string | null
@@ -738,7 +744,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      processing_time_stats: {
+        Args: never
+        Returns: {
+          file_tier: number
+          n: number
+          p50_seconds: number
+          p95_seconds: number
+        }[]
+      }
     }
     Enums: {
       evidence_level: "established" | "moderate" | "preliminary"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { Button } from "@/components/ui/button";
-import { sniffFile } from "@/lib/genome/parsers/sniff";
+import { sniffFile } from "@/lib/genome/parsers/sniff-browser";
 import type { FileKind } from "@/lib/genome/types";
 import { LIMITS, formatBytes } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";

@@ -1,0 +1,380 @@
+[
+ {
+  "haplogroup": "A",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "L419",
+    "rsid": "rs111762602",
+    "pos": 13092973,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "B",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M181",
+    "rsid": "rs2032599",
+    "pos": 12739620,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "C",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M130",
+    "rsid": "rs35284970",
+    "pos": 2866813,
+    "anc": "C",
+    "der": "T"
+   },
+   {
+    "name": "M216",
+    "rsid": "rs2032666",
+    "pos": 13325684,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "D",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M174",
+    "rsid": "rs2032602",
+    "pos": 12842354,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "E",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M96",
+    "rsid": "rs9306841",
+    "pos": 19617112,
+    "anc": "C",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "E1b1a",
+  "parent": "E",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M2",
+    "rsid": "rs9785941",
+    "pos": 11975871,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "E1b1b",
+  "parent": "E",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M215",
+    "rsid": "rs2032654",
+    "pos": 13355944,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "name": "M35.1",
+    "rsid": "rs375228668",
+    "pos": 19579817,
+    "anc": "G",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "G",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M201",
+    "rsid": "rs2032636",
+    "pos": 12915617,
+    "anc": "G",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "H",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M69",
+    "rsid": "rs2032673",
+    "pos": 19732172,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "I",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M170",
+    "rsid": "rs2032597",
+    "pos": 12735858,
+    "anc": "A",
+    "der": "C"
+   },
+   {
+    "name": "M258",
+    "rsid": "rs9341301",
+    "pos": 12911452,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "I1",
+  "parent": "I",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M253",
+    "rsid": "rs9341296",
+    "pos": 12910796,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "I2",
+  "parent": "I",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M438",
+    "rsid": "rs17307294",
+    "pos": 14526924,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "name": "L68",
+    "rsid": "rs35547782",
+    "pos": 16588270,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "J",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M304",
+    "rsid": "rs13447352",
+    "pos": 20587967,
+    "anc": "A",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "J1",
+  "parent": "J",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M267",
+    "rsid": "rs9341313",
+    "pos": 20579932,
+    "anc": "T",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "J2",
+  "parent": "J",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M172",
+    "rsid": "rs2032604",
+    "pos": 12857709,
+    "anc": "T",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "L",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M20",
+    "rsid": "rs3911",
+    "pos": 19571568,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "N",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M231",
+    "rsid": "rs9341278",
+    "pos": 13357844,
+    "anc": "G",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "O",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "P186",
+    "rsid": "rs16981290",
+    "pos": 7700527,
+    "anc": "C",
+    "der": "A"
+   },
+   {
+    "name": "P191",
+    "rsid": "rs16980601",
+    "pos": 13303235,
+    "anc": "A",
+    "der": "G"
+   },
+   {
+    "name": "P196",
+    "rsid": "rs917759",
+    "pos": 13642433,
+    "anc": "C",
+    "der": "A"
+   }
+  ]
+ },
+ {
+  "haplogroup": "Q",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M242",
+    "rsid": "rs8179021",
+    "pos": 12906671,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "R",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M207",
+    "rsid": "rs2032658",
+    "pos": 13470103,
+    "anc": "A",
+    "der": "G"
+   }
+  ]
+ },
+ {
+  "haplogroup": "R1a",
+  "parent": "R",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M420",
+    "rsid": "rs17250535",
+    "pos": 21311315,
+    "anc": "T",
+    "der": "A"
+   },
+   {
+    "name": "M198",
+    "rsid": "rs2020857",
+    "pos": 12918840,
+    "anc": "C",
+    "der": "T"
+   }
+  ]
+ },
+ {
+  "haplogroup": "R1b",
+  "parent": "R",
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M343",
+    "rsid": "rs9786184",
+    "pos": 3019783,
+    "anc": "C",
+    "der": "A"
+   },
+   {
+    "name": "M269",
+    "rsid": "rs9786153",
+    "pos": 20577481,
+    "anc": "T",
+    "der": "C"
+   }
+  ]
+ },
+ {
+  "haplogroup": "T",
+  "parent": null,
+  "lineage": "Y",
+  "markers": [
+   {
+    "name": "M70",
+    "rsid": "rs2032672",
+    "pos": 19731995,
+    "anc": "A",
+    "der": "C"
+   }
+  ]
+ }
+]

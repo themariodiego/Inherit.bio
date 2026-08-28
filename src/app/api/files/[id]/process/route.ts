@@ -5,8 +5,8 @@ import { sendReportReady } from "@/lib/email";
 import { estimateAdmixture } from "@/lib/genome/admixture";
 import { classify } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
-import { parseArray } from "@/lib/genome/parsers/array";
-import { linesOf } from "@/lib/genome/parsers/lines";
+import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
+import { toLines } from "@/lib/genome/parsers/lines";
 import { parseVcf } from "@/lib/genome/parsers/vcf";
 import type { ParseResult, VariantRecord } from "@/lib/genome/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -67,10 +67,10 @@ export async function POST(
       throw new Error(`storage download failed (${res.status})`);
     }
 
-    const lines = linesOf(res.body);
+    const lines = toLines(res.body);
     let parsed: ParseResult;
     if (ARRAY_KINDS.has(file.file_type)) {
-      parsed = await parseArray(lines, file.file_type as never);
+      parsed = await parseArray(lines, file.file_type as ArrayKind);
     } else if (file.file_type === "vcf" || file.file_type === "gvcf") {
       parsed = await parseVcf(lines);
     } else {

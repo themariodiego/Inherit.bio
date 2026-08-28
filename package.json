@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "gate:legal": "tsx scripts/legal-placeholder-gate.ts"
+    "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.44",

@@ -15,7 +15,8 @@ function startsWithBytes(buf: Uint8Array, magic: number[]): boolean {
 /**
  * Detect the file format from the first bytes of a file (a few KB is enough).
  * Handles gzip/bgzf-compressed input by decompressing what it can of the
- * leading member before inspecting the content.
+ * leading member before inspecting the content. Node-only (zlib); browsers
+ * use sniffFile from ./sniff-browser, which shares sniffHead below.
  */
 export function sniff(bytes: Uint8Array): SniffResult {
   const compressed =
@@ -34,6 +35,11 @@ export function sniff(bytes: Uint8Array): SniffResult {
     }
   }
 
+  return sniffHead(head, compressed);
+}
+
+/** Pure content detection on an already-decompressed head. Runtime-agnostic. */
+export function sniffHead(head: Uint8Array, compressed: boolean): SniffResult {
   // Binary magics: BAM ("BAM\1", inside bgzf) and CRAM ("CRAM", uncompressed).
   if (startsWithBytes(head, [0x42, 0x41, 0x4d, 0x01]))
     return { kind: "bam", compressed };
