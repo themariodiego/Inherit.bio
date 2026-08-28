@@ -106,6 +106,13 @@ pnpm gate:legal  # placeholder gate over legal pages
    (confirmations on) and optionally GitHub OAuth (callback:
    `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`).
 
+   In *Authentication → URL Configuration*, set **Site URL** to your
+   production URL and add `https://YOUR-DOMAIN/**` to **Redirect URLs**.
+   This is required: it defaults to `http://localhost:3000`, and redirect
+   targets not on the allowlist are ignored, so until it's set every
+   verification and reset link bounces the user to a dead
+   `localhost:3000/?code=…`.
+
 2. **Resend**: create an API key. Verify a sending domain (or use
    `onboarding@resend.dev`, which only delivers to your own account's
    inbox — fine for a single-operator demo, useless for real users). For
@@ -163,6 +170,12 @@ in your storage. Alignment/variant calling are documented extension points
   --no-backup` resets a wedged stack.
 - **Sign-up email never arrives locally**: it's in Mailpit
   (http://127.0.0.1:54324), not your real inbox.
+- **Verification link goes to `localhost:3000/?code=…` on a hosted
+  deployment**: the project's auth Site URL / redirect allowlist is unset
+  (see *Authentication → URL Configuration* in step 1 above). The email
+  itself is already confirmed when this happens — verification occurs on
+  Supabase's domain before the redirect — so sign in directly at your
+  production URL, then fix the URL configuration for future emails.
 - **`BYOK_ENCRYPTION_KEY must be 32 bytes of base64`**: regenerate with
   `openssl rand -base64 32` (the value includes a trailing `=` — keep it).
 - **Upload rejected as unrecognized**: the sniffer reads the first bytes;
