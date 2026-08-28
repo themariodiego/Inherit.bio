@@ -16,8 +16,10 @@ export function FileRowActions({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
+    <div className="flex flex-col items-end gap-1">
     <div className="flex items-center gap-1.5">
       <Button asChild variant="outline" size="xs">
         <a href={`/api/files/${fileId}/download`}>Download</a>
@@ -28,7 +30,17 @@ export function FileRowActions({
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            await fetch(`/api/files/${fileId}/process`, { method: "POST" });
+            setError(null);
+            const res = await fetch(`/api/files/${fileId}/process`, {
+              method: "POST",
+            }).catch(() => null);
+            if (!res?.ok) {
+              const detail = res ? await res.text().catch(() => "") : "";
+              setError(
+                detail.slice(0, 300) ||
+                  `Processing failed${res ? ` (${res.status})` : ""}`,
+              );
+            }
             setBusy(false);
             router.refresh();
           }}
@@ -64,6 +76,12 @@ export function FileRowActions({
       >
         Delete
       </Button>
+    </div>
+    {error ? (
+      <p role="alert" className="max-w-xs text-right text-xs text-danger">
+        {error}
+      </p>
+    ) : null}
     </div>
   );
 }

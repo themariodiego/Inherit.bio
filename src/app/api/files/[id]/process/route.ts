@@ -58,6 +58,13 @@ export async function POST(
     return new Response("Invalid file path", { status: 400 });
   }
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return new Response(
+      "This deployment is not fully configured: SUPABASE_SERVICE_ROLE_KEY is missing, so files cannot be processed. Set it in the hosting environment and redeploy (see docs/deployment.md).",
+      { status: 503 },
+    );
+  }
+
   const admin = createAdminClient();
   await admin
     .from("genome_files")
