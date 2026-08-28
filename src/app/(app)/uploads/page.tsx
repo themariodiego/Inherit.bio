@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Uploader } from "@/components/uploads/uploader";
+import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
@@ -29,8 +30,13 @@ export default async function UploadsPage() {
   const { data: stats } = await supabase.rpc("processing_time_stats");
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
+  const inFlight = (files ?? []).some(
+    (f) => f.status === "parsing" || f.status === "uploading",
+  );
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
+      <AutoRefresh active={inFlight} />
       <div>
         <p className="eyebrow mb-2">Ingestion</p>
         <h1 className="display text-3xl">My files</h1>
