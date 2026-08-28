@@ -138,9 +138,11 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   expect(json.published).toBe(true);
   expect(json.digest_sent).toBeGreaterThanOrEqual(1);
 
-  // Changelog page shows the entry.
+  // Changelog page shows the entry (heading carries the report title).
   await page.goto("/changelog");
-  await expect(page.getByText("E2E test trait")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /E2E test trait/ }),
+  ).toBeVisible();
 
   // The digest reached the (mock) Resend API addressed to the opted-in user.
   const digest = captured.find((e) =>
