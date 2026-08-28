@@ -35,6 +35,15 @@ describe("sniff", () => {
     expect(sniff(bytes).kind).toBe("array_myheritage");
   });
 
+  it("detects MyHeritage csv via comment block with unquoted header", () => {
+    // Some real exports: '#'-comment block naming the vendor, then a header
+    // row identical to FTDNA's. Must not be classified as ftdna.
+    const bytes = new TextEncoder().encode(
+      "# MyHeritage DNA raw data.\n# For personal use only.\nRSID,CHROMOSOME,POSITION,RESULT\nrs1,1,100,AA\n"
+    );
+    expect(sniff(bytes).kind).toBe("array_myheritage");
+  });
+
   it("detects FamilyTreeDNA csv (unquoted header)", () => {
     expect(sniff(fx("ftdna.csv"))).toEqual({
       kind: "array_ftdna",

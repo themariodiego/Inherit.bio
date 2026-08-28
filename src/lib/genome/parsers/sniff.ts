@@ -59,6 +59,11 @@ export function sniffHead(head: Uint8Array, compressed: boolean): SniffResult {
     return { kind: "array_ancestry", compressed };
   if (first.startsWith("##fileformat=MyHeritage"))
     return { kind: "array_myheritage", compressed };
+  // Some MyHeritage exports lack the ##fileformat line and use an unquoted
+  // header row (identical to FTDNA's) — but their leading comment block
+  // still names the vendor.
+  if (lines.some((l) => l.startsWith("#") && /myheritage/i.test(l)))
+    return { kind: "array_myheritage", compressed };
 
   // Header-comment-less CSVs: distinguish MyHeritage (quoted) from
   // FamilyTreeDNA (unquoted) by the column-header row.
