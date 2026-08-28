@@ -35,8 +35,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12595690", "label": "Kim et al., Science 2003" },
-      { "pmid": "15723792", "label": "Bufe et al., Curr Biol 2005" }
+      {
+        "pmid": "12595690",
+        "label": "Kim et al., Science 2003"
+      },
+      {
+        "pmid": "15723792",
+        "label": "Bufe et al., Curr Biol 2005"
+      }
     ]
   },
   {
@@ -62,7 +68,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "doi": "10.1186/2044-7248-1-22", "label": "Eriksson et al., Flavour 2012" }
+      {
+        "doi": "10.1186/2044-7248-1-22",
+        "label": "Eriksson et al., Flavour 2012"
+      }
     ]
   },
   {
@@ -88,8 +97,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genet 2010" },
-      { "pmid": "27965198", "label": "Markt et al., BMJ 2016" }
+      {
+        "pmid": "20585627",
+        "label": "Eriksson et al., PLoS Genet 2010"
+      },
+      {
+        "pmid": "27965198",
+        "label": "Markt et al., BMJ 2016"
+      }
     ]
   },
   {
@@ -115,8 +130,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genet 2010" },
-      { "pmid": "30899065", "label": "Wang et al., Sci Rep 2019" }
+      {
+        "pmid": "20585627",
+        "label": "Eriksson et al., PLoS Genet 2010"
+      },
+      {
+        "pmid": "30899065",
+        "label": "Wang et al., Sci Rep 2019"
+      }
     ]
   },
   {
@@ -142,8 +163,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "26105758", "label": "Adhikari et al., Nat Commun 2015" },
-      { "pmid": "29198719", "label": "Shaffer et al., Am J Hum Genet 2017" }
+      {
+        "pmid": "26105758",
+        "label": "Adhikari et al., Nat Commun 2015"
+      },
+      {
+        "pmid": "29198719",
+        "label": "Shaffer et al., Am J Hum Genet 2017"
+      }
     ]
   },
   {
@@ -169,7 +196,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "16444273", "label": "Yoshiura et al., Nat Genet 2006" }
+      {
+        "pmid": "16444273",
+        "label": "Yoshiura et al., Nat Genet 2006"
+      }
     ]
   },
   {
@@ -195,7 +225,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "36760791", "label": "Smit et al., Front Neurosci 2023" }
+      {
+        "pmid": "36760791",
+        "label": "Smit et al., Front Neurosci 2022"
+      }
     ]
   },
   {
@@ -221,8 +254,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12879365", "label": "Yang et al., Am J Hum Genet 2003" },
-      { "pmid": "10192379", "label": "North et al., Nat Genet 1999" }
+      {
+        "pmid": "12879365",
+        "label": "Yang et al., Am J Hum Genet 2003"
+      },
+      {
+        "pmid": "10192379",
+        "label": "North et al., Nat Genet 1999"
+      }
     ]
   },
   {
@@ -248,7 +287,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17873857", "label": "Keller et al., Nature 2007" }
+      {
+        "pmid": "17873857",
+        "label": "Keller et al., Nature 2007"
+      }
     ]
   },
   {
@@ -274,7 +316,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19559618", "label": "Fushan et al., Curr Biol 2009" }
+      {
+        "pmid": "19559618",
+        "label": "Fushan et al., Curr Biol 2009"
+      }
     ]
   }
 ]

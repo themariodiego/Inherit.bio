@@ -50,6 +50,13 @@ export async function POST(
       status: 400,
     });
   }
+  // Defense in depth: the object is fetched below with the service-role key,
+  // which bypasses storage RLS. bucket_path is client-set, so refuse any path
+  // not under this user's own prefix — otherwise a user could point their row
+  // at another user's object and have its variants loaded into their account.
+  if (!file.bucket_path.startsWith(`${user.id}/`)) {
+    return new Response("Invalid file path", { status: 400 });
+  }
 
   const admin = createAdminClient();
   await admin

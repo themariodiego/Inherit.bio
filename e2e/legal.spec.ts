@@ -13,7 +13,7 @@ const REQUIRED = [
   { route: "/legal/research-consent", must: [/consent/i] },
   { route: "/legal/law-enforcement", must: [/law enforcement/i, /transparency/i, /0\b/] },
   { route: "/legal/deceased", must: [/deceased|next of kin|next-of-kin/i, /death certificate/i] },
-  { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long-term care|long term care/i] },
+  { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
 ];
 
@@ -46,8 +46,11 @@ test("Plus Bio disclosure is accurate (separate service, no data flow) and never
   expect(body).toContain("plus bio");
   expect(body).toMatch(/separate|independent|standalone/);
   expect(body).toMatch(/no.*data.*flow|data.*(does not|never|doesn't).*(flow|pass|move)/);
-  // Must NOT imply Sequence is a Plus Bio product.
-  expect(body).not.toMatch(/a plus bio (product|service|offering)/);
+  // Must explicitly disclaim being a Plus Bio product (the page states this
+  // as a negation, so assert the disclaimer is present rather than naively
+  // forbidding the substring, which also occurs inside "not a Plus Bio product").
+  expect(body).toMatch(/not a plus bio product/);
+  expect(body).not.toMatch(/sequence is a plus bio (product|service)/);
 });
 
 test("the collaboration attribution renders in the site chrome", async ({

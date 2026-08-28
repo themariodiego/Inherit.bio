@@ -175,6 +175,8 @@ export function Uploader() {
         ref={inputRef}
         type="file"
         className="sr-only"
+        aria-hidden
+        tabIndex={-1}
         aria-label="Choose a raw DNA file"
         onChange={(e) => {
           const f = e.target.files?.[0];

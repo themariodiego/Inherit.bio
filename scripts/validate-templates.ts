@@ -93,11 +93,17 @@ for (const file of files) {
       if (!/^[ACGT]+$/.test(v.ref ?? "") || !/^[ACGT]+$/.test(v.alt ?? ""))
         errors.push(`${id}: bad ref/alt`);
       const interp = v.interpretations ?? {};
-      if (v.ref?.length === 1 && v.alt?.length === 1) {
-        for (const key of genotypeKeys(v.ref, v.alt, v.chrom)) {
-          if (!interp[key])
-            errors.push(`${id}: missing interpretation for ${key}`);
-        }
+      // Every possible genotype must have an interpretation keyed EXACTLY as
+      // reports.ts genotypeKey() produces it (alleles sorted, joined without a
+      // separator). This covers indels too — a slash in an indel key is the
+      // bug that silently made the CFTR report unreachable.
+      for (const key of genotypeKeys(v.ref, v.alt, v.chrom)) {
+        if (!interp[key])
+          errors.push(`${id}: missing interpretation for genotype key "${key}"`);
+      }
+      for (const key of Object.keys(interp)) {
+        if (key.includes("/"))
+          errors.push(`${id}: interpretation key "${key}" contains "/" (reports.ts strips it; use the sorted no-separator form)`);
       }
       for (const [k, text] of Object.entries(interp)) {
         if (typeof text !== "string" || text.length < 20)

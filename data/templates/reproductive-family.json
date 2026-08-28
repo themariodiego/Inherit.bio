@@ -14,15 +14,18 @@
         "ref": "TCTT",
         "alt": "T",
         "interpretations": {
-          "TCTT/TCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out carrier status. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
-          "T/TCTT": "One copy of the F508del deletion, consistent with being a cystic fibrosis carrier. Carriers are healthy; the finding matters mainly for family planning, because if both partners are carriers each pregnancy has on average a 1-in-4 chance of a child with CF. Consumer arrays can miscall this site, so this result should be confirmed by a clinical laboratory and discussed with a genetic counselor before acting on it.",
-          "T/T": "Two copies of the F508del deletion. This genotype is the most common one found in people with cystic fibrosis, which is usually identified in childhood. In an adult with no known CF this result would be unexpected and most likely reflects an array error at this technically difficult site; clinical-laboratory confirmation and a conversation with a genetic counselor are strongly recommended."
+          "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out carrier status. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
+          "TTCTT": "One copy of the F508del deletion, consistent with being a cystic fibrosis carrier. Carriers are healthy; the finding matters mainly for family planning, because if both partners are carriers each pregnancy has on average a 1-in-4 chance of a child with CF. Consumer arrays can miscall this site, so this result should be confirmed by a clinical laboratory and discussed with a genetic counselor before acting on it.",
+          "TT": "Two copies of the F508del deletion. This genotype is the most common one found in people with cystic fibrosis, which is usually identified in childhood. In an adult with no known CF this result would be unexpected and most likely reflects an array error at this technically difficult site; clinical-laboratory confirmation and a conversation with a genetic counselor are strongly recommended."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "2475911", "label": "Riordan et al., Science 1989" }
+      {
+        "pmid": "2475911",
+        "label": "Riordan et al., Science 1989"
+      }
     ]
   },
   {
@@ -48,7 +51,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18567894", "label": "Grigorova et al., Hum Reprod 2008" }
+      {
+        "pmid": "18567894",
+        "label": "Grigorova et al., Hum Reprod 2008"
+      }
     ]
   },
   {
@@ -74,7 +80,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "17339269", "label": "Bogdanova et al., Hum Mol Genet 2007" }
+      {
+        "pmid": "17339269",
+        "label": "Bogdanova et al., Hum Mol Genet 2007"
+      }
     ]
   },
   {
@@ -100,8 +109,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19448619", "label": "Stolk et al., Nat Genet 2009" },
-      { "pmid": "19448621", "label": "He et al., Nat Genet 2009" }
+      {
+        "pmid": "19448619",
+        "label": "Stolk et al., Nat Genet 2009"
+      },
+      {
+        "pmid": "19448621",
+        "label": "He et al., Nat Genet 2009"
+      }
     ]
   },
   {
@@ -127,7 +142,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "27132594", "label": "Mbarek et al., Am J Hum Genet 2016" }
+      {
+        "pmid": "27132594",
+        "label": "Mbarek et al., Am J Hum Genet 2016"
+      }
     ]
   },
   {
@@ -153,8 +171,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19448623", "label": "Ong et al., Nat Genet 2009" },
-      { "pmid": "25231870", "label": "Perry et al., Nature 2014" }
+      {
+        "pmid": "19448623",
+        "label": "Ong et al., Nat Genet 2009"
+      },
+      {
+        "pmid": "25231870",
+        "label": "Perry et al., Nature 2014"
+      }
     ]
   },
   {
@@ -180,8 +204,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "23104006", "label": "Nyholt et al., Nat Genet 2012" },
-      { "pmid": "28537267", "label": "Sapkota et al., Nat Commun 2017" }
+      {
+        "pmid": "23104006",
+        "label": "Nyholt et al., Nat Genet 2012"
+      },
+      {
+        "pmid": "28537267",
+        "label": "Sapkota et al., Nat Commun 2017"
+      }
     ]
   },
   {
@@ -207,8 +237,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "21151128", "label": "Chen et al., Nat Genet 2011" },
-      { "pmid": "22885925", "label": "Shi et al., Nat Genet 2012" }
+      {
+        "pmid": "21151128",
+        "label": "Chen et al., Nat Genet 2011"
+      },
+      {
+        "pmid": "22885925",
+        "label": "Shi et al., Nat Genet 2012"
+      }
     ]
   },
   {
@@ -234,7 +270,10 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "10999835", "label": "Perez Mayorga et al., J Clin Endocrinol Metab 2000" }
+      {
+        "pmid": "10999835",
+        "label": "Perez Mayorga et al., J Clin Endocrinol Metab 2000"
+      }
     ]
   },
   {
@@ -260,8 +299,14 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "8164741", "label": "Bertina et al., Nature 1994" },
-      { "pmid": "12648968", "label": "Rey et al., Lancet 2003" }
+      {
+        "pmid": "8164741",
+        "label": "Bertina et al., Nature 1994"
+      },
+      {
+        "pmid": "12648968",
+        "label": "Rey et al., Lancet 2003"
+      }
     ]
   }
 ]

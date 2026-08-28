@@ -210,6 +210,12 @@ export async function runAnnotateJob(
   payload: AnnotatePayload,
   env: StorageEnv,
 ): Promise<AnnotateResult> {
+  // Defense in depth: the object is fetched with the service-role key, so
+  // refuse any path not under the job's own user prefix (bucket_path is set
+  // client-side at upload time).
+  if (!payload.bucket_path.startsWith(`${payload.user_id}/`)) {
+    throw new Error("bucket_path is not under the job owner's prefix");
+  }
   const lines = await downloadVcfLines(payload.bucket_path, env);
   return annotateLines(lines, db);
 }

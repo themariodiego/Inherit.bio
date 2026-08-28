@@ -19,7 +19,7 @@ import {
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { parseRsid } from "@/lib/genome/types";
-import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
+import { isLocalBaseUrl, providerKeyFor, ssrfReasonForBaseUrl } from "@/lib/llm";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -101,6 +101,21 @@ export async function POST(request: Request) {
       { error: "no_key", message: "Add your Anthropic API key in Settings." },
       { status: 409 },
     );
+  }
+
+  // SSRF guard: the server fetches base_url below, so refuse internal
+  // addresses unless the deployment opts into local endpoints (self-host).
+  if (settings.provider === "openai_compatible" && settings.base_url) {
+    const reason = ssrfReasonForBaseUrl(
+      settings.base_url,
+      process.env.ALLOW_PRIVATE_LLM_ENDPOINTS === "true",
+    );
+    if (reason) {
+      return NextResponse.json(
+        { error: "blocked_endpoint", message: `Provider endpoint refused: ${reason}` },
+        { status: 400 },
+      );
+    }
   }
 
   const model =

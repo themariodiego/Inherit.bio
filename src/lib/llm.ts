@@ -49,3 +49,48 @@ export function providerDisplayName(providerKey: string): string {
   if (providerKey === "anthropic") return "Anthropic (Claude)";
   return providerKey;
 }
+
+/**
+ * SSRF guard for the BYOK OpenAI-compatible base URL. The chat route fetches
+ * this URL server-side, so on a hosted deployment a user could aim it at the
+ * server's own network (cloud metadata, internal services). We ALWAYS block
+ * link-local (incl. 169.254.169.254 cloud metadata), and block loopback/
+ * private ranges unless the deployment opts in via ALLOW_PRIVATE_LLM_ENDPOINTS
+ * — which is exactly the self-host / local-LLM case (ADR-0004), where the
+ * server IS the user's machine and reaching localhost is intended.
+ *
+ * Returns null if allowed, or a reason string if the URL must be refused.
+ */
+export function ssrfReasonForBaseUrl(
+  baseUrl: string,
+  allowPrivate: boolean,
+): string | null {
+  let host: string;
+  try {
+    host = new URL(baseUrl).hostname.replace(/^\[|\]$/g, "");
+  } catch {
+    return "malformed base URL";
+  }
+  // Link-local (IPv4 169.254/16 and IPv6 fe80::/10) and the cloud-metadata IP
+  // are refused unconditionally — never a legitimate LLM endpoint.
+  if (/^169\.254\./.test(host) || /^fe80:/i.test(host)) {
+    return "link-local address (possible cloud-metadata SSRF)";
+  }
+  if (allowPrivate) return null;
+
+  const isLoopback =
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host.endsWith(".localhost");
+  const isPrivateV4 =
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  const isPrivateV6 = /^(fc|fd)/i.test(host);
+  const isInternalName = host.endsWith(".local") || host.endsWith(".internal");
+  if (isLoopback || isPrivateV4 || isPrivateV6 || isInternalName) {
+    return "private/loopback address blocked on this deployment (set ALLOW_PRIVATE_LLM_ENDPOINTS=true when self-hosting a local model)";
+  }
+  return null;
+}

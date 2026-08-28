@@ -54,6 +54,21 @@ export async function SiteHeader() {
           )}
         </div>
       </div>
+      {/* Mobile nav: the primary links move to a scrollable row below md. */}
+      <nav
+        aria-label="Main (mobile)"
+        className="flex gap-5 overflow-x-auto border-t border-line px-6 py-2 md:hidden"
+      >
+        {nav.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="whitespace-nowrap text-sm text-ink-muted hover:text-ink"
+          >
+            {l.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }

@@ -88,6 +88,43 @@ describe("resolveVariant", () => {
   });
 });
 
+describe("indel variants (e.g. CFTR F508del)", () => {
+  // ref=TCTT alt=T deletion; genotypes come out of the VCF parser as
+  // 'T/TCTT' etc. and must resolve against sorted no-separator keys.
+  const cftr: TemplateVariant = {
+    rsid: 113993960,
+    gene: "CFTR",
+    chrom: 7,
+    pos38: 117559591,
+    ref: "TCTT",
+    alt: "T",
+    interpretations: {
+      TCTTTCTT: "no F508del allele",
+      TTCTT: "one F508del allele (carrier)",
+      TT: "two F508del alleles",
+    },
+  };
+  it("resolves a heterozygous carrier genotype", () => {
+    expect(resolveVariant(cftr, "T/TCTT")).toMatchObject({
+      status: "genotyped",
+      genotype: "TTCTT",
+      interpretation: "one F508del allele (carrier)",
+    });
+    // allele order in the genotype must not matter
+    expect(resolveVariant(cftr, "TCTT/T")).toMatchObject({
+      status: "genotyped",
+      genotype: "TTCTT",
+    });
+  });
+  it("resolves both homozygous genotypes", () => {
+    expect(resolveVariant(cftr, "TCTT/TCTT").status).toBe("genotyped");
+    expect(resolveVariant(cftr, "T/T")).toMatchObject({
+      status: "genotyped",
+      genotype: "TT",
+    });
+  });
+});
+
 describe("resolveTemplate", () => {
   it("computes covered from outcomes", () => {
     const template = {

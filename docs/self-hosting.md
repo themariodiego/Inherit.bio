@@ -6,7 +6,8 @@ Supabase + Resend, what the public demo runs). Both start the same way.
 
 ## Prerequisites
 
-- Node.js ≥ 20.9 and pnpm ≥ 9 (`corepack enable`)
+- Node.js ≥ 20.9 and pnpm ≥ 9 (`corepack enable`) — the optional Tier-3
+  worker needs Node 22+
 - Docker (for the local Supabase stack and the optional worker)
 - Git
 
@@ -141,9 +142,11 @@ See [worker/README.md](../worker/README.md). Short version:
 
 ```bash
 cd worker
-cp .env.example .env   # DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-docker compose up
+cp .env.example .env   # fill in DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+docker compose --env-file .env up --build
 ```
+
+(Without Docker: `npm install && npm start`, which needs Node 22+.)
 
 The worker polls `worker_jobs` and runs the annotation stage against files
 in your storage. Alignment/variant calling are documented extension points
