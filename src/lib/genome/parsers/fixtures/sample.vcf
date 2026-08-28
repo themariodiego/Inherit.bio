@@ -1,0 +1,11 @@
+##fileformat=VCFv4.2
+##reference=file:///refs/GRCh38.fa
+##contig=<ID=chr1,length=248956422>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	100	rs1	A	G	50	PASS	.	GT:DP	0/1:30
+chr1	200	rs2	C	T,G	50	PASS	.	GT	1/2
+chr1	300	.	G	A	50	PASS	.	GT	1|1
+chr1	400	rs4	T	C	50	PASS	.	GT	./.
+chr1	500	rs5	A	G	50	PASS	.	GT	0/0
+chrY	600	rs6	C	T	50	PASS	.	GT	1
+chrM	700	rs7	A	.	50	PASS	.	GT	0

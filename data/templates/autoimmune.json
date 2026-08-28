@@ -1,0 +1,291 @@
+[
+  {
+    "slug": "celiac-disease-hla-dq2-5",
+    "category": "autoimmune",
+    "title": "Celiac disease · HLA-DQ2.5 tag (HLA-DQA1)",
+    "summary": "Nearly all people with celiac disease carry the HLA-DQ2.5 or HLA-DQ8 molecules that present gluten fragments to the immune system. rs2187668 is a well-validated tag for the DQ2.5 haplotype: the T allele marks DQ2.5 carriage. Carrying DQ2.5 is close to necessary but far from sufficient — roughly a quarter of many populations carry it, while about 1% develop celiac disease.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 2187668,
+        "gene": "HLA-DQA1",
+        "chrom": 6,
+        "pos38": 32638107,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copies of the DQ2.5 tag allele. This makes carriage of the highest-risk celiac haplotype unlikely, which on average substantially lowers the genetic predisposition to celiac disease. It does not rule it out: DQ8 and DQ2.2, tagged by other variants, also confer susceptibility, and tag SNPs are imperfect proxies compared with direct HLA typing.",
+          "CT": "One copy of the T allele tagging HLA-DQ2.5, the haplotype found in roughly 90% of people with celiac disease. Carriers have higher average odds of celiac disease than non-carriers, but the vast majority of DQ2.5 carriers — around 25-30% of many populations — never develop it. This is a susceptibility marker, not a prediction.",
+          "TT": "Two copies of the T allele, consistent with carrying HLA-DQ2.5 on both chromosomes. Studies associate a double dose of DQ2.5 with higher average odds of celiac disease than a single copy. Even so, most people with this genotype never develop celiac disease; genotype describes predisposition only."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008" }
+    ]
+  },
+  {
+    "slug": "type-1-diabetes-hla-dr3-dr4",
+    "category": "autoimmune",
+    "title": "Type 1 diabetes · HLA DR3-DQ2 / DR4-DQ8 tags",
+    "summary": "The HLA region is by far the largest genetic contributor to type 1 diabetes, with the DR3-DQ2 and DR4-DQ8 haplotypes carrying most of that signal. Two tag variants approximate them: the rs2187668 T allele tags DR3-DQ2 and the rs7454108 C allele tags DR4-DQ8. Carrying one of each (the DR3/DR4 combination) is associated with the highest average risk, though most carriers of any of these haplotypes never develop type 1 diabetes.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 2187668,
+        "gene": "HLA-DQA1",
+        "chrom": 6,
+        "pos38": 32638107,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copies of the tag for the DR3-DQ2 haplotype. On average this lowers the HLA-based contribution to type 1 diabetes susceptibility from this haplotype, though DR4-DQ8 (see the second variant in this report) and other HLA types also matter, and tag SNPs are imperfect proxies for true HLA typing.",
+          "CT": "One copy of the T allele tagging DR3-DQ2, one of the two major type 1 diabetes susceptibility haplotypes. Its impact depends heavily on what the other haplotype is: the DR3/DR4 combination is associated with the highest average odds. Even in that highest group, the large majority of carriers never develop type 1 diabetes.",
+          "TT": "Two copies of the T allele, consistent with DR3-DQ2 on both chromosomes. DR3 homozygosity is associated with clearly elevated average odds of type 1 diabetes relative to non-carriers, though lower on average than the DR3/DR4 combination. Absolute risk remains modest for most carriers."
+        }
+      },
+      {
+        "rsid": 7454108,
+        "gene": "HLA-DQB1",
+        "chrom": 6,
+        "pos38": 32713706,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "No copies of the tag for the DR4-DQ8 haplotype. This lowers the average HLA-based susceptibility contributed by DQ8, one of the two haplotypes carrying most of the HLA signal in type 1 diabetes. Other HLA haplotypes, including DR3-DQ2, still contribute, and a tag SNP is only a proxy for direct HLA typing.",
+          "CT": "One copy of the C allele tagging DR4-DQ8, a major type 1 diabetes susceptibility haplotype. Combined with a DR3-DQ2 copy at the companion variant, this corresponds to the DR3/DR4 genotype associated with the highest average odds. Most carriers of DQ8, including DR3/DR4 carriers, never develop type 1 diabetes.",
+          "CC": "Two copies of the C allele, consistent with DR4-DQ8 on both chromosomes. DQ8 homozygosity is associated with elevated average odds of type 1 diabetes relative to non-carriers. This remains a probabilistic association; the large majority of people with this genotype are unaffected."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18252895", "label": "Erlich et al., Diabetes 2008" },
+      { "pmid": "18509540", "label": "Monsuur et al., PLoS ONE 2008" }
+    ]
+  },
+  {
+    "slug": "rheumatoid-arthritis-ptpn22",
+    "category": "autoimmune",
+    "title": "Rheumatoid arthritis · PTPN22 R620W",
+    "summary": "PTPN22 encodes a phosphatase that dampens immune-cell signaling. The R620W missense variant (rs2476601) is one of the strongest common non-HLA risk factors for rheumatoid arthritis, associated with roughly 1.5-1.9x higher odds of seropositive disease per copy, and it also shows associations with type 1 diabetes and other autoimmune conditions. Note that on GRCh38 the reference allele A corresponds to the risk (620W) form; G is the common non-risk allele.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 2476601,
+        "gene": "PTPN22",
+        "chrom": 1,
+        "pos38": 113834946,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the risk-associated A allele (620W), found in roughly 1% of people of European ancestry. Studies associate this genotype with several-fold higher average odds of seropositive rheumatoid arthritis versus GG, and with elevated odds of some other autoimmune conditions. Rheumatoid arthritis remains uncommon, so most people with this genotype are never affected.",
+          "AG": "One copy of the risk-associated A allele (620W). Associated on average with about 1.5-1.9x the odds of seropositive rheumatoid arthritis compared with GG. This is one susceptibility factor among many genetic and environmental influences, including smoking; it does not predict disease.",
+          "GG": "Two copies of the common G allele (620R). This genotype does not carry the PTPN22 R620W risk association; average odds of rheumatoid arthritis at this variant are the population baseline. Many other genetic and environmental factors still shape overall susceptibility."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "15208781", "label": "Begovich et al., Am J Hum Genet 2004" }
+    ]
+  },
+  {
+    "slug": "multiple-sclerosis-hla-drb1-1501",
+    "category": "autoimmune",
+    "title": "Multiple sclerosis · HLA-DRB1*15:01 tag",
+    "summary": "HLA-DRB1*15:01 is the strongest genetic risk factor for multiple sclerosis, associated with roughly 2-3x higher odds per copy. rs3135388 is a widely used tag for this HLA allele: the A allele marks DRB1*15:01 carriage (on GRCh38 the reference base at this position is the tag allele A). Because MS affects well under 1% of most populations, even the elevated odds in carriers leave absolute risk low.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 3135388,
+        "gene": "HLA-DRB1",
+        "chrom": 6,
+        "pos38": 32445274,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele tagging HLA-DRB1*15:01. Homozygous carriage is associated on average with substantially higher odds of multiple sclerosis than non-carriage — several-fold in most studies. MS is rare, so absolute risk stays low for the great majority of people with this genotype; this is one factor among many, alongside environmental influences such as EBV exposure and vitamin D.",
+          "AG": "One copy of the A allele tagging HLA-DRB1*15:01, carried by roughly 15-30% of people of European ancestry. Associated on average with about 2-3x the odds of multiple sclerosis versus non-carriers. Because MS is uncommon, absolute risk remains low; this is a single susceptibility factor, not a prediction.",
+          "GG": "No copies of the DRB1*15:01 tag allele. Average odds of multiple sclerosis at this locus are at or slightly below the population baseline. Other genetic variants and environmental factors still contribute, and a tag SNP is an imperfect proxy for direct HLA typing."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17660530", "label": "Hafler et al. (IMSGC), N Engl J Med 2007" }
+    ]
+  },
+  {
+    "slug": "crohns-disease-nod2",
+    "category": "autoimmune",
+    "title": "Crohn's disease · NOD2 (R702W, G908R)",
+    "summary": "NOD2 encodes an intracellular sensor of bacterial cell-wall fragments, and its variants were the first genetic risk factors discovered for Crohn's disease. The R702W (rs2066844) and G908R (rs2066845) missense variants are each associated with roughly 2-3x higher odds per copy, and carrying two NOD2 variant copies (in any combination, including the frameshift variant not covered here) is associated with substantially higher odds, particularly of ileal disease.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 2066844,
+        "gene": "NOD2",
+        "chrom": 16,
+        "pos38": 50712015,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the common C allele — no R702W variant. Average odds of Crohn's disease at this variant are the population baseline. NOD2 has other risk variants (G908R below, and a frameshift, 1007fs, that this report does not cover), and most Crohn's risk lies outside NOD2 altogether.",
+          "CT": "One copy of the T allele encoding R702W, the most common NOD2 risk variant in European-ancestry populations (about 4-5% allele frequency). Associated on average with roughly 2-3x the odds of Crohn's disease. Because Crohn's affects well under 1% of people, most carriers are never affected.",
+          "TT": "Two copies of the T allele encoding R702W. Carrying two NOD2 risk-variant copies is associated in studies with substantially higher average odds of Crohn's disease — estimates of several-fold up to more than tenfold, often with ileal involvement. Even so, absolute risk remains limited, and many people with two copies stay unaffected."
+        }
+      },
+      {
+        "rsid": 2066845,
+        "gene": "NOD2",
+        "chrom": 16,
+        "pos38": 50722629,
+        "ref": "G",
+        "alt": "C",
+        "interpretations": {
+          "GG": "Two copies of the common G allele — no G908R variant. Average odds of Crohn's disease at this variant are the population baseline. Other NOD2 variants (R702W above, and the 1007fs frameshift not covered here) and many non-NOD2 factors still contribute to overall susceptibility.",
+          "CG": "One copy of the C allele encoding G908R, a NOD2 risk variant carried by roughly 1-2% of European-ancestry chromosomes. Associated on average with roughly 2-3x the odds of Crohn's disease. Most carriers never develop Crohn's disease; this is one susceptibility factor among many.",
+          "CC": "Two copies of the C allele encoding G908R — a rare genotype. Two NOD2 risk-variant copies are associated with substantially higher average odds of Crohn's disease, often with ileal involvement. This remains a probabilistic association rather than a prediction, and many such carriers stay unaffected."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "11385576", "label": "Hugot et al., Nature 2001" },
+      { "pmid": "11385577", "label": "Ogura et al., Nature 2001" }
+    ]
+  },
+  {
+    "slug": "psoriasis-hla-c-0602",
+    "category": "autoimmune",
+    "title": "Psoriasis · HLA-C*06:02 tag",
+    "summary": "HLA-C*06:02 is the major genetic risk factor for psoriasis, especially early-onset and guttate forms, with per-copy odds ratios around 2-4 in most populations. rs10484554 is a commonly used tag for this HLA allele: the T allele marks likely C*06:02 carriage. About two-thirds of C*06:02 carriers never develop psoriasis.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 10484554,
+        "gene": "HLA-C",
+        "chrom": 6,
+        "pos38": 31306778,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copies of the HLA-C*06:02 tag allele. Average odds of psoriasis at this locus are at the population baseline. Psoriasis still occurs in non-carriers — dozens of other loci and environmental triggers contribute — and a tag SNP is an imperfect proxy for direct HLA typing.",
+          "CT": "One copy of the T allele tagging HLA-C*06:02. Associated on average with roughly 2-4x the odds of psoriasis compared with non-carriers, with a stronger association for early-onset and guttate forms. Most carriers never develop psoriasis; this is a susceptibility marker, not a determination.",
+          "TT": "Two copies of the T allele tagging HLA-C*06:02. Homozygous carriage is associated with higher average odds of psoriasis than a single copy, again weighted toward early-onset disease. The association is probabilistic: many people with this genotype remain unaffected throughout life."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "16642438", "label": "Nair et al., Am J Hum Genet 2006" },
+      { "pmid": "20953190", "label": "Strange et al., Nat Genet 2010" }
+    ]
+  },
+  {
+    "slug": "lupus-stat4",
+    "category": "autoimmune",
+    "title": "Systemic lupus erythematosus · STAT4",
+    "summary": "STAT4 encodes a transcription factor central to interferon and IL-12 signaling in immune cells. The rs7574865 T allele is one of the most consistently replicated non-HLA risk alleles for systemic lupus erythematosus, associated with roughly 1.5x higher odds per copy, and it shows a weaker association with rheumatoid arthritis. On GRCh38 the reference base at this position is the risk allele T; G is the common allele.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 7574865,
+        "gene": "STAT4",
+        "chrom": 2,
+        "pos38": 191099907,
+        "ref": "T",
+        "alt": "G",
+        "interpretations": {
+          "GG": "Two copies of the common G allele. Average odds of lupus at this variant are the population baseline. Lupus susceptibility involves many genetic variants plus hormonal and environmental factors, so this single result says little on its own.",
+          "GT": "One copy of the risk-associated T allele, carried by roughly a quarter to a third of many populations. Associated on average with about 1.5x the odds of systemic lupus erythematosus, and a smaller increase for rheumatoid arthritis. Lupus is rare, so absolute risk remains low; this is one small factor among many.",
+          "TT": "Two copies of the risk-associated T allele. Associated on average with roughly 2x or somewhat higher odds of systemic lupus erythematosus compared with GG. Because lupus affects well under 1% of most populations, absolute risk stays low even for this genotype; this is one small factor among many influences."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17804842", "label": "Remmers et al., N Engl J Med 2007" }
+    ]
+  },
+  {
+    "slug": "ankylosing-spondylitis-hla-b27",
+    "category": "autoimmune",
+    "title": "Ankylosing spondylitis · HLA-B27 tag",
+    "summary": "HLA-B27 is one of the strongest known HLA-disease associations: carriers have many-fold higher odds of ankylosing spondylitis than non-carriers, yet the large majority of B27 carriers (roughly 95%) never develop it. rs4349859 is a tag SNP whose A allele marks likely HLA-B*27:05 carriage; it is a good but imperfect proxy, particularly outside European-ancestry populations, and direct HLA-B27 typing from a blood sample remains the definitive measure.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 4349859,
+        "gene": "HLA-B",
+        "chrom": 6,
+        "pos38": 31398010,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "No copies of the HLA-B27 tag allele, suggesting B27 is likely absent. Ankylosing spondylitis does occur in B27-negative people, though at much lower average rates. Because tag SNPs imperfectly track HLA-B*27, direct HLA typing is the definitive way to establish B27 status.",
+          "AG": "One copy of the A allele tagging HLA-B*27:05. B27 carriage is strongly associated with ankylosing spondylitis — carriers make up most cases — yet only around 1 in 20 carriers ever develops it, so absolute risk remains low. The tag is an imperfect proxy, especially in non-European populations; direct HLA-B27 typing gives a definitive answer.",
+          "AA": "Two copies of the A allele tagging HLA-B*27:05, a rare genotype consistent with B27 on both chromosomes. The association with ankylosing spondylitis is strong on a relative scale, but most B27 carriers, including homozygotes, never develop the condition. Direct HLA typing remains the definitive measure of B27 status."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "21743469", "label": "Evans et al., Nat Genet 2011" }
+    ]
+  },
+  {
+    "slug": "autoimmune-thyroid-ctla4",
+    "category": "autoimmune",
+    "title": "Autoimmune thyroid disease · CTLA4 (CT60)",
+    "summary": "CTLA-4 is a brake on T-cell activation, and the CT60 variant (rs3087243) in its 3' region is a replicated susceptibility factor for autoimmune thyroid disease. The common G allele is the susceptibility allele — associated with roughly 1.4-1.5x higher odds of Graves' disease per copy and weaker associations with autoimmune hypothyroidism and type 1 diabetes — while the A allele is associated with lower average odds.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 3087243,
+        "gene": "CTLA4",
+        "chrom": 2,
+        "pos38": 203874196,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele, associated with the lowest average odds of Graves' disease and autoimmune hypothyroidism at this locus. The effect is modest, and thyroid autoimmunity depends on many other genetic and environmental factors, so this result shifts probability only slightly.",
+          "AG": "One copy of each allele, associated with intermediate average odds of autoimmune thyroid disease between the two homozygous groups. This variant's effect is modest — around 1.4x per G copy for Graves' disease — and is one small factor among many influences on thyroid autoimmunity.",
+          "GG": "Two copies of the susceptibility-associated G allele, the most common genotype in many populations. Associated on average with roughly 1.5-2x the odds of Graves' disease compared with AA, and weaker increases for autoimmune hypothyroidism. This remains a modest probabilistic shift, not a prediction."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12724780", "label": "Ueda et al., Nature 2003" }
+    ]
+  },
+  {
+    "slug": "inflammatory-bowel-disease-il23r",
+    "category": "autoimmune",
+    "title": "Inflammatory bowel disease · IL23R R381Q",
+    "summary": "IL23R encodes the receptor for interleukin-23, a cytokine driving intestinal inflammation. The rs11209026 A allele (R381Q) partially blunts IL-23 signaling and is protective: carriers have roughly 2-3x lower average odds of Crohn's disease, with a similar protective association for ulcerative colitis and psoriasis. This discovery helped motivate IL-23-pathway research in inflammatory disease.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 11209026,
+        "gene": "IL23R",
+        "chrom": 1,
+        "pos38": 67240275,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the common G allele (381R), found in the large majority of people. Average odds of Crohn's disease and ulcerative colitis at this variant are the population baseline. Overall IBD susceptibility involves more than a hundred other loci plus environmental factors.",
+          "AG": "One copy of the protective A allele (381Q), carried by roughly 5-7% of people of European ancestry. Associated on average with about 2-3x lower odds of Crohn's disease, and lower odds of ulcerative colitis and psoriasis. Protection is partial — carriers can still develop IBD.",
+          "AA": "Two copies of the protective A allele (381Q) — a rare genotype. Associated with substantially lower average odds of Crohn's disease and related inflammatory conditions at this locus. This lowers probability; it does not eliminate the possibility of inflammatory bowel disease."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17068223", "label": "Duerr et al., Science 2006" }
+    ]
+  }
+]

@@ -1,0 +1,263 @@
+[
+  {
+    "slug": "memory-plasticity-bdnf-rs6265",
+    "category": "brain-health",
+    "title": "Memory & brain plasticity · BDNF",
+    "summary": "BDNF (brain-derived neurotrophic factor) supports the growth and plasticity of neurons. The Val66Met variant (rs6265) changes how efficiently BDNF is released at synapses. Carriers of the Met allele (T on the forward strand) show, on average, slightly lower episodic memory scores and altered hippocampal activity in imaging studies, though the effect is small and most Met carriers have entirely normal memory.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 6265,
+        "gene": "BDNF",
+        "chrom": 11,
+        "pos38": 27658369,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C (Val) allele, the most common genotype. Activity-dependent BDNF secretion is typical, and studies find average episodic memory performance at this locus. Memory ability still varies widely between people with this genotype for many other genetic and lifestyle reasons.",
+          "CT": "One Val and one Met allele, carried by roughly a third of people of European ancestry. Met carriers show, on average, slightly lower scores on some episodic memory tasks and subtle differences in hippocampal activity. The effect is small at the individual level, and factors like sleep, exercise, and education matter far more for day-to-day memory.",
+          "TT": "Two copies of the T (Met) allele, an uncommon genotype in most populations. Associated on average with modestly reduced activity-dependent BDNF secretion and slightly lower episodic memory performance in group studies. This is a subtle statistical shift, not a memory impairment; many Met/Met individuals perform above average."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12553913", "label": "Egan et al., Cell 2003" }
+    ]
+  },
+  {
+    "slug": "episodic-memory-kibra-rs17070145",
+    "category": "brain-health",
+    "title": "Episodic memory · KIBRA",
+    "summary": "The KIBRA protein (gene WWC1) is involved in synaptic plasticity in the hippocampus. In a genome-wide study of memory performance, carriers of the T allele at rs17070145 recalled, on average, more items in delayed word-recall tests than non-carriers. The effect has been replicated in several cohorts, though it explains only a small fraction of memory differences between people.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 17070145,
+        "gene": "WWC1",
+        "chrom": 5,
+        "pos38": 168418786,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copies of the T allele. In group studies, CC individuals recalled slightly fewer items on average in delayed episodic memory tests than T carriers. This is a small average difference; memory performance in any individual depends far more on attention, sleep, and practice.",
+          "CT": "One copy of the T allele, which has been associated with better average performance on episodic memory tasks such as delayed word recall. The difference between genotype groups is modest, and this variant is only one of many influences on memory.",
+          "TT": "Two copies of the T allele. Studies associate this genotype with the highest average scores on some episodic memory tests at this locus. The effect remains small in absolute terms and does not guarantee strong memory on its own."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17053149", "label": "Papassotiropoulos et al., Science 2006" }
+    ]
+  },
+  {
+    "slug": "executive-function-comt-rs4680",
+    "category": "brain-health",
+    "title": "Executive function & stress · COMT",
+    "summary": "COMT breaks down dopamine in the prefrontal cortex. The Val158Met variant (rs4680) markedly changes enzyme activity: the Met (A) form works several-fold more slowly, leaving more dopamine available. Met carriers tend to perform slightly better on some executive-function tasks on average, while Val carriers may cope slightly better under acute stress — a trade-off sometimes summarized as the (oversimplified) worrier/warrior model.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 4680,
+        "gene": "COMT",
+        "chrom": 22,
+        "pos38": 19963748,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G (Val) allele, giving higher COMT activity and faster dopamine clearance in the prefrontal cortex. Associated on average with slightly lower scores on some working-memory and set-shifting tasks in calm conditions, but possibly steadier performance under acute stress. These are small group-level differences, not individual predictions.",
+          "AG": "One Val and one Met allele, giving intermediate COMT activity. Group studies place this genotype between the two homozygotes on executive-function measures, with a great deal of overlap. This variant is one small contributor among many genetic and environmental influences on cognition.",
+          "AA": "Two copies of the A (Met) allele, giving lower COMT activity and higher prefrontal dopamine availability. Associated on average with slightly better performance on some executive-function tasks in relaxed settings, and in some studies with greater sensitivity to stress or pain. The effect sizes are small and findings vary between studies."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "11381111", "label": "Egan et al., PNAS 2001" }
+    ]
+  },
+  {
+    "slug": "cognition-cacna1c-rs1006737",
+    "category": "brain-health",
+    "title": "Cognition & mood circuitry · CACNA1C",
+    "summary": "CACNA1C encodes a calcium channel subunit important for neuronal signaling. The A allele at rs1006737 is one of the most replicated common variants for bipolar disorder (odds ratio around 1.1-1.2 per copy) and has been linked in smaller imaging studies to differences in hippocampal and prefrontal activity during memory tasks. Its effect on everyday cognition, if any, is subtle.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1006737,
+        "gene": "CACNA1C",
+        "chrom": 12,
+        "pos38": 2236129,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G allele, the most common genotype. Not associated with the small increases in mood-disorder odds or the imaging differences reported for A carriers at this locus. Mood and cognition remain shaped by thousands of variants and by life circumstances.",
+          "AG": "One copy of the A allele, carried by a large minority of people. Associated on average with roughly 1.1-1.2x the odds of bipolar disorder and, in small imaging studies, with subtle differences in brain activity during memory and emotion tasks. This is one small factor among very many; it says nothing definitive about any individual's mood or cognition.",
+          "AA": "Two copies of the A allele. Group studies associate this genotype with modestly higher average odds of bipolar disorder and with subtle brain-imaging differences during cognitive tasks. This is one small factor among thousands of genetic and environmental influences, and most people with this genotype never develop a mood disorder."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+    ]
+  },
+  {
+    "slug": "chronotype-clock-rs1801260",
+    "category": "brain-health",
+    "title": "Chronotype · CLOCK 3111T/C",
+    "summary": "The CLOCK gene is a core component of the circadian pacemaker. The 3111T/C variant (rs1801260; the literature's C allele is G on the forward strand) has been associated with evening preference and later daily rhythms in several studies, though other studies found no effect. Chronotype is highly polygenic, so any single variant contributes only a small nudge.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1801260,
+        "gene": "CLOCK",
+        "chrom": 4,
+        "pos38": 55435202,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele (the literature's 3111T). In studies reporting an effect, this genotype leaned toward earlier, more morning-oriented daily rhythms on average. Chronotype is shaped by hundreds of variants plus age, light exposure, and habits, so this is a weak signal at best.",
+          "AG": "One copy of the G allele (the literature's 3111C), which some studies associate with a shift toward evening preference and later sleep timing on average. Replication has been inconsistent, and actual sleep timing depends far more on light exposure, schedule, and age.",
+          "GG": "Two copies of the G allele (the literature's 3111C). Some studies associate this genotype with the strongest average lean toward eveningness and delayed sleep timing at this locus, but several others found no association. This is best read as a tentative, small effect."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "9779516", "label": "Katzenberg et al., Sleep 1998" }
+    ]
+  },
+  {
+    "slug": "chronotype-per3-rs228697",
+    "category": "brain-health",
+    "title": "Chronotype · PER3",
+    "summary": "PER3 is a circadian clock gene long studied for links to sleep timing. The missense variant rs228697 (Pro415Ala) was associated with evening preference in a Japanese screening study: the minor G allele was more frequent among evening types and in people with delayed sleep-wake phase disorder. Evidence is early-stage and the effect, if real, is small.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 228697,
+        "gene": "PER3",
+        "chrom": 1,
+        "pos38": 7827519,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Two copies of the common C allele. In the available studies this genotype was not associated with a shift toward eveningness at this locus. Sleep timing is highly polygenic and strongly shaped by light, schedule, and age.",
+          "CG": "One copy of the G allele, which was over-represented among evening types and people with delayed sleep-wake phase in a Japanese study. This is a preliminary association from limited cohorts; a single variant nudges chronotype only slightly, if at all.",
+          "GG": "Two copies of the less common G allele. If the reported association holds, this genotype would lean furthest toward evening preference at this locus, but the evidence base is small and needs replication in more populations."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "25201053", "label": "Hida et al., Sci Rep 2014" }
+    ]
+  },
+  {
+    "slug": "caffeine-sleep-adora2a-rs5751876",
+    "category": "brain-health",
+    "title": "Caffeine, anxiety & sleep · ADORA2A",
+    "summary": "Caffeine keeps you alert by blocking adenosine A2A receptors, which ADORA2A encodes. The rs5751876 T allele has been repeatedly associated with greater caffeine-induced anxiety and with stronger self-reported sensitivity of sleep to caffeine: TT individuals were more likely to report anxiety after a moderate caffeine dose and more caffeine-related sleep disturbance on average.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 5751876,
+        "gene": "ADORA2A",
+        "chrom": 22,
+        "pos38": 24441333,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Two copies of the T allele. In controlled dosing studies, this genotype reported the most anxiety after moderate caffeine doses, and it is over-represented among people who say caffeine disturbs their sleep. On average, late-day caffeine may be more disruptive for this genotype, though individual tolerance also depends on habitual intake and CYP1A2 metabolism speed.",
+          "CT": "One T and one C allele, an intermediate genotype. Group studies place heterozygotes between the two homozygotes for caffeine-induced anxiety and caffeine-related sleep disturbance, with wide individual variation. Habitual intake and caffeine metabolism speed (CYP1A2) also shape the actual response.",
+          "CC": "Two copies of the C allele. Associated on average with less caffeine-induced anxiety and less self-reported sleep disturbance from caffeine than TT at this locus. This does not make caffeine sleep-neutral; dose and timing still matter for everyone."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12825092", "label": "Alsene et al., Neuropsychopharmacology 2003" },
+      { "pmid": "17329997", "label": "Rétey et al., Clin Pharmacol Ther 2007" }
+    ]
+  },
+  {
+    "slug": "cognitive-aging-klotho-rs9536314",
+    "category": "brain-health",
+    "title": "Cognitive aging · KLOTHO KL-VS",
+    "summary": "Klotho is a longevity-associated hormone that also acts in the brain. The KL-VS haplotype, tagged by rs9536314 (Phe352Val, T>G), raises circulating klotho. Carrying one copy has been associated with slightly better cognition across adulthood in several cohorts, while two copies may not confer the same benefit — a possible heterozygote advantage. Evidence is promising but still maturing.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 9536314,
+        "gene": "KL",
+        "chrom": 13,
+        "pos38": 33054001,
+        "ref": "T",
+        "alt": "G",
+        "interpretations": {
+          "TT": "No copies of the KL-VS variant, the most common genotype. Cognitive performance at this locus is simply the population baseline; lifestyle factors such as exercise, sleep, and cardiovascular health remain the dominant modifiable influences on cognitive aging.",
+          "GT": "One copy of the KL-VS variant, carried by roughly 20-25% of people of European ancestry. Associated in several cohorts with modestly higher average scores on tests of memory and executive function, possibly via higher circulating klotho. The effect is small and this remains an active research area.",
+          "GG": "Two copies of the KL-VS variant, an uncommon genotype. Unlike single-copy carriers, KL-VS homozygotes did not show the cognitive advantage in the reported studies, and some analyses suggest slightly lower average scores. Data on this rare genotype are limited, so conclusions are tentative."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "24813892", "label": "Dubal et al., Cell Rep 2014" }
+    ]
+  },
+  {
+    "slug": "social-cognition-oxtr-rs53576",
+    "category": "brain-health",
+    "title": "Social cognition · OXTR",
+    "summary": "The oxytocin receptor gene OXTR is widely studied in social behavior research. In one well-known study, people with two G alleles at rs53576 scored higher on average on a behavioral empathy test (reading emotions from the eyes) and showed lower stress reactivity than A-allele carriers. Later studies and meta-analyses found small and inconsistent effects, so this is best read as an intriguing early finding.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 53576,
+        "gene": "OXTR",
+        "chrom": 3,
+        "pos38": 8762685,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele. In the original study, A-allele carriers scored slightly lower on average on a behavioral empathy test and showed higher stress reactivity than GG individuals. Replication has been inconsistent, and social skills are overwhelmingly shaped by experience and environment rather than any single variant.",
+          "AG": "One A and one G allele. In the original study, carriers of at least one A allele scored slightly lower on average on an empathy task than GG individuals, but subsequent research has found small and mixed effects. This variant carries little individual-level information about social ability.",
+          "GG": "Two copies of the G allele. Associated in the original study with higher average scores on a behavioral empathy test and lower stress reactivity. Later work has not consistently replicated these findings, so any effect is small; upbringing, culture, and practice matter vastly more for social cognition."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009" }
+    ]
+  },
+  {
+    "slug": "attention-chrna4-rs1044396",
+    "category": "brain-health",
+    "title": "Visuospatial attention · CHRNA4",
+    "summary": "CHRNA4 encodes a subunit of the brain's main nicotinic acetylcholine receptor, a system central to attention. In small cognitive-genetics studies, the rs1044396 variant (the literature's C1545T; the C allele corresponds to G on the forward strand) modulated performance on cued visuospatial attention tasks in an allele dose-dependent way. These effects come from modest samples and should be treated as exploratory.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1044396,
+        "gene": "CHRNA4",
+        "chrom": 20,
+        "pos38": 63349782,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G allele (the literature's C allele). In small studies, attention-cue effects on visuospatial tasks scaled with the number of these alleles, suggesting subtle differences in how strongly spatial cues guide attention. These are laboratory-task findings from modest samples, not meaningful individual predictions.",
+          "AG": "One copy of each allele. Small studies place heterozygotes intermediate on cued visuospatial attention measures, with heavy overlap between genotype groups. Everyday attention depends far more on sleep, interest, and practice than on this variant.",
+          "AA": "Two copies of the A allele (the literature's T allele). In small studies this genotype sat at one end of a subtle, dose-dependent gradient in how spatial cues influenced attention task performance. The evidence base is thin and effects, if real, are small."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "15733200", "label": "Parasuraman et al., Psychol Sci 2005" }
+    ]
+  }
+]

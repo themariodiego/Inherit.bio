@@ -1,0 +1,466 @@
+{
+ "pgs_id": "PGS000011",
+ "name": "GRS50",
+ "trait": "Coronary artery disease",
+ "n_variants": 50,
+ "citation": {
+  "pmid": 26392438,
+  "doi": "10.1093/eurheartj/ehv462",
+  "label": "Tada H et al. Eur Heart J (2015). doi:10.1093/eurheartj/ehv462"
+ },
+ "source_url": "https://ftp.ebi.ac.uk/pub/databases/spot/pgs/scores/PGS000011/ScoringFiles/Harmonized/PGS000011_hmPOS_GRCh38.txt.gz",
+ "license_note": "PGS Catalog default license (per this score's metadata): 'PGS obtained from the Catalog should be cited appropriately, and used in accordance with any licensing restrictions set by the authors. See EBI Terms of Use (https://www.ebi.ac.uk/about/terms-of-use/) for additional details.' Note: PGS Catalog scoring files are not blanket CC BY 4.0; the default is the EMBL-EBI Terms of Use, and individual scores may carry author-set licenses. This score carries the default license.",
+ "ancestry_note": "Source GWAS ancestry (PGS Catalog): 53.3% multi-ancestry (including European), 40.3% European, 6.4% South Asian; the score was developed and validated in a Swedish (European-ancestry) cohort. Effect sizes and any percentile derived from these allele frequencies may not transfer accurately to individuals of non-European ancestry.",
+ "variants": [
+  {
+   "rsid": 646776,
+   "chrom": 1,
+   "pos38": 109275908,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.10436001532424286,
+   "effect_af": 0.77
+  },
+  {
+   "rsid": 17114036,
+   "chrom": 1,
+   "pos38": 56497149,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.10436001532424286,
+   "effect_af": 0.92
+  },
+  {
+   "rsid": 11206510,
+   "chrom": 1,
+   "pos38": 55030366,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.82
+  },
+  {
+   "rsid": 17465637,
+   "chrom": 1,
+   "pos38": 222650187,
+   "effect_allele": "C",
+   "other_allele": "A",
+   "weight": 0.131028262406404,
+   "effect_af": 0.74
+  },
+  {
+   "rsid": 6725887,
+   "chrom": 2,
+   "pos38": 202881162,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.11332868530700327,
+   "effect_af": 0.13
+  },
+  {
+   "rsid": 9818870,
+   "chrom": 3,
+   "pos38": 138403280,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.16
+  },
+  {
+   "rsid": 17609940,
+   "chrom": 6,
+   "pos38": 35067023,
+   "effect_allele": "G",
+   "other_allele": "C",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.79
+  },
+  {
+   "rsid": 12526453,
+   "chrom": 6,
+   "pos38": 12927312,
+   "effect_allele": "G",
+   "other_allele": "C",
+   "weight": 0.09531017980432493,
+   "effect_af": 0.67
+  },
+  {
+   "rsid": 12190287,
+   "chrom": 6,
+   "pos38": 133893387,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.63
+  },
+  {
+   "rsid": 3798220,
+   "chrom": 6,
+   "pos38": 160540105,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.412109650826833,
+   "effect_af": 0.01
+  },
+  {
+   "rsid": 10455872,
+   "chrom": 6,
+   "pos38": 160589086,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.371563556432483,
+   "effect_af": 0.07
+  },
+  {
+   "rsid": 11556924,
+   "chrom": 7,
+   "pos38": 130023656,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.08617769624105241,
+   "effect_af": 0.63
+  },
+  {
+   "rsid": 4977574,
+   "chrom": 9,
+   "pos38": 22098575,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.25464221837358075,
+   "effect_af": 0.45
+  },
+  {
+   "rsid": 579459,
+   "chrom": 9,
+   "pos38": 133278724,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.23
+  },
+  {
+   "rsid": 1746048,
+   "chrom": 10,
+   "pos38": 44280376,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.86
+  },
+  {
+   "rsid": 12413409,
+   "chrom": 10,
+   "pos38": 102959339,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.11332868530700327,
+   "effect_af": 0.89
+  },
+  {
+   "rsid": 964184,
+   "chrom": 11,
+   "pos38": 116778201,
+   "effect_allele": "G",
+   "other_allele": "C",
+   "weight": 0.12221763272424911,
+   "effect_af": 0.13
+  },
+  {
+   "rsid": 2259816,
+   "chrom": 12,
+   "pos38": 120997784,
+   "effect_allele": "T",
+   "other_allele": "G",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.35
+  },
+  {
+   "rsid": 3184504,
+   "chrom": 12,
+   "pos38": 111446804,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.48
+  },
+  {
+   "rsid": 4773144,
+   "chrom": 13,
+   "pos38": 110308365,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.41
+  },
+  {
+   "rsid": 2895811,
+   "chrom": 14,
+   "pos38": 99667605,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.45
+  },
+  {
+   "rsid": 3825807,
+   "chrom": 15,
+   "pos38": 78796769,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.57
+  },
+  {
+   "rsid": 12936587,
+   "chrom": 17,
+   "pos38": 17640408,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.53
+  },
+  {
+   "rsid": 216172,
+   "chrom": 17,
+   "pos38": 2223210,
+   "effect_allele": "C",
+   "other_allele": "G",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.36
+  },
+  {
+   "rsid": 318090,
+   "chrom": 17,
+   "pos38": 48914390,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.52
+  },
+  {
+   "rsid": 1122608,
+   "chrom": 19,
+   "pos38": 11052925,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": 0.09531017980432493,
+   "effect_af": 0.77
+  },
+  {
+   "rsid": 9982601,
+   "chrom": 21,
+   "pos38": 34226827,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.12221763272424911,
+   "effect_af": 0.14
+  },
+  {
+   "rsid": 4845625,
+   "chrom": 1,
+   "pos38": 154449591,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.03922071315328133,
+   "effect_af": 0.43
+  },
+  {
+   "rsid": 2028900,
+   "chrom": 2,
+   "pos38": 85540612,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.04879016416943205,
+   "effect_af": 0.43
+  },
+  {
+   "rsid": 4299376,
+   "chrom": 2,
+   "pos38": 43845437,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.29
+  },
+  {
+   "rsid": 515135,
+   "chrom": 2,
+   "pos38": 21063185,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.83
+  },
+  {
+   "rsid": 2252641,
+   "chrom": 2,
+   "pos38": 145043894,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.03922071315328133,
+   "effect_af": 0.44
+  },
+  {
+   "rsid": 1878406,
+   "chrom": 4,
+   "pos38": 147472512,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.13
+  },
+  {
+   "rsid": 7692387,
+   "chrom": 4,
+   "pos38": 155714157,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.8
+  },
+  {
+   "rsid": 273909,
+   "chrom": 5,
+   "pos38": 132331660,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.08617769624105241,
+   "effect_af": 0.13
+  },
+  {
+   "rsid": 10947789,
+   "chrom": 6,
+   "pos38": 39207146,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.75
+  },
+  {
+   "rsid": 2048327,
+   "chrom": 6,
+   "pos38": 160442500,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.41
+  },
+  {
+   "rsid": 4252120,
+   "chrom": 6,
+   "pos38": 160722576,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.71
+  },
+  {
+   "rsid": 11984041,
+   "chrom": 7,
+   "pos38": 18992312,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.09
+  },
+  {
+   "rsid": 10953541,
+   "chrom": 7,
+   "pos38": 107604100,
+   "effect_allele": "C",
+   "other_allele": "T",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.75
+  },
+  {
+   "rsid": 2954029,
+   "chrom": 8,
+   "pos38": 125478730,
+   "effect_allele": "A",
+   "other_allele": "T",
+   "weight": 0.03922071315328133,
+   "effect_af": 0.52
+  },
+  {
+   "rsid": 3217992,
+   "chrom": 9,
+   "pos38": 22003224,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.14842000511827322,
+   "effect_af": 0.34
+  },
+  {
+   "rsid": 2487928,
+   "chrom": 10,
+   "pos38": 30034963,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.44
+  },
+  {
+   "rsid": 2047009,
+   "chrom": 10,
+   "pos38": 44044465,
+   "effect_allele": "G",
+   "other_allele": "T",
+   "weight": 0.04879016416943205,
+   "effect_af": 0.51
+  },
+  {
+   "rsid": 1412444,
+   "chrom": 10,
+   "pos38": 89243170,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.058268908123975824,
+   "effect_af": 0.35
+  },
+  {
+   "rsid": 11226029,
+   "chrom": 11,
+   "pos38": 103822899,
+   "effect_allele": "G",
+   "other_allele": "A",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.26
+  },
+  {
+   "rsid": 9319428,
+   "chrom": 13,
+   "pos38": 28399484,
+   "effect_allele": "A",
+   "other_allele": "G",
+   "weight": 0.04879016416943205,
+   "effect_af": 0.32
+  },
+  {
+   "rsid": 9515203,
+   "chrom": 13,
+   "pos38": 110397276,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.0769610411361284,
+   "effect_af": 0.71
+  },
+  {
+   "rsid": 7173743,
+   "chrom": 15,
+   "pos38": 78849442,
+   "effect_allele": "T",
+   "other_allele": "C",
+   "weight": 0.06765864847381486,
+   "effect_af": 0.58
+  },
+  {
+   "rsid": 17514846,
+   "chrom": 15,
+   "pos38": 90873320,
+   "effect_allele": "A",
+   "other_allele": "C",
+   "weight": 0.04879016416943205,
+   "effect_af": 0.46
+  }
+ ]
+}

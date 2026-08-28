@@ -1,0 +1,8 @@
+##fileformat=VCFv4.2
+##ALT=<ID=NON_REF,Description="Represents any possible alternative allele">
+##contig=<ID=1,length=249250621>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA00001
+1	100	.	A	<NON_REF>	.	.	END=200	GT:DP	0/0:20
+1	300	rs10	G	A,<NON_REF>	50	.	.	GT	0/1
+1	400	.	T	<NON_REF>	.	.	END=450	GT	./.
+1	500	rs11	C	CT,<NON_REF>	50	.	.	GT	1/1

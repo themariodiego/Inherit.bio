@@ -1,0 +1,11 @@
+services:
+  worker:
+    build: .
+    restart: unless-stopped
+    # Give in-flight jobs time to finish after SIGTERM.
+    stop_grace_period: 60s
+    environment:
+      - DATABASE_URL
+      - SUPABASE_URL
+      - SUPABASE_SERVICE_ROLE_KEY
+      - WORKER_POLL_MS
