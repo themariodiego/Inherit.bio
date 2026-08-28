@@ -44,6 +44,9 @@ importers:
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
+      igv:
+        specifier: ^3.8.5
+        version: 3.8.5
       lucide-react:
         specifier: ^1.35.0
         version: 1.35.0(react@19.2.8)
@@ -2929,6 +2932,9 @@ packages:
   ignore@7.0.6:
     resolution: {integrity: sha512-BAg6QkE8W+TuQLrrw0Ugr7HegXduRuuj8/ti2kSOc+jz1dmx8/WNcjr6XGnq5YpDWxFwwaavqD0+jIUOKelTsw==}
     engines: {node: '>= 4'}
+
+  igv@3.8.5:
+    resolution: {integrity: sha512-Tdt0+z0DlQULSPByZG4wm3CeF4VzI+WehEKUyPTsT8W+EhRVV8VVlIZA5U+OXl9mVRMOL444qvN7w4IZJaW9Xw==}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -6934,6 +6940,8 @@ snapshots:
   ignore@5.3.2: {}
 
   ignore@7.0.6: {}
+
+  igv@3.8.5: {}
 
   import-fresh@3.3.1:
     dependencies:

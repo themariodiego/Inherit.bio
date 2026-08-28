@@ -125,7 +125,7 @@ export function classify(lineage: Lineage, getBase: GetBase): HaplogroupCall {
     }
   }
 
-  let best: Candidate | null = null;
+  const candidates: Candidate[] = [];
 
   const visit = (node: HaplogroupNode, path: string[], m: number, t: number): void => {
     let matched = 0;
@@ -142,14 +142,17 @@ export function classify(lineage: Lineage, getBase: GetBase): HaplogroupCall {
       matched: m + matched,
       tested: t + tested,
     };
-    if (best === null || betterThan(cand, best)) best = cand;
+    candidates.push(cand);
     for (const child of children.get(node.haplogroup) ?? []) {
       visit(child, cand.path, cand.matched, cand.tested);
     }
   };
   for (const root of children.get(null) ?? []) visit(root, [], 0, 0);
 
-  const won: Candidate | null = best;
+  let won: Candidate | null = null;
+  for (const cand of candidates) {
+    if (won === null || betterThan(cand, won)) won = cand;
+  }
   if (won === null) {
     return {
       haplogroup: null,

@@ -6,6 +6,8 @@ import { estimateAdmixture } from "@/lib/genome/admixture";
 import { classify } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
 import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
+import { computePrs } from "@/lib/genome/prs";
+import { ALL_PRS_SCORES } from "@/lib/genome/prs-data";
 import { toLines } from "@/lib/genome/parsers/lines";
 import { parseVcf } from "@/lib/genome/parsers/vcf";
 import type { ParseResult, VariantRecord } from "@/lib/genome/types";
@@ -140,7 +142,7 @@ export async function POST(
     }
 
     const hasMt = records.some((r) => r.chrom === 25);
-    const mt = hasMt ? await classify("mt", getBase) : null;
+    const mt = hasMt ? classify("mtDNA", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
       file_id: id,
@@ -152,7 +154,7 @@ export async function POST(
     });
 
     const hasY = records.some((r) => r.chrom === 24);
-    const y = hasY ? await classify("y", getBase) : null;
+    const y = hasY ? classify("Y", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
       file_id: id,
@@ -164,6 +166,31 @@ export async function POST(
     });
 
     await admin.from("ancestry_results").insert(ancestryRows);
+
+    // Polygenic scores from the bundled seed data.
+    const prsLookup = new Map(
+      records.map((r) => [
+        `${r.chrom}:${r.pos}`,
+        { genotype: r.genotype, ref: r.ref, alt: r.alt },
+      ]),
+    );
+    await admin.from("user_prs").delete().eq("file_id", id);
+    const prsRows = ALL_PRS_SCORES.map((score) => {
+      const result = computePrs(prsLookup, score);
+      return {
+        user_id: user.id,
+        file_id: id,
+        pgs_id: score.pgs_id,
+        raw_score: result.raw,
+        zscore: result.zscore,
+        percentile: result.percentile,
+        coverage: result.coverage,
+        matched: result.matched,
+      };
+    });
+    if (prsRows.length > 0) {
+      await admin.from("user_prs").insert(prsRows);
+    }
 
     await admin
       .from("genome_files")

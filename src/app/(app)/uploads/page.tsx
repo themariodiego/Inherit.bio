@@ -27,7 +27,7 @@ export default async function UploadsPage() {
     .order("created_at", { ascending: false });
 
   const { data: stats } = await supabase.rpc("processing_time_stats");
-  const tier1 = stats?.find((s) => s.file_tier === 1);
+  const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">

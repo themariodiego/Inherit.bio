@@ -149,7 +149,7 @@ export async function POST(request: Request) {
             annotation: ann ?? null,
           };
         }
-        return { rsid, covered: true, ...rows[0], annotation: ann ?? null };
+        return { ...rows[0], rsid, covered: true, annotation: ann ?? null };
       },
     }),
     search_variants: tool({
