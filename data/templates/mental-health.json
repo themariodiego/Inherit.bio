@@ -1,0 +1,264 @@
+[
+  {
+    "slug": "stress-response-fkbp5-rs1360780",
+    "category": "mental-health",
+    "title": "Stress hormone response · FKBP5",
+    "summary": "FKBP5 helps regulate the body's stress hormone (HPA axis) feedback loop. The T allele at rs1360780 is associated on average with a slower shut-off of the cortisol stress response and, in people who experienced significant early-life stress, with a modestly higher likelihood of depressive episodes and stress-related symptoms. In people without such exposure the association is weak or absent, which makes this a gene-environment story rather than a fixed risk.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 1360780,
+        "gene": "FKBP5",
+        "chrom": 6,
+        "pos38": 35639794,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Two copies of the T allele, carried by roughly 10% of people. In group studies this genotype is associated with a stronger and slower-recovering cortisol response to stress, and, mainly in combination with early-life adversity, with a modestly higher likelihood of recurrent depressive episodes. This is one small factor among many; life circumstances, support, and other genes matter far more, and most people with this genotype never experience these conditions.",
+          "CT": "One T and one C allele. Associated on average with an intermediate stress hormone response. Any shift in likelihood of stress-related symptoms at this locus is small and appears mostly in interaction with significant life adversity. This variant is one minor contributor among hundreds of genetic and environmental factors.",
+          "CC": "Two copies of the C allele, the most common genotype. Group studies find typical HPA-axis feedback and no elevated association with stress-related symptoms at this locus. This says nothing about overall susceptibility to stress or mood difficulties, which depend on many other genetic and life factors."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "15565110", "label": "Binder et al., Nat Genet 2004" },
+      { "pmid": "23201972", "label": "Klengel et al., Nat Neurosci 2013" }
+    ]
+  },
+  {
+    "slug": "social-sensitivity-oxtr-rs53576",
+    "category": "mental-health",
+    "title": "Social sensitivity · OXTR",
+    "summary": "OXTR encodes the receptor for oxytocin, a hormone involved in social bonding. Small studies have associated the G allele at rs53576 with higher average self-reported empathy and the AA genotype with somewhat higher stress reactivity. Replication has been inconsistent and effect sizes are small, so this is best read as an interesting research lead, not a personality readout.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 53576,
+        "gene": "OXTR",
+        "chrom": 3,
+        "pos38": 8762685,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele. In some small studies this genotype was associated on average with slightly lower self-reported empathy scores and a somewhat larger physiological stress response. Other studies found no difference, and the effect, where seen, is small. Social skills and empathy are shaped overwhelmingly by experience and many other genes.",
+          "AG": "One A and one G allele. Group differences reported for this variant are small and inconsistently replicated, and heterozygotes generally fall in the middle of an already-overlapping range. Nothing about day-to-day social behaviour can be read from this genotype.",
+          "GG": "Two copies of the G allele. A few studies associated this genotype with higher average empathy scores and calmer stress responses, but replication has been mixed and the effect, if real, is small. This is one preliminary data point, not a measure of social ability."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19934046", "label": "Rodrigues et al., PNAS 2009" }
+    ]
+  },
+  {
+    "slug": "novelty-seeking-drd4-rs1800955",
+    "category": "mental-health",
+    "title": "Novelty seeking & attention · DRD4",
+    "summary": "The dopamine D4 receptor gene DRD4 has long been studied in attention-deficit traits and novelty seeking. The frequently discussed 7-repeat variant cannot be measured on genotyping arrays, so this report uses the promoter variant rs1800955 (-521 C/T), where a meta-analysis associated the C allele with slightly higher average novelty-seeking scores. Later, larger studies weakened the association, so this association is best read as preliminary.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1800955,
+        "gene": "DRD4",
+        "chrom": 11,
+        "pos38": 636784,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Two copies of the T allele. In early studies and one meta-analysis this genotype was associated on average with slightly lower novelty-seeking scores than C carriers. The association has not held up consistently in larger samples, and personality traits like novelty seeking are highly polygenic and strongly shaped by environment.",
+          "CT": "One C and one T allele. Any average difference in approach-related personality traits reported for this variant is small and inconsistently replicated. This single promoter variant is also an imperfect stand-in for the DRD4 repeat variants studied in attention research, which arrays cannot measure.",
+          "CC": "Two copies of the C allele, which reduces DRD4 promoter activity in lab assays. A 2008 meta-analysis associated this allele with modestly higher average novelty-seeking scores, but subsequent larger studies found little or no effect. This is one small, uncertain factor among the many genes and experiences that shape temperament."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "17574217", "label": "Munafò et al., Biol Psychiatry 2008" }
+    ]
+  },
+  {
+    "slug": "stress-anxiety-comt-rs4680",
+    "category": "mental-health",
+    "title": "Stress & anxiety processing · COMT",
+    "summary": "COMT breaks down dopamine in the prefrontal cortex. The Val158Met variant (rs4680) changes enzyme activity three- to four-fold: the A (Met) allele slows dopamine clearance and is associated on average with slightly better working-memory performance but also, in some studies, with higher anxiety-related personality scores, particularly in women. Both alleles are common and each carries trade-offs rather than one being better.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 4680,
+        "gene": "COMT",
+        "chrom": 22,
+        "pos38": 19963748,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G (Val) allele, giving higher COMT activity and faster prefrontal dopamine clearance. Associated on average with slightly lower scores on some working-memory tasks but also, in several studies, with lower anxiety-related personality scores and steadier performance under acute stress. Effects are small, and this is one of many variants influencing how people respond to stress.",
+          "AG": "One Val and one Met allele, the most common genotype in many populations. Intermediate COMT activity; group studies place heterozygotes between the homozygous genotypes on both working-memory and anxiety-related measures, with wide individual overlap. Day-to-day anxiety depends far more on circumstances, sleep, and many other genes.",
+          "AA": "Two copies of the A (Met) allele, giving lower COMT activity and higher prefrontal dopamine. Associated on average with slightly better performance on some working-memory tasks, and in some studies with modestly higher anxiety-related personality scores and stress sensitivity, more consistently in women. These are small statistical shifts within a broad normal range, not a readout of anxiety levels."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "11381111", "label": "Egan et al., PNAS 2001" },
+      { "pmid": "15956988", "label": "Stein et al., Neuropsychopharmacology 2005" }
+    ]
+  },
+  {
+    "slug": "bipolar-association-cacna1c-rs1006737",
+    "category": "mental-health",
+    "title": "Bipolar disorder association · CACNA1C",
+    "summary": "CACNA1C encodes a calcium-channel subunit active in neurons and is one of the most consistently replicated loci in psychiatric genetics. Each copy of the A allele at rs1006737 is associated on average with roughly 1.1-1.2x the odds of bipolar disorder, with smaller associations also reported for depression and schizophrenia. Bipolar disorder is highly polygenic; this single variant shifts probability only slightly.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 1006737,
+        "gene": "CACNA1C",
+        "chrom": 12,
+        "pos38": 2236129,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Two copies of the G allele, the most common genotype. Associated with slightly lower average odds of bipolar disorder at this locus compared with A carriers. Because thousands of variants and non-genetic factors contribute, this genotype provides no meaningful protection on its own.",
+          "AG": "One copy of the A allele, carried by a large share of the population. Associated on average with roughly 1.1-1.2x the odds of bipolar disorder relative to GG — a small shift against a low baseline likelihood. This is one small factor among very many; the large majority of people with this genotype never experience bipolar disorder.",
+          "AA": "Two copies of the A allele. Associated on average with modestly higher odds of bipolar disorder (roughly 1.3-1.4x versus GG in combined analyses). This remains a small effect on an uncommon condition: it is one contributing factor among thousands, and most people with this genotype are never affected."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+    ]
+  },
+  {
+    "slug": "bipolar-association-ank3-rs10994336",
+    "category": "mental-health",
+    "title": "Bipolar disorder association · ANK3",
+    "summary": "ANK3 encodes ankyrin-G, a protein that organises ion channels at the axon's firing zone. In a collaborative genome-wide analysis, the less common T allele at rs10994336 was associated with increased odds of bipolar disorder (odds ratio about 1.45 in the discovery analysis; smaller in later cohorts). Like all common variants for psychiatric conditions, it accounts for only a sliver of overall likelihood.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 10994336,
+        "gene": "ANK3",
+        "chrom": 10,
+        "pos38": 60420054,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the common C allele. Associated with typical, slightly lower average odds of bipolar disorder at this locus. Overall likelihood still depends on thousands of other variants, family history, and life factors this report cannot see.",
+          "CT": "One copy of the T allele, carried by roughly one in five people of European ancestry. Associated on average with moderately increased odds of bipolar disorder in genome-wide studies — a shift measured against a low population baseline. This is one small factor among very many, and the large majority of carriers are never affected.",
+          "TT": "Two copies of the T allele, an uncommon genotype. Associated on average with the higher end of this locus's small effect on bipolar disorder odds. Even so, the absolute likelihood remains low for most people, and this single variant cannot indicate whether any individual will be affected."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18711365", "label": "Ferreira et al., Nat Genet 2008" }
+    ]
+  },
+  {
+    "slug": "schizophrenia-association-znf804a-rs1344706",
+    "category": "mental-health",
+    "title": "Schizophrenia association · ZNF804A",
+    "summary": "ZNF804A was among the first loci to reach genome-wide significance for schizophrenia. The A allele at rs1344706 (reported as T in studies using the opposite DNA strand) is associated on average with about 1.1x the odds of schizophrenia — a very small shift on a roughly 1% lifetime baseline. Schizophrenia involves thousands of variants plus environmental factors, so this single marker carries little individual information.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1344706,
+        "gene": "ZNF804A",
+        "chrom": 2,
+        "pos38": 184913701,
+        "ref": "A",
+        "alt": "C",
+        "interpretations": {
+          "AA": "Two copies of the A allele (the risk allele, also the most common allele; some papers call it T because they read the opposite strand). Associated on average with roughly 1.2x the odds of schizophrenia versus CC — against a low baseline, an absolute change of well under one percentage point. This is one tiny factor among thousands; the overwhelming majority of people with this common genotype are never affected.",
+          "AC": "One A and one C allele. Associated on average with about 1.1x the odds of schizophrenia relative to CC, a very small statistical shift. This locus explains almost none of the person-to-person variation in likelihood, which depends on many genes and non-genetic factors.",
+          "CC": "Two copies of the C allele. Associated with slightly lower average odds of schizophrenia at this locus. Given how small the effect is and how many other factors contribute, this genotype is not meaningfully protective on its own."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18677311", "label": "O'Donovan et al., Nat Genet 2008" }
+    ]
+  },
+  {
+    "slug": "depression-gwas-olfm4-rs12552",
+    "category": "mental-health",
+    "title": "Depression association · OLFM4 region",
+    "summary": "Depression is highly polygenic: the largest genome-wide meta-analysis to date (over 800,000 people) identified 102 independent variants, each with a tiny effect. rs12552, in the OLFM4 gene region, is one of the strongest of these signals, with the A allele associated with roughly 1.05x the odds of depression per copy. No single variant, including this one, can say anything meaningful about an individual's mood or outlook.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 12552,
+        "gene": "OLFM4",
+        "chrom": 13,
+        "pos38": 53051646,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele, the allele associated with depression in large meta-analyses. The average effect is roughly 1.1x the odds versus GG — so small that it is only detectable in studies of hundreds of thousands of people. Depression reflects thousands of variants plus life circumstances; this genotype on its own says essentially nothing about any one person.",
+          "AG": "One copy of the A allele, associated on average with about 1.05x the odds of depression relative to GG. This is among the smallest effect sizes reported in this app: a real, replicated statistical signal at the population level that carries almost no information at the individual level.",
+          "GG": "Two copies of the G allele, associated with marginally lower average odds of depression at this locus. Because each of the 100+ known depression-associated variants contributes so little, this genotype is not protective in any practical sense, and mood remains shaped mostly by life context and many other genes."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "30718901", "label": "Howard et al., Nat Neurosci 2019" }
+    ]
+  },
+  {
+    "slug": "emotional-reactivity-tph2-rs4570625",
+    "category": "mental-health",
+    "title": "Emotional reactivity · TPH2",
+    "summary": "TPH2 controls the rate-limiting step of serotonin synthesis in the brain. In small brain-imaging studies, carriers of the T allele at the promoter variant rs4570625 (-703 G/T) showed, on average, stronger amygdala responses to emotional faces. Findings on anxiety and mood outcomes are mixed, and sample sizes have been small, so this association is preliminary.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 4570625,
+        "gene": "TPH2",
+        "chrom": 12,
+        "pos38": 71938143,
+        "ref": "G",
+        "alt": "T",
+        "interpretations": {
+          "GG": "Two copies of the G allele, the most common genotype. In small imaging studies this group showed comparatively lower average amygdala reactivity to emotional stimuli. Such lab measures relate only loosely to everyday emotional life, and this variant explains at most a tiny fraction of the differences between people.",
+          "GT": "One G and one T allele. Small imaging studies grouped T-allele carriers together and reported, on average, somewhat stronger amygdala responses to emotional faces than in GG individuals. The finding comes from modest sample sizes and mixed replications, so it should be read as a research lead rather than a trait score.",
+          "TT": "Two copies of the T allele, an uncommon genotype. T carriers showed, on average, greater amygdala reactivity to emotional stimuli in small studies, which some researchers interpret as heightened emotional sensitivity. Evidence for downstream effects on anxiety or mood is inconsistent, and this is one small, uncertain factor among many."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "16044172", "label": "Brown et al., Mol Psychiatry 2005" }
+    ]
+  },
+  {
+    "slug": "mood-stress-resilience-bdnf-rs6265",
+    "category": "mental-health",
+    "title": "Mood & stress resilience · BDNF",
+    "summary": "BDNF supports neuronal growth and plasticity, and the Val66Met variant (rs6265) reduces activity-dependent BDNF release in Met (T) carriers. Some studies associate the Met allele with slightly higher vulnerability to low mood after stressful life events, but meta-analyses of depression overall are mixed and any main effect is small. For mood outcomes this remains a preliminary, context-dependent association.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 6265,
+        "gene": "BDNF",
+        "chrom": 11,
+        "pos38": 27658369,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C (Val) allele, the most common genotype. Activity-dependent BDNF secretion is typical, and studies find no elevated association with mood difficulties at this locus. Mood and resilience still vary widely with life circumstances, support, sleep, and many other genes.",
+          "CT": "One Val and one Met (T) allele. Some studies report that Met carriers show, on average, slightly greater mood sensitivity to stressful life events, but overall meta-analyses of depression find weak and inconsistent effects. This is one small, uncertain factor; how someone responds to stress depends far more on circumstances and support than on this variant.",
+          "TT": "Two copies of the Met (T) allele, an uncommon genotype associated with modestly reduced activity-dependent BDNF secretion. A few studies link this genotype to greater average mood reactivity under chronic stress, but the literature is mixed and effects are small. It is a minor statistical signal, not a resilience score."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "12553913", "label": "Egan et al., Cell 2003" }
+    ]
+  }
+]
