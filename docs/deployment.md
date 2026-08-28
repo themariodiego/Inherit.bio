@@ -8,7 +8,12 @@ set Vercel environment variables.
 
 - **Supabase project `sequence`** (`zuvloczwgrayonqabnss`, region us-east-1):
   all five migrations applied, RLS verified by the security advisor (only
-  intentional deny-all tables flagged), provider directory seeded (16 rows).
+  intentional deny-all tables flagged), and partially seeded — the public
+  **provider directory (16 rows)** and the **135 reference variants** are
+  live. The **151 report templates and 3 PRS scores** are seeded by the
+  owner running `pnpm seed` once (below); they only render on authenticated
+  pages, which need the secret env vars anyway, so nothing public is missing
+  in the meantime.
   - Project URL: `https://zuvloczwgrayonqabnss.supabase.co`
   - Anon/publishable key (safe to expose): `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg`
 - **Vercel project `sequence`** (`prj_K7bVowhjFr0uIapXraH41hthJkgy`, team
