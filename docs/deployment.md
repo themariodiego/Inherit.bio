@@ -32,7 +32,7 @@ Production) before the deployment is functional. After setting them, redeploy
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://zuvloczwgrayonqabnss.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg` |
-| `NEXT_PUBLIC_SITE_URL` | your production URL, e.g. `https://sequence.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | your production URL, e.g. `https://sequence-mariodiego.vercel.app` |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard → Project Settings → API (secret) |
 | `DATABASE_URL` | from Supabase dashboard → Database → Connection string |
 | `BYOK_ENCRYPTION_KEY` | `openssl rand -base64 32` |
@@ -49,6 +49,25 @@ NEXT_PUBLIC_SUPABASE_URL=https://zuvloczwgrayonqabnss.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
 pnpm seed
 ```
+
+## Auth URLs (production) — required, or auth emails bounce to localhost
+
+Supabase's auth redirects default to `http://localhost:3000`, and the app's
+`emailRedirectTo` is only honored if it is on the project's allowlist. Until
+this is set, every verification/reset link dead-ends at
+`localhost:3000/?code=…` ("This site can't be reached"). Note the email
+address itself still gets **confirmed** — the verify happens on Supabase's
+domain before the redirect — so an affected user can simply sign in at the
+production URL; only the redirect is broken.
+
+In Supabase → **Authentication → URL Configuration**:
+
+- **Site URL**: `https://sequence-mariodiego.vercel.app`
+- **Redirect URLs**: add
+  - `https://sequence-mariodiego.vercel.app/**`
+  - `https://sequence-murex.vercel.app/**` (the project's other production alias)
+  - optionally `https://sequence-*-mariodiego.vercel.app/**` for preview
+    deployments
 
 ## Auth email (production)
 
