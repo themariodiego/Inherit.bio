@@ -1,0 +1,159 @@
+// Generates data/samples/synthetic_23andme.txt: a fully synthetic 23andMe v5
+// text file (no real person) whose genotyped positions cover every report
+// template variant plus filler, so uploading it renders 100+ reports.
+//
+// 23andMe files are GRCh37, so this writes GRCh37 positions (obtained by
+// mapping each template's GRCh38 position back through the bundled chain via
+// a GRCh38->GRCh37 lookup built from Ensembl) — exercising the liftover path
+// on upload. Genotypes are chosen deterministically (seeded) per variant to
+// give a mix of homozygous-ref, het, and homozygous-alt so reports show
+// varied interpretations. This file belongs to no one.
+import fs from "node:fs";
+import path from "node:path";
+import { chromToName } from "../src/lib/genome/types";
+
+interface TemplateVariant {
+  rsid: number;
+  chrom: number;
+  pos38: number;
+  ref: string;
+  alt: string;
+}
+
+// Deterministic PRNG (mulberry32) — no Math.random, reproducible sample.
+function mulberry32(seed: number) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Map GRCh38 -> GRCh37 for our template positions using Ensembl's REST map
+// endpoint at build time; cached to data/ref/grch38_to_37.json so the
+// generator is offline-reproducible after the first run.
+const CACHE = path.join(process.cwd(), "data/ref/grch38_to_37.json");
+
+async function pos37For(
+  variants: TemplateVariant[],
+): Promise<Map<number, { chrom: number; pos: number }>> {
+  const cache: Record<string, { chrom: number; pos: number }> = fs.existsSync(
+    CACHE,
+  )
+    ? JSON.parse(fs.readFileSync(CACHE, "utf8"))
+    : {};
+  let changed = false;
+
+  for (const v of variants) {
+    if (cache[v.rsid]) continue;
+    const chrName = chromToName(v.chrom);
+    const url = `https://rest.ensembl.org/map/human/GRCh38/${chrName}:${v.pos38}..${v.pos38}/GRCh37?content-type=application/json`;
+    try {
+      const res = await fetch(url, { headers: { accept: "application/json" } });
+      if (res.ok) {
+        const json = (await res.json()) as {
+          mappings?: { mapped?: { start?: number; seq_region_name?: string } }[];
+        };
+        const mapped = json.mappings?.[0]?.mapped;
+        if (mapped?.start) {
+          cache[v.rsid] = { chrom: v.chrom, pos: mapped.start };
+          changed = true;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 120));
+    } catch {
+      // leave uncached; falls back to pos38 below
+    }
+  }
+  if (changed) fs.writeFileSync(CACHE, JSON.stringify(cache, null, 1));
+  const map = new Map<number, { chrom: number; pos: number }>();
+  for (const [rsid, v] of Object.entries(cache)) map.set(Number(rsid), v);
+  return map;
+}
+
+async function main() {
+  const dir = path.join(process.cwd(), "data/templates");
+  const seen = new Set<number>();
+  const variants: TemplateVariant[] = [];
+  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+    for (const t of JSON.parse(
+      fs.readFileSync(path.join(dir, file), "utf8"),
+    ) as { variants: TemplateVariant[] }[]) {
+      for (const v of t.variants ?? []) {
+        if (!seen.has(v.rsid)) {
+          seen.add(v.rsid);
+          variants.push(v);
+        }
+      }
+    }
+  }
+
+  const pos37 = await pos37For(variants);
+  const rand = mulberry32(20260828);
+
+  const rows: { rsid: string; chrom: string; pos: number; genotype: string }[] =
+    [];
+  for (const v of variants) {
+    const loc = pos37.get(v.rsid) ?? { chrom: v.chrom, pos: v.pos38 };
+    // Weighted genotype: 40% hom-ref, 45% het, 15% hom-alt.
+    const r = rand();
+    const geno =
+      v.chrom === 24 || v.chrom === 25
+        ? r < 0.5
+          ? v.ref
+          : v.alt
+        : r < 0.4
+          ? v.ref + v.ref
+          : r < 0.85
+            ? [v.ref, v.alt].sort().join("")
+            : v.alt + v.alt;
+    rows.push({
+      rsid: `rs${v.rsid}`,
+      chrom: chromToName(loc.chrom),
+      pos: loc.pos,
+      genotype: geno,
+    });
+  }
+
+  // Filler SNPs so the file looks like a real ~genotyped export (still
+  // synthetic). Deterministic positions well away from template variants.
+  const bases = ["A", "C", "G", "T"];
+  for (let i = 0; i < 2000; i++) {
+    const chrom = 1 + Math.floor(rand() * 22);
+    const pos = 1_000_000 + Math.floor(rand() * 200_000_000);
+    const a = bases[Math.floor(rand() * 4)];
+    const b = bases[Math.floor(rand() * 4)];
+    rows.push({
+      rsid: `rs${9_000_000 + i}`,
+      chrom: String(chrom),
+      pos,
+      genotype: [a, b].sort().join(""),
+    });
+  }
+
+  rows.sort((x, y) => {
+    const cx = x.chrom === "X" ? 23 : x.chrom === "Y" ? 24 : x.chrom === "MT" ? 25 : Number(x.chrom);
+    const cy = y.chrom === "X" ? 23 : y.chrom === "Y" ? 24 : y.chrom === "MT" ? 25 : Number(y.chrom);
+    return cx - cy || x.pos - y.pos;
+  });
+
+  const header = `# This data file generated by 23andMe at: Fri Aug 28 12:00:00 2026
+#
+# This is a SYNTHETIC file generated by scripts/generate-synthetic-sample.ts.
+# It belongs to no real person. Build 37 (GRCh37) coordinates.
+#
+# rsid\tchromosome\tposition\tgenotype
+`;
+  const body = rows
+    .map((r) => `${r.rsid}\t${r.chrom}\t${r.pos}\t${r.genotype}`)
+    .join("\n");
+  const out = path.join(process.cwd(), "data/samples/synthetic_23andme.txt");
+  fs.writeFileSync(out, header + body + "\n");
+  console.log(
+    `wrote ${rows.length} rows (${variants.length} template variants, ${pos37.size} lifted to GRCh37) -> ${out}`,
+  );
+}
+
+void main();
