@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Sequence design tokens — shared design language with Plus Bio (sibling brand).
+ * Observed reference: www.plus.bio — warm paper ground, green-biased ink,
+ * deep forest accent, one soft yellow-green tint, Fraunces + Inter.
+ * If Plus Bio supplies brand tokens (brand/ directory), those take precedence.
+ */
+:root {
+  --paper: #f7f8f1;
+  --ink: #14201b;
+  --ink-muted: #4c5a52;
+  --forest: #2e5c45;
+  --forest-deep: #234837;
+  --on-forest: #f7f8f1;
+  --tint: #e9efc4;
+  --card: #fdfdf9;
+  --line: #dde2d3;
+  --danger: #a03d2e;
+  --ok: #2e5c45;
+}
+
+.dark {
+  --paper: #101713;
+  --ink: #e8ede2;
+  --ink-muted: #a3b0a7;
+  --forest: #7fb298;
+  --forest-deep: #9cc7af;
+  --on-forest: #101713;
+  --tint: #2a3320;
+  --card: #171f1a;
+  --line: #2b352e;
+  --danger: #e08a7a;
+  --ok: #7fb298;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-on-forest: var(--on-forest);
+  --color-tint: var(--tint);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+
+  /* shadcn/ui semantic aliases mapped onto the Sequence palette */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--forest);
+  --color-primary-foreground: var(--on-forest);
+  --color-secondary: var(--tint);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--tint);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--tint);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--paper);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--forest);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --radius-pill: 9999px;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Two-tone Fraunces display headline: ink with a green .accent span */
+.display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.display .accent {
+  color: var(--forest);
+}
+
+/* Uppercase letter-spaced micro-eyebrow */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
