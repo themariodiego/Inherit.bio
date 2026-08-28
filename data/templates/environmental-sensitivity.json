@@ -1,0 +1,321 @@
+[
+  {
+    "slug": "sun-sensitivity-mc1r-variants",
+    "category": "environmental-sensitivity",
+    "title": "Sun sensitivity · MC1R R151C and R160W",
+    "summary": "Two of the best-characterised MC1R \"R\" variants. Carrying them is associated, on average, with fairer skin, more freckling, a poorer tanning response and a greater tendency to burn in sunlight. MC1R shapes the balance between red/yellow pheomelanin and dark eumelanin in skin.",
+    "evidence": "established",
+    "variants": [
+      {
+        "rsid": 1805007,
+        "gene": "MC1R",
+        "chrom": 16,
+        "pos38": 89919709,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copy of the R151C variant at this position. On average this is associated with a more typical tanning response, though many other pigmentation variants (including the second MC1R variant in this report) also matter.",
+          "CT": "One copy of R151C (Arg151Cys). Carriers report, on average, fairer skin, more freckling and a greater tendency to burn rather than tan. A single copy has a milder average effect than two.",
+          "TT": "Two copies of R151C. This genotype is strongly associated with red or reddish hair, fair skin, freckling and a markedly reduced tanning response. It is an association observed across many people, not a description of any one person's skin."
+        }
+      },
+      {
+        "rsid": 1805008,
+        "gene": "MC1R",
+        "chrom": 16,
+        "pos38": 89919736,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No copy of the R160W variant at this position. Sun response here is shaped by the other MC1R variant in this report and by genes such as IRF4 and SLC45A2.",
+          "CT": "One copy of R160W (Arg160Trp), another strong MC1R \"R\" allele. Associated on average with fairer skin, more freckling and easier sunburn; carrying one R151C copy as well tends to compound the effect.",
+          "TT": "Two copies of R160W. Associated on average with red or reddish hair, fair freckled skin and a weak tanning response. Sun exposure history and habits still account for a large share of how skin actually behaves."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "7581459", "label": "Valverde et al., Nature Genetics 1995" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+    ]
+  },
+  {
+    "slug": "tanning-response-irf4",
+    "category": "environmental-sensitivity",
+    "title": "Tanning response and freckling · IRF4",
+    "summary": "rs12203592 in IRF4 is one of the strongest common signals for how skin responds to sunlight. The T allele is associated on average with lighter hair and skin, more freckling, and a weaker tanning response with a greater tendency to sunburn.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 12203592,
+        "gene": "IRF4",
+        "chrom": 6,
+        "pos38": 396321,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "The most common genotype in most populations. Associated on average with a stronger tanning response and less freckling than T-allele carriers, though MC1R and SLC45A2 variants also contribute.",
+          "CT": "One copy of the T allele. Associated on average with somewhat lighter pigmentation, more freckling and a modestly higher reported tendency to sunburn than CC.",
+          "TT": "Two copies of the T allele. Associated on average with the lightest pigmentation at this locus, the most freckling and the weakest tanning response. Effect sizes are population averages, and actual sun response depends heavily on cumulative exposure."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008" },
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" }
+    ]
+  },
+  {
+    "slug": "skin-uv-sensitivity-slc45a2",
+    "category": "environmental-sensitivity",
+    "title": "UV sensitivity · SLC45A2 L374F",
+    "summary": "rs16891982 changes amino acid 374 of SLC45A2, a melanosome transporter. The C (Leu374) allele is near-fixed in European populations and is associated with lighter skin and greater reported sensitivity to sunlight; the G (Phe374) allele predominates in African and East Asian populations.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 16891982,
+        "gene": "SLC45A2",
+        "chrom": 5,
+        "pos38": 33951588,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Two copies of the Leu374 (C) allele, the common European form. Associated on average with lighter constitutive skin pigmentation and greater reported photosensitivity than G-allele carriers.",
+          "CG": "One copy of each allele. Associated with intermediate constitutive pigmentation on average. This variant is strongly ancestry-informative, so a heterozygous result often reflects mixed ancestry rather than anything unusual.",
+          "GG": "Two copies of the Phe374 (G) allele, the predominant form in African and East Asian populations. Associated on average with more constitutive melanin and less reported sun sensitivity. Darker skin still sustains UV damage, so this is not a measure of how much sun any person can tolerate."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" },
+      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008" }
+    ]
+  },
+  {
+    "slug": "photic-sneeze-reflex-zeb2",
+    "category": "environmental-sensitivity",
+    "title": "Photic sneeze reflex · rs10427255",
+    "summary": "Some people sneeze when they step into bright sunlight, a harmless quirk sometimes called the photic sneeze reflex. rs10427255, in a gene desert on chromosome 2 near ZEB2, is the best-replicated common variant associated with it, though studies disagree about which allele carries the effect.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 10427255,
+        "gene": "ZEB2 region (2q22 intergenic)",
+        "chrom": 2,
+        "pos38": 145367955,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two copies of the C allele. In the original European-ancestry study the C allele was associated with a higher chance of sneezing in bright light, roughly 1.3-fold per copy. Note that a later study in a Chinese cohort reported the opposite allele, so the direction is not settled.",
+          "CT": "One copy of each allele, an intermediate result. Reported effect sizes at this variant are modest, and plenty of people with any genotype here do or do not sneeze in sunlight.",
+          "TT": "Two copies of the T allele. Associated with a lower chance of the photic sneeze reflex in the original European-ancestry study, but a Chinese-population study reported T as the associated allele, so the direction here should be considered unresolved."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "20585627", "label": "Eriksson et al., PLoS Genetics 2010" },
+      { "pmid": "30899065", "label": "Wang et al., Scientific Reports 2019" }
+    ]
+  },
+  {
+    "slug": "air-pollution-response-gstp1",
+    "category": "environmental-sensitivity",
+    "title": "Air pollution response · GSTP1 I105V",
+    "summary": "GSTP1 is a detoxification enzyme active in the airway lining. rs1695 swaps isoleucine for valine at position 105 and has been studied as a modifier of how strongly traffic-related air pollution is associated with childhood asthma and wheeze. This is one small factor among many.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 1695,
+        "gene": "GSTP1",
+        "chrom": 11,
+        "pos38": 67585218,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the Ile105 (A) allele. In a pooled birth-cohort analysis, this group showed no clear increase in asthma risk with higher nitrogen dioxide exposure, unlike minor-allele carriers.",
+          "AG": "One copy of the Val105 (G) allele. In the same pooled analysis, minor-allele carriers showed a stronger association between air pollution exposure and childhood asthma or wheeze. Gene-environment interaction findings like this are easy to over-read and need more replication.",
+          "GG": "Two copies of the Val105 (G) allele. Grouped with heterozygotes as minor-allele carriers in the study above, where pollution exposure tracked more strongly with childhood asthma. Air quality, second-hand smoke and early respiratory infections matter far more than this single variant."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "24465030", "label": "MacIntyre et al., Environmental Health Perspectives 2014" }
+    ]
+  },
+  {
+    "slug": "organophosphate-sensitivity-pon1",
+    "category": "environmental-sensitivity",
+    "title": "Organophosphate handling · PON1 Q192R",
+    "summary": "Paraoxonase-1 breaks down organophosphate compounds used in some pesticides and nerve agents. rs662 swaps glutamine for arginine at position 192, and the two forms differ in which compounds they clear quickly. Neither form is simply better; the ranking reverses depending on the chemical.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 662,
+        "gene": "PON1",
+        "chrom": 7,
+        "pos38": 95308134,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "CC": "Two copies of the Arg192 (C, forward strand) form. In laboratory work this isoform hydrolyses paraoxon faster than the Gln192 form, but hydrolyses diazoxon, soman and sarin more slowly. Note that papers often report this variant as the coding-strand G allele.",
+          "CT": "One copy of each form, so both isoforms circulate. Overall PON1 activity varies more than tenfold between people for reasons largely unrelated to this variant, including a separate promoter polymorphism, age and liver function.",
+          "TT": "Two copies of the Gln192 (T, forward strand; coding-strand A) form. This isoform hydrolyses diazoxon, soman and sarin faster in laboratory assays, but paraoxon more slowly. Real-world exposure levels dominate any effect of genotype here."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "8896566", "label": "Davies et al., Nature Genetics 1996" }
+    ]
+  },
+  {
+    "slug": "cold-sensitivity-trpm8",
+    "category": "environmental-sensitivity",
+    "title": "Cold sensitivity · TRPM8",
+    "summary": "TRPM8 is the body's main cold receptor. The regulatory variant rs10166942 sits just upstream of the gene and tracks with TRPM8 expression, with reported effects on cold pain thresholds and a modest association with migraine. Its frequency follows a striking latitude gradient, from about 5% in Nigeria to 88% in Finland.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 10166942,
+        "gene": "TRPM8",
+        "chrom": 2,
+        "pos38": 233916448,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "CC": "Two copies of the C allele, the ancestral form that is common in equatorial populations. Associated with lower TRPM8 expression, on average a higher tolerance before cold becomes painful, and a modestly reduced association with migraine (odds ratio around 0.91).",
+          "CT": "One copy of each allele, an intermediate result. Cold tolerance is shaped much more by acclimatisation, body composition and circulation than by this variant.",
+          "TT": "Two copies of the T allele, which rises in frequency toward colder latitudes and appears to have been favoured there. Associated with higher TRPM8 expression, on average a lower threshold for cold pain, and a modestly increased association with migraine (odds ratio around 1.18 per copy). This is one small factor among many."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "29723195", "label": "Key et al., PLoS Genetics 2018" },
+      { "pmid": "31873179", "label": "Gavva et al., Scientific Reports 2019" },
+      { "pmid": "21666692", "label": "Chasman et al., Nature Genetics 2011" }
+    ]
+  },
+  {
+    "slug": "motion-sickness-susceptibility",
+    "category": "environmental-sensitivity",
+    "title": "Motion sickness susceptibility",
+    "summary": "About one in three people is markedly susceptible to motion sickness, and the trait is substantially heritable. A large genome-wide study of car sickness in over 80,000 people found dozens of common variants with small effects, several near genes involved in inner-ear and balance development. Two of them are shown here.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 66800491,
+        "gene": "3q13.2 intergenic region",
+        "chrom": 3,
+        "pos38": 109915280,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele. Associated with somewhat lower reported car sickness than the G allele in the study above, which found effects up to three times stronger in women than in men.",
+          "AG": "One copy of each allele, an intermediate result at this locus. Each variant found in this study shifted susceptibility only slightly; the trait reflects the sum of many such small contributions.",
+          "GG": "Two copies of the G allele, the allele associated with greater reported susceptibility to car sickness. The per-copy effect is small, and habituation, what a person looks at while travelling and prior experience all matter."
+        }
+      },
+      {
+        "rsid": 2153535,
+        "gene": "6p24.3 intergenic region",
+        "chrom": 6,
+        "pos38": 8369446,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "No copy of the G allele associated with motion sickness at this locus. Susceptibility here depends on many variants together rather than on any single one.",
+          "CG": "One copy of the G allele, which was associated with slightly higher reported car sickness. This is an association across tens of thousands of people, not a prediction for any individual trip.",
+          "GG": "Two copies of the G allele associated with greater reported car sickness in the study above. Motion sickness also shares genetic factors with migraine and with post-operative nausea, which is part of why it clusters in families."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "25628336", "label": "Hromatka et al., Human Molecular Genetics 2015" }
+    ]
+  },
+  {
+    "slug": "age-related-hearing-grm7",
+    "category": "environmental-sensitivity",
+    "title": "Age-related hearing change · GRM7",
+    "summary": "GRM7 encodes metabotropic glutamate receptor 7, expressed in inner-ear hair cells, and was the first gene to reach genome-wide significance for age-related hearing impairment. rs11928865 is the reported lead variant, but replication has been mixed and the evidence remains thin.",
+    "evidence": "preliminary",
+    "variants": [
+      {
+        "rsid": 11928865,
+        "gene": "GRM7",
+        "chrom": 3,
+        "pos38": 7114015,
+        "ref": "T",
+        "alt": "A",
+        "interpretations": {
+          "AA": "Two copies of the A allele. Not the genotype flagged in the studies that reported an association here. Cumulative noise exposure and age remain by far the largest drivers of hearing change.",
+          "AT": "One copy of each allele. Studies of this variant disagree: one large European study found a signal, a Chinese cohort study reported the TT genotype as more susceptible, and a Taiwanese study found no allelic association at all.",
+          "TT": "Two copies of the T allele, the genotype reported as more susceptible to age-related hearing change in some cohorts. This is one small factor among many, the finding has not replicated consistently, and protecting hearing from loud noise matters far more than any genotype here."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "19047183", "label": "Friedman et al., Human Molecular Genetics 2009" },
+      { "pmid": "24146964", "label": "Luo et al., PLoS One 2013" }
+    ]
+  },
+  {
+    "slug": "vitamin-d-sunlight-gc",
+    "category": "environmental-sensitivity",
+    "title": "Vitamin D from sunlight · GC",
+    "summary": "Most vitamin D comes from sunlight on skin, but how much circulates in blood also depends on the vitamin D binding protein encoded by GC. rs2282679 is the strongest common genetic signal for circulating 25-hydroxyvitamin D concentration, explaining a small share of the variation between people.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 2282679,
+        "gene": "GC",
+        "chrom": 4,
+        "pos38": 71742666,
+        "ref": "T",
+        "alt": "G",
+        "interpretations": {
+          "GG": "Two copies of the G allele, associated on average with the lowest circulating 25-hydroxyvitamin D of the three genotypes and a modestly increased chance of falling into the insufficient range in population studies.",
+          "GT": "One copy of the G allele, associated with intermediate average concentrations. Latitude, season, skin pigmentation, time outdoors and body composition each move vitamin D levels more than this variant does.",
+          "TT": "Two copies of the T allele, associated on average with the highest circulating 25-hydroxyvitamin D of the three genotypes. Genotype is a weak guide to actual status; a blood measurement is the only way to know."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "20541252", "label": "Wang et al., The Lancet 2010" }
+    ]
+  },
+  {
+    "slug": "allergic-sensitization-il13",
+    "category": "environmental-sensitivity",
+    "title": "Allergic sensitisation · IL13",
+    "summary": "Interleukin-13 is a central signal in allergic inflammation and drives IgE production. rs20541 changes amino acid 130 of the mature protein (Arg130Gln), and the reference A allele has been repeatedly associated with higher serum IgE and with self-reported allergy, eczema and asthma-related traits.",
+    "evidence": "moderate",
+    "variants": [
+      {
+        "rsid": 20541,
+        "gene": "IL13",
+        "chrom": 5,
+        "pos38": 132660272,
+        "ref": "A",
+        "alt": "G",
+        "interpretations": {
+          "AA": "Two copies of the A allele, which encodes glutamine at residue 130 and is the allele associated with higher serum IgE and with self-reported allergy in large studies. Note that many papers describe this variant on the opposite strand or as the Arg130Gln change, so allele labels vary between sources.",
+          "AG": "One copy of each allele, an intermediate result. Reported effects are small, around a 5 to 20 percent shift in odds of allergic traits, and are one small factor alongside early-life exposures and family history.",
+          "GG": "Two copies of the G allele, which encodes arginine at residue 130 and is the more common allele in most populations. Associated on average with slightly lower serum IgE and lower reported allergy than A-allele carriers. Allergy testing, not genotype, is what identifies what a person actually reacts to."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "23817569", "label": "Hinds et al., Nature Genetics 2013" }
+    ]
+  }
+]

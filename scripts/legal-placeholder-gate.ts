@@ -14,6 +14,10 @@ const PATTERNS: [RegExp, string][] = [
   [/lorem ipsum/i, "lorem ipsum"],
   [/\bN\/A\b/i, "N/A section"],
   [/\bPLACEHOLDER\b/i, "PLACEHOLDER"],
+];
+
+// Only meaningful on rendered text: in TSX source, `[]` is array syntax.
+const RENDERED_ONLY_PATTERNS: [RegExp, string][] = [
   [/\[\s*\]/, "empty brackets"],
 ];
 
@@ -35,8 +39,16 @@ const SOURCE_DIRS = [
   "src/components/legal",
 ];
 
-function check(name: string, text: string, failures: string[]) {
-  for (const [re, label] of PATTERNS) {
+function check(
+  name: string,
+  text: string,
+  failures: string[],
+  rendered: boolean,
+) {
+  const patterns = rendered
+    ? [...PATTERNS, ...RENDERED_ONLY_PATTERNS]
+    : PATTERNS;
+  for (const [re, label] of patterns) {
     const m = re.exec(text);
     if (m) {
       failures.push(`${name}: ${label} — "…${text.slice(Math.max(0, m.index - 40), m.index + 60).replace(/\s+/g, " ")}…"`);
@@ -61,7 +73,7 @@ async function main() {
         .replace(/<script[\s\S]*?<\/script>/g, "")
         .replace(/<style[\s\S]*?<\/style>/g, "")
         .replace(/<[^>]+>/g, " ");
-      check(route, text, failures);
+      check(route, text, failures, true);
     }
     console.log(`checked ${ROUTES.length} rendered routes`);
   } else {
@@ -78,7 +90,7 @@ async function main() {
           if (entry.isDirectory()) walk(p);
           else if (/\.(tsx|ts|mdx?)$/.test(entry.name)) {
             count++;
-            check(path.relative(process.cwd(), p), fs.readFileSync(p, "utf8"), failures);
+            check(path.relative(process.cwd(), p), fs.readFileSync(p, "utf8"), failures, false);
           }
         }
       };
