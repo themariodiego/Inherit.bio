@@ -30,7 +30,6 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
   const active = await getActiveFile(supabase, fileParam);
 
   let hits: Hit[] = [];
-  let mode: "rsid" | "gene" | "locus" | null = null;
   let locus: { chrom: number; start: number; end: number } | null = null;
   let message: string | null = null;
 
@@ -39,7 +38,6 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
     const locusMatch = /^(chr)?([0-9XYM T]+):([\d,]+)(?:-([\d,]+))?$/i.exec(q);
 
     if (rsid) {
-      mode = "rsid";
       const [{ data: mine }, { data: ann }] = await Promise.all([
         supabase
           .from("user_variants")
@@ -80,7 +78,6 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
         message = `rs${rsid} is not in your file and not in the reference store.`;
       }
     } else if (locusMatch) {
-      mode = "locus";
       const chrom = chromToNumber(locusMatch[2]);
       const start = Number(locusMatch[3].replace(/,/g, ""));
       const end = locusMatch[4]
@@ -107,7 +104,6 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
         message = "Unrecognized chromosome.";
       }
     } else {
-      mode = "gene";
       const { data: refs } = await supabase
         .from("ref_variants")
         .select("rsid, chrom, pos38, ref, alt, gene_symbol, clinvar_significance, gnomad_af")

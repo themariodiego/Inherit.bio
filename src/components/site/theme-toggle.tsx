@@ -2,30 +2,21 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+// Icon swap is CSS-driven (dark: variant), so both icons render on the
+// server and the client hides one — no mounted flag, no hydration mismatch.
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   return (
     <Button
       variant="ghost"
       size="icon-sm"
-      aria-label={
-        mounted && resolvedTheme === "dark"
-          ? "Switch to light theme"
-          : "Switch to dark theme"
-      }
+      aria-label="Toggle light and dark theme"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      {mounted && resolvedTheme === "dark" ? (
-        <Sun aria-hidden />
-      ) : (
-        <Moon aria-hidden />
-      )}
+      <Sun aria-hidden className="hidden dark:block" />
+      <Moon aria-hidden className="block dark:hidden" />
     </Button>
   );
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
 
 // A14 — the network audit as an E2E test over REAL rendered pages: the set
 // of request origins on landing, dashboard, and a report page must be

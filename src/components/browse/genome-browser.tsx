@@ -74,12 +74,11 @@ export function GenomeBrowser({
       );
     }
 
+    const el = containerRef.current;
     void mount();
     return () => {
       disposed = true;
-      if (browserRef && containerRef.current) {
-        containerRef.current.innerHTML = "";
-      }
+      if (browserRef && el) el.innerHTML = "";
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);
 

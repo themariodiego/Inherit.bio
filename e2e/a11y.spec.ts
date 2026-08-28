@@ -89,7 +89,7 @@ test("design language: Fraunces display, pill CTAs, attribution, theme toggle", 
   }
 
   // Theme toggle flips the class and persists paper/ink ground.
-  await page.getByRole("button", { name: /Switch to (dark|light) theme/ }).click();
+  await page.getByRole("button", { name: /toggle light and dark theme/i }).click();
   const isDark = await page.evaluate(() =>
     document.documentElement.classList.contains("dark"),
   );

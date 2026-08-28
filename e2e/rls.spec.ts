@@ -14,13 +14,12 @@ import {
 const A = { email: "rls-a@e2e.local", password: "e2e-password-a" };
 const B = { email: "rls-b@e2e.local", password: "e2e-password-b" };
 
-let aId: string;
 let bId: string;
 let bFileId: string;
 const bObjectPath = () => `${bId}/rls-test/victim.txt`;
 
 test.beforeAll(async () => {
-  aId = await createConfirmedUser(A.email, A.password);
+  await createConfirmedUser(A.email, A.password);
   bId = await createConfirmedUser(B.email, B.password);
 
   const admin = adminClient();
