@@ -5,6 +5,13 @@ spec run against a production build backed by the local Supabase stack (real
 PostgREST/Storage/Auth/Mailpit); "unit" to a vitest test; "live" to the
 provisioned hosted project or deployment.
 
+**Full-suite result: 48/48 E2E tests passed in a single clean run**
+(2026-08-28, `CI=1 pnpm e2e`, production build + local stack). The run
+surfaced one real app bug — igv.js resolved to its UMD `browser`-field
+build, whose AMD-or-global dispatch left the bundled module namespace
+empty, so the genome browser never rendered in production — fixed by
+importing `igv/dist/igv.esm.js` directly.
+
 | # | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | A1 | Clean clone → self-hosting guide → local app runs; deviations fixed and guide re-run clean | ✅ | Clean-room audit followed `docs/self-hosting.md`, found the `worker/.env.example` + `CRON_SECRET` deviations; both fixed and re-verified (`docs/audit-report.md`). Every documented `pnpm` script exists; every required env var is in `.env.example`/`worker/.env.example`. |
@@ -22,17 +29,18 @@ provisioned hosted project or deployment.
 | A13 | Deletion removes DB rows + storage objects (privileged re-query); export ZIP has originals + variants + reports; no fee path | ✅ | `e2e/deletion-export.spec.ts`: export ZIP contains manifest + originals + variant CSV (`free` in manifest note); account deletion removes the auth user, every table's rows (privileged re-query), and all storage objects. No billing/fee code path exists. |
 | A14 | Network audit: on landing/dashboard/report, third-party origins == allowlist; `window.fbq` undefined; no beacon/pixel hosts | ✅ | `e2e/network-audit.spec.ts` over real rendered pages: only first-party origins observed (fonts self-hosted via `next/font`), `window.fbq`/`window.gtag` undefined, no tracker-host fragments. |
 | A15 | Legal pages complete; placeholder gate passes; disclaimers on report surfaces by E2E | ✅ | `e2e/legal.spec.ts`: all 8 legal requirements + dual-surface Plus Bio disclosure present and on-topic; report-surface disclaimer visible; `pnpm gate:legal` passes. Legal audit returned clean. |
-| A16 | Design tokens implemented; wordmark + attribution; light+dark; axe/a11y pass; Lighthouse ≥90 | ✅ (Lighthouse: see note) | `e2e/a11y.spec.ts`: axe WCAG2 AA on landing/providers/privacy/sign-in/dashboard/settings/uploads in both themes; design-token assertions (Fraunces, pill radius, attribution, numbered steps, theme toggle). UX audit confirmed AA contrast in both themes. Lighthouse ≥90 target: `scripts/lighthouse-check.ts` (run against the served build). |
+| A16 | Design tokens implemented; wordmark + attribution; light+dark; axe/a11y pass; Lighthouse ≥90 | ✅ | `e2e/a11y.spec.ts`: axe WCAG2 AA on landing/providers/privacy/sign-in/dashboard/settings/uploads in both themes; design-token assertions (Fraunces, pill radius, attribution, numbered steps, theme toggle). UX audit confirmed AA contrast in both themes. Lighthouse against the served production build: landing performance 95 / accessibility 100, providers performance 92 / accessibility 100 (`scripts/lighthouse-check.ts`). |
 | A17 | CI green on main: typecheck (strict), lint, unit, E2E; no secrets in repo history; `.env.example` complete | ✅ | GitHub Actions `checks` job green (typecheck+lint+unit+gate). No committed secrets (only public Supabase local-dev JWTs). `.env.example` complete (was silently gitignored — fixed). E2E runs against the local stack. |
 | A18 | LICENSE, README, architecture doc, ADR directory (incl. Gating Decision), dataset-license audit | ✅ | `LICENSE` (AGPL-3.0), `README.md`, `docs/architecture.md`, `docs/adr/` (0001 Gating Decision + 0002–0005), `docs/dataset-licenses.md` (ClinVar/dbSNP/gnomAD/GWAS/PGS/1000G verified; SNPedia excluded as NC). |
 
 ## Notes
 
-- **Lighthouse (A16):** axe accessibility is enforced per-rule in CI; a
-  Lighthouse performance/accessibility ≥90 run is provided as
-  `scripts/lighthouse-check.ts` against the served production build (it needs
-  a headful Chrome run, so it is a documented local/CI-optional check rather
-  than part of the default E2E gate).
+- **Lighthouse (A16):** axe accessibility is enforced per-rule in CI; the
+  Lighthouse performance/accessibility ≥90 gate
+  (`node --experimental-strip-types scripts/lighthouse-check.ts` against the
+  served production build) passed with landing 95/100 and providers 92/100
+  (performance/accessibility). It needs a Chrome run, so it is a documented
+  local/CI-optional check rather than part of the default E2E gate.
 - **Hosted deployment:** Supabase provisioned + migrated + provider/reference
   data seeded; Vercel linked and deploying green; the remaining secret env
   vars are a one-time owner step (`docs/deployment.md`).

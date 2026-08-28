@@ -6,7 +6,11 @@
 // dashboard. Fails if performance or accessibility < 90 on any page.
 //
 // Uses the pre-installed Chromium (PLAYWRIGHT_BROWSERS_PATH) so it needs no
-// separate download. Run: pnpm tsx scripts/lighthouse-check.ts
+// separate download.
+//
+// Run: node --experimental-strip-types scripts/lighthouse-check.ts
+// (not tsx: esbuild's keepNames injects __name() into Lighthouse's own
+// functions, which fail when Lighthouse serializes them into the page.)
 import { launch } from "chrome-launcher";
 import lighthouse from "lighthouse";
 import fs from "node:fs";
