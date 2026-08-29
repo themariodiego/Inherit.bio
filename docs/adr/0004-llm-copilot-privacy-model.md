@@ -28,7 +28,7 @@
 ## The localhost caveat, stated honestly
 
 Chat inference runs in a server route (key decryption must stay
-server-side), so a localhost base URL is reachable only when the Sequence
+server-side), so a localhost base URL is reachable only when the Inherit
 server itself can reach it — i.e. running locally or self-hosted beside the
 model. The hosted demo cannot reach a visitor's localhost; the UI says so
 explicitly instead of failing mysteriously. A browser-side inference path

@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-// The Sequence wordmark: Fraunces, two-tone (ink "Se" + forest "quence" tail
+// The Inherit wordmark: Fraunces, two-tone (ink "In" + forest "herit" tail,
 // underline dot motif kept typographic — no Plus Bio logo assets are used or
-// recreated; Sequence is a sibling brand with its own mark.
+// recreated; Inherit carries its own mark within the shared design language.
 export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       href="/"
       className={cn("display text-2xl leading-none tracking-tight", className)}
-      aria-label="Sequence home"
+      aria-label="Inherit home"
     >
-      Se<span className="accent">quence</span>
+      In<span className="accent">herit</span>
       <span aria-hidden className="text-forest">
         .
       </span>
@@ -22,7 +22,7 @@ export function Wordmark({ className }: { className?: string }) {
 export function Attribution({ className }: { className?: string }) {
   return (
     <p className={cn("text-xs text-ink-muted", className)}>
-      Sequence · an open-source project in collaboration with{" "}
+      Inherit · an open-source project created by{" "}
       <a
         href="https://www.plus.bio"
         target="_blank"
@@ -30,7 +30,8 @@ export function Attribution({ className }: { className?: string }) {
         className="underline underline-offset-2 hover:text-ink"
       >
         Plus Bio
-      </a>
+      </a>{" "}
+      for the public good
     </p>
   );
 }

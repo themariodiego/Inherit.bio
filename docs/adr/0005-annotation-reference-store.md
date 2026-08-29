@@ -4,7 +4,7 @@
 
 ## Decision
 
-Sequence maintains its own Postgres reference tables (`ref_variants`,
+Inherit maintains its own Postgres reference tables (`ref_variants`,
 `ref_genes`, `prs_scores`/`prs_weights`) holding the report-relevant slice
 of public datasets (ClinVar, dbSNP rsIDs, gnomAD frequencies, GWAS Catalog,
 PGS Catalog — licenses audited in `docs/dataset-licenses.md`). User queries

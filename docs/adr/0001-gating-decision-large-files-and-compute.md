@@ -1,7 +1,7 @@
 # ADR-0001 — Gating Decision: large-file upload path, size caps, and compute placement
 
 - Status: **Accepted** · 2026-08-28
-- Deciders: Sequence engineering
+- Deciders: Inherit engineering
 - This ADR gates every feature: no capability may be claimed that it shows
   infeasible.
 

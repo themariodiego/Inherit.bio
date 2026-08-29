@@ -74,10 +74,10 @@ test("design language: Fraunces display, pill CTAs, attribution, theme toggle", 
   const radius = await cta.evaluate((el) => getComputedStyle(el).borderRadius);
   expect(parseFloat(radius)).toBeGreaterThanOrEqual(999);
 
-  // Collaboration attribution present in the chrome.
+  // Attribution line present in the chrome.
   await expect(
     page
-      .getByText("an open-source project in collaboration with", {
+      .getByText("Inherit · an open-source project created by Plus Bio for the public good", {
         exact: false,
       })
       .first(),

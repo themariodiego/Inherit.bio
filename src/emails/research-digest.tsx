@@ -20,7 +20,7 @@ export function ResearchDigestEmail({
 }: ResearchDigestProps) {
   return (
     <EmailLayout
-      heading="New in the Sequence research library"
+      heading="New in the Inherit research library"
       unsubscribe={
         <Text style={{ fontSize: "12px", margin: 0 }}>
           <Link href={manageUrl} style={{ color: brand.inkMuted }}>

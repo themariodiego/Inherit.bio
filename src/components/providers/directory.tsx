@@ -116,7 +116,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
           </Select>
         </div>
         <p className="basis-full text-xs text-ink-muted">
-          Location is used only to filter this list, in your browser. Sequence
+          Location is used only to filter this list, in your browser. Inherit
           never asks for a street address and never takes payment — you buy
           from the provider directly.
         </p>
@@ -225,7 +225,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   </a>
                 ))}
                 {p.affiliate
-                  ? "· Affiliate link — Sequence may earn a commission (disclosed here because it must be)."
+                  ? "· Affiliate link — Inherit may earn a commission (disclosed here because it must be)."
                   : "· No affiliate relationship."}
               </p>
             </div>

@@ -4,7 +4,7 @@
 
 ## Decision
 
-Sequence v1 performs **no genotype imputation**. Array-file reports are
+Inherit v1 performs **no genotype imputation**. Array-file reports are
 limited to variants the chip actually genotyped; everything else renders the
 honest "your file does not cover this variant" state. Coverage is always a
 number (per file, per PRS), never a slogan.

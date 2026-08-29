@@ -38,27 +38,26 @@ for (const { route, must } of REQUIRED) {
   });
 }
 
-test("Plus Bio disclosure is accurate (separate service, no data flow) and never implies a Plus Bio product", async ({
+test("Plus Bio disclosure is accurate (created by, legally separate, no data flow)", async ({
   page,
 }) => {
   await page.goto("/about");
   const body = (await page.locator("main").innerText()).toLowerCase();
   expect(body).toContain("plus bio");
-  expect(body).toMatch(/separate|independent|standalone/);
+  // The relationship must state both halves: created by Plus Bio AND legally
+  // separate — creation without separation or vice versa misstates it.
+  expect(body).toMatch(/created by plus bio/);
+  expect(body).toMatch(/legally separate/);
+  expect(body).toMatch(/public good/);
   expect(body).toMatch(/no.*data.*flow|data.*(does not|never|doesn't).*(flow|pass|move)/);
-  // Must explicitly disclaim being a Plus Bio product (the page states this
-  // as a negation, so assert the disclaimer is present rather than naively
-  // forbidding the substring, which also occurs inside "not a Plus Bio product").
-  expect(body).toMatch(/not a plus bio product/);
-  expect(body).not.toMatch(/sequence is a plus bio (product|service)/);
 });
 
-test("the collaboration attribution renders in the site chrome", async ({
+test("the creation attribution renders in the site chrome", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(
-    page.getByText(/in collaboration with plus bio/i).first(),
+    page.getByText(/created by plus bio for the public good/i).first(),
   ).toBeVisible();
 });
 

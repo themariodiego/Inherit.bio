@@ -25,7 +25,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
 
-const SYSTEM_PROMPT = `You are the Sequence copilot: you help a person explore their OWN genome data on Sequence, an open-source consumer genomics platform.
+const SYSTEM_PROMPT = `You are the Inherit copilot: you help a person explore their OWN genome data on Inherit, an open-source consumer genomics platform.
 
 Hard rules:
 - You are informational, never diagnostic. Never tell the user they have, will get, or are protected from any disease. Frame everything as association and probability shift, with effect sizes where available.
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
   const activeFile = await getActiveFile(supabase, body.fileId);
   const fileNote = activeFile
     ? `The user's active processed file is "${activeFile.original_name}" (${activeFile.variant_count?.toLocaleString()} variants).`
-    : "The user has no processed genome file yet; tools will return empty results. Help them understand what Sequence can do and how to upload data.";
+    : "The user has no processed genome file yet; tools will return empty results. Help them understand what Inherit can do and how to upload data.";
 
   const tools = {
     get_genotype: tool({

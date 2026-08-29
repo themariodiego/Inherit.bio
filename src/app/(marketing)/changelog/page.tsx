@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = {
   title: "Research changelog",
   description:
-    "Every report added to the Sequence library, with dates — the output of our continuously running research pipeline.",
+    "Every report added to the Inherit library, with dates — the output of our continuously running research pipeline.",
 };
 
 export default async function ChangelogPage() {

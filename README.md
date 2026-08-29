@@ -1,15 +1,15 @@
-# Sequence
+# Inherit
 
-**Your genome, on your terms.** Sequence is an open-source consumer genomics
-platform — an open-source project in collaboration with
-[Plus Bio](https://www.plus.bio) — that gives an individual everything a
+**Your genome, on your terms.** Inherit is an open-source consumer genomics
+platform — created by [Plus Bio](https://www.plus.bio) as an open-source
+project for the public good — that gives an individual everything a
 commercial consumer-WGS service provides, without the platform ever selling
 sequencing, and with privacy engineering that is implemented rather than
 announced.
 
-Sequence is an independent, standalone service. It shares a design language
-with Plus Bio as a sibling brand; accounts are separate, there is no SSO,
-and **no personal, health, or genetic data flows between Sequence and any
+Inherit operates as a legally separate entity from Plus Bio. It shares a
+design language with Plus Bio; accounts are separate, there is no SSO,
+and **no personal, health, or genetic data flows between Inherit and any
 Plus Bio service in either direction** (see [About](/about) and the
 [privacy policy](/privacy)).
 
@@ -19,7 +19,7 @@ Plus Bio service in either direction** (see [About](/about) and the
    providers (prices with capture dates, sequencing depth, the raw files you
    actually get back, shipping coverage incl. US-state exclusions, each
    provider's data practices, source links). You buy from the provider
-   directly; Sequence never takes payment for sequencing.
+   directly; Inherit never takes payment for sequencing.
 2. **Genome ingestion** — upload your own raw data. Array exports (23andMe,
    AncestryDNA, MyHeritage, FamilyTreeDNA) and VCF/gVCF are fully processed
    into a canonical GRCh38 variant store (GRCh37 arrays are lifted over).
@@ -83,7 +83,7 @@ the local stack.
 ## Non-goals
 
 No sequencing sales, no imputation ([ADR-0003](docs/adr/0003-no-imputation.md)),
-no microbiome claims (different assay), no diagnosis — Sequence is
+no microbiome claims (different assay), no diagnosis — Inherit is
 informational and says so on every report.
 
 ## License

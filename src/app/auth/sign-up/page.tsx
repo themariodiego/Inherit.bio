@@ -27,7 +27,7 @@ export default function SignUpPage() {
       <div>
         <h1 className="display text-2xl">Create your account</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Sequence is for adults (18+). Your data stays yours.
+          Inherit is for adults (18+). Your data stays yours.
         </p>
       </div>
       <AuthForm

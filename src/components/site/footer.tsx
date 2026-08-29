@@ -24,7 +24,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
     {
       heading: "Company",
       links: [
-        { href: "/about", label: "About & the Plus Bio collaboration" },
+        { href: "/about", label: "About & the Plus Bio relationship" },
         { href: "/legal/gina", label: "GINA, explained" },
         { href: "/legal/deceased", label: "Deceased customers" },
         {
@@ -42,7 +42,7 @@ export function SiteFooter() {
         <div className="space-y-4">
           <Wordmark />
           <p className="max-w-xs text-sm text-ink-muted">
-            Your genome, on your terms. Sequence never sells sequencing, never
+            Your genome, on your terms. Inherit never sells sequencing, never
             sells your data, and runs on code you can read.
           </p>
           <Attribution />

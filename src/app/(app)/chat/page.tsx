@@ -75,7 +75,7 @@ export default async function ChatPage() {
                 llama3.1
               </code>
               . Nothing about your genome ever leaves your infrastructure.
-              (Local endpoints require running Sequence itself locally or
+              (Local endpoints require running Inherit itself locally or
               self-hosted on the same network — the hosted demo cannot reach
               your localhost.)
             </li>

@@ -90,7 +90,7 @@ export function LlmSettingsForm({
           <p className="text-xs text-ink-muted">
             A localhost/private base URL keeps everything on your own
             infrastructure — the privacy-preferred setup. It requires running
-            Sequence locally or self-hosted where it can reach that endpoint.
+            Inherit locally or self-hosted where it can reach that endpoint.
           </p>
         ) : null}
       </div>

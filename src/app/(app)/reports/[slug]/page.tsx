@@ -137,7 +137,7 @@ export default async function ReportDetailPage(
                 <p className="text-sm text-ink-muted">
                   Your file does not cover this variant. Array files test a
                   fixed set of positions; whole-genome data covers more.
-                  Sequence never imputes genotypes it hasn&apos;t observed.
+                  Inherit never imputes genotypes it hasn&apos;t observed.
                 </p>
               ) : r.status === "no-call" ? (
                 <p className="text-sm text-ink-muted">
@@ -259,7 +259,7 @@ export default async function ReportDetailPage(
         data-testid="report-disclaimer"
         className="rounded-xl border border-line p-4 text-xs leading-relaxed text-ink-muted"
       >
-        This report is informational, not medical advice, and Sequence is not
+        This report is informational, not medical advice, and Inherit is not
         a diagnostic service. Genetic associations describe averages across
         studies, not certainties about you; environment, lifestyle and other
         genes matter too. Talk to a clinician or genetic counselor before

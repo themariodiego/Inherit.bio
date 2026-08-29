@@ -1,4 +1,4 @@
-# Sequence Worker (Tier 3 self-host)
+# Inherit Worker (Tier 3 self-host)
 
 A single-process queue consumer for compute jobs that cannot run inside the
 web app. It connects directly to your Supabase Postgres database, polls

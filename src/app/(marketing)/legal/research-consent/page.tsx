@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 export const metadata: Metadata = {
   title: "Research consent",
   description:
-    "Sequence runs no research program and shares nothing by default. This page says so explicitly, and binds any future program to per-study opt-in, named data classes, and revocability.",
+    "Inherit runs no research program and shares nothing by default. This page says so explicitly, and binds any future program to per-study opt-in, named data classes, and revocability.",
 };
 
 export default function ResearchConsentPage() {
@@ -28,11 +28,11 @@ export default function ResearchConsentPage() {
       sections={[
         {
           id: "no-program",
-          heading: "Sequence does not run a research program",
+          heading: "Inherit does not run a research program",
           body: (
             <>
               <p>
-                As of the effective date above, Sequence operates{" "}
+                As of the effective date above, Inherit operates{" "}
                 <strong>no research program of any kind</strong>. We do not
                 share your genetic data, your derived variants, your reports,
                 or any aggregate statistics computed from them with academic
@@ -63,7 +63,7 @@ export default function ResearchConsentPage() {
           body: (
             <>
               <p>
-                If Sequence ever proposes a research program in the future, we
+                If Inherit ever proposes a research program in the future, we
                 bind ourselves now to the following minimums. A program that
                 does not meet every one of them will not launch:
               </p>
@@ -73,7 +73,7 @@ export default function ResearchConsentPage() {
                   requested for each specific study individually. There will
                   be no blanket “future research” consent, no consent bundled
                   into sign-up or the terms of service, and no pre-checked
-                  boxes. Declining will never affect your use of Sequence.
+                  boxes. Declining will never affect your use of Inherit.
                 </li>
                 <li>
                   <strong>Named data classes.</strong> Each consent request
@@ -125,7 +125,7 @@ export default function ResearchConsentPage() {
               </p>
               <p>
                 A consent that does not tell you exactly what is shared, with
-                whom, and how to take it back is not consent. Sequence will
+                whom, and how to take it back is not consent. Inherit will
                 either meet that bar or not ask.
               </p>
             </>
@@ -136,7 +136,7 @@ export default function ResearchConsentPage() {
           heading: "Contact",
           body: (
             <p>
-              Questions about this policy: <strong>legal@sequence-dna.org</strong>.
+              Questions about this policy: <strong>legal@inherit.bio</strong>.
               This page is informational and is part of our binding privacy
               commitments; if it ever changes, the change will be announced to
               account holders in advance, as described in the{" "}

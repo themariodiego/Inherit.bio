@@ -22,7 +22,7 @@ export async function SiteHeader() {
         <div className="flex items-baseline gap-3">
           <Wordmark />
           <span className="hidden text-[11px] text-ink-muted sm:inline">
-            in collaboration with Plus Bio
+            created by Plus Bio for the public good
           </span>
         </div>
         <nav aria-label="Main" className="hidden items-center gap-6 md:flex">

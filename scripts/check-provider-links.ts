@@ -16,7 +16,7 @@ async function head(url: string): Promise<number> {
     const res = await fetch(url, {
       method: "GET",
       redirect: "follow",
-      headers: { "user-agent": "Mozilla/5.0 (compatible; SequenceLinkCheck/1.0)" },
+      headers: { "user-agent": "Mozilla/5.0 (compatible; InheritLinkCheck/1.0)" },
       signal: AbortSignal.timeout(20000),
     });
     return res.status;

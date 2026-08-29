@@ -18,7 +18,7 @@ function client(): Resend | null {
 }
 
 function from(): string {
-  return process.env.EMAIL_FROM ?? "Sequence <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM ?? "Inherit <onboarding@resend.dev>";
 }
 
 async function send(
@@ -42,7 +42,7 @@ export async function sendReportReady(
   props: ReportReadyProps,
 ): Promise<boolean> {
   const html = await render(createElement(ReportReadyEmail, props));
-  return send(to, "Your Sequence reports are ready", html, "report-ready");
+  return send(to, "Your Inherit reports are ready", html, "report-ready");
 }
 
 export async function sendResearchDigest(
@@ -50,5 +50,5 @@ export async function sendResearchDigest(
   props: ResearchDigestProps,
 ): Promise<boolean> {
   const html = await render(createElement(ResearchDigestEmail, props));
-  return send(to, "New reports in the Sequence research library", html, "research-digest");
+  return send(to, "New reports in the Inherit research library", html, "research-digest");
 }
