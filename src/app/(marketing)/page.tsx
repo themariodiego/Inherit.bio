@@ -5,7 +5,7 @@ const steps = [
   {
     n: "01",
     title: "Find a provider",
-    body: "Compare real sequencing providers that ship to you — depth, price, turnaround, and exactly which raw files you get back. You buy from them directly; Sequence never takes a cut of sequencing.",
+    body: "Compare real sequencing providers that ship to you — depth, price, turnaround, and exactly which raw files you get back. You buy from them directly; Inherit never takes a cut of sequencing.",
   },
   {
     n: "02",
@@ -25,7 +25,7 @@ const steps = [
 ];
 
 const candor = [
-  "No diagnosis. Sequence is informational, not a medical device.",
+  "No diagnosis. Inherit is informational, not a medical device.",
   "No sequencing sales. We route you to providers; money never passes through us.",
   "No trackers. Zero ad pixels or third-party analytics, verified by an automated network audit in CI.",
   "No data sharing with anyone — including Plus Bio. Separate service, separate accounts, no data flow.",
@@ -40,7 +40,7 @@ export default function LandingPage() {
           Your genome, <span className="accent">on your terms.</span>
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink-muted">
-          Sequence helps you buy sequencing from a real provider, then turns
+          Inherit helps you buy sequencing from a real provider, then turns
           your raw DNA file into reports, ancestry, and polygenic scores — on
           infrastructure you can read, audit, and self-host.
         </p>

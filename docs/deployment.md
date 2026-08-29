@@ -30,14 +30,14 @@ Production) before the deployment is functional. After setting them, redeploy
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://zuvloczwgrayonqabnss.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg` |
-| `NEXT_PUBLIC_SITE_URL` | your production URL, e.g. `https://sequence-mariodiego.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | the production URL: `https://inherit.bio` |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard → Project Settings → API (secret) |
 | `DATABASE_URL` | from Supabase dashboard → Database → Connection string |
 | `BYOK_ENCRYPTION_KEY` | `openssl rand -base64 32` |
 | `JOBS_SECRET` | `openssl rand -hex 32` |
 | `CRON_SECRET` | `openssl rand -hex 32` (lets Vercel Cron call the scheduled jobs) |
 | `RESEND_API_KEY` | a Resend API key |
-| `EMAIL_FROM` | a verified Resend sender, e.g. `Sequence <onboarding@resend.dev>` |
+| `EMAIL_FROM` | a verified Resend sender, e.g. `Inherit <onboarding@resend.dev>` |
 
 To re-seed reference data later (all upserts, safe to repeat):
 
@@ -59,10 +59,12 @@ production URL; only the redirect is broken.
 
 In Supabase → **Authentication → URL Configuration**:
 
-- **Site URL**: `https://sequence-mariodiego.vercel.app`
+- **Site URL**: `https://inherit.bio` (once the domain is attached to the
+  Vercel project)
 - **Redirect URLs**: add
-  - `https://sequence-mariodiego.vercel.app/**`
-  - `https://sequence-murex.vercel.app/**` (the project's other production alias)
+  - `https://inherit.bio/**`
+  - `https://sequence-mariodiego.vercel.app/**` (still-working Vercel alias)
+  - `https://sequence-murex.vercel.app/**` (still-working Vercel alias)
   - optionally `https://sequence-*-mariodiego.vercel.app/**` for preview
     deployments
 

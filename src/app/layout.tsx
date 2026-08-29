@@ -16,8 +16,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sequence — your genome, on your terms",
-    template: "%s · Sequence",
+    default: "Inherit — your genome, on your terms",
+    template: "%s · Inherit",
   },
   description:
     "Open-source consumer genomics: find a sequencing provider, upload your raw DNA data, and explore reports, ancestry, and polygenic scores — privately, on infrastructure you can self-host.",

@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 export const metadata: Metadata = {
   title: "Terms of service",
   description:
-    "The Sequence terms of service: 18+, informational not medical, you own your data, free export forever, real deletion, AGPL-3.0, and Delaware governing law.",
+    "The Inherit terms of service: 18+, informational not medical, you own your data, free export forever, real deletion, AGPL-3.0, and Delaware governing law.",
 };
 
 export default function TermsPage() {
@@ -20,10 +20,10 @@ export default function TermsPage() {
       effectiveDate="2026-08-28"
       intro={
         <p>
-          These terms govern your use of the hosted Sequence service. They are
+          These terms govern your use of the hosted Inherit service. They are
           deliberately short and written in plain language; where they make
           commitments to you — free export, real deletion — those commitments
-          are contractual, not marketing. If you self-host Sequence under its
+          are contractual, not marketing. If you self-host Inherit under its
           open-source license, these terms do not apply to your own
           installation.
         </p>
@@ -31,7 +31,7 @@ export default function TermsPage() {
       sections={[
         {
           id: "eligibility",
-          heading: "1. Who can use Sequence",
+          heading: "1. Who can use Inherit",
           body: (
             <>
               <p>
@@ -52,7 +52,7 @@ export default function TermsPage() {
           body: (
             <>
               <p>
-                Sequence provides <strong>informational and educational</strong>{" "}
+                Inherit provides <strong>informational and educational</strong>{" "}
                 content about your genome. It is{" "}
                 <strong>not a medical device</strong>, does not provide medical
                 advice, and does not diagnose, treat, cure, or prevent any
@@ -63,7 +63,7 @@ export default function TermsPage() {
               </p>
               <p>
                 Do not make medical decisions — starting, stopping, or changing
-                any treatment, medication, or screening — based on Sequence
+                any treatment, medication, or screening — based on Inherit
                 alone. Consult a physician, pharmacist, or licensed genetic
                 counselor, who can order clinical-grade confirmation of any
                 variant that matters for your care.
@@ -79,11 +79,11 @@ export default function TermsPage() {
               <p>
                 <strong>You own your data.</strong> Your uploaded files and
                 everything derived from them (variants, reports, scores, chat
-                history) belong to you. Sequence claims no ownership interest
+                history) belong to you. Inherit claims no ownership interest
                 in any of it, ever.
               </p>
               <p>
-                So that we can operate the service, you grant Sequence only a{" "}
+                So that we can operate the service, you grant Inherit only a{" "}
                 <strong>limited, revocable processing license</strong>: the
                 right to store, parse, and analyze your data solely to provide
                 the features you use, on your instructions. This license exists
@@ -116,7 +116,7 @@ export default function TermsPage() {
                 </li>
               </ul>
               <p>
-                These clauses survive any change of control of Sequence and
+                These clauses survive any change of control of Inherit and
                 bind any successor for data collected under these terms.
               </p>
             </>
@@ -128,7 +128,7 @@ export default function TermsPage() {
           body: (
             <>
               <p>
-                The Sequence software is licensed under the GNU Affero General
+                The Inherit software is licensed under the GNU Affero General
                 Public License, version 3.0, and its source code is available
                 at{" "}
                 <a
@@ -186,7 +186,7 @@ export default function TermsPage() {
           body: (
             <>
               <p>
-                To the maximum extent permitted by law, Sequence and its
+                To the maximum extent permitted by law, Inherit and its
                 contributors will not be liable for indirect, incidental,
                 special, consequential, or punitive damages, or for lost
                 profits or data, arising from your use of the service. Our
@@ -255,7 +255,7 @@ export default function TermsPage() {
               </p>
               <p>
                 Questions about these terms:{" "}
-                <strong>legal@sequence-dna.org</strong>.
+                <strong>legal@inherit.bio</strong>.
               </p>
             </>
           ),

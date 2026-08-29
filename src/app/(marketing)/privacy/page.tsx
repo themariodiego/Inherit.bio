@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "Plain-language privacy policy: what Sequence collects, what it refuses to collect, where data is processed, deletion that actually deletes, free export forever, and change-of-control protections.",
+    "Plain-language privacy policy: what Inherit collects, what it refuses to collect, where data is processed, deletion that actually deletes, free export forever, and change-of-control protections.",
 };
 
 export default function PrivacyPage() {
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
               </p>
               <p>
                 If you prefer that no company — including us — hold your
-                genome, Sequence is designed to be{" "}
+                genome, Inherit is designed to be{" "}
                 <strong>self-hosted</strong>. The complete platform is
                 open-source under AGPL-3.0, and the self-hosting guide at{" "}
                 <Link href="/docs/self-hosting">/docs/self-hosting</Link> lets
@@ -130,7 +130,7 @@ export default function PrivacyPage() {
                 only operational measurements we make are first-party server
                 logs (for security and debugging) and aggregate counts with no
                 per-user tracking. No analytics vendor, ad network, or data
-                broker receives anything from Sequence — not even “anonymized”
+                broker receives anything from Inherit — not even “anonymized”
                 or “aggregated” genetic statistics, which we do not share
                 either.
               </p>
@@ -275,9 +275,9 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                Sequence is for adults: you must be{" "}
+                Inherit is for adults: you must be{" "}
                 <strong>18 or older</strong> to create an account, and you may
-                only upload genome files that are your own. Sequence is not
+                only upload genome files that are your own. Inherit is not
                 directed to children and we do not knowingly collect or
                 process data from anyone under 18.
               </p>
@@ -291,7 +291,7 @@ export default function PrivacyPage() {
                 someone else — we will delete it promptly upon notice, using
                 the same immediate, unrecoverable deletion described above.
                 Reports of suspected minors’ data should go to
-                privacy@sequence-dna.org.
+                privacy@inherit.bio.
               </p>
             </>
           ),
@@ -304,7 +304,7 @@ export default function PrivacyPage() {
               <p>
                 Genomics companies get acquired, and databases have a way of
                 becoming the asset that changes hands. Here is exactly what
-                happens if Sequence is ever acquired, merged, or transferred,
+                happens if Inherit is ever acquired, merged, or transferred,
                 or enters bankruptcy or receivership:
               </p>
               <ul>
@@ -326,7 +326,7 @@ export default function PrivacyPage() {
                   affirmative consent — silence is not consent.
                 </li>
                 <li>
-                  <strong>A structural escape hatch.</strong> Because Sequence
+                  <strong>A structural escape hatch.</strong> Because Inherit
                   is AGPL-3.0 open source, the platform itself cannot be taken
                   away from you: you can export your data and self-host the
                   same software, permanently, regardless of what happens to
@@ -338,31 +338,36 @@ export default function PrivacyPage() {
         },
         {
           id: "plus-bio",
-          heading: "Sequence and Plus Bio: strict separation",
+          heading: "Inherit and Plus Bio: created by, legally separate",
           body: (
             <>
               <p>
-                Sequence is an independent, separate service built in
-                collaboration with Plus Bio. The collaboration is limited to a
-                shared visual design language. As a matter of binding policy:
+                Inherit was created by Plus Bio as an open-source project for
+                the public good, and it operates as a legally separate entity.
+                Creation is not access: the legal separation exists precisely
+                so that your genetic data can never become an asset of any
+                commercial business, Plus Bio&rsquo;s included. As a matter of
+                binding policy:
               </p>
               <ul>
                 <li>
-                  Sequence and Plus Bio services run on separate domains with
-                  separate accounts, and there is no single sign-on between
-                  them.
+                  Inherit and Plus Bio&rsquo;s commercial services run on
+                  separate domains with separate accounts, and there is no
+                  single sign-on between them.
                 </li>
                 <li>
                   <strong>
-                    No personal, health, or genetic data flows between
-                    Sequence and any Plus Bio service, in either direction
+                    No personal, health, or genetic data flows between Inherit
+                    and any Plus Bio service, in either direction
                   </strong>{" "}
                   — no uploads, no derived data, no account details, no usage
                   events.
                 </li>
                 <li>
-                  Sequence is not a Plus Bio product, and nothing in this
-                  policy grants Plus Bio any access to Sequence data.
+                  Nothing in this policy grants Plus Bio&rsquo;s commercial
+                  operations any access to Inherit data, and Inherit&rsquo;s
+                  legal separation means a change of control at Plus Bio does
+                  not transfer your data anywhere.
                 </li>
               </ul>
             </>
@@ -422,7 +427,7 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 Most rights are self-serve in the app. For anything that is
-                not, email privacy@sequence-dna.org and we will respond within
+                not, email privacy@inherit.bio and we will respond within
                 30 days.
               </p>
             </>
@@ -442,8 +447,8 @@ export default function PrivacyPage() {
               </p>
               <p>
                 Privacy questions and data-rights requests:{" "}
-                <strong>privacy@sequence-dna.org</strong>. Security reports:{" "}
-                <strong>security@sequence-dna.org</strong>.
+                <strong>privacy@inherit.bio</strong>. Security reports:{" "}
+                <strong>security@inherit.bio</strong>.
               </p>
             </>
           ),

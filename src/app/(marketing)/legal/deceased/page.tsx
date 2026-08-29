@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 export const metadata: Metadata = {
   title: "Deceased customers",
   description:
-    "The documented next-of-kin process for a deceased Sequence customer's account: what a representative must provide, and what Sequence will do within 30 days.",
+    "The documented next-of-kin process for a deceased Inherit customer's account: what a representative must provide, and what Inherit will do within 30 days.",
 };
 
 export default function DeceasedPage() {
@@ -22,7 +22,7 @@ export default function DeceasedPage() {
         <p>
           A genome outlives its owner, and it carries information about
           relatives who never agreed to share it. This page documents exactly
-          how Sequence handles the account of a customer who has died — a
+          how Inherit handles the account of a customer who has died — a
           process families should not have to discover mid-grief.
         </p>
       }
@@ -56,7 +56,7 @@ export default function DeceasedPage() {
             <>
               <p>
                 We act only for an authorized representative of the estate.
-                To start, email <strong>legal@sequence-dna.org</strong> with
+                To start, email <strong>legal@inherit.bio</strong> with
                 all three of the following:
               </p>
               <ol>
@@ -90,7 +90,7 @@ export default function DeceasedPage() {
         },
         {
           id: "what-we-do",
-          heading: "What Sequence will do",
+          heading: "What Inherit will do",
           body: (
             <>
               <p>
@@ -132,7 +132,7 @@ export default function DeceasedPage() {
           heading: "Planning ahead",
           body: (
             <p>
-              The simplest gift to your estate is a note. If you use Sequence,
+              The simplest gift to your estate is a note. If you use Inherit,
               consider recording the account email address and your preference
               — delete or export — wherever you keep your will or password
               manager’s emergency access. You can also simply export your data

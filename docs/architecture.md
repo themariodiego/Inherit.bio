@@ -1,4 +1,4 @@
-# Sequence architecture
+# Inherit architecture
 
 One Next.js 16 app (App Router, TypeScript strict) + one Supabase project +
 Resend. Everything user-facing runs in the app; heavy compute that cannot
@@ -84,7 +84,7 @@ updates apply instantly and deletion surfaces stay small.
 ## The genome browser without a third-party reference
 
 igv.js normally fetches reference sequence/annotation from public hosts —
-which would leak the locus a user is viewing. Sequence defines a custom
+which would leak the locus a user is viewing. Inherit defines a custom
 `chromsizes`-format genome served from `/public/genomes/` (positions-only)
 and feeds igv a single annotation track built from the user's own variants
 via an RLS-scoped region API. No external origin is contacted; the network

@@ -124,7 +124,7 @@ export default function GinaPage() {
               lines of insurance or add consent requirements. Many states,
               however, add little or nothing beyond the federal floor. Your
               actual protection depends on where you live, which is one
-              reason Sequence’s optional location field is a country/state
+              reason Inherit’s optional location field is a country/state
               dropdown — it lets us surface relevant law without collecting
               your address.
             </p>
@@ -148,13 +148,13 @@ export default function GinaPage() {
                   results to disclose.
                 </li>
                 <li>
-                  A consumer report from Sequence is informational rather than
+                  A consumer report from Inherit is informational rather than
                   clinical, but underwriting questions are often phrased
                   broadly enough to include consumer testing. Read the actual
                   question on any application.
                 </li>
                 <li>
-                  Results you never generate cannot be demanded: Sequence
+                  Results you never generate cannot be demanded: Inherit
                   computes only the reports you open, and deleting your data
                   here is immediate and real (see the{" "}
                   <Link href="/privacy">privacy policy</Link>). Deletion does

@@ -1,4 +1,4 @@
-// Shared layout for all Sequence transactional emails, in the brand:
+// Shared layout for all Inherit transactional emails, in the brand:
 // paper ground, ink text, forest accent. System font fallbacks only —
 // webfonts are unreliable in email clients.
 import {
@@ -61,7 +61,7 @@ export function EmailLayout({
               margin: "0 0 16px",
             }}
           >
-            Se<span style={{ color: brand.forest }}>quence</span>
+            In<span style={{ color: brand.forest }}>herit.</span>
           </Text>
           <Section
             style={{
@@ -85,7 +85,7 @@ export function EmailLayout({
           </Section>
           <Section style={{ paddingTop: "16px" }}>
             <Text style={footerText}>
-              Sequence · an open-source project in collaboration with Plus Bio
+              Inherit · an open-source project created by Plus Bio for the public good
             </Text>
             <Text style={footerText}>Informational, not medical advice.</Text>
             {unsubscribe}

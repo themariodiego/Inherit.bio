@@ -7,7 +7,7 @@ import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 
 const ATTRIBUTION =
-  "Sequence · an open-source project in collaboration with Plus Bio";
+  "Inherit · an open-source project created by Plus Bio for the public good";
 const DISCLAIMER = "Informational, not medical advice.";
 
 describe("report-ready email", () => {

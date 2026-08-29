@@ -12,7 +12,7 @@ const report2026 = [
 export const metadata: Metadata = {
   title: "Law enforcement & transparency",
   description:
-    "How Sequence handles government and law-enforcement requests: valid legal process required, user notice unless barred, minimal-scope responses, and a public transparency report.",
+    "How Inherit handles government and law-enforcement requests: valid legal process required, user notice unless barred, minimal-scope responses, and a public transparency report.",
 };
 
 export default function LawEnforcementPage() {
@@ -29,7 +29,7 @@ export default function LawEnforcementPage() {
       intro={
         <p>
           Genetic databases are attractive to investigators, and the industry
-          record on this is mixed. This page states exactly how Sequence
+          record on this is mixed. This page states exactly how Inherit
           responds to government and law-enforcement requests, and publishes
           the running count of every request we receive.
         </p>
@@ -119,7 +119,7 @@ export default function LawEnforcementPage() {
               <p>
                 On National Security Letters: the count above reflects the
                 most precise reporting United States law permits. As of the
-                effective date, Sequence has never received a National
+                effective date, Inherit has never received a National
                 Security Letter or an order under the Foreign Intelligence
                 Surveillance Act.
               </p>
@@ -145,7 +145,7 @@ export default function LawEnforcementPage() {
           body: (
             <p>
               Serve valid legal process to{" "}
-              <strong>legal@sequence-dna.org</strong>. Include the requesting
+              <strong>legal@inherit.bio</strong>. Include the requesting
               agency, the responsible officer, the legal authority relied
               upon, and the specific account identifier and data sought.
               Emergency disclosure requests are evaluated under the standard

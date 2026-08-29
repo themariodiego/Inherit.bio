@@ -31,7 +31,7 @@ export default defineConfig({
       NEXT_PUBLIC_SITE_URL: `http://localhost:${PORT}`,
       BYOK_ENCRYPTION_KEY: "5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=",
       JOBS_SECRET: "e2e-jobs-secret",
-      EMAIL_FROM: "Sequence <sequence@e2e.local>",
+      EMAIL_FROM: "Inherit <inherit@e2e.local>",
       // App emails go to a mock Resend API started by research.spec.ts
       // (the SDK honors RESEND_BASE_URL). Sends while the mock is down are
       // caught and logged by src/lib/email.ts — never fatal. Auth emails

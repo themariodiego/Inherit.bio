@@ -29,7 +29,7 @@ export default async function ProvidersPage() {
         Buy sequencing from a <span className="accent">real provider.</span>
       </h1>
       <p className="mt-4 max-w-2xl text-ink-muted">
-        Sequence doesn&apos;t sell sequencing — ever. This directory lists
+        Inherit doesn&apos;t sell sequencing — ever. This directory lists
         independently verified providers with their prices as captured on the
         listed date, the raw files they return, and a note on what each does
         with your data. When your results arrive, bring the raw file here.

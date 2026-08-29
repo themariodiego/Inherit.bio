@@ -1,6 +1,6 @@
-# Self-hosting Sequence
+# Self-hosting Inherit
 
-Two ways to run Sequence yourself: fully local (everything on your machine,
+Two ways to run Inherit yourself: fully local (everything on your machine,
 good for trying it out and for local-LLM privacy) or hosted (Vercel +
 Supabase + Resend, what the public demo runs). Both start the same way.
 
@@ -45,7 +45,7 @@ Then edit `.env.local`:
 | `BYOK_ENCRYPTION_KEY` | output of `openssl rand -base64 32` |
 | `JOBS_SECRET` | output of `openssl rand -hex 32` |
 | `RESEND_API_KEY` | leave unset locally — auth emails land in Mailpit (http://127.0.0.1:54324); app emails no-op with a console note |
-| `EMAIL_FROM` | anything locally, e.g. `Sequence <sequence@localhost>` |
+| `EMAIL_FROM` | anything locally, e.g. `Inherit <inherit@localhost>` |
 
 Seed the reference data (provider directory, report templates, PRS
 weights):
