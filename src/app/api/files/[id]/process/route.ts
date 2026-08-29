@@ -179,7 +179,12 @@ export async function POST(
         : "Your file contains no Y-chromosome positions (expected for XX genomes and some file types), so no Y haplogroup is estimated.",
     });
 
-    await admin.from("ancestry_results").insert(ancestryRows);
+    const { error: ancestryError } = await admin
+      .from("ancestry_results")
+      .insert(ancestryRows);
+    if (ancestryError) {
+      throw new Error(`ancestry insert failed: ${ancestryError.code}`);
+    }
 
     // Polygenic scores from the bundled seed data.
     const prsLookup = new Map(
@@ -203,7 +208,10 @@ export async function POST(
       };
     });
     if (prsRows.length > 0) {
-      await admin.from("user_prs").insert(prsRows);
+      // An unchecked failure here once hid an FK violation (unseeded
+      // prs_scores catalog) — the file showed as processed with no PRS.
+      const { error: prsError } = await admin.from("user_prs").insert(prsRows);
+      if (prsError) throw new Error(`prs insert failed: ${prsError.code}`);
     }
 
     await admin

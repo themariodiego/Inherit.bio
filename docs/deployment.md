@@ -8,12 +8,10 @@ set Vercel environment variables.
 
 - **Supabase project `sequence`** (`zuvloczwgrayonqabnss`, region us-east-1):
   all five migrations applied, RLS verified by the security advisor (only
-  intentional deny-all tables flagged), and partially seeded — the public
-  **provider directory (16 rows)** and the **135 reference variants** are
-  live. The **151 report templates and 3 PRS scores** are seeded by the
-  owner running `pnpm seed` once (below); they only render on authenticated
-  pages, which need the secret env vars anyway, so nothing public is missing
-  in the meantime.
+  intentional deny-all tables flagged), and fully seeded — the **provider
+  directory (16 rows)**, **151 report templates**, **3 PRS scores (697
+  weights)**, and the **reference variants** are live. Re-running
+  `pnpm seed` (below) stays safe — every write is an idempotent upsert.
   - Project URL: `https://zuvloczwgrayonqabnss.supabase.co`
   - Anon/publishable key (safe to expose): `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg`
 - **Vercel project `sequence`** (`prj_K7bVowhjFr0uIapXraH41hthJkgy`, team
@@ -41,8 +39,7 @@ Production) before the deployment is functional. After setting them, redeploy
 | `RESEND_API_KEY` | a Resend API key |
 | `EMAIL_FROM` | a verified Resend sender, e.g. `Sequence <onboarding@resend.dev>` |
 
-Then seed the reference data into the hosted project (report templates + PRS;
-providers are already seeded):
+To re-seed reference data later (all upserts, safe to repeat):
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://zuvloczwgrayonqabnss.supabase.co \
