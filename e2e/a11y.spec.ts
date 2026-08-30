@@ -58,7 +58,7 @@ test("axe: dashboard + settings (authenticated, both themes)", async ({
   }
 });
 
-test("skip link: first tabbable element, moves focus to main (both layouts)", async ({
+test("skip link: first tabbable element, moves focus to main without navigating (both layouts)", async ({
   page,
 }) => {
   // Marketing layout: the very first Tab press must land on the skip link…
@@ -66,9 +66,15 @@ test("skip link: first tabbable element, moves focus to main (both layouts)", as
   await page.keyboard.press("Tab");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
   await expect(skipLink).toBeFocused();
-  // …and activating it must move focus to the main landmark (tabIndex={-1}).
+  // …and activating it must move focus to the main landmark (tabIndex={-1})
+  // WITHOUT hash navigation: the URL keeps no #main fragment and no history
+  // entry is pushed, so Back from a later page can never replay a stale
+  // render (the app-router quirk this behavior guards against).
+  const historyBefore = await page.evaluate(() => history.length);
   await page.keyboard.press("Enter");
   await expect(page.locator("main#main")).toBeFocused();
+  expect(new URL(page.url()).hash).toBe("");
+  expect(await page.evaluate(() => history.length)).toBe(historyBefore);
 
   // Signed-in app layout: same contract.
   await signIn(page, USER.email, USER.password);
@@ -77,6 +83,9 @@ test("skip link: first tabbable element, moves focus to main (both layouts)", as
   await expect(
     page.getByRole("link", { name: "Skip to main content" }),
   ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#main")).toBeFocused();
+  expect(new URL(page.url()).hash).toBe("");
 });
 
 test("design language: Fraunces display, pill CTAs, attribution, theme toggle", async ({

@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -97,6 +103,51 @@ function depthTip(depth: string): string {
   if (d.includes("rna"))
     return "RNA gene-expression test — not a DNA genome test.";
   return "";
+}
+
+// Horizontal-scroll wrapper for the product tables: the table scrolls inside
+// this container (the page body never scrolls horizontally), and a right-edge
+// fade appears only while there is more table to the right — a swipe
+// affordance on narrow screens. The fade is a decorative, pointer-inert,
+// aria-hidden overlay, so it is invisible to axe.
+function ScrollableTable({ children }: { children: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState(false);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => {
+      const canScroll = el.scrollWidth > el.clientWidth + 1;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+      setFade(canScroll && !atEnd);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    el.addEventListener("scroll", update, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return (
+    <div className="relative mt-4">
+      <div ref={scrollerRef} className="overflow-x-auto">
+        {children}
+      </div>
+      {fade ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-10"
+          style={{
+            background: "linear-gradient(to left, var(--card), transparent)",
+          }}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 function depthClass(p: Provider): Set<string> {
@@ -229,7 +280,13 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
       </div>
 
       <ul className="space-y-4">
-        {rows.map(({ provider: p, availability }) => (
+        {rows.map(({ provider: p, availability }) => {
+          // A provider where every product is "Not usable" still gets a buy
+          // link (people may want it for other reasons) but a quiet one.
+          const anyUsable = p.products.some(
+            (prod) => compatFor(prod).kind !== "none",
+          );
+          return (
           <li
             key={p.slug}
             data-testid={`provider-${p.slug}`}
@@ -256,11 +313,21 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   </Badge>
                 ) : null}
                 {availability.available ? (
-                  <Button asChild size="sm">
+                  <Button
+                    asChild
+                    size="sm"
+                    variant={anyUsable ? "default" : "outline"}
+                    className={anyUsable ? undefined : "text-ink-muted"}
+                  >
                     <a
                       href={p.checkout_url}
                       target="_blank"
                       rel="noopener noreferrer nofollow"
+                      title={
+                        anyUsable
+                          ? undefined
+                          : "This provider returns no raw file Inherit can use"
+                      }
                     >
                       Buy through provider ↗
                     </a>
@@ -285,17 +352,18 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               </p>
             ) : null}
 
-            {/* The table scrolls inside this container; the page body never
-                scrolls horizontally. */}
-            <div className="mt-4 overflow-x-auto">
+            {/* "Works with Inherit" is the decision column, so it sits
+                second — right after the product name — where it stays
+                visible on narrow screens instead of far off to the right. */}
+            <ScrollableTable>
               <table className="w-full min-w-[44rem] text-left text-sm">
                 <thead>
                   <tr className="text-xs text-ink-muted">
                     <th className="pb-1 pr-4 font-normal">Product</th>
+                    <th className="pb-1 pr-4 font-normal">Works with Inherit</th>
                     <th className="pb-1 pr-4 font-normal">Depth</th>
                     <th className="pb-1 pr-4 font-normal">Price (captured {p.last_verified_at})</th>
                     <th className="pb-1 pr-4 font-normal">Raw files you get</th>
-                    <th className="pb-1 pr-4 font-normal">Works with Inherit</th>
                     <th className="pb-1 font-normal">Advertised turnaround</th>
                   </tr>
                 </thead>
@@ -306,19 +374,6 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                     return (
                       <tr key={i} className="border-t border-line align-top">
                         <td className="py-1.5 pr-4">{prod.name}</td>
-                        <td
-                          className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
-                          title={tip || undefined}
-                          aria-label={
-                            tip ? `${prod.depth} — ${tip}` : undefined
-                          }
-                        >
-                          {prod.depth}
-                        </td>
-                        <td className="py-1.5 pr-4">{prod.price}</td>
-                        <td className="py-1.5 pr-4 text-xs">
-                          {(prod.formats_returned ?? []).join(", ") || "—"}
-                        </td>
                         <td className="py-1.5 pr-4">
                           <Badge
                             variant={
@@ -332,6 +387,19 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                             {compat.label}
                           </Badge>
                         </td>
+                        <td
+                          className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
+                          title={tip || undefined}
+                          aria-label={
+                            tip ? `${prod.depth} — ${tip}` : undefined
+                          }
+                        >
+                          {prod.depth}
+                        </td>
+                        <td className="py-1.5 pr-4">{prod.price}</td>
+                        <td className="py-1.5 pr-4 text-xs">
+                          {(prod.formats_returned ?? []).join(", ") || "—"}
+                        </td>
                         <td className="py-1.5 text-xs">
                           {prod.turnaround || "—"}
                         </td>
@@ -340,7 +408,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTable>
 
             <div className="mt-3 space-y-1 border-t border-line pt-3 text-xs text-ink-muted">
               {p.data_practices_note ? (
@@ -377,7 +445,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               </p>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );

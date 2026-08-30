@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ConsentList } from "@/components/settings/consent-list";
 import { DangerZone } from "@/components/settings/danger-zone";
 import { DigestToggle } from "@/components/settings/digest-toggle";
@@ -82,6 +83,18 @@ export default async function SettingsPage() {
         </div>
         <DangerZone />
       </section>
+
+      {/* The accessibility statement otherwise lives only in the marketing
+          footer, which signed-in pages never show — link it from here too. */}
+      <footer className="border-t border-line pt-6 text-sm text-ink-muted">
+        <Link
+          href="/about#accessibility"
+          className="underline underline-offset-4 hover:text-ink"
+        >
+          Accessibility
+        </Link>{" "}
+        — our WCAG 2.1 AA commitment, known gaps, and how to report a barrier.
+      </footer>
     </div>
   );
 }

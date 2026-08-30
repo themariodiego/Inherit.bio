@@ -69,8 +69,11 @@ test("cloud provider requires a consent dialog naming provider and data classes;
     "vcf",
   );
 
-  // Configure the mock as an OpenAI-compatible CLOUD endpoint.
+  // Configure the mock as an OpenAI-compatible CLOUD endpoint. The form
+  // defaults to Anthropic for fresh users, so pick the provider first.
   await page.goto("/settings");
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
   await page.getByLabel("Base URL").fill(MOCK_BASE);
   await expect(
     page.getByText("Detected as a cloud endpoint"),

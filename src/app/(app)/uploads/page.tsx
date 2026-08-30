@@ -69,9 +69,13 @@ export default async function UploadsPage() {
           </Link>
           ).
         </p>
-        <p>
-          Not sure which file you have? 23andMe/Ancestry/MyHeritage exports
-          are .txt or .csv; clinical/lab files are usually .vcf or .vcf.gz.
+        {/* <wbr /> after each slash lets the provider token wrap on narrow
+            screens instead of forcing a horizontal body overflow. */}
+        <p className="break-words">
+          Not sure which file you have? 23andMe/<wbr />
+          Ancestry/<wbr />
+          MyHeritage exports are .txt or .csv; clinical/lab files are usually
+          .vcf or .vcf.gz.
         </p>
       </div>
 

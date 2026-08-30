@@ -23,6 +23,14 @@ export default async function DashboardPage() {
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
   const active = files[0] ?? null;
 
+  // getProcessedFiles only returns fully processed files; ask separately
+  // whether anything is still in flight so the empty state can say so.
+  const { data: inFlightFiles } = await supabase
+    .from("genome_files")
+    .select("id")
+    .in("status", ["uploading", "parsing"]);
+  const processing = (inFlightFiles ?? []).length > 0;
+
   const genotypes = active
     ? await getGenotypesByRsid(supabase, active.id, templateRsids(templates))
     : new Map<number, string>();
@@ -51,6 +59,11 @@ export default async function DashboardPage() {
     } | null
   )?.haplogroup;
 
+  // Only scores with a computed percentile count toward the tile's number —
+  // a score whose panel the file doesn't cover produced nothing.
+  const prsRows = prs ?? [];
+  const prsComputed = prsRows.filter((r) => r.percentile != null).length;
+
   const cards = [
     {
       href: "/reports",
@@ -58,13 +71,18 @@ export default async function DashboardPage() {
       value: active ? `${covered} / ${templates.length}` : "—",
       note: active
         ? "a result is computed only when you open a report"
-        : "upload a file to unlock",
+        : processing
+          ? "processing your file…"
+          : "upload a file to unlock",
     },
     {
       href: "/reports#polygenic-scores",
       label: "Polygenic scores",
-      value: active ? String((prs ?? []).length) : "—",
-      note: "many small genetic effects combined into one estimate",
+      value: active ? String(prsComputed) : "—",
+      note:
+        active && prsRows.length > 0 && prsComputed < prsRows.length
+          ? `${prsComputed} of ${prsRows.length} computable from your file`
+          : "many small genetic effects combined into one estimate",
     },
     {
       href: "/ancestry",
@@ -117,10 +135,10 @@ export default async function DashboardPage() {
       {!active ? (
         <div className="rounded-2xl border border-dashed border-line p-8 text-center">
           <h2 className="display text-2xl">Start with your raw data</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-            Upload a 23andMe/AncestryDNA/MyHeritage/FamilyTreeDNA export or a
-            VCF. Don&apos;t have one yet? Find a sequencing provider first —
-            we&apos;ll route you to them directly.
+          <p className="mx-auto mt-2 max-w-md break-words text-sm text-ink-muted">
+            Upload a 23andMe, AncestryDNA, MyHeritage, or FamilyTreeDNA export
+            — or a VCF. Don&apos;t have one yet? Find a sequencing provider
+            first — we&apos;ll route you to them directly.
           </p>
           <div className="mt-4 flex justify-center gap-3">
             <Button asChild>

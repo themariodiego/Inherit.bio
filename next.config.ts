@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/signup", destination: "/auth/sign-up", permanent: false },
       { source: "/login", destination: "/auth/sign-in", permanent: false },
+      { source: "/copilot", destination: "/chat", permanent: false },
     ];
   },
 };

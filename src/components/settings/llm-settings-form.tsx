@@ -26,14 +26,14 @@ export function LlmSettingsForm({
 }) {
   const router = useRouter();
   const [provider, setProvider] = useState<"anthropic" | "openai_compatible">(
-    current?.provider ?? "openai_compatible",
+    current?.provider ?? "anthropic",
   );
   const [baseUrl, setBaseUrl] = useState(
     current?.base_url ?? "http://localhost:11434/v1",
   );
   const [model, setModel] = useState(
     current?.model ??
-      (current?.provider === "anthropic" ? "claude-sonnet-5" : "llama3.1"),
+      (current?.provider === "openai_compatible" ? "llama3.1" : "claude-sonnet-5"),
   );
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);

@@ -88,6 +88,62 @@ function installFirstPartyXhrGuard() {
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
 
+/**
+ * igv.js (3.8.5) ships its navbar controls unlabeled: a bare <select> of
+ * chromosomes, an unnamed zoom slider, and icon-only <div>s acting as
+ * buttons. After createBrowser resolves we post-process the DOM igv built
+ * and attach accessible names (and button roles where a plain div is
+ * click-handled). Selectors follow the classnames in
+ * node_modules/igv/dist/igv.esm.js — ChromosomeSelectWidget, ZoomWidget,
+ * ResponsiveNavbar. Everything is best-effort inside try/catch: an igv
+ * upgrade that renames a class must degrade to the old unlabeled state,
+ * never crash the page.
+ */
+function labelIgvControls(root: HTMLElement) {
+  try {
+    const label = (el: Element | null, name: string, asButton = false) => {
+      if (!el || el.hasAttribute("aria-label")) return;
+      el.setAttribute("aria-label", name);
+      if (asButton && !el.hasAttribute("role")) {
+        el.setAttribute("role", "button");
+      }
+    };
+
+    // Chromosome picker: a bare 26-option <select> with no name.
+    label(
+      root.querySelector(".igv-chromosome-select-widget-container select"),
+      "Chromosome",
+    );
+
+    // Locus search box (placeholder-only otherwise) and its icon "button".
+    label(root.querySelector("input.igv-search-input"), "Search by locus");
+    label(root.querySelector(".igv-search-icon-container"), "Search", true);
+
+    // Zoom widget: [zoom-out div] [slider] [zoom-in div], per ZoomWidget's
+    // construction order in the igv dist.
+    const zoom = root.querySelector(".igv-zoom-widget");
+    if (zoom) {
+      label(zoom.querySelector("input[type='range']"), "Zoom level");
+      label(zoom.firstElementChild, "Zoom out", true);
+      label(zoom.lastElementChild, "Zoom in", true);
+    }
+
+    // Navbar toggle buttons (cursor guide, center line, track labels, …)
+    // are divs carrying only a title tooltip; promote it to a real name.
+    for (const btn of root.querySelectorAll(
+      ".igv-navbar-text-button, .igv-navbar-icon-button",
+    )) {
+      const title = btn.getAttribute("title");
+      if (title) label(btn, title, true);
+    }
+
+    // The igv logo is decorative.
+    root.querySelector(".igv-logo")?.setAttribute("aria-hidden", "true");
+  } catch {
+    // Labeling is progressive enhancement over igv internals — never fatal.
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
@@ -194,6 +250,7 @@ export function GenomeBrowser({
         igv.createBrowser(el, config),
         CREATE_BROWSER_TIMEOUT_MS,
       );
+      labelIgvControls(el);
       return variants.length;
     }
 
@@ -237,6 +294,8 @@ export function GenomeBrowser({
         <div
           ref={containerRef}
           data-testid="genome-browser"
+          role="region"
+          aria-label="Interactive genome browser"
           className="min-h-64 rounded-xl border border-line bg-white p-2 dark:bg-card"
         />
         {status === "loading" ? (

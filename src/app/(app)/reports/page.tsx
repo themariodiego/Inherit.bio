@@ -70,6 +70,9 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
       return meta ? [{ row, meta }] : [];
     })
     .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
+  const computedScoreCount = scores.filter(
+    ({ row }) => row.percentile != null,
+  ).length;
 
   const byCategory = new Map<string, LibraryCard[]>();
   for (const { template, covered } of resolved) {
@@ -122,8 +125,14 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
                   ))}
               </>
             ) : null}
-            . The rest state honestly that your file doesn&apos;t cover their
-            variants.
+            .
+            {coveredCount < templates.length ? (
+              <>
+                {" "}
+                The rest state honestly that your file doesn&apos;t cover
+                their variants.
+              </>
+            ) : null}
             {coveredCount === 0 &&
             (active.file_type === "vcf" || active.file_type === "gvcf") ? (
               <>
@@ -154,78 +163,138 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
         <h2 id="polygenic-scores-heading" className="eyebrow mb-1">
           Polygenic scores
         </h2>
-        <p className="mb-3 text-sm text-ink-muted">
-          A polygenic score combines many small genetic effects into one
-          estimate.
-        </p>
-        {scores.length > 0 ? (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {scores.map(({ row, meta }) => {
-              const reportSlug = reportByPgs.get(row.pgs_id);
-              return (
-                <li
-                  key={row.pgs_id}
-                  className="rounded-xl border border-line bg-card p-4"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-medium">
-                      {reportSlug ? (
-                        <Link
-                          href={`/reports/${reportSlug}`}
-                          className="underline-offset-2 hover:underline"
-                        >
-                          {meta.name}
-                        </Link>
-                      ) : (
-                        meta.name
-                      )}
-                    </h3>
-                    <span className="shrink-0 font-mono text-[10px] text-ink-muted">
+        {scores.length > 0 && computedScoreCount === 0 ? (
+          // Nothing was computable: one compact, honest line instead of a
+          // wall of per-score failure cards. Per-score coverage sits behind
+          // an explicit disclosure.
+          <div className="text-sm text-ink-muted">
+            <p>
+              Your file doesn&apos;t cover enough of the score panels to
+              compute percentiles.
+            </p>
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs underline underline-offset-2">
+                Per-score coverage details
+              </summary>
+              <ul className="mt-2 space-y-1.5 text-xs">
+                {scores.map(({ row, meta }) => (
+                  <li key={row.pgs_id}>
+                    <span className="font-medium text-ink">{meta.name}</span>{" "}
+                    <span className="font-mono text-[10px]">
                       {row.pgs_id}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-ink-muted">{meta.trait}</p>
-                  {row.percentile != null ? (
-                    <>
-                      <p className="mt-3 text-sm">
-                        Approximately the{" "}
-                        <strong>
-                          {Math.round(row.percentile)}th percentile
-                        </strong>{" "}
-                        of a population-reference distribution.
+                    </span>{" "}
+                    — your file covered {row.matched.toLocaleString()} of{" "}
+                    {meta.n_variants.toLocaleString()} variants (
+                    {(row.coverage * 100).toFixed(1)}%); not computable from
+                    your file.
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        ) : scores.length > 0 ? (
+          <>
+            <p className="mb-3 text-sm text-ink-muted">
+              A polygenic score combines many small genetic effects into one
+              estimate.
+            </p>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {scores.map(({ row, meta }) => {
+                const reportSlug = reportByPgs.get(row.pgs_id);
+                return (
+                  <li
+                    key={row.pgs_id}
+                    className="rounded-xl border border-line bg-card p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-medium">
+                        {reportSlug ? (
+                          <Link
+                            href={`/reports/${reportSlug}`}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {meta.name}
+                          </Link>
+                        ) : (
+                          meta.name
+                        )}
+                      </h3>
+                      <span className="shrink-0 font-mono text-[10px] text-ink-muted">
+                        {row.pgs_id}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-ink-muted">{meta.trait}</p>
+                    {row.percentile != null ? (
+                      <>
+                        <p className="mt-3 text-sm">
+                          Approximately the{" "}
+                          <strong>
+                            {Math.round(row.percentile)}th percentile
+                          </strong>{" "}
+                          of a population-reference distribution.
+                        </p>
+                        <div
+                          role="img"
+                          aria-label={`Score percentile ${Math.round(row.percentile)}`}
+                          className="relative mt-2 h-2 overflow-hidden rounded-full bg-tint"
+                        >
+                          <span
+                            className="absolute top-0 h-full w-1.5 rounded-full bg-forest"
+                            style={{
+                              left: `${Math.min(99, Math.max(1, row.percentile))}%`,
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-ink-muted">
+                        Not computable from your file.
                       </p>
-                      <div
-                        role="img"
-                        aria-label={`Score percentile ${Math.round(row.percentile)}`}
-                        className="relative mt-2 h-2 overflow-hidden rounded-full bg-tint"
-                      >
-                        <span
-                          className="absolute top-0 h-full w-1.5 rounded-full bg-forest"
-                          style={{
-                            left: `${Math.min(99, Math.max(1, row.percentile))}%`,
-                          }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-3 text-sm text-ink-muted">
-                      A percentile could not be computed for your file.
+                    )}
+                    <p className="mt-2 text-xs text-ink-muted">
+                      {row.matched === 0 ? (
+                        <>
+                          Coverage: your file covered none of this
+                          score&apos;s {meta.n_variants.toLocaleString()}{" "}
+                          variants.
+                        </>
+                      ) : (
+                        <>
+                          Coverage: your file covered{" "}
+                          {(row.coverage * 100).toFixed(1)}% of this
+                          score&apos;s variants ({row.matched.toLocaleString()}{" "}
+                          of {meta.n_variants.toLocaleString()})
+                          {row.percentile != null
+                            ? " — treat it as an approximation."
+                            : " — not enough to compute a percentile."}
+                        </>
+                      )}
                     </p>
-                  )}
-                  <p className="mt-2 text-xs text-ink-muted">
-                    Coverage: your file covered{" "}
-                    {(row.coverage * 100).toFixed(1)}% of this score&apos;s
-                    variants ({row.matched.toLocaleString()} of{" "}
-                    {meta.n_variants.toLocaleString()}) — treat it as an
-                    approximation.
-                  </p>
-                  <p className="mt-3 rounded-lg bg-tint p-2.5 text-xs leading-relaxed">
-                    <strong>Ancestry portability:</strong> {meta.ancestry_note}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+                    <details className="group mt-3 rounded-lg bg-tint p-2.5 text-xs leading-relaxed">
+                      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span className="line-clamp-2 group-open:line-clamp-none">
+                          <strong>Ancestry portability:</strong>{" "}
+                          {meta.ancestry_note}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 inline-block text-ink-muted underline underline-offset-2 group-open:hidden"
+                        >
+                          more
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 hidden text-ink-muted underline underline-offset-2 group-open:inline-block"
+                        >
+                          less
+                        </span>
+                      </summary>
+                    </details>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         ) : (
           <p className="rounded-xl border border-dashed border-line p-4 text-sm text-ink-muted">
             No polygenic scores yet — they are computed when your file is

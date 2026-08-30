@@ -189,6 +189,120 @@ async function buildReports(supabase: Db) {
   return files;
 }
 
+/** Greedy word-wrap for the plain-text report rendering; every emitted line
+ * (including the first) carries the given indent. */
+function wrapText(text: string, indent: string, width = 78): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    if (line && indent.length + line.length + 1 + word.length > width) {
+      lines.push(indent + line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  if (line) lines.push(indent + line);
+  return lines.join("\n");
+}
+
+const VARIANT_STATUS_TEXT: Record<string, string> = {
+  "no-call": "no call in your file",
+  "not-covered": "your file does not cover this variant",
+  unrecognized: "did not match the known alleles for this variant",
+};
+
+/**
+ * reports.txt: the same covered reports as reports.json, rendered as plain
+ * text a person can print or hand to a doctor — title, category, evidence
+ * level, each genotype with its interpretation paragraph, and citations.
+ * Generated from the exact same buildReports() data, so the two files can
+ * never disagree.
+ */
+function renderReportsTxt(
+  reportFiles: Awaited<ReturnType<typeof buildReports>>,
+  accountEmail: string | undefined,
+  exportedAt: string,
+): string {
+  const out: string[] = [];
+  out.push("YOUR INHERIT REPORTS");
+  out.push("====================");
+  out.push("");
+  out.push(`Exported: ${exportedAt}`);
+  if (accountEmail) out.push(`Account:  ${accountEmail}`);
+  out.push("");
+  out.push(
+    wrapText(
+      "This is the human-readable version of reports.json in this archive — " +
+        "the same reports, formatted for printing or for sharing with a " +
+        "doctor or genetic counselor. Inherit is informational, not a " +
+        "medical device: nothing here is a diagnosis. Every report states " +
+        "its evidence level and cites its sources.",
+      "",
+    ),
+  );
+
+  for (const file of reportFiles) {
+    out.push("");
+    out.push("");
+    out.push(`FILE: ${file.original_name}`);
+    out.push("-".repeat(Math.min(78, 6 + file.original_name.length)));
+    if (file.reports.length === 0) {
+      out.push("");
+      out.push("No covered reports for this file.");
+      continue;
+    }
+
+    file.reports.forEach((report, i) => {
+      out.push("");
+      out.push(`${i + 1}. ${report.title}`);
+      out.push(`   Category: ${report.category} — Evidence: ${report.evidence}`);
+      out.push("");
+      out.push(wrapText(report.summary, "   "));
+      out.push("");
+      out.push("   Your genotypes:");
+      // Wrapped entries indent continuation lines by 5 and swap the first
+      // line's indent for a same-width "   - " list marker.
+      const listItem = (text: string) =>
+        wrapText(text, "     ").replace(/^ {5}/, "   - ");
+      for (const v of report.variants) {
+        if (v.genotype && v.interpretation) {
+          const flip = v.strand_flipped
+            ? " [reported on the opposite strand; shown as template alleles]"
+            : "";
+          out.push(
+            listItem(
+              `${v.rsid} (${v.gene}): ${v.genotype}${flip} — ${v.interpretation}`,
+            ),
+          );
+        } else {
+          const statusText =
+            v.status === "unrecognized" && v.genotype
+              ? `${v.genotype} — ${VARIANT_STATUS_TEXT.unrecognized}`
+              : (VARIANT_STATUS_TEXT[v.status] ?? v.status);
+          out.push(`   - ${v.rsid} (${v.gene}): ${statusText}`);
+        }
+      }
+      if (report.citations.length > 0) {
+        out.push("");
+        out.push("   Citations:");
+        for (const c of report.citations) {
+          const refs = [
+            c.pmid ? `PMID ${c.pmid}` : null,
+            c.doi ? `doi:${c.doi}` : null,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          out.push(listItem(`${c.label}${refs ? ` (${refs})` : ""}`));
+        }
+      }
+    });
+  }
+  out.push("");
+  return out.join("\n");
+}
+
 /** The user's polygenic score results joined with score metadata. */
 async function buildPrs(
   admin: ReturnType<typeof createAdminClient>,
@@ -307,6 +421,7 @@ export async function GET() {
 
   void (async () => {
     try {
+      const exportedAt = new Date().toISOString();
       const contents: {
         path: string;
         description: string;
@@ -339,6 +454,7 @@ export async function GET() {
 
       // Report results, resolved the same way the /reports pages render them.
       const reportFiles = await buildReports(supabase);
+      const reportCount = reportFiles.reduce((n, f) => n + f.report_count, 0);
       archive.append(JSON.stringify(reportFiles, null, 2), {
         name: "reports.json",
       });
@@ -346,7 +462,20 @@ export async function GET() {
         path: "reports.json",
         description:
           "All reports: every covered report resolved against each processed file (genotype, interpretation, citations).",
-        count: reportFiles.reduce((n, f) => n + f.report_count, 0),
+        count: reportCount,
+      });
+
+      // The same reports as plain, printable text — for a person (or their
+      // doctor), not a program. Rendered from the identical data.
+      archive.append(
+        renderReportsTxt(reportFiles, user.email, exportedAt),
+        { name: "reports.txt" },
+      );
+      contents.push({
+        path: "reports.txt",
+        description:
+          "The same reports as reports.json, formatted as plain text you can print or hand to a doctor.",
+        count: reportCount,
       });
 
       const prs = await buildPrs(admin, user.id);
@@ -404,7 +533,7 @@ export async function GET() {
       // Manifest last: by now every variant CSV has been fully written, so
       // per-file row counts are exact and verified against variant_count.
       const manifest = {
-        exported_at: new Date().toISOString(),
+        exported_at: exportedAt,
         account_email: user.email,
         contents,
         files: (files ?? []).map((f) => ({

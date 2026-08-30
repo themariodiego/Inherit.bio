@@ -62,13 +62,13 @@ export default async function ChatPage() {
               <em>&ldquo;What does my caffeine result mean?&rdquo;</em> — and
               get answers grounded in your data.
             </p>
-            <ul aria-label="Example questions" className="flex flex-wrap gap-2">
+            <ul aria-label="Example questions" className="space-y-1.5">
               {EXAMPLE_QUESTIONS.map((q) => (
                 <li
                   key={q}
-                  className="rounded-full border border-line bg-tint px-3 py-1.5 text-xs text-ink-muted"
+                  className="border-l-2 border-line pl-3 text-xs italic text-ink-muted"
                 >
-                  {q}
+                  &ldquo;{q}&rdquo;
                 </li>
               ))}
             </ul>
