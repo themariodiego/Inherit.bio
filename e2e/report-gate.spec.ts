@@ -92,10 +92,11 @@ test("non-sensitive report shows its result directly, with no gate", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  // ALDH2 rs671 is covered by the tiny fixture (G/G) and addiction is not a
-  // gated category for the report detail page.
-  await page.goto("/reports/alcohol-dependence-aldh2-rs671");
+  // CYP1A2 rs762551 is a real 0/1 call in the tiny fixture (A/C), and
+  // lifestyle-wellness is not a gated category. (rs671 is 0/0 there — the
+  // parser drops reference calls, so ALDH2 resolves not-covered.)
+  await page.goto("/reports/caffeine-metabolism-cyp1a2-rs762551");
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
   await expect(page.getByText("Your genotype")).toBeVisible();
-  await expect(page.getByText("G/G")).toBeVisible();
+  await expect(page.getByText("A/C")).toBeVisible();
 });
