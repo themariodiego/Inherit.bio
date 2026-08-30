@@ -16,6 +16,7 @@ import {
   COUNTRIES,
   US_STATES,
   type Provider,
+  type ProviderProduct,
 } from "@/lib/providers";
 
 const DEPTH_FILTERS = [
@@ -24,6 +25,79 @@ const DEPTH_FILTERS = [
   { key: "wgs", label: "Whole genome (30x+)" },
   { key: "specialty", label: "Y-DNA / mtDNA / exome" },
 ] as const;
+
+// "Works with Inherit" per product row — derived mechanically from the raw
+// file formats the product returns (formats_returned), never hand-labeled.
+// Rules: array-txt/VCF/gVCF → full reports; BAM/CRAM/FASTQ only → stored
+// only; nothing usable returned → not usable.
+const NO_FILE_RE = /app\/portal|reports only|not stated|unverified/i;
+const FULL_RE = /array|gvcf|\bvcf\b/i;
+const STORED_RE = /\b(bam|cram|fastq)\b/i;
+
+type Compat = {
+  kind: "full" | "stored" | "none";
+  label: string;
+  detail: string;
+};
+
+function compatFor(prod: ProviderProduct): Compat {
+  const formats = (prod.formats_returned ?? []).filter(
+    (f) => f.trim() !== "" && !NO_FILE_RE.test(f),
+  );
+  if (formats.length === 0) {
+    return {
+      kind: "none",
+      label: "Not usable — no raw file",
+      detail:
+        "This product returns no raw data file, so Inherit has nothing to analyze.",
+    };
+  }
+  if (formats.some((f) => FULL_RE.test(f))) {
+    return {
+      kind: "full",
+      label: "Full reports",
+      detail:
+        "Returns an array/VCF raw file Inherit analyzes directly — most reports resolve.",
+    };
+  }
+  if (formats.some((f) => STORED_RE.test(f))) {
+    return {
+      kind: "stored",
+      label: "Stored only (analysis needs self-hosting)",
+      detail:
+        "Returns BAM/CRAM/FASTQ only — Inherit stores these, but analysis requires a self-hosted variant-calling step.",
+    };
+  }
+  return {
+    kind: "none",
+    label: "Not usable — no compatible raw file",
+    detail:
+      "The raw files this product returns are not a format Inherit can analyze.",
+  };
+}
+
+// One-line explanations for the Depth column (also stated visibly in the
+// explainer box above the directory — the tooltip is a convenience, not the
+// only conveyance).
+function depthTip(depth: string): string {
+  const d = depth.toLowerCase();
+  if (d.includes("array"))
+    return "Genotyping array: tests ~700k specific common variants, not the whole genome.";
+  if (d.includes("exome"))
+    return "Exome sequencing: reads the ~2% of the genome that codes for proteins.";
+  const cov = d.match(/(\d+)x/);
+  if (cov)
+    return `Whole genome sequencing at ${cov[1]}x: reads (nearly) every position of your genome, about ${cov[1]} times over on average.`;
+  if (d.includes("wgs") || d.includes("whole"))
+    return "Whole genome sequencing: reads (nearly) every position of your genome.";
+  if (d.includes("mtdna") || d.includes("mitochondrial"))
+    return "Mitochondrial DNA only: maternal-line ancestry, not genome-wide reports.";
+  if (d.includes("y-dna") || d.includes("y-snp") || d.includes("y-str"))
+    return "Y chromosome only: paternal-line ancestry, not genome-wide reports.";
+  if (d.includes("rna"))
+    return "RNA gene-expression test — not a DNA genome test.";
+  return "";
+}
 
 function depthClass(p: Provider): Set<string> {
   const classes = new Set<string>();
@@ -61,6 +135,38 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
 
   return (
     <div className="space-y-6">
+      <section
+        aria-labelledby="test-types-heading"
+        className="rounded-2xl border border-line bg-card p-4"
+      >
+        <h2 id="test-types-heading" className="text-sm font-medium">
+          New to this? What the three test types mean
+        </h2>
+        <ul className="mt-2 space-y-1.5 text-sm text-ink-muted">
+          <li>
+            <strong className="font-medium text-ink">
+              Genotyping array (~$30–120):
+            </strong>{" "}
+            tests ~700k common variants — works fully with Inherit, most
+            reports resolve.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">
+              Whole genome 30x (~$200–1,000):
+            </strong>{" "}
+            reads everything — fullest report coverage, biggest files.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Exome/other:</strong>{" "}
+            reads protein-coding regions; coverage varies.
+          </li>
+        </ul>
+        <p className="mt-2 text-sm">
+          If you&apos;re new and just want reports: an array kit is the
+          cheapest way in; whole genome is the most complete.
+        </p>
+      </section>
+
       <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-line bg-card p-4">
         <div className="space-y-1.5">
           <Label htmlFor="country-select">Your country</Label>
@@ -130,16 +236,24 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             className={`rounded-2xl border border-line bg-card p-5 ${availability.available ? "" : "opacity-60"}`}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <h2 className="font-medium">{p.name}</h2>
                 <p className="mt-0.5 text-xs text-ink-muted">
                   Ships to: {p.ships_to}
                   {p.shipping.note ? ` (${p.shipping.note})` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              {/* min-w-0 + flex-wrap + wrapping badges: long gating text
+                  wraps inside the card instead of forcing the page wider
+                  and pushing the buy button off-screen. */}
+              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
                 {p.gating ? (
-                  <Badge variant="secondary">{p.gating}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="max-w-full shrink whitespace-normal rounded-lg text-left"
+                  >
+                    {p.gating}
+                  </Badge>
                 ) : null}
                 {availability.available ? (
                   <Button asChild size="sm">
@@ -152,7 +266,12 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                     </a>
                   </Button>
                 ) : (
-                  <Badge variant="secondary">{availability.reason}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="max-w-full shrink whitespace-normal rounded-lg text-left"
+                  >
+                    {availability.reason}
+                  </Badge>
                 )}
               </div>
             </div>
@@ -166,31 +285,59 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
               </p>
             ) : null}
 
+            {/* The table scrolls inside this container; the page body never
+                scrolls horizontally. */}
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[36rem] text-left text-sm">
+              <table className="w-full min-w-[44rem] text-left text-sm">
                 <thead>
                   <tr className="text-xs text-ink-muted">
                     <th className="pb-1 pr-4 font-normal">Product</th>
                     <th className="pb-1 pr-4 font-normal">Depth</th>
                     <th className="pb-1 pr-4 font-normal">Price (captured {p.last_verified_at})</th>
                     <th className="pb-1 pr-4 font-normal">Raw files you get</th>
+                    <th className="pb-1 pr-4 font-normal">Works with Inherit</th>
                     <th className="pb-1 font-normal">Advertised turnaround</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {p.products.map((prod, i) => (
-                    <tr key={i} className="border-t border-line align-top">
-                      <td className="py-1.5 pr-4">{prod.name}</td>
-                      <td className="py-1.5 pr-4">{prod.depth}</td>
-                      <td className="py-1.5 pr-4">{prod.price}</td>
-                      <td className="py-1.5 pr-4 text-xs">
-                        {(prod.formats_returned ?? []).join(", ") || "—"}
-                      </td>
-                      <td className="py-1.5 text-xs">
-                        {prod.turnaround || "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {p.products.map((prod, i) => {
+                    const tip = depthTip(prod.depth);
+                    const compat = compatFor(prod);
+                    return (
+                      <tr key={i} className="border-t border-line align-top">
+                        <td className="py-1.5 pr-4">{prod.name}</td>
+                        <td
+                          className={`py-1.5 pr-4 ${tip ? "cursor-help" : ""}`}
+                          title={tip || undefined}
+                          aria-label={
+                            tip ? `${prod.depth} — ${tip}` : undefined
+                          }
+                        >
+                          {prod.depth}
+                        </td>
+                        <td className="py-1.5 pr-4">{prod.price}</td>
+                        <td className="py-1.5 pr-4 text-xs">
+                          {(prod.formats_returned ?? []).join(", ") || "—"}
+                        </td>
+                        <td className="py-1.5 pr-4">
+                          <Badge
+                            variant={
+                              compat.kind === "full" ? "secondary" : "outline"
+                            }
+                            title={compat.detail}
+                            className={`max-w-[13rem] whitespace-normal rounded-lg text-left text-[11px] leading-4 ${
+                              compat.kind === "none" ? "text-ink-muted" : ""
+                            }`}
+                          >
+                            {compat.label}
+                          </Badge>
+                        </td>
+                        <td className="py-1.5 text-xs">
+                          {prod.turnaround || "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

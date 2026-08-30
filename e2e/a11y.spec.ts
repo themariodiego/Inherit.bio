@@ -58,6 +58,27 @@ test("axe: dashboard + settings (authenticated, both themes)", async ({
   }
 });
 
+test("skip link: first tabbable element, moves focus to main (both layouts)", async ({
+  page,
+}) => {
+  // Marketing layout: the very first Tab press must land on the skip link…
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeFocused();
+  // …and activating it must move focus to the main landmark (tabIndex={-1}).
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#main")).toBeFocused();
+
+  // Signed-in app layout: same contract.
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/dashboard");
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("link", { name: "Skip to main content" }),
+  ).toBeFocused();
+});
+
 test("design language: Fraunces display, pill CTAs, attribution, theme toggle", async ({
   page,
 }) => {

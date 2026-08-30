@@ -14,9 +14,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "TT": "No copies of the ε4-tagging C allele at rs429358. Combined with rs7412, this typically corresponds to ε2 or ε3 alleles, which are associated with average or lower-than-average Alzheimer's risk. Genetics is only one small factor in overall risk.",
-          "CT": "One copy of the ε4-tagging C allele. If rs7412 is C on the same chromosome, this indicates one ε4 allele, associated on average with roughly 2-4 fold higher odds of late-onset Alzheimer's disease in European-ancestry studies (effect sizes differ by ancestry). Many people with one ε4 allele never develop the condition — this is one factor among many, not a prediction.",
-          "CC": "Two copies of the ε4-tagging C allele, consistent with an ε4/ε4 genotype (rs7412 is essentially always C on ε4 chromosomes). ε4/ε4 is associated on average with substantially higher odds of late-onset Alzheimer's disease — around 8-12 fold in European-ancestry studies, with lower estimates in some other ancestries. Even so, a large fraction of ε4/ε4 carriers never develop dementia; this is a risk association, not a certainty, and lifestyle and other genes matter too."
+          "TT": "In plain words: this means no ε4 allele — together with your rs7412 result below, it determines whether your type is ε2/ε2, ε2/ε3, or ε3/ε3. No copies of the ε4-tagging C allele at rs429358. Combined with rs7412, this typically corresponds to ε2 or ε3 alleles, which are associated with average or lower-than-average Alzheimer's risk. Genetics is only one small factor in overall risk.",
+          "CT": "In plain words: this corresponds to one ε4 allele — your rs7412 result below completes the picture: C/C there means ε3/ε4, while a T there almost always means ε2/ε4. One copy of the ε4-tagging C allele. If rs7412 is C on the same chromosome, this indicates one ε4 allele, associated on average with roughly 2-4 fold higher odds of late-onset Alzheimer's disease in European-ancestry studies (effect sizes differ by ancestry). Many people with one ε4 allele never develop the condition — this is one factor among many, not a prediction.",
+          "CC": "In plain words: this corresponds to ε4/ε4. Two copies of the ε4-tagging C allele, consistent with an ε4/ε4 genotype (rs7412 is essentially always C on ε4 chromosomes). ε4/ε4 is associated on average with substantially higher odds of late-onset Alzheimer's disease — around 8-12 fold in European-ancestry studies, with lower estimates in some other ancestries. Even so, a large fraction of ε4/ε4 carriers never develop dementia; this is a risk association, not a certainty, and lifestyle and other genes matter too."
         }
       },
       {
@@ -27,9 +27,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "No copies of the ε2-tagging T allele at rs7412. Your ε2/ε3/ε4 status is then determined by rs429358: C there tags ε4, T there tags ε3. This variant alone does not change your risk estimate.",
-          "CT": "One copy of the ε2-tagging T allele, typically indicating one ε2 allele. ε2 is associated on average with somewhat lower odds of late-onset Alzheimer's disease relative to the common ε3 allele. This is a modest average effect and only one small factor in overall risk.",
-          "TT": "Two copies of the ε2-tagging T allele, consistent with an ε2/ε2 genotype (roughly 1 in 200 people). ε2/ε2 is associated on average with lower odds of late-onset Alzheimer's disease than ε3/ε3. As with all APOE genotypes, this shifts average risk only — it is not protective in any absolute sense."
+          "CC": "In plain words: this means no ε2 allele — together with your rs429358 result above, it determines whether your type is ε3/ε3, ε3/ε4, or ε4/ε4. No copies of the ε2-tagging T allele at rs7412. Your ε2/ε3/ε4 status is then determined by rs429358: C there tags ε4, T there tags ε3. This variant alone does not change your risk estimate.",
+          "CT": "In plain words: this corresponds to one ε2 allele — your rs429358 result above completes the picture: T/T there means ε2/ε3, while a C there almost always means ε2/ε4. One copy of the ε2-tagging T allele, typically indicating one ε2 allele. ε2 is associated on average with somewhat lower odds of late-onset Alzheimer's disease relative to the common ε3 allele. This is a modest average effect and only one small factor in overall risk.",
+          "TT": "In plain words: this corresponds to ε2/ε2 (rs429358 is essentially always T on ε2 chromosomes). Two copies of the ε2-tagging T allele, consistent with an ε2/ε2 genotype (roughly 1 in 200 people). ε2/ε2 is associated on average with lower odds of late-onset Alzheimer's disease than ε3/ε3. As with all APOE genotypes, this shifts average risk only — it is not protective in any absolute sense."
         }
       }
     ],

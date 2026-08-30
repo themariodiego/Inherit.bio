@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/files/[id]/process": ["./data/ref/chain/**"],
   },
+  async redirects() {
+    return [
+      { source: "/signup", destination: "/auth/sign-up", permanent: false },
+      { source: "/login", destination: "/auth/sign-in", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

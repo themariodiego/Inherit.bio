@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SensitiveGate } from "@/components/reports/sensitive-gate";
+import { SupportPanel } from "@/components/reports/support-panel";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_LABELS, EVIDENCE_LABELS } from "@/lib/genome/categories";
 import { getActiveFile, getGenotypesByRsid } from "@/lib/genome/load";
@@ -11,6 +13,24 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Report" };
+
+// Categories whose results can be life-altering enough to warrant an
+// explicit opt-in before the genotype section renders.
+const SENSITIVE_CATEGORIES = new Set([
+  "cancer-risk",
+  "neurodegenerative",
+  "mental-health",
+]);
+
+// Templates whose interpretations recommend clinical confirmation (rare,
+// high-impact variants like LRRK2 G2019S, GBA1 N370S, CFTR F508del, Factor V
+// Leiden) are treated as sensitive regardless of category. Matches the
+// phrasings used across the seed templates ("confirmed with clinical-quality
+// sequencing", "clinical-laboratory confirmation", "confirmation is
+// sensible", "deserves confirmation") without tripping on "unconfirmed" or
+// "needs confirmation in other populations".
+const CLINICAL_CONFIRMATION_RE =
+  /confirm\w*\s+(?:by|with)\s+(?:a\s+)?clinical|clinical(?:[-\s](?:laboratory|quality))?\s+confirmation|confirmation\s+is\s+sensible|deserves\s+confirmation/i;
 
 export default async function ReportDetailPage(
   props: PageProps<"/reports/[slug]">,
@@ -61,27 +81,26 @@ export default async function ReportDetailPage(
       ).data
     : null;
 
-  return (
-    <article className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <p className="eyebrow mb-2">
-          {CATEGORY_LABELS[template.category] ?? template.category}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="display text-3xl">{template.title}</h1>
-          <Badge variant="secondary">
-            {EVIDENCE_LABELS[template.evidence]}
-          </Badge>
-        </div>
-        <p className="mt-3 text-ink-muted">{template.summary}</p>
-        {active ? (
-          <p className="mt-2 text-xs text-ink-muted">
-            Results computed from <strong>{active.original_name}</strong>,
-            entirely on this deployment&apos;s own infrastructure.
-          </p>
-        ) : null}
-      </div>
+  const recommendsClinicalConfirmation = template.variants.some((v) =>
+    Object.values(v.interpretations).some((text) =>
+      CLINICAL_CONFIRMATION_RE.test(text),
+    ),
+  );
+  const sensitive =
+    SENSITIVE_CATEGORIES.has(template.category) ||
+    recommendsClinicalConfirmation;
+  // Carrier-style reports get the support pathway too, and carrier-status
+  // reports specifically get the partner-testing note.
+  const carrierStyle = template.category === "reproductive-family";
+  const carrier = /\bcarrier\b/i.test(template.title);
+  // With no processed file there is no result to protect or be concerned by —
+  // the sections just say "upload a file" — so neither the gate nor the
+  // support panel applies.
+  const gated = sensitive && active != null;
+  const showSupport = (sensitive || carrierStyle) && active != null;
 
+  const resultsSection = (
+    <>
       {template.variants.map((v) => {
         const r = resolved.variants.find(
           (x) => x.variant.rsid === v.rsid,
@@ -116,11 +135,14 @@ export default async function ReportDetailPage(
               ) : r.status === "genotyped" ? (
                 <>
                   <p className="text-sm">
+                    {/* The explicit space keeps screen readers from running
+                        the genotype and its label together ("C/TYour
+                        genotype"). */}
                     <span className="mr-2 rounded-full bg-tint px-3 py-1 font-mono">
                       {r.genotype.length === 2
                         ? `${r.genotype[0]}/${r.genotype[1]}`
                         : r.genotype}
-                    </span>
+                    </span>{" "}
                     Your genotype
                     {r.strandFlipped ? (
                       <span className="ml-2 text-xs text-ink-muted">
@@ -134,11 +156,24 @@ export default async function ReportDetailPage(
                   </p>
                 </>
               ) : r.status === "not-covered" ? (
-                <p className="text-sm text-ink-muted">
-                  Your file does not cover this variant. Array files test a
-                  fixed set of positions; whole-genome data covers more.
-                  Inherit never imputes genotypes it hasn&apos;t observed.
-                </p>
+                active.file_type === "vcf" || active.file_type === "gvcf" ? (
+                  <p className="text-sm text-ink-muted">
+                    Your file does not cover this variant. VCF files from
+                    clinical or targeted tests usually list only the positions
+                    where you differ from the reference (or only one region),
+                    so Inherit cannot tell &ldquo;tested and normal&rdquo;
+                    apart from &ldquo;not tested&rdquo; here — and it never
+                    guesses genotypes it hasn&apos;t observed. If your lab can
+                    provide a gVCF or whole-genome file, more reports will
+                    resolve.
+                  </p>
+                ) : (
+                  <p className="text-sm text-ink-muted">
+                    Your file does not cover this variant. Array files test a
+                    fixed set of positions; whole-genome data covers more.
+                    Inherit never imputes genotypes it hasn&apos;t observed.
+                  </p>
+                )
               ) : r.status === "no-call" ? (
                 <p className="text-sm text-ink-muted">
                   Your file includes this position but the test could not make
@@ -223,6 +258,39 @@ export default async function ReportDetailPage(
           </p>
         </section>
       ) : null}
+
+      {showSupport ? <SupportPanel carrier={carrier} /> : null}
+    </>
+  );
+
+  return (
+    <article className="mx-auto max-w-3xl space-y-8">
+      <div>
+        <p className="eyebrow mb-2">
+          {CATEGORY_LABELS[template.category] ?? template.category}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="display text-3xl">{template.title}</h1>
+          <Badge variant="secondary">
+            {EVIDENCE_LABELS[template.evidence]}
+          </Badge>
+        </div>
+        <p className="mt-3 text-ink-muted">{template.summary}</p>
+        {active ? (
+          <p className="mt-2 text-xs text-ink-muted">
+            Results computed from <strong>{active.original_name}</strong>,
+            entirely on this deployment&apos;s own infrastructure.
+          </p>
+        ) : null}
+      </div>
+
+      {gated ? (
+        <SensitiveGate category={template.category}>
+          {resultsSection}
+        </SensitiveGate>
+      ) : (
+        resultsSection
+      )}
 
       <section>
         <h2 className="eyebrow mb-2">Sources</h2>

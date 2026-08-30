@@ -30,7 +30,7 @@
     "slug": "breast-cancer-fgfr2-rs2981582",
     "category": "cancer-risk",
     "title": "Breast cancer · FGFR2",
-    "summary": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 (often reported as the T allele on the opposite strand) is associated on average with roughly 1.2-1.3x the odds of breast cancer, mainly estrogen-receptor-positive disease.",
+    "summary": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 (often reported as the T allele on the opposite strand) is associated on average with roughly 1.2-1.3x the odds of breast cancer, mainly estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test — a reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
     "evidence": "moderate",
     "variants": [
       {
@@ -56,7 +56,7 @@
     "slug": "breast-cancer-2q35-rs13387042",
     "category": "cancer-risk",
     "title": "Breast cancer · 2q35 region",
-    "summary": "A variant in a gene-free stretch of chromosome 2q35 was one of the first replicated common breast cancer risk loci found by genome-wide studies. Each copy of the A allele at rs13387042 is associated on average with roughly 1.2x the odds of breast cancer, primarily estrogen-receptor-positive disease.",
+    "summary": "A variant in a gene-free stretch of chromosome 2q35 was one of the first replicated common breast cancer risk loci found by genome-wide studies. Each copy of the A allele at rs13387042 is associated on average with roughly 1.2x the odds of breast cancer, primarily estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test — a reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
     "evidence": "moderate",
     "variants": [
       {

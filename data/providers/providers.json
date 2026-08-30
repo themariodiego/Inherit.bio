@@ -180,7 +180,7 @@
   "slug": "ancestrydna",
   "name": "AncestryDNA",
   "website": "https://www.ancestry.com/dna/",
-  "checkout_url": "https://www.ancestry.com/checkout/mli?direct=1&offers=O-29007&quantities=1&rtype=85&flow=3",
+  "checkout_url": "https://www.ancestry.com/dna/",
   "privacy_policy_url": "https://www.ancestry.com/c/legal/privacystatement",
   "data_practices_note": "Genetic data used for research only under a separate opt-in Informed Consent to Research (some partners may have financial interests); Ancestry does not voluntarily give user data to law enforcement and offers opt-out of ad-tracking sharing/selling.",
   "products": [

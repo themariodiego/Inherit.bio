@@ -9,15 +9,18 @@ import {
 } from "@/lib/genome/load";
 import { resolveTemplate } from "@/lib/genome/reports";
 import { createClient } from "@/lib/supabase/server";
+import { isFixtureSlug } from "@/components/reports/library";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [files, templates] = await Promise.all([
+  const [files, allTemplates] = await Promise.all([
     getProcessedFiles(supabase),
     getPublishedTemplates(supabase),
   ]);
+  // Test fixtures never count toward user-facing library numbers.
+  const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
   const active = files[0] ?? null;
 
   const genotypes = active
@@ -51,29 +54,29 @@ export default async function DashboardPage() {
   const cards = [
     {
       href: "/reports",
-      label: "Reports with results",
+      label: "Reports covered",
       value: active ? `${covered} / ${templates.length}` : "—",
       note: active
-        ? "genotype-specific results from your file"
+        ? "a result is computed only when you open a report"
         : "upload a file to unlock",
     },
     {
-      href: "/reports",
+      href: "/reports#polygenic-scores",
       label: "Polygenic scores",
       value: active ? String((prs ?? []).length) : "—",
-      note: "with percentile + coverage",
+      note: "many small genetic effects combined into one estimate",
     },
     {
       href: "/ancestry",
       label: "mtDNA haplogroup",
       value: mtHaplo ?? "—",
-      note: "maternal line",
+      note: "your mother's-side deep ancestry line",
     },
     {
       href: "/uploads",
       label: "Files",
       value: String(files.length),
-      note: "processed",
+      note: "raw data files processed",
     },
   ];
 
@@ -129,7 +132,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-line bg-card p-5">
             <h2 className="font-medium">Ask your genome</h2>
             <p className="mt-1 text-sm text-ink-muted">
@@ -148,6 +151,16 @@ export default async function DashboardPage() {
             </p>
             <Button asChild size="sm" variant="outline" className="mt-3">
               <Link href="/browse">Browse genome</Link>
+            </Button>
+          </div>
+          <div className="rounded-2xl border border-line bg-card p-5">
+            <h2 className="font-medium">Trace your ancestry</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Your mother&apos;s-side and father&apos;s-side deep ancestry
+              lines (mtDNA and Y haplogroups), plus a continental estimate.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link href="/ancestry">View ancestry</Link>
             </Button>
           </div>
         </div>

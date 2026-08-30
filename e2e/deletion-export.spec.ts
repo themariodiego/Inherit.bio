@@ -31,24 +31,68 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   const res = await page.request.get("/api/export");
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toContain("application/zip");
+  expect(res.headers()["content-disposition"]).toContain("inherit-export-");
   const zip = new AdmZip(Buffer.from(await res.body()));
   const names = zip.getEntries().map((e) => e.entryName);
 
   expect(names).toContain("manifest.json");
+  expect(names).toContain("reports.json");
+  expect(names).toContain("prs.json");
+  expect(names).toContain("chats.json");
   expect(names.some((n) => n.startsWith("originals/"))).toBe(true);
   expect(names.some((n) => n.startsWith("variants/") && n.endsWith(".csv"))).toBe(true);
 
   const manifest = JSON.parse(zip.readAsText("manifest.json")) as {
-    files: { original_name: string; sha256: string | null }[];
+    files: {
+      id: string;
+      original_name: string;
+      sha256: string | null;
+      variant_count: number | null;
+      row_count: number;
+    }[];
+    warnings?: string[];
     note: string;
   };
   expect(manifest.files.length).toBeGreaterThan(0);
   expect(manifest.note).toContain("free");
+  // The manifest must account for the privacy policy's export promise verbatim.
+  expect(manifest.note).toContain(
+    "your original uploaded files, all derived variants, all reports, and your chat history",
+  );
+  expect(manifest.warnings ?? []).toHaveLength(0);
 
   const csvName = names.find((n) => n.startsWith("variants/"))!;
   const csv = zip.readAsText(csvName);
   expect(csv.split("\n")[0]).toBe("rsid,chrom,pos_grch38,ref,alt,genotype");
   expect(csv.split("\n").length).toBeGreaterThan(1000);
+
+  // The CSV must contain every variant row — a PostgREST page cap (1,000
+  // rows by default) must never silently truncate the export again.
+  const fileId = csvName.replace(/^variants\//, "").replace(/\.csv$/, "");
+  const { data: gf } = await adminClient()
+    .from("genome_files")
+    .select("variant_count")
+    .eq("id", fileId)
+    .single();
+  const variantCount = (gf as { variant_count: number | null }).variant_count;
+  expect(variantCount).toBeGreaterThan(1000);
+  const dataRows = csv.trimEnd().split("\n").length - 1; // minus header
+  expect(dataRows).toBe(variantCount);
+  const manifestFile = manifest.files.find((f) => f.id === fileId)!;
+  expect(manifestFile.row_count).toBe(variantCount);
+
+  // reports.json resolves the report library against the processed file.
+  const reports = JSON.parse(zip.readAsText("reports.json")) as {
+    file_id: string;
+    reports: { slug: string }[];
+  }[];
+  expect(reports.some((f) => f.file_id === fileId)).toBe(true);
+  for (const f of reports) {
+    expect(f.reports.every((r) => !r.slug.startsWith("auto-e2e-"))).toBe(true);
+  }
+
+  // prs.json is present and parseable (an array; may be empty for this file).
+  expect(Array.isArray(JSON.parse(zip.readAsText("prs.json")))).toBe(true);
 });
 
 test("account deletion removes auth user, all rows, and all storage objects", async ({

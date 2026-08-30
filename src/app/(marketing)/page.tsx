@@ -41,8 +41,13 @@ export default function LandingPage() {
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink-muted">
           Inherit helps you buy sequencing from a real provider, then turns
-          your raw DNA file into reports, ancestry, and polygenic scores — on
+          your raw DNA file into reports, ancestry, and polygenic scores
+          (combined estimates from many small genetic effects) — on
           infrastructure you can read, audit, and self-host.
+        </p>
+        <p className="mt-4 max-w-xl text-ink-muted">
+          Inherit itself is free — you only ever pay a sequencing provider,
+          directly. Already have a DNA file? Everything here costs nothing.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild size="lg">
@@ -89,6 +94,11 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
+            <p className="mt-8 border-t border-line pt-6 text-sm leading-relaxed text-ink-muted">
+              How is that possible? Created and funded by Plus Bio as a
+              public-good project — Inherit has no revenue model and nothing
+              to sell.
+            </p>
           </div>
           <div className="rounded-2xl border border-line bg-card p-6">
             <p className="eyebrow mb-4">Sample report</p>

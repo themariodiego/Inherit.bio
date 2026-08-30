@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import http from "node:http";
-import { JOBS_SECRET, adminClient, createConfirmedUser } from "./helpers";
+import {
+  JOBS_SECRET,
+  adminClient,
+  createConfirmedUser,
+  signIn,
+} from "./helpers";
 
 // A7 — the research-library pipeline, driven by a fixtured GWAS release:
 // refresh drafts a template into the review queue; publishing it updates
@@ -150,4 +155,16 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   );
   expect(digest, "digest email must have been sent").toBeTruthy();
   expect(`${digest!.subject} ${digest!.html ?? ""}`).toContain("E2E test trait");
+
+  // The fixture IS published (changelog above, direct link below) but must
+  // NOT appear in the user-facing report library — auto-e2e-* slugs are
+  // excluded there unconditionally.
+  await signIn(page, USER.email, USER.password);
+  await page.goto(`/reports/${SLUG}`);
+  await expect(
+    page.getByRole("heading", { name: /E2E test trait/ }),
+  ).toBeVisible();
+  await page.goto("/reports");
+  await expect(page.locator(`a[href="/reports/${SLUG}"]`)).toHaveCount(0);
+  await expect(page.getByText("E2E test trait")).toHaveCount(0);
 });

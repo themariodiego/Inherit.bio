@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Uploader } from "@/components/uploads/uploader";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
@@ -56,6 +57,24 @@ export default async function UploadsPage() {
 
       <Uploader />
 
+      <div className="space-y-1 text-xs text-ink-muted">
+        <p>
+          Your own DNA only — files from children or relatives aren&rsquo;t
+          allowed (
+          <Link
+            href="/terms#eligibility"
+            className="underline underline-offset-2"
+          >
+            Terms
+          </Link>
+          ).
+        </p>
+        <p>
+          Not sure which file you have? 23andMe/Ancestry/MyHeritage exports
+          are .txt or .csv; clinical/lab files are usually .vcf or .vcf.gz.
+        </p>
+      </div>
+
       <ul className="space-y-3">
         {(files ?? []).map((f) => (
           <li
@@ -88,6 +107,14 @@ export default async function UploadsPage() {
                 >
                   {STATUS_LABEL[f.status] ?? f.status}
                 </Badge>
+                {f.status === "annotated" ? (
+                  <Link
+                    href="/reports"
+                    className="whitespace-nowrap text-xs text-forest underline underline-offset-2"
+                  >
+                    See your reports →
+                  </Link>
+                ) : null}
                 <FileRowActions
                   fileId={f.id}
                   status={f.status}

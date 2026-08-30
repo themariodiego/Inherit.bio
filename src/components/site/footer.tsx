@@ -19,6 +19,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
         { href: "/terms", label: "Terms of service" },
         { href: "/legal/research-consent", label: "Research consent" },
         { href: "/legal/law-enforcement", label: "Law enforcement & transparency" },
+        { href: "/about#accessibility", label: "Accessibility" },
       ],
     },
     {

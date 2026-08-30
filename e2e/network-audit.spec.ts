@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createConfirmedUser, signIn } from "./helpers";
+import path from "node:path";
+import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 
 // A14 — the network audit as an E2E test over REAL rendered pages: the set
 // of request origins on landing, dashboard, and a report page must be
@@ -99,6 +100,42 @@ test("a report page contacts no third-party origin", async ({ page }) => {
     await page.waitForLoadState("networkidle");
   }
   await assertClean(page, observed, "report");
+});
+
+// The browse page embeds igv.js, which by default phones home to igv.org
+// (its genome registry and url_mappings.tsv). The page claims "no external
+// genome service is contacted" — this test is the CI enforcement of that
+// claim: it renders the real igv browser over a processed file and asserts
+// the origin set stays first-party.
+test("browse page with the embedded genome browser contacts no third-party origin", async ({
+  page,
+}) => {
+  const user = {
+    email: "netaudit-browse@e2e.local",
+    password: "e2e-netaudit-browse-pw",
+  };
+  await createConfirmedUser(user.email, user.password);
+  await signIn(page, user.email, user.password);
+  await ingestFileAs(
+    page,
+    user.email,
+    user.password,
+    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
+    "vcf",
+  );
+
+  const observed = watchRequests(page);
+  // rs762551 is a non-ref call in the tiny fixture, so the search returns a
+  // table hit and mounts igv at its locus.
+  await page.goto("/browse?q=rs762551");
+  await expect(page.getByTestId("genome-browser")).toBeVisible();
+  // igv has finished initializing (reference + track loads, and any
+  // phone-home attempts) once its canvas exists.
+  await expect(
+    page.getByTestId("genome-browser").locator("canvas").first(),
+  ).toBeVisible({ timeout: 60_000 });
+  await page.waitForLoadState("networkidle");
+  await assertClean(page, observed, "browse");
 });
 
 test("legal pages contact no third-party origin", async ({ page }) => {

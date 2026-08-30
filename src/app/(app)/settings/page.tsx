@@ -70,9 +70,10 @@ export default async function SettingsPage() {
           <div>
             <h3 className="font-medium">Export everything</h3>
             <p className="text-sm text-ink-muted">
-              ZIP of your original uploads, normalized variants, and results.
-              Free, forever — exporting your own genome will never cost money
-              here.
+              ZIP of your original uploads, all variants, computed report
+              results, polygenic scores, ancestry, consents, and chat history
+              (if stored). Free, forever — exporting your own genome will
+              never cost money here.
             </p>
           </div>
           <Button asChild variant="outline">
