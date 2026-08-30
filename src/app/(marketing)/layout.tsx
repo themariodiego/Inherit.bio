@@ -1,5 +1,6 @@
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
+import { SkipLink } from "@/components/site/skip-link";
 
 export default function MarketingLayout({
   children,
@@ -8,8 +9,11 @@ export default function MarketingLayout({
 }) {
   return (
     <>
+      <SkipLink />
       <SiteHeader />
-      <main className="flex-1">{children}</main>
+      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
+        {children}
+      </main>
       <SiteFooter />
     </>
   );

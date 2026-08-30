@@ -26,6 +26,12 @@ once in the Vercel dashboard (Project → Settings → Environment Variables,
 Production) before the deployment is functional. After setting them, redeploy
 (or merge the PR to `main`).
 
+> **Note**: production env belongs here — in the hosting platform's
+> environment variables — never in a committed file such as
+> `.env.production`. `NEXT_PUBLIC_*` values are inlined into every bundle at
+> build time, so builds must receive them explicitly; a committed env file
+> would silently bake its values into anyone's local `pnpm build`.
+
 | Variable | Value |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://zuvloczwgrayonqabnss.supabase.co` |

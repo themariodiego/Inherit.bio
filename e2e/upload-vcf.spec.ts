@@ -109,4 +109,30 @@ test("ancestry page states what a chr20-22 file cannot support", async ({
   await expect(page.getByTestId("ydna")).toContainText(
     /no Y-chromosome positions/i,
   );
+  // Plain-language gloss on the "XX genomes" jargon.
+  await expect(page.getByTestId("ydna")).toContainText(
+    /without a Y chromosome/i,
+  );
+
+  // chr20-22 covers almost none of the AIM panel, so the admixture card must
+  // refuse to show confident percentage bars and render the honest empty
+  // state instead.
+  const admixture = page.getByTestId("admixture");
+  await expect(admixture).toContainText(/Not enough data for an estimate/i);
+  await expect(admixture).toContainText(
+    /covered only \d+ of \d+ ancestry markers/i,
+  );
+  await expect(admixture).toContainText(
+    /a limitation of the file, not a result about you/i,
+  );
+  // The raw numbers stay hidden behind an explicit disclosure...
+  const rawList = admixture.getByRole("list");
+  await expect(rawList).toBeHidden();
+  // ...and opening it shows the warning plus the greyed, whole-number bars.
+  await admixture
+    .getByText("Show the unreliable raw numbers anyway")
+    .click();
+  await expect(admixture).toContainText(/proportions are unreliable/i);
+  await expect(rawList).toBeVisible();
+  await expect(rawList.getByRole("listitem")).toHaveCount(5);
 });

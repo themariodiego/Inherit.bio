@@ -27,7 +27,15 @@ export default function SignUpPage() {
       <div>
         <h1 className="display text-2xl">Create your account</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Inherit is for adults (18+). Your data stays yours.
+          Inherit is for adults (18+), and only for your own DNA — you
+          can&rsquo;t upload a child&rsquo;s or relative&rsquo;s file (
+          <Link
+            href="/terms#eligibility"
+            className="underline underline-offset-2"
+          >
+            why?
+          </Link>
+          ). Your data stays yours.
         </p>
       </div>
       <AuthForm
@@ -61,6 +69,17 @@ export default function SignUpPage() {
           return null;
         }}
       />
+      <p className="text-center text-xs text-ink-muted">
+        By creating an account you agree to the{" "}
+        <Link href="/terms" className="underline underline-offset-2">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
+      </p>
       <p className="text-center text-sm text-ink-muted">
         Already have an account?{" "}
         <Link href="/auth/sign-in" className="text-forest underline underline-offset-2">

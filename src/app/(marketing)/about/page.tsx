@@ -165,6 +165,37 @@ export default function AboutPage() {
           ),
         },
         {
+          id: "accessibility",
+          heading: "Accessibility",
+          body: (
+            <>
+              <p>
+                A platform built on trust has to be usable by everyone, so
+                accessibility is treated as a core requirement, not a
+                nice-to-have. Inherit targets{" "}
+                <strong>WCAG 2.1 AA</strong>: every release runs automated
+                axe accessibility checks in our continuous-integration
+                pipeline, in both light and dark themes, and the interface
+                is built to be fully operable with a keyboard alone — a
+                skip-to-content link, visible focus styles, and proper
+                landmarks and headings throughout.
+              </p>
+              <p>
+                We are equally honest about known gaps: the genome browser
+                canvas is not yet screen-reader accessible; variant search
+                results are, and every insight in the browser is also
+                available as text.
+              </p>
+              <p>
+                If you hit a barrier, please tell us — email{" "}
+                <strong>accessibility@inherit.bio</strong> or open an issue
+                on the public repository. Accessibility reports are triaged
+                with the same priority as functional bugs.
+              </p>
+            </>
+          ),
+        },
+        {
           id: "contact",
           heading: "Contact",
           body: (

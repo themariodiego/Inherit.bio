@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
+import {
+  CLINICAL_GENES,
+  matchTraitSuggestion,
+  SEARCH_EXAMPLES,
+  type TraitSuggestion,
+} from "@/components/browse/search-guidance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getActiveFile } from "@/lib/genome/load";
@@ -32,6 +39,9 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
   let hits: Hit[] = [];
   let locus: { chrom: number; start: number; end: number } | null = null;
   let message: string | null = null;
+  let showReportsLink = false;
+  let clinicalGene: string | null = null;
+  let traitSuggestion: TraitSuggestion | null = null;
 
   if (q && active) {
     const rsid = parseRsid(q);
@@ -139,8 +149,16 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
             end: Math.max(...positions) + 10000,
           };
         }
+      } else if (CLINICAL_GENES.has(q.toUpperCase())) {
+        // A silent empty result for a hereditary-risk gene reads as
+        // reassurance. Say what is actually going on instead.
+        clinicalGene = q.toUpperCase();
       } else {
-        message = `No reference variants known for "${q}" — try an rsID (rs123…) or a position (chr15:74749576).`;
+        traitSuggestion = matchTraitSuggestion(q);
+        if (!traitSuggestion) {
+          message = `No reference variants known for "${q}" — try an rsID (rs123…), a gene symbol (CYP1A2), or a position (chr15:74749576).`;
+          showReportsLink = true;
+        }
       }
     }
   }
@@ -163,20 +181,82 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
         )}
       </div>
 
-      <form className="flex gap-2" action="/browse" method="get">
-        <Input
-          name="q"
-          defaultValue={q}
-          placeholder="rs762551 · CYP1A2 · chr20:1000000-1100000"
-          aria-label="Search variants"
-          className="max-w-md font-mono text-sm"
-        />
-        <Button type="submit">Search</Button>
-      </form>
+      <div className="space-y-2">
+        <form className="flex gap-2" action="/browse" method="get">
+          <Input
+            name="q"
+            defaultValue={q}
+            placeholder="rs762551 · CYP1A2 · chr20:1000000-1100000"
+            aria-label="Search variants"
+            className="max-w-md font-mono text-sm"
+          />
+          <Button type="submit">Search</Button>
+        </form>
+        <p className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+          <span>Try:</span>
+          {SEARCH_EXAMPLES.map((ex) => (
+            <Link
+              key={ex.q}
+              href={`/browse?q=${encodeURIComponent(ex.q)}`}
+              className="rounded-full border border-line bg-card px-3 py-1 transition-colors hover:border-forest"
+            >
+              <span className="font-mono">{ex.q}</span> ({ex.hint})
+            </Link>
+          ))}
+        </p>
+      </div>
+
+      {clinicalGene ? (
+        <div
+          role="status"
+          className="rounded-xl border border-line bg-card p-4 text-sm"
+        >
+          <p>
+            Inherit&apos;s reference doesn&apos;t include clinical{" "}
+            {clinicalGene} variants, and consumer array files can&apos;t
+            reliably assess hereditary cancer risk — that requires clinical
+            genetic testing. A result here saying nothing is{" "}
+            <strong>NOT</strong> reassurance.
+          </p>
+        </div>
+      ) : null}
+
+      {traitSuggestion ? (
+        <div className="rounded-xl border border-line bg-card p-4 text-sm">
+          <p>Looking for {traitSuggestion.topic}? See these reports →</p>
+          <ul className="mt-2 space-y-1">
+            {traitSuggestion.reports.map((r) => (
+              <li key={r.slug}>
+                <Link
+                  href={`/reports/${r.slug}`}
+                  className="underline underline-offset-2 hover:text-forest"
+                >
+                  {r.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-ink-muted">
+            <Link href="/reports" className="underline underline-offset-2">
+              Browse the full report library
+            </Link>
+          </p>
+        </div>
+      ) : null}
 
       {message ? (
         <p className="rounded-xl border border-line bg-card p-4 text-sm text-ink-muted">
           {message}
+          {showReportsLink ? (
+            <>
+              {" "}
+              Or{" "}
+              <Link href="/reports" className="underline underline-offset-2">
+                start from your reports
+              </Link>{" "}
+              instead.
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -189,8 +269,20 @@ export default async function BrowsePage(props: PageProps<"/browse">) {
                 <th className="px-4 py-2 font-normal">Position (GRCh38)</th>
                 <th className="px-4 py-2 font-normal">Gene</th>
                 <th className="px-4 py-2 font-normal">Your genotype</th>
-                <th className="px-4 py-2 font-normal">ClinVar</th>
-                <th className="px-4 py-2 font-normal">gnomAD AF</th>
+                <th
+                  className="cursor-help px-4 py-2 font-normal underline decoration-dotted underline-offset-2"
+                  title="ClinVar: public database of medical variant classifications"
+                  aria-label="ClinVar — public database of medical variant classifications"
+                >
+                  ClinVar
+                </th>
+                <th
+                  className="cursor-help px-4 py-2 font-normal underline decoration-dotted underline-offset-2"
+                  title="gnomAD allele frequency: how common this variant is worldwide (allele frequency)"
+                  aria-label="gnomAD AF — how common this variant is worldwide (allele frequency)"
+                >
+                  gnomAD AF
+                </th>
               </tr>
             </thead>
             <tbody>

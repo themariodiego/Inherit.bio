@@ -180,7 +180,7 @@
   "slug": "ancestrydna",
   "name": "AncestryDNA",
   "website": "https://www.ancestry.com/dna/",
-  "checkout_url": "https://www.ancestry.com/checkout/mli?direct=1&offers=O-29007&quantities=1&rtype=85&flow=3",
+  "checkout_url": "https://www.ancestry.com/dna/",
   "privacy_policy_url": "https://www.ancestry.com/c/legal/privacystatement",
   "data_practices_note": "Genetic data used for research only under a separate opt-in Informed Consent to Research (some partners may have financial interests); Ancestry does not voluntarily give user data to law enforcement and offers opt-out of ad-tracking sharing/selling.",
   "products": [
@@ -329,7 +329,7 @@
   "slug": "dante-labs",
   "name": "Dante Labs",
   "website": "https://dantelabs.com/",
-  "checkout_url": "https://dantelabs.com/checkout/?product=genome&tier=premium",
+  "checkout_url": "https://dantelabs.com/genome/",
   "privacy_policy_url": "https://dantelabs.com/privacy/",
   "data_practices_note": "Does not sell genetic data; research use is opt-in via separate Research Consent; GDPR-compliant with user-initiated deletion of data and sample (policy dated 2026-04-12)",
   "products": [
@@ -480,7 +480,7 @@
   "slug": "familytreedna",
   "name": "FamilyTreeDNA",
   "website": "https://www.familytreedna.com",
-  "checkout_url": "https://www.familytreedna.com/products/big-y",
+  "checkout_url": "https://www.familytreedna.com/products",
   "privacy_policy_url": "https://www.familytreedna.com/legal/privacy-statement",
   "data_practices_note": "States it does not sell/trade genetic data; research sharing requires separate express consent; law-enforcement (investigative genetic genealogy) matching is opt-OUT for US customers by default.",
   "products": [

@@ -17,11 +17,16 @@ export async function SiteHeader() {
   } = await supabase.auth.getUser();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
+    // Solid bg-paper (not /90 + blur): content scrolling under the sticky
+    // header must never bleed through, especially at high zoom levels.
+    <header className="sticky top-0 z-40 border-b border-line bg-paper">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3.5">
         <div className="flex items-baseline gap-3">
           <Wordmark />
-          <span className="hidden text-[11px] text-ink-muted sm:inline">
+          {/* Tagline only when there is genuinely room for one line: at
+              200% zoom a typical window is ~640-768 effective px, where
+              sm:inline wrapped it into a multi-line sliver. */}
+          <span className="hidden text-[11px] whitespace-nowrap text-ink-muted lg:inline">
             created by Plus Bio for the public good
           </span>
         </div>
@@ -54,10 +59,11 @@ export async function SiteHeader() {
           )}
         </div>
       </div>
-      {/* Mobile nav: the primary links move to a scrollable row below md. */}
+      {/* Mobile nav: the primary links move to a wrapping row below md —
+          wrap rather than scroll so no destination hides off-screen. */}
       <nav
         aria-label="Main (mobile)"
-        className="flex gap-5 overflow-x-auto border-t border-line px-6 py-2 md:hidden"
+        className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line px-6 py-2 md:hidden"
       >
         {nav.map((l) => (
           <Link

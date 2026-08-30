@@ -16,7 +16,7 @@ export default function AuthLayout({
         <Attribution />
         <p className="text-xs text-ink-muted">
           <Link href="/" className="underline underline-offset-2">
-            Back to sequence
+            Back to Inherit
           </Link>
         </p>
       </div>

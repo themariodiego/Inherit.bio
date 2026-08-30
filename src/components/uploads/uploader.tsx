@@ -76,7 +76,7 @@ export function Uploader() {
         setPhase({
           step: "error",
           message:
-            "Unrecognized format. Supported: 23andMe/AncestryDNA/MyHeritage/FamilyTreeDNA raw files, VCF/VCF.GZ/gVCF, BAM, CRAM.",
+            "Unrecognized format. Supported: 23andMe, AncestryDNA, MyHeritage, or FamilyTreeDNA raw files, VCF/VCF.GZ/gVCF, BAM, CRAM.",
         });
         return;
       }

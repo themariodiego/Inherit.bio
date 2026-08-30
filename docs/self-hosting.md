@@ -126,6 +126,12 @@ pnpm gate:legal  # placeholder gate over legal pages
    Cron can call the scheduled jobs). `vercel.json` schedules the research
    and annotation jobs daily.
 
+   > **Note**: production env belongs in the hosting platform's environment
+   > variables (the Vercel dashboard), never in a committed file such as
+   > `.env.production`. `NEXT_PUBLIC_*` values are inlined into the client
+   > bundle at build time, so the build itself must receive them — make sure
+   > they point at *your* Supabase project wherever the build runs.
+
 4. **Seed** the production project (uses the service-role key against the
    hosted URL):
 

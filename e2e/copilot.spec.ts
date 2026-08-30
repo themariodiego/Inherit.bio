@@ -31,19 +31,30 @@ test.afterAll(async () => {
   await stopMock?.();
 });
 
-test("with no provider configured, local-mode instructions render first", async ({
+test("with no provider configured, plain-language setup renders and the local option stays the stated privacy preference", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/chat");
   const instructions = page.getByTestId("local-mode-instructions");
   await expect(instructions).toBeVisible();
-  // Local-first ordering: Ollama/local before the cloud option.
-  const text = await instructions.textContent();
-  expect(text!.indexOf("Local model")).toBeLessThan(
-    text!.indexOf("Cloud model"),
+  // Leads with what the copilot does, in plain language, before any setup.
+  await expect(instructions).toContainText(
+    "Ask questions about your own reports in plain language",
   );
-  await expect(instructions).toContainText("localhost:11434");
+  await expect(instructions).toContainText(
+    "Connecting an AI is a one-time technical step",
+  );
+  // The local-first privacy PREFERENCE is still present: the self-hosted
+  // option is named the most private / privacy-preferred one, and the
+  // full local instructions live in the expandable advanced section.
+  await expect(instructions).toContainText("most private");
+  const advanced = instructions.locator("details");
+  await expect(advanced).toContainText("privacy-preferred");
+  await advanced.locator("summary").click();
+  await expect(
+    instructions.getByText("localhost:11434", { exact: false }),
+  ).toBeVisible();
 });
 
 test("cloud provider requires a consent dialog naming provider and data classes; tool call + cited streamed answer; revocation works", async ({
@@ -58,8 +69,11 @@ test("cloud provider requires a consent dialog naming provider and data classes;
     "vcf",
   );
 
-  // Configure the mock as an OpenAI-compatible CLOUD endpoint.
+  // Configure the mock as an OpenAI-compatible CLOUD endpoint. The form
+  // defaults to Anthropic for fresh users, so pick the provider first.
   await page.goto("/settings");
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
   await page.getByLabel("Base URL").fill(MOCK_BASE);
   await expect(
     page.getByText("Detected as a cloud endpoint"),
