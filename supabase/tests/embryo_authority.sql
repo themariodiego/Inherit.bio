@@ -88,7 +88,7 @@ select throws_ok(
 );
 
 select lives_ok(
-  $$insert into public.embryo_findings (
+  $$insert into public.embryo_scores (
       embryo_id, condition_id, condition_name, finding, evidence_label,
       coverage_state, citation_ids, source_binding_fingerprint, computation_revision
     ) values (
@@ -100,7 +100,7 @@ select lives_ok(
 );
 
 select throws_ok(
-  $$insert into public.embryo_findings (
+  $$insert into public.embryo_scores (
       embryo_id, condition_id, condition_name, finding, evidence_label,
       coverage_state, source_binding_fingerprint, computation_revision
     ) values (
@@ -114,7 +114,7 @@ select throws_ok(
 );
 
 select is(
-  has_table_privilege('authenticated', 'public.embryo_findings', 'select'),
+  has_table_privilege('authenticated', 'public.embryo_scores', 'select'),
   false,
   'embryo findings remain closed to authenticated clients by default'
 );

@@ -50,6 +50,9 @@ export async function POST(
       status: 400,
     });
   }
+  if (!file.subject_id) {
+    return new Response("File subject binding is unavailable", { status: 409 });
+  }
   // Defense in depth: the object is fetched below with the service-role key,
   // which bypasses storage RLS. bucket_path is client-set, so refuse any path
   // not under this user's own prefix — otherwise a user could point their row
@@ -117,6 +120,7 @@ export async function POST(
     for (let i = 0; i < records.length; i += BATCH) {
       const rows = records.slice(i, i + BATCH).map((r) => ({
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         rsid: r.rsid,
         chrom: r.chrom,
@@ -148,6 +152,7 @@ export async function POST(
     if (admix) {
       ancestryRows.push({
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         kind: "admixture",
         result: admix as never,
@@ -159,6 +164,7 @@ export async function POST(
     const mt = hasMt ? classify("mtDNA", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
+      subject_id: file.subject_id,
       file_id: id,
       kind: "mtdna",
       result: (mt ?? { haplogroup: null }) as never,
@@ -171,6 +177,7 @@ export async function POST(
     const y = hasY ? classify("Y", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
+      subject_id: file.subject_id,
       file_id: id,
       kind: "ydna",
       result: (y ?? { haplogroup: null }) as never,
@@ -198,6 +205,7 @@ export async function POST(
       const result = computePrs(prsLookup, score);
       return {
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         pgs_id: score.pgs_id,
         raw_score: result.raw,

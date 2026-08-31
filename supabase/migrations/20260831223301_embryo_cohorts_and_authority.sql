@@ -224,7 +224,7 @@ create table public.embryo_qc (
   )
 );
 
-create table public.embryo_findings (
+create table public.embryo_scores (
   id uuid primary key default gen_random_uuid(),
   embryo_id uuid not null references public.embryos (id) on delete cascade,
   condition_id text not null,
@@ -264,12 +264,12 @@ create table public.embryo_findings (
   ]))
 );
 
-create index embryo_findings_embryo_idx
-  on public.embryo_findings (embryo_id, condition_id, computed_at desc);
+create index embryo_scores_embryo_idx
+  on public.embryo_scores (embryo_id, condition_id, computed_at desc);
 
 create table public.embryo_figures (
   id uuid primary key default gen_random_uuid(),
-  finding_id uuid not null references public.embryo_findings (id) on delete cascade,
+  finding_id uuid not null references public.embryo_scores (id) on delete cascade,
   figure_kind text not null check (figure_kind in (
     'absolute_risk', 'interval', 'natural_frequency', 'within_family'
   )),
@@ -279,7 +279,7 @@ create table public.embryo_figures (
   unique (finding_id, figure_kind, figure_revision)
 );
 
-create table public.result_suppressions (
+create table public.suppressions (
   id uuid primary key default gen_random_uuid(),
   subject_id uuid not null references public.subjects (id) on delete restrict,
   condition_id text not null,
@@ -289,8 +289,8 @@ create table public.result_suppressions (
   ended_at timestamptz
 );
 
-create unique index result_suppressions_current_idx
-  on public.result_suppressions (subject_id, condition_id)
+create unique index suppressions_current_idx
+  on public.suppressions (subject_id, condition_id)
   where ended_at is null;
 
 create table public.embryo_variants (
@@ -355,7 +355,7 @@ create table public.embryo_ingest_sessions (
   check (expires_at > created_at)
 );
 
-create table public.embryo_ingest_handles (
+create table public.embryo_fragment_handle_maps (
   session_id uuid not null references public.embryo_ingest_sessions (id) on delete cascade,
   sample_ordinal smallint not null check (sample_ordinal between 0 and 63),
   handle_hash text not null unique check (handle_hash ~ '^[0-9a-f]{64}$'),
@@ -462,9 +462,9 @@ begin
   foreach t in array array[
     'embryo_cohort_drafts', 'embryo_draft_participants', 'embryo_cohorts',
     'embryo_participant_sets', 'embryo_basis_bindings', 'embryo_donor_attributions',
-    'embryos', 'embryo_qc', 'embryo_findings', 'embryo_figures',
-    'result_suppressions', 'embryo_variants', 'embryo_ingest_sessions',
-    'embryo_ingest_handles', 'embryo_ingest_fragments',
+    'embryos', 'embryo_qc', 'embryo_scores', 'embryo_figures',
+    'suppressions', 'embryo_variants', 'embryo_ingest_sessions',
+    'embryo_fragment_handle_maps', 'embryo_ingest_fragments',
     'embryo_disposition_proposals', 'future_person_record_key_hashes',
     'future_person_record_key_print_rights'
   ] loop
