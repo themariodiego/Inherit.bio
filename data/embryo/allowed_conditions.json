@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "withheld_until_calibrated_models_are_registered",
+  "model_constraints": {
+    "sex": "combined",
+    "age_band": "lifetime",
+    "prevalence_basis": "lifetime_risk",
+    "birth_cohort": "required_nonempty",
+    "calibration_cohort": "required_nonempty",
+    "calibration_n": "positive_integer",
+    "baseline_interval": "required_strict_low_point_high",
+    "within_family_status": [
+      "measured",
+      "measured_inconclusive",
+      "not_measured"
+    ],
+    "within_family_measurement": "when_measured_or_measured_inconclusive_require_published_sibling_validation_citation_family_count_point_estimate_and_strict_95_percent_interval",
+    "within_family_default": "not_measured_rows_are_disabled_by_default_and_return_no_numeric_finding"
+  },
+  "allowed_categories": [
+    "Heart and circulation",
+    "Food, drink and metabolism",
+    "Immune system and allergies",
+    "Cancer",
+    "Having children"
+  ],
+  "forbidden_phenotype_classes": [
+    "cognitive",
+    "educational",
+    "personality",
+    "behavioural",
+    "mental_health",
+    "height",
+    "weight",
+    "bmi",
+    "appearance",
+    "athleticism",
+    "longevity",
+    "lifespan",
+    "biological_age",
+    "sex",
+    "gender",
+    "sexual_orientation",
+    "non_disease_trait",
+    "composite"
+  ],
+  "conditions": []
+}
