@@ -63,11 +63,11 @@ export async function POST(request: Request) {
           {
             title: template.title,
             summary: template.summary,
-            url: `${siteUrl}/reports/${template.slug}`,
+            url: `${siteUrl}/genome/me/reports/${template.slug}`,
           },
         ],
         manageUrl: `${siteUrl}/settings`,
-      });
+      }, `research-${template.slug}-${p.id}`);
       if (ok) sent++;
     }
   }

@@ -9,7 +9,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
         { href: "/providers", label: "Find a provider" },
         { href: "/overview", label: "Overview" },
         { href: "/changelog", label: "Research changelog" },
-        { href: "/docs/self-hosting", label: "Self-host" },
+        { href: "/legal/self-hosting", label: "Self-host" },
       ],
     },
     {

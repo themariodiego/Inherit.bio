@@ -18,7 +18,12 @@ function client(): Resend | null {
 }
 
 function from(): string {
-  return process.env.EMAIL_FROM ?? "Inherit <onboarding@resend.dev>";
+  const value = process.env.EMAIL_FROM;
+  if (value) return value;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("EMAIL_FROM must use a verified sender in production");
+  }
+  return "Inherit <onboarding@resend.dev>";
 }
 
 async function send(
@@ -26,13 +31,17 @@ async function send(
   subject: string,
   html: string,
   label: string,
+  idempotencyKey?: string,
 ): Promise<boolean> {
   const resend = client();
   if (!resend) {
     console.warn(`[email] RESEND_API_KEY unset; skipping ${label} email`);
     return false;
   }
-  const { error } = await resend.emails.send({ from: from(), to, subject, html });
+  const { error } = await resend.emails.send(
+    { from: from(), to, subject, html },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
   if (error) console.error(`[email] ${label} send failed:`, error.message);
   return !error;
 }
@@ -40,15 +49,17 @@ async function send(
 export async function sendReportReady(
   to: string,
   props: ReportReadyProps,
+  idempotencyKey?: string,
 ): Promise<boolean> {
   const html = await render(createElement(ReportReadyEmail, props));
-  return send(to, "Your Inherit reports are ready", html, "report-ready");
+  return send(to, "Your Inherit reports are ready", html, "report-ready", idempotencyKey);
 }
 
 export async function sendResearchDigest(
   to: string,
   props: ResearchDigestProps,
+  idempotencyKey?: string,
 ): Promise<boolean> {
   const html = await render(createElement(ResearchDigestEmail, props));
-  return send(to, "New reports in the Inherit research library", html, "research-digest");
+  return send(to, "New reports in the Inherit research library", html, "research-digest", idempotencyKey);
 }

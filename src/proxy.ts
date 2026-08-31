@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
   const isProtected =
     path.startsWith("/overview") ||
     path.startsWith("/genome") ||
-    path.startsWith("/family") ||
+    path.startsWith("/family/") ||
     path.startsWith("/embryos") ||
     path.startsWith("/copilot") ||
     path.startsWith("/files") ||

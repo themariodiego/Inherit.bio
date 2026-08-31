@@ -240,8 +240,8 @@ export async function POST(
       await sendReportReady(user.email, {
         fileName: file.original_name,
         reportCount: templateCount ?? 0,
-        dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/reports`,
-      });
+        dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/genome/me/reports`,
+      }, `report-ready-${file.id}`);
     }
 
     return NextResponse.json({
