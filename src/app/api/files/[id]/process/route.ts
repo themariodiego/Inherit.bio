@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { sendReportReady } from "@/lib/email";
 import { estimateAdmixture } from "@/lib/genome/admixture";
 import { classify } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
@@ -11,6 +10,7 @@ import { ALL_PRS_SCORES } from "@/lib/genome/prs-data";
 import { toLines } from "@/lib/genome/parsers/lines";
 import { parseVcf } from "@/lib/genome/parsers/vcf";
 import type { ParseResult, VariantRecord } from "@/lib/genome/types";
+import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -237,11 +237,25 @@ export async function POST(
       .select("slug", { count: "exact", head: true })
       .eq("status", "published");
     if (user.email) {
-      await sendReportReady(user.email, {
-        fileName: file.original_name,
-        reportCount: templateCount ?? 0,
-        dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/genome/me/reports`,
-      }, `report-ready-${file.id}`);
+      try {
+        await enqueueAccountMail({
+          accountId: user.id,
+          email: user.email,
+          mail: {
+            id: "report-ready",
+            payload: {
+              reportCount: templateCount ?? 0,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/genome/me/reports`,
+            },
+          },
+          purpose: "report.ready",
+          targetKind: "genome_file",
+          targetId: file.id,
+          semanticKey: `annotated:${file.id}`,
+        });
+      } catch {
+        console.error("[mail] report-ready enqueue failed");
+      }
     }
 
     return NextResponse.json({

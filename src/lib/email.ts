@@ -4,6 +4,7 @@
 // genotype data is never logged and never included: the digest carries only
 // public template info.
 import { createElement } from "react";
+import crypto from "node:crypto";
 import { render } from "@react-email/components";
 import { Resend } from "resend";
 import { ReportReadyEmail, type ReportReadyProps } from "@/emails/report-ready";
@@ -11,6 +12,16 @@ import {
   ResearchDigestEmail,
   type ResearchDigestProps,
 } from "@/emails/research-digest";
+
+export type MailTemplate =
+  | {
+      id: "report-ready";
+      payload: ReportReadyProps;
+    }
+  | {
+      id: "research-digest";
+      payload: ResearchDigestProps;
+    };
 
 function client(): Resend | null {
   const key = process.env.RESEND_API_KEY;
@@ -26,24 +37,31 @@ function from(): string {
   return "Inherit <onboarding@resend.dev>";
 }
 
-async function send(
+export async function submitMail(
   to: string,
-  subject: string,
-  html: string,
-  label: string,
-  idempotencyKey?: string,
-): Promise<boolean> {
+  mail: MailTemplate,
+  idempotencyKey: string,
+): Promise<string> {
   const resend = client();
   if (!resend) {
-    console.warn(`[email] RESEND_API_KEY unset; skipping ${label} email`);
-    return false;
+    throw new Error("mail_provider_unavailable");
   }
-  const { error } = await resend.emails.send(
+
+  const subject =
+    mail.id === "report-ready"
+      ? "Your Inherit reports are ready"
+      : "New reports in the Inherit research library";
+  const html =
+    mail.id === "report-ready"
+      ? await render(createElement(ReportReadyEmail, mail.payload))
+      : await render(createElement(ResearchDigestEmail, mail.payload));
+
+  const { data, error } = await resend.emails.send(
     { from: from(), to, subject, html },
-    idempotencyKey ? { idempotencyKey } : undefined,
+    { idempotencyKey },
   );
-  if (error) console.error(`[email] ${label} send failed:`, error.message);
-  return !error;
+  if (error || !data?.id) throw new Error("mail_provider_rejected");
+  return data.id;
 }
 
 export async function sendReportReady(
@@ -51,8 +69,16 @@ export async function sendReportReady(
   props: ReportReadyProps,
   idempotencyKey?: string,
 ): Promise<boolean> {
-  const html = await render(createElement(ReportReadyEmail, props));
-  return send(to, "Your Inherit reports are ready", html, "report-ready", idempotencyKey);
+  if (!client()) {
+    console.warn("[email] RESEND_API_KEY unset; skipping report-ready email");
+    return false;
+  }
+  try {
+    await submitMail(to, { id: "report-ready", payload: props }, idempotencyKey ?? crypto.randomUUID());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function sendResearchDigest(
@@ -60,6 +86,14 @@ export async function sendResearchDigest(
   props: ResearchDigestProps,
   idempotencyKey?: string,
 ): Promise<boolean> {
-  const html = await render(createElement(ResearchDigestEmail, props));
-  return send(to, "New reports in the Inherit research library", html, "research-digest", idempotencyKey);
+  if (!client()) {
+    console.warn("[email] RESEND_API_KEY unset; skipping research-digest email");
+    return false;
+  }
+  try {
+    await submitMail(to, { id: "research-digest", payload: props }, idempotencyKey ?? crypto.randomUUID());
+    return true;
+  } catch {
+    return false;
+  }
 }

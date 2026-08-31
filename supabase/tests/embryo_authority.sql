@@ -1,6 +1,32 @@
 begin;
 select plan(7);
 
+insert into auth.users (id, email, raw_user_meta_data)
+values (
+  '10000000-0000-0000-0000-000000000001',
+  'embryo-authority@example.invalid',
+  '{"display_name":"Embryo authority"}'
+);
+insert into public.subjects (
+  id, owner_account_id, subject_account_id, subject_class, upload_class,
+  display_label, lifecycle
+)
+values (
+  '13000000-0000-0000-0000-000000000013',
+  '10000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001',
+  'self', 'self', 'Me', 'active'
+);
+insert into public.subject_principals (
+  id, subject_id, account_id, principal_kind, principal_revision, status
+)
+values (
+  '14000000-0000-0000-0000-000000000014',
+  '13000000-0000-0000-0000-000000000013',
+  '10000000-0000-0000-0000-000000000001',
+  'account_subject', 1, 'active'
+);
+
 insert into public.embryo_cohort_drafts (
   id, owner_account_id, uploader_principal_id, upload_class, basis_case,
   embryo_count, state, fixed_expires_at

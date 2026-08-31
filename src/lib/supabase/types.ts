@@ -4283,11 +4283,14 @@ export type Database = {
       }
       mail_outbox: {
         Row: {
+          attempt_count: number
+          claimed_at: string | null
           contact_reference_id: string
           created_at: string
           expires_at: string
           id: string
           idempotency_key: string
+          last_outcome_code: string | null
           not_before: string
           purpose: string
           recipient_authority_revision: number
@@ -4297,15 +4300,19 @@ export type Database = {
           target_id: string
           target_kind: string
           template_id: string
+          template_payload: Json
           token_purpose: string | null
           token_target_id: string | null
         }
         Insert: {
+          attempt_count?: number
+          claimed_at?: string | null
           contact_reference_id: string
           created_at?: string
           expires_at: string
           id?: string
           idempotency_key: string
+          last_outcome_code?: string | null
           not_before?: string
           purpose: string
           recipient_authority_revision: number
@@ -4315,15 +4322,19 @@ export type Database = {
           target_id: string
           target_kind: string
           template_id: string
+          template_payload?: Json
           token_purpose?: string | null
           token_target_id?: string | null
         }
         Update: {
+          attempt_count?: number
+          claimed_at?: string | null
           contact_reference_id?: string
           created_at?: string
           expires_at?: string
           id?: string
           idempotency_key?: string
+          last_outcome_code?: string | null
           not_before?: string
           purpose?: string
           recipient_authority_revision?: number
@@ -4333,6 +4344,7 @@ export type Database = {
           target_id?: string
           target_kind?: string
           template_id?: string
+          template_payload?: Json
           token_purpose?: string | null
           token_target_id?: string | null
         }
@@ -6801,6 +6813,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_mail_outbox: {
+        Args: never
+        Returns: {
+          attempt_ordinal: number
+          contact_ciphertext: string
+          idempotency_key: string
+          outbox_id: string
+          template_id: string
+          template_payload: Json
+        }[]
+      }
+      complete_mail_attempt: {
+        Args: {
+          p_attempt_ordinal: number
+          p_outbox_id: string
+          p_outcome_code: string
+          p_provider_message_id_hmac: string
+          p_success: boolean
+        }
+        Returns: undefined
+      }
+      enqueue_account_mail: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string
+          p_expires_at: string
+          p_idempotency_key: string
+          p_purpose: string
+          p_target_id: string
+          p_target_kind: string
+          p_template_id: string
+          p_template_payload: Json
+        }
+        Returns: string
+      }
       processing_time_stats: {
         Args: never
         Returns: {
@@ -6809,6 +6857,15 @@ export type Database = {
           p50_seconds: number
           p95_seconds: number
         }[]
+      }
+      record_resend_mail_event: {
+        Args: {
+          p_occurred_at: string
+          p_provider_event_hmac: string
+          p_provider_message_id_hmac: string
+          p_status: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

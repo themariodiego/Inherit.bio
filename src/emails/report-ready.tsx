@@ -2,13 +2,11 @@ import { Button, Text } from "@react-email/components";
 import { EmailLayout, brand } from "./base";
 
 export interface ReportReadyProps {
-  fileName: string;
   reportCount: number;
   dashboardUrl: string;
 }
 
 export function ReportReadyEmail({
-  fileName,
   reportCount,
   dashboardUrl,
 }: ReportReadyProps) {
@@ -22,8 +20,7 @@ export function ReportReadyEmail({
           margin: 0,
         }}
       >
-        We finished processing{" "}
-        <strong style={{ color: brand.ink }}>{fileName}</strong>.{" "}
+        We finished processing your genome file.{" "}
         {`${reportCount} report${reportCount === 1 ? " is" : "s are"} ready on your dashboard.`}
       </Text>
       <Button

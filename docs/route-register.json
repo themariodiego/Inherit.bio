@@ -18794,6 +18794,7 @@
       "domain": "jobs",
       "auth": "jobs-secret",
       "methods": [
+        "GET",
         "POST"
       ],
       "requestContract": {
@@ -18814,6 +18815,33 @@
       },
       "disposition": "kept",
       "successResponseContract": "machine-job-result-v1"
+    },
+    {
+      "id": "webhooks.resend",
+      "path": "/api/webhooks/resend",
+      "kind": "endpoint",
+      "domain": "jobs",
+      "auth": "resend-standard-webhook-signature",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "body": "exact-signed-provider-event-only",
+        "query": "forbidden",
+        "applicationSelectedRecipientTargetPurposeOrRow": "forbidden"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "provider-delivery-state-only",
+        "match": "keyed-hash-of-provider-message-id-to-one-recorded-provider-attempt",
+        "storage": "coded-delivery-state-event-hash-and-timestamps-only; raw-provider-event-address-subject-link-and-message-id-are-never-stored-or-logged",
+        "contracts": [
+          "mail-token-delivery-v1",
+          "resource-authorization-v1"
+        ]
+      },
+      "disposition": "kept",
+      "successResponseContract": "empty-provider-acknowledgement"
     }
   ],
   "storagePrefixes": [
