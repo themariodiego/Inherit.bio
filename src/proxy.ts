@@ -35,6 +35,12 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isProtected =
+    path.startsWith("/overview") ||
+    path.startsWith("/genome") ||
+    path.startsWith("/family") ||
+    path.startsWith("/embryos") ||
+    path.startsWith("/copilot") ||
+    path.startsWith("/files") ||
     path.startsWith("/dashboard") ||
     path.startsWith("/uploads") ||
     path.startsWith("/reports") ||

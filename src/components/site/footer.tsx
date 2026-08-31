@@ -7,7 +7,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
       heading: "Product",
       links: [
         { href: "/providers", label: "Find a provider" },
-        { href: "/dashboard", label: "Dashboard" },
+        { href: "/overview", label: "Overview" },
         { href: "/changelog", label: "Research changelog" },
         { href: "/docs/self-hosting", label: "Self-host" },
       ],
@@ -29,7 +29,7 @@ const columns: { heading: string; links: { href: string; label: string }[] }[] =
         { href: "/legal/gina", label: "GINA, explained" },
         { href: "/legal/deceased", label: "Deceased customers" },
         {
-          href: "https://github.com/themariodiego/sequence",
+          href: "https://github.com/themariodiego/Inherit.bio",
           label: "Source code (AGPL-3.0)",
         },
       ],

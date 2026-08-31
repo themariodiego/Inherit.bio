@@ -56,12 +56,12 @@ export default function SignUpPage() {
             email,
             password,
             options: {
-              emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+              emailRedirectTo: `${window.location.origin}/auth/callback?next=/overview`,
             },
           });
           if (error) return error.message;
           if (data.session) {
-            router.push("/dashboard");
+            router.push("/overview");
             router.refresh();
             return null;
           }

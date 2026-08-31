@@ -16,13 +16,24 @@ export async function getProcessedFiles(supabase: Db) {
   return data ?? [];
 }
 
-export async function getActiveFile(supabase: Db, fileId?: string) {
-  const files = await getProcessedFiles(supabase);
-  if (fileId) {
-    const chosen = files.find((f) => f.id === fileId);
-    if (chosen) return chosen;
-  }
-  return files[0] ?? null;
+export async function getSubjectProcessedFiles(supabase: Db, subjectId: string) {
+  const { data } = await supabase
+    .from("genome_files")
+    .select("id, original_name, file_type, status, variant_count, created_at, subject_id")
+    .eq("subject_id", subjectId)
+    .eq("status", "annotated")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+export async function getProcessedFileById(supabase: Db, fileId: string) {
+  const { data } = await supabase
+    .from("genome_files")
+    .select("id, original_name, file_type, status, variant_count, created_at, subject_id")
+    .eq("id", fileId)
+    .eq("status", "annotated")
+    .maybeSingle();
+  return data;
 }
 
 export async function getPublishedTemplates(
@@ -58,6 +69,52 @@ export async function getGenotypesByRsid(
     }
   }
   return map;
+}
+
+/**
+ * Resolve a subject's files newest-first. A position present in more than one
+ * file is usable only when every observed genotype agrees.
+ */
+export async function getSubjectGenotypesByRsid(
+  supabase: Db,
+  subjectId: string,
+  rsids: number[],
+): Promise<{
+  genotypes: Map<number, string>;
+  conflicts: Set<number>;
+  fileCount: number;
+}> {
+  const files = await getSubjectProcessedFiles(supabase, subjectId);
+  const genotypes = new Map<number, string>();
+  const conflicts = new Set<number>();
+  const CHUNK = 200;
+
+  if (files.length === 0) return { genotypes, conflicts, fileCount: 0 };
+
+  for (let i = 0; i < rsids.length; i += CHUNK) {
+    const { data } = await supabase
+      .from("user_variants")
+      .select("rsid, genotype, file_id")
+      .eq("subject_id", subjectId)
+      .in("file_id", files.map((file) => file.id))
+      .in("rsid", rsids.slice(i, i + CHUNK));
+
+    const fileOrder = new Map(files.map((file, index) => [file.id, index]));
+    const rows = [...(data ?? [])].sort(
+      (a, b) => (fileOrder.get(a.file_id) ?? 0) - (fileOrder.get(b.file_id) ?? 0),
+    );
+    for (const row of rows) {
+      if (row.rsid == null || conflicts.has(row.rsid)) continue;
+      const current = genotypes.get(row.rsid);
+      if (current == null) genotypes.set(row.rsid, row.genotype);
+      else if (current !== row.genotype) {
+        genotypes.delete(row.rsid);
+        conflicts.add(row.rsid);
+      }
+    }
+  }
+
+  return { genotypes, conflicts, fileCount: files.length };
 }
 
 export function templateRsids(templates: ReportTemplate[]): number[] {

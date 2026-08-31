@@ -5,12 +5,10 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/uploads", label: "My files" },
-  { href: "/reports", label: "Reports" },
-  { href: "/browse", label: "Browse genome" },
-  { href: "/ancestry", label: "Ancestry" },
-  { href: "/chat", label: "Copilot" },
+  { href: "/overview", label: "Overview" },
+  { href: "/genome/me", label: "My Genome" },
+  { href: "/family", label: "Family" },
+  { href: "/embryos", label: "Embryos" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -21,7 +19,7 @@ function isActive(pathname: string, href: string) {
 /**
  * Signed-in navigation with current-page indication: `aria-current="page"`
  * plus a visible active style on the item matching the route (nested routes
- * count, e.g. /reports/brca marks "Reports").
+ * count, e.g. /genome/me/reports marks "My Genome").
  *
  * - `sidebar`: vertical pill list for the md+ side rail.
  * - `mobile`: wrapping row below md — wraps instead of scrolling
@@ -32,7 +30,7 @@ export function AppNav({ variant }: { variant: "sidebar" | "mobile" }) {
 
   if (variant === "sidebar") {
     return (
-      <nav aria-label="App" className="flex flex-col gap-1">
+      <nav aria-label="App" className="flex flex-col gap-3">
         {nav.map((l) => {
           const active = isActive(pathname, l.href);
           return (
@@ -41,7 +39,7 @@ export function AppNav({ variant }: { variant: "sidebar" | "mobile" }) {
               href={l.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "rounded-full px-3 py-1.5 text-sm transition-colors",
+                "rounded-full px-3 py-2 text-base transition-colors",
                 active
                   ? "bg-tint font-medium text-ink"
                   : "text-ink-muted hover:bg-tint hover:text-ink",
@@ -58,7 +56,7 @@ export function AppNav({ variant }: { variant: "sidebar" | "mobile" }) {
   return (
     <nav
       aria-label="App (mobile)"
-      className="flex flex-wrap gap-x-3 gap-y-1 md:hidden"
+      className="flex flex-wrap gap-x-4 gap-y-3 md:hidden"
     >
       {nav.map((l) => {
         const active = isActive(pathname, l.href);
@@ -68,7 +66,7 @@ export function AppNav({ variant }: { variant: "sidebar" | "mobile" }) {
             href={l.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "whitespace-nowrap text-sm",
+              "whitespace-nowrap text-base",
               active
                 ? "text-ink underline decoration-forest decoration-2 underline-offset-4"
                 : "text-ink-muted hover:text-ink",

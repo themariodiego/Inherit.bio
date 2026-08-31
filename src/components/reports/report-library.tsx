@@ -34,7 +34,13 @@ export interface LibraryGroup {
   cards: LibraryCard[];
 }
 
-export function ReportLibrary({ groups }: { groups: LibraryGroup[] }) {
+export function ReportLibrary({
+  groups,
+  baseHref,
+}: {
+  groups: LibraryGroup[];
+  baseHref: string;
+}) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
 
@@ -161,7 +167,7 @@ export function ReportLibrary({ groups }: { groups: LibraryGroup[] }) {
                     {/* The link's accessible name is just title + evidence;
                         the summary stays adjacent, outside the link. */}
                     <Link
-                      href={`/reports/${c.slug}`}
+                      href={`${baseHref}/${c.slug}`}
                       aria-label={`${c.title}, ${c.evidenceLabel}`}
                       className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
                     >

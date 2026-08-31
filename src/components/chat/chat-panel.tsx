@@ -30,11 +30,19 @@ function extractErrorCode(err: Error): { code: string; providerKey?: string } {
   }
 }
 
-export function ChatPanel({ info }: { info: ChatProviderInfo }) {
+export function ChatPanel({
+  info,
+  scope,
+}: {
+  info: ChatProviderInfo;
+  scope: string;
+}) {
   const [input, setInput] = useState("");
   const [consentFor, setConsentFor] = useState<string | null>(null);
   const { messages, sendMessage, status, error, clearError } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: `/api/chat?scope=${encodeURIComponent(scope)}`,
+    }),
   });
 
   const errorCode = error ? extractErrorCode(error) : null;
@@ -68,7 +76,7 @@ export function ChatPanel({ info }: { info: ChatProviderInfo }) {
             <strong>Cloud mode:</strong> genome-derived answers are sent to{" "}
             {providerDisplayName(info.providerKey ?? "")} ({info.model}) under
             your consent grant —{" "}
-            <Link href="/settings" className="underline underline-offset-2">
+            <Link href="/settings/copilot" className="underline underline-offset-2">
               revoke in Settings
             </Link>
             .
@@ -151,7 +159,7 @@ export function ChatPanel({ info }: { info: ChatProviderInfo }) {
         <div className="rounded-xl border border-line bg-tint p-4 text-sm">
           <p>
             Configure a provider in{" "}
-            <Link href="/settings" className="underline underline-offset-2">
+            <Link href="/settings/copilot" className="underline underline-offset-2">
               Settings
             </Link>{" "}
             — bring your own Anthropic key, or point at a local model

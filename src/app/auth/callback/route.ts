@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
-  const next = url.searchParams.get("next") ?? "/dashboard";
-  const safeNext = next.startsWith("/") ? next : "/dashboard";
+  const next = url.searchParams.get("next") ?? "/overview";
+  const safeNext = next.startsWith("/") ? next : "/overview";
 
   const supabase = await createClient();
 
