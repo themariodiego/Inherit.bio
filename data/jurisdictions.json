@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "accessedAt": "2026-08-31",
+  "determination": {
+    "method": "user-declared",
+    "field": "profiles.jurisdiction",
+    "allowsInference": false,
+    "allowedFormats": [
+      "ISO 3166-1 alpha-2",
+      "ISO 3166-2 when a signed review distinguishes a subdivision"
+    ],
+    "countryCodeSource": {
+      "title": "ISO 3166 — Country codes",
+      "url": "https://www.iso.org/iso-3166-country-codes.html"
+    }
+  },
+  "statusValues": [
+    "permitted",
+    "prohibited",
+    "unreviewed"
+  ],
+  "capabilities": [
+    "third_party_adult_analysis",
+    "family_heritability",
+    "family_preview",
+    "family_portrait",
+    "embryo_analysis",
+    "embryo_single_locus",
+    "embryo_statistical_estimate",
+    "carrier_match",
+    "sex_disclosure"
+  ],
+  "unrestrictedCapabilities": {
+    "adult_self_analysis": {
+      "reason": "X12.3 expressly permits My Genome to ship without a jurisdiction review; the matrix governs restricted Family, Portrait, embryo, carrier-match and sex-disclosure capabilities."
+    }
+  },
+  "defaultRealJurisdiction": {
+    "status": "unreviewed",
+    "capabilities": {
+      "third_party_adult_analysis": "unreviewed",
+      "family_heritability": "unreviewed",
+      "family_preview": "unreviewed",
+      "family_portrait": "unreviewed",
+      "embryo_analysis": "unreviewed",
+      "embryo_single_locus": "unreviewed",
+      "embryo_statistical_estimate": "unreviewed",
+      "carrier_match": "unreviewed",
+      "sex_disclosure": "unreviewed"
+    },
+    "governingInstruments": [],
+    "review": null,
+    "reason": "No real jurisdiction may be marked permitted or prohibited without the signed review required by G5.5."
+  },
+  "realJurisdictions": {},
+  "testJurisdictions": {
+    "TEST-LOCAL": {
+      "reserved": true,
+      "productionAllowed": false,
+      "selectableWhen": "INHERIT_TEST_JURISDICTION=1",
+      "capabilities": {
+        "third_party_adult_analysis": "permitted",
+        "family_heritability": "permitted",
+        "family_preview": "permitted",
+        "family_portrait": "permitted",
+        "embryo_analysis": "permitted",
+        "embryo_single_locus": "permitted",
+        "embryo_statistical_estimate": "permitted",
+        "carrier_match": "permitted",
+        "sex_disclosure": "permitted"
+      },
+      "governingInstruments": [],
+      "review": null,
+      "reason": "Reserved acceptance fixture required by X12.3 and G5.5; it is not a legal conclusion and can never appear in a production picker or build."
+    }
+  },
+  "productionPolicy": {
+    "refuseStartWhenTestJurisdictionEnabled": true,
+    "hideTestJurisdictions": true,
+    "missingCapabilityStatus": "unreviewed",
+    "missingJurisdictionStatus": "unreviewed",
+    "requireSignedReviewForRealPermittedStatus": true,
+    "requireSignedReviewForRealProhibitedStatus": true
+  }
+}
