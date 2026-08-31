@@ -1,6 +1,7 @@
 # ADR-0001 — Gating Decision: large-file upload path, size caps, and compute placement
 
-- Status: **Accepted** · 2026-08-28
+- Status: **Superseded** · 2026-08-31
+- Superseded by: [ADR-0016](./0016-supersede-large-file-transport-and-compute.md) in full. The historical text below is non-operative and must not be consumed as current product behavior, limits, or implementation guidance.
 - Deciders: Inherit engineering
 - This ADR gates every feature: no capability may be claimed that it shows
   infeasible.
@@ -49,7 +50,7 @@ signed URLs (redirect), never proxied through a function.
 
 | Tier | Formats | Cap (demo) | What happens |
 | --- | --- | --- | --- |
-| 1 | 23andMe / AncestryDNA / MyHeritage / FTDNA text, VCF / VCF.GZ / gVCF | 100 MB array, 200 MB VCF | Fully parsed → canonical GRCh38 variant store → reports, PRS, ancestry |
+| 1 | Four registered consumer-array text structures, VCF / VCF.GZ / gVCF | 100 MB array, 200 MB VCF | Fully parsed → canonical GRCh38 variant store → reports, PRS, ancestry |
 | 2 | BAM / CRAM | 5 GB (requires Supabase Pro; 50 MB on Free) | Stored, hashed, listed, re-downloadable; analyzed only by the Tier-3 worker |
 | 3 | FASTQ (+ Tier-2 analysis) | not accepted serverless | Self-host worker (`worker/`): queue consumer the user runs on their own machine/cloud; ships with a real VCF-annotation stage; alignment/calling documented as the extension path |
 
