@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "e2e": "tsx scripts/run-e2e.ts",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
+    "gate:secrets": "tsx scripts/secret-gate.ts",
     "gate:templates": "tsx scripts/validate-templates.ts",
     "seed": "tsx scripts/seed.ts"
   },
