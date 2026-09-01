@@ -181,4 +181,13 @@ describe("readability copy extraction", () => {
 
     expect(autoimmuneFailures).toEqual([]);
   });
+
+  it("keeps the GINA explainer within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const ginaFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/gina/page.tsx:"),
+    );
+
+    expect(ginaFailures).toEqual([]);
+  });
 });
