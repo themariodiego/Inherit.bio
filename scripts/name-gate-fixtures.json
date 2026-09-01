@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "lowercase-domain-fragment",
+      "denylistParts": ["outside", "genome"],
+      "textParts": ["https", "://outside", "genome.example/results"]
+    },
+    {
+      "id": "camel-case-product-name",
+      "denylistParts": ["outside", "genome"],
+      "textParts": ["const product = outside", "Genome;"]
+    }
+  ]
+}
