@@ -10,17 +10,17 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,469 user-visible blocks:
+The deterministic extraction currently covers 1,479 user-visible blocks:
 
-- 923 long blocks from static TSX, the 151 report templates, rendered provider
+- 930 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
-- 395 short strings selected by rendered role;
+- 398 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
   subject to the 25-word sentence cap.
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-17 long-block grade findings, concentrated in long legal copy.
+14 long-block grade findings, concentrated in long legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -262,6 +262,17 @@ subject's variants and a parent's own DNA results without separate agreement.
 Focused unit and browser assertions keep these terms present and readable.
 This copy remediation does not claim that artifact versioning, acknowledgement,
 claim review, notice, retention, or deletion workers are complete.
+
+The twenty-seventh remediation pass removed all three findings from the GDPR
+status page. It also replaces a broad legal-basis sentence with a table keyed
+by all ten registered purposes. Each row names consent under Article 6(1)(a)
+and explicit consent under Article 9(2)(a). The page now states the one-month
+rights deadline and possible two-month extension. It keeps EU and UK service
+unavailable because the controller's full contact, named DPO, two named
+representatives, impact-assessment summaries, and verified transfer map do not
+exist. Focused unit and browser assertions keep those facts present and
+readable. This copy remediation does not mark L-27 complete or invent a person,
+address, assessment, destination, or transfer method.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
