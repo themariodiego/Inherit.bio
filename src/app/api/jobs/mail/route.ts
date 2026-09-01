@@ -34,12 +34,18 @@ const accountDeletionCancelledPayload = z
   })
   .strict();
 
+const adultSubjectInvitationPayload = z.object({}).strict();
+
 function applicationUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.inherit.bio";
   return new URL(path, base).toString();
 }
 
-function parseMail(templateId: string, payload: unknown): MailTemplate {
+function parseMail(
+  templateId: string,
+  payload: unknown,
+  deliveryToken?: string | null,
+): MailTemplate {
   if (templateId === "report-ready") {
     return { id: templateId, payload: reportReadyPayload.parse(payload) };
   }
@@ -62,6 +68,18 @@ function parseMail(templateId: string, payload: unknown): MailTemplate {
     return {
       id: templateId,
       payload: { settingsUrl: applicationUrl(parsed.settingsPath) },
+    };
+  }
+  if (templateId === "adult-subject-invitation") {
+    adultSubjectInvitationPayload.parse(payload);
+    if (!deliveryToken || !/^[A-Za-z0-9_-]{43}$/.test(deliveryToken)) {
+      throw new Error("mail_token_unavailable");
+    }
+    return {
+      id: templateId,
+      payload: {
+        invitationUrl: applicationUrl(`/withdraw/${deliveryToken}`),
+      },
     };
   }
   throw new Error("mail_template_unknown");
@@ -127,7 +145,11 @@ async function drainMail() {
     try {
       const ciphertextHex = row.contact_ciphertext.replace(/^\\x/, "");
       recipient = decryptSecret(Buffer.from(ciphertextHex, "hex"));
-      const mail = parseMail(row.template_id, row.template_payload);
+      const mail = parseMail(
+        row.template_id,
+        row.template_payload,
+        row.delivery_token,
+      );
       const providerMessageId = await submitMail(
         recipient,
         mail,

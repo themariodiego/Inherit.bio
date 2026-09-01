@@ -18,6 +18,10 @@ import {
   type AccountDeletionCancelledProps,
   type AccountDeletionNoticeProps,
 } from "@/emails/account-deletion";
+import {
+  AdultSubjectInvitationEmail,
+  type AdultSubjectInvitationProps,
+} from "@/emails/adult-subject-invitation";
 
 export type MailTemplate =
   | {
@@ -35,6 +39,10 @@ export type MailTemplate =
   | {
       id: "account-deletion-cancelled";
       payload: AccountDeletionCancelledProps;
+    }
+  | {
+      id: "adult-subject-invitation";
+      payload: AdultSubjectInvitationProps;
     };
 
 function client(): Resend | null {
@@ -67,6 +75,7 @@ export async function submitMail(
     "account-deletion-notice": "Your Inherit account deletion is scheduled",
     "account-deletion-cancelled":
       "Your Inherit account deletion was cancelled",
+    "adult-subject-invitation": "You were invited to Inherit",
   }[mail.id];
   const html =
     mail.id === "report-ready"
@@ -77,9 +86,13 @@ export async function submitMail(
           ? await render(
               createElement(AccountDeletionNoticeEmail, mail.payload),
             )
-          : await render(
-              createElement(AccountDeletionCancelledEmail, mail.payload),
-            );
+          : mail.id === "account-deletion-cancelled"
+            ? await render(
+                createElement(AccountDeletionCancelledEmail, mail.payload),
+              )
+            : await render(
+                createElement(AdultSubjectInvitationEmail, mail.payload),
+              );
 
   const { data, error } = await resend.emails.send(
     { from: from(), to, subject, html },

@@ -14,8 +14,8 @@ Supabase + Resend, what the public demo runs). Both start the same way.
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/themariodiego/sequence.git
-cd sequence
+git clone https://github.com/themariodiego/Inherit.bio.git
+cd Inherit.bio
 pnpm install
 ```
 

@@ -1,11 +1,18 @@
 # Acceptance matrix (A1–A18)
 
+**Required baseline:** `864736979c92a08ba77e8580d61946eba6864918`
+(`8647369`; 48 E2E tests on 2026-08-28).
+
+G1.2 non-test-code baseline/current counts over the same population:
+`@ts-expect-error` 0/0; `@ts-ignore` 0/0; `as any` 1/1;
+`eslint-disable` 0/0.
+
 Evidence for each Section-2 acceptance item. "E2E" refers to a Playwright
 spec run against a production build backed by the local Supabase stack (real
 PostgREST/Storage/Auth/Mailpit); "unit" to a vitest test; "live" to the
 provisioned hosted project or deployment.
 
-**Full-suite result: 56/56 E2E tests passed in a single clean run**
+**Full-suite result: 57/57 E2E tests passed in a single clean run**
 (2026-09-01, `pnpm e2e`, production build + local stack). The run
 surfaced one real app bug — igv.js resolved to its UMD `browser`-field
 build, whose AMD-or-global dispatch left the bundled module namespace
@@ -44,3 +51,79 @@ importing `igv/dist/igv.esm.js` directly.
 - **Hosted deployment:** Supabase provisioned + migrated + provider/reference
   data seeded; Vercel linked and deploying green; the remaining secret env
   vars are a one-time owner step (`docs/deployment.md`).
+
+## Full-resolution gates (G1–G8)
+
+Current audited state: **8/65 YES**. `NO` means the exact gate is not yet
+proved; partial implementations are intentionally not rounded up. The adult
+subject invitation work adds a safe TEST-LOCAL reservation and acceptance
+boundary, but it does not claim the class-(b) upload, quarantine, purpose,
+revocation, notification, or ownership-transfer contract is complete.
+
+| ID | Statement | YES/NO | Evidence |
+| --- | --- | --- | --- |
+| G1.1 | Production build exits cleanly without source warnings. | YES | `pnpm build` exits 0; `package.json`; verified 2026-09-01. |
+| G1.2 | Typecheck passes and suppression counts do not exceed baseline. | YES | `pnpm typecheck`; baseline/current counts are recorded above and reproducible with `git grep` over non-test `*.ts,*.tsx,*.js,*.jsx`. |
+| G1.3 | Lint treats warnings as failures and passes. | YES | `pnpm lint`; `package.json` uses `eslint --max-warnings=0`. |
+| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (125 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
+| G1.5 | E2E has zero failures, skips, retries, or quarantine. | YES | `pnpm e2e` (57 tests); `playwright.config.ts` has `retries: 0`; `scripts/run-e2e.ts` validates `test-results/results.json`; `docs/test-diff-register.md`. |
+| G1.6 | Extended RLS attack suite covers every new table and revocation. | NO | `e2e/rls.spec.ts` does not yet cover all tables in `supabase/migrations/20260831*.sql`; adult invitation database invariants are narrower in `supabase/tests/adult_subject_invitation.sql`. |
+| G1.7 | Network audit covers every registered route/state/theme/auth mode. | NO | `e2e/network-audit.spec.ts` covers only its existing route subset; compare `docs/route-register.json`. |
+| G1.8 | Legal gate runs rendered-page mode over all required routes. | NO | `pnpm gate:legal` passes static checks, but `scripts/legal-placeholder-gate.ts` lacks the complete rendered-route G5.7/G5.8 contract. |
+| G1.9 | Name gate passes. | NO | Required `gate:names` script is absent from `package.json`. |
+| G1.10 | Readability and vocabulary gate passes with self-test. | NO | Required `gate:readability`, `data/plain-vocabulary.json`, and `scripts/readability-fixtures.json` are absent. |
+| G1.11 | Claims/provenance gate passes. | NO | Required `gate:claims` and `data/citations.json` are absent. |
+| G1.12 | Route/state register gate and titled tests pass. | NO | `docs/route-register.json` exists; required `gate:routes` and complete route/state E2E coverage do not. |
+| G1.13a | Full axe tag matrix passes on every registered route. | NO | `e2e/a11y.spec.ts` does not yet cover the complete tag/route/auth/viewport matrix. |
+| G1.13b | Reflow, target size, keyboard order, and alternatives pass. | NO | Named Playwright coverage for the complete non-axe matrix is absent from `e2e/a11y.spec.ts`. |
+| G1.14 | Lighthouse passes exact route and threshold contract. | NO | `scripts/lighthouse-check.ts` does not yet implement per-category thresholds and authenticated exact-final-URL checks. |
+| G1.15 | Template integrity gate passes without baseline loss. | YES | `pnpm gate:templates`; `scripts/validate-templates.ts` validates 151 templates and genotype/citation structure. |
+| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` now adds build, template, local Supabase, seed, and E2E, but G1.8–G1.12/G1.17 commands do not all exist. |
+| G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | NO | Required `gate:secrets` and `scripts/secret-allowlist.json` are absent. |
+| G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists, but several Family/Embryo routes still render `src/components/capability-unavailable.tsx`. |
+| G2.2 | Every route declares and tests every required state. | NO | `docs/route-register.json` is not backed by one substantive E2E per required route/state pair. |
+| G2.3 | Every pre-existing route has a verified kept/redirect/gone disposition. | NO | Required `gate:routes` is absent; `docs/route-register.json` is not fully live-verified. |
+| G2.4 | Reachability and instrumented task-depth limits pass. | NO | No complete action-count suite exists under `e2e/`. |
+| G2.5 | Numeric white-space and density budgets pass against baseline. | NO | `docs/density-baseline.json` exists; complete `e2e/density.spec.ts` route and viewport enforcement is absent. |
+| G2.6 | All four upload-subject paths work end to end under TEST-LOCAL. | NO | `e2e/adult-subject-invitation.spec.ts` covers reservation/acceptance only; `src/app/api/uploads/route.ts` still accepts only the self subject and embryo paths are unavailable. |
+| G2.7 | Frozen visual identity and all-new-route theme checks pass. | NO | Baseline tokens remain in `src/app/globals.css`, but every new route is not yet covered in both themes by unmodified assertions. |
+| G3.1 | Thirty-persona comprehension harness exists and records raw runs. | NO | Required `scripts/comprehension/` and `docs/comprehension-runs/` are absent. |
+| G3.2 | Ten comprehension tasks are bound to exact fixtures/surfaces. | NO | Required `docs/comprehension-protocol.md` is absent. |
+| G3.3 | Scored comprehension thresholds pass twice. | NO | No runnable comprehension command or committed run exists under `scripts/comprehension/`. |
+| G3.4 | Human comprehension round is recorded without fabricated evidence. | NO | No consented human-run artifact exists under `docs/comprehension-runs/`; this remains an operator obligation. |
+| G3.5 | Failed comprehension produces a blocking release state. | NO | Required release integration is absent from `docs/release-checklist.md` (file absent). |
+| G4.1 | Every result uses the complete plain-language result anatomy. | NO | Result surfaces under `src/app/(app)/genome/` predate the full G4 contract. |
+| G4.2 | Risk figures include absolute values and required uncertainty. | NO | No full gate/test maps every risk figure in `docs/figures-register.json` (file absent). |
+| G4.3 | Single-variant and carrier claims follow the bounded vocabulary. | NO | Required claim/language gates are absent from `package.json`. |
+| G4.4 | Polygenic estimates satisfy coverage and portability rules. | NO | Existing PRS tests do not prove every rendered surface against the full G4.4 contract. |
+| G4.5 | Ancestry outputs satisfy geographic and comparability bounds. | NO | `src/app/(app)/genome/[subject]/ancestry/page.tsx` lacks complete registered-figure proof. |
+| G4.6 | Embryo comparison obeys non-ranking, uncertainty, and QC rules. | NO | `src/app/(app)/embryos/compare/page.tsx` is unavailable. |
+| G4.7 | Future-child preview obeys bounded population-level presentation. | NO | Required implementation and E2E contract are absent from Family routes. |
+| G4.8 | Copilot passes the adversarial output contract. | NO | Required `e2e/fixtures/copilot-redteam.json` and ≥40-prompt shipped-path E2E are absent. |
+| G5.1 | Jurisdiction is server-enforced for every restricted capability. | NO | `data/jurisdictions.json` is fail-closed, but no complete resolver/gate protects every data-returning route. |
+| G5.1a | User-declared jurisdiction cannot be inferred or race-changed. | NO | Complete declared-prohibited/unreviewed/change-between-load-and-submit E2E is absent. |
+| G5.1b | Actor and every subject jurisdiction must all permit access. | NO | Cross-jurisdiction subject enforcement and E2E are absent. |
+| G5.2 | Versioned consent documents and re-consent contract pass. | NO | `consent_artifacts` exists, but complete routes, summaries, re-consent, and E2E are not implemented. |
+| G5.3 | Third-party upload stays quarantined until subject confirmation. | NO | `e2e/adult-subject-invitation.spec.ts` proves no file exists at invitation acceptance; it does not implement or prove quarantined upload/purge. |
+| G5.3a | Revocation is immediately inaccessible and fully purged in seven days. | NO | Existing account purge tests do not cover the full subject-revocation table/storage list. |
+| G5.4 | Accountless subject/future-person rights routes and retention work. | NO | `/withdraw/[token]` is a partial adult invitation mechanism; the complete access, future-person, and retention mechanisms are absent. |
+| G5.5 | Structural human-review gate defaults all unreviewed capabilities off. | NO | `data/jurisdictions.json` defaults real jurisdictions to unreviewed and `next.config.ts` rejects TEST-LOCAL on Vercel production, but the required structural review gate is absent. |
+| G5.6 | Free exports are complete and correctly subject-scoped. | NO | `e2e/deletion-export.spec.ts` covers the original export but not every new subject/embryo scope. |
+| G5.7 | No fee path exists and the legal gate proves it. | NO | No payment code is present, but the required route-wide origin/submission and legal-copy gate is not implemented. |
+| G5.8 | Protective legal anchors exist and are tested by id. | NO | Existing `e2e/legal.spec.ts` does not prove every required stable anchor across every consent document. |
+| G5.9 | Future-child preview satisfies all bounded-harm assertions. | NO | Future-child preview implementation and named E2E assertions are absent. |
+| G6.1 | Whole-tree and new-commit name scan passes. | NO | Required `gate:names` and scanner fixtures are absent. |
+| G6.2 | External-name allowlist has only the permitted categories. | NO | Required `data/allowed-external-names.json` is absent. |
+| G6.3 | Out-of-tree denylist and provider carve-out are enforced in CI. | NO | `NAME_DENYLIST_FILE` handling is absent from `.github/workflows/ci.yml`. |
+| G6.4 | End-state scan is clean and all 16 providers remain sourced. | NO | Provider data remains in `data/providers/providers.json`; no runnable `gate:names` proves the rest of the tree. |
+| G6.5 | Provider names have no evaluative proximity. | NO | Required `scripts/evaluative-tokens.json` and proximity check are absent. |
+| G7.1 | Required gating ADRs exist from 0006 onward. | NO | `docs/adr/` lacks the complete named G7.1 decision set. |
+| G7.2 | Core docs/env are current and a clean-clone run is recorded. | NO | `docs/self-hosting.md` now names `Inherit.bio`, but the full new surfaces and a current clean-clone record are incomplete. |
+| G7.3 | Acceptance matrix covers every G gate with concrete evidence. | YES | This G1.1–G8.6 table in `docs/acceptance-matrix.md`; gate ids are complete and NO rows name the missing command, test, or path. |
+| G7.4 | Capability and all named evidence registers exist and are current. | NO | `docs/test-diff-register.md`, `docs/retention.md`, and `docs/density-baseline.json` exist; `docs/capability-register.md`, `docs/fixture-paths.md`, `docs/figures-register.json`, and `docs/release-checklist.md` are absent. |
+| G8.1 | All pre-existing E2E tests pass without weakening. | YES | `pnpm e2e` passes all 57 tests; `docs/test-diff-register.md` records the runner change and confirms no pre-existing E2E test changed. |
+| G8.2 | Production routes cannot render demo/fixture data as user data. | NO | Required `docs/fixture-paths.md` and `scripts/mock-token-allowlist.json` are absent. |
+| G8.3 | Every registered figure differs correctly across two seeds. | NO | Required two-seed E2E and `docs/figures-register.json` are absent. |
+| G8.4 | Entire deterministic suite passes twice from clean state. | NO | One clean 57-test run is recorded; the required two consecutive full gate/build/database cycles have not run. |
+| G8.5 | Every live surface/endpoint/prefix matches its register. | NO | Required comprehensive route/form/API/storage register verification is absent. |
+| G8.6 | Repeated figures have one source of truth and cannot diverge. | NO | Required `docs/figures-register.json` and enforcement gate are absent. |

@@ -10,8 +10,10 @@ export default defineConfig({
   fullyParallel: false, // suites share one DB; specs manage their own users
   workers: 1,
   timeout: 120_000,
-  retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
+  retries: 0,
+  reporter: process.env.CI
+    ? [["list"], ["github"], ["json", { outputFile: "test-results/results.json" }]]
+    : [["list"], ["json", { outputFile: "test-results/results.json" }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
@@ -25,10 +27,14 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_ANON_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
       SUPABASE_SERVICE_ROLE_KEY:
+        process.env.SUPABASE_SERVICE_ROLE_KEY ??
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
       NEXT_PUBLIC_SITE_URL: `http://localhost:${PORT}`,
+      NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}`,
+      INHERIT_TEST_JURISDICTION: "1",
       BYOK_ENCRYPTION_KEY: "5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=",
       JOBS_SECRET: "e2e-jobs-secret",
       CRON_SECRET: "e2e-cron-secret",

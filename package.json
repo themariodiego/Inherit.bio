@@ -6,12 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "tsx scripts/run-e2e.ts",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
+    "gate:templates": "tsx scripts/validate-templates.ts",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
