@@ -12,7 +12,21 @@ const REQUIRED = [
   { route: "/terms", must: [/18|eighteen/i, /not medical advice|informational/i, /export/i, /AGPL/i] },
   { route: "/legal/research-consent", must: [/consent/i] },
   { route: "/legal/law-enforcement", must: [/law enforcement/i, /transparency/i, /0\b/] },
-  { route: "/legal/deceased", must: [/deceased|next of kin|next-of-kin/i, /death certificate/i] },
+  {
+    route: "/legal/deceased",
+    must: [
+      /deceased|next of kin|next-of-kin/i,
+      /death certificate/i,
+      /does not accept a new upload.*died/i,
+      /other adult who later dies/i,
+      /embryo record after a genetic parent dies/i,
+      /future-person record/i,
+      /human reviewer/i,
+      /30 days’ notice/i,
+      /recorded choice comes first/i,
+      /living relative’s genotype unless that relative consents/i,
+    ],
+  },
   { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
 ];

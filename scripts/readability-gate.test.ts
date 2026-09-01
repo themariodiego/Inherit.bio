@@ -191,6 +191,15 @@ describe("readability copy extraction", () => {
     expect(ginaFailures).toEqual([]);
   });
 
+  it("keeps the deceased-account policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const deceasedFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/deceased/page.tsx:"),
+    );
+
+    expect(deceasedFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
