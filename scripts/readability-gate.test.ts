@@ -163,4 +163,13 @@ describe("readability copy extraction", () => {
 
     expect(metabolicFailures).toEqual([]);
   });
+
+  it("keeps every neurodegenerative template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const neurodegenerativeFailures = runReadabilityGate(repositoryRoot).failures.filter(
+      (failure) => failure.startsWith("data/templates/neurodegenerative.json:"),
+    );
+
+    expect(neurodegenerativeFailures).toEqual([]);
+  });
 });

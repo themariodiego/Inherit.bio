@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-86 long-block grade findings, concentrated in the existing report-template
+72 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -145,6 +145,17 @@ measures, study design, and limits on individual prediction. The APOA2
 gene-diet result remains labeled preliminary, and the GIPR diet-response copy
 still identifies its single-trial basis and lack of a high-fat genotype effect.
 A category-level regression keeps the file at zero findings.
+
+The seventeenth remediation pass removed all 14 findings from the
+neurodegenerative report category. The rewrites retain allele and effect
+direction, effect sizes, ancestry qualifiers, absolute-risk limits, clinical
+confirmation guidance, disease distinctions, and limits on individual
+prediction. The LRRK2 copy now cites later family cohorts for its age-80
+penetrance range instead of relying on the older study's higher estimate. The
+GBA1 copy now attributes the five-fold estimate to the cited study's combined
+variant group rather than to N370S alone. Later primary studies were also added
+for the UNC13A frontotemporal findings and the TMEM106B C9orf72 modifier. A
+category-level regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
