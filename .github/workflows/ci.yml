@@ -8,6 +8,19 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5Nn0.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      NEXT_PUBLIC_SITE_URL: http://localhost:3100
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      INHERIT_TEST_JURISDICTION: "1"
+      BYOK_ENCRYPTION_KEY: 5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=
+      JOBS_SECRET: e2e-jobs-secret
+      CRON_SECRET: e2e-cron-secret
+      EMAIL_FROM: Inherit <inherit@e2e.local>
+      RESEND_API_KEY: re_e2e_mock
+      RESEND_BASE_URL: http://127.0.0.1:8124
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -16,11 +29,32 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
+      - name: Production build
+        run: pnpm build
       - name: Unit tests
         run: pnpm test
       - name: Legal placeholder gate
         run: pnpm gate:legal
+      - name: Template integrity gate
+        run: pnpm gate:templates
+      - name: Start local Supabase
+        run: pnpm exec supabase start
+      - name: Export current local Supabase keys
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Seed local Supabase
+        run: pnpm seed
+      - name: Full browser suite
+        run: pnpm e2e
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup

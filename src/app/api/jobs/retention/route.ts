@@ -72,6 +72,15 @@ export async function POST(request: Request) {
   let processed = 0;
   let failed = 0;
 
+  const { data: expiredInvitations, error: invitationExpiryError } =
+    await admin.rpc("expire_due_adult_subject_invitations_v1");
+  if (invitationExpiryError) {
+    return NextResponse.json(
+      { error: "retention_worker_unavailable" },
+      { status: 503 },
+    );
+  }
+
   // The caller cannot select a row or batch size. The database serializes and
   // chooses due work, while this fixed bound limits one invocation's runtime.
   for (let index = 0; index < 5; index++) {
@@ -183,5 +192,10 @@ export async function POST(request: Request) {
     .select("id", { count: "exact", head: true })
     .or(`and(state.eq.notice_period,notice_ends_at.lte.${now}),state.eq.delete_started`);
 
-  return NextResponse.json({ processed, failed, pending: pending ?? 0 });
+  return NextResponse.json({
+    processed,
+    failed,
+    pending: pending ?? 0,
+    expiredInvitations: expiredInvitations ?? 0,
+  });
 }

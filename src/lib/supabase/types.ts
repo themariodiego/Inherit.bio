@@ -6979,6 +6979,7 @@ export type Database = {
         Returns: {
           attempt_ordinal: number
           contact_ciphertext: string
+          delivery_token: string
           idempotency_key: string
           outbox_id: string
           template_id: string
@@ -7019,6 +7020,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_adult_subject_invitation_v1: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string
+          p_idempotency_key: string
+          p_test_jurisdiction: boolean
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          subject_id: string
+        }[]
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -7034,6 +7049,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_due_adult_subject_invitations_v1: { Args: never; Returns: number }
       fail_account_deletion_attempt_v1: {
         Args: {
           p_claim_token_hash: string
@@ -7100,6 +7116,22 @@ export type Database = {
           notice_ends_at: string
           status: string
         }[]
+      }
+      resolve_adult_subject_invitation_v1: {
+        Args: { p_token_hash: string }
+        Returns: {
+          requires_account: boolean
+          state: string
+        }[]
+      }
+      respond_adult_subject_invitation_v1: {
+        Args: {
+          p_account_email_hmac?: string
+          p_account_id?: string
+          p_action: string
+          p_token_hash: string
+        }
+        Returns: string
       }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }

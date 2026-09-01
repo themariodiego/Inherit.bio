@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+if (
+  process.env.VERCEL_ENV === "production" &&
+  process.env.INHERIT_TEST_JURISDICTION === "1"
+) {
+  throw new Error(
+    "INHERIT_TEST_JURISDICTION cannot be enabled in a production deployment.",
+  );
+}
+
 const nextConfig: NextConfig = {
   // Runtime data files read with fs (not imported) must be traced into the
   // serverless bundle explicitly.

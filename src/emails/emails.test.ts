@@ -5,6 +5,7 @@ import { render } from "@react-email/components";
 import { describe, expect, it } from "vitest";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
+import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
 
 const ATTRIBUTION =
   "Inherit · an open-source project created by Plus Bio for the public good";
@@ -61,6 +62,22 @@ describe("research-digest email", () => {
     expect(html).toContain("https://example.test/r/lactase");
     expect(html).toContain("Manage email preferences");
     expect(html).toContain("https://example.test/settings/email");
+    expect(html).toContain(ATTRIBUTION);
+    expect(html).toContain(DISCLAIMER);
+  });
+});
+
+describe("adult-subject invitation email", () => {
+  it("states the no-access boundary and renders the one-time review link", async () => {
+    const html = await render(
+      createElement(AdultSubjectInvitationEmail, {
+        invitationUrl: "https://example.test/withdraw/opaque-token",
+      }),
+    );
+    expect(html).toContain("No genetic file has been added");
+    expect(html).toContain("no access to your genetic data");
+    expect(html).toContain("https://example.test/withdraw/opaque-token");
+    expect(html).toContain("30 days");
     expect(html).toContain(ATTRIBUTION);
     expect(html).toContain(DISCLAIMER);
   });
