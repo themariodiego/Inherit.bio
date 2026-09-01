@@ -65,7 +65,7 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   await expect(browser.locator("canvas").first()).toBeVisible({
     timeout: 60_000,
   });
-  await expect(page.getByText(/no external genome service/)).toBeVisible();
+  await expect(page.getByText(/does not contact an outside genome service/)).toBeVisible();
 
   // rsID search: pick an rsID from the table we just rendered, then search
   // for it directly and assert the genotype chip appears.

@@ -18,9 +18,8 @@ export function DigestToggle({
       <div>
         <Label htmlFor="digest-toggle">Research digest emails</Label>
         <p className="text-sm text-ink-muted">
-          Occasional email when new reports are published from the research
-          pipeline. Off by default; contains only public report info, never
-          your data.
+          We may email you when we add reports from new research. This is off
+          by default. Emails contain public report details, never your data.
         </p>
       </div>
       <Switch

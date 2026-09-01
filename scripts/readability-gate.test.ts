@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { extractTsxBlocksFromSource } from "./readability-gate";
+
+describe("readability copy extraction", () => {
+  it("scores nested copy containers separately instead of inventing a composite block", () => {
+    const blocks = extractTsxBlocksFromSource(
+      "src/example.tsx",
+      `<div role="status"><h2>Invitation requested</h2><p>We will send an invitation if this address can receive one.</p></div>`,
+    );
+
+    expect(blocks.map(({ role, text }) => ({ role, text }))).toEqual([
+      { role: "heading", text: "Invitation requested" },
+      { role: "block", text: "We will send an invitation if this address can receive one." },
+    ]);
+  });
+
+  it("keeps inline markup inside the string block", () => {
+    const blocks = extractTsxBlocksFromSource(
+      "src/example.tsx",
+      `<p>Your <strong>private</strong> data stays here.</p>`,
+    );
+
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].text).toBe("Your private data stays here.");
+  });
+
+  it("extracts visible text attributes independently", () => {
+    const blocks = extractTsxBlocksFromSource(
+      "src/example.tsx",
+      `<img alt="A map of your results" title="Open the map" />`,
+    );
+
+    expect(blocks.map(({ role, text }) => ({ role, text }))).toEqual([
+      { role: "label", text: "A map of your results" },
+      { role: "label", text: "Open the map" },
+    ]);
+  });
+});
