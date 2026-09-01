@@ -290,8 +290,8 @@ export default async function BrowsePage(
                 </th>
                 <th
                   className="cursor-help px-4 py-2 font-normal underline decoration-dotted underline-offset-2"
-                  title="gnomAD allele frequency: how common this variant is worldwide (allele frequency)"
-                  aria-label="gnomAD AF — how common this variant is worldwide (allele frequency)"
+                  title="gnomAD frequency: how common this DNA version is worldwide"
+                  aria-label="gnomAD frequency — how common this DNA version is worldwide"
                 >
                   gnomAD AF
                 </th>
