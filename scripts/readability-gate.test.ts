@@ -1,5 +1,7 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { extractTsxBlocksFromSource } from "./readability-gate";
+import { extractTsxBlocksFromSource, runReadabilityGate } from "./readability-gate";
 
 describe("readability copy extraction", () => {
   it("scores nested copy containers separately instead of inventing a composite block", () => {
@@ -34,5 +36,14 @@ describe("readability copy extraction", () => {
       { role: "label", text: "A map of your results" },
       { role: "label", text: "Open the map" },
     ]);
+  });
+
+  it("keeps every displayed provider field within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const providerFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/providers/providers.json:"),
+    );
+
+    expect(providerFailures).toEqual([]);
   });
 });

@@ -7,7 +7,7 @@
   "website": "https://www.23andme.org",
   "checkout_url": "https://www.23andme.org/compare-dna-tests/",
   "privacy_policy_url": "https://www.23andme.org/legal/privacy/",
-  "data_practices_note": "Opt-in research model: deidentified data pooled for research only if you consent, opt-out anytime; now operated by nonprofit TTAM/23andMe Research Institute (policy last updated 2026-05-19).",
+  "data_practices_note": "Research use is optional. 23andMe pools data with identity details removed only when you agree. You may opt out at any time. The nonprofit TTAM/23andMe Research Institute now runs the service. Its policy was last updated May 19, 2026.",
   "products": [
    {
     "name": "Basic Ancestry",
@@ -53,7 +53,7 @@
   "raw_formats": [
    "array-txt (zipped .txt raw genotype download)"
   ],
-  "ships_to": "US store serves US only (incl. some territories); separate Canada, UK, EU and International stores serve Canada, UK, select European countries and others",
+  "ships_to": "The US store serves the US and some territories. Separate stores serve Canada, the UK, parts of Europe, and other countries.",
   "us_state_exclusions": [
    "NY",
    "NJ",
@@ -101,7 +101,7 @@
   "website": "https://24genetics.com",
   "checkout_url": "https://24genetics.com/shop/",
   "privacy_policy_url": "https://24genetics.com/protection-of-genetic-data/",
-  "data_practices_note": "GDPR-governed (Spain/EU lab); states it does not sell customer data; anonymized internal research use only with the customer's opt-in choice at informed consent.",
+  "data_practices_note": "Spain and EU privacy law apply. 24Genetics says it does not sell customer data. It uses data with identity details removed for its own research only when the customer agrees during consent.",
   "products": [
    {
     "name": "All in One Pack (7 reports)",
@@ -188,7 +188,7 @@
   "website": "https://www.ancestry.com/dna/",
   "checkout_url": "https://www.ancestry.com/dna/",
   "privacy_policy_url": "https://www.ancestry.com/c/legal/privacystatement",
-  "data_practices_note": "Genetic data used for research only under a separate opt-in Informed Consent to Research (some partners may have financial interests); Ancestry does not voluntarily give user data to law enforcement and offers opt-out of ad-tracking sharing/selling.",
+  "data_practices_note": "Research needs a separate opt-in consent. Some research partners may have a financial interest. Ancestry says it does not volunteer user data to law enforcement. Users may opt out of ad tracking, data sharing, and data sales.",
   "products": [
    {
     "name": "AncestryDNA kit",
@@ -266,7 +266,7 @@
   "website": "https://circledna.com",
   "checkout_url": "https://circledna.com/products/premium-dna-test",
   "privacy_policy_url": "https://circledna.com/pages/privacy",
-  "data_practices_note": "Prenetics-owned; data shared only within Prenetics entities/contracted processors, no third-party sale stated; third-party research and research-database use are explicit opt-ins per informed consent.",
+  "data_practices_note": "Prenetics owns CircleDNA. Data may go to Prenetics companies and hired service firms. The policy does not state any sale to other parties. Research use and research database use each require the customer to opt in.",
   "products": [
    {
     "name": "Premium DNA Test",
@@ -304,7 +304,7 @@
    "app/portal reports only; raw data sold separately",
    "format not stated on official pages; third-party 2021 account reports zipped .txt variant file; VCF/FASTQ/BAM unverified"
   ],
-  "ships_to": "80+ countries: US, Canada, UK, EU/EEA, Australia/NZ, HK, SG, JP, KR, India, Middle East (GCC, Israel), parts of Africa and Latin America",
+  "ships_to": "Ships to more than 80 countries. It serves the US, Canada, UK, EU, EEA, Australia, and New Zealand. It also serves Hong Kong, Singapore, Japan, South Korea, India, GCC states, and Israel. Some countries in Africa and Latin America are included.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "~18 business days lab time; 4-6 weeks end-to-end",
@@ -341,7 +341,7 @@
   "website": "https://dantelabs.com/",
   "checkout_url": "https://dantelabs.com/genome/",
   "privacy_policy_url": "https://dantelabs.com/privacy/",
-  "data_practices_note": "Does not sell genetic data; research use is opt-in via separate Research Consent; GDPR-compliant with user-initiated deletion of data and sample (policy dated 2026-04-12)",
+  "data_practices_note": "Dante Labs says it does not sell genetic data. Research needs a separate opt-in consent. It follows GDPR. Users may ask to delete their data and sample. The policy is dated April 12, 2026.",
   "products": [
    {
     "name": "Genome Test — Premium",
@@ -425,7 +425,7 @@
   "website": "https://dnacomplete.com",
   "checkout_url": "https://dnacomplete.com/shop",
   "privacy_policy_url": "https://dnacomplete.com/privacy-policy",
-  "data_practices_note": "Policy (updated 2026-05-11) says genetic data is not sold, research sharing is strictly opt-in with explicit prior consent, no disclosure to insurers/employers, deletion on account closure — but Nebula's blockchain/user-held-key model did NOT carry over (per genomereviews.com).",
+  "data_practices_note": "The May 11, 2026 policy says genetic data is not sold. Research sharing needs clear prior consent. Data is not sent to insurers or employers. Closing an account deletes the data. Nebula's blockchain and user-held key model did not carry over, according to GenomeReviews.",
   "products": [
    {
     "name": "Essential – 1x WGS DNA Test",
@@ -465,7 +465,7 @@
    "CRAM",
    "VCF"
   ],
-  "ships_to": "US (free shipping); international orders accepted but customer pays sample return shipping and possible added shipping charges per Terms — no verified country list",
+  "ships_to": "US shipping is free. Customers outside the US may order, but must pay to return the sample and may face added shipping fees. The terms do not give a country list.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "8–12 weeks (company claim per genomereviews.com; not stated on site FAQ)",
@@ -496,7 +496,7 @@
   "website": "https://www.familytreedna.com",
   "checkout_url": "https://www.familytreedna.com/products",
   "privacy_policy_url": "https://www.familytreedna.com/legal/privacy-statement",
-  "data_practices_note": "States it does not sell/trade genetic data; research sharing requires separate express consent; law-enforcement (investigative genetic genealogy) matching is opt-OUT for US customers by default.",
+  "data_practices_note": "FamilyTreeDNA says it does not sell or trade genetic data. Sharing data for research needs a separate consent. By default, US customers are included in police matching for family-tree cases. They may opt out.",
   "products": [
    {
     "name": "Family Finder",
@@ -565,7 +565,7 @@
    "Y-SNP CSV (males)",
    "array-txt (Build 37 CSV, gzipped)"
   ],
-  "ships_to": "Worldwide except Belarus, Cuba, France, Iran, Kosovo, Russia, Somalia, Sudan, Ukraine, Yemen (kits ship from Houston, TX)",
+  "ships_to": "Kits ship worldwide from Houston, Texas. They do not ship to Belarus, Cuba, France, Iran, Kosovo, Russia, Somalia, Sudan, Ukraine, or Yemen.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "6-8 weeks",
@@ -610,7 +610,7 @@
   "website": "https://geneplanet.com",
   "checkout_url": "https://geneplanet.com/eu/products/premium-pack",
   "privacy_policy_url": "https://geneplanet.com/eu/privacy-policy",
-  "data_practices_note": "GDPR-based, consent-driven model: unused DNA/sample data is stored and used for internal research in aggregated, anonymised form; no release to third parties without express consent; samples analysed in own labs (Ljubljana, Zagreb) and partner labs (Copenhagen, Hoddesdon UK).",
+  "data_practices_note": "GDPR rules apply. Unused DNA and sample data may be stored and used for in-house research after identity details are removed. Nothing goes to another party without clear consent. Samples are tested in company labs in Ljubljana and Zagreb, or partner labs in Copenhagen and Hoddesdon, UK.",
   "products": [
    {
     "name": "Premium Pack (MyLifestyle + MyHealth, WGS)",
@@ -646,7 +646,7 @@
    }
   ],
   "raw_formats": [],
-  "ships_to": "Regional shops: EU (EUR; DE/HR/RO/SI/SK localized), UK (GBP), Switzerland (CHF), US (USD), Poland (PLN); Italy shop disabled. Company claims presence in 35-50+ markets; kits shipped via DHL, delivery 4-6 business days.",
+  "ships_to": "Regional shops serve the EU, UK, Switzerland, US, and Poland in local currencies. EU shops include local pages for Germany, Croatia, Romania, Slovenia, and Slovakia. The Italy shop is off. The company says it serves 35 to more than 50 markets. DHL delivery takes 4 to 6 business days.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "~5 weeks after lab receives sample",
@@ -695,7 +695,7 @@
   "website": "https://livingdna.com",
   "checkout_url": "https://livingdna.com/kit/ancestry-dna-test",
   "privacy_policy_url": "https://livingdna.com/legal/Privacy-Policy",
-  "data_practices_note": "States it does not sell customer data to third parties; research participation is strictly opt-in (revocable); genetic and personal data stored separately under random barcodes.",
+  "data_practices_note": "Living DNA says it does not sell customer data to other parties. Research is opt-in, and consent may be withdrawn. Genetic and personal data are kept apart under random barcodes.",
   "products": [
    {
     "name": "Your Ancestry",
@@ -762,7 +762,7 @@
   "website": "https://mapmygenome.in",
   "checkout_url": "https://mapmygenome.in/products/genomepatri",
   "privacy_policy_url": "https://mapmygenome.in/policies/privacy-policy",
-  "data_practices_note": "Generic e-commerce policy: discloses personal info to service providers and business/marketing partners; no explicit genetic-data research-sharing, sale, or research opt-in/opt-out language found in the policy.",
+  "data_practices_note": "The general shop policy lets personal data go to service firms and business or marketing partners. It does not say whether genetic data is sold or shared for research. It also gives no choice to join or leave research.",
   "products": [
    {
     "name": "Genomepatri",
@@ -798,7 +798,7 @@
    "FASTQ",
    "VCF"
   ],
-  "ships_to": "India (free pan-India shipping, 2-5 business days); separate international store advertised with $50 USD one-way shipping fee, customer pays return shipping",
+  "ships_to": "Shipping within India is free and takes 2 to 5 business days. The international store lists a US$50 outbound fee. The customer pays to return the sample.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "3 weeks",
@@ -830,7 +830,7 @@
   "website": "https://www.myheritage.com/dna",
   "checkout_url": "https://www.myheritage.com/dna/order",
   "privacy_policy_url": "https://www.myheritage.com/privacy-policy",
-  "data_practices_note": "Pledges genetic data \"will never be sold or licensed to third parties, including insurance companies\"; internal research use is opt-in via a separate DNA Informed Consent Agreement, revocable anytime.",
+  "data_practices_note": "MyHeritage promises not to sell or license genetic data. This includes sales or licenses to insurers. Its own research needs a separate DNA consent. Users may opt in and can withdraw at any time.",
   "products": [
    {
     "name": "MyHeritage DNA kit (ancestry + DNA matching)",
@@ -846,7 +846,7 @@
   "raw_formats": [
    "array-txt (CSV, MyHeritage_raw_dna_data.csv delivered in a ZIP)"
   ],
-  "ships_to": "Worldwide (extensive country list at checkout); test not available in France, Israel, Iran, Libya, Sudan, Somalia, North Korea, Lebanon, Russia, Syria. 18+ only.",
+  "ships_to": "Ships worldwide, with the full country list at checkout. Tests are not sold in France, Israel, Iran, Libya, Sudan, Somalia, North Korea, Lebanon, Russia, or Syria. Buyers must be at least 18.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "3-4 weeks after sample arrives at lab",
@@ -889,7 +889,7 @@
   "website": "https://mynucleus.com",
   "checkout_url": "https://mynucleus.com/health/shop",
   "privacy_policy_url": "https://mynucleus.com/privacy-policy",
-  "data_practices_note": "States it does not sell/share genetic data with third parties (incl. insurers, employers, public databases) unless the user explicitly asks or law requires; HIPAA/SOC 2 Type II; policy (updated 2026-08-24) describes no research-sharing program.",
+  "data_practices_note": "Nucleus says it does not sell or share genetic data with insurers, employers, public databases, or other parties unless the user asks or law requires. It lists HIPAA and SOC 2 Type II controls. The August 24, 2026 policy describes no research sharing plan.",
   "products": [
    {
     "name": "Nucleus Health (whole-genome kit)",
@@ -921,13 +921,13 @@
    "SV",
    "VCF"
   ],
-  "ships_to": "US (free shipping), plus Canada, Czech Republic, Germany, India, Ireland, Italy, New Zealand, Spain, Switzerland, UAE, UK",
+  "ships_to": "US shipping is free. Nucleus also ships to Canada, Czech Republic, Germany, India, Ireland, and Italy. It also serves New Zealand, Spain, Switzerland, the UAE, and the UK.",
   "us_state_exclusions": [
    "NY"
   ],
   "us_state_exclusion_notes": [],
   "turnaround": "4-6 weeks from order; results ~4-5 weeks after lab receives sample",
-  "gating": "None for the buyer — consumer orders directly online; terms state US tests are \"physician-ordered and reviewed\" via Nucleus's arranged clinician network, not the customer's own doctor",
+  "gating": "Buyers order online without their own prescription. In the US, a doctor in the Nucleus network orders and reviews the test. Nucleus arranges that doctor.",
   "affiliate": false,
   "source_urls": [
    "https://mynucleus.com",
@@ -968,7 +968,7 @@
   "website": "https://selfdecode.com",
   "checkout_url": "https://selfdecode.com/shop/dna-kits/dna-kit/",
   "privacy_policy_url": "https://selfdecode.com/en/privacy-policy/",
-  "data_practices_note": "No sharing of individual-level genetic data with third parties without explicit consent; anonymized/aggregated data used for research and product development, with withdrawable consent via privacy@selfdecode.com",
+  "data_practices_note": "SelfDecode shares a person's genetic data only when that person clearly agrees. It uses data with names removed or grouped for research and product work. Users may withdraw consent by emailing privacy@selfdecode.com.",
   "products": [
    {
     "name": "DNA Kit (genotyping array)",
@@ -1053,7 +1053,7 @@
    "VCF",
    "array-txt"
   ],
-  "ships_to": "Most countries worldwide (all 50 US states); excluded: France, Russia, Ukraine/Crimea, Belarus, South Korea, Vietnam, Serbia, Montenegro, North Macedonia, Albania, Kosovo, and sanctioned countries (Iran, North Korea, Cuba, Syria, etc.); India served via manual email order",
+  "ships_to": "Ships to all 50 US states and most countries. It does not ship to France, Russia, Ukraine, Crimea, or Belarus. It also excludes South Korea, Vietnam, Serbia, Montenegro, North Macedonia, Albania, and Kosovo. Countries under sanctions are also excluded. These include Iran, North Korea, Cuba, and Syria. Customers in India order by email.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "3-6 weeks",
@@ -1103,7 +1103,7 @@
   "website": "https://sequencing.com",
   "checkout_url": "https://sequencing.com/marketplace/whole-genome-sequencing-30x",
   "privacy_policy_url": "https://sequencing.com/policies/privacy-policy",
-  "data_practices_note": "States it never sells, rents, or shares genetic data with third parties (incl. pharma/insurers/law enforcement); research or app access to data is explicit opt-in per feature, withdrawable anytime; HIPAA-compliant.",
+  "data_practices_note": "Sequencing.com says it never sells, rents, or shares genetic data with drug firms, insurers, police, or other parties. Each research or app use needs a separate opt-in choice, which users may withdraw. The service says it follows HIPAA.",
   "products": [
    {
     "name": "30x Whole Genome Sequencing (Standard bundle)",
@@ -1199,7 +1199,7 @@
   "website": "https://www.tellmegen.com/en",
   "checkout_url": "https://shop.tellmegen.com/en-us/products/ultra-wgs-dna-kit",
   "privacy_policy_url": "https://www.tellmegen.com/en/privacy-policy",
-  "data_practices_note": "Spanish GDPR-regulated company (GENELINK S.L., Valencia); states it does not sell personal data; research sharing only with explicit consent using pseudonymized/anonymized data; explicit-consent basis for genetic processing; EU-U.S. DPF safeguards for US providers.",
+  "data_practices_note": "GENELINK S.L. in Valencia, Spain runs tellmeGen under GDPR. It says it does not sell personal data. Research sharing needs clear consent and uses data with identity details removed. Genetic data use also needs clear consent. US service firms use EU-US Data Privacy Framework safeguards.",
   "products": [
    {
     "name": "Starter Kit",
@@ -1241,7 +1241,7 @@
    "VCF",
    "array-txt"
   ],
-  "ships_to": "Worldwide (\"practically any country,\" per FAQ) via UPS/DHL; sample must be returned from the country of purchase; possible restrictions/delays in remote or island regions. Ships to the US.",
+  "ships_to": "Ships by UPS or DHL to nearly every country, including the US. The sample must return from the country where it was bought. Remote places and islands may face limits or delays.",
   "us_state_exclusions": [],
   "us_state_exclusion_notes": [],
   "turnaround": "4-6 weeks after sample received at lab; kit ships in 2-4 business days",
@@ -1275,7 +1275,7 @@
   "website": "https://www.yseq.net/",
   "checkout_url": "https://www.yseq.net/product_info.php?cPath=29&products_id=129554",
   "privacy_policy_url": "https://www.yseq.net/privacy.php",
-  "data_practices_note": "Will not sell or rent personal info; research sharing is opt-in via separate consent forms (anonymized/aggregated with research partners), though consent once given cannot be revoked; some data processing occurs in the US.",
+  "data_practices_note": "YSEQ says it does not sell or rent personal data. Research sharing needs a separate opt-in form and uses data with names removed or grouped. Consent cannot be withdrawn after it is given. Some processing happens in the US.",
   "products": [
    {
     "name": "WGS (45 Gbases)",
