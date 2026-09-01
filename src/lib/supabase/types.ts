@@ -80,51 +80,113 @@ export type Database = {
       }
       account_deletion_requests: {
         Row: {
-          account_id: string
+          account_id: string | null
+          account_pseudonym_id: string
           cancelled_at: string | null
+          claim_expires_at: string | null
+          claim_token_hash: string | null
           completed_at: string | null
           created_at: string
+          database_purged_at: string | null
           delete_started_at: string | null
           deletion_hold_revision: number
           id: string
+          last_error_code: string | null
           notice_ends_at: string
           principal_graph_revision: number
           request_account_revision: number
           request_auth_session_revision: number
           requested_at: string
           state: string
+          storage_completed_at: string | null
+          storage_manifest_frozen_at: string | null
         }
         Insert: {
-          account_id: string
+          account_id?: string | null
+          account_pseudonym_id?: string
           cancelled_at?: string | null
+          claim_expires_at?: string | null
+          claim_token_hash?: string | null
           completed_at?: string | null
           created_at?: string
+          database_purged_at?: string | null
           delete_started_at?: string | null
           deletion_hold_revision: number
           id?: string
+          last_error_code?: string | null
           notice_ends_at: string
           principal_graph_revision: number
           request_account_revision: number
           request_auth_session_revision: number
           requested_at: string
           state?: string
+          storage_completed_at?: string | null
+          storage_manifest_frozen_at?: string | null
         }
         Update: {
-          account_id?: string
+          account_id?: string | null
+          account_pseudonym_id?: string
           cancelled_at?: string | null
+          claim_expires_at?: string | null
+          claim_token_hash?: string | null
           completed_at?: string | null
           created_at?: string
+          database_purged_at?: string | null
           delete_started_at?: string | null
           deletion_hold_revision?: number
           id?: string
+          last_error_code?: string | null
           notice_ends_at?: string
           principal_graph_revision?: number
           request_account_revision?: number
           request_auth_session_revision?: number
           requested_at?: string
           state?: string
+          storage_completed_at?: string | null
+          storage_manifest_frozen_at?: string | null
         }
         Relationships: []
+      }
+      account_deletion_storage_entries: {
+        Row: {
+          bucket_id: string
+          completed_at: string | null
+          deletion_id: string
+          entry_ordinal: number
+          object_name: string
+          source_id: string
+          source_kind: string
+          status: string
+        }
+        Insert: {
+          bucket_id: string
+          completed_at?: string | null
+          deletion_id: string
+          entry_ordinal: number
+          object_name: string
+          source_id: string
+          source_kind: string
+          status?: string
+        }
+        Update: {
+          bucket_id?: string
+          completed_at?: string | null
+          deletion_id?: string
+          entry_ordinal?: number
+          object_name?: string
+          source_id?: string
+          source_kind?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_deletion_storage_entries_deletion_id_fkey"
+            columns: ["deletion_id"]
+            isOneToOne: false
+            referencedRelation: "account_deletion_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       account_operation_nonces: {
         Row: {
@@ -6903,6 +6965,15 @@ export type Database = {
           status: string
         }[]
       }
+      claim_due_account_deletion_v1: {
+        Args: { p_claim_token_hash: string; p_lease_seconds?: number }
+        Returns: {
+          account_id: string
+          database_already_purged: boolean
+          deletion_id: string
+          storage_objects: Json
+        }[]
+      }
       claim_mail_outbox: {
         Args: never
         Returns: {
@@ -6913,6 +6984,18 @@ export type Database = {
           template_id: string
           template_payload: Json
         }[]
+      }
+      complete_account_deletion_storage_batch_v1: {
+        Args: {
+          p_claim_token_hash: string
+          p_deletion_id: string
+          p_entries: Json
+        }
+        Returns: number
+      }
+      complete_account_deletion_storage_v1: {
+        Args: { p_claim_token_hash: string; p_deletion_id: string }
+        Returns: undefined
       }
       complete_mail_attempt: {
         Args: {
@@ -6951,6 +7034,18 @@ export type Database = {
         }
         Returns: string
       }
+      fail_account_deletion_attempt_v1: {
+        Args: {
+          p_claim_token_hash: string
+          p_deletion_id: string
+          p_error_code: string
+        }
+        Returns: undefined
+      }
+      finalize_account_deletion_v1: {
+        Args: { p_claim_token_hash: string; p_deletion_id: string }
+        Returns: undefined
+      }
       grant_cloud_model_consent: {
         Args: {
           p_account_id: string
@@ -6977,6 +7072,10 @@ export type Database = {
           p50_seconds: number
           p95_seconds: number
         }[]
+      }
+      purge_account_deletion_database_v1: {
+        Args: { p_claim_token_hash: string; p_deletion_id: string }
+        Returns: string
       }
       record_resend_mail_event: {
         Args: {
