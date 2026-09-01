@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-156 long-block grade findings, concentrated in the existing report-template
+134 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -112,6 +112,14 @@ follow-up guidance, and limits on individual prediction. The CETP B2B2 copy
 also corrects the coronary odds comparison from about 20% lower to about 10%
 lower versus B1B1, consistent with the cited review's per-allele estimate. A
 category-level regression keeps the file at zero findings.
+
+The thirteenth remediation pass removed all 22 findings from the privacy
+policy. The rewrites retain the named infrastructure providers and processor
+limits; bans on tracking, analytics, sale, and sharing; consent-gated AI chat;
+law-enforcement limits; immediate deletion and free export; child-data rules;
+change-of-control protections; legal separation from Plus Bio; and every
+listed GDPR and CCPA/CPRA right. A page-level regression keeps the privacy
+policy at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
