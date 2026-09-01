@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-60 long-block grade findings, concentrated in the existing report-template
+50 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -166,6 +166,16 @@ carrier penetrance across populations. It now adds a heterogeneous-population
 study that measures the rs4349859 tag directly and keeps blood-based HLA typing
 as the clearer result. A category-level regression keeps the file at zero
 findings.
+
+The nineteenth remediation pass removed all 10 findings from the GINA
+explainer. The rewrites retain the federal health-insurance and employment
+protections, the 15-worker threshold, the life, disability, and long-term-care
+gaps, the role of state law, and the need for professional advice. The state
+example now matches Florida's current statute: it names health, life, and
+long-term-care insurance rather than claiming a broad stand-alone disability
+rule. The practical guidance no longer implies that an ungenerated report can
+never be requested or that every clinician-ordered test includes counseling.
+A page-level regression keeps the explainer at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
