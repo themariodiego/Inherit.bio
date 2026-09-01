@@ -10,9 +10,9 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,460 user-visible blocks:
+The deterministic extraction currently covers 1,467 user-visible blocks:
 
-- 914 long blocks from static TSX, the 151 report templates, rendered provider
+- 921 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
 - 395 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,460 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-20 long-block grade findings, concentrated in long legal copy.
+19 long-block grade findings, concentrated in long legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -237,6 +237,17 @@ LM Studio, the OpenAI-compatible setting, example base URL and model, the
 same-network requirement, and the hosted-demo localhost limit. The mandated
 privacy-preference and no-leaving-infrastructure statements remain. Focused
 unit and browser assertions keep those clauses present and readable.
+
+The twenty-fifth remediation pass removed the one finding from the appeals
+policy and replaced its two-paragraph outline with the required public policy.
+The page now covers an adult who says an uploaded genome is theirs, a genetic
+relative who objects to relative-visible processing, the 60-second cross-
+account restriction, and written confirmation of what was switched off. It
+also retains other decision appeals, named-human review, no automated approval
+or rejection, five-business-day acknowledgement, a fixed 30-day decision
+deadline, and response privacy. Focused unit and browser assertions keep those
+rules present. This copy remediation does not claim that the full account-free
+intake, evidence-session, or review runtime required by the brief is complete.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

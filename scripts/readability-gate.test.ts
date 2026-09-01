@@ -227,6 +227,15 @@ describe("readability copy extraction", () => {
     expect(copilotFailures).toEqual([]);
   });
 
+  it("keeps the appeals policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const appealsFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/appeals/page.tsx:"),
+    );
+
+    expect(appealsFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
