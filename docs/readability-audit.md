@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,460 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-22 long-block grade findings, concentrated in long marketing and legal copy.
+20 long-block grade findings, concentrated in long legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -29,10 +29,10 @@ reusable components without deleting caveats. It also corrected the extractor
 so a parent status or list container no longer concatenates its nested heading
 and paragraph into a synthetic copy block. Three regression tests prove that
 nested blocks remain separate, inline markup remains part of its block, and
-visible text attributes are still extracted. Two Copilot paragraphs remain in
-the application-route set because the brief separately requires their current
-wording verbatim; that conflict must be resolved without silently exempting
-them from G1.10.
+visible text attributes are still extracted. Two Copilot paragraphs remained
+in the application-route set at this stage because an earlier brief section
+required their wording verbatim. The final X7.2 contract resolves that conflict
+by requiring long mandated strings to be split while preserving every clause.
 
 The second remediation pass removed all 24 findings from non-legal marketing
 and science pages. It also aligned the About and home pages with the provider
@@ -225,8 +225,18 @@ cases. Withdrawal is stated as prospective, with each study required to name
 and publish what cannot be recalled. Research consent cannot authorize
 internal model development or model training. The page also corrects its
 former claim that AI chat and legal process were the only ways data could
-leave by recognizing a
-person's own export. A page-level regression keeps the policy at zero findings.
+leave by recognizing a person's own export. A page-level regression keeps the
+policy at zero findings.
+
+The twenty-fourth remediation pass removed both remaining application-route
+findings from the Copilot setup state. The API-key explanation still says what
+the key permits, that consent is explicit for each use, that a question
+typically costs pennies, that the dialog names the provider and exact data
+classes, and that the grant is revocable. The local option still names Ollama,
+LM Studio, the OpenAI-compatible setting, example base URL and model, the
+same-network requirement, and the hosted-demo localhost limit. The mandated
+privacy-preference and no-leaving-infrastructure statements remain. Focused
+unit and browser assertions keep those clauses present and readable.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
