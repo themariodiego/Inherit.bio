@@ -190,4 +190,13 @@ describe("readability copy extraction", () => {
 
     expect(ginaFailures).toEqual([]);
   });
+
+  it("keeps every cancer-risk template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/cancer-risk.json:"),
+    );
+
+    expect(cancerRiskFailures).toEqual([]);
+  });
 });
