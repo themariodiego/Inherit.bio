@@ -91,4 +91,13 @@ describe("readability copy extraction", () => {
 
     expect(mentalHealthFailures).toEqual([]);
   });
+
+  it("keeps every basic-traits template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const basicTraitsFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/basic-traits.json:"),
+    );
+
+    expect(basicTraitsFailures).toEqual([]);
+  });
 });
