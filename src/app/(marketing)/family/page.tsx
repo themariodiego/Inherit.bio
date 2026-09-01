@@ -9,7 +9,7 @@ export default function FamilyPage() {
     <div className="mx-auto max-w-4xl px-6 py-16">
       <p className="eyebrow">Family</p>
       <h1 className="display mt-4 text-4xl sm:text-5xl">Understand shared inheritance.</h1>
-      <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">Family features require each adult&apos;s own account, directional consent, and a current jurisdiction-specific human legal review.</p>
+      <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">Each adult needs their own account and must choose what they share. A legal expert must also approve the feature for their country.</p>
       <section className="mt-10 rounded-2xl border border-line bg-card p-6">
         <h2 className="font-medium">Not available in any production jurisdiction yet</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">No real jurisdiction has the required human sign-off. Invitations, shared analysis, and inheritance portraits remain off.</p>
