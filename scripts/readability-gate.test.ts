@@ -200,6 +200,15 @@ describe("readability copy extraction", () => {
     expect(deceasedFailures).toEqual([]);
   });
 
+  it("keeps the law-enforcement policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const lawEnforcementFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/law-enforcement/page.tsx:"),
+    );
+
+    expect(lawEnforcementFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
