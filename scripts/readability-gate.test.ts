@@ -127,4 +127,13 @@ describe("readability copy extraction", () => {
 
     expect(heartFailures).toEqual([]);
   });
+
+  it("keeps the privacy policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const privacyFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/privacy/page.tsx:"),
+    );
+
+    expect(privacyFailures).toEqual([]);
+  });
 });
