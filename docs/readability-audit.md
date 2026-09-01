@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-117 long-block grade findings, concentrated in the existing report-template
+101 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -128,6 +128,15 @@ study design, replication status, and limits on individual prediction. The
 photic-sneeze copy also corrects its cross-population comparison: both cited
 studies associate the C allele with higher odds, rather than reporting opposite
 directions. A category-level regression keeps the file at zero findings.
+
+The fifteenth remediation pass removed all 16 findings from the reproductive
+and family report category. The rewrites retain carrier-screening and clinical
+confirmation limits, inheritance probabilities, allele and effect direction,
+effect sizes, ancestry and population qualifiers, study design and replication
+status, clinical follow-up, and limits on individual prediction. The FSHR copy
+now attributes the higher average stimulation requirement specifically to early
+IVF studies rather than presenting it as a universal result. A category-level
+regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

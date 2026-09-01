@@ -145,4 +145,13 @@ describe("readability copy extraction", () => {
 
     expect(environmentalFailures).toEqual([]);
   });
+
+  it("keeps every reproductive-family template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const reproductiveFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/reproductive-family.json:"),
+    );
+
+    expect(reproductiveFailures).toEqual([]);
+  });
 });

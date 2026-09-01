@@ -3,7 +3,7 @@
     "slug": "cystic-fibrosis-cftr-f508del-informational",
     "category": "reproductive-family",
     "title": "CFTR F508del carrier status (informational) · CFTR",
-    "summary": "F508del is the most common cystic fibrosis variant, accounting for roughly 70% of CF alleles in European-ancestry populations; about 1 in 25-30 people of European ancestry carries one copy. This informational report checks a single variant only. It is NOT carrier screening and cannot replace clinical carrier testing, which examines many CFTR variants: anyone planning a family who wants carrier information should speak with a doctor or genetic counselor about proper screening.",
+    "summary": "F508del is the most common cystic fibrosis (CF) variant. It makes up about 70% of CF alleles in people with European ancestry. About 1 in 25 to 30 people in that group carries one copy. This report checks only F508del. It is not carrier screening. Clinical screening tests many CFTR variants. If you are planning a family and want carrier information, ask a doctor or genetic counselor about proper testing.",
     "evidence": "established",
     "variants": [
       {
@@ -15,8 +15,8 @@
         "alt": "T",
         "interpretations": {
           "TCTTTCTT": "No F508del deletion detected at this site. Important caveat: this checks only one CFTR variant out of the hundreds that can cause cystic fibrosis, so it does not rule out carrier status. Clinical carrier screening, which covers many CFTR variants, is the appropriate route for family-planning decisions; a genetic counselor can explain the options.",
-          "TTCTT": "One copy of the F508del deletion, consistent with being a cystic fibrosis carrier. Carriers are healthy; the finding matters mainly for family planning, because if both partners are carriers each pregnancy has on average a 1-in-4 chance of a child with CF. Consumer arrays can miscall this site, so this result should be confirmed by a clinical laboratory and discussed with a genetic counselor before acting on it.",
-          "TT": "Two copies of the F508del deletion. This genotype is the most common one found in people with cystic fibrosis, which is usually identified in childhood. In an adult with no known CF this result would be unexpected and most likely reflects an array error at this technically difficult site; clinical-laboratory confirmation and a conversation with a genetic counselor are strongly recommended."
+          "TTCTT": "One copy of F508del, which is consistent with CF carrier status. Carriers are healthy. If both partners carry a CF-causing variant, each pregnancy has a 1-in-4 chance of CF. Consumer arrays can misread this site. A clinical lab should confirm the result before you act on it. A genetic counselor can explain what it means for family planning.",
+          "TT": "Two copies of F508del. This is the most common genotype in people with CF, which is usually found in childhood. This result would be unexpected in an adult with no known CF. An array error is likely because this site is hard to read. A clinical lab should confirm the result. You should also speak with a genetic counselor."
         }
       }
     ],
@@ -32,7 +32,7 @@
     "slug": "fsh-levels-fshb-promoter-rs10835638",
     "category": "reproductive-family",
     "title": "FSH hormone levels · FSHB promoter (-211G>T)",
-    "summary": "Follicle-stimulating hormone (FSH) drives egg maturation and sperm production. The FSHB promoter variant rs10835638 (-211G>T) reduces FSHB gene transcription: the T allele is associated with lower average circulating FSH, and in men has been linked to modestly lower testis volume and sperm parameters. Effects on actual fertility are small and inconsistent across studies; a blood test measures real FSH levels far better than genotype.",
+    "summary": "Follicle-stimulating hormone (FSH) helps eggs mature and supports sperm production. rs10835638 lies in the FSHB promoter and lowers gene transcription. The T allele is linked to lower average blood FSH. In men, studies also link it to slightly smaller testes and lower sperm measures. Effects on fertility are small and differ across studies. A blood test measures FSH far better than genotype.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -74,7 +74,7 @@
         "interpretations": {
           "CC": "No copies of the M2-tagging allele at this position. This genotype is not associated with the reduced ANXA5 promoter activity linked to the M2 haplotype. Most pregnancy losses have causes unrelated to ANXA5, so this result says little either way about individual pregnancy outcomes.",
           "CT": "One copy of the T allele that tags the M2 haplotype, carried by roughly 10-15% of people of European ancestry. Some studies associate M2 carriage with about 1.5-2x the average odds of recurrent pregnancy loss; others find no effect. This is one small, preliminary factor among many, and most carriers have uncomplicated pregnancies. Anyone experiencing recurrent loss deserves a full clinical evaluation regardless of this result.",
-          "TT": "Two copies of the M2-tagging T allele, which is uncommon. Associated in some studies with the lowest average ANXA5 promoter activity and modestly elevated odds of recurrent pregnancy loss, though data on this rare genotype are thin. This remains a preliminary association and one small factor among many; a clinician or genetic counselor can put it in context alongside a proper evaluation."
+          "TT": "Two copies of the uncommon T allele that tags M2. Some studies link this result to the lowest average ANXA5 promoter activity and slightly higher odds of repeat pregnancy loss. Data on this rare genotype are thin. This is one early finding among many factors. A clinician or genetic counselor can review it as part of a full evaluation."
         }
       }
     ],
@@ -90,7 +90,7 @@
     "slug": "age-at-menopause-mcm8",
     "category": "reproductive-family",
     "title": "Age at natural menopause · MCM8",
-    "summary": "MCM8 is involved in DNA repair in developing eggs, and common variation in it is one of the strongest single-variant influences on menopause timing. Each copy of the rs16991615 A allele (a Glu341Lys change) is associated with natural menopause roughly one year later on average, along with slightly higher anti-Mullerian hormone levels. Menopause timing still varies by many years between people with the same genotype.",
+    "summary": "MCM8 helps repair DNA in developing eggs. rs16991615 is one of the strongest single variants linked to menopause timing. Each A allele changes Glu341 to Lys. Each copy is linked to natural menopause about one year later and slightly higher anti-Mullerian hormone on average. People with the same genotype still differ by many years.",
     "evidence": "moderate",
     "variants": [
       {
@@ -136,7 +136,7 @@
         "interpretations": {
           "GG": "Two copies of the common G allele, which is the twinning-associated allele at this locus. Associated with modestly higher average FSH and, in mothers, roughly 1.2-1.3x the odds of a dizygotic twin pregnancy per G copy compared with carrying A alleles. Dizygotic twinning still depends heavily on maternal age, ancestry, and chance.",
           "AG": "One copy of each allele. The A allele is associated with lower average FSH levels and somewhat lower odds of dizygotic twinning; this genotype sits in between the two homozygous groups on average. The absolute chance of a twin pregnancy remains low for all genotypes.",
-          "AA": "Two copies of the less common A allele (roughly 8% frequency in European-ancestry populations). Associated with the lowest average FSH levels at this locus and on average lower odds of a dizygotic twin pregnancy. This variant only matters for the egg-producing partner, and its effect is small next to maternal age and family history."
+          "AA": "Two copies of the less common A allele, which has about 8% frequency in European-ancestry groups. This result is linked to the lowest average FSH at this site and lower odds of a fraternal twin pregnancy. It matters only for the partner who makes eggs. Its effect is small next to age and family history."
         }
       }
     ],
@@ -152,7 +152,7 @@
     "slug": "age-at-menarche-lin28b",
     "category": "reproductive-family",
     "title": "Age at first period · LIN28B",
-    "summary": "LIN28B is a master regulator of developmental timing, and common variation near it was among the first replicated genetic influences on puberty timing found by GWAS. At rs7759938, the C allele is associated with a first period roughly 1-1.5 months later per copy, and with correspondingly later puberty milestones in both sexes. The effect is real but tiny compared with the years of normal variation in puberty timing.",
+    "summary": "LIN28B helps control when development happens. Variation near it was among the first genetic links to puberty timing found by genome-wide studies. At rs7759938, each C allele is linked to a first period about 1 to 1.5 months later. It is also linked to later puberty milestones in both sexes. This shift is tiny next to the normal range of several years.",
     "evidence": "moderate",
     "variants": [
       {
@@ -165,7 +165,7 @@
         "interpretations": {
           "CC": "Two copies of the C allele, carried by roughly 10-15% of people of European ancestry. Associated on average with menarche about 2-3 months later than TT, and with slightly later puberty timing in boys as well. A shift of weeks against a backdrop of years of normal variation.",
           "CT": "One copy of each allele, associated with intermediate average puberty timing: roughly 1-1.5 months later menarche than TT on average. Nutrition, body composition, and hundreds of other variants each contribute; this is one small factor.",
-          "TT": "The most common genotype, associated with the earliest average puberty timing at this locus, though the difference from CC is only a couple of months on average. Genotype at one variant says very little about any individual's actual development."
+          "TT": "Two copies of T, the most common genotype. This group has the earliest average puberty timing at this site. The gap from CC is only about two to three months. One variant says very little about when any one person will develop."
         }
       }
     ],
@@ -185,7 +185,7 @@
     "slug": "endometriosis-wnt4-region",
     "category": "reproductive-family",
     "title": "Endometriosis · WNT4 region (1p36)",
-    "summary": "Endometriosis, where tissue similar to the uterine lining grows outside the uterus, affects roughly 1 in 10 people with a uterus and is partly heritable. The 1p36 locus near WNT4, a gene central to development of the female reproductive tract, is one of the most consistently replicated endometriosis loci: each copy of the rs7521902 A allele is associated with roughly 1.2x the odds of endometriosis on average.",
+    "summary": "Endometriosis is a condition in which tissue like the uterine lining grows outside the uterus. It affects about 1 in 10 people with a uterus and is partly inherited. The 1p36 site near WNT4 is one of the most often replicated genetic links. WNT4 helps form the female reproductive tract. Each rs7521902 A allele is linked to about 1.2 times the average odds of endometriosis.",
     "evidence": "moderate",
     "variants": [
       {
@@ -197,7 +197,7 @@
         "alt": "A",
         "interpretations": {
           "CC": "No copies of the A risk allele. Associated with somewhat lower average odds of endometriosis at this locus. This does not rule anything out: most endometriosis risk comes from other genetic and non-genetic factors, and symptoms such as severe pelvic pain warrant medical attention regardless of genotype.",
-          "AC": "One copy of the A allele, associated on average with roughly 1.2x the odds of endometriosis compared with CC. This is a modest probabilistic shift at one of many contributing loci, not a prediction; the condition can only be established by clinical evaluation.",
+          "AC": "One copy of A. This result is linked to about 1.2 times the average odds of endometriosis compared with CC. It is a small shift from one of many sites, not a prediction. Only a clinical evaluation can establish the condition.",
           "AA": "Two copies of the A allele, carried by roughly 7-8% of people of European ancestry. Associated on average with about 1.4-1.5x the odds of endometriosis relative to CC. Still one small factor among many: most people with this genotype never develop endometriosis, and most cases occur in people without it."
         }
       }
@@ -218,7 +218,7 @@
     "slug": "polycystic-ovary-syndrome-dennd1a",
     "category": "reproductive-family",
     "title": "Polycystic ovary syndrome · DENND1A",
-    "summary": "Polycystic ovary syndrome (PCOS) is a common hormonal condition involving irregular ovulation and elevated androgens. DENND1A on 9q33.3 emerged from the first PCOS genome-wide studies in Han Chinese cohorts, where each copy of the rs2479106 G allele was associated with roughly 1.3x the odds of PCOS; replication in European-ancestry cohorts has been inconsistent for this particular variant, so the association is graded preliminary.",
+    "summary": "Polycystic ovary syndrome (PCOS) is a common hormone condition that can involve irregular ovulation and high androgen levels. DENND1A at 9q33.3 emerged from the first genome-wide PCOS studies in Han Chinese groups. Each rs2479106 G allele was linked to about 1.3 times the odds of PCOS. Studies of this variant in European-ancestry groups have had mixed results. The evidence is preliminary.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -251,7 +251,7 @@
     "slug": "ovarian-fsh-response-fshr-asn680ser",
     "category": "reproductive-family",
     "title": "FSH receptor sensitivity · FSHR Asn680Ser",
-    "summary": "The FSH receptor on ovarian cells determines how strongly the ovary responds to follicle-stimulating hormone. The common Asn680Ser variant (rs6166) shifts receptor sensitivity: Ser680 homozygotes have modestly higher average basal FSH and, in IVF studies, needed more stimulation medication on average to achieve the same ovarian response. Both versions are common and compatible with normal fertility; this is about average dose-response, not ability to conceive.",
+    "summary": "FSH receptors on ovarian cells control how strongly the ovary responds to FSH. rs6166 changes amino acid 680 from asparagine to serine. Ser/Ser carriers have slightly higher average FSH at baseline. Early IVF studies found that they needed more stimulation medicine on average for the same response. Both forms are common and work with normal fertility. This result concerns average IVF response, not the ability to conceive.",
     "evidence": "moderate",
     "variants": [
       {
@@ -280,7 +280,7 @@
     "slug": "pregnancy-thrombosis-factor-v-leiden",
     "category": "reproductive-family",
     "title": "Pregnancy and clotting · Factor V Leiden",
-    "summary": "Factor V Leiden (rs6025, Arg506Gln) is the most common inherited clotting-tendency variant, carried by roughly 3-5% of people of European ancestry. Pregnancy itself raises clotting tendency, and carriers have higher average odds of venous blood clots during pregnancy and the postpartum period; meta-analyses also associate the variant with roughly 1.5-2x the odds of pregnancy loss. Most carriers have entirely uncomplicated pregnancies. This is informational only; carriers planning a pregnancy may wish to discuss the finding with a clinician or genetic counselor.",
+    "summary": "Factor V Leiden (rs6025, Arg506Gln) is the most common inherited variant that raises clot risk. About 3% to 5% of people with European ancestry carry it. Pregnancy also raises clot risk. Carriers have higher average odds of a vein clot during pregnancy and after birth. Studies also link the variant to about 1.5 to 2 times the odds of pregnancy loss. Most carriers have pregnancies without these problems. This report is for information only. If you carry the variant and plan a pregnancy, consider speaking with a clinician or genetic counselor.",
     "evidence": "moderate",
     "variants": [
       {
@@ -292,8 +292,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No Factor V Leiden variant detected. Clotting tendency at this locus is typical. Other inherited and acquired factors can still affect clotting risk in pregnancy, and this single-variant result is not a full thrombophilia work-up.",
-          "CT": "One copy of Factor V Leiden, found in roughly 3-5% of people of European ancestry. Associated on average with several-fold higher odds of venous blood clots, a risk that pregnancy and estrogen-containing medications amplify, and in meta-analyses with roughly 1.5-2x the odds of pregnancy loss. Most carriers never have a clot and most carrier pregnancies are uncomplicated; a clinician or genetic counselor can put this in personal context, ideally with clinical confirmation of the result.",
-          "TT": "Two copies of Factor V Leiden, which is rare (around 1 in 1,000-2,500 people of European ancestry). Associated with substantially higher average odds of venous blood clots than one copy, with pregnancy further raising that baseline. This result warrants clinical-laboratory confirmation and a conversation with a clinician or genetic counselor, particularly around pregnancy planning; it remains a probability shift, not a certainty of any outcome."
+          "CT": "One copy of Factor V Leiden. About 3% to 5% of people with European ancestry have this result. It is linked to several times the average odds of a vein clot. Pregnancy and medicines that contain estrogen raise that risk further. Studies also link it to about 1.5 to 2 times the odds of pregnancy loss. Most carriers never have a clot, and most pregnancies have no related problem. A clinical lab should confirm the result. A clinician or genetic counselor can put it in context.",
+          "TT": "Two copies of Factor V Leiden. This is rare, affecting about 1 in 1,000 to 2,500 people with European ancestry. It is linked to much higher average odds of a vein clot than one copy. Pregnancy raises that risk further. A clinical lab should confirm this result. Speak with a clinician or genetic counselor, especially before pregnancy. The result shifts probability; it does not make any outcome certain."
         }
       }
     ],
