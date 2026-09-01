@@ -19,11 +19,11 @@ export default function AboutPage() {
       }
       intro={
         <p>
-          Inherit is an open-source consumer genomics platform. It helps you
-          buy whole-genome or exome sequencing from an independent provider,
-          then turns the raw file you get back into reports, ancestry
-          estimates, and polygenic scores — on infrastructure you can read,
-          audit, and run yourself.
+          Inherit is open-source software for people who want to explore their
+          DNA. It helps you buy whole-genome or exome sequencing from an
+          independent lab. You can turn the raw file into reports, ancestry
+          estimates, and polygenic scores. You can inspect the system or run it
+          yourself.
         </p>
       }
       sections={[
@@ -33,21 +33,19 @@ export default function AboutPage() {
           body: (
             <>
               <p>
-                Most consumer genomics companies sell you a test, keep your
-                data on their servers, and make their real money elsewhere.
-                Inherit inverts that model. We do not sell sequencing at all:
-                our provider directory routes you to real laboratories, you pay
-                them directly, and no money passes through us. You then upload
-                the raw file — a 23andMe, AncestryDNA, MyHeritage, or
-                FamilyTreeDNA export, a VCF, or a BAM/CRAM — and Inherit
-                interprets it for you.
+                Many DNA companies sell a test and keep your data on their
+                servers. Inherit works another way. We do not sell tests. Our
+                provider list sends you to independent labs, which you pay
+                directly. Some links may earn Inherit a commission, which we
+                show beside the link. You can upload a file from 23andMe,
+                AncestryDNA, MyHeritage, or FamilyTreeDNA. You can also add a
+                VCF, BAM, or CRAM file. Inherit reads the file for you.
               </p>
               <p>
-                Every report states its evidence level, cites its sources, and
-                says plainly when your file does not cover a variant. Inherit
-                is informational, not a medical device: it does not diagnose,
-                treat, or prevent any disease, and it is not a substitute for a
-                physician or a genetic counselor.
+                Each report shows its evidence, sources, and any variant your
+                file could not read. Inherit gives information, not medical
+                care. It does not diagnose, treat, or prevent disease. It cannot
+                replace a doctor or genetic counselor.
               </p>
             </>
           ),
@@ -60,9 +58,10 @@ export default function AboutPage() {
               <ul>
                 <li>
                   <strong>We never sell sequencing.</strong> Providers are
-                  listed with their real prices, depth, and turnaround. You buy
-                  from them directly; Inherit takes no commission, referral
-                  fee, or cut of any kind.
+                  listed with their prices, depth, and turnaround. You buy from
+                  them directly. Some provider links are affiliate links. We
+                  label each one and may earn a commission if you use it. Your
+                  price does not change.
                 </li>
                 <li>
                   <strong>We never sell or share your data.</strong> Your
@@ -73,16 +72,14 @@ export default function AboutPage() {
                   commitments, including what happens in a change of control.
                 </li>
                 <li>
-                  <strong>We never run third-party trackers.</strong> Zero ad
-                  pixels, zero third-party analytics. An automated network
-                  audit in our continuous-integration pipeline fails the build
-                  if any tracker appears.
+                  <strong>We never use outside trackers.</strong> There are no
+                  ad pixels or outside analytics. An automated network check
+                  fails the build if it finds a tracker.
                 </li>
                 <li>
-                  <strong>Export is free, forever.</strong> Everything you
-                  upload and everything we derive from it can be downloaded at
-                  any time at no charge, and deletion actually deletes — rows
-                  and storage objects, immediately.
+                  <strong>You can always export for free.</strong> The export
+                  includes all uploads and results. When a deletion is due,
+                  Inherit removes its database rows and stored files.
                 </li>
               </ul>
             </>
@@ -94,27 +91,25 @@ export default function AboutPage() {
           body: (
             <>
               <p>
-                The entire Inherit codebase is published under the GNU Affero
-                General Public License, version 3.0 (AGPL-3.0) at{" "}
+                All Inherit code is available under the GNU Affero General
+                Public License, version 3.0 (AGPL-3.0), at{" "}
                 <a
-                  href="https://github.com/themariodiego/sequence"
+                  href="https://github.com/themariodiego/Inherit.bio"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  github.com/themariodiego/sequence
+                  github.com/themariodiego/Inherit.bio
                 </a>
-                . That license choice is deliberate: anyone who runs Inherit
-                as a service — including us — must publish their modifications.
-                You can read exactly how your file is parsed, how reports are
-                generated, and what leaves the server (nothing, unless you ask
-                it to).
+                . The license requires anyone who runs a changed copy as a
+                service to publish those changes. You can inspect how Inherit
+                reads files, builds reports, and sends data. It sends nothing
+                outside the service unless you ask.
               </p>
               <p>
-                Because the code is open, our privacy promises are not just
-                policy — they are structural. If Inherit the company ever
-                disappointed you, you could take the code, your exported data,
-                and self-host the whole platform. That exit path is documented
-                at <Link href="/docs/self-hosting">/docs/self-hosting</Link>.
+                Open code makes our privacy promises part of the design, not
+                just a policy. If the Inherit company let you down, you could
+                export your data, copy the code, and run it yourself. Read the{" "}
+                <Link href="/legal/self-hosting">self-hosting guide</Link>.
               </p>
             </>
           ),
@@ -125,13 +120,11 @@ export default function AboutPage() {
           body: (
             <>
               <p>
-                Inherit was <strong>created by Plus Bio</strong> — the team
-                built it, gave it their design language, and released it as
-                open source <strong>for the public good</strong>. And it was
-                deliberately set up as a{" "}
-                <strong>legally separate entity</strong>: Inherit is not a
-                product line inside a company, it is its own thing, with its
-                own domain, its own accounts, and its own obligations to you.
+                <strong>Plus Bio created Inherit.</strong> Its team built the
+                software, shared its design, and released the code for public
+                use. Inherit is a <strong>separate legal entity</strong>, not a
+                Plus Bio product line. It has its own domain, accounts, and
+                duties to you.
               </p>
               <ul>
                 <li>
@@ -142,10 +135,9 @@ export default function AboutPage() {
                   Inherit&rsquo;s data is simply not part of it.
                 </li>
                 <li>
-                  Inherit runs on a <strong>separate domain</strong>{" "}
-                  (inherit.bio) with <strong>separate accounts</strong>. There
-                  is no single sign-on with any Plus Bio service and no shared
-                  login infrastructure.
+                  Inherit uses its own domain, <strong>inherit.bio</strong>, and
+                  its own accounts. It does not share sign-in systems with any
+                  Plus Bio service.
                 </li>
                 <li>
                   <strong>
@@ -157,9 +149,8 @@ export default function AboutPage() {
                 </li>
               </ul>
               <p>
-                This separation is restated, with the same guarantees, in the{" "}
-                <Link href="/privacy">privacy policy</Link>, where it is a
-                binding commitment rather than a description.
+                The <Link href="/privacy">privacy policy</Link> states the same
+                promises as binding rules.
               </p>
             </>
           ),
@@ -170,27 +161,22 @@ export default function AboutPage() {
           body: (
             <>
               <p>
-                A platform built on trust has to be usable by everyone, so
-                accessibility is treated as a core requirement, not a
-                nice-to-have. Inherit targets{" "}
-                <strong>WCAG 2.1 AA</strong>: every release runs automated
-                axe accessibility checks in our continuous-integration
-                pipeline, in both light and dark themes, and the interface
-                is built to be fully operable with a keyboard alone — a
-                skip-to-content link, visible focus styles, and proper
-                landmarks and headings throughout.
+                Everyone must be able to use a service built on trust.
+                Accessibility is a core rule for Inherit. We aim for{" "}
+                <strong>WCAG 2.1 AA</strong>. Each release runs automated axe
+                checks in light and dark themes. You can use the interface with
+                a keyboard. It has a skip link, clear focus styles, and page
+                landmarks and headings.
               </p>
               <p>
-                We are equally honest about known gaps: the genome browser
-                canvas is not yet screen-reader accessible; variant search
-                results are, and every insight in the browser is also
-                available as text.
+                We also name known gaps. A screen reader cannot use the genome
+                browser canvas yet. Its search results are accessible, and
+                every finding also appears as text.
               </p>
               <p>
-                If you hit a barrier, please tell us — email{" "}
-                <strong>accessibility@inherit.bio</strong> or open an issue
-                on the public repository. Accessibility reports are triaged
-                with the same priority as functional bugs.
+                Found an access problem? Tell us. Email{" "}
+                <strong>accessibility@inherit.bio</strong> or open a public
+                issue. We treat access bugs like other broken features.
               </p>
             </>
           ),
@@ -202,10 +188,15 @@ export default function AboutPage() {
             <>
               <p>
                 General questions: <strong>hello@inherit.bio</strong>.
-                Privacy and data-rights requests:{" "}
-                <strong>privacy@inherit.bio</strong>. Security reports:{" "}
-                <strong>security@inherit.bio</strong>. Bugs and feature
-                requests are best filed as issues on the public repository.
+              </p>
+              <p>
+                Privacy and data rights: <strong>privacy@inherit.bio</strong>.
+              </p>
+              <p>
+                Security reports: <strong>security@inherit.bio</strong>.
+              </p>
+              <p>
+                Please file bugs and feature requests in the public repository.
               </p>
               <p>
                 Inherit is informational only — not medical advice and not a

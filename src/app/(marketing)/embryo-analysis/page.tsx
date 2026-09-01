@@ -10,15 +10,15 @@ export default function EmbryoAnalysisPage() {
       <p className="eyebrow">Embryo Analysis</p>
       <h1 className="display mt-4 text-4xl sm:text-5xl">A bounded record, held for a future person.</h1>
       <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">
-        Inherit is designed to explain supported, autosomal findings without
-        ranking embryos, recommending transfer, predicting sex, or filling gaps
-        in source data.
+        Inherit can explain supported findings on non-sex chromosomes. It does
+        not rank embryos, suggest which embryo to transfer, predict sex, or
+        guess when data is missing.
       </p>
       <section className="mt-10 rounded-2xl border border-line bg-card p-6">
         <h2 className="font-medium">Not available in any production jurisdiction yet</h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-muted">
-          The human legal review and model allowlist required for embryo data
-          are absent. The capability therefore remains off on the hosted service.
+          Embryo tools need a review by a legal expert and a list of approved
+          models. Neither is ready, so these tools stay off on the hosted service.
         </p>
       </section>
       <section className="mt-6 rounded-2xl bg-tint p-6">
