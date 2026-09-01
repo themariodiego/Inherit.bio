@@ -12,6 +12,7 @@ skipped, quarantined, or retry-dependent tests are not permitted.
 | `e2e/adult-subject-invitation.spec.ts` | New E2E coverage | Covers the TEST-LOCAL adult-subject invitation Path A reservation and acceptance boundary. | Follows the captured email link, proves the raw token is absent from durable mail payloads, binds the subject to the matching recipient account, and proves the inviter has zero directional grants and the subject has zero files. |
 | `scripts/secret-gate.test.ts` | New unit coverage | Pins the G1.17 credential detector against future provider formats and false-positive regressions. | Detects provider tokens, JWTs, private-key headers, credential-bearing URLs, and generic secret assignments while rejecting documented placeholders and environment lookups. |
 | `scripts/name-gate.test.ts` | New unit coverage | Pins G1.9/G6 normalization, carve-out precedence, and evaluative-distance behavior. | Detects lowercase-domain, camelCase, kebab-case, snake_case and compact forms; proves the provider carve-out is path-limited and absent for commit messages; checks the exact 200-character proximity boundary. |
+| `scripts/readability.test.ts` | New unit coverage | Pins the G1.10 scorer before corpus remediation begins. | Proves opaque-token normalization, deterministic sentence/word/syllable counts, contraction handling, and all ten versioned calibration grades within the 0.2 tolerance. |
 
 No pre-existing E2E test has been modified, weakened, deleted, skipped, or
 quarantined in this change set. Existing design-token assertions are unchanged.
