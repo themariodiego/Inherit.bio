@@ -46,4 +46,13 @@ describe("readability copy extraction", () => {
 
     expect(providerFailures).toEqual([]);
   });
+
+  it("keeps every lifestyle and wellness template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const lifestyleFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/lifestyle-wellness.json:"),
+    );
+
+    expect(lifestyleFailures).toEqual([]);
+  });
 });

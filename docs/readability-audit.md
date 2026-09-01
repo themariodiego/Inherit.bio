@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-379 long-block grade findings, concentrated in the existing report-template
+347 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -48,6 +48,13 @@ clinician-ordering description. The rewrites retain country exclusions,
 consent and opt-out choices, policy dates, laboratory locations, ordering
 rules, and shipping costs or delays. Prices, product compatibility, source
 URLs, and verification summaries were not changed.
+
+The fourth remediation pass removed all 32 findings from the lifestyle and
+wellness report category: 10 summaries and 22 genotype interpretations. The
+rewrites retain each allele direction, phenotype, effect size or population
+frequency, evidence status, study limitation, and measurement caveat. A
+category-level regression keeps this template file at zero findings while the
+remaining report categories are remediated.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
