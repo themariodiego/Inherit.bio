@@ -11,7 +11,23 @@ const REQUIRED = [
   { route: "/privacy", must: [/children/i, /genetic data/i, /change of control|change-of-control/i, /deletion/i, /export/i] },
   { route: "/terms", must: [/18|eighteen/i, /not medical advice|informational/i, /export/i, /AGPL/i] },
   { route: "/legal/research-consent", must: [/consent/i] },
-  { route: "/legal/law-enforcement", must: [/law enforcement/i, /transparency/i, /0\b/] },
+  {
+    route: "/legal/law-enforcement",
+    must: [
+      /law enforcement/i,
+      /search warrant or an equal judicial order/i,
+      /subpoena alone is not enough/i,
+      /resist subpoenas for genetic data/i,
+      /notify each affected person before we comply/i,
+      /notice as soon as that bar ends/i,
+      /another adult subject/i,
+      /future-person records/i,
+      /forensic genealogy database/i,
+      /requests received[\s\S]{0,80}all jurisdictions\s+0/i,
+      /requests resisted[\s\S]{0,80}all jurisdictions\s+0/i,
+      /requests complied with[\s\S]{0,80}all jurisdictions\s+0/i,
+    ],
+  },
   {
     route: "/legal/deceased",
     must: [

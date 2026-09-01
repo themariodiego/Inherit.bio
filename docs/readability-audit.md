@@ -10,17 +10,17 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,452 user-visible blocks:
+The deterministic extraction currently covers 1,457 user-visible blocks:
 
-- 911 long blocks from static TSX, the 151 report templates, rendered provider
+- 914 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
-- 393 short strings selected by rendered role;
+- 395 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
   subject to the 25-word sentence cap.
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-32 long-block grade findings, concentrated in long marketing and legal copy.
+26 long-block grade findings, concentrated in long marketing and legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -200,6 +200,19 @@ remain protected without their consent. Account-deletion wording now points to
 the fixed seven-day notice and purge lifecycle instead of promising an
 immediate account purge. A page-level regression keeps this policy at zero
 findings.
+
+The twenty-second remediation pass removed all 6 findings from the law-
+enforcement policy. It also replaces a subpoena-as-sufficient rule with the v2
+contract: stored content requires a warrant or equal judicial order, and
+Inherit first resists demands and subpoenas for genetic data. The policy now
+applies to other adult subjects and future-person records, preserves notice and
+narrow-response duties, and bans voluntary forensic-genealogy upload or
+matching. Its annual report now gives explicit received, resisted, complied,
+and affected-account zeros by requesting jurisdiction. Future-person claim
+volume is also published there, and the twice-yearly update cadence remains.
+The page no longer promises an immediate purge or a voluntary emergency
+exception that conflicts with its one compelled-process position. A page-level
+regression keeps the policy at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
