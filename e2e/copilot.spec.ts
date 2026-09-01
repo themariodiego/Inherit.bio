@@ -81,9 +81,7 @@ test("cloud provider requires a consent dialog naming provider and data classes;
   await page.getByLabel("Provider", { exact: true }).click();
   await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
   await page.getByLabel("Base URL").fill(MOCK_BASE);
-  await expect(
-    page.getByText("Detected as a cloud endpoint"),
-  ).toBeVisible();
+  await expect(page.getByText(/Cloud service found/)).toBeVisible();
   await page.getByLabel("Model").fill("mock-model");
   await page.getByRole("button", { name: "Save provider" }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
