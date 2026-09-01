@@ -55,7 +55,7 @@
     "slug": "ldl-cholesterol-sort1-rs599839",
     "category": "heart-cardiovascular",
     "title": "LDL cholesterol · SORT1 region (1p13)",
-    "summary": "The 1p13 locus near SORT1/CELSR2/PSRC1 is one of the strongest common-variant influences on LDL (\"bad\") cholesterol. At rs599839, the A allele is associated with modestly higher LDL cholesterol (a few mg/dL per copy) and about 10% higher odds of coronary disease per copy.",
+    "summary": "The 1p13 region near SORT1, CELSR2, and PSRC1 strongly affects LDL, often called bad cholesterol. At rs599839, each A copy is linked to LDL that is a few mg/dL higher. Each A is also linked to about 10% higher odds of coronary disease.",
     "evidence": "moderate",
     "variants": [
       {
@@ -66,7 +66,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the less common G allele, which is associated with lower average LDL cholesterol (roughly 5-7 mg/dL lower than AA) and modestly lower average odds of coronary disease at this locus.",
+          "GG": "Two G copies mark lower LDL at this site. Average LDL is about 5 to 7 mg/dL lower than with AA. GG is also linked to slightly lower odds of coronary disease.",
           "AG": "One copy of each allele. Associated with intermediate average LDL cholesterol between the two homozygous groups. The effect is small compared with diet, weight, and other genetic factors combined.",
           "AA": "Two copies of the A allele, the most common genotype in most populations. Associated with slightly higher average LDL cholesterol and roughly 10-20% higher odds of coronary disease compared with GG. A lipid panel measures actual cholesterol far better than genotype."
         }
@@ -82,7 +82,7 @@
     "slug": "ldl-cholesterol-ldlr-rs6511720",
     "category": "heart-cardiovascular",
     "title": "LDL cholesterol · LDLR",
-    "summary": "LDLR encodes the LDL receptor that clears LDL cholesterol from the blood. The common intronic variant rs6511720 T allele is associated with lower LDL cholesterol (around 6-7 mg/dL lower per copy) and correspondingly lower average odds of coronary disease. This is distinct from the rare LDLR mutations that cause familial hypercholesterolemia.",
+    "summary": "LDLR makes the receptor that clears LDL cholesterol from blood. T at the common rs6511720 site is linked to LDL about 6 to 7 mg/dL lower per copy. It is also linked to lower average odds of coronary disease. This common site is not the same as rare LDLR changes that cause familial high cholesterol.",
     "evidence": "moderate",
     "variants": [
       {
@@ -108,7 +108,7 @@
     "slug": "blood-pressure-agt-m235t",
     "category": "heart-cardiovascular",
     "title": "Blood pressure · AGT M235T",
-    "summary": "AGT encodes angiotensinogen, a precursor in the hormone system that regulates blood pressure. The M235T variant (rs699; the 235Thr form corresponds to the G allele on the reference strand reported here) is associated with modestly higher circulating angiotensinogen and, in many but not all studies, slightly higher odds of hypertension.",
+    "summary": "AGT makes angiotensinogen, part of a hormone system that controls blood pressure. rs699 changes Met235 to Thr235. In this report, G on the reference strand marks Thr235. G is linked to slightly more angiotensinogen in blood. Many studies, but not all, also link it to slightly higher odds of high blood pressure.",
     "evidence": "moderate",
     "variants": [
       {
@@ -119,9 +119,9 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the Met235 (A) allele. Associated with somewhat lower average angiotensinogen levels and, across studies, slightly lower average odds of hypertension than the Thr235 genotypes. Blood pressure itself is overwhelmingly shaped by weight, sodium intake, activity, and many other genes.",
-          "AG": "One Met235 and one Thr235 allele. Associated with intermediate average angiotensinogen levels. Any effect on blood pressure is small and inconsistent across populations; a cuff reading is what actually matters.",
-          "GG": "Two copies of the Thr235 (G) allele, common worldwide and the majority genotype in many populations. Associated with roughly 10-20% higher average angiotensinogen and, in meta-analyses, modestly higher average odds of hypertension. This is one small factor among many influencing blood pressure."
+          "AA": "Two A copies make Met235. AA is linked to somewhat less angiotensinogen in blood. Across studies, it also marks slightly lower odds of high blood pressure than Thr235 types. Weight, salt, activity, and many other genes matter far more.",
+          "AG": "One A/Met235 and one G/Thr235 copy give a middle angiotensinogen level. Any blood pressure effect is small and differs across groups. A blood pressure cuff shows what actually matters.",
+          "GG": "Two G copies make Thr235. GG is common worldwide and is the main type in many groups. Reviews link it to about 10% to 20% more angiotensinogen on average. They also link it to modestly higher odds of high blood pressure. This is one small factor among many."
         }
       }
     ],
@@ -134,7 +134,7 @@
     "slug": "factor-v-leiden-rs6025",
     "category": "heart-cardiovascular",
     "title": "Factor V Leiden · F5",
-    "summary": "Factor V Leiden (rs6025 T allele, the R506Q change in coagulation factor V) makes factor V resistant to inactivation by activated protein C, tilting blood chemistry toward clotting. It is the most common inherited venous thrombosis risk factor in people of European ancestry, carried by about 3-5% of that population.",
+    "summary": "Factor V Leiden is T at rs6025, which changes R506 to Q in clotting factor V. It makes factor V harder for activated protein C to turn off. This shifts blood chemistry toward clots. It is the most common inherited vein-clot risk in people with European ancestry. About 3% to 5% of that group carry it.",
     "evidence": "established",
     "variants": [
       {
@@ -145,9 +145,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "No Factor V Leiden allele detected at this position. This genotype carries the baseline population risk of venous blood clots from this locus; other genetic and situational factors (surgery, immobility, hormones) still apply.",
-          "CT": "One copy of the Factor V Leiden (T) allele. Associated on average with roughly 5-7x the baseline risk of venous thromboembolism, though the absolute lifetime risk for most carriers remains modest and most carriers never experience a clot. Situations like surgery, long immobility, pregnancy, and estrogen-containing medications interact with this predisposition, and a clinician can put the result in context.",
-          "TT": "Two copies of the Factor V Leiden (T) allele, which is rare. Associated with a substantially elevated risk of venous thromboembolism, commonly estimated at 20-80x baseline. Even so this is a predisposition, not a certainty; discussing the result with a clinician or genetic counselor is sensible."
+          "CC": "No Factor V Leiden copy was found at this site. CC has the usual population clot risk from this gene. Other genes and situations still matter, such as surgery, little movement, and hormones.",
+          "CT": "One Factor V Leiden T copy is linked to about 5 to 7 times the usual risk of a vein clot. The lifetime chance is still modest for most carriers, and most never have a clot. Surgery, long periods without movement, pregnancy, and estrogen medicines can add to the risk. A clinician can explain the result with personal history.",
+          "TT": "Two Factor V Leiden T copies are rare. TT is linked to much higher vein-clot risk, often about 20 to 80 times the usual risk. This is a tendency, not a sure outcome. It is sensible to discuss TT with a clinician or genetic counselor."
         }
       }
     ],
@@ -160,7 +160,7 @@
     "slug": "prothrombin-g20210a-rs1799963",
     "category": "heart-cardiovascular",
     "title": "Prothrombin G20210A · F2",
-    "summary": "The prothrombin G20210A variant (rs1799963 A allele) in the F2 gene is associated with higher prothrombin levels and is the second most common inherited venous thrombosis risk factor after Factor V Leiden, carried by roughly 2% of people of European ancestry.",
+    "summary": "Prothrombin G20210A is A at rs1799963 in F2. It is linked to higher prothrombin levels. After Factor V Leiden, it is the second most common inherited vein-clot risk. About 2% of people with European ancestry carry it.",
     "evidence": "established",
     "variants": [
       {
@@ -171,7 +171,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "No prothrombin G20210A allele detected. Baseline population risk of venous blood clots from this locus; situational risk factors such as surgery, immobility, and hormone therapy remain relevant for everyone.",
+          "GG": "No prothrombin G20210A copy was found. GG has the usual population clot risk from this site. Surgery, little movement, and hormone treatment can still raise risk for anyone.",
           "AG": "One copy of the 20210A allele. Associated with roughly 30% higher average prothrombin levels and about 2-3x the baseline risk of venous thromboembolism. Absolute risk for most carriers stays low, and most never experience a clot; a clinician can help interpret this alongside personal and family history.",
           "AA": "Two copies of the 20210A allele, which is rare. Associated with a further elevated risk of venous thromboembolism beyond heterozygous carriers, though precise estimates are uncertain because this genotype is so uncommon. Worth discussing with a clinician or genetic counselor."
         }
@@ -186,7 +186,7 @@
     "slug": "mthfr-c677t-homocysteine",
     "category": "heart-cardiovascular",
     "title": "Homocysteine · MTHFR C677T",
-    "summary": "The MTHFR C677T variant (rs1801133; the 677T form corresponds to the A allele on the reference strand reported here) produces a heat-sensitive enzyme with reduced activity in folate metabolism. The TT genotype is associated with higher homocysteine, mainly when dietary folate is low. Despite its internet reputation, its direct association with cardiovascular events is modest and inconsistent.",
+    "summary": "The MTHFR C677T change is rs1801133. In this report, A on the reference strand marks the 677T form. It makes a heat-sensitive enzyme with less activity in folate use. TT is linked to more homocysteine, mainly when folate intake is low. Despite common online claims, its direct link to heart events is small and not steady.",
     "evidence": "established",
     "variants": [
       {
@@ -198,8 +198,8 @@
         "alt": "A",
         "interpretations": {
           "GG": "The 677CC form: full MTHFR enzyme activity. Homocysteine levels at this locus are expected to be in the typical range, though they also depend on B-vitamin status, kidney function, and other genes.",
-          "AG": "The 677CT form: about 65-70% of typical enzyme activity, usually with little or no measurable effect on homocysteine. Around 40% of many populations carry this genotype; it is generally considered of minimal consequence.",
-          "AA": "The 677TT form, carried by roughly 10% of people of European ancestry: about 30% of typical enzyme activity. Associated with moderately higher average homocysteine, largely when folate intake is low. Evidence linking this genotype to actual cardiovascular events is weak and inconsistent, so this is best read as one small metabolic trait rather than a heart-disease verdict."
+          "AG": "The 677CT form has about 65% to 70% of usual enzyme activity. It often has little or no effect that can be measured in homocysteine. About 40% of many groups have CT. It is generally seen as having little impact.",
+          "AA": "The 677TT form occurs in about 10% of people with European ancestry. It has about 30% of usual enzyme activity. Average homocysteine is moderately higher, mainly when folate intake is low. Links to actual heart events are weak and mixed. This is a small metabolic trait, not a heart-disease result."
         }
       }
     ],
@@ -212,7 +212,7 @@
     "slug": "atrial-fibrillation-pitx2-rs2200733",
     "category": "heart-cardiovascular",
     "title": "Atrial fibrillation · PITX2 region (4q25)",
-    "summary": "The chromosome 4q25 region upstream of PITX2, a gene central to heart development, harbors the strongest common genetic association with atrial fibrillation, an irregular heart rhythm. Each copy of the rs2200733 T allele is associated with roughly 1.7x the average odds of atrial fibrillation.",
+    "summary": "The chromosome 4q25 region before PITX2 has the strongest common gene link to atrial fibrillation. PITX2 plays a key role in heart growth. Atrial fibrillation is an uneven heart rhythm. Each T copy at rs2200733 is linked to about 1.7 times the average odds.",
     "evidence": "moderate",
     "variants": [
       {
@@ -238,7 +238,7 @@
     "slug": "hdl-cholesterol-cetp-taqib",
     "category": "heart-cardiovascular",
     "title": "HDL cholesterol · CETP TaqIB",
-    "summary": "CETP transfers cholesterol between lipoprotein particles. The classic TaqIB polymorphism (rs708272; the B2 form corresponds to the A allele) is associated with lower CETP activity and higher HDL (\"good\") cholesterol, with a small associated reduction in average coronary risk.",
+    "summary": "CETP moves cholesterol between fat-carrying particles. The classic TaqIB change is rs708272. In this report, A marks the B2 form. B2 is linked to less CETP activity and higher HDL, often called good cholesterol. It is also linked to a small drop in average coronary risk.",
     "evidence": "moderate",
     "variants": [
       {
@@ -251,7 +251,7 @@
         "interpretations": {
           "GG": "The B1B1 form, the most common genotype: typical CETP activity and, on average, the lowest HDL cholesterol of the three genotypes at this locus. HDL is also strongly shaped by exercise, weight, smoking, and other genes.",
           "AG": "The B1B2 form: intermediate average CETP activity and HDL cholesterol, between the two homozygous groups. A small effect in the context of everything else that moves HDL.",
-          "AA": "The B2B2 form, carried by roughly 15-20% of people of European ancestry: lower average CETP activity and about 4-5 mg/dL higher average HDL cholesterol than B1B1, with meta-analyses suggesting modestly lower average coronary risk (on the order of 20% lower odds vs B1B1). A lipid panel measures actual HDL directly."
+          "AA": "The B2B2 form occurs in about 15% to 20% of people with European ancestry. It marks less CETP activity and HDL about 4 to 5 mg/dL higher than B1B1. The cited review found only a small coronary-risk difference, about 10% lower odds for B2B2 versus B1B1. A lipid panel measures actual HDL directly."
         }
       }
     ],

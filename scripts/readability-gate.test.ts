@@ -118,4 +118,13 @@ describe("readability copy extraction", () => {
 
     expect(aestheticFailures).toEqual([]);
   });
+
+  it("keeps every heart-cardiovascular template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const heartFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/heart-cardiovascular.json:"),
+    );
+
+    expect(heartFailures).toEqual([]);
+  });
 });

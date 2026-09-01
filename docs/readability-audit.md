@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-175 long-block grade findings, concentrated in the existing report-template
+156 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -103,6 +103,15 @@ rewrites retain allele and trait direction, effect and population sizes,
 ancestry and X-chromosome qualifiers, functional findings, sun-protection and
 melanoma language, and the distinction between group trends and individual
 outcomes. A category-level regression keeps the file at zero findings.
+
+The twelfth remediation pass removed all 19 findings from the heart and
+cardiovascular report category: 8 summaries and 11 genotype interpretations.
+The rewrites retain allele and effect direction, absolute-versus-relative risk
+language, exposure interactions, ancestry qualifiers, direct-test and clinical
+follow-up guidance, and limits on individual prediction. The CETP B2B2 copy
+also corrects the coronary odds comparison from about 20% lower to about 10%
+lower versus B1B1, consistent with the cited review's per-allele estimate. A
+category-level regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
