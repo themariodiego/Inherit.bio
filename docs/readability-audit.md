@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-134 long-block grade findings, concentrated in the existing report-template
+117 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -120,6 +120,14 @@ law-enforcement limits; immediate deletion and free export; child-data rules;
 change-of-control protections; legal separation from Plus Bio; and every
 listed GDPR and CCPA/CPRA right. A page-level regression keeps the privacy
 policy at zero findings.
+
+The fourteenth remediation pass removed all 17 findings from the environmental
+sensitivity report category. The rewrites retain allele and effect direction,
+population and ancestry limits, exposure and non-genetic factors, effect sizes,
+study design, replication status, and limits on individual prediction. The
+photic-sneeze copy also corrects its cross-population comparison: both cited
+studies associate the C allele with higher odds, rather than reporting opposite
+directions. A category-level regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

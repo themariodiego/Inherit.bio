@@ -136,4 +136,13 @@ describe("readability copy extraction", () => {
 
     expect(privacyFailures).toEqual([]);
   });
+
+  it("keeps every environmental-sensitivity template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const environmentalFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/environmental-sensitivity.json:"),
+    );
+
+    expect(environmentalFailures).toEqual([]);
+  });
 });
