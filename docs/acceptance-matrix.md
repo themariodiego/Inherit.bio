@@ -37,8 +37,8 @@ importing `igv/dist/igv.esm.js` directly.
 | A14 | Network audit: on landing/dashboard/report, third-party origins == allowlist; `window.fbq` undefined; no beacon/pixel hosts | ✅ | `e2e/network-audit.spec.ts` over real rendered pages: only first-party origins observed (fonts self-hosted via `next/font`), `window.fbq`/`window.gtag` undefined, no tracker-host fragments. |
 | A15 | Legal pages complete; placeholder gate passes; disclaimers on report surfaces by E2E | ✅ | `e2e/legal.spec.ts`: all 8 legal requirements + dual-surface Plus Bio disclosure present and on-topic; report-surface disclaimer visible; `pnpm gate:legal` passes. Legal audit returned clean. |
 | A16 | Design tokens implemented; wordmark + attribution; light+dark; axe/a11y pass; Lighthouse ≥90 | ✅ | `e2e/a11y.spec.ts`: axe WCAG2 AA on landing/providers/privacy/sign-in/dashboard/settings/uploads in both themes; design-token assertions (Fraunces, pill radius, attribution, numbered steps, theme toggle). UX audit confirmed AA contrast in both themes. Lighthouse against the served production build: landing performance 95 / accessibility 100, providers performance 92 / accessibility 100 (`scripts/lighthouse-check.ts`). |
-| A17 | CI green on main: typecheck (strict), lint, unit, E2E; no secrets in repo history; `.env.example` complete | ✅ | GitHub Actions `checks` job green (typecheck+lint+unit+gate). No committed secrets (only public Supabase local-dev JWTs). `.env.example` complete (was silently gitignored — fixed). E2E runs against the local stack. |
-| A18 | LICENSE, README, architecture doc, ADR directory (incl. Gating Decision), dataset-license audit | ✅ | `LICENSE` (AGPL-3.0), `README.md`, `docs/architecture.md`, `docs/adr/` (0001 Gating Decision + 0002–0005), `docs/dataset-licenses.md` (ClinVar/dbSNP/gnomAD/GWAS/PGS/1000G verified; SNPedia excluded as NC). |
+| A17 | CI green on main: typecheck (strict), lint, unit, E2E; no secrets in repo history; `.env.example` complete | ✅ | GitHub Actions `checks` job green (typecheck+lint+unit+gate). `pnpm gate:secrets` scans the tracked tree and every added line in non-merge commits after the required baseline; only exact local fixtures covered by ADR 0006 are accepted. The hosted Supabase publishable key formerly present in deployment documentation was removed from the current tree. `.env.example` is complete and E2E runs against the local stack. |
+| A18 | LICENSE, README, architecture doc, ADR directory (incl. Gating Decision), dataset-license audit | ✅ | `LICENSE` (AGPL-3.0), `README.md`, `docs/architecture.md`, `docs/adr/` (0001 Gating Decision + 0002–0006), `docs/dataset-licenses.md` (ClinVar/dbSNP/gnomAD/GWAS/PGS/1000G verified; SNPedia excluded as NC). |
 
 ## Notes
 
@@ -54,7 +54,7 @@ importing `igv/dist/igv.esm.js` directly.
 
 ## Full-resolution gates (G1–G8)
 
-Current audited state: **8/65 YES**. `NO` means the exact gate is not yet
+Current audited state: **9/65 YES**. `NO` means the exact gate is not yet
 proved; partial implementations are intentionally not rounded up. The adult
 subject invitation work adds a safe TEST-LOCAL reservation and acceptance
 boundary, but it does not claim the class-(b) upload, quarantine, purpose,
@@ -65,7 +65,7 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.1 | Production build exits cleanly without source warnings. | YES | `pnpm build` exits 0; `package.json`; verified 2026-09-01. |
 | G1.2 | Typecheck passes and suppression counts do not exceed baseline. | YES | `pnpm typecheck`; baseline/current counts are recorded above and reproducible with `git grep` over non-test `*.ts,*.tsx,*.js,*.jsx`. |
 | G1.3 | Lint treats warnings as failures and passes. | YES | `pnpm lint`; `package.json` uses `eslint --max-warnings=0`. |
-| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (125 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
+| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (128 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
 | G1.5 | E2E has zero failures, skips, retries, or quarantine. | YES | `pnpm e2e` (57 tests); `playwright.config.ts` has `retries: 0`; `scripts/run-e2e.ts` validates `test-results/results.json`; `docs/test-diff-register.md`. |
 | G1.6 | Extended RLS attack suite covers every new table and revocation. | NO | `e2e/rls.spec.ts` does not yet cover all tables in `supabase/migrations/20260831*.sql`; adult invitation database invariants are narrower in `supabase/tests/adult_subject_invitation.sql`. |
 | G1.7 | Network audit covers every registered route/state/theme/auth mode. | NO | `e2e/network-audit.spec.ts` covers only its existing route subset; compare `docs/route-register.json`. |
@@ -78,8 +78,8 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.13b | Reflow, target size, keyboard order, and alternatives pass. | NO | Named Playwright coverage for the complete non-axe matrix is absent from `e2e/a11y.spec.ts`. |
 | G1.14 | Lighthouse passes exact route and threshold contract. | NO | `scripts/lighthouse-check.ts` does not yet implement per-category thresholds and authenticated exact-final-URL checks. |
 | G1.15 | Template integrity gate passes without baseline loss. | YES | `pnpm gate:templates`; `scripts/validate-templates.ts` validates 151 templates and genotype/citation structure. |
-| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` now adds build, template, local Supabase, seed, and E2E, but G1.8–G1.12/G1.17 commands do not all exist. |
-| G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | NO | Required `gate:secrets` and `scripts/secret-allowlist.json` are absent. |
+| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs build, template, secret, local Supabase, seed, and E2E, but the complete G1.8–G1.12 command set does not yet exist. |
+| G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | YES | `pnpm gate:secrets`; `scripts/secret-gate.ts`; exact local-only values and paths in `scripts/secret-allowlist.json`; accepted ADR 0006; current tree, 19 authored non-merge commits, `.env.production` paths, and three tracked genome fixtures verified on 2026-09-01. |
 | G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists, but several Family/Embryo routes still render `src/components/capability-unavailable.tsx`. |
 | G2.2 | Every route declares and tests every required state. | NO | `docs/route-register.json` is not backed by one substantive E2E per required route/state pair. |
 | G2.3 | Every pre-existing route has a verified kept/redirect/gone disposition. | NO | Required `gate:routes` is absent; `docs/route-register.json` is not fully live-verified. |

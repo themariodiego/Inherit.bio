@@ -6,16 +6,17 @@ set Vercel environment variables.
 
 ## Provisioned (live)
 
-- **Supabase project `sequence`** (`zuvloczwgrayonqabnss`, region us-east-1):
+- **Supabase project `Inherit`** (`zuvloczwgrayonqabnss`, region us-east-1):
   all five migrations applied, RLS verified by the security advisor (only
   intentional deny-all tables flagged), and fully seeded — the **provider
   directory (16 rows)**, **151 report templates**, **3 PRS scores (697
   weights)**, and the **reference variants** are live. Re-running
   `pnpm seed` (below) stays safe — every write is an idempotent upsert.
   - Project URL: `https://zuvloczwgrayonqabnss.supabase.co`
-  - Anon/publishable key (safe to expose): `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg`
-- **Vercel project `sequence`** (`prj_K7bVowhjFr0uIapXraH41hthJkgy`, team
-  `mariodiego`): linked to `themariodiego/sequence`, production branch
+  - Anon/publishable key: retrieve it from Project Settings → API; do not
+    commit even publishable credentials to this repository.
+- **Vercel project `inherit`** (`prj_K7bVowhjFr0uIapXraH41hthJkgy`, team
+  `mariodiego`): linked to `themariodiego/Inherit.bio`, production branch
   `main`. It auto-deploys on push to `main`.
 
 ## The one owner step: environment variables
@@ -35,7 +36,7 @@ Production) before the deployment is functional. After setting them, redeploy
 | Variable | Value |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://zuvloczwgrayonqabnss.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_rNejZTcIIARYXRntz8YvbA_VcxEQZLg` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase dashboard → Project Settings → API (publishable) |
 | `NEXT_PUBLIC_SITE_URL` | the production URL: `https://inherit.bio` |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard → Project Settings → API (secret) |
 | `DATABASE_URL` | from Supabase dashboard → Database → Connection string |

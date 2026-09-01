@@ -1,4 +1,5 @@
 ##fileformat=VCFv4.2
+##source=Inherit deterministic synthetic fixture; no real person
 ##reference=GRCh38
 ##contig=<ID=chr2,length=242193529>
 ##contig=<ID=chr11,length=135086622>
