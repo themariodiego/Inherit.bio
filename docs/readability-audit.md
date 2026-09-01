@@ -20,9 +20,9 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-50 long-block grade findings, concentrated in the existing report-template
-library and long marketing/legal copy. There is deliberately no baseline
-allowance and the command is not yet wired into CI.
+41 long-block grade findings, concentrated in long marketing and legal copy.
+There is deliberately no baseline allowance and the command is not yet wired
+into CI.
 
 The first remediation pass removed 22 genuine findings from application UI and
 reusable components without deleting caveats. It also corrected the extractor
@@ -176,6 +176,18 @@ long-term-care insurance rather than claiming a broad stand-alone disability
 rule. The practical guidance no longer implies that an ungenerated report can
 never be requested or that every clinician-ordered test includes counseling.
 A page-level regression keeps the explainer at zero findings.
+
+The twentieth remediation pass removed all 9 findings from the cancer-risk
+report category. The rewrites retain allele and effect direction, effect
+sizes, ancestry limits, relative-versus-absolute risk language, hereditary-
+cancer and screening caveats, environmental factors, and limits on individual
+prediction. The MC1R copy now matches its cited meta-analysis by retaining the
+red-hair association without claiming that R151C itself predicts fair skin.
+The APC homozygote copy now states that too few cases exist to estimate risk,
+instead of assuming more risk than one-copy carriers. A current position
+statement supports that limit. The TERT report now cites the glioma study that
+supports its glioma estimate, and CHRNA3 adds direct nicotine-intake evidence.
+A category-level regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
