@@ -20,12 +20,49 @@ const researchDigestPayload = z.object({
   manageUrl: z.url(),
 }).strict();
 
+const accountDeletionNoticePayload = z
+  .object({
+    noticeEndsAt: z.iso.datetime({ offset: true }),
+    cancelPath: z.string().regex(/^\/[A-Za-z0-9/_-]*$/),
+    exportPath: z.string().regex(/^\/[A-Za-z0-9/_-]*$/),
+  })
+  .strict();
+
+const accountDeletionCancelledPayload = z
+  .object({
+    settingsPath: z.string().regex(/^\/[A-Za-z0-9/_-]*$/),
+  })
+  .strict();
+
+function applicationUrl(path: string): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.inherit.bio";
+  return new URL(path, base).toString();
+}
+
 function parseMail(templateId: string, payload: unknown): MailTemplate {
   if (templateId === "report-ready") {
     return { id: templateId, payload: reportReadyPayload.parse(payload) };
   }
   if (templateId === "research-digest") {
     return { id: templateId, payload: researchDigestPayload.parse(payload) };
+  }
+  if (templateId === "account-deletion-notice") {
+    const parsed = accountDeletionNoticePayload.parse(payload);
+    return {
+      id: templateId,
+      payload: {
+        noticeEndsAt: parsed.noticeEndsAt,
+        cancelUrl: applicationUrl(parsed.cancelPath),
+        exportUrl: applicationUrl(parsed.exportPath),
+      },
+    };
+  }
+  if (templateId === "account-deletion-cancelled") {
+    const parsed = accountDeletionCancelledPayload.parse(payload);
+    return {
+      id: templateId,
+      payload: { settingsUrl: applicationUrl(parsed.settingsPath) },
+    };
   }
   throw new Error("mail_template_unknown");
 }

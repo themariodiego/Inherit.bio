@@ -56,6 +56,36 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user && (isProtected || path.startsWith("/api/"))) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("deletion_requested_at")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.deletion_requested_at) {
+      const allowedApi =
+        path === "/api/export" ||
+        path === "/api/account/delete" ||
+        path === "/api/account/delete/cancel" ||
+        (path.startsWith("/api/consents/") && path.endsWith("/revoke")) ||
+        path.startsWith("/api/subjects/transfer");
+
+      if (path.startsWith("/api/") && !allowedApi) {
+        return NextResponse.json(
+          { error: "account_deletion_notice_period" },
+          { status: 423 },
+        );
+      }
+      if (isProtected && path !== "/settings/data") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/settings/data";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   return response;
 }
 

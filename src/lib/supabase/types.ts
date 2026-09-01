@@ -78,6 +78,84 @@ export type Database = {
           },
         ]
       }
+      account_deletion_requests: {
+        Row: {
+          account_id: string
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          delete_started_at: string | null
+          deletion_hold_revision: number
+          id: string
+          notice_ends_at: string
+          principal_graph_revision: number
+          request_account_revision: number
+          request_auth_session_revision: number
+          requested_at: string
+          state: string
+        }
+        Insert: {
+          account_id: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delete_started_at?: string | null
+          deletion_hold_revision: number
+          id?: string
+          notice_ends_at: string
+          principal_graph_revision: number
+          request_account_revision: number
+          request_auth_session_revision: number
+          requested_at: string
+          state?: string
+        }
+        Update: {
+          account_id?: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delete_started_at?: string | null
+          deletion_hold_revision?: number
+          id?: string
+          notice_ends_at?: string
+          principal_graph_revision?: number
+          request_account_revision?: number
+          request_auth_session_revision?: number
+          requested_at?: string
+          state?: string
+        }
+        Relationships: []
+      }
+      account_operation_nonces: {
+        Row: {
+          account_id: string
+          consumed_at: string | null
+          expires_at: string
+          issued_at: string
+          nonce_hash: string
+          operation: string
+          session_id: string
+        }
+        Insert: {
+          account_id: string
+          consumed_at?: string | null
+          expires_at: string
+          issued_at?: string
+          nonce_hash: string
+          operation: string
+          session_id: string
+        }
+        Update: {
+          account_id?: string
+          consumed_at?: string | null
+          expires_at?: string
+          issued_at?: string
+          nonce_hash?: string
+          operation?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       account_security_states: {
         Row: {
           account_id: string
@@ -6813,6 +6891,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_account_deletion_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          cancelled_at: string
+          status: string
+        }[]
+      }
       claim_mail_outbox: {
         Args: never
         Returns: {
@@ -6869,6 +6959,16 @@ export type Database = {
         }
         Returns: string
       }
+      issue_account_operation_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_expires_at: string
+          p_nonce_hash: string
+          p_operation: string
+          p_session_id: string
+        }
+        Returns: undefined
+      }
       processing_time_stats: {
         Args: never
         Returns: {
@@ -6886,6 +6986,21 @@ export type Database = {
           p_status: string
         }
         Returns: boolean
+      }
+      request_account_deletion_v1: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string
+          p_nonce_hash: string
+          p_notice_idempotency_key: string
+          p_session_id: string
+        }
+        Returns: {
+          deletion_id: string
+          notice_ends_at: string
+          status: string
+        }[]
       }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }

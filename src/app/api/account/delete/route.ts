@@ -1,60 +1,114 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  deletionErrorResponse,
+  getSensitiveAccountContext,
+  hashOperationNonce,
+  isSameOrigin,
+  operationIdempotencyKey,
+} from "@/lib/account-deletion";
+import { encryptSecret, hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
-export const maxDuration = 300;
+const requestBody = z
+  .object({
+    confirmation: z.literal("account.delete.confirmation"),
+    nonce: z.string().min(32).max(256),
+  })
+  .strict();
 
-// Deletion that deletes: every storage object under the user's prefix is
-// removed, then the auth user — which cascades every DB row via FKs.
-// Verified end-to-end by e2e/deletion.spec.ts with a privileged re-query.
-export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+async function activeRequest(accountId: string) {
+  return createAdminClient()
+    .from("account_deletion_requests")
+    .select("id,state,notice_ends_at")
+    .eq("account_id", accountId)
+    .in("state", ["notice_period", "delete_started"])
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
 
-  const admin = createAdminClient();
+export async function GET(request: Request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const context = await getSensitiveAccountContext();
+  if (!context) return new Response("Unauthorized", { status: 401 });
 
-  // 1. Storage objects (paged; folders are virtual).
-  const toDelete: string[] = [];
-  const walk = async (prefix: string) => {
-    for (let offset = 0; ; offset += 100) {
-      const { data: entries, error } = await admin.storage
-        .from("genomes")
-        .list(prefix, { limit: 100, offset });
-      if (error || !entries || entries.length === 0) break;
-      for (const e of entries) {
-        const path = prefix ? `${prefix}/${e.name}` : e.name;
-        if (e.id === null) {
-          await walk(path); // folder
-        } else {
-          toDelete.push(path);
+  const { data: active, error: activeError } = await activeRequest(
+    context.user.id,
+  );
+  if (activeError) {
+    return NextResponse.json(
+      { error: "account_deletion_unavailable" },
+      { status: 503 },
+    );
+  }
+
+  const nonce = crypto.randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const operation = active ? "account_delete_cancel" : "account_delete";
+  const { error } = await createAdminClient().rpc(
+    "issue_account_operation_nonce_v1",
+    {
+      p_account_id: context.user.id,
+      p_session_id: context.sessionId,
+      p_operation: operation,
+      p_nonce_hash: hashOperationNonce(nonce),
+      p_expires_at: expiresAt,
+    },
+  );
+  if (error) return deletionErrorResponse(error.message, 403);
+
+  return NextResponse.json(
+    active
+      ? {
+          status: "notice_period" as const,
+          noticeEndsAt: active.notice_ends_at,
+          operationNonce: nonce,
         }
-      }
-      if (entries.length < 100) break;
-    }
-  };
-  await walk(user.id);
-  for (let i = 0; i < toDelete.length; i += 100) {
-    const { error } = await admin.storage
-      .from("genomes")
-      .remove(toDelete.slice(i, i + 100));
-    if (error) {
-      return new Response(`Storage deletion failed: ${error.message}`, {
-        status: 500,
-      });
-    }
+      : { status: "active" as const, operationNonce: nonce },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const parsed = requestBody.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const context = await getSensitiveAccountContext();
+  if (!context?.user.email) return new Response("Unauthorized", { status: 401 });
+
+  const normalizedEmail = context.user.email.trim().toLowerCase();
+  const { data, error } = await createAdminClient().rpc(
+    "request_account_deletion_v1",
+    {
+      p_account_id: context.user.id,
+      p_session_id: context.sessionId,
+      p_nonce_hash: hashOperationNonce(parsed.data.nonce),
+      p_contact_ciphertext: `\\x${encryptSecret(normalizedEmail).toString("hex")}`,
+      p_contact_hmac: hmacSecret(normalizedEmail, "contact-email-v1"),
+      p_notice_idempotency_key: operationIdempotencyKey(
+        "requested",
+        context.user.id,
+        parsed.data.nonce,
+      ),
+    },
+  );
+  if (error || !data?.[0]) {
+    return deletionErrorResponse(
+      error?.message ?? "account_deletion_failed",
+      409,
+    );
   }
 
-  // 2. Auth user; profiles/genome_files/user_variants/chats/etc. cascade.
-  const { error } = await admin.auth.admin.deleteUser(user.id);
-  if (error) {
-    return new Response(`Account deletion failed: ${error.message}`, {
-      status: 500,
-    });
-  }
-
-  await supabase.auth.signOut();
-  return NextResponse.json({ deleted: true, storage_objects: toDelete.length });
+  return NextResponse.json(
+    { status: "notice_period", noticeEndsAt: data[0].notice_ends_at },
+    { status: 202, headers: { "Cache-Control": "no-store" } },
+  );
 }

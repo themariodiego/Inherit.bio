@@ -12,6 +12,12 @@ import {
   ResearchDigestEmail,
   type ResearchDigestProps,
 } from "@/emails/research-digest";
+import {
+  AccountDeletionCancelledEmail,
+  AccountDeletionNoticeEmail,
+  type AccountDeletionCancelledProps,
+  type AccountDeletionNoticeProps,
+} from "@/emails/account-deletion";
 
 export type MailTemplate =
   | {
@@ -21,6 +27,14 @@ export type MailTemplate =
   | {
       id: "research-digest";
       payload: ResearchDigestProps;
+    }
+  | {
+      id: "account-deletion-notice";
+      payload: AccountDeletionNoticeProps;
+    }
+  | {
+      id: "account-deletion-cancelled";
+      payload: AccountDeletionCancelledProps;
     };
 
 function client(): Resend | null {
@@ -47,14 +61,25 @@ export async function submitMail(
     throw new Error("mail_provider_unavailable");
   }
 
-  const subject =
-    mail.id === "report-ready"
-      ? "Your Inherit reports are ready"
-      : "New reports in the Inherit research library";
+  const subject = {
+    "report-ready": "Your Inherit reports are ready",
+    "research-digest": "New reports in the Inherit research library",
+    "account-deletion-notice": "Your Inherit account deletion is scheduled",
+    "account-deletion-cancelled":
+      "Your Inherit account deletion was cancelled",
+  }[mail.id];
   const html =
     mail.id === "report-ready"
       ? await render(createElement(ReportReadyEmail, mail.payload))
-      : await render(createElement(ResearchDigestEmail, mail.payload));
+      : mail.id === "research-digest"
+        ? await render(createElement(ResearchDigestEmail, mail.payload))
+        : mail.id === "account-deletion-notice"
+          ? await render(
+              createElement(AccountDeletionNoticeEmail, mail.payload),
+            )
+          : await render(
+              createElement(AccountDeletionCancelledEmail, mail.payload),
+            );
 
   const { data, error } = await resend.emails.send(
     { from: from(), to, subject, html },
