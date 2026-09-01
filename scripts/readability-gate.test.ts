@@ -154,4 +154,13 @@ describe("readability copy extraction", () => {
 
     expect(reproductiveFailures).toEqual([]);
   });
+
+  it("keeps every metabolic-obesity template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const metabolicFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/metabolic-obesity.json:"),
+    );
+
+    expect(metabolicFailures).toEqual([]);
+  });
 });
