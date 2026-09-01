@@ -51,6 +51,13 @@ test("with no provider configured, plain-language setup renders and the local op
   await expect(instructions).toContainText(
     "Connecting an AI is a one-time technical step",
   );
+  await expect(instructions).toContainText("An API key is like a password");
+  await expect(instructions).toContainText("explicit consent each time");
+  await expect(instructions).toContainText("typically costs pennies");
+  await expect(instructions).toContainText(
+    "consent dialog names the provider and exact data classes",
+  );
+  await expect(instructions).toContainText("revoke the grant at any time");
   // The local-first privacy PREFERENCE is still present: the self-hosted
   // option is named the most private / privacy-preferred one, and the
   // full local instructions live in the expandable advanced section.
@@ -58,6 +65,14 @@ test("with no provider configured, plain-language setup renders and the local op
   const advanced = instructions.locator("details");
   await expect(advanced).toContainText("privacy-preferred");
   await advanced.locator("summary").click();
+  await expect(advanced).toContainText("Ollama or LM Studio");
+  await expect(advanced).toContainText("OpenAI-compatible");
+  await expect(advanced).toContainText(
+    "Nothing about your genome ever leaves your infrastructure",
+  );
+  await expect(advanced).toContainText(
+    "hosted demo cannot reach your localhost",
+  );
   await expect(
     instructions.getByText("localhost:11434", { exact: false }),
   ).toBeVisible();
