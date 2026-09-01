@@ -1,5 +1,5 @@
 begin;
-select plan(17);
+select plan(19);
 
 insert into auth.users (id, email, raw_user_meta_data)
 values (
@@ -13,6 +13,40 @@ values (
   '74000000-0000-0000-0000-000000000001',
   clock_timestamp(), clock_timestamp(), 'aal1'
 );
+
+insert into public.subjects (
+  id, owner_account_id, subject_account_id, subject_class, upload_class,
+  display_label, lifecycle
+) values (
+  '74000000-0000-0000-0000-000000000020',
+  '74000000-0000-0000-0000-000000000001', null,
+  'other_adult', 'adult', 'Owned adult', 'active'
+);
+insert into public.subject_principals (
+  id, subject_id, account_id, principal_kind, status
+) values (
+  '74000000-0000-0000-0000-000000000021',
+  '74000000-0000-0000-0000-000000000020',
+  '74000000-0000-0000-0000-000000000001',
+  'account_subject', 'active'
+);
+insert into public.family_pairs (id, subject_a_id, subject_b_id)
+select '74000000-0000-0000-0000-000000000022', s.id,
+  '74000000-0000-0000-0000-000000000020'
+from public.subjects s
+where s.subject_account_id = '74000000-0000-0000-0000-000000000001'
+  and s.subject_class = 'self';
+insert into public.portrait_results (
+  id, owner_account_id, parent_a_subject_id, parent_b_subject_id,
+  family_pair_id, kind, trait_key, result, coverage, method_version,
+  source_binding_fingerprint, computation_revision
+)
+select '74000000-0000-0000-0000-000000000023',
+  '74000000-0000-0000-0000-000000000001', fp.subject_a_id,
+  fp.subject_b_id, fp.id, 'carrier_pair', 'abo', '{}'::jsonb, 1,
+  'e2e-v1', repeat('7', 64), 1
+from public.family_pairs fp
+where fp.id = '74000000-0000-0000-0000-000000000022';
 
 select public.issue_account_operation_nonce_v1(
   '74000000-0000-0000-0000-000000000001',
@@ -106,8 +140,15 @@ select is((select count(*) from public.profiles
   where id = '74000000-0000-0000-0000-000000000001'), 0::bigint,
   'the profile is purged before Auth');
 select is((select count(*) from public.subjects
-  where subject_account_id = '74000000-0000-0000-0000-000000000001'), 0::bigint,
-  'the self subject is purged before Auth');
+  where owner_account_id = '74000000-0000-0000-0000-000000000001'
+     or subject_account_id = '74000000-0000-0000-0000-000000000001'), 0::bigint,
+  'the self and wholly owned adult subjects are purged before Auth');
+select is((select count(*) from public.family_pairs
+  where id = '74000000-0000-0000-0000-000000000022'), 0::bigint,
+  'the owned family pair is purged before its subjects');
+select is((select count(*) from public.portrait_results
+  where id = '74000000-0000-0000-0000-000000000023'), 0::bigint,
+  'Portrait output for the owned pair is purged');
 select is((select count(*) from public.subject_principals
   where account_id = '74000000-0000-0000-0000-000000000001'), 0::bigint,
   'the account principal is purged before Auth');
