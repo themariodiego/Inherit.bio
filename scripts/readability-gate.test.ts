@@ -236,6 +236,15 @@ describe("readability copy extraction", () => {
     expect(appealsFailures).toEqual([]);
   });
 
+  it("keeps the Future Person Charter within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const futurePersonFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/future-person/page.tsx:"),
+    );
+
+    expect(futurePersonFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
