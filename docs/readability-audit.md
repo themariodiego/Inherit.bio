@@ -10,9 +10,9 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,467 user-visible blocks:
+The deterministic extraction currently covers 1,469 user-visible blocks:
 
-- 921 long blocks from static TSX, the 151 report templates, rendered provider
+- 923 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
 - 395 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,467 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-19 long-block grade findings, concentrated in long legal copy.
+17 long-block grade findings, concentrated in long legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -248,6 +248,20 @@ or rejection, five-business-day acknowledgement, a fixed 30-day decision
 deadline, and response privacy. Focused unit and browser assertions keep those
 rules present. This copy remediation does not claim that the full account-free
 intake, evidence-session, or review runtime required by the brief is complete.
+
+The twenty-sixth remediation pass removed both findings from the Future Person
+Charter. The six rights remain in their required order and retain every clause,
+while the longer mandated rights are split under the brief's final X7.2 rule.
+Right five now also carries the missing local-model-only promise for any genome
+but the user's own. The page adds the intended-beneficiary enforcement rule,
+names the official UK statute, and states that England-and-Wales terms do not
+exclude it. It also expands the availability notice to cover Family features,
+embryo storage, embryo analysis, each operating jurisdiction, and review of the
+Charter's enforcement route. The release boundary still excludes every other
+subject's variants and a parent's own DNA results without separate agreement.
+Focused unit and browser assertions keep these terms present and readable.
+This copy remediation does not claim that artifact versioning, acknowledgement,
+claim review, notice, retention, or deletion workers are complete.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
