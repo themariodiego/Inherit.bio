@@ -209,6 +209,15 @@ describe("readability copy extraction", () => {
     expect(lawEnforcementFailures).toEqual([]);
   });
 
+  it("keeps the research-consent policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const researchConsentFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/research-consent/page.tsx:"),
+    );
+
+    expect(researchConsentFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>

@@ -10,7 +10,7 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,457 user-visible blocks:
+The deterministic extraction currently covers 1,460 user-visible blocks:
 
 - 914 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,457 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-26 long-block grade findings, concentrated in long marketing and legal copy.
+22 long-block grade findings, concentrated in long marketing and legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -213,6 +213,20 @@ volume is also published there, and the twice-yearly update cadence remains.
 The page no longer promises an immediate purge or a voluntary emergency
 exception that conflicts with its one compelled-process position. A page-level
 regression keeps the policy at zero findings.
+
+The twenty-third remediation pass removed all 4 findings from the research-
+consent policy. The page still states that Inherit conducts no research with
+customer or subject data, while distinguishing the public-source Research
+library from a user-data research program. Any future proposal now requires a
+separate opt-in for each purpose and recipient class, names every recipient and
+data class, and publishes approval from an institutional review board or equal
+independent body. Embryo data and data about another adult are excluded in all
+cases. Withdrawal is stated as prospective, with each study required to name
+and publish what cannot be recalled. Research consent cannot authorize
+internal model development or model training. The page also corrects its
+former claim that AI chat and legal process were the only ways data could
+leave by recognizing a
+person's own export. A page-level regression keeps the policy at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
