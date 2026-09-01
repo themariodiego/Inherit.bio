@@ -61,8 +61,8 @@ export function InviteAdultForm() {
       <label className="flex items-start gap-3 text-sm leading-relaxed">
         <input type="checkbox" name="adultAttestation" required className="mt-1 size-4" />
         <span>
-          I am 18 or over, and I understand that this invitation creates no
-          right to upload, analyse, or read the other person&apos;s genetic data.
+          I am at least 18. I know this invitation gives me no right to upload,
+          analyse, or read the other person&apos;s genetic data.
         </span>
       </label>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}

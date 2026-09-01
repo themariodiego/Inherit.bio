@@ -39,10 +39,9 @@ export function ConsentDialog({
           <DialogDescription asChild>
             <div className="space-y-3 pt-2 text-sm">
               <p>
-                To answer questions about your DNA, the copilot would send the
-                following data classes to{" "}
-                <strong>{providerDisplayName(providerKey)}</strong>, a cloud
-                provider outside this deployment:
+                To answer questions about your DNA, Copilot would send these
+                types of data to <strong>{providerDisplayName(providerKey)}</strong>.
+                This cloud service runs outside Inherit:
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 {LLM_DATA_CLASSES.map((c) => (

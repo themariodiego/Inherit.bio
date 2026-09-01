@@ -12,8 +12,8 @@ export default function DataSettingsPage() {
       <section className="rounded-2xl border border-line bg-card p-5">
         <h2 className="font-medium">Export everything</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-          Download your uploads, observed variants, derived results, consents,
-          legal-audit slice, and stored conversations in one ZIP.
+          Download one ZIP. It includes your uploads, DNA variants we found,
+          results, consent records, legal audit records, and saved chats.
         </p>
         <Button asChild variant="outline" className="mt-4"><a href="/api/export">Download export</a></Button>
       </section>

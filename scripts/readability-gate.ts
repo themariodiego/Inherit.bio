@@ -41,7 +41,7 @@ interface JargonFile {
   terms: Array<{ term: string; aliases?: string[]; definition: string }>;
 }
 
-interface CopyBlock {
+export interface CopyBlock {
   path: string;
   line: number;
   text: string;
@@ -76,23 +76,39 @@ function attributeValue(node: ts.JsxOpeningLikeElement, name: string): string | 
   return undefined;
 }
 
-function staticText(node: ts.Node): string {
+function copyRole(node: ts.JsxOpeningLikeElement): string {
+  const tag = tagName(node);
+  if (/^h[1-6]$/.test(tag)) return "heading";
+  return (
+    COMPONENT_ROLES.get(tag) ??
+    (SHORT_TAGS.has(tag)
+      ? tag
+      : attributeValue(node, "role") ?? (LONG_TAGS.has(tag) ? "block" : ""))
+  );
+}
+
+function staticText(node: ts.Node, skipNestedCopyContainers = false): string {
   if (ts.isJsxText(node)) return node.text;
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
   if (ts.isJsxExpression(node)) {
-    return node.expression ? staticText(node.expression) : "";
+    return node.expression ? staticText(node.expression, skipNestedCopyContainers) : "";
   }
-  if (ts.isParenthesizedExpression(node)) return staticText(node.expression);
+  if (ts.isParenthesizedExpression(node)) {
+    return staticText(node.expression, skipNestedCopyContainers);
+  }
   if (ts.isConditionalExpression(node)) {
-    return `${staticText(node.whenTrue)} ${staticText(node.whenFalse)}`;
+    return `${staticText(node.whenTrue, skipNestedCopyContainers)} ${staticText(node.whenFalse, skipNestedCopyContainers)}`;
   }
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-    return `${staticText(node.left)} ${staticText(node.right)}`;
+    return `${staticText(node.left, skipNestedCopyContainers)} ${staticText(node.right, skipNestedCopyContainers)}`;
   }
   if (ts.isJsxElement(node)) {
-    return node.children.map(staticText).join(" ");
+    if (skipNestedCopyContainers && copyRole(node.openingElement)) return "";
+    return node.children.map((child) => staticText(child, true)).join(" ");
   }
-  if (ts.isJsxFragment(node)) return node.children.map(staticText).join(" ");
+  if (ts.isJsxFragment(node)) {
+    return node.children.map((child) => staticText(child, skipNestedCopyContainers)).join(" ");
+  }
   return "";
 }
 
@@ -123,6 +139,62 @@ function hasSentenceCap(relativePath: string, role: string): boolean {
   );
 }
 
+export function extractTsxBlocksFromSource(relativePath: string, sourceText: string): CopyBlock[] {
+  const blocks: CopyBlock[] = [];
+  const source = ts.createSourceFile(
+    relativePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const legal = isLegalPath(relativePath);
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxElement(node)) {
+      const opening = node.openingElement;
+      const role = copyRole(opening);
+      if (role) {
+        const text = cleanText(node.children.map((child) => staticText(child, true)).join(" "));
+        if (text) {
+          blocks.push({
+            path: relativePath,
+            line: sourceLine(source, node),
+            text,
+            role,
+            legal,
+            legalSummary: legal && attributeValue(opening, "data-legal-summary") !== undefined,
+            sentenceCap: hasSentenceCap(relativePath, role),
+          });
+        }
+      }
+    }
+    if (ts.isJsxOpeningLikeElement(node)) {
+      for (const [attribute, role] of [
+        ["aria-label", "label"],
+        ["alt", "label"],
+        ["placeholder", "label"],
+        ["title", "label"],
+      ] as const) {
+        const text = cleanText(attributeValue(node, attribute) ?? "");
+        if (text) {
+          blocks.push({
+            path: relativePath,
+            line: sourceLine(source, node),
+            text,
+            role,
+            legal,
+            legalSummary: false,
+            sentenceCap: hasSentenceCap(relativePath, role),
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return blocks;
+}
+
 function extractTsxBlocks(repositoryRoot: string): CopyBlock[] {
   const blocks: CopyBlock[] = [];
   const sourceRoot = path.join(repositoryRoot, "src");
@@ -135,63 +207,9 @@ function extractTsxBlocks(repositoryRoot: string): CopyBlock[] {
       }
       if (!entry.name.endsWith(".tsx") || entry.name.endsWith(".test.tsx")) continue;
       const relativePath = path.relative(repositoryRoot, absolute);
-      const source = ts.createSourceFile(
-        relativePath,
-        fs.readFileSync(absolute, "utf8"),
-        ts.ScriptTarget.Latest,
-        true,
-        ts.ScriptKind.TSX,
+      blocks.push(
+        ...extractTsxBlocksFromSource(relativePath, fs.readFileSync(absolute, "utf8")),
       );
-      const legal = isLegalPath(relativePath);
-      const visit = (node: ts.Node) => {
-        if (ts.isJsxElement(node)) {
-          const opening = node.openingElement;
-          const tag = tagName(opening);
-          const heading = /^h[1-6]$/.test(tag);
-          const explicitRole = attributeValue(opening, "role");
-          const role = heading
-            ? "heading"
-            : COMPONENT_ROLES.get(tag) ??
-              (SHORT_TAGS.has(tag) ? tag : explicitRole ?? (LONG_TAGS.has(tag) ? "block" : ""));
-          if (role) {
-            const text = cleanText(node.children.map(staticText).join(" "));
-            if (text) {
-              blocks.push({
-                path: relativePath,
-                line: sourceLine(source, node),
-                text,
-                role,
-                legal,
-                legalSummary: legal && attributeValue(opening, "data-legal-summary") !== undefined,
-                sentenceCap: hasSentenceCap(relativePath, role),
-              });
-            }
-          }
-        }
-        if (ts.isJsxOpeningLikeElement(node)) {
-          for (const [attribute, role] of [
-            ["aria-label", "label"],
-            ["alt", "label"],
-            ["placeholder", "label"],
-            ["title", "label"],
-          ] as const) {
-            const text = cleanText(attributeValue(node, attribute) ?? "");
-            if (text) {
-              blocks.push({
-                path: relativePath,
-                line: sourceLine(source, node),
-                text,
-                role,
-                legal,
-                legalSummary: false,
-                sentenceCap: hasSentenceCap(relativePath, role),
-              });
-            }
-          }
-        }
-        ts.forEachChild(node, visit);
-      };
-      visit(source);
     }
   };
   visitDirectory(sourceRoot);

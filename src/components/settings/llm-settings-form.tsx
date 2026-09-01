@@ -88,9 +88,9 @@ export function LlmSettingsForm({
         </Select>
         {provider === "openai_compatible" ? (
           <p className="text-xs text-ink-muted">
-            A localhost/private base URL keeps everything on your own
-            infrastructure — the privacy-preferred setup. It requires running
-            Inherit locally or self-hosted where it can reach that endpoint.
+            Use a local or private address to keep data on systems you control.
+            For the most private setup, run Inherit yourself where it can reach
+            that address.
           </p>
         ) : null}
       </div>
@@ -106,8 +106,8 @@ export function LlmSettingsForm({
           />
           <p className="text-xs text-ink-muted">
             {isLocalBaseUrl(baseUrl)
-              ? "Detected as local — no consent dialog needed; a data-flow indicator is always shown."
-              : "Detected as a cloud endpoint — a consent grant naming this host is required before genome data is sent."}
+              ? "Local service found. You do not need a consent screen. We always show where your data goes."
+              : "Cloud service found. You must give consent that names this host before we send genome data."}
           </p>
         </div>
       ) : null}
@@ -160,8 +160,8 @@ export function LlmSettingsForm({
           placeholder={current?.key_last4 ? "Enter to replace" : "sk-…"}
         />
         <p className="text-xs text-ink-muted">
-          Bring-your-own-key: encrypted at rest with a server-side key, never
-          logged, never shown again, deletable below.
+          We encrypt your key before storing it, using a key held on the server.
+          We never log it or show it again. You can delete it below.
         </p>
       </div>
 

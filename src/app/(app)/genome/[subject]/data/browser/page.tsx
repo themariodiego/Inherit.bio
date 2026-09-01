@@ -224,11 +224,10 @@ export default async function BrowsePage(
           className="rounded-xl border border-line bg-card p-4 text-sm"
         >
           <p>
-            Inherit&apos;s reference doesn&apos;t include clinical{" "}
-            {clinicalGene} variants, and consumer array files can&apos;t
-            reliably assess hereditary cancer risk — that requires clinical
-            genetic testing. A result here saying nothing is{" "}
-            <strong>NOT</strong> reassurance.
+            Inherit&apos;s reference has no clinical variants for {clinicalGene}.
+            Consumer DNA chip files also cannot rule out inherited cancer risk.
+            That needs a clinical genetic test. Finding nothing here does{" "}
+            <strong>not</strong> mean you are safe.
           </p>
         </div>
       ) : null}
@@ -338,9 +337,9 @@ export default async function BrowsePage(
           </h2>
           <GenomeBrowser fileId={active.id} locus={locus} />
           <p className="mt-2 text-xs text-ink-muted">
-            Rendered from your own variant store only — no external genome
-            service is contacted (the reference here is positions-only, served
-            by this deployment).
+            This view uses only the DNA data stored in Inherit. It does not
+            contact an outside genome service. The list of positions comes
+            from this Inherit site.
           </p>
         </section>
       ) : null}

@@ -158,10 +158,10 @@ export function DangerZone() {
     <div className="space-y-3 rounded-2xl border border-danger/40 p-5">
       <h3 className="font-medium">Delete account</h3>
       <p className="text-sm leading-relaxed text-ink-muted">
-        Schedules deletion of your account, uploaded files, derived results,
-        and conversations after a seven-day notice period. You can export your
-        data or cancel before the deadline. Legally required records survive
-        only in pseudonymized form for their stated retention period.
+        Your account, files, results, and chats will be deleted after seven
+        days. You may export your data or cancel before then. Records required
+        by law stay only without your name or account link, for their required
+        time.
       </p>
       <div className="space-y-1.5">
         <Label htmlFor="delete-confirm">

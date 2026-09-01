@@ -82,12 +82,10 @@ export function SensitiveGate({
         Before you look
       </h2>
       <p className="mt-3 max-w-prose text-sm leading-relaxed text-ink-muted">
-        This report can reveal serious health-risk information, and once
-        you&apos;ve seen a result it can&apos;t be unlearned. What it can tell
-        you is a statistical association observed across many people; what it
-        can&apos;t do is diagnose anything or say whether you personally will
-        ever be affected. Some people prefer not to know — both choices are
-        reasonable, and you can come back any time.
+        This report may show a serious health risk. You cannot unlearn a result
+        after you see it. It shows a link found across many people. It cannot
+        diagnose you or say if you will be affected. You may choose not to
+        know. Both choices are fair, and you can come back at any time.
       </p>
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button asChild data-testid="sensitive-gate-reveal">
