@@ -73,4 +73,13 @@ describe("readability copy extraction", () => {
 
     expect(gastrointestinalFailures).toEqual([]);
   });
+
+  it("keeps every longevity template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const longevityFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/longevity.json:"),
+    );
+
+    expect(longevityFailures).toEqual([]);
+  });
 });
