@@ -109,4 +109,13 @@ describe("readability copy extraction", () => {
 
     expect(addictionFailures).toEqual([]);
   });
+
+  it("keeps every aesthetic-cosmetic template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const aestheticFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/aesthetic-cosmetic.json:"),
+    );
+
+    expect(aestheticFailures).toEqual([]);
+  });
 });

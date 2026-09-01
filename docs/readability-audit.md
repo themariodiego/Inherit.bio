@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-195 long-block grade findings, concentrated in the existing report-template
+175 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -96,6 +96,13 @@ alcohol-related cancer warnings, medication non-dosing language, study-size
 and replication limits, and the distinction between group trends and
 individual outcomes. A category-level regression keeps the file at zero
 findings.
+
+The eleventh remediation pass removed all 20 findings from the aesthetic and
+cosmetic report category: 9 summaries and 11 genotype interpretations. The
+rewrites retain allele and trait direction, effect and population sizes,
+ancestry and X-chromosome qualifiers, functional findings, sun-protection and
+melanoma language, and the distinction between group trends and individual
+outcomes. A category-level regression keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

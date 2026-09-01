@@ -3,7 +3,7 @@
     "slug": "male-pattern-baldness-ar-rs6152",
     "category": "aesthetic-cosmetic",
     "title": "Male-pattern hair loss · AR (X chromosome)",
-    "summary": "Variation in the androgen receptor (AR) gene on the X chromosome is the single strongest known genetic factor in male-pattern hair loss (androgenetic alopecia). The common G allele of rs6152 tags the higher-risk AR haplotype; the less common A allele is associated with lower odds of early-onset balding. Because the gene sits on the X chromosome, men inherit their copy from their mother, which is why balding patterns often track the maternal line. Many other genes and age itself also contribute.",
+    "summary": "Changes in the androgen receptor gene, AR, are the strongest known gene factor for male-pattern hair loss. AR is on the X chromosome. G at rs6152 marks the higher-risk AR form. The less common A copy is linked to lower odds of early hair loss. Men get their X copy from their mother, so the maternal line can matter. Many other genes and age also shape hair loss.",
     "evidence": "moderate",
     "variants": [
       {
@@ -14,7 +14,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "The G allele tags the AR haplotype associated with higher odds of early-onset male-pattern hair loss; in one large case-control study nearly all men with early balding carried it. Men are hemizygous (one X copy), so a GG readout reflects that single G allele. The association is a shift in odds, not a certainty: many G-allele carriers keep a full head of hair, and hair loss in women shows a much weaker link to this gene.",
+          "GG": "G marks the AR form linked to higher odds of early male-pattern hair loss. In one large comparison study, nearly all men with early hair loss carried it. Men have one X copy, so a GG result reflects one G. This changes odds; it does not give a sure outcome. Many G carriers keep their hair, and the link is much weaker in women.",
           "AG": "One G and one A allele. This genotype occurs in genetic females (two X copies) and is associated with intermediate odds of pattern hair loss, which is generally less pronounced in women regardless of genotype. For men, a heterozygous call at this X-chromosome site is usually a genotyping artifact worth interpreting with caution.",
           "AA": "The A allele is the less common variant and is associated with lower odds of early-onset androgenetic alopecia. Men are hemizygous, so an AA readout reflects a single A allele on their one X chromosome. This is protective on average only; other loci, hormones, and age still drive substantial hair-loss risk."
         }
@@ -55,7 +55,7 @@
     "slug": "hair-thickness-edar-rs3827760",
     "category": "aesthetic-cosmetic",
     "title": "Hair strand thickness · EDAR",
-    "summary": "The EDAR Val370Ala variant (rs3827760) is a major determinant of hair-fiber thickness. The derived G allele (encoding 370Ala) increases signaling through the ectodysplasin receptor and is associated with thicker, straighter scalp hair; it is very common in East Asian and Native American populations and rare in people of European or African ancestry. The same variant is associated with shovel-shaped incisors and differences in sweat-gland density.",
+    "summary": "rs3827760 changes EDAR from Val370 to Ala370. It has a large effect on hair strand thickness. The G/Ala370 copy raises signaling through the EDAR receptor. It is linked to thicker, straighter scalp hair. G is very common in East Asian and Indigenous American groups but rare in European and African groups. It is also linked to shovel-shaped front teeth and differences in sweat gland count.",
     "evidence": "moderate",
     "variants": [
       {
@@ -66,9 +66,9 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the ancestral A allele (Val370), the near-universal genotype in European and African ancestry populations. Hair-fiber diameter falls in the typical range for those populations, with the wide individual variation that other genes and hair care produce.",
+          "AA": "Two A copies make the older Val370 form. AA occurs in almost everyone with European or African ancestry. Hair width falls in the usual range for those groups. Other genes and hair care still cause wide differences.",
           "AG": "One copy of the derived G allele (Ala370). Hair fibers are on average thicker than in AA carriers but thinner than in GG carriers — the effect is roughly additive per allele in East Asian cohorts.",
-          "GG": "Two copies of the derived G allele (Ala370), the most common genotype in East Asian and Native American populations. This genotype is associated with the thickest, straightest hair-fiber phenotype measured in the original studies, along with related ectodermal traits such as shovel-shaped incisors."
+          "GG": "Two G copies make the Ala370 form. GG is most common in East Asian and Indigenous American groups. In the first studies, it marked the thickest and straightest hair strands. It is also linked to traits such as shovel-shaped front teeth."
         }
       }
     ],
@@ -82,7 +82,7 @@
     "slug": "hair-curl-tchh-rs11803731",
     "category": "aesthetic-cosmetic",
     "title": "Straight vs. curly hair · TCHH",
-    "summary": "Trichohyalin (TCHH) helps cross-link the inner root sheath that molds the growing hair fiber. The derived T allele of rs11803731, found almost exclusively in people of European ancestry, is associated with straighter hair; the variant explains around 6% of the variance in hair curliness in European cohorts, so it nudges the odds rather than deciding the outcome.",
+    "summary": "TCHH helps join the inner root layer that shapes a growing hair strand. T at rs11803731 is found almost only in people with European ancestry. It is linked to straighter hair. In European groups, this site explains about 6% of the difference in hair curl. It shifts the odds and does not decide hair shape.",
     "evidence": "moderate",
     "variants": [
       {
@@ -95,7 +95,7 @@
         "interpretations": {
           "AA": "Two copies of the ancestral A allele, associated with higher average odds of wavy or curly hair in European-ancestry cohorts. Hair shape is polygenic (EDAR, WNT10A, and many other loci contribute), so straight hair with this genotype is still common.",
           "AT": "One copy of the straight-hair-associated T allele, associated with intermediate odds of straight hair on average. The per-allele effect is modest and many other variants shape the final phenotype.",
-          "TT": "Two copies of the derived T allele, the genotype associated with the highest odds of straight hair at this locus in Europeans. This variant accounts for only a few percent of the overall variation in curliness, so it is one contributor among many."
+          "TT": "Two T copies mark the highest odds of straight hair at this site in Europeans. This change explains only a few percent of all curl differences. TT is one factor among many."
         }
       }
     ],
@@ -108,7 +108,7 @@
     "slug": "eye-color-herc2-rs12913832",
     "category": "aesthetic-cosmetic",
     "title": "Blue vs. brown eye color · HERC2/OCA2",
-    "summary": "rs12913832 sits in a HERC2 intron that acts as an enhancer switch for the neighboring pigment gene OCA2 and is the single strongest predictor of blue versus brown eye color. The G allele dampens OCA2 expression in the iris: G/G individuals of European ancestry most often show blue or gray eyes, A/A individuals most often brown. Green, hazel, and intermediate shades reflect additional variants in OCA2, TYR, SLC24A4, IRF4, and other genes, so the prediction is strong but not absolute.",
+    "summary": "rs12913832 sits inside HERC2 and acts as a switch for the nearby OCA2 pigment gene. It is the strongest single marker of blue versus brown eyes. G lowers OCA2 activity in the iris. In people with European ancestry, GG most often marks blue or gray eyes, while AA most often marks brown eyes. Other pigment genes create green, hazel, and other shades. The result is strong but not certain.",
     "evidence": "established",
     "variants": [
       {
@@ -134,7 +134,7 @@
     "slug": "skin-pigmentation-tanning-slc45a2-rs16891982",
     "category": "aesthetic-cosmetic",
     "title": "Skin pigmentation and tanning · SLC45A2",
-    "summary": "SLC45A2 (also called MATP) transports substrates needed for melanin synthesis. The Leu374Phe variant rs16891982 is one of the strongest common-variant contributors to skin tone: the G allele (Leu374), nearly fixed in Europeans, is associated with lighter skin, while the C allele (Phe374) is associated with darker, more readily tanning skin and is the majority allele in most non-European populations. Skin tone and tanning response remain highly polygenic, and sun protection matters for every genotype.",
+    "summary": "SLC45A2, also called MATP, moves materials needed to make melanin. The Leu374Phe change, rs16891982, strongly contributes to skin tone. G/Leu374 is almost fixed in Europeans and is linked to lighter skin. C/Phe374 is the main copy in most non-European groups. It is linked to darker skin and easier tanning. Many genes shape skin and tanning, and every type needs sun protection.",
     "evidence": "moderate",
     "variants": [
       {
@@ -146,8 +146,8 @@
         "alt": "G",
         "interpretations": {
           "CC": "Two copies of the C (Phe374) allele, the ancestral genotype common outside Europe. On average it is associated with darker constitutive skin pigment and a stronger tanning response rather than burning. Within any genotype, actual skin tone spans a wide range set by many other genes.",
-          "CG": "One C and one G allele, associated with intermediate pigmentation on average — common in people of mixed, Southern European, South Asian, or Middle Eastern ancestry. Tanning versus burning tendency depends heavily on the rest of the pigmentation genotype, particularly MC1R.",
-          "GG": "Two copies of the G (Leu374) allele, the genotype carried by roughly 98% of Northern Europeans. It is associated with lighter skin that tans less readily and burns more easily, on average, which makes routine sun protection especially worthwhile."
+          "CG": "One C and one G copy give a middle skin pigment level on average. CG is common in people with mixed, Southern European, South Asian, or Middle Eastern ancestry. Other pigment genes, especially MC1R, strongly affect tanning and burning.",
+          "GG": "Two G copies make the Leu374 form. About 98% of Northern Europeans have GG. On average, it marks lighter skin that tans less and burns more easily. Regular sun protection is especially useful."
         }
       }
     ],
@@ -160,7 +160,7 @@
     "slug": "freckling-sun-sensitivity-irf4-rs12203592",
     "category": "aesthetic-cosmetic",
     "title": "Freckling and sun sensitivity · IRF4",
-    "summary": "rs12203592 lies in an intronic enhancer of IRF4, a transcription factor that cooperates with MITF to drive tyrosinase expression in melanocytes. The T allele weakens this enhancer and is associated with more freckling, higher sun sensitivity, lighter eye color, and — in a separate study — earlier hair graying. Effects are additive and modest; freckling also depends strongly on MC1R and on sun exposure itself.",
+    "summary": "rs12203592 sits in a control region inside IRF4. IRF4 works with MITF to turn on the pigment enzyme tyrosinase. T weakens this control region. It is linked to more freckles, higher sun sensitivity, and lighter eyes. A separate study also linked it to earlier gray hair. Effects are small and add by copy. MC1R and sun exposure also matter a lot.",
     "evidence": "moderate",
     "variants": [
       {
@@ -173,7 +173,7 @@
         "interpretations": {
           "CC": "Two copies of the C allele, which keeps the IRF4 melanocyte enhancer fully active. This genotype is associated with lower average odds of freckling and sun sensitivity from this locus; freckles can still arise through MC1R variants and sun exposure.",
           "CT": "One copy of the T allele, associated with intermediate odds of freckling and a somewhat higher tendency to burn rather than tan, on average. One IRF4 variant is a small part of the overall picture.",
-          "TT": "Two copies of the T allele, the genotype associated with the highest odds of freckling and sun sensitivity at this locus, and in one large Latin American cohort with earlier hair graying. On average carriers tan less well; consistent sun protection is sensible for every genotype but particularly so here."
+          "TT": "Two T copies mark the highest odds of freckles and sun sensitivity at this site. One large Latin American study also linked TT to earlier gray hair. On average, people with TT tan less well. Sun protection is wise for every type and especially useful here."
         }
       }
     ],
@@ -187,7 +187,7 @@
     "slug": "earwax-body-odor-abcc11-rs17822931",
     "category": "aesthetic-cosmetic",
     "title": "Earwax type and body odor · ABCC11",
-    "summary": "A single variant, rs17822931 (Gly180Arg) in the ABCC11 transporter, determines whether earwax is wet or dry and strongly influences underarm odor. The T allele inactivates the transporter that secretes odor-precursor molecules: T/T individuals have dry, flaky earwax and produce little of the compounds that skin bacteria turn into underarm odor. The T allele is the majority allele in East Asia and rare in Europe and Africa. This is one of the clearest single-gene traits in humans.",
+    "summary": "One change in the ABCC11 transporter, rs17822931 Gly180Arg, largely sets wet or dry earwax. It also strongly affects underarm odor. T turns off the transporter that releases chemicals used by odor-making skin bacteria. TT marks dry earwax and very little of these odor chemicals. T is common in East Asia but rare in Europe and Africa. This is one of the clearest one-gene human traits.",
     "evidence": "established",
     "variants": [
       {
@@ -198,9 +198,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C (Gly180) allele: a fully active ABCC11 transporter. This genotype is associated with wet, sticky earwax and typical apocrine secretion of odor precursors, so deodorant use tends to make a noticeable difference. This is the most common genotype in people of European and African ancestry.",
+          "CC": "Two C copies make the working Gly180 transporter. CC is linked to wet, sticky earwax and usual levels of underarm odor chemicals. Deodorant therefore tends to make a clear difference. CC is most common in people with European or African ancestry.",
           "CT": "One C and one T allele. Because one working copy of the transporter is enough, this genotype is associated with wet earwax and near-typical underarm odor, though secretion levels are on average somewhat lower than in CC carriers.",
-          "TT": "Two copies of the T (Arg180) allele, which leaves the transporter essentially inactive. This genotype is associated with dry, flaky earwax and markedly reduced underarm odor — many TT carriers produce so little odor precursor that deodorant adds little. TT is the majority genotype in East Asian populations."
+          "TT": "Two T copies make Arg180 and leave the transporter almost inactive. TT is linked to dry, flaky earwax and much less underarm odor. Many people with TT make so little odor material that deodorant adds little. TT is the main type in East Asian groups."
         }
       }
     ],
@@ -213,7 +213,7 @@
     "slug": "red-hair-fair-skin-mc1r-rs1805007",
     "category": "aesthetic-cosmetic",
     "title": "Red hair and fair skin · MC1R (R151C)",
-    "summary": "MC1R is the switch that shifts melanocytes from red-yellow pheomelanin to brown-black eumelanin. rs1805007 (Arg151Cys) is one of the most common strong loss-of-function 'R' alleles in Europeans: the T allele is associated with red hair, fair skin, freckling, poor tanning, and higher sensitivity to UV. Red hair usually requires two MC1R loss-of-function alleles (this one or others such as R160W or D294H), so a single variant here more often shows up as fair, freckle-prone skin or a reddish beard tint.",
+    "summary": "MC1R switches pigment cells from red-yellow pigment to brown-black pigment. rs1805007 changes Arg151 to Cys. T is a common strong loss-of-function R copy in Europeans. It is linked to red hair, fair skin, freckles, poor tanning, and more UV sensitivity. Red hair usually needs two weak MC1R copies, which may include R160W or D294H. One T copy more often shows as fair, freckled skin or a red beard tint.",
     "evidence": "established",
     "variants": [
       {
@@ -226,7 +226,7 @@
         "interpretations": {
           "CC": "No copies of the R151C variant. Red hair is still possible through other MC1R loss-of-function alleles not covered by this single site, but the strongest common red-hair allele is absent. Tanning ability and freckling from this locus fall in the typical range.",
           "CT": "One copy of the R151C (T) allele. Carriers usually do not have red hair from this variant alone, but on average show fairer, more freckle-prone, sun-sensitive skin, and sometimes reddish tones in beard or body hair. A second loss-of-function allele elsewhere in MC1R would raise the odds of red hair substantially.",
-          "TT": "Two copies of the R151C (T) allele, a genotype strongly associated with red hair, very fair skin, dense freckling, and burning rather than tanning. MC1R variant carriers show elevated melanoma risk on average, so careful sun protection and skin awareness are especially worthwhile; this variant is still just one factor in skin-cancer risk."
+          "TT": "Two T copies make the R151C form. TT is strongly linked to red hair, very fair skin, many freckles, and burning rather than tanning. MC1R carriers have higher melanoma risk on average. Careful sun protection and skin awareness are especially useful. This site is still only one part of skin cancer risk."
         }
       }
     ],
@@ -240,7 +240,7 @@
     "slug": "blond-hair-kitlg-rs12821256",
     "category": "aesthetic-cosmetic",
     "title": "Blond hair · KITLG enhancer",
-    "summary": "rs12821256 sits in an enhancer about 350 kb upstream of KITLG, a growth factor that supports melanocyte development in the hair follicle. The C allele reduces enhancer activity by roughly 20% in hair-follicle cells and is associated with higher odds of blond hair in Northern Europeans — an elegant example of how a small regulatory tweak, rather than a broken gene, shifts a visible trait. Hair color is polygenic, so this variant shifts probabilities rather than fixing an outcome.",
+    "summary": "rs12821256 sits in a control region about 350 kb before KITLG. KITLG is a growth factor that supports pigment cells in hair roots. C lowers control-region activity by about 20% in hair-root cells. It is linked to higher odds of blond hair in Northern Europeans. This is a small change in gene control, not a broken gene. Many genes set hair color, so C only shifts the odds.",
     "evidence": "moderate",
     "variants": [
       {
@@ -253,7 +253,7 @@
         "interpretations": {
           "TT": "Two copies of the ancestral T allele. From this locus, hair color odds lean toward darker blond through brown shades, but KITLG is only one of a dozen-plus loci (MC1R, HERC2/OCA2, SLC24A4, TYRP1 and others) that together set hair color.",
           "CT": "One copy of the blond-associated C allele, associated with somewhat higher odds of blond or light-brown hair on average. The per-allele effect is modest and the final shade depends on the rest of the pigmentation genotype.",
-          "CC": "Two copies of the blond-associated C allele, the genotype with the highest odds of blond hair at this locus in Northern European cohorts. Plenty of CC carriers still have brown hair — this regulatory variant nudges melanin production in the follicle rather than dictating it."
+          "CC": "Two C copies mark the highest odds of blond hair at this site in Northern European groups. Many people with CC still have brown hair. This control change slightly lowers pigment in hair roots; it does not set the final color."
         }
       }
     ],
