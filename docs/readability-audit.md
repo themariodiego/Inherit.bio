@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-72 long-block grade findings, concentrated in the existing report-template
+60 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -156,6 +156,16 @@ GBA1 copy now attributes the five-fold estimate to the cited study's combined
 variant group rather than to N370S alone. Later primary studies were also added
 for the UNC13A frontotemporal findings and the TMEM106B C9orf72 modifier. A
 category-level regression keeps the file at zero findings.
+
+The eighteenth remediation pass removed all 12 findings from the autoimmune
+report category. The rewrites retain allele and effect direction, effect
+sizes, ancestry limits, HLA-tag uncertainty, direct-typing guidance,
+population frequencies, absolute-risk limits, disease distinctions, and
+limits on individual prediction. The HLA-B27 copy no longer presents a fixed
+carrier penetrance across populations. It now adds a heterogeneous-population
+study that measures the rs4349859 tag directly and keeps blood-based HLA typing
+as the clearer result. A category-level regression keeps the file at zero
+findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

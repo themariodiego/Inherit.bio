@@ -172,4 +172,13 @@ describe("readability copy extraction", () => {
 
     expect(neurodegenerativeFailures).toEqual([]);
   });
+
+  it("keeps every autoimmune template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const autoimmuneFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/autoimmune.json:"),
+    );
+
+    expect(autoimmuneFailures).toEqual([]);
+  });
 });
