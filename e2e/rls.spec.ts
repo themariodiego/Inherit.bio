@@ -16,6 +16,7 @@ const B = { email: "rls-b@e2e.local", password: "e2e-password-b" };
 
 let bId: string;
 let bFileId: string;
+let bSubjectId: string;
 const bObjectPath = () => `${bId}/rls-test/victim.txt`;
 
 test.beforeAll(async () => {
@@ -23,10 +24,25 @@ test.beforeAll(async () => {
   bId = await createConfirmedUser(B.email, B.password);
 
   const admin = adminClient();
+  const { data: subject, error: subjectError } = await admin
+    .from("subjects")
+    .select("id")
+    .eq("subject_account_id", bId)
+    .eq("subject_class", "self")
+    .single();
+  if (subjectError || !subject) {
+    throw new Error(`plant subject: ${subjectError?.message}`);
+  }
+  bSubjectId = subject.id;
+  await admin.from("user_variants").delete().eq("user_id", bId);
+  await admin.from("chats").delete().eq("user_id", bId);
+  await admin.from("consent_grants").delete().eq("user_id", bId);
+  await admin.from("genome_files").delete().eq("user_id", bId);
   const { data: file, error } = await admin
     .from("genome_files")
     .insert({
       user_id: bId,
+      subject_id: bSubjectId,
       bucket_path: bObjectPath(),
       original_name: "victim.txt",
       file_type: "vcf",
@@ -42,6 +58,7 @@ test.beforeAll(async () => {
   await admin.from("user_variants").insert({
     user_id: bId,
     file_id: bFileId,
+    subject_id: bSubjectId,
     rsid: 762551,
     chrom: 15,
     pos: 74749576,
@@ -49,7 +66,17 @@ test.beforeAll(async () => {
     alt: "C",
     genotype: "A/C",
   });
-  await admin.from("chats").insert({ user_id: bId, title: "victim chat" });
+  await admin.from("chats").insert({
+    user_id: bId,
+    subject_id: bSubjectId,
+    scope_kind: "self",
+    lifecycle_revision: 1,
+    provider_classification: "local",
+    runtime_attestation_revision: 1,
+    model_recipient_revision: 1,
+    authorization_fingerprint: "a".repeat(64),
+    title: "victim chat",
+  });
   await admin.from("consent_grants").insert({
     user_id: bId,
     provider_key: "anthropic",
@@ -81,7 +108,10 @@ test("cross-user reads return zero rows on every user table", async () => {
     "profiles",
   ]) {
     const { data, error } = await a.from(table).select("*").limit(10);
-    expect(error, `${table} select should not error`).toBeNull();
+    if (error) {
+      expect(error.code, `${table} hard denial must be a privilege error`).toBe("42501");
+      continue;
+    }
     const foreign = (data ?? []).filter(
       (row) =>
         ("user_id" in row && row.user_id === bId) ||

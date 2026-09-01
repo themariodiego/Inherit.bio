@@ -91,9 +91,9 @@ test("dashboard contacts no third-party origin", async ({ page }) => {
 
 test("a report page contacts no third-party origin", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
-  await page.goto("/reports");
+  await page.goto("/genome/me/reports");
   await page.waitForLoadState("networkidle");
-  const firstReport = page.locator('a[href^="/reports/"]').first();
+  const firstReport = page.locator('a[href^="/genome/me/reports/"]').first();
   const observed = watchRequests(page);
   if ((await firstReport.count()) > 0) {
     await firstReport.click();
@@ -127,7 +127,7 @@ test("browse page with the embedded genome browser contacts no third-party origi
   const observed = watchRequests(page);
   // rs762551 is a non-ref call in the tiny fixture, so the search returns a
   // table hit and mounts igv at its locus.
-  await page.goto("/browse?q=rs762551");
+  await page.goto("/genome/me/data/browser?q=rs762551");
   await expect(page.getByTestId("genome-browser")).toBeVisible();
   // igv has finished initializing (reference + track loads, and any
   // phone-home attempts) once its canvas exists.

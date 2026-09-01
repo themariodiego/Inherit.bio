@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 
-// A13 — export contains originals + normalized variants; deletion removes
-// DB rows AND storage objects, verified by privileged re-query afterwards.
+// A13 — export contains originals + normalized variants; account deletion is
+// held for the fixed notice period and remains cancellable before purge starts.
 
 const USER = { email: "delete-me@e2e.local", password: "e2e-delete-pw" };
 
@@ -122,38 +122,122 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   expect(Array.isArray(JSON.parse(zip.readAsText("prs.json")))).toBe(true);
 });
 
-test("account deletion removes auth user, all rows, and all storage objects", async ({
+test("account deletion schedules a seven-day hold and can be cancelled", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
 
-  await page.goto("/settings");
+  await page.goto("/settings/data");
   await page.getByLabel(/Type/).fill("delete my genome");
   await page.getByTestId("delete-account").click();
-  await page.waitForURL((url) => url.pathname === "/", { timeout: 60_000 });
+  await expect(
+    page.getByRole("heading", { name: "Account deletion scheduled" }),
+  ).toBeVisible();
 
   const admin = adminClient();
 
   const { data: users } = await admin.auth.admin.listUsers();
-  expect(users?.users.find((u) => u.id === userId)).toBeUndefined();
+  expect(users?.users.find((user) => user.id === userId)).toBeDefined();
 
-  for (const table of [
-    "profiles",
-    "genome_files",
-    "user_variants",
-    "ancestry_results",
-    "user_prs",
-    "chats",
-    "consent_grants",
-  ]) {
-    const { data } = await admin
-      .from(table)
-      .select("*")
-      .eq(table === "profiles" ? "id" : "user_id", userId);
-    expect(data ?? [], `${table} rows must be gone`).toHaveLength(0);
+  const { data: deletion } = await admin
+    .from("account_deletion_requests")
+    .select("id,state,requested_at,notice_ends_at")
+    .eq("account_id", userId)
+    .eq("state", "notice_period")
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .single();
+  expect(deletion?.state).toBe("notice_period");
+  expect(
+    new Date(deletion!.notice_ends_at).getTime() -
+      new Date(deletion!.requested_at).getTime(),
+  ).toBe(7 * 24 * 60 * 60 * 1000);
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("deletion_requested_at")
+    .eq("id", userId)
+    .single();
+  expect(profile?.deletion_requested_at).not.toBeNull();
+
+  const { data: retention } = await admin
+    .from("retention_rows")
+    .select("id,state,fixed_deadline")
+    .eq("retention_id", "account-deletion.notice-7d")
+    .eq("target_id", userId)
+    .single();
+  expect(retention?.state).toBe("scheduled");
+  expect(retention?.fixed_deadline).toBe(deletion?.notice_ends_at);
+
+  const { data: phase } = await admin
+    .from("retention_due_phases")
+    .select("status,phase_deadline")
+    .eq("retention_row_id", retention!.id)
+    .single();
+  expect(phase?.status).toBe("pending");
+  expect(phase?.phase_deadline).toBe(deletion?.notice_ends_at);
+
+  const { data: manifest } = await admin
+    .from("purge_manifests")
+    .select("state,manifest_class")
+    .eq("retention_row_id", retention!.id)
+    .single();
+  expect(manifest).toMatchObject({
+    state: "frozen",
+    manifest_class: "complete-retention",
+  });
+
+  const { count: noticeCount } = await admin
+    .from("mail_outbox")
+    .select("id", { count: "exact", head: true })
+    .eq("target_id", deletion!.id)
+    .eq("template_id", "account-deletion-notice");
+  expect(noticeCount).toBe(1);
+
+  // Physical data and joined UUID storage objects remain throughout notice.
+  const { data: files } = await admin
+    .from("genome_files")
+    .select("id,storage_object_id")
+    .eq("user_id", userId);
+  expect(files?.length).toBeGreaterThan(0);
+  const { data: objects } = await admin
+    .from("genome_storage_objects")
+    .select("object_name,bucket_id,state")
+    .in("genome_file_id", files!.map((file) => file.id));
+  expect(objects?.length).toBe(files?.length);
+  for (const object of objects ?? []) {
+    expect(object.state).toBe("current");
+    const { data: stored } = await admin.storage
+      .from(object.bucket_id)
+      .list("", { search: object.object_name });
+    expect(stored?.some((entry) => entry.name === object.object_name)).toBe(true);
   }
 
-  // Storage: nothing under the user's prefix, at any depth.
-  const { data: topLevel } = await admin.storage.from("genomes").list(userId);
-  expect(topLevel ?? []).toHaveLength(0);
+  // During notice, non-allowlisted application operations are locked.
+  const blocked = await page.request.post("/api/chat", { data: {} });
+  expect(blocked.status()).toBe(423);
+  await page.goto("/overview");
+  await page.waitForURL((url) => url.pathname === "/settings/data");
+
+  await page.getByTestId("cancel-account-deletion").click();
+  await expect(
+    page.getByRole("heading", { name: "Delete account" }),
+  ).toBeVisible();
+
+  const { data: cancelled } = await admin
+    .from("account_deletion_requests")
+    .select("state,cancelled_at")
+    .eq("id", deletion!.id)
+    .single();
+  expect(cancelled?.state).toBe("cancelled");
+  expect(cancelled?.cancelled_at).not.toBeNull();
+  const { data: restoredProfile } = await admin
+    .from("profiles")
+    .select("deletion_requested_at")
+    .eq("id", userId)
+    .single();
+  expect(restoredProfile?.deletion_requested_at).toBeNull();
+
+  await page.goto("/overview");
+  await expect(page).toHaveURL(/\/overview$/);
 });

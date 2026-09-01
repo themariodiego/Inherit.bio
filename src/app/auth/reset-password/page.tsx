@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
           const supabase = createClient();
           const { error } = await supabase.auth.updateUser({ password });
           if (error) return error.message;
-          router.push("/dashboard");
+          router.push("/overview");
           router.refresh();
           return null;
         }}

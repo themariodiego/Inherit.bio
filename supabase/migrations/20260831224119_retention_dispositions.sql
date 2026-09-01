@@ -1,0 +1,637 @@
+-- Closed retention, phase, and purge-manifest registries.
+
+create table public.retention_registry (
+  retention_id text primary key,
+  execution_class text not null check (execution_class in (
+    'scheduledDuePhase', 'revocationDispositionWorker',
+    'inlineEventDriven', 'externalProviderEnforced'
+  ))
+);
+
+insert into public.retention_registry (retention_id, execution_class) values
+  ('audit.legal-log-7y', 'scheduledDuePhase'),
+  ('adult.unconfirmed-30d', 'scheduledDuePhase'),
+  ('adult.subject-draft-30d', 'scheduledDuePhase'),
+  ('upload.staging-2h', 'scheduledDuePhase'),
+  ('evidence.ingest-session-24h', 'scheduledDuePhase'),
+  ('legal-evidence.adult-permission-24mo', 'scheduledDuePhase'),
+  ('legal-evidence.embryo-basis', 'scheduledDuePhase'),
+  ('invitation.pending-30d', 'scheduledDuePhase'),
+  ('embryo.identified-donor-invitation-30d', 'scheduledDuePhase'),
+  ('invitation.reminder-7d', 'scheduledDuePhase'),
+  ('invitation.contact-terminal-30d', 'scheduledDuePhase'),
+  ('invitation.refusal-hash-365d', 'scheduledDuePhase'),
+  ('security.rate-limit-hmac-24h', 'scheduledDuePhase'),
+  ('adult.acceptance-hold-72h', 'scheduledDuePhase'),
+  ('adult.re-notice-30d', 'scheduledDuePhase'),
+  ('adult.non-account-holder-24mo', 'scheduledDuePhase'),
+  ('account-deletion.notice-7d', 'scheduledDuePhase'),
+  ('export.generated-artifact-24h', 'scheduledDuePhase'),
+  ('appeal.intake-review-30d', 'scheduledDuePhase'),
+  ('future-person.correction-review-30d', 'scheduledDuePhase'),
+  ('embryo.cohort-draft-30d', 'scheduledDuePhase'),
+  ('embryo.stored-or-unknown-24mo', 'scheduledDuePhase'),
+  ('embryo.ingest-session-24h', 'scheduledDuePhase'),
+  ('embryo.disposition-proposal-7d', 'scheduledDuePhase'),
+  ('embryo.single-parent-review-30d', 'scheduledDuePhase'),
+  ('future-person.claim-intake-session-24h', 'scheduledDuePhase'),
+  ('embryo.donated-or-discarded-90d', 'scheduledDuePhase'),
+  ('embryo.transferred-claim-window', 'scheduledDuePhase'),
+  ('future-person.claim-review', 'scheduledDuePhase'),
+  ('future-person.keyless-notice-release-62d', 'scheduledDuePhase'),
+  ('future-person.claim-objection-review-30d', 'scheduledDuePhase'),
+  ('future-person.claimed-unbound-24mo', 'scheduledDuePhase'),
+  ('future-person.identity-match-profile', 'scheduledDuePhase'),
+  ('future-person.owner-notice-30d', 'scheduledDuePhase'),
+  ('contradiction.freeze', 'scheduledDuePhase'),
+  ('derived.revocation-60s', 'revocationDispositionWorker'),
+  ('source.revocation-7d', 'revocationDispositionWorker'),
+  ('purpose.derived-60s', 'revocationDispositionWorker'),
+  ('access.revocation-immediate', 'inlineEventDriven'),
+  ('purpose.access-immediate', 'inlineEventDriven'),
+  ('raw-export.access-immediate', 'inlineEventDriven'),
+  ('cloud-model.access-immediate', 'inlineEventDriven'),
+  ('pair.access-immediate', 'inlineEventDriven'),
+  ('audit.pseudonymize-on-deletion', 'inlineEventDriven'),
+  ('account-holder.until-request', 'inlineEventDriven'),
+  ('account-deletion.purge-owned', 'inlineEventDriven'),
+  ('future-person.claimant-reverification-until-request', 'inlineEventDriven'),
+  ('cohort.restriction-whole', 'inlineEventDriven'),
+  ('mail.resend-provider-payload-30d', 'externalProviderEnforced');
+
+create table public.retention_phase_registry (
+  retention_id text not null references public.retention_registry (retention_id) on delete restrict,
+  phase_id text not null,
+  phase_kind text not null check (phase_kind in (
+    'notice-enqueue', 'lifecycle-transition', 'deny', 'purge',
+    'compound-atomic', 'ordered-notice-then-purge', 'review-close',
+    'ingest-abandoned-no-source'
+  )),
+  primary key (retention_id, phase_id)
+);
+
+insert into public.retention_phase_registry (retention_id, phase_id, phase_kind) values
+  ('audit.legal-log-7y', 'audit-legal-log-prefix-purge', 'purge'),
+  ('invitation.reminder-7d', 'invitation-reminder-reissue', 'notice-enqueue'),
+  ('invitation.pending-30d', 'invitation-silent-expiry', 'compound-atomic'),
+  ('embryo.identified-donor-invitation-30d', 'identified-donor-silence-fallback', 'compound-atomic'),
+  ('adult.acceptance-hold-72h', 'adult-acceptance-second-notice', 'notice-enqueue'),
+  ('adult.re-notice-30d', 'adult-revocation-renotice', 'notice-enqueue'),
+  ('invitation.contact-terminal-30d', 'invitation-terminal-contact-purge', 'ordered-notice-then-purge'),
+  ('adult.subject-draft-30d', 'adult-subject-draft-expiry', 'compound-atomic'),
+  ('embryo.cohort-draft-30d', 'embryo-cohort-draft-expiry', 'compound-atomic'),
+  ('embryo.stored-or-unknown-24mo', 'stored-expiry-notice-30d', 'notice-enqueue'),
+  ('embryo.stored-or-unknown-24mo', 'stored-expiry-deny', 'deny'),
+  ('embryo.stored-or-unknown-24mo', 'stored-expiry-purge', 'purge'),
+  ('embryo.donated-or-discarded-90d', 'disposition-expiry-notice-30d', 'notice-enqueue'),
+  ('embryo.donated-or-discarded-90d', 'disposition-expiry-deny', 'deny'),
+  ('embryo.donated-or-discarded-90d', 'disposition-expiry-purge', 'purge'),
+  ('embryo.transferred-claim-window', 'transferred-claim-window-open-notice', 'notice-enqueue'),
+  ('embryo.transferred-claim-window', 'transferred-deletion-notice-90d', 'notice-enqueue'),
+  ('embryo.transferred-claim-window', 'transferred-final-deletion-notice', 'notice-enqueue'),
+  ('embryo.transferred-claim-window', 'transferred-closing-deny', 'deny'),
+  ('embryo.transferred-claim-window', 'transferred-closing-purge', 'purge'),
+  ('embryo.ingest-session-24h', 'ingest-abandoned-no-source', 'ingest-abandoned-no-source'),
+  ('future-person.claim-review', 'claim-review-acknowledgement', 'notice-enqueue'),
+  ('future-person.claim-review', 'claim-review-close', 'review-close'),
+  ('future-person.keyless-notice-release-62d', 'keyless-owner-notice-delivery-close', 'review-close'),
+  ('future-person.keyless-notice-release-62d', 'keyless-day62-close', 'review-close'),
+  ('future-person.owner-notice-30d', 'owner-objection-window-complete', 'lifecycle-transition'),
+  ('future-person.claim-objection-review-30d', 'objection-review-decision-close', 'review-close'),
+  ('future-person.claim-objection-review-30d', 'overrule-release-close', 'review-close'),
+  ('future-person.claim-intake-session-24h', 'claim-intake-expiry-purge', 'purge'),
+  ('future-person.claimed-unbound-24mo', 'claimed-unbound-working-data-purge', 'purge'),
+  ('adult.unconfirmed-30d', 'adult-unconfirmed-source-expiry', 'compound-atomic'),
+  ('upload.staging-2h', 'upload-staging-expiry', 'purge'),
+  ('evidence.ingest-session-24h', 'evidence-ingest-session-expiry', 'purge'),
+  ('legal-evidence.adult-permission-24mo', 'adult-permission-deny', 'deny'),
+  ('legal-evidence.adult-permission-24mo', 'adult-permission-purge', 'purge'),
+  ('legal-evidence.embryo-basis', 'embryo-basis-evidence-deny', 'deny'),
+  ('legal-evidence.embryo-basis', 'embryo-basis-evidence-purge', 'purge'),
+  ('invitation.refusal-hash-365d', 'invitation-refusal-hash-expiry', 'purge'),
+  ('security.rate-limit-hmac-24h', 'security-rate-limit-hmac-expiry', 'purge'),
+  ('adult.non-account-holder-24mo', 'adult-non-account-holder-expiry', 'compound-atomic'),
+  ('export.generated-artifact-24h', 'export-artifact-expiry', 'purge'),
+  ('appeal.intake-review-30d', 'appeal-acknowledgement', 'notice-enqueue'),
+  ('appeal.intake-review-30d', 'appeal-review-close', 'review-close'),
+  ('future-person.correction-review-30d', 'correction-acknowledgement', 'notice-enqueue'),
+  ('future-person.correction-review-30d', 'correction-review-close', 'review-close'),
+  ('embryo.disposition-proposal-7d', 'embryo-disposition-proposal-expiry', 'purge'),
+  ('embryo.single-parent-review-30d', 'embryo-single-parent-review-expiry', 'compound-atomic'),
+  ('future-person.identity-match-profile', 'identity-profile-deny', 'deny'),
+  ('future-person.identity-match-profile', 'identity-profile-purge', 'purge'),
+  ('account-deletion.notice-7d', 'account-deletion-notice-deadline', 'compound-atomic'),
+  ('contradiction.freeze', 'contradiction-freeze-notice', 'notice-enqueue'),
+  ('contradiction.freeze', 'contradiction-freeze-close', 'review-close');
+
+create table public.purge_manifest_classes (
+  manifest_class text primary key
+);
+
+insert into public.purge_manifest_classes (manifest_class) values
+  ('adult-draft-complete'),
+  ('adult-upload-revision-only'),
+  ('audit-chain-retention-only'),
+  ('audit-link-only'),
+  ('claim-working'),
+  ('claimant-reverification-secrets-only'),
+  ('cloud-provider-payload-only'),
+  ('cohort-draft-complete'),
+  ('cohort-prepublication-complete'),
+  ('complete-retention'),
+  ('derived-only'),
+  ('evidence-working'),
+  ('export-artifact-only'),
+  ('identity-profile-only'),
+  ('invitation-working'),
+  ('no-physical-manifest'),
+  ('notice-contact-working'),
+  ('proposal-working'),
+  ('purpose-derived-only'),
+  ('rate-limit-only'),
+  ('raw-export-only'),
+  ('refusal-bar-only'),
+  ('review-working'),
+  ('source-only'),
+  ('upload-working');
+
+create table public.purge_targets (
+  target_id text primary key,
+  delete_order integer not null unique check (delete_order > 0)
+);
+
+insert into public.purge_targets (target_id, delete_order) values
+  ('chat-derived-contexts', 10),
+  ('portrait-pair-results', 20),
+  ('polygenic-results', 30),
+  ('ancestry-regions', 40),
+  ('ancestry-results', 50),
+  ('embryo-scores', 60),
+  ('embryo-qc', 70),
+  ('embryo-figures', 72),
+  ('result-suppressions', 74),
+  ('generated-artifacts', 80),
+  ('worker-and-model-working-state', 82),
+  ('cloud-provider-working-state', 83),
+  ('mail-token-and-rights-delivery-state', 84),
+  ('claim-review-working-packages', 86),
+  ('appeal-and-correction-working-packages', 88),
+  ('variant-rows', 90),
+  ('legal-evidence-working-and-private-objects', 92),
+  ('upload-and-ingest-working-state', 94),
+  ('drafts-invitations-and-candidates', 96),
+  ('contact-refusal-and-rate-limit-state', 98),
+  ('subject-relationships', 100),
+  ('disposition-proposals-and-transient-authority', 102),
+  ('future-person-identity-profiles', 104),
+  ('record-key-authority', 105),
+  ('subject-demographics', 106),
+  ('account-model-and-provider-configuration', 107),
+  ('storage-objects', 110),
+  ('genome-files', 120),
+  ('embryo-projections', 125),
+  ('claimant-reverification-authority', 127),
+  ('audit-principal-link-key-envelope', 128),
+  ('legal-audit-chain-retention', 129),
+  ('subject-bound-authority-and-lifecycle-terminalization', 130);
+
+create table public.purge_target_stores (
+  target_id text not null references public.purge_targets (target_id) on delete restrict,
+  store_name text not null,
+  store_order integer not null check (store_order > 0),
+  primary key (target_id, store_name),
+  unique (target_id, store_order)
+);
+
+insert into public.purge_target_stores (target_id, store_name, store_order) values
+  ('chat-derived-contexts', 'public.chat_messages', 1),
+  ('chat-derived-contexts', 'public.chats', 2),
+  ('chat-derived-contexts', 'public.copilot_context_tokens', 3),
+  ('chat-derived-contexts', 'public.copilot_context_history', 4),
+  ('chat-derived-contexts', 'public.copilot_turn_dependencies', 5),
+  ('portrait-pair-results', 'public.portrait_results', 1),
+  ('polygenic-results', 'public.user_prs', 1),
+  ('ancestry-regions', 'public.ancestry_regions', 1),
+  ('ancestry-results', 'public.ancestry_results', 1),
+  ('embryo-scores', 'public.embryo_scores', 1),
+  ('embryo-qc', 'public.embryo_qc', 1),
+  ('embryo-figures', 'public.embryo_figures', 1),
+  ('result-suppressions', 'public.suppressions', 1),
+  ('generated-artifacts', 'public.report_artifacts', 1),
+  ('generated-artifacts', 'public.generated_exports', 2),
+  ('generated-artifacts', 'public.download_sessions', 3),
+  ('generated-artifacts', 'public.model_contexts', 4),
+  ('worker-and-model-working-state', 'public.worker_jobs', 1),
+  ('worker-and-model-working-state', 'public.worker_job_batches', 2),
+  ('worker-and-model-working-state', 'public.analysis_jobs', 3),
+  ('worker-and-model-working-state', 'public.copilot_generation_sessions', 4),
+  ('cloud-provider-working-state', 'public.cloud_provider_payloads', 1),
+  ('cloud-provider-working-state', 'public.cloud_provider_attempts', 2),
+  ('cloud-provider-working-state', 'public.cloud_model_calls', 3),
+  ('mail-token-and-rights-delivery-state', 'public.mail_outbox', 1),
+  ('mail-token-and-rights-delivery-state', 'public.mail_deliveries', 2),
+  ('mail-token-and-rights-delivery-state', 'public.mail_provider_attempts', 3),
+  ('mail-token-and-rights-delivery-state', 'public.token_hashes', 4),
+  ('mail-token-and-rights-delivery-state', 'public.token_candidates', 5),
+  ('mail-token-and-rights-delivery-state', 'public.rights_sessions', 6),
+  ('mail-token-and-rights-delivery-state', 'public.rights_nonces', 7),
+  ('claim-review-working-packages', 'public.future_person_claims', 1),
+  ('claim-review-working-packages', 'public.future_person_claim_sessions', 2),
+  ('claim-review-working-packages', 'public.future_person_claim_documents', 3),
+  ('claim-review-working-packages', 'public.future_person_claim_review_packages', 4),
+  ('claim-review-working-packages', 'public.future_person_claim_assignments', 5),
+  ('claim-review-working-packages', 'public.future_person_claim_notices', 6),
+  ('claim-review-working-packages', 'public.future_person_claim_objections', 7),
+  ('claim-review-working-packages', 'public.future_person_claim_release_credentials', 8),
+  ('appeal-and-correction-working-packages', 'public.appeal_intakes', 1),
+  ('appeal-and-correction-working-packages', 'public.appeal_evidence', 2),
+  ('appeal-and-correction-working-packages', 'public.appeal_assignments', 3),
+  ('appeal-and-correction-working-packages', 'public.correction_requests', 4),
+  ('appeal-and-correction-working-packages', 'public.correction_working_data', 5),
+  ('appeal-and-correction-working-packages', 'public.correction_assignments', 6),
+  ('appeal-and-correction-working-packages', 'public.legal_reviews', 7),
+  ('variant-rows', 'public.user_variants', 1),
+  ('variant-rows', 'public.embryo_variants', 2),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_ingest_sessions', 1),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_fragments', 2),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_documents', 3),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_review_copies', 4),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_assignments', 5),
+  ('legal-evidence-working-and-private-objects', 'public.legal_evidence_working_data', 6),
+  ('upload-and-ingest-working-state', 'public.upload_sessions', 1),
+  ('upload-and-ingest-working-state', 'public.upload_chunks', 2),
+  ('upload-and-ingest-working-state', 'public.upload_staging_objects', 3),
+  ('upload-and-ingest-working-state', 'public.embryo_ingest_sessions', 4),
+  ('upload-and-ingest-working-state', 'public.embryo_ingest_fragments', 5),
+  ('upload-and-ingest-working-state', 'public.embryo_fragment_handle_maps', 6),
+  ('upload-and-ingest-working-state', 'public.embryo_mapping_challenges', 7),
+  ('upload-and-ingest-working-state', 'public.pending_source_rows', 8),
+  ('drafts-invitations-and-candidates', 'public.adult_subject_drafts', 1),
+  ('drafts-invitations-and-candidates', 'public.embryo_cohort_drafts', 2),
+  ('drafts-invitations-and-candidates', 'public.subject_invitations', 3),
+  ('drafts-invitations-and-candidates', 'public.invitation_candidates', 4),
+  ('drafts-invitations-and-candidates', 'public.invitation_reminders', 5),
+  ('drafts-invitations-and-candidates', 'public.draft_participant_slots', 6),
+  ('contact-refusal-and-rate-limit-state', 'public.encrypted_contact_references', 1),
+  ('contact-refusal-and-rate-limit-state', 'public.contact_hmac_indexes', 2),
+  ('contact-refusal-and-rate-limit-state', 'public.subject_control_refusal_authorities', 3),
+  ('contact-refusal-and-rate-limit-state', 'public.contact_refusal_bars', 4),
+  ('contact-refusal-and-rate-limit-state', 'public.rate_limit_hmac_buckets', 5),
+  ('subject-relationships', 'public.subject_relationships', 1),
+  ('disposition-proposals-and-transient-authority', 'public.embryo_disposition_proposals', 1),
+  ('disposition-proposals-and-transient-authority', 'public.embryo_disposition_confirmations', 2),
+  ('disposition-proposals-and-transient-authority', 'public.retention_notice_campaigns', 3),
+  ('future-person-identity-profiles', 'public.future_person_identity', 1),
+  ('record-key-authority', 'public.future_person_record_key_recipients', 1),
+  ('record-key-authority', 'public.future_person_record_key_hashes', 2),
+  ('record-key-authority', 'public.future_person_record_key_print_rights', 3),
+  ('subject-demographics', 'public.subject_demographics', 1),
+  ('account-model-and-provider-configuration', 'public.profiles', 1),
+  ('account-model-and-provider-configuration', 'public.llm_settings', 2),
+  ('account-model-and-provider-configuration', 'public.llm_keys', 3),
+  ('account-model-and-provider-configuration', 'public.consent_grants', 4),
+  ('account-model-and-provider-configuration', 'public.provider_recipient_grants', 5),
+  ('account-model-and-provider-configuration', 'public.template_reviews', 6),
+  ('storage-objects', 'storage.objects', 1),
+  ('genome-files', 'public.genome_files', 1),
+  ('embryo-projections', 'public.embryos', 1),
+  ('claimant-reverification-authority', 'public.future_person_claimant_principals', 1),
+  ('claimant-reverification-authority', 'public.future_person_claimant_identity_hmacs', 2),
+  ('claimant-reverification-authority', 'public.future_person_recovery_key_hashes', 3),
+  ('audit-principal-link-key-envelope', 'public.audit_principal_links', 1),
+  ('audit-principal-link-key-envelope', 'public.audit_principal_link_keys', 2),
+  ('legal-audit-chain-retention', 'public.legal_audit_log', 1),
+  ('legal-audit-chain-retention', 'public.legal_audit_retention_checkpoints', 2),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.subject_consents', 1),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.consent_signatures', 2),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.attestations', 3),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.attestation_contradictions', 4),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.embryo_donor_attributions', 5),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.purpose_grants', 6),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.directional_grants', 7),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.subject_principals', 8),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.subjects', 9),
+  ('subject-bound-authority-and-lifecycle-terminalization', 'public.embryo_cohorts', 10);
+
+create table public.purge_manifest_class_targets (
+  manifest_class text not null references public.purge_manifest_classes (manifest_class) on delete restrict,
+  target_id text not null references public.purge_targets (target_id) on delete restrict,
+  primary key (manifest_class, target_id)
+);
+
+insert into public.purge_manifest_class_targets (manifest_class, target_id) values
+  ('derived-only', 'chat-derived-contexts'),
+  ('purpose-derived-only', 'chat-derived-contexts'),
+  ('adult-upload-revision-only', 'chat-derived-contexts'),
+  ('adult-draft-complete', 'chat-derived-contexts'),
+  ('cohort-draft-complete', 'chat-derived-contexts'),
+  ('cohort-prepublication-complete', 'chat-derived-contexts'),
+  ('complete-retention', 'chat-derived-contexts'),
+  ('derived-only', 'portrait-pair-results'),
+  ('purpose-derived-only', 'portrait-pair-results'),
+  ('adult-upload-revision-only', 'portrait-pair-results'),
+  ('adult-draft-complete', 'portrait-pair-results'),
+  ('cohort-draft-complete', 'portrait-pair-results'),
+  ('cohort-prepublication-complete', 'portrait-pair-results'),
+  ('complete-retention', 'portrait-pair-results'),
+  ('derived-only', 'polygenic-results'),
+  ('purpose-derived-only', 'polygenic-results'),
+  ('adult-upload-revision-only', 'polygenic-results'),
+  ('adult-draft-complete', 'polygenic-results'),
+  ('cohort-draft-complete', 'polygenic-results'),
+  ('cohort-prepublication-complete', 'polygenic-results'),
+  ('complete-retention', 'polygenic-results'),
+  ('derived-only', 'ancestry-regions'),
+  ('purpose-derived-only', 'ancestry-regions'),
+  ('adult-upload-revision-only', 'ancestry-regions'),
+  ('adult-draft-complete', 'ancestry-regions'),
+  ('cohort-draft-complete', 'ancestry-regions'),
+  ('cohort-prepublication-complete', 'ancestry-regions'),
+  ('complete-retention', 'ancestry-regions'),
+  ('derived-only', 'ancestry-results'),
+  ('purpose-derived-only', 'ancestry-results'),
+  ('adult-upload-revision-only', 'ancestry-results'),
+  ('adult-draft-complete', 'ancestry-results'),
+  ('cohort-draft-complete', 'ancestry-results'),
+  ('cohort-prepublication-complete', 'ancestry-results'),
+  ('complete-retention', 'ancestry-results'),
+  ('derived-only', 'embryo-scores'),
+  ('purpose-derived-only', 'embryo-scores'),
+  ('cohort-draft-complete', 'embryo-scores'),
+  ('cohort-prepublication-complete', 'embryo-scores'),
+  ('complete-retention', 'embryo-scores'),
+  ('derived-only', 'embryo-qc'),
+  ('cohort-draft-complete', 'embryo-qc'),
+  ('cohort-prepublication-complete', 'embryo-qc'),
+  ('complete-retention', 'embryo-qc'),
+  ('derived-only', 'embryo-figures'),
+  ('purpose-derived-only', 'embryo-figures'),
+  ('cohort-draft-complete', 'embryo-figures'),
+  ('cohort-prepublication-complete', 'embryo-figures'),
+  ('complete-retention', 'embryo-figures'),
+  ('derived-only', 'result-suppressions'),
+  ('purpose-derived-only', 'result-suppressions'),
+  ('adult-upload-revision-only', 'result-suppressions'),
+  ('cohort-draft-complete', 'result-suppressions'),
+  ('cohort-prepublication-complete', 'result-suppressions'),
+  ('complete-retention', 'result-suppressions'),
+  ('derived-only', 'generated-artifacts'),
+  ('purpose-derived-only', 'generated-artifacts'),
+  ('adult-upload-revision-only', 'generated-artifacts'),
+  ('adult-draft-complete', 'generated-artifacts'),
+  ('cohort-draft-complete', 'generated-artifacts'),
+  ('cohort-prepublication-complete', 'generated-artifacts'),
+  ('export-artifact-only', 'generated-artifacts'),
+  ('raw-export-only', 'generated-artifacts'),
+  ('complete-retention', 'generated-artifacts'),
+  ('derived-only', 'worker-and-model-working-state'),
+  ('purpose-derived-only', 'worker-and-model-working-state'),
+  ('adult-upload-revision-only', 'worker-and-model-working-state'),
+  ('adult-draft-complete', 'worker-and-model-working-state'),
+  ('cohort-draft-complete', 'worker-and-model-working-state'),
+  ('cohort-prepublication-complete', 'worker-and-model-working-state'),
+  ('complete-retention', 'worker-and-model-working-state'),
+  ('cloud-provider-payload-only', 'cloud-provider-working-state'),
+  ('complete-retention', 'cloud-provider-working-state'),
+  ('notice-contact-working', 'mail-token-and-rights-delivery-state'),
+  ('invitation-working', 'mail-token-and-rights-delivery-state'),
+  ('claim-working', 'mail-token-and-rights-delivery-state'),
+  ('review-working', 'mail-token-and-rights-delivery-state'),
+  ('adult-draft-complete', 'mail-token-and-rights-delivery-state'),
+  ('cohort-draft-complete', 'mail-token-and-rights-delivery-state'),
+  ('cohort-prepublication-complete', 'mail-token-and-rights-delivery-state'),
+  ('export-artifact-only', 'mail-token-and-rights-delivery-state'),
+  ('raw-export-only', 'mail-token-and-rights-delivery-state'),
+  ('complete-retention', 'mail-token-and-rights-delivery-state'),
+  ('claim-working', 'claim-review-working-packages'),
+  ('complete-retention', 'claim-review-working-packages'),
+  ('review-working', 'appeal-and-correction-working-packages'),
+  ('evidence-working', 'appeal-and-correction-working-packages'),
+  ('adult-draft-complete', 'appeal-and-correction-working-packages'),
+  ('cohort-draft-complete', 'appeal-and-correction-working-packages'),
+  ('cohort-prepublication-complete', 'appeal-and-correction-working-packages'),
+  ('complete-retention', 'appeal-and-correction-working-packages'),
+  ('source-only', 'variant-rows'),
+  ('adult-upload-revision-only', 'variant-rows'),
+  ('adult-draft-complete', 'variant-rows'),
+  ('cohort-draft-complete', 'variant-rows'),
+  ('cohort-prepublication-complete', 'variant-rows'),
+  ('complete-retention', 'variant-rows'),
+  ('evidence-working', 'legal-evidence-working-and-private-objects'),
+  ('invitation-working', 'legal-evidence-working-and-private-objects'),
+  ('claim-working', 'legal-evidence-working-and-private-objects'),
+  ('review-working', 'legal-evidence-working-and-private-objects'),
+  ('adult-draft-complete', 'legal-evidence-working-and-private-objects'),
+  ('cohort-draft-complete', 'legal-evidence-working-and-private-objects'),
+  ('cohort-prepublication-complete', 'legal-evidence-working-and-private-objects'),
+  ('complete-retention', 'legal-evidence-working-and-private-objects'),
+  ('upload-working', 'upload-and-ingest-working-state'),
+  ('adult-draft-complete', 'upload-and-ingest-working-state'),
+  ('cohort-draft-complete', 'upload-and-ingest-working-state'),
+  ('cohort-prepublication-complete', 'upload-and-ingest-working-state'),
+  ('complete-retention', 'upload-and-ingest-working-state'),
+  ('invitation-working', 'drafts-invitations-and-candidates'),
+  ('adult-draft-complete', 'drafts-invitations-and-candidates'),
+  ('cohort-draft-complete', 'drafts-invitations-and-candidates'),
+  ('cohort-prepublication-complete', 'drafts-invitations-and-candidates'),
+  ('complete-retention', 'drafts-invitations-and-candidates'),
+  ('notice-contact-working', 'contact-refusal-and-rate-limit-state'),
+  ('invitation-working', 'contact-refusal-and-rate-limit-state'),
+  ('adult-draft-complete', 'contact-refusal-and-rate-limit-state'),
+  ('cohort-draft-complete', 'contact-refusal-and-rate-limit-state'),
+  ('cohort-prepublication-complete', 'contact-refusal-and-rate-limit-state'),
+  ('claim-working', 'contact-refusal-and-rate-limit-state'),
+  ('review-working', 'contact-refusal-and-rate-limit-state'),
+  ('refusal-bar-only', 'contact-refusal-and-rate-limit-state'),
+  ('rate-limit-only', 'contact-refusal-and-rate-limit-state'),
+  ('complete-retention', 'contact-refusal-and-rate-limit-state'),
+  ('adult-draft-complete', 'subject-relationships'),
+  ('cohort-draft-complete', 'subject-relationships'),
+  ('cohort-prepublication-complete', 'subject-relationships'),
+  ('complete-retention', 'subject-relationships'),
+  ('proposal-working', 'disposition-proposals-and-transient-authority'),
+  ('cohort-draft-complete', 'disposition-proposals-and-transient-authority'),
+  ('cohort-prepublication-complete', 'disposition-proposals-and-transient-authority'),
+  ('complete-retention', 'disposition-proposals-and-transient-authority'),
+  ('identity-profile-only', 'future-person-identity-profiles'),
+  ('complete-retention', 'future-person-identity-profiles'),
+  ('cohort-draft-complete', 'record-key-authority'),
+  ('cohort-prepublication-complete', 'record-key-authority'),
+  ('complete-retention', 'record-key-authority'),
+  ('adult-draft-complete', 'subject-demographics'),
+  ('complete-retention', 'subject-demographics'),
+  ('complete-retention', 'account-model-and-provider-configuration'),
+  ('source-only', 'storage-objects'),
+  ('adult-upload-revision-only', 'storage-objects'),
+  ('upload-working', 'storage-objects'),
+  ('evidence-working', 'storage-objects'),
+  ('invitation-working', 'storage-objects'),
+  ('adult-draft-complete', 'storage-objects'),
+  ('cohort-draft-complete', 'storage-objects'),
+  ('cohort-prepublication-complete', 'storage-objects'),
+  ('claim-working', 'storage-objects'),
+  ('review-working', 'storage-objects'),
+  ('identity-profile-only', 'storage-objects'),
+  ('export-artifact-only', 'storage-objects'),
+  ('raw-export-only', 'storage-objects'),
+  ('derived-only', 'storage-objects'),
+  ('purpose-derived-only', 'storage-objects'),
+  ('complete-retention', 'storage-objects'),
+  ('source-only', 'genome-files'),
+  ('adult-upload-revision-only', 'genome-files'),
+  ('adult-draft-complete', 'genome-files'),
+  ('cohort-draft-complete', 'genome-files'),
+  ('cohort-prepublication-complete', 'genome-files'),
+  ('complete-retention', 'genome-files'),
+  ('cohort-draft-complete', 'embryo-projections'),
+  ('cohort-prepublication-complete', 'embryo-projections'),
+  ('complete-retention', 'embryo-projections'),
+  ('claimant-reverification-secrets-only', 'claimant-reverification-authority'),
+  ('complete-retention', 'claimant-reverification-authority'),
+  ('audit-link-only', 'audit-principal-link-key-envelope'),
+  ('complete-retention', 'audit-principal-link-key-envelope'),
+  ('audit-chain-retention-only', 'legal-audit-chain-retention'),
+  ('adult-draft-complete', 'subject-bound-authority-and-lifecycle-terminalization'),
+  ('cohort-draft-complete', 'subject-bound-authority-and-lifecycle-terminalization'),
+  ('cohort-prepublication-complete', 'subject-bound-authority-and-lifecycle-terminalization'),
+  ('complete-retention', 'subject-bound-authority-and-lifecycle-terminalization');
+
+create table public.retention_rows (
+  id uuid primary key default gen_random_uuid(),
+  retention_id text not null references public.retention_registry (retention_id) on delete restrict,
+  target_kind text not null check (target_kind in (
+    'account', 'subject', 'cohort', 'family_pair', 'file', 'upload_session',
+    'ingest_session', 'invitation', 'evidence', 'claim', 'appeal',
+    'correction', 'export', 'audit_prefix'
+  )),
+  target_id uuid not null,
+  retention_revision bigint not null check (retention_revision > 0),
+  target_lifecycle_revision bigint not null check (target_lifecycle_revision > 0),
+  disposition_revision bigint not null check (disposition_revision > 0),
+  fixed_deadline timestamptz not null,
+  state text not null default 'scheduled' check (state in (
+    'scheduled', 'active', 'superseded', 'cancelled', 'complete'
+  )),
+  created_at timestamptz not null default clock_timestamp(),
+  ended_at timestamptz,
+  unique (retention_id, target_kind, target_id, retention_revision),
+  check ((state in ('superseded', 'cancelled', 'complete')) = (ended_at is not null))
+);
+
+create index retention_rows_due_idx on public.retention_rows (state, fixed_deadline, id);
+
+create table public.retention_due_phases (
+  retention_row_id uuid not null references public.retention_rows (id) on delete restrict,
+  retention_id text not null,
+  phase_id text not null,
+  phase_kind text not null,
+  phase_revision bigint not null check (phase_revision > 0),
+  phase_deadline timestamptz not null,
+  target_kind text not null,
+  target_id uuid not null,
+  target_lifecycle_revision bigint not null check (target_lifecycle_revision > 0),
+  disposition_revision bigint not null check (disposition_revision > 0),
+  recipient_authority_kind text not null,
+  recipient_authority_revision bigint not null check (recipient_authority_revision > 0),
+  immutable_envelope jsonb not null default '{}'::jsonb,
+  status text not null default 'pending' check (status in (
+    'pending', 'claimed', 'retry', 'cancelled', 'succeeded', 'failed'
+  )),
+  claim_token_hash text check (claim_token_hash is null or claim_token_hash ~ '^[0-9a-f]{64}$'),
+  claim_expires_at timestamptz,
+  attempts smallint not null default 0 check (attempts between 0 and 20),
+  terminal_outcome_code text,
+  completed_at timestamptz,
+  primary key (retention_row_id, phase_id, phase_revision),
+  foreign key (retention_id, phase_id)
+    references public.retention_phase_registry (retention_id, phase_id) on delete restrict,
+  check (
+    (status = 'claimed') = (claim_token_hash is not null and claim_expires_at is not null)
+  ),
+  check (
+    (status in ('cancelled', 'succeeded', 'failed')) =
+    (terminal_outcome_code is not null and completed_at is not null)
+  )
+);
+
+create index retention_due_phases_claim_idx
+  on public.retention_due_phases (status, phase_deadline, retention_row_id, phase_id);
+
+create table public.purge_manifests (
+  id uuid primary key default gen_random_uuid(),
+  retention_row_id uuid not null references public.retention_rows (id) on delete restrict,
+  phase_id text not null,
+  phase_revision bigint not null,
+  manifest_class text not null references public.purge_manifest_classes (manifest_class) on delete restrict,
+  manifest_revision bigint not null check (manifest_revision > 0),
+  source_binding_fingerprint text not null check (source_binding_fingerprint ~ '^[0-9a-f]{64}$'),
+  state text not null default 'frozen' check (state in ('frozen', 'executing', 'complete', 'cancelled')),
+  created_at timestamptz not null default clock_timestamp(),
+  unique (retention_row_id, phase_id, phase_revision, manifest_revision),
+  foreign key (retention_row_id, phase_id, phase_revision)
+    references public.retention_due_phases (retention_row_id, phase_id, phase_revision) on delete restrict
+);
+
+create table public.purge_manifest_entries (
+  manifest_id uuid not null references public.purge_manifests (id) on delete cascade,
+  target_id text not null references public.purge_targets (target_id) on delete restrict,
+  store_name text not null,
+  row_key jsonb,
+  object_id uuid,
+  entry_revision bigint not null check (entry_revision > 0),
+  status text not null default 'pending' check (status in ('pending', 'deleted', 'missing', 'failed')),
+  primary key (manifest_id, target_id, store_name, entry_revision),
+  foreign key (target_id, store_name)
+    references public.purge_target_stores (target_id, store_name) on delete restrict,
+  check (num_nonnulls(row_key, object_id) = 1)
+);
+
+create or replace function private.claim_retention_phase_v1(
+  p_claim_token_hash text,
+  p_lease_seconds integer default 60
+)
+returns public.retention_due_phases
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_row public.retention_due_phases;
+begin
+  if p_claim_token_hash !~ '^[0-9a-f]{64}$' or p_lease_seconds not between 10 and 300 then
+    raise exception using errcode = '22023', message = 'invalid retention claim';
+  end if;
+  select * into v_row from public.retention_due_phases
+  where status in ('pending', 'retry') and phase_deadline <= clock_timestamp()
+  order by phase_deadline, retention_row_id, phase_id
+  for update skip locked limit 1;
+  if v_row.retention_row_id is null then return null; end if;
+  update public.retention_due_phases
+  set status = 'claimed', claim_token_hash = p_claim_token_hash,
+      claim_expires_at = clock_timestamp() + make_interval(secs => p_lease_seconds),
+      attempts = attempts + 1
+  where retention_row_id = v_row.retention_row_id
+    and phase_id = v_row.phase_id and phase_revision = v_row.phase_revision
+  returning * into v_row;
+  return v_row;
+end;
+$$;
+
+revoke all on function private.claim_retention_phase_v1(text, integer)
+  from public, anon, authenticated;
+grant execute on function private.claim_retention_phase_v1(text, integer) to service_role;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'retention_registry', 'retention_phase_registry', 'purge_manifest_classes',
+    'purge_targets', 'purge_target_stores', 'purge_manifest_class_targets',
+    'retention_rows', 'retention_due_phases', 'purge_manifests',
+    'purge_manifest_entries'
+  ] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('revoke all on table public.%I from anon, authenticated', t);
+    execute format('grant all on table public.%I to service_role', t);
+  end loop;
+end;
+$$;

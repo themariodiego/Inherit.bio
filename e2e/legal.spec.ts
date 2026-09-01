@@ -75,8 +75,8 @@ test("disclaimers appear on the report SURFACE, not only in ToS", async ({
     "vcf",
   );
 
-  await page.goto("/reports");
-  const firstReport = page.locator('a[href^="/reports/"]').first();
+  await page.goto("/genome/me/reports");
+  const firstReport = page.locator('a[href^="/genome/me/reports/"]').first();
   await firstReport.click();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
   await expect(page.getByTestId("report-disclaimer")).toContainText(

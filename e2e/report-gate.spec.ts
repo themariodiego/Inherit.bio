@@ -42,13 +42,13 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
 
   // The gated response itself (raw HTML, inline scripts included) carries no
   // result content at all.
-  const gatedRes = await page.request.get("/reports/apoe-e4-alzheimers-risk");
+  const gatedRes = await page.request.get("/genome/me/reports/apoe-e4-alzheimers-risk");
   expect(gatedRes.ok()).toBe(true);
   const gatedHtml = await gatedRes.text();
   expect(gatedHtml).not.toContain("Your genotype");
   expect(gatedHtml).not.toContain("does not cover this variant");
 
-  await page.goto("/reports/apoe-e4-alzheimers-risk");
+  await page.goto("/genome/me/reports/apoe-e4-alzheimers-risk");
 
   // Gate is up: interstitial visible, result/variant sections not rendered.
   const gate = page.getByTestId("sensitive-gate");
@@ -77,7 +77,7 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await page.waitForURL(/reveal=1/);
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
   await expect(
-    page.getByText(/Your file does not cover this variant/).first(),
+    page.getByText(/files do not cover this variant/).first(),
   ).toBeVisible();
 
   // Support pathway appears with the result.
@@ -94,10 +94,10 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   // The choice is remembered per user+category on this device: a later
   // visit WITHOUT ?reveal=1 reads storage and redirects itself to ?reveal=1
   // (a brief gate flash is fine).
-  await page.goto("/reports/apoe-e4-alzheimers-risk");
+  await page.goto("/genome/me/reports/apoe-e4-alzheimers-risk");
   await page.waitForURL(/reveal=1/);
   await expect(
-    page.getByText(/Your file does not cover this variant/).first(),
+    page.getByText(/files do not cover this variant/).first(),
   ).toBeVisible();
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
 });
@@ -108,11 +108,11 @@ test("'Not now' returns to the library at the report's category section", async 
   await signIn(page, USER.email, USER.password);
   // Fresh browser context per test → no remembered choice; use a different
   // sensitive category (cancer-risk) anyway to keep tests independent.
-  await page.goto(`/reports/${FGFR2_SLUG}`);
+  await page.goto(`/genome/me/reports/${FGFR2_SLUG}`);
   await expect(page.getByTestId("sensitive-gate")).toBeVisible();
   await expect(page.getByText("Your genotype")).toHaveCount(0);
   await page.getByRole("link", { name: "Not now" }).click();
-  await page.waitForURL(/\/reports#cancer-risk$/);
+  await page.waitForURL(/\/genome\/me\/reports#cancer-risk$/);
   await expect(page.locator("#cancer-risk")).toBeVisible();
 });
 
@@ -123,7 +123,7 @@ test("non-sensitive report shows its result directly, with no gate", async ({
   // CYP1A2 rs762551 is a real 0/1 call in the tiny fixture (A/C), and
   // lifestyle-wellness is not a gated category. (rs671 is 0/0 there — the
   // parser drops reference calls, so ALDH2 resolves not-covered.)
-  await page.goto("/reports/caffeine-metabolism-cyp1a2-rs762551");
+  await page.goto("/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551");
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
   await expect(page.getByText("Your genotype")).toBeVisible();
   await expect(page.getByText("A/C")).toBeVisible();
@@ -155,7 +155,7 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   // Raw served HTML of the gated page (page.request shares the signed-in
   // context's cookies). The genotype and its label must appear nowhere —
   // not in rendered markup, not in inline __next_f/RSC payload scripts.
-  const gatedRes = await page.request.get(`/reports/${FGFR2_SLUG}`);
+  const gatedRes = await page.request.get(`/genome/me/reports/${FGFR2_SLUG}`);
   expect(gatedRes.ok()).toBe(true);
   const gatedHtml = await gatedRes.text();
   expect(gatedHtml).not.toContain("Your genotype");
@@ -164,7 +164,7 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
 
   // The same URL with ?reveal=1 does serve the result.
   const revealedRes = await page.request.get(
-    `/reports/${FGFR2_SLUG}?reveal=1`,
+    `/genome/me/reports/${FGFR2_SLUG}?reveal=1`,
   );
   expect(revealedRes.ok()).toBe(true);
   const revealedHtml = await revealedRes.text();
@@ -174,7 +174,7 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
 
   // Cross-account regression: a choice stored for ANOTHER user id — or under
   // the old un-scoped device-global key — must not un-gate this account.
-  await page.goto(`/reports/${FGFR2_SLUG}`);
+  await page.goto(`/genome/me/reports/${FGFR2_SLUG}`);
   await page.evaluate(() => {
     window.localStorage.setItem(
       "inherit.sensitive-reveal.cancer-risk", // legacy device-global key
@@ -214,7 +214,7 @@ test("blocked localStorage: gate still shows and reveal still works — only the
     });
   });
 
-  await page.goto(`/reports/${FGFR2_SLUG}`);
+  await page.goto(`/genome/me/reports/${FGFR2_SLUG}`);
   await expect(page.getByTestId("sensitive-gate")).toBeVisible();
 
   // The reveal is server-side (?reveal=1), so it works without storage.
@@ -225,7 +225,7 @@ test("blocked localStorage: gate still shows and reveal still works — only the
 
   // No memory could be written: the next plain visit is gated again (and
   // stays gated — no redirect).
-  await page.goto(`/reports/${FGFR2_SLUG}`);
+  await page.goto(`/genome/me/reports/${FGFR2_SLUG}`);
   await expect(page.getByTestId("sensitive-gate")).toBeVisible();
   await page.waitForTimeout(1000);
   expect(page.url()).not.toContain("reveal=1");

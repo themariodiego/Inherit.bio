@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendResearchDigest } from "@/lib/email";
+import { enqueueAccountMail } from "@/lib/mail-outbox";
 
 export const maxDuration = 300;
 
@@ -40,37 +40,59 @@ export async function POST(request: Request) {
     });
   }
 
-  await admin.from("changelog_entries").insert({
-    title: `New report: ${template.title}`,
-    body: template.summary,
-    template_slug: template.slug,
-  });
+  const { data: changelog, error: changelogError } = await admin
+    .from("changelog_entries")
+    .insert({
+      title: `New report: ${template.title}`,
+      body: template.summary,
+      template_slug: template.slug,
+    })
+    .select("id")
+    .single();
+  if (changelogError || !changelog) {
+    return NextResponse.json({ error: "publish_incomplete" }, { status: 503 });
+  }
 
   // Digest to opted-in users.
   const { data: optIns } = await admin
     .from("profiles")
     .select("id")
     .eq("digest_opt_in", true);
-  let sent = 0;
+  let queued = 0;
   if (optIns && optIns.length > 0) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     for (const p of optIns) {
       const { data: userData } = await admin.auth.admin.getUserById(p.id);
       const email = userData?.user?.email;
       if (!email) continue;
-      const ok = await sendResearchDigest(email, {
-        entries: [
-          {
-            title: template.title,
-            summary: template.summary,
-            url: `${siteUrl}/reports/${template.slug}`,
+      try {
+        await enqueueAccountMail({
+          accountId: p.id,
+          email,
+          mail: {
+            id: "research-digest",
+            payload: {
+              entries: [
+                {
+                  title: template.title,
+                  summary: template.summary,
+                  url: `${siteUrl}/genome/me/reports/${template.slug}`,
+                },
+              ],
+              manageUrl: `${siteUrl}/settings`,
+            },
           },
-        ],
-        manageUrl: `${siteUrl}/settings`,
-      });
-      if (ok) sent++;
+          purpose: "research.digest",
+          targetKind: "changelog_entry",
+          targetId: changelog.id,
+          semanticKey: `research:${template.slug}:${p.id}`,
+        });
+        queued++;
+      } catch {
+        console.error("[mail] research-digest enqueue failed");
+      }
     }
   }
 
-  return NextResponse.json({ published: true, slug, digest_sent: sent });
+  return NextResponse.json({ published: true, slug, digest_queued: queued });
 }

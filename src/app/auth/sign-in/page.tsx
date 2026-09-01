@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 function SignInInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/dashboard";
+  const next = params.get("next") ?? "/overview";
 
   return (
     <div className="space-y-5">

@@ -53,7 +53,7 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   // rs6062496 is a common chr20 SNV present in HG001's benchmark set;
   // search by position window instead of hardcoding a genotype: query a
   // known locus and assert rows + browser render.
-  await page.goto("/browse?q=chr20:1000000-1100000");
+  await page.goto("/genome/me/data/browser?q=chr20:1000000-1100000");
   const table = page.locator("table");
   await expect(table).toBeVisible();
   const rows = table.locator("tbody tr");
@@ -75,7 +75,7 @@ test("variant search by rsID returns genotype; genome browser displays variants 
     .first()
     .textContent();
   if (firstRsid && firstRsid.startsWith("rs")) {
-    await page.goto(`/browse?q=${firstRsid.trim()}`);
+    await page.goto(`/genome/me/data/browser?q=${firstRsid.trim()}`);
     await expect(page.locator("table tbody tr").first()).toBeVisible();
     await expect(
       page.locator("table tbody tr").first().getByText(/^[ACGT](\/[ACGT])?$/),
@@ -90,7 +90,7 @@ test("gene search joins reference annotations with user genotypes", async ({
   // A gene on chr20-22 covered by templates (seeded ref_variants); ADA is
   // chr20. If the reference store lacks it, the page must say so honestly
   // rather than render junk.
-  await page.goto("/browse?q=PRODH"); // chr22 gene used by template seeds
+  await page.goto("/genome/me/data/browser?q=PRODH"); // chr22 gene used by template seeds
   const outcome = page
     .locator("table tbody tr")
     .first()

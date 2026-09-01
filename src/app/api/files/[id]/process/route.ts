@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { sendReportReady } from "@/lib/email";
 import { estimateAdmixture } from "@/lib/genome/admixture";
 import { classify } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
@@ -11,6 +10,7 @@ import { ALL_PRS_SCORES } from "@/lib/genome/prs-data";
 import { toLines } from "@/lib/genome/parsers/lines";
 import { parseVcf } from "@/lib/genome/parsers/vcf";
 import type { ParseResult, VariantRecord } from "@/lib/genome/types";
+import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,11 +50,15 @@ export async function POST(
       status: 400,
     });
   }
-  // Defense in depth: the object is fetched below with the service-role key,
-  // which bypasses storage RLS. bucket_path is client-set, so refuse any path
-  // not under this user's own prefix — otherwise a user could point their row
-  // at another user's object and have its variants loaded into their account.
-  if (!file.bucket_path.startsWith(`${user.id}/`)) {
+  if (!file.subject_id) {
+    return new Response("File subject binding is unavailable", { status: 409 });
+  }
+  // New objects have server-issued UUID names. Retain the user-prefix form for
+  // pre-v2 rows; clients can no longer insert or mutate genome_files directly.
+  const serverIssuedPath = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+    file.bucket_path,
+  );
+  if (!serverIssuedPath && !file.bucket_path.startsWith(`${user.id}/`)) {
     return new Response("Invalid file path", { status: 400 });
   }
 
@@ -117,6 +121,7 @@ export async function POST(
     for (let i = 0; i < records.length; i += BATCH) {
       const rows = records.slice(i, i + BATCH).map((r) => ({
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         rsid: r.rsid,
         chrom: r.chrom,
@@ -148,6 +153,7 @@ export async function POST(
     if (admix) {
       ancestryRows.push({
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         kind: "admixture",
         result: admix as never,
@@ -159,6 +165,7 @@ export async function POST(
     const mt = hasMt ? classify("mtDNA", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
+      subject_id: file.subject_id,
       file_id: id,
       kind: "mtdna",
       result: (mt ?? { haplogroup: null }) as never,
@@ -171,6 +178,7 @@ export async function POST(
     const y = hasY ? classify("Y", getBase) : null;
     ancestryRows.push({
       user_id: user.id,
+      subject_id: file.subject_id,
       file_id: id,
       kind: "ydna",
       result: (y ?? { haplogroup: null }) as never,
@@ -198,6 +206,7 @@ export async function POST(
       const result = computePrs(prsLookup, score);
       return {
         user_id: user.id,
+        subject_id: file.subject_id,
         file_id: id,
         pgs_id: score.pgs_id,
         raw_score: result.raw,
@@ -229,11 +238,25 @@ export async function POST(
       .select("slug", { count: "exact", head: true })
       .eq("status", "published");
     if (user.email) {
-      await sendReportReady(user.email, {
-        fileName: file.original_name,
-        reportCount: templateCount ?? 0,
-        dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/reports`,
-      });
+      try {
+        await enqueueAccountMail({
+          accountId: user.id,
+          email: user.email,
+          mail: {
+            id: "report-ready",
+            payload: {
+              reportCount: templateCount ?? 0,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/genome/me/reports`,
+            },
+          },
+          purpose: "report.ready",
+          targetKind: "genome_file",
+          targetId: file.id,
+          semanticKey: `annotated:${file.id}`,
+        });
+      } catch {
+        console.error("[mail] report-ready enqueue failed");
+      }
     }
 
     return NextResponse.json({

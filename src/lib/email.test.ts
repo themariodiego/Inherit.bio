@@ -12,7 +12,6 @@ describe("send helpers without RESEND_API_KEY", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const sentReport = await sendReportReady("user@example.test", {
-      fileName: "a.vcf",
       reportCount: 3,
       dashboardUrl: "https://example.test/d",
     });

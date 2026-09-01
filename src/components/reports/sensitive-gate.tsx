@@ -33,6 +33,7 @@ export function SensitiveGate({
   category,
   categoryLabel,
   revealHref,
+  returnHref,
 }: {
   userId: string;
   category: string;
@@ -40,6 +41,8 @@ export function SensitiveGate({
   categoryLabel: string;
   /** This report's URL with ?reveal=1 (and any file selection preserved). */
   revealHref: string;
+  /** Subject-scoped report library URL. */
+  returnHref: string;
 }) {
   const router = useRouter();
 
@@ -98,7 +101,7 @@ export function SensitiveGate({
           </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href={`/reports#${category}`}>Not now</Link>
+          <Link href={`${returnHref}#${category}`}>Not now</Link>
         </Button>
       </div>
       <p className="mt-4 text-xs text-ink-muted">

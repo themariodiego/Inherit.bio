@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 // Re-download of an original upload via a short-lived signed URL.
 // RLS-scoped row read proves ownership; the signed URL is created with the
-// user's own session (storage RLS applies).
+// service role only after the RLS-scoped file read proves ownership.
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/api/files/[id]/download">,
@@ -22,7 +23,7 @@ export async function GET(
     .maybeSingle();
   if (!file) return new Response("Not found", { status: 404 });
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await createAdminClient().storage
     .from("genomes")
     .createSignedUrl(file.bucket_path, 300, {
       download: file.original_name,

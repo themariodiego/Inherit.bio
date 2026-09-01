@@ -31,3 +31,17 @@ export function decryptSecret(blob: Buffer): string {
     "utf8",
   );
 }
+
+/**
+ * Produce a keyed, context-separated digest for values that must be matched
+ * without being stored in plaintext. The context derives a distinct sub-key
+ * from the deployment encryption key, so ciphertext encryption and indexes do
+ * not reuse the same key material directly.
+ */
+export function hmacSecret(value: string, context: string): string {
+  const subKey = crypto
+    .createHmac("sha256", dataKey())
+    .update(context, "utf8")
+    .digest();
+  return crypto.createHmac("sha256", subKey).update(value, "utf8").digest("hex");
+}

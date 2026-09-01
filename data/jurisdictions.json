@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 3,
+  "accessedAt": "2026-08-31",
+  "determination": {
+    "method": "user-declared",
+    "field": "profiles.jurisdiction",
+    "allowsInference": false,
+    "allowedFormats": [
+      "ISO 3166-1 alpha-2",
+      "ISO 3166-2 only when the exact normalized subdivision is a committed realJurisdictions key"
+    ],
+    "resolutionGrammar": {
+      "normalization": "trim and uppercase before validation; persist only the normalized code",
+      "country": "exactly two ASCII letters and present in realJurisdictionCatalog.codes",
+      "subdivision": "country prefix, hyphen, and one to three uppercase ASCII letters or digits; the country prefix must be in realJurisdictionCatalog.codes and the full normalized subdivision code must be an exact committed key in realJurisdictions with displayName and an explicit decision for every capability. The entry may remain fail-closed with every status unreviewed and every review null; each permitted or prohibited decision requires its own exact signedReviewContract reference.",
+      "lookupOrder": ["for a committed subdivision, use its exact capability decision; a missing subdivision capability is invalid and never inherits a country decision", "for an alpha-2 country, use its exact realJurisdictions capability override when present", "otherwise use the defaultRealJurisdiction capability"],
+      "testPseudoValue": "TEST-LOCAL is handled only by productionPolicy and testJurisdictions, never by the real-code grammar",
+      "unknownOrMalformed": "reject the write, including every syntactically valid but unregistered subdivision; never silently coerce, infer, or select a nearby jurisdiction"
+    },
+    "countryCodeSource": {
+      "title": "ISO 3166 — Country codes",
+      "url": "https://www.iso.org/iso-3166-country-codes.html",
+      "standard": "ISO 3166-1:2020, as maintained by the ISO 3166 Maintenance Agency"
+    }
+  },
+  "realJurisdictionCatalog": {
+    "snapshotAccessedOn": "2026-08-31",
+    "displayNameRule": "Render the current locale country display name for each committed alpha-2 code. A subdivision renders only the committed displayName on its exact realJurisdictions entry. Persist and resolve only the normalized code.",
+    "statusRule": "Resolve each capability independently under determination.resolutionGrammar.lookupOrder. A committed subdivision is a complete, authoritative capability entry and never inherits a country decision; an alpha-2 country may use an exact country override and otherwise defaults to defaultRealJurisdiction. A jurisdiction-wide status does not exist.",
+    "codes": [
+      "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ",
+      "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ",
+      "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ",
+      "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR",
+      "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY",
+      "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT",
+      "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ",
+      "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ",
+      "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY",
+      "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ",
+      "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ",
+      "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"
+    ]
+  },
+  "signedReviewContract": {
+    "appliesTo": "Every permitted or prohibited capability decision under realJurisdictions, including every alpha-2 country and every committed subdivision; it never applies to TEST-LOCAL or the adult_self_analysis exemption.",
+    "reviewField": "For each realJurisdictions capability decision to which this contract applies, review is null only for status unreviewed and is the exact reference object defined here for status permitted or prohibited. No string, array, partial object or additional field is accepted.",
+    "referenceObject": {
+      "requiredFields": ["path", "reviewer", "qualification", "jurisdiction", "capability", "scope", "status", "reviewedOn", "gitSha", "outcome"],
+      "additionalFields": "reject",
+      "pathTemplate": "docs/reviews/jurisdictions/{jurisdiction}/{capability}.md",
+      "pathPattern": "^docs/reviews/jurisdictions/[A-Z]{2}(?:-[A-Z0-9]{1,3})?/[a-z][a-z0-9_]*\\.md$",
+      "scopeTemplate": "/realJurisdictions/{jurisdiction}/capabilities/{capability}",
+      "fieldRules": {
+        "path": "must equal pathTemplate after literal substitution; repository-relative POSIX path only, with no dot segment, symlink, glob, percent encoding or case folding",
+        "reviewer": "non-empty trimmed string naming the consenting human reviewer; CI checks presence and exact record equality but must not infer identity or qualification",
+        "qualification": "non-empty trimmed string stating the reviewer's relevant professional qualification; CI checks presence and exact record equality only",
+        "jurisdiction": "must exactly equal the containing realJurisdictions key",
+        "capability": "must exactly equal the containing capability key and be present in top-level capabilities",
+        "scope": "must exactly equal scopeTemplate after literal jurisdiction and capability substitution",
+        "status": "must be permitted or prohibited and exactly equal the containing capability decision status",
+        "reviewedOn": "strict Gregorian YYYY-MM-DD string and exactly equal the signed record reviewedOn",
+        "gitSha": "must match ^[0-9a-f]{40}$ and exactly equal the signed record gitSha",
+        "outcome": "must be the exact string approved"
+      }
+    },
+    "markdownRecord": {
+      "format": "UTF-8 Markdown with LF line endings and leading YAML front matter; every front-matter value is a string",
+      "frontMatterFields": ["path", "reviewer", "qualification", "jurisdiction", "capability", "scope", "status", "reviewedOn", "gitSha", "outcome"],
+      "frontMatterAdditionalFields": "reject",
+      "fieldEquality": "Every front-matter field must exactly equal the same-named review reference field after parsing; Unicode normalization, trimming and case folding are forbidden.",
+      "signature": "The final non-blank Markdown line must exactly equal Signed-off-by: {reviewer}; CI verifies this structural sign-off but makes no claim about substantive qualification or independence."
+    },
+    "referentialValidation": [
+      "compute path and scope from the containing realJurisdictions key and capability; never trust the reference values as lookup input",
+      "require path to be a tracked regular file in the candidate tree, reject symlinks, and require its resolved path to remain under docs/reviews/jurisdictions/",
+      "parse the leading YAML front matter once with duplicate keys and aliases disabled, require exactly markdownRecord.frontMatterFields, then compare every value and the final signature line exactly",
+      "resolve gitSha to one commit, require the full SHA to name an ancestor of the candidate commit, and reject abbreviated, missing, tree, blob or non-ancestor objects",
+      "read data/jurisdictions.json from gitSha, resolve scope as an RFC 6901 JSON Pointer, and require it to exist",
+      "deep-compare the reviewed decision at gitSha with the candidate decision after removing only the review member from both objects; canonicalize object keys for comparison but preserve array order and string bytes",
+      "require reference status to match both reviewed and candidate decision status; on any mismatch, missing record, parse ambiguity or failed comparison the runtime resolver treats the capability as unreviewed and the build or release gate fails if the candidate entry says permitted or prohibited"
+    ]
+  },
+  "freshnessContract": {
+    "asOfDate": "The gate receives and echoes one explicit UTC Gregorian YYYY-MM-DD date for the release run; it must not use file mtimes or locale-dependent parsing.",
+    "dateSyntax": "strict Gregorian YYYY-MM-DD; invalid or future dates fail",
+    "accessDatePaths": ["/accessedAt", "/realJurisdictionCatalog/snapshotAccessedOn", "/unrestrictedCapabilities/*/accessedOn", "/defaultRealJurisdiction/capabilities/*/accessedOn", "/realJurisdictions/*/capabilities/*/accessedOn", "/testJurisdictions/*/capabilities/*/accessedOn"],
+    "reviewDatePath": "every non-null capability decision review.reviewedOn",
+    "ageCalculation": "For every matched access date and review date independently, subtract its UTC midnight from asOfDate UTC midnight and take the integer number of elapsed 24-hour days; the oldest date controls the highest severity.",
+    "warnAfterDays": 300,
+    "failAboveDays": 365,
+    "boundaries": "0 through 300 days pass; 301 through 365 days warn; 366 days or more fail. Missing, malformed or future dates fail.",
+    "reviewAndAccessRule": "A non-null review does not refresh or replace accessedOn: both accessedOn and reviewedOn are evaluated, and either can warn or fail."
+  },
+  "statusValues": [
+    "permitted",
+    "prohibited",
+    "unreviewed"
+  ],
+  "capabilities": [
+    "third_party_adult_analysis",
+    "family_heritability",
+    "family_portrait",
+    "family_portrait_abo",
+    "family_portrait_rh",
+    "family_portrait_red_hair",
+    "family_portrait_lactase_persistence",
+    "family_portrait_earwax",
+    "embryo_analysis",
+    "embryo_single_locus",
+    "embryo_statistical_estimate",
+    "carrier_match"
+  ],
+  "unrestrictedCapabilities": {
+    "adult_self_analysis": {
+      "status": "permitted",
+      "governingInstruments": ["Inherit specification X12.3 — jurisdiction exemption; not legal authority"],
+      "accessedOn": "2026-08-31",
+      "review": null,
+      "reason": "X12.3 expressly permits My Genome to ship without a jurisdiction review; the matrix governs restricted Family, Portrait, embryo and carrier-match capabilities.",
+      "userFacingCopy": "My Genome is available without a jurisdiction-specific Family or embryo review."
+    }
+  },
+  "defaultRealJurisdiction": {
+    "capabilities": {
+      "third_party_adult_analysis": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_heritability": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait_abo": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait_rh": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait_red_hair": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait_lactase_persistence": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "family_portrait_earwax": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "embryo_analysis": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "embryo_single_locus": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "embryo_statistical_estimate": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."},
+      "carrier_match": {"status":"unreviewed","governingInstruments":["Inherit specification G5.5 and X12.3 — withheld pending signed jurisdiction-specific review; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"No signed jurisdiction-specific review has determined this capability.","userFacingCopy":"This part of Inherit is not available here because its legal review is not complete."}
+    }
+  },
+  "realJurisdictions": {},
+  "testJurisdictions": {
+    "TEST-LOCAL": {
+      "reserved": true,
+      "productionAllowed": false,
+      "selectableWhen": "runtime-environment-is-test and INHERIT_TEST_JURISDICTION=1",
+      "capabilities": {
+        "third_party_adult_analysis": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_heritability": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait_abo": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait_rh": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait_red_hair": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait_lactase_persistence": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "family_portrait_earwax": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "embryo_analysis": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "embryo_single_locus": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "embryo_statistical_estimate": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."},
+        "carrier_match": {"status":"permitted","governingInstruments":["Inherit specification X12.3 — internal acceptance-fixture basis; not legal authority"],"accessedOn":"2026-08-31","review":null,"reason":"X12.3 enables restricted capabilities only in the isolated TEST-LOCAL acceptance environment.","userFacingCopy":"This capability is enabled only for the TEST-LOCAL acceptance fixture."}
+      }
+    }
+  },
+  "productionPolicy": {
+    "refuseStartWhenTestJurisdictionEnabled": true,
+    "hideTestJurisdictions": true,
+    "testPseudoJurisdictionValues": ["TEST-LOCAL"],
+    "persistedTestPseudoValueWrite": "reject",
+    "persistedTestPseudoValueRead": "reject-and-record-configuration-error",
+    "refuseStartWhenPersistedTestPseudoValueExistsIn": ["profiles.jurisdiction", "subject_consents.jurisdiction"],
+    "missingCapabilityStatus": "unreviewed",
+    "missingJurisdictionStatus": "unreviewed",
+    "requireSignedReviewForRealPermittedStatus": true,
+    "requireSignedReviewForRealProhibitedStatus": true,
+    "realOverrideRequiredFields": ["capabilities"],
+    "realSubdivisionOverrideRequiredFields": ["displayName", "capabilities"],
+    "realSubdivisionCapabilityCoverage": "capabilities must contain exactly every key in top-level capabilities; an omitted or unknown key is invalid and never falls through to the alpha-2 country",
+    "realSubdivisionWithoutSignedReview": "allowed only when every capability status is unreviewed and every review is null; this committed entry remains fail-closed",
+    "realSubdivisionPermittedOrProhibitedDecision": "each such capability requires its own exact signedReviewContract reference whose jurisdiction is the full subdivision code and whose capability, scope and status match that decision",
+    "capabilityDecisionRequiredFields": ["status", "governingInstruments", "accessedOn", "review", "reason", "userFacingCopy"],
+    "realPermittedOrProhibitedDecision": "requires nonempty governingInstruments and an exact signedReviewContract reference",
+    "realUnreviewedDecision": "requires-a-non-legal-withholding-basis-citation-and-null-review",
+    "unknownDecisionFieldOrStatus": "reject"
+  }
+}

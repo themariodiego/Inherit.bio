@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
-import { createClient } from "@/lib/supabase/client";
 
 export function ConsentList({
   grants,
@@ -53,11 +52,7 @@ export function ConsentList({
               size="sm"
               data-testid={`revoke-${g.provider_key}`}
               onClick={async () => {
-                const supabase = createClient();
-                await supabase
-                  .from("consent_grants")
-                  .update({ revoked_at: new Date().toISOString() })
-                  .eq("id", g.id);
+                await fetch(`/api/consents/${g.id}/revoke`, { method: "POST" });
                 router.refresh();
               }}
             >

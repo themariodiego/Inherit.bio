@@ -5,7 +5,10 @@ import { adminClient, clearMailbox, latestEmailTo } from "./helpers";
 // session; password reset → new password works. Emails are captured by the
 // local stack's Mailpit (production uses Resend SMTP; same templates).
 
-const USER = { email: "authflow@e2e.local", password: "e2e-auth-pw-1" };
+const USER = {
+  email: `authflow-${Date.now()}@e2e.local`,
+  password: "e2e-auth-pw-1",
+};
 
 test.describe.configure({ mode: "serial" });
 
@@ -32,7 +35,7 @@ test("sign-up sends a verification email; the link yields a signed-in session", 
   expect(link, "verification link must be present").toBeTruthy();
 
   await page.goto(link!.replace(/&amp;/g, "&"));
-  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+  await page.waitForURL(/\/(?:dashboard|overview)/, { timeout: 30_000 });
   await expect(page.getByText(USER.email)).toBeVisible();
 });
 
@@ -53,7 +56,7 @@ test("password reset flow works end-to-end", async ({ page }) => {
   const newPassword = "e2e-auth-pw-2";
   await page.getByLabel("New password").fill(newPassword);
   await page.getByRole("button", { name: "Update password" }).click();
-  await page.waitForURL(/\/dashboard/);
+  await page.waitForURL(/\/(?:dashboard|overview)/);
 
   // The new password signs in from a fresh context.
   await page.request.post("/auth/sign-out");
@@ -61,5 +64,5 @@ test("password reset flow works end-to-end", async ({ page }) => {
   await page.getByLabel("Email").fill(USER.email);
   await page.getByLabel("Password").fill(newPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/dashboard/);
+  await page.waitForURL(/\/(?:dashboard|overview)/);
 });

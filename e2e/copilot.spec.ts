@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 import { startMockLlm } from "./mock-llm";
 
 // A9 — copilot: local-mode instructions with no provider; the consent
@@ -16,7 +16,8 @@ import { startMockLlm } from "./mock-llm";
 
 const USER = { email: "copilot@e2e.local", password: "e2e-copilot-pw" };
 const MOCK_PORT = 8123;
-const MOCK_BASE = `http://mock-llm.test:${MOCK_PORT}/v1`;
+const MOCK_HOST = "localhost.localdomain";
+const MOCK_BASE = `http://${MOCK_HOST}:${MOCK_PORT}/v1`;
 
 let stopMock: (() => Promise<void>) | null = null;
 
@@ -24,7 +25,12 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   stopMock = await startMockLlm(MOCK_PORT);
-  await createConfirmedUser(USER.email, USER.password);
+  const userId = await createConfirmedUser(USER.email, USER.password);
+  const admin = adminClient();
+  await admin.from("llm_keys").delete().eq("user_id", userId);
+  await admin.from("llm_settings").delete().eq("user_id", userId);
+  await admin.from("subject_consents").delete().eq("account_id", userId).eq("consent_type", "cloud_model");
+  await admin.from("consent_grants").delete().eq("user_id", userId);
 });
 
 test.afterAll(async () => {
@@ -71,7 +77,7 @@ test("cloud provider requires a consent dialog naming provider and data classes;
 
   // Configure the mock as an OpenAI-compatible CLOUD endpoint. The form
   // defaults to Anthropic for fresh users, so pick the provider first.
-  await page.goto("/settings");
+  await page.goto("/settings/copilot");
   await page.getByLabel("Provider", { exact: true }).click();
   await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
   await page.getByLabel("Base URL").fill(MOCK_BASE);
@@ -97,7 +103,7 @@ test("cloud provider requires a consent dialog naming provider and data classes;
 
   // The dialog names the provider host and the exact data classes.
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toContainText(`mock-llm.test:${MOCK_PORT}`);
+  await expect(dialog).toContainText(`${MOCK_HOST}:${MOCK_PORT}`);
   await expect(dialog).toContainText("Individual genotypes you ask about");
   await expect(dialog).toContainText("Polygenic score results");
   await expect(dialog).toContainText("Your chat messages");
@@ -119,8 +125,8 @@ test("cloud provider requires a consent dialog naming provider and data classes;
   await expect(page.getByText(/your genotype is A\/C/)).toBeVisible();
 
   // Revoke in Settings → next request requires consent again.
-  await page.goto("/settings");
-  await page.getByTestId(`revoke-mock-llm.test:${MOCK_PORT}`).click();
+  await page.goto("/settings/consents");
+  await page.getByTestId(`revoke-${MOCK_HOST}:${MOCK_PORT}`).click();
   await expect(page.getByText(/revoked \d/)).toBeVisible();
 
   await page.goto("/chat");

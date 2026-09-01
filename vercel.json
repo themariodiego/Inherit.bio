@@ -7,6 +7,10 @@
     {
       "path": "/api/jobs/annotation-refresh",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/jobs/mail",
+      "schedule": "* * * * *"
     }
   ]
 }

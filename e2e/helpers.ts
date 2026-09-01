@@ -31,7 +31,14 @@ export async function createConfirmedUser(
   // Idempotent: remove any leftover user with this email first.
   const { data: list } = await admin.auth.admin.listUsers();
   const existing = list?.users.find((u) => u.email === email);
-  if (existing) await admin.auth.admin.deleteUser(existing.id);
+  if (existing) {
+    const { error } = await admin.auth.admin.updateUserById(existing.id, {
+      password,
+      email_confirm: true,
+    });
+    if (error) throw new Error(`updateUser: ${error.message}`);
+    return existing.id;
+  }
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
@@ -47,7 +54,7 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/dashboard/);
+  await page.waitForURL(/\/(?:dashboard|overview)/);
 }
 
 interface MailpitMessage {
@@ -107,35 +114,47 @@ export async function ingestFileAs(
     password,
   });
   if (error || !session.session) throw new Error(`sign-in: ${error?.message}`);
-  const userId = session.session.user.id;
-
   const fs = await import("node:fs");
+  const nodeCrypto = await import("node:crypto");
   const path = await import("node:path");
   const bytes = fs.readFileSync(filePath);
-  const objectName = `${userId}/${crypto.randomUUID()}/${path.basename(filePath)}`;
+  const sha256 = nodeCrypto.createHash("sha256").update(bytes).digest("hex");
+  const issue = await page.request.post("/api/files/upload-session", {
+    data: {
+      originalName: path.basename(filePath),
+      fileType,
+      sizeBytes: bytes.length,
+      sha256,
+      contentType: "application/octet-stream",
+    },
+  });
+  if (!issue.ok()) throw new Error(`issue: ${issue.status()} ${await issue.text()}`);
+  const issued = (await issue.json()) as {
+    uploadId: string;
+    bucketName: string;
+    objectName: string;
+    tier: 1 | 2;
+  };
   const { error: upErr } = await client.storage
-    .from("genomes")
-    .upload(objectName, bytes, { contentType: "application/octet-stream" });
+    .from(issued.bucketName)
+    .upload(issued.objectName, bytes, { contentType: "application/octet-stream" });
   if (upErr) throw new Error(`upload: ${upErr.message}`);
 
-  const { data: row, error: rowErr } = await client
-    .from("genome_files")
-    .insert({
-      user_id: userId,
-      bucket_path: objectName,
-      original_name: path.basename(filePath),
-      file_type: fileType,
-      tier: 1,
-      size_bytes: bytes.length,
-      status: "uploaded",
-    })
-    .select("id")
-    .single();
-  if (rowErr || !row) throw new Error(`row: ${rowErr?.message}`);
+  const complete = await page.request.post(`/api/files/${issued.uploadId}/finalize`, {
+    data: {
+      originalName: path.basename(filePath),
+      fileType,
+      tier: issued.tier,
+    },
+  });
+  if (!complete.ok()) {
+    throw new Error(`complete: ${complete.status()} ${await complete.text()}`);
+  }
+  const { fileId } = (await complete.json()) as { fileId: string };
 
-  const res = await page.request.post(`/api/files/${row.id}/process`);
+  const res = await page.request.post(`/api/files/${fileId}/process`);
   if (!res.ok()) {
     throw new Error(`process: ${res.status()} ${await res.text()}`);
   }
-  return row.id as string;
+  return fileId;
 }

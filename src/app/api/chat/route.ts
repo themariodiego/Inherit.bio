@@ -12,14 +12,15 @@ import { z } from "zod";
 import { decryptSecret } from "@/lib/crypto";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
-  getActiveFile,
-  getGenotypesByRsid,
   getPublishedTemplates,
+  getSubjectGenotypesByRsid,
+  getSubjectProcessedFiles,
   templateRsids,
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { parseRsid } from "@/lib/genome/types";
 import { isLocalBaseUrl, providerKeyFor, ssrfReasonForBaseUrl } from "@/lib/llm";
+import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,8 +44,13 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     messages: UIMessage[];
-    fileId?: string;
   };
+  const scopeSegment = new URL(request.url).searchParams.get("scope") ?? "me";
+  const subject = await resolveSubjectForAccount(user.id, scopeSegment);
+  if (!subject) {
+    return NextResponse.json({ error: "scope_not_found" }, { status: 404 });
+  }
+  const admin = createAdminClient();
 
   const { data: settings } = await supabase
     .from("llm_settings")
@@ -61,7 +67,18 @@ export async function POST(request: Request) {
   const local =
     settings.provider === "openai_compatible" &&
     settings.base_url != null &&
-    isLocalBaseUrl(settings.base_url);
+      isLocalBaseUrl(settings.base_url);
+
+  if (subject.subjectClass !== "self" && !local) {
+    return NextResponse.json(
+      {
+        error: "local_model_required",
+        message:
+          "For anyone's genome but your own, Copilot only runs on a model you host yourself. Nothing leaves Inherit.",
+      },
+      { status: 403 },
+    );
+  }
 
   // Consent gate: genome-derived data may not leave for a CLOUD provider
   // without a stored, unrevoked grant naming that provider.
@@ -86,7 +103,6 @@ export async function POST(request: Request) {
 
   // Decrypt the BYOK key server-side (service role; table has no client grants).
   let apiKey: string | undefined;
-  const admin = createAdminClient();
   const { data: keyRow } = await admin
     .from("llm_keys")
     .select("encrypted_key")
@@ -127,10 +143,10 @@ export async function POST(request: Request) {
           apiKey: apiKey ?? "sequence-local",
         })(settings.model);
 
-  const activeFile = await getActiveFile(supabase, body.fileId);
-  const fileNote = activeFile
-    ? `The user's active processed file is "${activeFile.original_name}" (${activeFile.variant_count?.toLocaleString()} variants).`
-    : "The user has no processed genome file yet; tools will return empty results. Help them understand what Inherit can do and how to upload data.";
+  const files = await getSubjectProcessedFiles(admin, subject.id);
+  const fileNote = files.length > 0
+    ? `The resolved subject is "${subject.displayLabel}". Combine ${files.length} processed files; if files disagree at a position, return no genotype.`
+    : `The resolved subject is "${subject.displayLabel}" and has no processed genome file yet; tools will return empty results.`;
 
   const tools = {
     get_genotype: tool({
@@ -144,19 +160,20 @@ export async function POST(request: Request) {
       execute: async ({ rsid }) => {
         const n = parseRsid(rsid);
         if (!n) return { error: "not a valid rsID" };
-        if (!activeFile) return { error: "no processed file" };
-        const { data: rows } = await supabase
-          .from("user_variants")
-          .select("rsid, chrom, pos, ref, alt, genotype")
-          .eq("file_id", activeFile.id)
-          .eq("rsid", n)
-          .limit(1);
-        const { data: ann } = await supabase
+        if (files.length === 0) return { error: "no processed file" };
+        const [{ genotypes, conflicts }, { data: ann }] = await Promise.all([
+          getSubjectGenotypesByRsid(admin, subject.id, [n]),
+          admin
           .from("ref_variants")
-          .select("gene_symbol, clinvar_significance, gnomad_af")
+          .select("rsid, chrom, pos38, ref, alt, gene_symbol, clinvar_significance, gnomad_af")
           .eq("rsid", n)
-          .maybeSingle();
-        if (!rows || rows.length === 0) {
+          .maybeSingle(),
+        ]);
+        if (conflicts.has(n)) {
+          return { rsid, covered: false, conflict: true, note: "The subject's files disagree at this position." };
+        }
+        const genotype = genotypes.get(n);
+        if (!genotype) {
           return {
             rsid,
             covered: false,
@@ -164,7 +181,7 @@ export async function POST(request: Request) {
             annotation: ann ?? null,
           };
         }
-        return { ...rows[0], rsid, covered: true, annotation: ann ?? null };
+        return { rsid, genotype, covered: true, annotation: ann ?? null };
       },
     }),
     search_variants: tool({
@@ -174,7 +191,7 @@ export async function POST(request: Request) {
         gene: z.string().describe("Gene symbol, e.g. 'CYP1A2'"),
       }),
       execute: async ({ gene }) => {
-        const { data: refs } = await supabase
+        const { data: refs } = await admin
           .from("ref_variants")
           .select("rsid, chrom, pos38, gene_symbol, clinvar_significance")
           .ilike("gene_symbol", gene)
@@ -182,19 +199,20 @@ export async function POST(request: Request) {
         if (!refs || refs.length === 0) {
           return { gene, variants: [], note: "no reference variants known for this gene symbol" };
         }
-        if (!activeFile) {
+        if (files.length === 0) {
           return { gene, variants: refs.map((r) => ({ ...r, genotype: null })) };
         }
-        const genotypes = await getGenotypesByRsid(
-          supabase,
-          activeFile.id,
+        const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
+          admin,
+          subject.id,
           refs.map((r) => r.rsid),
         );
         return {
           gene,
           variants: refs.map((r) => ({
             ...r,
-            genotype: genotypes.get(r.rsid) ?? null,
+            genotype: conflicts.has(r.rsid) ? null : (genotypes.get(r.rsid) ?? null),
+            conflict: conflicts.has(r.rsid),
           })),
         };
       },
@@ -211,15 +229,15 @@ export async function POST(request: Request) {
           ),
       }),
       execute: async ({ category }) => {
-        let templates = await getPublishedTemplates(supabase);
+        let templates = await getPublishedTemplates(admin);
         if (category) templates = templates.filter((t) => t.category === category);
-        const genotypes = activeFile
-          ? await getGenotypesByRsid(
-              supabase,
-              activeFile.id,
+        const { genotypes } = files.length > 0
+          ? await getSubjectGenotypesByRsid(
+              admin,
+              subject.id,
               templateRsids(templates),
             )
-          : new Map<number, string>();
+          : { genotypes: new Map<number, string>() };
         return {
           reports: templates.map((t) => {
             const r = resolveTemplate(t, (rsid) => genotypes.get(rsid));
@@ -241,7 +259,7 @@ export async function POST(request: Request) {
         slug: z.string().describe("Report slug from list_reports"),
       }),
       execute: async ({ slug }) => {
-        const { data: raw } = await supabase
+        const { data: raw } = await admin
           .from("report_templates")
           .select(
             "slug, category, title, summary, evidence, variants, pgs_id, citations",
@@ -251,13 +269,13 @@ export async function POST(request: Request) {
           .maybeSingle();
         if (!raw) return { error: "unknown report" };
         const template = raw as unknown as ReportTemplate;
-        const genotypes = activeFile
-          ? await getGenotypesByRsid(
-              supabase,
-              activeFile.id,
+        const { genotypes } = files.length > 0
+          ? await getSubjectGenotypesByRsid(
+              admin,
+              subject.id,
               template.variants.map((v) => v.rsid),
             )
-          : new Map<number, string>();
+          : { genotypes: new Map<number, string>() };
         const resolved = resolveTemplate(template, (r) => genotypes.get(r));
         return {
           slug: template.slug,
@@ -280,20 +298,21 @@ export async function POST(request: Request) {
         score_id: z.string().describe("PGS Catalog ID, e.g. 'PGS000018'"),
       }),
       execute: async ({ score_id }) => {
-        const { data: meta } = await supabase
+        const { data: meta } = await admin
           .from("prs_scores")
           .select("pgs_id, name, trait, n_variants, ancestry_note")
           .eq("pgs_id", score_id)
           .maybeSingle();
         if (!meta) return { error: "unknown score id" };
-        if (!activeFile) return { ...meta, result: null };
-        const { data: result } = await supabase
+        if (files.length === 0) return { ...meta, result: null };
+        const { data: results } = await admin
           .from("user_prs")
           .select("raw_score, zscore, percentile, coverage, matched")
-          .eq("file_id", activeFile.id)
+          .eq("subject_id", subject.id)
           .eq("pgs_id", score_id)
-          .maybeSingle();
-        return { ...meta, result };
+          .order("computed_at", { ascending: false })
+          .limit(1);
+        return { ...meta, result: results?.[0] ?? null };
       },
     }),
   };

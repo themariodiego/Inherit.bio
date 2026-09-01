@@ -96,9 +96,29 @@ export function Uploader() {
         setPhase({ step: "hashing", pct }),
       );
 
-      // 3. Resumable direct-to-storage upload (TUS, 6 MiB chunks) — the file
-      // never passes through the app's own servers.
-      const objectName = `${session.user.id}/${crypto.randomUUID()}/${file.name}`;
+      // 3. Ask the server for a short-lived, account-bound staging object.
+      // The file bytes still travel directly to Supabase Storage.
+      const tier = TIER_BY_KIND[kind];
+      const issueRes = await fetch("/api/files/upload-session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          originalName: file.name,
+          fileType: kind,
+          sizeBytes: file.size,
+          sha256,
+          contentType: "application/octet-stream",
+        }),
+      });
+      if (!issueRes.ok) throw new Error("Could not authorize this upload.");
+      const issued = (await issueRes.json()) as {
+        uploadId: string;
+        bucketName: string;
+        objectName: string;
+        tier: 1 | 2;
+      };
+      if (issued.tier !== tier) throw new Error("Upload tier mismatch.");
+
       setPhase({ step: "uploading", pct: 0 });
       await new Promise<void>((resolve, reject) => {
         const upload = new tus.Upload(file, {
@@ -107,8 +127,8 @@ export function Uploader() {
           chunkSize: 6 * 1024 * 1024,
           removeFingerprintOnSuccess: true,
           metadata: {
-            bucketName: "genomes",
-            objectName,
+            bucketName: issued.bucketName,
+            objectName: issued.objectName,
             contentType: "application/octet-stream",
             cacheControl: "3600",
           },
@@ -127,31 +147,20 @@ export function Uploader() {
         });
       });
 
-      // 4. Register the file row (RLS insert-own).
+      // 4. Promote the object and atomically bind its database records.
       setPhase({ step: "registering" });
-      const tier = TIER_BY_KIND[kind];
-      const { data: row, error } = await supabase
-        .from("genome_files")
-        .insert({
-          user_id: session.user.id,
-          bucket_path: objectName,
-          original_name: file.name,
-          file_type: kind,
-          tier,
-          size_bytes: file.size,
-          sha256,
-          status: tier === 1 ? "uploaded" : "stored",
-        })
-        .select("id")
-        .single();
-      if (error || !row) {
-        throw new Error(error?.message ?? "could not register file");
-      }
+      const completeRes = await fetch(`/api/files/${issued.uploadId}/finalize`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ originalName: file.name, fileType: kind, tier }),
+      });
+      if (!completeRes.ok) throw new Error("Could not register the uploaded file.");
+      const completed = (await completeRes.json()) as { fileId: string };
 
       // 5. Tier 1: kick off processing.
       if (tier === 1) {
         setPhase({ step: "processing" });
-        const res = await fetch(`/api/files/${row.id}/process`, {
+        const res = await fetch(`/api/files/${completed.fileId}/process`, {
           method: "POST",
         });
         if (!res.ok) {

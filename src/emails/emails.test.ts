@@ -11,16 +11,15 @@ const ATTRIBUTION =
 const DISCLAIMER = "Informational, not medical advice.";
 
 describe("report-ready email", () => {
-  it("renders file name, count, dashboard link, and footer lines", async () => {
+  it("renders generic file copy, count, dashboard link, and footer lines", async () => {
     const html = await render(
       createElement(ReportReadyEmail, {
-        fileName: "genome_v5.txt",
         reportCount: 12,
         dashboardUrl: "https://example.test/dashboard",
       }),
     );
     expect(html).toContain("Your reports are ready");
-    expect(html).toContain("genome_v5.txt");
+    expect(html).toContain("your genome file");
     expect(html).toContain("12 reports are");
     expect(html).toContain("https://example.test/dashboard");
     expect(html).toContain(ATTRIBUTION);
@@ -30,7 +29,6 @@ describe("report-ready email", () => {
   it("uses singular phrasing for one report", async () => {
     const html = await render(
       createElement(ReportReadyEmail, {
-        fileName: "a.vcf",
         reportCount: 1,
         dashboardUrl: "https://example.test/d",
       }),

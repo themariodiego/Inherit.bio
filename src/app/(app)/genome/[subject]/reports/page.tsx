@@ -1,0 +1,310 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { CATEGORY_LABELS, EVIDENCE_LABELS } from "@/lib/genome/categories";
+import {
+  getPublishedTemplates,
+  getSubjectGenotypesByRsid,
+  getSubjectProcessedFiles,
+  templateRsids,
+} from "@/lib/genome/load";
+import { resolveTemplate } from "@/lib/genome/reports";
+import { createClient } from "@/lib/supabase/server";
+import { categoryRank, isFixtureSlug } from "@/components/reports/library";
+import {
+  ReportLibrary,
+  type LibraryCard,
+  type LibraryGroup,
+} from "@/components/reports/report-library";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveSubjectForAccount } from "@/lib/subjects";
+import { notFound } from "next/navigation";
+
+export const metadata: Metadata = { title: "Reports" };
+
+export default async function ReportsPage(
+  props: PageProps<"/genome/[subject]/reports">,
+) {
+  const { subject: subjectSegment } = await props.params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) notFound();
+  const subject = await resolveSubjectForAccount(user.id, subjectSegment);
+  if (!subject) notFound();
+  const admin = createAdminClient();
+  const [files, allTemplates] = await Promise.all([
+    getSubjectProcessedFiles(admin, subject.id),
+    getPublishedTemplates(admin),
+  ]);
+  // Test fixtures never reach the user-facing library.
+  const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
+  const { genotypes } = await getSubjectGenotypesByRsid(
+    admin,
+    subject.id,
+    templateRsids(templates),
+  );
+
+  const resolved = templates.map((t) =>
+    resolveTemplate(t, (rsid) => genotypes.get(rsid)),
+  );
+  const coveredCount = resolved.filter((r) => r.covered).length;
+
+  // The user's polygenic scores for the active file, joined with score
+  // metadata (same tables the report detail page's PGS block reads).
+  const { data: prsRows } = files.length > 0
+    ? await admin
+        .from("user_prs")
+        .select("pgs_id, percentile, coverage, matched")
+        .eq("subject_id", subject.id)
+    : { data: [] };
+  const pgsIds = (prsRows ?? []).map((r) => r.pgs_id);
+  const { data: prsMeta } = pgsIds.length
+    ? await admin
+        .from("prs_scores")
+        .select("pgs_id, name, trait, n_variants, ancestry_note")
+        .in("pgs_id", pgsIds)
+    : { data: [] };
+  const metaById = new Map((prsMeta ?? []).map((m) => [m.pgs_id, m]));
+  const reportByPgs = new Map<string, string>();
+  for (const t of templates) {
+    if (t.pgs_id && !reportByPgs.has(t.pgs_id)) {
+      reportByPgs.set(t.pgs_id, t.slug);
+    }
+  }
+  const scores = (prsRows ?? [])
+    .flatMap((row) => {
+      const meta = metaById.get(row.pgs_id);
+      return meta ? [{ row, meta }] : [];
+    })
+    .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
+  const computedScoreCount = scores.filter(
+    ({ row }) => row.percentile != null,
+  ).length;
+
+  const byCategory = new Map<string, LibraryCard[]>();
+  for (const { template, covered } of resolved) {
+    const list = byCategory.get(template.category) ?? [];
+    list.push({
+      slug: template.slug,
+      title: template.title,
+      summary: template.summary,
+      evidenceLabel: EVIDENCE_LABELS[template.evidence] ?? template.evidence,
+      genes: [...new Set(template.variants.map((v) => v.gene))],
+      status: files.length > 0 ? (covered ? "covered" : "not-covered") : "awaiting",
+    });
+    byCategory.set(template.category, list);
+  }
+  const groups: LibraryGroup[] = [...byCategory.entries()]
+    .map(([category, cards]) => ({
+      id: category,
+      label: CATEGORY_LABELS[category] ?? category,
+      cards,
+    }))
+    .sort(
+      (a, b) =>
+        categoryRank(a.id) - categoryRank(b.id) ||
+        a.label.localeCompare(b.label),
+    );
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-8">
+      <div>
+        <p className="eyebrow mb-2">Report library</p>
+        <h1 className="display text-3xl">Reports</h1>
+        {files.length > 0 ? (
+          <p className="mt-2 text-sm text-ink-muted">
+            {subject.displayLabel}&apos;s {files.length === 1 ? "file covers" : "files together cover"}{" "}
+            {coveredCount} of {templates.length} reports. When files disagree
+            at a position, Inherit shows no result there.
+            {coveredCount < templates.length ? (
+              <>
+                {" "}
+                The rest state honestly that your file doesn&apos;t cover
+                their variants.
+              </>
+            ) : null}
+            {coveredCount === 0 &&
+            files.some((file) => file.file_type === "vcf" || file.file_type === "gvcf") ? (
+              <>
+                {" "}
+                <strong>Why zero?</strong> VCF files from clinical or targeted
+                tests usually list only positions where you differ from the
+                reference, so Inherit cannot tell &ldquo;tested and
+                normal&rdquo; apart from &ldquo;not tested&rdquo; — this is a
+                limit of the file, not of your test. Ask your lab for a gVCF
+                or whole-genome file to unlock these reports.
+              </>
+            ) : null}
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-ink-muted">
+            Upload and process a raw data file to see which reports it covers
+            — each result is computed only when you open a report. The full
+            library is browsable meanwhile.
+          </p>
+        )}
+      </div>
+
+      <section
+        id="polygenic-scores"
+        aria-labelledby="polygenic-scores-heading"
+        className="scroll-mt-24"
+      >
+        <h2 id="polygenic-scores-heading" className="eyebrow mb-1">
+          Polygenic scores
+        </h2>
+        {scores.length > 0 && computedScoreCount === 0 ? (
+          // Nothing was computable: one compact, honest line instead of a
+          // wall of per-score failure cards. Per-score coverage sits behind
+          // an explicit disclosure.
+          <div className="text-sm text-ink-muted">
+            <p>
+              Your file doesn&apos;t cover enough of the score panels to
+              compute percentiles.
+            </p>
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs underline underline-offset-2">
+                Per-score coverage details
+              </summary>
+              <ul className="mt-2 space-y-1.5 text-xs">
+                {scores.map(({ row, meta }) => (
+                  <li key={row.pgs_id}>
+                    <span className="font-medium text-ink">{meta.name}</span>{" "}
+                    <span className="font-mono text-[10px]">
+                      {row.pgs_id}
+                    </span>{" "}
+                    — your file covered {row.matched.toLocaleString()} of{" "}
+                    {meta.n_variants.toLocaleString()} variants (
+                    {(row.coverage * 100).toFixed(1)}%); not computable from
+                    your file.
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        ) : scores.length > 0 ? (
+          <>
+            <p className="mb-3 text-sm text-ink-muted">
+              A polygenic score combines many small genetic effects into one
+              estimate.
+            </p>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {scores.map(({ row, meta }) => {
+                const reportSlug = reportByPgs.get(row.pgs_id);
+                return (
+                  <li
+                    key={row.pgs_id}
+                    className="rounded-xl border border-line bg-card p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-medium">
+                        {reportSlug ? (
+                          <Link
+                            href={`/genome/${subject.routeSegment}/reports/${reportSlug}`}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {meta.name}
+                          </Link>
+                        ) : (
+                          meta.name
+                        )}
+                      </h3>
+                      <span className="shrink-0 font-mono text-[10px] text-ink-muted">
+                        {row.pgs_id}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-ink-muted">{meta.trait}</p>
+                    {row.percentile != null ? (
+                      <>
+                        <p className="mt-3 text-sm">
+                          Approximately the{" "}
+                          <strong>
+                            {Math.round(row.percentile)}th percentile
+                          </strong>{" "}
+                          of a population-reference distribution.
+                        </p>
+                        <div
+                          role="img"
+                          aria-label={`Score percentile ${Math.round(row.percentile)}`}
+                          className="relative mt-2 h-2 overflow-hidden rounded-full bg-tint"
+                        >
+                          <span
+                            className="absolute top-0 h-full w-1.5 rounded-full bg-forest"
+                            style={{
+                              left: `${Math.min(99, Math.max(1, row.percentile))}%`,
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-ink-muted">
+                        Not computable from your file.
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-ink-muted">
+                      {row.matched === 0 ? (
+                        <>
+                          Coverage: your file covered none of this
+                          score&apos;s {meta.n_variants.toLocaleString()}{" "}
+                          variants.
+                        </>
+                      ) : (
+                        <>
+                          Coverage: your file covered{" "}
+                          {(row.coverage * 100).toFixed(1)}% of this
+                          score&apos;s variants ({row.matched.toLocaleString()}{" "}
+                          of {meta.n_variants.toLocaleString()})
+                          {row.percentile != null
+                            ? " — treat it as an approximation."
+                            : " — not enough to compute a percentile."}
+                        </>
+                      )}
+                    </p>
+                    <details className="group mt-3 rounded-lg bg-tint p-2.5 text-xs leading-relaxed">
+                      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span className="line-clamp-2 group-open:line-clamp-none">
+                          <strong>Ancestry portability:</strong>{" "}
+                          {meta.ancestry_note}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 inline-block text-ink-muted underline underline-offset-2 group-open:hidden"
+                        >
+                          more
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 hidden text-ink-muted underline underline-offset-2 group-open:inline-block"
+                        >
+                          less
+                        </span>
+                      </summary>
+                    </details>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        ) : (
+          <p className="rounded-xl border border-dashed border-line p-4 text-sm text-ink-muted">
+            No polygenic scores yet — they are computed when your file is
+            processed.{" "}
+            {files.length > 0
+              ? `None are available for ${subject.displayLabel}.`
+              : "Upload and process a raw data file to see yours."}
+          </p>
+        )}
+      </section>
+
+      <ReportLibrary
+        groups={groups}
+        baseHref={`/genome/${subject.routeSegment}/reports`}
+      />
+
+      {templates.length === 0 ? (
+        <p className="text-sm text-ink-muted">
+          The report library has not been seeded on this deployment yet.
+        </p>
+      ) : null}
+    </div>
+  );
+}
