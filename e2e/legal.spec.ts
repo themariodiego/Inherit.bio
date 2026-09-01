@@ -10,7 +10,21 @@ import path from "node:path";
 const REQUIRED = [
   { route: "/privacy", must: [/children/i, /genetic data/i, /change of control|change-of-control/i, /deletion/i, /export/i] },
   { route: "/terms", must: [/18|eighteen/i, /not medical advice|informational/i, /export/i, /AGPL/i] },
-  { route: "/legal/research-consent", must: [/consent/i] },
+  {
+    route: "/legal/research-consent",
+    must: [
+      /conducts no research with customer or subject data/i,
+      /specific purpose and each recipient class needs its own opt-in/i,
+      /names every recipient/i,
+      /institutional review board, or an equal independent body/i,
+      /publish its name, decision, and protocol reference/i,
+      /may never use embryo data/i,
+      /may never use data about another adult/i,
+      /withdrawal stops new transfers/i,
+      /exactly what cannot be recalled after withdrawal/i,
+      /research consent never permits internal model development or model training/i,
+    ],
+  },
   {
     route: "/legal/law-enforcement",
     must: [
