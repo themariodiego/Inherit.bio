@@ -6834,6 +6834,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_upload_session: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_file_type: string
+          p_original_name: string
+          p_storage_object_id: string
+          p_tier: number
+          p_upload_session_id: string
+        }
+        Returns: string
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -6846,6 +6858,14 @@ export type Database = {
           p_target_kind: string
           p_template_id: string
           p_template_payload: Json
+        }
+        Returns: string
+      }
+      grant_cloud_model_consent: {
+        Args: {
+          p_account_id: string
+          p_data_classes: string[]
+          p_provider_key: string
         }
         Returns: string
       }
@@ -6865,6 +6885,10 @@ export type Database = {
           p_provider_message_id_hmac: string
           p_status: string
         }
+        Returns: boolean
+      }
+      revoke_cloud_model_consent: {
+        Args: { p_account_id: string; p_grant_id: string }
         Returns: boolean
       }
     }

@@ -53,11 +53,12 @@ export async function POST(
   if (!file.subject_id) {
     return new Response("File subject binding is unavailable", { status: 409 });
   }
-  // Defense in depth: the object is fetched below with the service-role key,
-  // which bypasses storage RLS. bucket_path is client-set, so refuse any path
-  // not under this user's own prefix — otherwise a user could point their row
-  // at another user's object and have its variants loaded into their account.
-  if (!file.bucket_path.startsWith(`${user.id}/`)) {
+  // New objects have server-issued UUID names. Retain the user-prefix form for
+  // pre-v2 rows; clients can no longer insert or mutate genome_files directly.
+  const serverIssuedPath = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+    file.bucket_path,
+  );
+  if (!serverIssuedPath && !file.bucket_path.startsWith(`${user.id}/`)) {
     return new Response("Invalid file path", { status: 400 });
   }
 

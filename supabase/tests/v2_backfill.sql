@@ -6,6 +6,11 @@ values
   ('10000000-0000-0000-0000-000000000001', 'migration-a@example.invalid', '{"display_name":"Migration A"}'),
   ('20000000-0000-0000-0000-000000000002', 'migration-b@example.invalid', '{"display_name":"Migration B"}');
 
+delete from public.subject_relationships;
+delete from public.subject_account_bindings;
+delete from public.subject_principals;
+delete from public.subjects;
+
 insert into public.subjects (
   id, owner_account_id, subject_account_id, subject_class, upload_class,
   display_label, lifecycle

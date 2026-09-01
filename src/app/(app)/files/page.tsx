@@ -6,6 +6,7 @@ import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = { title: "My files" };
 
@@ -28,7 +29,7 @@ export default async function UploadsPage() {
     )
     .order("created_at", { ascending: false });
 
-  const { data: stats } = await supabase.rpc("processing_time_stats");
+  const { data: stats } = await createAdminClient().rpc("processing_time_stats");
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
   const inFlight = (files ?? []).some(

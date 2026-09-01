@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LLM_DATA_CLASSES, providerDisplayName } from "@/lib/llm";
-import { createClient } from "@/lib/supabase/client";
 
 // The cloud-consent gate (A9): names the provider and the exact data classes
 // before any genome-derived data leaves for a cloud LLM. Grants are stored
@@ -78,25 +77,14 @@ export function ConsentDialog({
             onClick={async () => {
               setBusy(true);
               setError(null);
-              const supabase = createClient();
-              const {
-                data: { user },
-              } = await supabase.auth.getUser();
-              if (!user) {
-                setError("Signed out.");
-                setBusy(false);
-                return;
-              }
-              const { error: insertError } = await supabase
-                .from("consent_grants")
-                .insert({
-                  user_id: user.id,
-                  provider_key: providerKey,
-                  data_classes: [...LLM_DATA_CLASSES],
-                });
+              const response = await fetch("/api/consents", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ providerKey }),
+              });
               setBusy(false);
-              if (insertError) {
-                setError(insertError.message);
+              if (!response.ok) {
+                setError("Consent could not be saved. Please try again.");
                 return;
               }
               onGranted();

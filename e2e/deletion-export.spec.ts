@@ -127,7 +127,7 @@ test("account deletion removes auth user, all rows, and all storage objects", as
 }) => {
   await signIn(page, USER.email, USER.password);
 
-  await page.goto("/settings");
+  await page.goto("/settings/data");
   await page.getByLabel(/Type/).fill("delete my genome");
   await page.getByTestId("delete-account").click();
   await page.waitForURL((url) => url.pathname === "/", { timeout: 60_000 });

@@ -8,6 +8,11 @@ values (
   '{"display_name":"Mail worker"}'
 );
 
+delete from public.subject_relationships;
+delete from public.subject_account_bindings;
+delete from public.subject_principals;
+delete from public.subjects;
+
 insert into public.subjects (
   id, owner_account_id, subject_account_id, subject_class, upload_class,
   display_label, lifecycle

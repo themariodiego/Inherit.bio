@@ -9,7 +9,8 @@ import {
 
 // A7 — the research-library pipeline, driven by a fixtured GWAS release:
 // refresh drafts a template into the review queue; publishing it updates
-// the public changelog and sends the opt-in digest (captured via a mock
+// the public changelog and queues the opt-in digest; the mail worker submits
+// it to a mock
 // Resend API — the SDK honors RESEND_BASE_URL; production uses the real
 // API, verified in the Resend dashboard).
 
@@ -139,9 +140,17 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
     data: { slug: SLUG },
   });
   expect(res.status()).toBe(200);
-  const json = (await res.json()) as { published: boolean; digest_sent: number };
+  const json = (await res.json()) as { published: boolean; digest_queued: number };
   expect(json.published).toBe(true);
-  expect(json.digest_sent).toBeGreaterThanOrEqual(1);
+  expect(json.digest_queued).toBeGreaterThanOrEqual(1);
+
+  const drain = await request.post("/api/jobs/mail", {
+    headers: { authorization: `Bearer ${JOBS_SECRET}` },
+  });
+  expect(drain.status()).toBe(200);
+  const drainJson = (await drain.json()) as { processed: number; failed: number };
+  expect(drainJson.processed).toBeGreaterThanOrEqual(1);
+  expect(drainJson.failed).toBe(0);
 
   // Changelog page shows the entry (heading carries the report title).
   await page.goto("/changelog");
@@ -160,11 +169,11 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   // NOT appear in the user-facing report library — auto-e2e-* slugs are
   // excluded there unconditionally.
   await signIn(page, USER.email, USER.password);
-  await page.goto(`/reports/${SLUG}`);
+  await page.goto(`/genome/me/reports/${SLUG}`);
   await expect(
     page.getByRole("heading", { name: /E2E test trait/ }),
   ).toBeVisible();
-  await page.goto("/reports");
-  await expect(page.locator(`a[href="/reports/${SLUG}"]`)).toHaveCount(0);
+  await page.goto("/genome/me/reports");
+  await expect(page.locator(`a[href="/genome/me/reports/${SLUG}"]`)).toHaveCount(0);
   await expect(page.getByText("E2E test trait")).toHaveCount(0);
 });
