@@ -82,4 +82,13 @@ describe("readability copy extraction", () => {
 
     expect(longevityFailures).toEqual([]);
   });
+
+  it("keeps every mental-health template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const mentalHealthFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/mental-health.json:"),
+    );
+
+    expect(mentalHealthFailures).toEqual([]);
+  });
 });

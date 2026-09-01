@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-265 long-block grade findings, concentrated in the existing report-template
+240 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -74,6 +74,13 @@ category: 8 summaries and 19 genotype interpretations. The rewrites retain
 allele direction, odds and cohort sizes, population qualifiers, biological
 trade-offs, replication status, and limits on individual prediction. A
 category-level regression keeps the file at zero findings.
+
+The eighth remediation pass removed all 25 findings from the mental-health
+report category: 8 summaries and 17 genotype interpretations. The rewrites
+retain allele direction, odds and population baselines, gene-environment
+interactions, biological trade-offs, replication status, study limits, and
+limits on individual prediction. A category-level regression keeps the file
+at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
