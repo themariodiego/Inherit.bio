@@ -121,10 +121,10 @@ export default function AboutPage() {
             <>
               <p>
                 <strong>Plus Bio created Inherit.</strong> Its team built the
-                software, shared its design, and released the code for public
-                use. Inherit is a <strong>separate legal entity</strong>, not a
-                Plus Bio product line. It has its own domain, accounts, and
-                duties to you.
+                software, shared its design, and released the code for the
+                public good. Inherit is a <strong>separate legal entity</strong>,
+                not a Plus Bio product line. It has its own domain, accounts,
+                and duties to you.
               </p>
               <ul>
                 <li>
