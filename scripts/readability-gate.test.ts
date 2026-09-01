@@ -100,4 +100,13 @@ describe("readability copy extraction", () => {
 
     expect(basicTraitsFailures).toEqual([]);
   });
+
+  it("keeps every addiction template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const addictionFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/addiction.json:"),
+    );
+
+    expect(addictionFailures).toEqual([]);
+  });
 });

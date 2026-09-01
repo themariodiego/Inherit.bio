@@ -3,7 +3,7 @@
     "slug": "nicotine-dependence-chrna5-rs16969968",
     "category": "addiction",
     "title": "Nicotine dependence · CHRNA5",
-    "summary": "CHRNA5 encodes a subunit of the nicotinic acetylcholine receptor that nicotine binds in the brain. The rs16969968 variant (Asp398Asn) is one of the most replicated findings in addiction genetics: each copy of the A allele is associated with roughly one additional cigarette per day among smokers and about 1.3-fold higher odds of heavy smoking and nicotine dependence.",
+    "summary": "CHRNA5 makes part of the brain receptor that nicotine binds to. rs16969968 changes Asp398 to Asn. It is one of the most repeated findings in addiction genetics. Among smokers, each A copy is linked to about one more cigarette per day. It is also linked to about 1.3 times the odds of heavy smoking and nicotine dependence.",
     "evidence": "established",
     "variants": [
       {
@@ -30,7 +30,7 @@
     "slug": "alcohol-dependence-aldh2-rs671",
     "category": "addiction",
     "title": "Alcohol dependence protection · ALDH2",
-    "summary": "ALDH2 clears acetaldehyde, the toxic first breakdown product of alcohol. The rs671 A allele (ALDH2*2), common in East Asian populations, largely inactivates the enzyme, causing the flushing reaction after drinking. Because drinking becomes unpleasant, the A allele is strongly associated with lower rates of heavy drinking and alcohol dependence — one of the clearest gene-behavior links known.",
+    "summary": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The A copy at rs671, called ALDH2*2, is common in East Asian groups. It leaves the enzyme mostly inactive and can cause flushing after drinking. Because alcohol then feels unpleasant, A is strongly linked to less heavy drinking and alcohol dependence. This is one of the clearest known links between a gene and behavior.",
     "evidence": "established",
     "variants": [
       {
@@ -42,8 +42,8 @@
         "alt": "A",
         "interpretations": {
           "GG": "Plain summary: no flush variant here — this gene does not change your alcohol-related risks either way, and the usual guidance on drinking still applies. Two working copies of ALDH2. Acetaldehyde is cleared normally, no genetic flushing reaction, and no protection against heavy drinking from this locus. Drinking patterns for this genotype are shaped by culture, environment, and other genes.",
-          "AG": "Plain summary: if you drink little or no alcohol, this risk does not apply to you. Heavy drinking with this gene variant raises throat-cancer risk. One inactive ALDH2*2 copy, found mainly in people with East Asian ancestry. Acetaldehyde accumulates after drinking, typically causing facial flushing and nausea, and this genotype is associated with substantially lower rates of alcohol dependence. Note that heterozygotes who drink heavily despite flushing show elevated esophageal cancer risk in epidemiological studies, so the flush is worth taking seriously as a signal.",
-          "AA": "Plain summary: alcohol usually feels strongly unpleasant with this genotype; if you drink little or none, no extra risk applies — drinking heavily despite the flush would carry the highest acetaldehyde-related throat-cancer risk. Two inactive ALDH2*2 copies. Even small amounts of alcohol usually cause a strong flushing reaction, and alcohol dependence is rare in this genotype because drinking is so aversive. This is an association with typical behavior, not a rule about any individual."
+          "AG": "Plain summary: This risk does not apply if little or no alcohol is used. Heavy drinking with this DNA type raises the risk of throat cancer. AG has one inactive ALDH2*2 copy and occurs mainly in people with East Asian ancestry. Acetaldehyde builds up after alcohol and often causes a red face and nausea. AG is linked to far less alcohol dependence. People who drink heavily despite flushing have a higher risk of esophageal cancer in population studies. The flush should be taken seriously.",
+          "AA": "Plain summary: Alcohol usually feels very unpleasant with AA. No extra risk applies if little or no alcohol is used. Heavy drinking despite flushing brings the highest acetaldehyde-related throat-cancer risk. AA has two inactive ALDH2*2 copies. Even small amounts of alcohol often cause strong flushing. Alcohol dependence is rare because drinking is so unpleasant. This is a common group pattern, not a rule for one person."
         }
       }
     ],
@@ -56,7 +56,7 @@
     "slug": "alcohol-dependence-adh1b-rs1229984",
     "category": "addiction",
     "title": "Alcohol dependence protection · ADH1B",
-    "summary": "ADH1B converts alcohol to acetaldehyde. The rs1229984 T allele (His48, ADH1B*2) makes the enzyme roughly 40-fold faster, producing a quick acetaldehyde pulse that makes drinking less pleasant. Across many populations, T-allele carriers show markedly lower average rates of alcohol dependence — a meta-analysis found the effect among the strongest single-gene protections in addiction genetics. Note: this site is multiallelic; this report covers the common T/C alleles.",
+    "summary": "ADH1B turns alcohol into acetaldehyde. The T copy at rs1229984 is His48, also called ADH1B*2. It makes the enzyme about 40 times faster. The quick acetaldehyde rise can make drinking less pleasant. Across many groups, T carriers have much lower rates of alcohol dependence. A large review found one of the strongest single-gene protective links in addiction genetics. This site has more than two forms; this report covers common T and C.",
     "evidence": "established",
     "variants": [
       {
@@ -67,9 +67,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "CC": "Two copies of the C (Arg48) allele — the slower, more common form of ADH1B in European and African populations. Alcohol is metabolized at the typical baseline rate, and this locus confers no genetic protection against heavy drinking. Overall risk still depends far more on environment and other genes.",
-          "CT": "One fast T (His48) allele. Alcohol converts to acetaldehyde more quickly, which many carriers experience as milder unpleasant effects after drinking. Meta-analyses associate this genotype with substantially lower average odds of alcohol dependence than CC — a group-level statistical protection, not a guarantee for any individual.",
-          "TT": "Two fast T (His48) alleles — the most common genotype in East Asian populations, uncommon in European ancestry. Alcohol is converted to acetaldehyde very rapidly, and this genotype shows the lowest average rates of alcohol dependence at this locus. Heavy drinking is still possible and carries its usual harms."
+          "CC": "Two C copies make the slower Arg48 form. This is the common form in European and African groups. Alcohol is broken down at the usual rate. CC gives no protection from heavy drinking at this site. Life context and other genes matter far more.",
+          "CT": "One T copy makes the fast His48 form. Alcohol turns into acetaldehyde more quickly. Many carriers feel mild unpleasant effects after drinking. Large reviews link CT to much lower odds of alcohol dependence than CC. This is a group-level protective link, not a sure result for one person.",
+          "TT": "Two T copies make the fast His48 form. TT is the most common type in East Asian groups and is uncommon in European groups. Alcohol turns into acetaldehyde very quickly. TT has the lowest average rate of alcohol dependence at this site. Heavy drinking is still possible and has its usual harms."
         }
       }
     ],
@@ -82,7 +82,7 @@
     "slug": "opioid-response-oprm1-rs1799971",
     "category": "addiction",
     "title": "Opioid receptor variation · OPRM1",
-    "summary": "OPRM1 encodes the mu-opioid receptor, the main target of opioid painkillers and endorphins. The rs1799971 G allele (Asn40Asp) changes the receptor protein. In a large collaborative meta-analysis the G allele was associated with slightly lower general liability to substance dependence, and some clinical studies associate it with needing modestly higher opioid doses for the same pain relief. Effects are small and findings on specific addictions have been inconsistent.",
+    "summary": "OPRM1 makes the mu-opioid receptor. Opioid pain medicines and endorphins act mainly through this receptor. The G copy at rs1799971 changes Asn40 to Asp. A large joint review linked G to slightly lower overall likelihood of substance dependence. Some clinical studies link it to needing a little more opioid medicine for the same pain relief. Effects are small, and results for specific addictions do not agree.",
     "evidence": "moderate",
     "variants": [
       {
@@ -94,8 +94,8 @@
         "alt": "G",
         "interpretations": {
           "AA": "Two copies of the A (Asn40) allele, the most common genotype worldwide. Mu-opioid receptor function is the reference baseline, and opioid medication dosing studies use this group as the comparison. This genotype carries no particular signal in either direction at this locus.",
-          "AG": "One G (Asp40) allele. On average across studies, G carriers report slightly different subjective responses to alcohol and opioids, and some surgical-pain studies associate the G allele with modestly higher opioid dose requirements. In the largest meta-analysis the G allele tracked with slightly lower overall substance-dependence liability. All of these effects are small; this is one minor factor among many.",
-          "GG": "Two G (Asp40) alleles, most common in East Asian populations. Associated on average with the strongest version of the G-allele pattern: modestly altered opioid sensitivity in pain studies and slightly lower measured substance-dependence liability in meta-analysis. Individual responses to opioid medications still vary widely for non-genetic reasons — this result is informational, not a dosing guide."
+          "AG": "One G copy makes the Asp40 form. Studies link G carriers to slightly different feelings from alcohol and opioids. Some surgery studies also link G to a need for slightly more opioid medicine. The largest review found slightly lower overall substance-dependence likelihood. Each effect is small, and many other factors matter.",
+          "GG": "Two G copies make the Asp40 form. GG is most common in East Asian groups. It shows the strongest version of the small G pattern in group studies. These include changed opioid response in pain studies and slightly lower substance-dependence likelihood. Medicine response still varies widely for other reasons. This result is information, not a dosing guide."
         }
       }
     ],
@@ -121,7 +121,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G ('A2') allele, the most common genotype in most populations. Striatal dopamine D2 receptor availability is at the reference baseline on average, and this genotype is the comparison group in addiction association studies at this locus.",
-          "AG": "One A ('A1') allele, carried by roughly a third of people of European ancestry. Imaging studies associate the A allele with somewhat lower average D2 receptor availability, and meta-analyses report modestly higher odds of alcohol dependence (about 1.2-fold). This is a weak, group-level association — one small factor among hundreds of genetic and environmental influences on reward and habit.",
+          "AG": "One A copy, once called A1, occurs in about one third of people with European ancestry. Brain scans link A to somewhat fewer D2 receptors on average. Reviews link it to about 1.2 times the odds of alcohol dependence. This is a weak group link. It is one small factor among hundreds of gene and life effects on reward and habit.",
           "AA": "Two A ('A1') alleles, a less common genotype. Associated on average with the lowest D2 receptor availability at this locus and, in meta-analyses, slightly elevated odds of alcohol and other substance dependence. The effect size is small and studies conflict; most people with this genotype never develop any substance problem."
         }
       }
@@ -135,7 +135,7 @@
     "slug": "cannabis-dependence-cnr1-rs2023239",
     "category": "addiction",
     "title": "Cannabinoid receptor · CNR1",
-    "summary": "CNR1 encodes the CB1 cannabinoid receptor, the main brain target of THC. In small studies of cannabis users, carriers of the rs2023239 C allele reported greater craving and withdrawal during abstinence and showed differences in reward-region brain activity to cannabis cues. These findings come from modest samples and have not been consistently replicated, so this should be read as an early, tentative association.",
+    "summary": "CNR1 makes the CB1 receptor, the main brain target of THC. In small studies of cannabis users, people with C at rs2023239 reported more craving and withdrawal while not using cannabis. Their reward brain regions also responded differently to cannabis cues. The study groups were small, and later results have not been steady. This is an early and uncertain link.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -148,7 +148,7 @@
         "interpretations": {
           "TT": "Two copies of the T allele, the most common genotype. In the small studies done so far, this group reported comparatively lower cannabis craving and withdrawal during abstinence. Evidence at this locus is preliminary, and cannabis-use outcomes depend overwhelmingly on non-genetic factors.",
           "CT": "One C allele, present in roughly a third of people of European ancestry. Small studies associate C-allele carriers who use cannabis with greater average craving and withdrawal during abstinence and stronger neural responses to cannabis cues. These are preliminary findings from limited samples — one small and uncertain factor.",
-          "CC": "Two C alleles, an uncommon genotype. If the preliminary associations hold, this group would show the pattern reported for C carriers — greater average craving and withdrawal among cannabis users — but no study has been large enough to characterize CC individuals specifically. Interpret with real caution."
+          "CC": "Two C copies form an uncommon type. If the early link is real, CC may follow the C-carrier pattern. That means more craving and withdrawal on average among cannabis users. No study has included enough people to describe CC on its own. This result needs great caution."
         }
       }
     ],
@@ -161,7 +161,7 @@
     "slug": "caffeine-intake-ahr-rs4410790",
     "category": "addiction",
     "title": "Habitual caffeine intake · AHR",
-    "summary": "AHR regulates the expression of CYP1A2, the liver enzyme that clears most caffeine. In genome-wide studies of hundreds of thousands of people, the rs4410790 C allele is associated with drinking slightly more coffee on average — on the order of a tenth of a cup per day per allele — likely because faster caffeine clearance nudges people toward more frequent intake. A well-replicated but tiny effect.",
+    "summary": "AHR controls CYP1A2, a liver enzyme that clears most caffeine. Studies of hundreds of thousands of people link C at rs4410790 to slightly more coffee use. Each C copy adds about one tenth of a cup per day on average. Faster caffeine clearance may lead to more frequent use. The link repeats well but is tiny.",
     "evidence": "moderate",
     "variants": [
       {
@@ -173,7 +173,7 @@
         "alt": "C",
         "interpretations": {
           "TT": "Two copies of the T allele. Associated on average with slightly lower habitual coffee and caffeine consumption than C carriers — a difference of a fraction of a cup a day at the population level. Personal preference, sleep habits, and culture matter far more.",
-          "CT": "One C allele. Intermediate position for this locus: on average a small nudge toward higher habitual caffeine intake compared with TT, likely reflecting modestly faster caffeine handling. The effect is real across large populations but tiny for any individual.",
+          "CT": "One C copy gives a middle result at this site. On average, CT is linked to slightly more daily caffeine than TT. A small rise in caffeine clearance may explain the link. The effect appears in large groups but is tiny for one person.",
           "CC": "Two C alleles. Associated with the highest average habitual coffee and caffeine intake at this locus — still only around a quarter of a cup per day more than TT on average. This describes consumption patterns, not caffeine's health effects."
         }
       }
@@ -187,7 +187,7 @@
     "slug": "alcohol-consumption-klb-rs11940694",
     "category": "addiction",
     "title": "Alcohol consumption · KLB",
-    "summary": "KLB encodes β-Klotho, a liver-brain hormone receptor component through which FGF21 suppresses alcohol preference in animal studies. In a genome-wide study of over 100,000 people, the rs11940694 G allele was associated with slightly higher weekly alcohol consumption, and the finding has replicated in later biobank analyses. The per-allele effect on drinks per week is very small.",
+    "summary": "KLB makes beta-Klotho, part of a liver-to-brain hormone receptor. Through this receptor, FGF21 lowers alcohol preference in animal studies. A study of more than 100,000 people linked G at rs11940694 to slightly more alcohol each week. Later biobank studies found the link again. Each G copy changes weekly drinks by very little.",
     "evidence": "moderate",
     "variants": [
       {
@@ -213,7 +213,7 @@
     "slug": "problem-substance-use-faah-rs324420",
     "category": "addiction",
     "title": "Endocannabinoid breakdown · FAAH",
-    "summary": "FAAH breaks down anandamide, the brain's own cannabinoid. The rs324420 A allele (Pro129Thr) makes the enzyme less stable, raising anandamide levels. The original study associated the AA genotype with higher rates of problem street-drug use, and later work has linked the A allele to differences in stress reactivity and cannabis effects — but replications have been mixed, so this remains an early-stage association.",
+    "summary": "FAAH breaks down anandamide, a cannabinoid made by the brain. The A copy at rs324420 changes Pro129 to Thr. It makes the enzyme less stable and raises anandamide levels. The first study linked AA to more problem street-drug use. Later work links A to small differences in stress response and cannabis effects. Other studies did not always agree, so this is an early link.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -226,7 +226,7 @@
         "interpretations": {
           "CC": "Two copies of the C (Pro129) allele, the most common genotype. FAAH enzyme stability is at the reference baseline, and this group serves as the comparison in association studies. No particular signal at this locus.",
           "AC": "One A (Thr129) allele. FAAH activity is modestly reduced on average, which raises baseline anandamide signaling. Studies associate A carriers with subtle differences in stress and reward responses; links to substance-use problems are inconsistent across cohorts. A preliminary, small factor at most.",
-          "AA": "Two A (Thr129) alleles, an uncommon genotype with substantially reduced FAAH stability. The original 2002 study found this genotype overrepresented among people reporting problem street-drug use, but later replications have been mixed. This is best read as an early, uncertain association — not a meaningful individual prediction."
+          "AA": "Two A copies make the uncommon Thr129 type. AA greatly lowers FAAH stability. A 2002 study found AA more often among people who reported problem street-drug use. Later studies did not always find the same result. This is an early, uncertain group link and cannot predict one person."
         }
       }
     ],
@@ -239,7 +239,7 @@
     "slug": "smoking-initiation-bdnf-rs6265",
     "category": "addiction",
     "title": "Smoking initiation · BDNF",
-    "summary": "In the Tobacco and Genetics Consortium meta-analysis of over 70,000 people, the BDNF Val66Met variant (rs6265) reached genome-wide significance for smoking initiation: the common C (Val) allele was associated with about 1.06-fold higher odds of ever becoming a regular smoker. The effect is tiny, and whether someone ever smokes is driven overwhelmingly by environment, era, and social context.",
+    "summary": "The Tobacco and Genetics Consortium studied more than 70,000 people. Its review found a broad-study signal for the BDNF Val66Met change, rs6265. The common C/Val copy was linked to about 1.06 times the odds of ever smoking often. The effect is tiny. Social setting, time period, and other life factors matter far more to whether someone starts smoking.",
     "evidence": "moderate",
     "variants": [
       {
@@ -251,7 +251,7 @@
         "alt": "T",
         "interpretations": {
           "CC": "Two copies of the C (Val) allele. Associated in large meta-analyses with very slightly higher odds of ever taking up regular smoking (around 6% higher odds per C allele). This is a barely-detectable statistical tilt found only in huge samples — one small factor, dwarfed by social environment.",
-          "CT": "One C (Val) and one T (Met) allele. Intermediate at this locus: a very small average difference in smoking-initiation odds compared with the homozygous genotypes. At the individual level this genotype carries essentially no predictive weight for smoking behavior.",
+          "CT": "One C/Val and one T/Met copy give a middle result at this site. The average difference in smoking-start odds is very small. This type has almost no power to predict one person's smoking behavior.",
           "TT": "Two T (Met) alleles, an uncommon genotype in most populations. Associated on average with slightly lower odds of ever becoming a regular smoker. As with the other genotypes here, the effect is tiny and only visible when averaging across tens of thousands of people."
         }
       }
