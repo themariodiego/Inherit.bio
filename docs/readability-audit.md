@@ -10,9 +10,9 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,440 user-visible blocks:
+The deterministic extraction currently covers 1,452 user-visible blocks:
 
-- 905 long blocks from static TSX, the 151 report templates, rendered provider
+- 911 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
 - 393 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-41 long-block grade findings, concentrated in long marketing and legal copy.
+32 long-block grade findings, concentrated in long marketing and legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -188,6 +188,18 @@ instead of assuming more risk than one-copy carriers. A current position
 statement supports that limit. The TERT report now cites the glioma study that
 supports its glioma estimate, and CHRNA3 adds direct nicotine-intake evidence.
 A category-level regression keeps the file at zero findings.
+
+The twenty-first remediation pass removed all 9 findings from the deceased-
+account policy. It also brings the page into the v2 contract: the policy now
+covers account holders, other adult subjects, embryo records after a genetic
+parent dies, and future-person records. It states that Inherit accepts no new
+upload for a deceased person. The default remains non-disclosure, documents
+receive human review, and any disclosure waits through a 30-day notice period.
+Recorded wishes override an estate request, and living relatives' genotypes
+remain protected without their consent. Account-deletion wording now points to
+the fixed seven-day notice and purge lifecycle instead of promising an
+immediate account purge. A page-level regression keeps this policy at zero
+findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
