@@ -10,17 +10,17 @@ Run:
 pnpm gate:readability
 ```
 
-The deterministic extraction currently covers 1,479 user-visible blocks:
+The deterministic extraction currently covers 1,489 user-visible blocks:
 
-- 930 long blocks from static TSX, the 151 report templates, rendered provider
+- 942 long blocks from static TSX, the 151 report templates, rendered provider
   fields, and seeded consent artifacts;
-- 398 short strings selected by rendered role;
+- 397 short strings selected by rendered role;
 - 252 onboarding, consent-summary, result-headline, status, and error blocks
   subject to the 25-word sentence cap.
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-14 long-block grade findings, concentrated in long legal copy.
+12 long-block grade findings, concentrated in long legal copy.
 There is deliberately no baseline allowance and the command is not yet wired
 into CI.
 
@@ -273,6 +273,17 @@ representatives, impact-assessment summaries, and verified transfer map do not
 exist. Focused unit and browser assertions keep those facts present and
 readable. This copy remediation does not mark L-27 complete or invent a person,
 address, assessment, destination, or transfer method.
+
+The twenty-eighth remediation pass removed both findings from the incident-
+response page. The page now publishes the four-hour assessment start, response
+stages, Article 33 authority notice, Article 34 affected-person notice, US
+state-attorney-general timing, and direct notice to non-account-holder subjects
+and a future-person claimant. Its dated history includes incidents with no
+confirmed data loss and retains the current zero report. The first-contact
+instructions disclose that no encryption key is published and prohibit private
+data in the first message. Focused unit and browser assertions keep those terms
+present and readable. This copy remediation does not claim that the missing
+public encryption key or written operator runbook exists.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a

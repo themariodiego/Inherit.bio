@@ -254,6 +254,15 @@ describe("readability copy extraction", () => {
     expect(gdprFailures).toEqual([]);
   });
 
+  it("keeps the incident-response policy within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const incidentFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("src/app/(marketing)/legal/incident-response/page.tsx:"),
+    );
+
+    expect(incidentFailures).toEqual([]);
+  });
+
   it("keeps every cancer-risk template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const cancerRiskFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
