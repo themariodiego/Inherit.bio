@@ -64,4 +64,13 @@ describe("readability copy extraction", () => {
 
     expect(brainHealthFailures).toEqual([]);
   });
+
+  it("keeps every gastrointestinal template within the long-block grade limit", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const gastrointestinalFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/gastrointestinal.json:"),
+    );
+
+    expect(gastrointestinalFailures).toEqual([]);
+  });
 });

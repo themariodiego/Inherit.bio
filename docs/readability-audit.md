@@ -20,7 +20,7 @@ The deterministic extraction currently covers 1,440 user-visible blocks:
 
 The pinned ten-case scorer self-test passes. The short-role vocabulary and
 sentence-length rules are clean. The command currently exits non-zero with
-319 long-block grade findings, concentrated in the existing report-template
+292 long-block grade findings, concentrated in the existing report-template
 library and long marketing/legal copy. There is deliberately no baseline
 allowance and the command is not yet wired into CI.
 
@@ -61,6 +61,13 @@ category: 10 summaries and 18 genotype interpretations. The rewrites preserve
 the tested allele direction, population or effect size, evidence label, study
 design, replication status, and limits on individual prediction. A second
 category-level regression keeps this template file at zero findings.
+
+The sixth remediation pass removed all 27 findings from the gastrointestinal
+report category: 9 summaries and 18 genotype interpretations. The rewrites
+retain allele direction, population and effect-size qualifiers, clinical
+penetrance, medication and test caveats, study limits, and the distinction
+between inherited tendency and current health. A category-level regression
+keeps the file at zero findings.
 
 Before G1.10 can become YES, the extractor must also prove coverage for strings
 assembled entirely from runtime data and for chart-axis labels registered by a
