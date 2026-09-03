@@ -134,6 +134,11 @@ test("typing caffeine lists the Reports group with the caffeine template link ca
   await expect(input(page)).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(first).toBeFocused();
+  // Two seed templates match "caffeine" (sleep · ADORA2A and metabolism ·
+  // CYP1A2), so the first result is not necessarily the metabolism one:
+  // follow the specific link, which is the behaviour a reader relies on.
+  await link.focus();
+  await expect(link).toBeFocused();
   await page.keyboard.press("Enter");
   await page.waitForURL(`**${CAFFEINE}`);
   await expect(dialog(page)).toBeHidden();
