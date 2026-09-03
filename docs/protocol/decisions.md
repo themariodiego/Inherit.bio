@@ -407,3 +407,56 @@ work is sequenced after the ancestry surface because both change
   rejected.
 - The GIAB browser test pins the grey state to the exact mandated sentence
   with the measured counts (`\d+ of \d+`), never a fixed number.
+
+## 2026-09-03 — Expert path (W8), built: decisions taken while building the surface
+
+- The genotype column is headed "Your two letters", the words the report page
+  already uses, because the term of art may not head a column.
+- Trait topics are ids in the guidance module; their user-facing phrases live
+  in the copy registry, so no user-facing string remains under `src/lib`.
+- The track's locus controls are named "Search by position" and "Go to
+  position" so no track control shares the page's "Search" button name.
+- A single-position locus query centres a 10 kb window on the position, the
+  same window an rsID search uses; a reversed range is ordered, not rejected.
+- A trait match whose reports are unpublished falls through to the no-match
+  sentence rather than an empty suggestion box; the three example chips and
+  their constant are gone.
+- The region row limit is the page's constant and the truncation sentence is
+  built from it, never retyped.
+
+## 2026-09-03 — Family surfaces (W9): decisions taken from the design pass
+
+Design: `docs/design/w9-family-surfaces.md`; every open decision below takes
+its recommended default.
+
+- A person who accepted an invitation but has granted nothing shows the
+  state line "Waiting for {name} to share"; "No file yet" would be false and
+  would leak whether a file exists.
+- A health-picture cell renders the observed genotype figure, the layer chip
+  and an "Open" link; interpretation stays on the report page.
+- A shared adult's report page derives its domain crumb from the subject
+  class (`Family / {name} / …`), never "My Genome" over someone else's data.
+- `/family` moves to its own route group with an auth-branching layout and
+  the app shell extracted, keeping the two public panels ahead of the
+  signed-in hub; no second hub path is registered.
+- The Tier-2 acknowledgement ("I understand this can tell me something I
+  can’t un-know.") is remembered in an httpOnly session cookie cleared at
+  sign-out, never in local storage, and the pages fetch nothing derived until
+  it is set.
+- The Portrait distribution sentence is §2's "Out of 100 possible children,
+  about {n} would {outcome}."; a sub-1% category, when banded traits exist,
+  renders in its own claim block at 1,000 with the exception recorded.
+- No chromosomal-sex expectation card renders until a citation exists.
+- Portrait registers as `shipped-degraded`; runs of homozygosity are computed
+  per file where measurable and refused with the named reason otherwise.
+- The refusals heading is "What Portrait will not tell you, and why".
+- Joint surfaces carry no subject bar; column headers and the banner carry
+  both full subject chips. The layer chip per cell is label text with the
+  definition once per table.
+- A family pair is created on the first portrait grant in either direction
+  (status pending) so the blocking screen can name the other person's
+  missing steps.
+- Build order F0 (migrations, RPCs, jurisdiction reader, register rows) →
+  F1 (graph, hub, person, permissions, invite copy) → F2 (health picture and
+  carrier pairs) → F3 (Portrait); the pure libraries may be written in
+  parallel with F1.
