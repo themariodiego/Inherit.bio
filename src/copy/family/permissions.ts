@@ -48,7 +48,8 @@ export type PermissionRowId =
   | "reports.polygenic"
   | "ancestry"
   | "raw.export"
-  | "family.portrait";
+  | "family.portrait"
+  | "family.heritability";
 
 export interface PermissionRowCopy {
   id: PermissionRowId;
@@ -83,6 +84,11 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
     id: "family.portrait",
     label: "Portrait",
     consequence: "The two of you can open Portrait, once you have both turned this on.",
+  },
+  {
+    id: "family.heritability",
+    label: "Health picture",
+    consequence: "The two of you can see your results side by side, once you have both turned this on.",
   },
 ];
 

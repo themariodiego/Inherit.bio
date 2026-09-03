@@ -210,7 +210,8 @@ export default async function FamilyHealthPicturePage() {
     // The carrier pipeline, behind its own response guard
     // (register family.health-picture, `response:carrier-arithmetic`). With
     // no classified position in the reference table — today's state — this
-    // costs one query and reads no genotype.
+    // costs one query, reads no genotype, and the panel says it has nothing
+    // to check yet.
     const refVariants = permits(carrierMatch) ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
     for (const person of permits(carrierMatch) ? shared : []) {
@@ -296,6 +297,7 @@ export default async function FamilyHealthPicturePage() {
                   HealthPictureColumn,
                 ],
                 matches: pair.summary.matches,
+                classifiedPositions: pair.summary.classifiedPositions,
                 positionsBothCover: pair.summary.positionsBothCover,
               };
             })}

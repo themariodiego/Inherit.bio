@@ -256,9 +256,14 @@ export function canonicalCross(id: CanonicalCross): MendelCross {
   }
 }
 
-/** The outcomes as shares summing to 1, in cross order: the input the 100-dot distribution takes. */
-export function crossShares(cross: MendelCross): Record<MendelOutcome, number> {
-  const shares = {} as Record<MendelOutcome, number>;
+/**
+ * The outcomes as shares summing to 1, in cross order: the input the 100-dot
+ * distribution takes. An outcome the cross cannot produce is an absent key,
+ * not a zero: the type promises no number for it, so no `?? 0` downstream
+ * can turn an absent outcome into "0 in 100" (line 2238).
+ */
+export function crossShares(cross: MendelCross): Partial<Record<MendelOutcome, number>> {
+  const shares: Partial<Record<MendelOutcome, number>> = {};
   for (const { outcome, fraction } of cross.outcomes) {
     shares[outcome] = fraction.numerator / fraction.denominator;
   }

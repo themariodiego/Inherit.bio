@@ -37,6 +37,7 @@ function corpus(): string[] {
       walk((value as (...args: unknown[]) => string)("Bo", 3));
       walk((value as (...args: unknown[]) => string)("Bo", "dominant"));
       walk((value as (...args: unknown[]) => string)("estimate"));
+      walk((value as (...args: unknown[]) => string)("Bo", 999_999_001, "TESTGENE", "Pathogenic"));
     } else walk(value);
   }
   return out;
@@ -119,6 +120,14 @@ describe("health-picture copy", () => {
     );
   });
 
+  it("says in words that there is nothing to check when the reference table classifies nothing (D-034)", () => {
+    expect(copy.NO_CLASSIFIED_POSITIONS).toBe(
+      "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.",
+    );
+    expect(copy.NO_CLASSIFIED_POSITIONS).not.toMatch(/\d/);
+    expect(copy.NO_CLASSIFIED_POSITIONS).not.toContain("checked the");
+  });
+
   it("renders the mandated carrier sentence around its own figure", () => {
     // The figure the block renders at the denominator the sentence states.
     const figure = naturalFrequency(0.25, 100).text;
@@ -131,8 +140,19 @@ describe("health-picture copy", () => {
     expect(copy.CARRIER_SENTENCE_TAIL.startsWith("—")).toBe(true);
   });
 
-  it("names every reason in the closed table, and no other", () => {
+  it("names each person's own variant and its classification, not just the gene (brief line 346)", () => {
+    expect(copy.personVariantLine("Bo", 999_999_001, "E2EGENE1", "Pathogenic")).toBe(
+      "Bo: rs999999001 in E2EGENE1, which outside reviewers class as Pathogenic.",
+    );
+    // The classification is the reference row's own label, unaltered.
+    expect(copy.personVariantLine("Bo", 1, "G", "Pathogenic/Likely pathogenic")).toContain(
+      "class as Pathogenic/Likely pathogenic.",
+    );
+  });
+
+  it("names every reason in the closed table of eight, and no other", () => {
     expect(Object.keys(copy.CARRIER_REASON_PHRASES).sort()).toEqual([...CARRIER_REASONS].sort());
+    expect(CARRIER_REASONS).toHaveLength(8);
     expect(copy.CARRIER_REASON_PHRASES.dominant).toBe("the change runs in a dominant pattern");
     expect(copy.CARRIER_REASON_PHRASES.harmless).toBe("the change is classed as harmless");
     expect(copy.CARRIER_REASON_PHRASES["unknown-meaning"]).toBe(
@@ -146,6 +166,14 @@ describe("health-picture copy", () => {
     );
     expect(copy.CARRIER_REASON_PHRASES["runs-unchecked"]).toBe(
       "Inherit could not check how much of one file is made of long identical stretches",
+    );
+    // The two beyond the design's six: what is not recorded, said truly
+    // (D-031), and two changed copies named rather than dropped (D-035).
+    expect(copy.CARRIER_REASON_PHRASES["sex-unknown"]).toBe(
+      "this pattern depends on which parent carries the change on the X, and Inherit does not record that",
+    );
+    expect(copy.CARRIER_REASON_PHRASES["two-copies"]).toBe(
+      "one file shows two changed copies, not one",
     );
     expect(copy.carrierNoProbabilitySentence("BRCA2", "dominant")).toBe(
       "Both of you have a change in BRCA2, but Inherit cannot turn that into a chance for a pregnancy. Reason: the change runs in a dominant pattern.",

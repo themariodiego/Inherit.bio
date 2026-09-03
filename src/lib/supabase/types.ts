@@ -3750,6 +3750,12 @@ export type Database = {
           original_name: string
           processing_finished_at: string | null
           processing_started_at: string | null
+          roh_covered_bases: number | null
+          roh_fraction: number | null
+          roh_measured_at: string | null
+          roh_reason: string | null
+          roh_status: string | null
+          roh_total_bases: number | null
           sample_count: number
           sha256: string | null
           single_logical_sample_verified_at: string | null
@@ -3780,6 +3786,12 @@ export type Database = {
           original_name: string
           processing_finished_at?: string | null
           processing_started_at?: string | null
+          roh_covered_bases?: number | null
+          roh_fraction?: number | null
+          roh_measured_at?: string | null
+          roh_reason?: string | null
+          roh_status?: string | null
+          roh_total_bases?: number | null
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null
@@ -3810,6 +3822,12 @@ export type Database = {
           original_name?: string
           processing_finished_at?: string | null
           processing_started_at?: string | null
+          roh_covered_bases?: number | null
+          roh_fraction?: number | null
+          roh_measured_at?: string | null
+          roh_reason?: string | null
+          roh_status?: string | null
+          roh_total_bases?: number | null
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null

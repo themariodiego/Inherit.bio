@@ -93,7 +93,8 @@ export const OPEN_CONSENTS_BUTTON = "Open your consents";
 /** The acknowledgement checkbox (design §2.5), stamped on the viewer's own subject only. */
 export const ACKNOWLEDGE_CHECKBOX_LABEL = "I have read what Portrait will and will not show.";
 
-export const ACKNOWLEDGE_BUTTON = "Continue";
+/** Verb plus object (brief line 928): "Continue" is banned standalone. */
+export const ACKNOWLEDGE_BUTTON = "Open Portrait";
 
 /** The acknowledgement did not save; the same words as the Tier-2 gate's own failure. */
 export const ACKNOWLEDGE_ERROR_STATUS = GATE_ERROR_STATUS;
@@ -276,7 +277,7 @@ export const ASSUMPTION_STATEMENTS: Record<MendelAssumption, string> = {
   no_imprinting:
     "It makes no difference which parent a copy came from, because this gene is not registered as one where it does.",
   runs_below_threshold:
-    "Inherit checked each file on its own for long runs of matching letters. Neither file was above the limit.",
+    "This split assumes neither file has long runs of matching letters above Inherit’s limit.",
   equal_x_y_transmission:
     "This split takes an X and a Y from the father as equally likely. That is an assumption of the pattern, not a count of births.",
 };
@@ -319,7 +320,7 @@ export const REFUSALS: readonly Refusal[] = [
     refusalId: "body-measures",
     line: "Height, weight, BMI and other body measures, as a child prediction.",
     reason:
-      "A height estimate for a child who doesn’t exist carries the parents’ population differences with no way to check them, so the number would look precise and mean little.",
+      "A height estimate for a child who does not exist yet would rest on the parents’ population differences, with no way to check them. The number would look precise and mean little.",
   },
   {
     refusalId: "personality-mental-health",
@@ -347,7 +348,7 @@ export const REFUSALS: readonly Refusal[] = [
     refusalId: "polygenic-disease-risk",
     line: "Disease risk for a hypothetical child from polygenic scores.",
     reason:
-      "Family shows each parent’s own risks and the carrier arithmetic above; it does not project a score onto an unconceived person.",
+      "Family shows each parent’s own risks and the carrier arithmetic above. It does not project a score onto a child who does not exist yet.",
   },
   {
     refusalId: "appearance",

@@ -149,10 +149,14 @@ export function carrierProbabilitySentence(figureText: string): string {
 }
 
 /**
- * The closed reason table (design §2.3). Six phrases are the design's own;
- * `sex-unknown` is the seventh, for a pattern whose arithmetic needs each
- * person's sex — which nothing in Inherit records — and whose hundred-
- * pregnancy split belongs to Portrait rather than to this page.
+ * The closed reason table (design §2.3; ADR 0017 §5-6). Six phrases are the
+ * design's own; `sex-unknown` is for an X-linked pattern, whose hundred-
+ * pregnancy split needs to know which parent carries the change on the X —
+ * Inherit records no person's chromosomal sex (`subject_demographics` has
+ * no writer), and the split belongs to Portrait rather than to this page
+ * (D-031); `two-copies` is for a file that shows two changed copies rather
+ * than one, which the brief says must render with a reason, never be
+ * dropped (D-035).
  */
 export const CARRIER_REASON_PHRASES: Record<CarrierReason, string> = {
   dominant: "the change runs in a dominant pattern",
@@ -160,7 +164,9 @@ export const CARRIER_REASON_PHRASES: Record<CarrierReason, string> = {
   "unknown-meaning": "nobody yet knows what this change means",
   "copies-unknown": "one file does not show how many copies were read",
   "no-pattern": "Inherit has no recorded inheritance pattern for this gene",
-  "sex-unknown": "this pattern depends on a person’s sex, which Inherit does not know",
+  "sex-unknown":
+    "this pattern depends on which parent carries the change on the X, and Inherit does not record that",
+  "two-copies": "one file shows two changed copies, not one",
   "runs-unchecked":
     "Inherit could not check how much of one file is made of long identical stretches",
 };
@@ -170,19 +176,39 @@ export function carrierNoProbabilitySentence(gene: string, reason: CarrierReason
   return `Both of you have a change in ${gene}, but Inherit cannot turn that into a chance for a pregnancy. Reason: ${CARRIER_REASON_PHRASES[reason]}.`;
 }
 
-/** Nothing was found: the count is of positions, which is page furniture. */
+/**
+ * Nothing was found over a non-empty classified set: the count is of the
+ * classified positions both files cover, which is page furniture.
+ */
 export function noCarrierMatches(positions: number): string {
   return `No change to show that you both carry. Inherit checked the ${positions} positions both files cover.`;
 }
+
+/**
+ * The classified reference set is empty — the production state today, with
+ * every `ref_variants.clinvar_significance` null — so there was nothing to
+ * check and no count to print (D-034).
+ */
+export const NO_CLASSIFIED_POSITIONS =
+  "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.";
 
 /** The name each person's own reading is rendered beside, in the block header. */
 export function carrierPersonPrefix(name: string): string {
   return `${name}:`;
 }
 
-/** The classification the outside review gave the change, named in the block. */
-export function classificationLine(gene: string, classification: string): string {
-  return `Outside reviewers class the change in ${gene} as: ${classification}.`;
+/**
+ * One line per person: their own variant and its classification, named as
+ * the brief requires ("both variants and both classifications, not just the
+ * gene", line 346). The classification is the reference row's own label.
+ */
+export function personVariantLine(
+  name: string,
+  rsid: number,
+  gene: string,
+  classification: string,
+): string {
+  return `${name}: rs${rsid} in ${gene}, which outside reviewers class as ${classification}.`;
 }
 
 /** Rendered under every pair block until a counsellor directory exists (X16.2). */

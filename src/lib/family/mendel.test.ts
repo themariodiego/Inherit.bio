@@ -143,8 +143,13 @@ describe("exactness", () => {
         expect(outcome.inHundred).toBe((outcome.fraction.numerator * 100) / outcome.fraction.denominator);
         expect(Number.isInteger(outcome.inHundred)).toBe(true);
       }
-      const shares = Object.values(crossShares(cross)).reduce((sum, share) => sum + share, 0);
-      expect(shares).toBeCloseTo(1, 12);
+      const shares = crossShares(cross);
+      // Present outcomes carry their share; absent outcomes are absent keys,
+      // so nothing downstream can read a zero for them.
+      expect(Object.keys(shares).sort()).toEqual(cross.outcomes.map((outcome) => outcome.outcome).sort());
+      for (const absent of cross.absentOutcomes) expect(absent in shares).toBe(false);
+      const shareTotal = cross.outcomes.reduce((sum, outcome) => sum + (shares[outcome.outcome] as number), 0);
+      expect(shareTotal).toBeCloseTo(1, 12);
     }
   });
 

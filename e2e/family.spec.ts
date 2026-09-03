@@ -317,7 +317,7 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
 
   const yours = page.locator('[data-slot="permission-column"][data-settable="true"]');
   await expect(yours).toContainText(`What ${A_AS_SEEN_BY_B} will see about you`);
-  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(5);
+  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(6);
   await expect(yours.locator('[data-permission-state="on"]')).toHaveCount(0);
 
   const estimates = yours

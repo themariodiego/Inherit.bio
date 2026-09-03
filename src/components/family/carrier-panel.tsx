@@ -2,15 +2,18 @@
  * <CarrierPanel> — the section above the table (design §2.3; brief line
  * 346). Server component.
  *
- * One group per pair of people, one block per change that pair both carry,
- * and one sentence where a pair carries none. The panel never says how many
- * matches there are before it lists them, never orders them by anything but
- * position, and never turns two people's shared letters into a statement
- * about how they are related.
+ * One group per pair of people, one block per gene that pair both carry a
+ * change in, and one sentence where a pair carries none: the count of
+ * classified positions both files cover when there was something to check,
+ * or the plain statement that the reference table classifies nothing yet
+ * (D-034). The panel never says how many matches there are before it lists
+ * them, never orders them by anything but gene, and never turns two
+ * people's shared letters into a statement about how they are related.
  */
 import {
   CARRIER_MATCHES_HEADING,
   CARRIER_MATCHES_ID,
+  NO_CLASSIFIED_POSITIONS,
   noCarrierMatches,
 } from "@/copy/family/health-picture";
 import type { CarrierMatch } from "@/lib/family/carrier-pair";
@@ -22,6 +25,8 @@ export interface CarrierPairGroup {
   /** The two people the matches are about, in the order the matches name them. */
   people: readonly [HealthPictureColumn, HealthPictureColumn];
   matches: readonly CarrierMatch[];
+  /** Classified positions in the reference set; zero means nothing could be checked. */
+  classifiedPositions: number;
   /** Classified positions both files cover: page furniture, not a result. */
   positionsBothCover: number;
 }
@@ -58,14 +63,16 @@ export function CarrierPanel({
       {(unavailableCopy ? [] : groups).map((group) => (
         <div key={group.key} data-slot="carrier-group" className="space-y-4">
           {group.matches.length === 0 ? (
-            <p className="max-w-prose text-base leading-relaxed text-ink">
-              {/* inherit-figure-exempt: a count of positions both files cover, not a result */}
-              {noCarrierMatches(group.positionsBothCover)}
+            <p data-slot="carrier-empty" className="max-w-prose text-base leading-relaxed text-ink">
+              {group.classifiedPositions === 0
+                ? NO_CLASSIFIED_POSITIONS
+                : // inherit-figure-exempt: a count of positions both files cover, not a result
+                  noCarrierMatches(group.positionsBothCover)}
             </p>
           ) : (
             <ul className="space-y-4">
               {group.matches.map((match) => (
-                <li key={match.rsid}>
+                <li key={match.gene}>
                   <CarrierMatchBlock
                     match={match}
                     people={group.people}

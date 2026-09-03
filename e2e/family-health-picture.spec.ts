@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import {
   adminClient,
@@ -9,7 +10,8 @@ import {
   ingestFileAs,
   signIn,
 } from "./helpers";
-import { CARRIER_POSITIONS, CARRIER_RSIDS } from "./fixtures/carrier-pair-positions";
+import { CARRIER_FIXTURE_POSITIONS, type FixtureGenotype } from "./fixtures/carrier-pair-positions";
+import { buildCarrierPairVcf, verify, type FixtureCheck } from "./fixtures/carrier-pair-fixture";
 
 /**
  * `/family/health-picture` (design docs/design/w9-family-surfaces.md §6.2):
@@ -21,16 +23,20 @@ import { CARRIER_POSITIONS, CARRIER_RSIDS } from "./fixtures/carrier-pair-positi
  * control anywhere that could order, rank or sum the table; the exact
  * baseline-absence sentence in every column footer; exactly one block with
  * the 25-in-100 sentence and none anywhere else; the named reason on every
- * other match; and no word about how the two people are related.
+ * other match, the two-copies reason included; each person's own variant
+ * and classification named in every block; the runs measure stored with
+ * the file at ingest; the count sentence over a classified set with no
+ * match and the plain sentence over an empty one; and no word about how
+ * the two people are related.
  *
- * Setup. No screen grants `family.heritability` — the five permission rows
- * are the report layers, ancestry, raw data and Portrait — so the spec
- * creates the two grants through the real routine
+ * Setup. The permissions page carries a "Health picture" row for
+ * `family.heritability` (ADR 0017), on the same own-session rules as the
+ * other rows. This spec writes the two grants through the real routine
  * (`grant_directional_purpose_v1`) with the service-role client, exactly as
- * a screen would once one exists. The four classified positions are
- * synthetic rows inserted here and removed in `afterAll`: the shipped
- * reference table has no classification at all, so this branch has no other
- * way to be proved.
+ * the row does, so the surface is exercised without a second sign-in
+ * dance. The seven classified positions are synthetic rows inserted here
+ * and removed in `afterAll`: the shipped reference table has no
+ * classification at all, so these branches have no other way to be proved.
  */
 
 const A = { email: "family-hp-a@e2e.local", password: "e2e-family-hp-pw" };
@@ -54,48 +60,101 @@ const EXACT_MARKER = "This is exact arithmetic, not an estimate.";
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
 const NEEDS_TWO =
   "This page needs two people who have both agreed to be seen side by side. So far there is 1.";
+const NO_CLASSIFIED_POSITIONS =
+  "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.";
 
-/** The four synthetic positions, with the reason each one must produce. */
-const SYNTHETIC = [
+interface SyntheticEntry {
+  gene: string;
+  significance: string;
+  conditionId: string;
+  mode: string | null;
+  /** The genotype the fixture writes at this position (carrier-pair-positions.ts). */
+  gt: FixtureGenotype;
+  /**
+   * `probability`: the one 25-in-100 block; a phrase: a block with that
+   * reason; null: both files cover the position but neither shows the
+   * classified change, so no block renders and the position counts only
+   * toward "both files cover".
+   */
+  block: "probability" | string | null;
+}
+
+/** The seven synthetic positions, in the order of `CARRIER_FIXTURE_POSITIONS`, with what each must produce. */
+const SYNTHETIC: readonly SyntheticEntry[] = [
   {
-    rsid: CARRIER_RSIDS[0],
     gene: "E2EGENE1",
-    significance: "Pathogenic",
+    // ClinVar's own joined label (D-033): read as pathogenic, printed as it is.
+    significance: "Pathogenic/Likely pathogenic",
     conditionId: "e2e-recessive",
-    mode: "autosomal_recessive" as string | null,
-    reason: null as string | null,
+    mode: "autosomal_recessive",
+    gt: "0/1",
+    block: "probability",
   },
   {
-    rsid: CARRIER_RSIDS[1],
     gene: "E2EGENE2",
     significance: "Pathogenic",
     conditionId: "e2e-dominant",
     mode: "autosomal_dominant",
-    reason: "the change runs in a dominant pattern",
+    gt: "0/1",
+    block: "the change runs in a dominant pattern",
   },
   {
-    rsid: CARRIER_RSIDS[2],
     gene: "E2EGENE3",
     significance: "Uncertain significance",
     conditionId: "e2e-uncertain",
     mode: "autosomal_recessive",
-    reason: "nobody yet knows what this change means",
+    gt: "0/1",
+    block: "nobody yet knows what this change means",
   },
   {
-    rsid: CARRIER_RSIDS[3],
     gene: "E2EGENE4",
     significance: "Pathogenic",
     conditionId: "e2e-no-pattern",
     mode: null,
-    reason: "Inherit has no recorded inheritance pattern for this gene",
+    gt: "0/1",
+    block: "Inherit has no recorded inheritance pattern for this gene",
   },
-] as const;
+  {
+    gene: "E2EGENE5",
+    significance: "Pathogenic",
+    conditionId: "e2e-two-copies",
+    mode: "autosomal_recessive",
+    gt: "1/1",
+    block: "one file shows two changed copies, not one",
+  },
+  {
+    gene: "E2EGENE6",
+    significance: "Pathogenic",
+    conditionId: "e2e-other-letter-1",
+    mode: "autosomal_recessive",
+    gt: "0/2",
+    block: null,
+  },
+  {
+    gene: "E2EGENE7",
+    significance: "Likely pathogenic",
+    conditionId: "e2e-other-letter-2",
+    mode: "autosomal_recessive",
+    gt: "0/2",
+    block: null,
+  },
+];
+
+const rsidOf = (index: number) => CARRIER_FIXTURE_POSITIONS[index].rsid;
+const CARRIED = SYNTHETIC.map((entry, index) => ({ ...entry, rsid: rsidOf(index) })).filter(
+  (entry) => entry.block !== null,
+);
+const NOT_CARRIED = SYNTHETIC.map((entry, index) => ({ ...entry, rsid: rsidOf(index) })).filter(
+  (entry) => entry.block === null,
+);
 
 let accountA = "";
 let accountB = "";
 let selfSubjectA = "";
 let selfSubjectB = "";
 let grantFromB = "";
+/** The fixture as the generator builds it, checked with the real parser and the real runs measure. */
+let fixtureCheck: FixtureCheck;
 
 test.describe.configure({ mode: "serial" });
 
@@ -148,6 +207,15 @@ async function grantSideBySide(
   return data as unknown as string;
 }
 
+/** Removes the classification from the given synthetic rows: the shipped table's own state. */
+async function declassify(rsids: readonly number[]) {
+  const { error } = await adminClient()
+    .from("ref_variants")
+    .update({ clinvar_significance: null })
+    .in("rsid", [...rsids]);
+  expect(error).toBeNull();
+}
+
 async function expectAxeClean(page: Page) {
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
@@ -167,13 +235,30 @@ test.beforeAll(async () => {
   await createConfirmedUser(A.email, A.password);
   await createConfirmedUser(B.email, B.password);
 
+  // The spec's expectations and the fixture's rows are one list: the
+  // genotype each entry expects is the one the generator writes there.
+  expect(SYNTHETIC).toHaveLength(CARRIER_FIXTURE_POSITIONS.length);
+  SYNTHETIC.forEach((entry, index) => expect(entry.gt).toBe(CARRIER_FIXTURE_POSITIONS[index].gt));
+
+  // The committed fixture is byte-identical to what the generator builds,
+  // and the real parser and runs measure accept it.
+  const lines = buildCarrierPairVcf();
+  const committed = fs.readFileSync(
+    path.join(process.cwd(), "e2e/fixtures/carrier-pair-grch38.vcf"),
+    "utf8",
+  );
+  expect(committed).toBe(`${lines.join("\n")}\n`);
+  fixtureCheck = await verify(lines);
+  expect(fixtureCheck.reasons).toEqual([]);
+  expect(fixtureCheck.measure.status).toBe("measured");
+
   // Synthetic reference rows: the shipped table classifies nothing, so the
   // carrier branches exist only against these. Every one is removed below.
   for (const [index, entry] of SYNTHETIC.entries()) {
     const { error: variantError } = await admin.from("ref_variants").upsert({
-      rsid: entry.rsid,
+      rsid: rsidOf(index),
       chrom: 1,
-      pos38: CARRIER_POSITIONS[index],
+      pos38: CARRIER_FIXTURE_POSITIONS[index].pos,
       ref: "A",
       alt: "G",
       gene_symbol: entry.gene,
@@ -205,12 +290,16 @@ test.afterAll(async () => {
   await admin
     .from("ref_variants")
     .delete()
-    .in("rsid", SYNTHETIC.map((entry) => entry.rsid));
+    .in("rsid", CARRIER_FIXTURE_POSITIONS.map((entry) => entry.rsid));
 });
 
-test("both adults add the synthetic file and turn on being seen side by side", async ({ page }) => {
+test("both adults add the synthetic file, its runs measure is stored with it, and both turn on being seen side by side", async ({
+  page,
+}) => {
   const admin = adminClient();
   const fixture = path.join(process.cwd(), "e2e/fixtures/carrier-pair-grch38.vcf");
+  const measure = fixtureCheck.measure;
+  if (measure.status !== "measured") throw new Error("the fixture must be measurable");
 
   for (const account of [A, B]) {
     await signIn(page, account.email, account.password);
@@ -228,6 +317,31 @@ test("both adults add the synthetic file and turn on being seen side by side", a
         { timeout: 60_000 },
       )
       .toBe("annotated");
+
+    // The processing route measured the file's own runs once and stored
+    // them (ADR 0017 §7, D-030): the same numbers the real measure gives
+    // for the fixture, and nothing about any other file.
+    const { data: stored } = await admin
+      .from("genome_files")
+      .select("roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction, roh_measured_at")
+      .eq("id", fileId)
+      .single();
+    const columns = stored as {
+      roh_status: string | null;
+      roh_reason: string | null;
+      roh_total_bases: number | string | null;
+      roh_covered_bases: number | string | null;
+      roh_fraction: number | string | null;
+      roh_measured_at: string | null;
+    };
+    expect(columns.roh_status).toBe("measured");
+    expect(columns.roh_reason).toBeNull();
+    expect(Number(columns.roh_total_bases)).toBe(measure.totalRunBases);
+    expect(Number(columns.roh_covered_bases)).toBe(measure.coveredSpanBases);
+    expect(Math.abs(Number(columns.roh_fraction) - measure.fRoh)).toBeLessThan(1e-6);
+    expect(columns.roh_measured_at).not.toBeNull();
+    expect(measure.aboveThreshold).toBe(false);
+
     await page.request.post("/auth/sign-out");
   }
 
@@ -354,7 +468,7 @@ test("the side-by-side table compares nothing and offers no way to order it", as
   expect(content).not.toMatch(/centimorgan|\bcM\b|kinship|shared DNA|related to/i);
 });
 
-test("the carrier panel gives one probability and names a reason for every other match", async ({
+test("the carrier panel gives one probability, names both variants, and names a reason for every other match", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -364,12 +478,17 @@ test("the carrier panel gives one probability and names a reason for every other
   await expect(panel).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "A change you both carry" })).toBeVisible();
 
+  // One block per gene both files carry a change in: the five carried
+  // positions, and nothing for the two where neither file shows the
+  // classified change.
   const blocks = panel.locator("[data-claim-block]");
-  await expect(blocks).toHaveCount(4);
+  await expect(blocks).toHaveCount(CARRIED.length);
+  for (const entry of NOT_CARRIED) await expect(panel).not.toContainText(entry.gene);
+  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveCount(0);
 
   // Exactly one block carries the mandated sentence, and it reads as one line.
   const sentences = panel.locator('[data-slot="carrier-sentence"]');
-  await expect(sentences).toHaveCount(4);
+  await expect(sentences).toHaveCount(CARRIED.length);
   const withProbability = panel.locator(
     '[data-claim-block]:has([data-figure-basis="exact"])',
   );
@@ -379,7 +498,19 @@ test("the carrier panel gives one probability and names a reason for every other
   );
   await expect(withProbability.locator("[data-exact-marker]")).toHaveCount(1);
   await expect(withProbability.locator("[data-exact-marker]")).toHaveText(EXACT_MARKER);
-  await expect(withProbability).toContainText(SYNTHETIC[0].gene);
+  const probable = CARRIED.find((entry) => entry.block === "probability")!;
+  await expect(withProbability).toContainText(probable.gene);
+
+  // Brief line 346: both variants and both classifications, not just the
+  // gene — one line per person, with the reference's own label.
+  const variantLines = withProbability.locator('[data-slot="carrier-variant"]');
+  await expect(variantLines).toHaveCount(2);
+  for (let index = 0; index < 2; index++) {
+    await expect(variantLines.nth(index)).toContainText(`rs${probable.rsid}`);
+    await expect(variantLines.nth(index)).toContainText(probable.gene);
+    await expect(variantLines.nth(index)).toContainText(probable.significance);
+  }
+  await expect(variantLines.nth(1)).toContainText(B_AS_SEEN_BY_A);
 
   // Acceptance 17: no other block anywhere on the page states the fraction.
   const texts = await page
@@ -396,15 +527,27 @@ test("the carrier panel gives one probability and names a reason for every other
   await expect(withProbability.locator('[data-slot="carrier-person"]')).toHaveCount(2);
   await expect(withProbability).toContainText(B_AS_SEEN_BY_A);
 
-  // The other three carry no number, and each says which reason applies.
-  for (const entry of SYNTHETIC.filter((item) => item.reason !== null)) {
+  // The other four carry no number, and each says which reason applies,
+  // and names both variants all the same.
+  for (const entry of CARRIED.filter((item) => item.block !== "probability")) {
     const block = panel.locator(`[data-claim-block]:has-text("${entry.gene}")`);
+    await expect(block).toHaveCount(1);
     await expect(block.locator('[data-slot="carrier-sentence"]')).toHaveText(
-      `Both of you have a change in ${entry.gene}, but Inherit cannot turn that into a chance for a pregnancy. Reason: ${entry.reason}.`,
+      `Both of you have a change in ${entry.gene}, but Inherit cannot turn that into a chance for a pregnancy. Reason: ${entry.block}.`,
     );
     await expect(block.locator('[data-figure-basis="exact"]')).toHaveCount(0);
     await expect(block.locator("[data-exact-marker]")).toHaveCount(0);
+    await expect(block.locator('[data-slot="carrier-variant"]')).toHaveCount(2);
+    await expect(block.locator('[data-slot="carrier-variant"]').first()).toContainText(`rs${entry.rsid}`);
   }
+
+  // Two changed copies in both files: the chip says so, and no probability renders (D-035).
+  const twoCopies = CARRIED.find((entry) => entry.gt === "1/1")!;
+  const twoCopiesBlock = panel.locator(`[data-claim-block]:has-text("${twoCopies.gene}")`);
+  const statuses = twoCopiesBlock.locator('[data-figure-kind="carrier-status"]');
+  await expect(statuses).toHaveCount(2);
+  await expect(statuses.nth(0)).toContainText("two copies");
+  await expect(statuses.nth(1)).toContainText("two copies");
 
   // Neither marker contradicts the other, and nothing is called a model.
   await expect(page.locator("[data-modelled-marker]")).toHaveCount(0);
@@ -433,6 +576,45 @@ test("the Overview names the match, carries the pair and shows no value", async 
   );
   await expect(line.locator("[data-figure-kind]")).toHaveCount(0);
   expect(await line.textContent()).not.toContain("25 in 100");
+});
+
+test("with no match left, the panel counts the classified positions both files cover", async ({
+  page,
+}) => {
+  // Only the two positions neither file shows the classified change at
+  // stay classified: both files cover them, so there is something to check
+  // and nothing to show.
+  await declassify(CARRIED.map((entry) => entry.rsid));
+
+  await signIn(page, A.email, A.password);
+  await page.goto("/family/health-picture");
+  const panel = page.locator('[data-slot="carrier-panel"]');
+  await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
+  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(
+    `No change to show that you both carry. Inherit checked the ${NOT_CARRIED.length} positions both files cover.`,
+  );
+  expect(await page.content()).not.toContain("25 in 100");
+
+  await page.goto("/overview");
+  await expect(page.locator("[data-subject-pair]")).toHaveCount(0);
+});
+
+test("with no classified position at all, the panel says so in words, never a count of zero", async ({
+  page,
+}) => {
+  // The shipped reference table's own state (D-034).
+  await declassify(NOT_CARRIED.map((entry) => entry.rsid));
+
+  await signIn(page, A.email, A.password);
+  await page.goto("/family/health-picture");
+  const panel = page.locator('[data-slot="carrier-panel"]');
+  await expect(panel).toHaveCount(1);
+  await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
+  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
+  await expect(panel).not.toContainText("checked the");
+  await expect(panel).not.toContainText("0 positions");
+  // The table beneath still shows the positions both files do cover.
+  await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 
 test("revoking one direction empties the panel and the Overview line at once", async ({ page }) => {

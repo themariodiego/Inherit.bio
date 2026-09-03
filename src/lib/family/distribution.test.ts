@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { OUTCOME_PHRASES } from "@/copy/family/portrait";
 import { apportionShares } from "@/lib/ancestry/present";
 import { claimBlock } from "@/lib/figures/claim-block";
-import { chooseDenominator } from "@/lib/figures/natural-frequency";
+import { chooseDenominator, naturalFrequency } from "@/lib/figures/natural-frequency";
 import {
   DOT_COUNT,
   belowOneInHundredSentence,
   distribute,
   outOfHundredSentence,
 } from "./distribution";
-import { CANONICAL_CROSSES, canonicalCross, crossShares } from "./mendel";
+import { CANONICAL_CROSSES, autosomalCross, canonicalCross, crossShares } from "./mendel";
 
 /** A tiny deterministic generator so the sum-to-100 property is checked over many inputs. */
 function* pseudoRandom(seed: number): Generator<number> {
@@ -82,6 +82,80 @@ describe("distribute", () => {
     expect(chooseDenominator([0.004])).toBe(1000);
   });
 
+  it("(R8a) keys the below-1-in-100 rule on the share, even when largest remainder would have given it a dot", () => {
+    // 6 in 1,000 has the largest remainder (6 units over 0 dots) and would
+    // win the leftover dot; it is still fewer than 1 in 100.
+    const distribution = distribute({ a: 0.5, b: 0.494, c: 0.006 }, { a: "x", b: "y", c: "z" });
+    const c = distribution.categories.find((category) => category.key === "c")!;
+    expect(c.outlined).toBe(true);
+    expect(c.dots).toBe(1);
+    expect(c.sentence).toBe("Fewer than 1 in 100 — but not zero. Inherit’s estimate is about 6 in 1,000.");
+    expect(c.denominator).toBe(1000);
+    expect(distribution.belowOne.map((category) => category.key)).toEqual(["c"]);
+    expect(distribution.categories.map((category) => category.dots)).toEqual([50, 49, 1]);
+    // And no outlined category ever renders the "about n would" sentence.
+    for (const category of distribution.belowOne) expect(category.sentence).not.toMatch(/^Out of 100/);
+  });
+
+  it("(R8b) states the figure contract's own rounding in the sentence of a category that lent a dot", () => {
+    const distribution = distribute({ common: 0.996, rare: 0.004 }, { common: "have one form", rare: "y" });
+    const common = distribution.categories.find((category) => category.key === "common")!;
+    // The grid shows 99 solid dots (one was lent), but the figure the block
+    // renders is naturalFrequency(0.996, 100) = about 100 in 100.
+    expect(common.dots).toBe(99);
+    expect(naturalFrequency(0.996, 100).count).toBe(100);
+    expect(common.sentence).toBe("Out of 100 possible children, about 100 would have one form.");
+    expect(common.sentence).not.toContain("about 99 ");
+    // Every non-outlined sentence states that rounding, so a lender and a
+    // non-lender read alike.
+    const thirds = distribute({ a: 0.333, b: 0.333, c: 0.334 }, { a: "x", b: "y", c: "z" });
+    for (const category of thirds.categories) {
+      expect(category.sentence).toBe(
+        outOfHundredSentence(naturalFrequency(category.share, 100).count, { a: "x", b: "y", c: "z" }[category.key]),
+      );
+    }
+  });
+
+  it("(R8c) refuses a NaN, negative, infinite or missing share rather than filtering it away", () => {
+    expect(() => distribute({ a: 1, b: Number.NaN }, { a: "x", b: "y" })).toThrow(/finite number/);
+    expect(() => distribute({ a: 1.2, b: -0.2 }, { a: "x", b: "y" })).toThrow(/finite number/);
+    expect(() => distribute({ a: 1, b: Number.POSITIVE_INFINITY }, { a: "x", b: "y" })).toThrow(/finite number/);
+    expect(() => distribute({ a: 1, b: undefined }, { a: "x", b: "y" })).toThrow(/finite number/);
+  });
+
+  it("(R8d) takes a cross whose absent outcomes are absent keys, never zero", () => {
+    const cross = autosomalCross("autosomal_recessive", 1, 0);
+    const shares = crossShares(cross);
+    expect(Object.keys(shares).sort()).toEqual(["carrier", "neither"]);
+    expect("affected" in shares).toBe(false);
+    expect(shares.affected).toBeUndefined();
+    const distribution = distribute(shares, OUTCOME_PHRASES);
+    expect(distribution.categories.map((category) => category.key)).toEqual(["carrier", "neither"]);
+    expect(distribution.categories.map((category) => category.dots)).toEqual([50, 50]);
+    for (const category of distribution.categories) expect(category.sentence).not.toMatch(/about 0 would/);
+  });
+
+  it("(R8e) decides the sentence and the rung by one rounding, so null never pairs with 1,000", () => {
+    // 0.0006 and 0.0005 both round to 1 in 1,000 under the contract's own
+    // rounding, whatever the apportionment gave them (1 unit and 0 units).
+    const distribution = distribute({ a: 0.9989, b: 0.0006, c: 0.0005 }, { a: "x", b: "y", c: "z" });
+    const [a, b, c] = distribution.categories;
+    expect(distribution.categories.reduce((sum, category) => sum + category.dots, 0)).toBe(100);
+    expect([a.dots, b.dots, c.dots]).toEqual([98, 1, 1]);
+    expect(a.sentence).toBe("Out of 100 possible children, about 100 would x.");
+    expect(b.perThousand).toBe(1);
+    expect(c.perThousand).toBe(0);
+    for (const category of [b, c]) {
+      expect(category.outlined).toBe(true);
+      expect(category.denominator).toBe(1000);
+      expect(category.sentence).toBe("Fewer than 1 in 100 — but not zero. Inherit’s estimate is about 1 in 1,000.");
+    }
+    // The general property: a null sentence never sits beside a denominator of 1,000.
+    for (const category of distribution.categories) {
+      expect(category.sentence === null && category.denominator === 1000).toBe(false);
+    }
+  });
+
   it("returns no sentence when even 1,000 cannot show the share, and names the rung that can", () => {
     const distribution = distribute({ common: 0.9997, rare: 0.0003 }, { common: "x", rare: "y" });
     const rare = distribution.categories.find((category) => category.key === "rare")!;
@@ -110,7 +184,7 @@ describe("distribute", () => {
     expect(tied.categories.map((category) => category.dots)).toEqual([34, 33, 33]);
   });
 
-  it("sums to exactly 100 for many arbitrary share vectors", () => {
+  it("sums to exactly 100 for many arbitrary share vectors, and outlines exactly the shares below 1 in 100", () => {
     const random = pseudoRandom(9);
     for (let trial = 0; trial < 300; trial++) {
       const size = 2 + Math.floor(random.next().value * 6);
@@ -124,7 +198,11 @@ describe("distribute", () => {
       });
       const distribution = distribute(shares, phrases);
       expect(distribution.categories.reduce((sum, category) => sum + category.dots, 0)).toBe(DOT_COUNT);
-      for (const category of distribution.categories) expect(category.dots).toBeGreaterThanOrEqual(1);
+      for (const category of distribution.categories) {
+        expect(category.dots).toBeGreaterThanOrEqual(1);
+        expect(category.outlined).toBe(category.share < 0.01);
+        if (category.outlined) expect(category.dots).toBe(1);
+      }
     }
   });
 

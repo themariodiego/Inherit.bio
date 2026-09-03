@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PANEL } from "@/lib/ancestry/panel";
+import { measureRunsOfHomozygosity, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
 import { classify, type HaplogroupCall } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
@@ -71,9 +72,21 @@ export async function POST(
   }
 
   const admin = createAdminClient();
+  // A re-run measures the file again at the end, so a stale measure never
+  // outlives the calls it was taken from (the all-null shape is admitted).
   await admin
     .from("genome_files")
-    .update({ status: "parsing", processing_started_at: new Date().toISOString(), error: null })
+    .update({
+      status: "parsing",
+      processing_started_at: new Date().toISOString(),
+      error: null,
+      roh_status: null,
+      roh_reason: null,
+      roh_total_bases: null,
+      roh_covered_bases: null,
+      roh_fraction: null,
+      roh_measured_at: null,
+    })
     .eq("id", id);
 
   try {
@@ -261,15 +274,23 @@ export async function POST(
       if (prsError) throw new Error(`prs insert failed: ${prsError.code}`);
     }
 
-    await admin
+    // Runs of homozygosity, measured once from the same parsed records the
+    // variant rows were built from (chrom, pos, genotype) and stored with the
+    // file (ADR 0017 §7, D-030). A fact about this one file; nothing here
+    // reads another file.
+    const runs = measureRunsOfHomozygosity(records);
+    const finishedAt = new Date().toISOString();
+    const { error: fileError } = await admin
       .from("genome_files")
       .update({
         status: "annotated",
         build: "GRCh38",
         variant_count: records.length,
-        processing_finished_at: new Date().toISOString(),
+        processing_finished_at: finishedAt,
+        ...rohColumns(runs, finishedAt),
       })
       .eq("id", id);
+    if (fileError) throw new Error(`file update failed: ${fileError.code}`);
 
     const { count: templateCount } = await admin
       .from("report_templates")

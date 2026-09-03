@@ -65,13 +65,19 @@ function match(overrides: Partial<CarrierMatch> = {}): CarrierMatch {
   return {
     kind: "probability",
     probability: 0.25,
-    rsid: 999_999_001,
     gene: "E2EGENE1",
     conditionId: "e2e-recessive",
     conditionName: "A synthetic condition",
-    classification: "Pathogenic",
-    a: { dataSubjectId: SELF_A, displayLabel: "You", genotype: "A/G", copies: "one copy" },
-    b: { dataSubjectId: SELF_B, displayLabel: "Bo", genotype: "A/G", copies: "one copy" },
+    a: {
+      dataSubjectId: SELF_A,
+      displayLabel: "You",
+      variant: { rsid: 999_999_001, classification: "Pathogenic", genotype: "A/G", copies: "one copy" },
+    },
+    b: {
+      dataSubjectId: SELF_B,
+      displayLabel: "Bo",
+      variant: { rsid: 999_999_001, classification: "Pathogenic", genotype: "A/G", copies: "one copy" },
+    },
     ...overrides,
   } as CarrierMatch;
 }
@@ -237,6 +243,54 @@ describe("carrier match block", () => {
     expect(html).toContain("one copy");
   });
 
+  it("names both variants and both classifications, one line per person (brief line 346)", () => {
+    const html = renderToStaticMarkup(
+      h(CarrierMatchBlock, {
+        match: match({
+          b: {
+            dataSubjectId: SELF_B,
+            displayLabel: "Bo",
+            variant: {
+              rsid: 999_999_002,
+              classification: "Likely pathogenic",
+              genotype: "C/T",
+              copies: "one copy",
+            },
+          },
+        }),
+        people: PEOPLE,
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(html.match(/data-slot="carrier-variant"/g)).toHaveLength(2);
+    expect(html).toContain(copy.personVariantLine("You", 999_999_001, "E2EGENE1", "Pathogenic"));
+    expect(html).toContain(copy.personVariantLine("Bo", 999_999_002, "E2EGENE1", "Likely pathogenic"));
+  });
+
+  it("names two changed copies in the chip and the reason, and renders no number", () => {
+    const html = renderToStaticMarkup(
+      h(CarrierMatchBlock, {
+        match: match({
+          kind: "no-probability",
+          reason: "two-copies",
+          a: {
+            dataSubjectId: SELF_A,
+            displayLabel: "You",
+            variant: { rsid: 999_999_005, classification: "Pathogenic", genotype: "G/G", copies: "two copies" },
+          },
+        } as Partial<CarrierMatch>),
+        people: PEOPLE,
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(html).toContain("two copies");
+    expect(textOfSlot(html, "carrier-sentence")).toBe(
+      "Both of you have a change in E2EGENE1, but Inherit cannot turn that into a chance for a pregnancy. Reason: one file shows two changed copies, not one.",
+    );
+    expect(html).not.toContain("25 in 100");
+    expect(html).not.toContain('data-figure-basis="exact"');
+  });
+
   it("renders no number when there is no probability, and names the reason", () => {
     const html = renderToStaticMarkup(
       h(CarrierMatchBlock, {
@@ -257,16 +311,34 @@ describe("carrier match block", () => {
 });
 
 describe("carrier panel", () => {
-  it("states what it checked when a pair carries nothing in common", () => {
+  it("states what it checked when a pair carries nothing in common over a classified set", () => {
     const html = renderToStaticMarkup(
       h(CarrierPanel, {
-        groups: [{ key: "one", people: PEOPLE, matches: [], positionsBothCover: 7 }],
+        groups: [
+          { key: "one", people: PEOPLE, matches: [], classifiedPositions: 40, positionsBothCover: 7 },
+        ],
         viewerAccountId: VIEWER,
       }),
     );
     expect(html).toContain(copy.noCarrierMatches(7));
+    expect(html).not.toContain(copy.NO_CLASSIFIED_POSITIONS);
     expect(html).toContain(copy.CARRIER_MATCHES_HEADING);
     expect(html).toContain(`id="${copy.CARRIER_MATCHES_ID}"`);
+    expect(html).not.toContain("data-claim-block");
+  });
+
+  it("says there was nothing to check when the reference table classifies nothing (D-034)", () => {
+    const html = renderToStaticMarkup(
+      h(CarrierPanel, {
+        groups: [
+          { key: "one", people: PEOPLE, matches: [], classifiedPositions: 0, positionsBothCover: 0 },
+        ],
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(html).toContain(copy.NO_CLASSIFIED_POSITIONS);
+    expect(html).not.toContain("checked the");
+    expect(html).not.toContain(copy.noCarrierMatches(0));
     expect(html).not.toContain("data-claim-block");
   });
 
@@ -277,7 +349,11 @@ describe("carrier panel", () => {
           {
             key: "one",
             people: PEOPLE,
-            matches: [match(), match({ rsid: 999_999_002, kind: "no-probability", reason: "harmless" } as Partial<CarrierMatch>)],
+            matches: [
+              match(),
+              match({ gene: "E2EGENE2", kind: "no-probability", reason: "harmless" } as Partial<CarrierMatch>),
+            ],
+            classifiedPositions: 40,
             positionsBothCover: 7,
           },
         ],

@@ -1,35 +1,37 @@
 import "server-only";
 
 import { genotypeKey } from "@/lib/genome/reports";
-import {
-  getSubjectGenotypesByRsid,
-  getSubjectProcessedFiles,
-  type Db,
-} from "@/lib/genome/load";
-import { belowRohThreshold, measureSubjectRuns, type RohMeasure } from "./roh";
+import { getSubjectGenotypesByRsid, type Db } from "@/lib/genome/load";
+import { readSubjectRuns, subjectRunsBelowThreshold, type StoredRohMeasure } from "./roh";
 
 /**
- * Carrier pairs: the one home of the trigger rule (design §2.3; brief
- * §3 §8.4, §4 §5.3, X16.3). Pure functions over plain rows, so the whole
- * rule is decided in one place and proved without a database.
+ * Carrier pairs: the one home of the trigger rule (design §2.3; brief line
+ * 346, §3 §8.4, §4 §5.3, X16.3; ADR 0017 §5). Pure functions over plain
+ * rows, so the whole rule is decided in one place and proved without a
+ * database.
  *
- * The question is narrow and the answer is narrow. Two people's files both
- * report a change at the same position; a clinical classification exists for
- * that position; a registry says how the change is passed on. Only when all
- * of that lines up — both files read one changed copy and one unchanged
- * copy, the classification is pathogenic or likely pathogenic, the pattern
- * is autosomal recessive, and each file on its own sits below the runs
- * threshold — does a probability exist, and it is the single Mendelian
- * fraction 1 in 4. Every other case renders no number at all and says which
- * of the named reasons applies.
+ * The question is narrow and the answer is narrow. Each person's file
+ * reports a change in the same gene; a clinical classification exists for
+ * each change; a registry says how changes in that gene are passed on. Only
+ * when all of that lines up — each file reads one changed copy and one
+ * unchanged copy of a change classed pathogenic or likely pathogenic, the
+ * pattern is autosomal recessive, and every file of each person on its own
+ * sits below the runs threshold — does a probability exist, and it is the
+ * single Mendelian fraction 1 in 4. Every other case renders no number at
+ * all and says which of the eight named reasons applies. A failed trigger
+ * never drops a pair from the panel (brief line 346).
  *
- * **Nothing here is a relatedness quantity.** The two files are compared at
- * one position at a time for identity of the letters they report, which is
- * what the panel above says it does. No shared-DNA length, centimorgan
- * count, IBD segment, kinship coefficient or relationship label is computed
- * or could be: the runs measure each file carries is read on its own
- * (`belowRohThreshold` takes one measure), never against the other
- * (X15, brief line 348, acceptance 20).
+ * The trigger is gene-level, as the brief says: the two changes may sit at
+ * the same position or at different positions in the gene, and the block
+ * names each person's own variant and classification.
+ *
+ * **Nothing here is a relatedness quantity.** The two files are read one
+ * classified position at a time for what each reports, which is what the
+ * panel above says it does. No shared-DNA length, centimorgan count, IBD
+ * segment, kinship coefficient or relationship label is computed or could
+ * be: the runs measure each file carries is read on its own
+ * (`subjectRunsBelowThreshold` takes one person's files), never against
+ * the other person's (X15, brief line 348, acceptance 20).
  *
  * The only number this module produces is 1 in 4, which is arithmetic, not
  * a statistic: no frequency, penetrance, prevalence or threshold is read
@@ -61,6 +63,11 @@ export interface CarrierCondition {
 /** How each person's own file reads at the position, in words the panel prints. */
 export type CarrierCopies = "one copy" | "two copies" | "copies not shown";
 
+/**
+ * The closed reason table (design §2.3; ADR 0017 §5-6): the design's six,
+ * `sex-unknown` for an X-linked pattern and `two-copies` for a file that
+ * shows two changed copies rather than one.
+ */
 export const CARRIER_REASONS = [
   "dominant",
   "harmless",
@@ -68,6 +75,7 @@ export const CARRIER_REASONS = [
   "copies-unknown",
   "no-pattern",
   "sex-unknown",
+  "two-copies",
   "runs-unchecked",
 ] as const;
 
@@ -79,19 +87,31 @@ export interface CarrierPerson {
   displayLabel: string;
   /** rsid → the letters that file reports. */
   genotypes: ReadonlyMap<number, string>;
-  /** That file's own runs measure; never compared with the other person's. */
-  runs: RohMeasure;
+  /** The stored runs measure of each of that person's own files; never compared with the other person's. */
+  runs: readonly StoredRohMeasure[];
+}
+
+/** One person's own change in the gene: the variant the block names for them. */
+export interface CarrierVariantReading {
+  rsid: number;
+  /** The classification exactly as the reference row records it. */
+  classification: string;
+  genotype: string;
+  copies: CarrierCopies;
+}
+
+export interface CarrierMatchPerson {
+  dataSubjectId: string;
+  displayLabel: string;
+  variant: CarrierVariantReading;
 }
 
 interface CarrierMatchCommon {
-  rsid: number;
   gene: string;
   conditionId: string | null;
   conditionName: string | null;
-  /** The classification exactly as the reference row records it. */
-  classification: string;
-  a: { dataSubjectId: string; displayLabel: string; genotype: string; copies: CarrierCopies };
-  b: { dataSubjectId: string; displayLabel: string; genotype: string; copies: CarrierCopies };
+  a: CarrierMatchPerson;
+  b: CarrierMatchPerson;
 }
 
 export type CarrierMatch =
@@ -109,15 +129,32 @@ function normalise(value: string): string {
   return value.trim().toLowerCase();
 }
 
-/** Pathogenic and likely pathogenic, case-insensitively, and nothing else. */
-export function isPathogenicClassification(significance: string): boolean {
-  const value = normalise(significance);
-  return value === "pathogenic" || value === "likely pathogenic";
+/**
+ * The words of a classification label. The one writer stores ClinVar's list
+ * joined with ", " and ClinVar itself joins with "/" ("Pathogenic/Likely
+ * pathogenic"), so a label is split on `/`, `,`, `;` and `|`, trimmed and
+ * lower-cased before any word is read (D-033).
+ */
+export function classificationTokens(label: string): string[] {
+  return label
+    .split(/[/,;|]/)
+    .map((token) => normalise(token).replace(/\s+/g, " "))
+    .filter((token) => token.length > 0);
 }
 
+const PATHOGENIC_TOKENS = new Set(["pathogenic", "likely pathogenic"]);
+const HARMLESS_TOKENS = new Set(["benign", "likely benign"]);
+
+/** Pathogenic only when every word of the label is pathogenic or likely pathogenic. */
+export function isPathogenicClassification(significance: string): boolean {
+  const tokens = classificationTokens(significance);
+  return tokens.length > 0 && tokens.every((token) => PATHOGENIC_TOKENS.has(token));
+}
+
+/** Harmless only when every word of the label is benign or likely benign. */
 export function isHarmlessClassification(significance: string): boolean {
-  const value = normalise(significance);
-  return value === "benign" || value === "likely benign";
+  const tokens = classificationTokens(significance);
+  return tokens.length > 0 && tokens.every((token) => HARMLESS_TOKENS.has(token));
 }
 
 /**
@@ -157,88 +194,151 @@ function conditionFor(
   );
 }
 
+/** A position is a candidate only with a classification and a gene name to print. */
+function isClassified(
+  variant: CarrierRefVariant,
+): variant is CarrierRefVariant & { geneSymbol: string; clinvarSignificance: string } {
+  return (
+    variant.clinvarSignificance !== null &&
+    variant.clinvarSignificance.trim() !== "" &&
+    variant.geneSymbol !== null &&
+    variant.geneSymbol.trim() !== ""
+  );
+}
+
+/**
+ * Which of a person's changes in one gene the block names, when their file
+ * shows more than one. The order is the trigger's own: a pathogenic or
+ * likely pathogenic change before one of unknown meaning before a harmless
+ * one, and within a class two changed copies before one before a reading
+ * the file cannot give — because two copies of any pathogenic change in
+ * the gene means every child gets one, and 1 in 4 would then be false.
+ * Ties fall to the lower rsid, so two requests answer alike.
+ */
+function readingRank(reading: CarrierVariantReading): number {
+  const classRank = isPathogenicClassification(reading.classification)
+    ? 0
+    : isHarmlessClassification(reading.classification)
+      ? 2
+      : 1;
+  const copiesRank =
+    reading.copies === "two copies" ? 0 : reading.copies === "one copy" ? 1 : 2;
+  return classRank * 3 + copiesRank;
+}
+
+/** The change this person's file shows in the gene, or null when it shows none. */
+function carriedReading(
+  person: CarrierPerson,
+  variants: readonly CarrierRefVariant[],
+): CarrierVariantReading | null {
+  let chosen: CarrierVariantReading | null = null;
+  for (const variant of variants) {
+    if (!isClassified(variant)) continue;
+    const genotype = person.genotypes.get(variant.rsid);
+    if (genotype === undefined) continue;
+    const copies = copiesShown(genotype, variant.alt);
+    if (copies === null) continue;
+    const reading: CarrierVariantReading = {
+      rsid: variant.rsid,
+      classification: variant.clinvarSignificance.trim(),
+      genotype,
+      copies,
+    };
+    if (
+      chosen === null ||
+      readingRank(reading) < readingRank(chosen) ||
+      (readingRank(reading) === readingRank(chosen) && reading.rsid < chosen.rsid)
+    ) {
+      chosen = reading;
+    }
+  }
+  return chosen;
+}
+
 function reasonFor(
-  classification: string,
   condition: CarrierCondition | null,
   a: CarrierPerson,
   b: CarrierPerson,
-  copiesA: CarrierCopies,
-  copiesB: CarrierCopies,
+  readingA: CarrierVariantReading,
+  readingB: CarrierVariantReading,
 ): CarrierReason | null {
   // A file that does not show how many copies it read cannot support any of
   // the questions below, so it is answered first.
-  if (copiesA === "copies not shown" || copiesB === "copies not shown") return "copies-unknown";
-  if (isHarmlessClassification(classification)) return "harmless";
-  if (!isPathogenicClassification(classification)) return "unknown-meaning";
+  if (readingA.copies === "copies not shown" || readingB.copies === "copies not shown") {
+    return "copies-unknown";
+  }
+  const classifications = [readingA.classification, readingB.classification];
+  if (classifications.some(isHarmlessClassification)) return "harmless";
+  if (!classifications.every(isPathogenicClassification)) return "unknown-meaning";
 
   const mode = condition === null ? null : normalise(condition.inheritanceMode ?? "");
   if (mode === "autosomal_dominant") return "dominant";
-  // An X-linked pattern needs each person's chromosomal sex, which nothing in
-  // Inherit records, and the hundred-pregnancy split it would render belongs
-  // to Portrait. The panel says so rather than printing a fraction that does
-  // not apply (design §2.3, deviation recorded).
+  // An X-linked pattern: the hundred-pregnancy split (brief line 346) needs
+  // which parent carries the change on the X, and Inherit records no
+  // person's chromosomal sex (`subject_demographics` has no writer; the
+  // Y positions a file happens to hold are not a recorded fact about the
+  // person). The panel says so rather than printing a fraction that does
+  // not apply (ADR 0017 §6, D-031).
   if (mode === "x_linked") return "sex-unknown";
   if (mode !== "autosomal_recessive") return "no-pattern";
 
-  // Each file is asked on its own; the two measures are never compared.
-  if (!belowRohThreshold(a.runs) || !belowRohThreshold(b.runs)) return "runs-unchecked";
+  // Two changed copies in either file: every child gets one from that
+  // parent, so 1 in 4 is not the arithmetic. The panel names it rather than
+  // dropping the pair (brief line 346, D-035).
+  if (readingA.copies === "two copies" || readingB.copies === "two copies") return "two-copies";
+
+  // Each person's files are asked on their own; the two are never compared.
+  if (!subjectRunsBelowThreshold(a.runs) || !subjectRunsBelowThreshold(b.runs)) {
+    return "runs-unchecked";
+  }
   return null;
 }
 
 /**
- * Every position both files report a change at, with the one probability or
- * the one named reason. Ordered by rsid so two requests answer alike, and
+ * Every gene both files report a classified change in, with the one
+ * probability or the one named reason. Ordered by gene symbol, then by the
+ * rsid each person's reading names, so two requests answer alike — and
  * ordered by nothing else: no match is ranked, scored or called worse.
  */
 export function evaluateCarrierPairs(input: CarrierPairInput): CarrierMatch[] {
   const { a, b, refVariants, conditions } = input;
-  const matches: CarrierMatch[] = [];
 
+  // Classified positions, grouped by gene (X16.3: the registry joins through
+  // gene symbols) and ordered by rsid within the gene.
+  const byGene = new Map<string, { gene: string; variants: CarrierRefVariant[] }>();
   for (const variant of [...refVariants].sort((left, right) => left.rsid - right.rsid)) {
-    // A position with no clinical classification is not a candidate at all.
-    if (variant.clinvarSignificance === null || variant.clinvarSignificance.trim() === "") continue;
-    const gene = variant.geneSymbol?.trim();
-    // Without a gene name the panel could not name what the two files share.
-    if (!gene) continue;
+    if (!isClassified(variant)) continue;
+    const gene = variant.geneSymbol.trim();
+    const key = normalise(gene);
+    const group = byGene.get(key);
+    if (group) group.variants.push(variant);
+    else byGene.set(key, { gene, variants: [variant] });
+  }
 
-    const genotypeA = a.genotypes.get(variant.rsid);
-    const genotypeB = b.genotypes.get(variant.rsid);
-    if (genotypeA === undefined || genotypeB === undefined) continue;
+  const matches: CarrierMatch[] = [];
+  const groups = [...byGene.values()].sort((left, right) =>
+    left.gene.localeCompare(right.gene, "en"),
+  );
+  for (const group of groups) {
+    const readingA = carriedReading(a, group.variants);
+    const readingB = carriedReading(b, group.variants);
+    // One of the two files shows no change in this gene: nothing is shared.
+    if (readingA === null || readingB === null) continue;
+    // At least one file must actually show a changed copy. Two files that
+    // both failed to read the gene's positions share nothing that could be
+    // stated: a no-call is not a change.
+    if (readingA.copies === "copies not shown" && readingB.copies === "copies not shown") continue;
 
-    const copiesA = copiesShown(genotypeA, variant.alt);
-    const copiesB = copiesShown(genotypeB, variant.alt);
-    // One of the two files shows no changed copy here: nothing is shared.
-    if (copiesA === null || copiesB === null) continue;
-    // Two changed copies is a finding about that person, not a carrier pair.
-    // It belongs on their own report, behind their own layer permission, and
-    // the closed reason table has no sentence that would be true here.
-    if (copiesA === "two copies" || copiesB === "two copies") continue;
-    // At least one file must actually show one changed copy. Two files that
-    // both failed to read the position share nothing that could be stated.
-    if (copiesA !== "one copy" && copiesB !== "one copy") continue;
-
-    const condition = conditionFor(gene, conditions);
+    const condition = conditionFor(group.gene, conditions);
     const common: CarrierMatchCommon = {
-      rsid: variant.rsid,
-      gene,
+      gene: group.gene,
       conditionId: condition?.conditionId ?? null,
       conditionName: condition?.conditionName ?? null,
-      classification: variant.clinvarSignificance.trim(),
-      a: {
-        dataSubjectId: a.dataSubjectId,
-        displayLabel: a.displayLabel,
-        genotype: genotypeA,
-        copies: copiesA,
-      },
-      b: {
-        dataSubjectId: b.dataSubjectId,
-        displayLabel: b.displayLabel,
-        genotype: genotypeB,
-        copies: copiesB,
-      },
+      a: { dataSubjectId: a.dataSubjectId, displayLabel: a.displayLabel, variant: readingA },
+      b: { dataSubjectId: b.dataSubjectId, displayLabel: b.displayLabel, variant: readingB },
     };
 
-    const reason = reasonFor(common.classification, condition, a, b, copiesA, copiesB);
+    const reason = reasonFor(condition, a, b, readingA, readingB);
     matches.push(
       reason === null
         ? { ...common, kind: "probability", probability: BOTH_CHANGED_COPIES_PROBABILITY }
@@ -255,9 +355,9 @@ export function countCarrierMatches(matches: readonly CarrierMatch[]): number {
 }
 
 /**
- * The positions both files cover, counted for the empty-panel sentence. It
- * is a count of positions and nothing else: no coverage fraction, no
- * quality score, no comparison between the two people.
+ * The classified positions both files cover, counted for the empty-panel
+ * sentence. It is a count of positions and nothing else: no coverage
+ * fraction, no quality score, no comparison between the two people.
  */
 export function countPositionsBothCover(
   a: ReadonlyMap<number, string>,
@@ -272,8 +372,8 @@ export function countPositionsBothCover(
 // Reading the rows the rule decides on (design §5: computed server-side, at
 // request time). The reads are ordered so the common state costs one query:
 // today every `ref_variants.clinvar_significance` is null, so the classified
-// set is empty, no genotype is read, no runs are measured and the panel
-// states that it found nothing.
+// set is empty, no genotype is read, no runs measure is read and the panel
+// states that it has nothing to check yet.
 // ---------------------------------------------------------------------------
 
 /**
@@ -286,6 +386,8 @@ export const MAX_CLASSIFIED_POSITIONS = 5_000;
 
 export interface CarrierPairSummary {
   matches: CarrierMatch[];
+  /** Classified positions in the reference set: zero is the production state today (D-034). */
+  classifiedPositions: number;
   /** Classified positions both files cover: the count the empty sentence prints. */
   positionsBothCover: number;
 }
@@ -336,10 +438,10 @@ export interface CarrierPairPerson {
 }
 
 /**
- * The whole pipeline for one pair, at request time. Each person's runs are
- * measured from that person's own files and asked about on their own; the
- * two measures are never compared, and no quantity crossing the two people
- * is produced anywhere in this function.
+ * The whole pipeline for one pair, at request time. Each person's stored
+ * runs measures are read from that person's own files and asked about on
+ * their own; the two are never compared, and no quantity crossing the two
+ * people is produced anywhere in this function.
  */
 export async function resolveCarrierPair(
   supabase: Db,
@@ -348,22 +450,19 @@ export async function resolveCarrierPair(
   refVariants: readonly CarrierRefVariant[],
   conditions: readonly CarrierCondition[],
 ): Promise<CarrierPairSummary> {
-  if (refVariants.length === 0) return { matches: [], positionsBothCover: 0 };
+  const classifiedPositions = refVariants.length;
+  if (classifiedPositions === 0) return { matches: [], classifiedPositions, positionsBothCover: 0 };
   const rsids = refVariants.map((variant) => variant.rsid);
   const [readA, readB] = await Promise.all([
     getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids),
     getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids),
   ]);
   const positionsBothCover = countPositionsBothCover(readA.genotypes, readB.genotypes);
-  if (positionsBothCover === 0) return { matches: [], positionsBothCover: 0 };
+  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover };
 
-  const [filesA, filesB] = await Promise.all([
-    getSubjectProcessedFiles(supabase, a.dataSubjectId),
-    getSubjectProcessedFiles(supabase, b.dataSubjectId),
-  ]);
   const [runsA, runsB] = await Promise.all([
-    measureSubjectRuns(supabase, a.dataSubjectId, filesA.map((file) => file.id)),
-    measureSubjectRuns(supabase, b.dataSubjectId, filesB.map((file) => file.id)),
+    readSubjectRuns(supabase, a.dataSubjectId),
+    readSubjectRuns(supabase, b.dataSubjectId),
   ]);
 
   return {
@@ -373,6 +472,7 @@ export async function resolveCarrierPair(
       refVariants,
       conditions,
     }),
+    classifiedPositions,
     positionsBothCover,
   };
 }
