@@ -90,9 +90,9 @@ export function ChatPanel({
         {messages.length === 0 ? (
           <div className="rounded-2xl border border-line bg-card p-5 text-sm text-ink-muted">
             <p>
-              Ask about your own genome: &ldquo;What does my file say about
-              caffeine?&rdquo;, &ldquo;Do I carry the alcohol-flush
-              variant?&rdquo;, &ldquo;Summarize my heart reports.&rdquo;
+              Ask about your own genome. Try: &ldquo;What does my file say about
+              caffeine?&rdquo; &ldquo;Do I carry the alcohol-flush
+              variant?&rdquo; &ldquo;Summarize my heart reports.&rdquo;
             </p>
             <p className="mt-2">
               Answers are grounded in your reports and variants via tools, and
@@ -144,8 +144,8 @@ export function ChatPanel({
       {errorCode?.code === "consent_required" ? (
         <div className="rounded-xl border border-line bg-tint p-4 text-sm">
           <p>
-            The copilot needs your explicit consent before sending
-            genome-derived data to a cloud provider.
+            Before sending data from your genome to a cloud service, Copilot
+            needs your clear consent.
           </p>
           <Button
             size="sm"
@@ -161,9 +161,9 @@ export function ChatPanel({
             Configure a provider in{" "}
             <Link href="/settings/copilot" className="underline underline-offset-2">
               Settings
-            </Link>{" "}
-            — bring your own Anthropic key, or point at a local model
-            (privacy-preferred).
+            </Link>
+            {". "}Add your own Anthropic key, or connect a model that runs on
+            your computer for more privacy.
           </p>
         </div>
       ) : error ? (

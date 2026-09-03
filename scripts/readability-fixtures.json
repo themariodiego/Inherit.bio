@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "package": "flesch-kincaid",
+  "version": "2.0.1",
+  "tolerance": 0.2,
+  "cases": [
+    { "id": "short-action", "text": "Open your report.", "expectedGrade": 5.2467 },
+    { "id": "plain-result", "text": "Your file shows this change.", "expectedGrade": -1.84 },
+    { "id": "two-sentences", "text": "This result is an estimate. It cannot predict what will happen.", "expectedGrade": 4.7914 },
+    { "id": "number-normalization", "text": "About 12 in 100 people have this result.", "expectedGrade": 3.755 },
+    { "id": "rsid-normalization", "text": "We found rs12345 in your file.", "expectedGrade": -1.45 },
+    { "id": "gene-normalization", "text": "BRCA1 is a gene in this report.", "expectedGrade": 0.6257 },
+    { "id": "unit-normalization", "text": "The sample contains 25 mg of material.", "expectedGrade": 7.3686 },
+    { "id": "question", "text": "What does this mean for you?", "expectedGrade": -1.45 },
+    { "id": "legal-summary", "text": "You may ask us to delete your account. We will stop access when your request is complete.", "expectedGrade": 2.9956 },
+    { "id": "coverage-caveat", "text": "Your file did not cover this position, so Inherit cannot show a result here.", "expectedGrade": 7.57 }
+  ]
+}

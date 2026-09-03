@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  BROWSER_EMPTY_REGION,
+  BROWSER_FAILED,
+  BROWSER_LOADING,
+  IGV_CONTROL_LABELS,
+  TRACK_NAME,
+} from "@/copy/genome/data";
 import { chromToName } from "@/lib/genome/types";
 
 interface RegionVariant {
@@ -109,23 +116,24 @@ function labelIgvControls(root: HTMLElement) {
       }
     };
 
-    // Chromosome picker: a bare 26-option <select> with no name.
+    // Chromosome picker: a bare 26-option <select> with no name. Hidden by
+    // the config below, but named in case a config change shows it again.
     label(
       root.querySelector(".igv-chromosome-select-widget-container select"),
-      "Chromosome",
+      IGV_CONTROL_LABELS.chromosome,
     );
 
     // Locus search box (placeholder-only otherwise) and its icon "button".
-    label(root.querySelector("input.igv-search-input"), "Search by locus");
-    label(root.querySelector(".igv-search-icon-container"), "Search", true);
+    label(root.querySelector("input.igv-search-input"), IGV_CONTROL_LABELS.locusSearch);
+    label(root.querySelector(".igv-search-icon-container"), IGV_CONTROL_LABELS.locusSubmit, true);
 
     // Zoom widget: [zoom-out div] [slider] [zoom-in div], per ZoomWidget's
     // construction order in the igv dist.
     const zoom = root.querySelector(".igv-zoom-widget");
     if (zoom) {
-      label(zoom.querySelector("input[type='range']"), "Zoom level");
-      label(zoom.firstElementChild, "Zoom out", true);
-      label(zoom.lastElementChild, "Zoom in", true);
+      label(zoom.querySelector("input[type='range']"), IGV_CONTROL_LABELS.zoomSlider);
+      label(zoom.firstElementChild, IGV_CONTROL_LABELS.zoomOut, true);
+      label(zoom.lastElementChild, IGV_CONTROL_LABELS.zoomIn, true);
     }
 
     // Navbar toggle buttons (cursor guide, center line, track labels, …)
@@ -223,6 +231,20 @@ export function GenomeBrowser({
         // Without this, igv fetches its default genome registry from
         // igv.org on startup (see the privacy note above).
         loadDefaultGenomes: false,
+        // The navbar keeps locus search and zoom only. Every other control
+        // (chromosome picker, SVG export, sample names, multi-select, track
+        // labels, centre line, cursor guide) is switched off through the
+        // library's own display flags — each read by name in
+        // node_modules/igv/dist/igv.esm.js (3.8.5) — so the first viewport
+        // at 1280×800 stays within the twelve interactive elements X6.1
+        // allows even with the track in view.
+        showChromosomeWidget: false,
+        showSVGButton: false,
+        showSampleNameButton: false,
+        showMultiSelectButton: false,
+        showTrackLabelButton: false,
+        showCenterGuideButton: false,
+        showCursorTrackingGuideButton: false,
         reference: {
           id: "hg38-positions",
           name: "GRCh38 (positions only, no external sequence host)",
@@ -232,7 +254,7 @@ export function GenomeBrowser({
         locus: `${chromName}:${locus.start}-${locus.end}`,
         tracks: [
           {
-            name: "Your variants",
+            name: TRACK_NAME,
             type: "annotation",
             format: "bed",
             displayMode: "EXPANDED",
@@ -279,8 +301,7 @@ export function GenomeBrowser({
         role="alert"
         className="flex min-h-64 items-center justify-center rounded-xl border border-line bg-card p-6 text-center text-sm text-ink-muted"
       >
-        The genome browser could not load — your variants are still listed
-        above.
+        {BROWSER_FAILED}
       </div>
     );
   }
@@ -295,7 +316,7 @@ export function GenomeBrowser({
           ref={containerRef}
           data-testid="genome-browser"
           role="region"
-          aria-label="Interactive genome browser"
+          aria-label={IGV_CONTROL_LABELS.region}
           className="min-h-64 rounded-xl border border-line bg-white p-2 dark:bg-card"
         />
         {status === "loading" ? (
@@ -303,16 +324,13 @@ export function GenomeBrowser({
             className="absolute inset-0 flex items-center justify-center rounded-xl"
             aria-live="polite"
           >
-            <p className="text-sm text-ink-muted">
-              Loading the genome browser…
-            </p>
+            <p className="text-sm text-ink-muted">{BROWSER_LOADING}</p>
           </div>
         ) : null}
       </div>
       {status === "ready" && variantCount === 0 ? (
-        <p className="mt-2 rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
-          Your file has no variants in this region, so the track above is
-          empty — that reflects your file&apos;s coverage, not an error.
+        <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
+          {BROWSER_EMPTY_REGION}
         </p>
       ) : null}
     </div>

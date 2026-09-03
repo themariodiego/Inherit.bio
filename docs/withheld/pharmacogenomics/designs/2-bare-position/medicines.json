@@ -1,0 +1,139 @@
+[
+  {
+    "slug": "vkorc1-rs9923231-one-position",
+    "category": "pharmacogenomics",
+    "title": "Blood clotting medicines, one position · VKORC1",
+    "summary": "This reads one position near VKORC1. It is the only position CPIC uses to name the two VKORC1 forms. The report tells you which letters your file shows there. It does not tell you how you respond to warfarin or to any other medicine, and it is not a dose.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 9923231,
+        "gene": "VKORC1",
+        "chrom": 16,
+        "pos38": 31096368,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. CPIC calls this the reference form of VKORC1. It says nothing about how you respond to a medicine.",
+          "CT": "Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. It says nothing about how you respond to a medicine.",
+          "TT": "Your file shows T on both copies at this position. CPIC calls this the variant form of VKORC1. It says nothing about how you respond to a medicine."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "28198005", "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017" }
+    ]
+  },
+  {
+    "slug": "cyp2c19-rs4244285-one-position",
+    "category": "pharmacogenomics",
+    "title": "Blood clotting medicines, one position · CYP2C19",
+    "summary": "This reads one position in CYP2C19, the one that defines the *2 form. CPIC uses 43 positions to name CYP2C19 forms, and this report reads one of them. It tells you the letters at that spot. It cannot name your CYP2C19 forms or say how you respond to clopidogrel.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 4244285,
+        "gene": "CYP2C19",
+        "chrom": 10,
+        "pos38": 94781859,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Your file shows G on both copies. G is the letter in the reference-like forms of CYP2C19, such as *38. The other 42 positions CPIC uses are not read here, so this is not a *1 call.",
+          "AG": "Your file shows A on one copy and G on the other. A is the letter that defines the *2 form, which CPIC lists as no function. Which forms your other positions carry is not read here.",
+          "AA": "Your file shows A on both copies. A defines the *2 form, which CPIC lists as no function. This is one position, not a metabolizer status."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "35034351", "label": "CPIC guideline for CYP2C19 and clopidogrel, 2022 update, Clin Pharmacol Ther 2022" }
+    ]
+  },
+  {
+    "slug": "cyp2c9-rs1799853-one-position",
+    "category": "pharmacogenomics",
+    "title": "Blood clotting medicines, one position · CYP2C9 rs1799853",
+    "summary": "This reads one position in CYP2C9, the one that defines the *2 form. The same letter also appears in the *35, *61 and *92 forms. CPIC scores CYP2C9 across both gene copies and 88 positions, so this report cannot give that score or say how you respond to warfarin.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 1799853,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94942290,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies. C is the reference letter at this position. The other 87 positions CPIC uses for CYP2C9 are not read here.",
+          "CT": "Your file shows C on one copy and T on the other. T is the letter that defines the *2 form; it also appears in *35, *61 and *92. This is one position, not a score.",
+          "TT": "Your file shows T on both copies. T defines the *2 form and also appears in *35, *61 and *92. This is one position, not a score."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "28198005", "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017" },
+      { "pmid": "32189324", "label": "CPIC guideline for CYP2C9 and NSAIDs, Clin Pharmacol Ther 2020" }
+    ]
+  },
+  {
+    "slug": "cyp2c9-rs1057910-one-position",
+    "category": "pharmacogenomics",
+    "title": "Blood clotting medicines, one position · CYP2C9 rs1057910",
+    "summary": "This reads one position in CYP2C9, the one that defines the *3 form. The same letter also appears in the *18 and *68 forms. CPIC scores CYP2C9 across both gene copies and 88 positions, so this report cannot give that score or say how you respond to a medicine.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 1057910,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94981296,
+        "ref": "A",
+        "alt": "C",
+        "interpretations": {
+          "AA": "Your file shows A on both copies. A is the reference letter at this position. The other 87 positions CPIC uses for CYP2C9 are not read here.",
+          "AC": "Your file shows A on one copy and C on the other. C is the letter that defines the *3 form; it also appears in *18 and *68. This is one position, not a score.",
+          "CC": "Your file shows C on both copies. C defines the *3 form and also appears in *18 and *68. This is one position, not a score."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "28198005", "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017" },
+      { "pmid": "32189324", "label": "CPIC guideline for CYP2C9 and NSAIDs, Clin Pharmacol Ther 2020" }
+    ]
+  },
+  {
+    "slug": "slco1b1-rs4149056-one-position",
+    "category": "pharmacogenomics",
+    "title": "Cholesterol medicines, one position · SLCO1B1",
+    "summary": "This reads one position in SLCO1B1, the one that defines the *5 form. The same letter also appears in the *15, *40 and *47 forms. The 2022 guideline reads SLCO1B1 together with ABCG2 and CYP2C9, so this report is one position in one of three genes. It cannot say how you respond to a statin.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 4149056,
+        "gene": "SLCO1B1",
+        "chrom": 12,
+        "pos38": 21178615,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Your file shows T on both copies. T is the reference letter at this position. The other 34 positions CPIC uses for SLCO1B1 are not read here.",
+          "CT": "Your file shows C on one copy and T on the other. C is the letter that defines the *5 form, which CPIC lists as decreased function; it also appears in *15, *40 and *47. This is one position, not a status.",
+          "CC": "Your file shows C on both copies. C defines the *5 form and also appears in *15, *40 and *47. This is one position, not a status."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "35152405", "label": "CPIC guideline for SLCO1B1, ABCG2 and CYP2C9 and statin-associated musculoskeletal symptoms, Clin Pharmacol Ther 2022" }
+    ]
+  }
+]

@@ -67,6 +67,29 @@ registered claimant-principal stores.
 - The baseline `user_id` columns remain during backfill. Assertions prove each
   migrated row resolves to the correct account-owned self subject before any
   new read path is enabled.
+- `subjects.portrait_acknowledged_at timestamptz` is written only by
+  `acknowledge_portrait_v1(p_account_id, p_subject_id)`, once, on a subject
+  whose `subject_account_id` is the caller; `portrait-trait-v1` requires it on
+  both subjects of a pair.
+- `subjects.independent_login_at timestamptz` is written only by
+  `mark_independent_login_v1(p_account_id, p_auth_session_id)`, once per
+  subject bound to the account, from a server-verified auth session that
+  post-dates any accepted invitation for that subject; it never changes a
+  binding revision. `grant_directional_purpose_v1` requires it on the data
+  subject for `family.heritability` and `family.portrait`
+  (`other-adult-mitigation-state-v1.independent-login-restricted`). The call
+  belongs in the ordinary sign-in exchange (`auth.callback`
+  `independentLoginMarker`).
+- `family_sharing_pauses` is the pause store of `family-sharing-state-v1`,
+  keyed by the two accounts (`account_low_id < account_high_id`, one current
+  row per pair of accounts). A pause is a table rather than
+  `family_pairs.paused_at` because a pair row exists only after the first
+  `family.portrait` grant while report-layer sharing has no pair, and because
+  the contract forbids a pause from terminalising any grant row: the row is a
+  predicate `private.resource_authorized_v1` reads on every check. `resume`
+  ends the row (`end_reason = 'resumed'`); `stop` ends it (`'stopped'`).
+- `family_sharing_stops` is the stop tombstone (`ended_at`, `deleted_counts`
+  jsonb) both accounts read; nothing else records what a stop deleted.
 
 ## Legal artifacts, signatures, attestations, and grants
 
@@ -95,6 +118,32 @@ tables, and donor-attribution tables.
   result grants are limited to `reports.monogenic`, `reports.polygenic`,
   `ancestry`, and `copilot.local`; `family.heritability` is only for an explicit
   multi-subject output.
+- Directional grants between adults are written only by the service-role RPCs
+  of `20260903120000_family_sharing_runtime.sql`:
+  `grant_directional_purpose_v1(p_account_id, p_data_subject_id,
+  p_recipient_principal_id, p_purpose, p_artifact_key, p_artifact_version,
+  p_token_nonce) returns uuid` (signature, base row and direction row in one
+  transaction; only the data subject's own account; `consent.share-with-adult`
+  at its current version; a `family.portrait` grant creates the pending
+  `family_pairs` row and promotes it to `current` when both own-session
+  directions are live; every other purpose carries a current `family_member`
+  relationship), `revoke_directional_purpose_v1(p_account_id, p_grant_id)`,
+  `pause_family_sharing_v1` / `resume_family_sharing_v1(p_account_id,
+  p_counterpart_account_id)`, `stop_family_sharing_v1(...) returns
+  table(ended_at, deleted_counts jsonb)` and `acknowledge_portrait_v1`. Every
+  one is `security definer`, empty `search_path`, revoked from `anon` and
+  `authenticated`, executable by `service_role` only, and raises a named error
+  (`42501` authority, `22023` invalid input, `23505` nonce reuse, `55000`
+  state).
+- `purpose_grant_nonces` holds the SHA-256 of every consumed presentation
+  nonce (`directional-purpose-grant-v1.presentationAuthority`); the RPC writes
+  it before any grant row and a reused nonce fails with zero side effect.
+- Revocation and stop delete the exact derived rows inline
+  (`portrait_results` for the pair, `chat_messages` and
+  `copilot_context_history` by `retrieved_subject_ids`, context tokens) and
+  enqueue the `purpose.derived-60s` worker job (`worker_jobs.kind =
+  'revoke_purge'`, output `lifecycle.revoke-purge`, source binding
+  `revocation-disposition`) for re-verification.
 
 ## Embryo cohorts and results
 
@@ -118,6 +167,10 @@ corrections, suppressions, and notices listed in the purge registry.
 - Allowed condition IDs and model bindings equal
   `data/embryo/allowed_conditions.json`. The initially empty registry is a
   deliberate unavailable state: it produces no numeric embryo finding.
+- `condition_registry.gene_symbols text[] not null default '{}'` (upper-case
+  HGNC-style symbols, checked by `private.valid_gene_symbols`) joins classified
+  `ref_variants` to a condition's inheritance mode for the carrier-pair
+  trigger (X16.3); an empty array means no gene is registered, never "any".
 - Stored result documents validate recursively against the exact eight-key
   `EmbryoFinding` leaf and its registered child graph before insert/update.
 - QC thresholds, coverage failures, within-family validation, natural-frequency

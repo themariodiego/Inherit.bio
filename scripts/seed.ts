@@ -6,6 +6,11 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
+import type {
+  EstimateKind,
+  EvidenceLevel,
+  FindingLayer,
+} from "../src/lib/genome/taxonomy";
 import type { Database } from "../src/lib/supabase/types";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,7 +64,11 @@ interface SeedTemplate {
   category: string;
   title: string;
   summary: string;
-  evidence: "established" | "moderate" | "preliminary";
+  evidence: EvidenceLevel;
+  /** Optional in seed files; derived as 'estimate' when absent. */
+  layer?: FindingLayer;
+  /** Optional in seed files; derived from pgs_id when absent. */
+  estimate_kind?: EstimateKind | null;
   variants: {
     rsid: number;
     gene: string;
@@ -88,6 +97,13 @@ async function seedTemplates() {
     const templates = JSON.parse(
       fs.readFileSync(path.join(dir, file), "utf8"),
     ) as SeedTemplate[];
+    for (const t of templates) {
+      // Seeds always publish, and an 'insufficient' template is never
+      // published (the database CHECK would reject it too).
+      if (t.evidence === "insufficient") {
+        throw new Error(`${file}: ${t.slug} is 'insufficient' and cannot be seeded as published`);
+      }
+    }
     const rows = templates.map((t) => ({
       slug: t.slug,
       category: t.category,
@@ -95,6 +111,10 @@ async function seedTemplates() {
       summary: t.summary,
       status: "published" as const,
       evidence: t.evidence,
+      layer: t.layer ?? ("estimate" as const),
+      estimate_kind:
+        t.estimate_kind ??
+        (t.pgs_id ? ("polygenic_score" as const) : ("single_locus" as const)),
       variants: t.variants as never,
       pgs_id: t.pgs_id,
       citations: t.citations as never,

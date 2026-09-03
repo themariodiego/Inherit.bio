@@ -20,6 +20,18 @@
   --line: #dde2d3;
   --danger: #a03d2e;
   --ok: #2e5c45;
+  /* Subject identity colours (X2.4): eight tokens, each ≥3:1 against --paper
+     and --card in both themes. Colour never carries identity alone; the disc
+     always contains the subject's initial and the name sits beside it. Never
+     used for embryos. */
+  --subject-0: #2e5c45;
+  --subject-1: #8f3527;
+  --subject-2: #6b5a1f;
+  --subject-3: #2f4f7a;
+  --subject-4: #6a3d7a;
+  --subject-5: #245c5c;
+  --subject-6: #7a3a55;
+  --subject-7: #5a6155;
 }
 
 .dark {
@@ -34,6 +46,14 @@
   --line: #2b352e;
   --danger: #e08a7a;
   --ok: #7fb298;
+  --subject-0: #7fb298;
+  --subject-1: #e59586;
+  --subject-2: #d8c273;
+  --subject-3: #8fb3e0;
+  --subject-4: #c39be0;
+  --subject-5: #7fc4c4;
+  --subject-6: #e0a0be;
+  --subject-7: #a9b6ad;
 }
 
 @theme inline {
@@ -48,6 +68,14 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
+  --color-subject-0: var(--subject-0);
+  --color-subject-1: var(--subject-1);
+  --color-subject-2: var(--subject-2);
+  --color-subject-3: var(--subject-3);
+  --color-subject-4: var(--subject-4);
+  --color-subject-5: var(--subject-5);
+  --color-subject-6: var(--subject-6);
+  --color-subject-7: var(--subject-7);
 
   /* shadcn/ui semantic aliases mapped onto the Sequence palette */
   --color-background: var(--paper);

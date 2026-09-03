@@ -1,6 +1,6 @@
-// CI gate: legal/consent surfaces must contain no placeholder text — the
-// incumbent pattern this project exists to avoid ("[Nebula to specify…]",
-// "N/A" sections). Checks rendered pages when SERVER_URL is set (E2E/CI
+// CI gate: legal/consent surfaces must contain no placeholder text — for
+// example a bracketed operator instruction or an "N/A" section. Checks
+// rendered pages when SERVER_URL is set (E2E/CI
 // with a running server); otherwise greps the page sources.
 import fs from "node:fs";
 import path from "node:path";

@@ -7025,6 +7025,14 @@
         "targetSource": "route-adult-subject-and-exact-relationship-to-the-acting-account",
         "operation": "family-sharing-pause-resume-or-stop"
       },
+      "api.family-acknowledge": {
+        "targetSource": "acting-account-and-for-the-portrait-case-the-exact-subject-whose-subject_account_id-is-the-acting-account",
+        "operation": "family-acknowledgement-write"
+      },
+      "api.family-sharing": {
+        "targetSource": "route-family-person-resolved-through-the-family-graph-to-exactly-one-counterpart-account-and-every-grant-relationship-and-pair-between-the-two-accounts",
+        "operation": "family-sharing-pause-resume-or-stop"
+      },
       "api.consents": {
         "targetSource": "exactly-one-server-resolved-subject-subject-draft-cohort-or-cohort-draft-plus-server-resolved-action-artifact-upload-class-and-purpose",
         "operation": "consent-create",
@@ -8738,6 +8746,16 @@
         }
       },
       {
+        "routeId": "api.family-sharing",
+        "method": "POST",
+        "requestOperation": {
+          "const": "stop"
+        },
+        "nonce": {
+          "body": "nonce"
+        }
+      },
+      {
         "routeId": "api.consent-revoke",
         "method": "POST",
         "operation": "consent-revoke",
@@ -10259,6 +10277,35 @@
       "emptyAfterRevocation": "return-the-readable-chat-with-an-empty-messages-array-or-opaque-404-when-the-scope-itself-is-unreadable",
       "cohortRevisionGuard": "before-serializing-each-cohort-turn-pair-chat-history-projection-v1-matches-its-immutable-basis-case-basis-revision-all-five-participant-set-memberships-and-set-revisions-and-donor-classification-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-to-the-current-resolvers; stale-pairs-and-dependents-are-omitted-in-full"
     },
+    "search-results-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "groups": [
+          {
+            "id": {
+              "enum": [
+                "people",
+                "reports",
+                "ancestry",
+                "settings"
+              ]
+            },
+            "label": "the-registered-group-label-from-src/copy/search.ts",
+            "results": [
+              {
+                "label": "safe-plain-destination-label",
+                "href": "same-origin-path-built-from-a-src/lib/primary-routes.ts-route-id",
+                "chip": "optional-subject-kind-chip-word-present-on-every-subject-derived-row"
+              }
+            ]
+          }
+        ]
+      },
+      "ordering": "groups-in-the-registered-order-only-non-empty-groups-at-most-four-groups-and-at-most-eight-results-per-group",
+      "unknownFieldsRecursively": "forbidden",
+      "genotypePercentileRiskValueOrAncestryShare": "forbidden-in-every-field"
+    },
     "llm-settings-v1": {
       "post": {
         "status": 200,
@@ -11515,6 +11562,21 @@
       },
       "unknownFieldsRecursively": "forbidden"
     },
+    "family-acknowledged-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "acknowledgement": {
+          "enum": [
+            "tier2-result-gate",
+            "portrait"
+          ]
+        },
+        "acknowledgedAt": "ISO-8601-UTC-server-timestamp"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer"
+    },
     "signup-v1": {
       "status": 202,
       "contentType": "application/json",
@@ -11998,6 +12060,9 @@
         "revoked-resource-v1",
         "resource-not-found-v1"
       ],
+      "api.search": [
+        "search-results-v1"
+      ],
       "api.browse-region": [
         "raw-region-v1",
         "invalid-request-v1",
@@ -12068,6 +12133,18 @@
         "resource-not-found-v1"
       ],
       "api.subject-sharing": [
+        "sharing-updated-v1",
+        "invalid-request-v1",
+        "consent-required-v1",
+        "capability-denied-api-v1",
+        "resource-not-found-v1"
+      ],
+      "api.family-acknowledge": [
+        "family-acknowledged-v1",
+        "invalid-request-v1",
+        "resource-not-found-v1"
+      ],
+      "api.family-sharing": [
         "sharing-updated-v1",
         "invalid-request-v1",
         "consent-required-v1",
@@ -14504,6 +14581,57 @@
       "disposition": "kept"
     },
     {
+      "id": "api.search",
+      "path": "/api/search",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": {
+          "q": "optional-plain-text-search-query-cut-to-100-characters-and-matched-only-after-normalisation"
+        }
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "actorRole": "acting-account",
+        "operation": "global-search-destinations-read",
+        "sources": {
+          "people": "every-subject-listSubjectsForAccount-returns-for-the-acting-account-matched-on-its-display-label-and-chipped-relative-to-the-viewer-exactly-as-the-subject-bar-chips-it; a-record-that-can-carry-no-chip-is-not-listed",
+          "reports": "published-non-fixture-report-templates-matched-on-title-gene-symbols-and-nine-category-label-linking-to-genome.report-for-subject-me-with-the-self-chip",
+          "ancestry": "no-ancestry-region-source-exists-so-the-group-is-omitted-rather-than-fabricated; never-a-share",
+          "settings": "settings.index-settings.data-settings.copilot-settings.people-and-settings.consents-matched-on-their-labels"
+        },
+        "groupsInOrder": [
+          "People and embryos",
+          "Reports",
+          "Ancestry regions",
+          "Settings"
+        ],
+        "helpGroup": "forbidden",
+        "maximumResultsPerGroup": 8,
+        "maximumGroups": 4,
+        "emptyGroups": "omitted",
+        "hrefs": "built-only-by-src/lib/primary-routes.ts-route-ids",
+        "subjectDerivedRows": "carry-that-subjects-kind-chip-word-from-src/copy/reports/strings.ts-KIND_CHIPS",
+        "forbiddenInEveryField": [
+          "genotype",
+          "percentile",
+          "risk-value",
+          "ancestry-share"
+        ],
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "search-results-v1",
+      "disposition": "kept"
+    },
+    {
       "id": "api.browse-region",
       "path": "/api/browse/region",
       "kind": "endpoint",
@@ -15427,6 +15555,141 @@
       "disposition": "kept"
     },
     {
+      "id": "api.family-acknowledge",
+      "path": "/api/family/acknowledge",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "oneOfClosedBodies": [
+          {
+            "acknowledgement": {
+              "const": "tier2-result-gate"
+            },
+            "affirmed": {
+              "const": true
+            }
+          },
+          {
+            "acknowledgement": {
+              "const": "portrait"
+            },
+            "subjectId": "required-canonical-lowercase-UUID-of-a-subject-whose-subject_account_id-is-the-acting-account",
+            "affirmed": {
+              "const": true
+            }
+          }
+        ],
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "pairId",
+          "counterpartSubjectId",
+          "acknowledgedAt"
+        ]
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": true,
+        "actorRole": "acting-account",
+        "operationCases": {
+          "tier2-result-gate": {
+            "effect": "set-one-httpOnly-Secure-SameSite-Lax-session-cookie-whose-value-is-a-keyed-digest-of-the-account-id-and-the-current-auth-session-id-with-no-Max-Age; auth.sign-out-clears-it; localStorage-is-forbidden",
+            "writes": "none",
+            "readBy": "family.person-family.health-picture-and-family.portrait-fetch-nothing-derived-until-the-cookie-verifies-server-side"
+          },
+          "portrait": {
+            "rpc": "public.acknowledge_portrait_v1(p_account_id, p_subject_id)",
+            "effect": "stamp-subjects.portrait_acknowledged_at-once-on-the-exact-subject-bound-to-the-acting-account; a-repeat-returns-the-first-stamp; any-other-subject-is-resource-not-found-v1-with-zero-writes"
+          }
+        },
+        "protectedFetchSerializeEnqueueOrModelCall": "forbidden",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "family-acknowledged-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.family-sharing",
+      "path": "/api/family/[person]/sharing",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "parameterContract": {
+        "person": "route-person-subject-segment-s-{uuid}-resolved-through-the-family-graph-to-exactly-one-counterpart-account; anything-else-is-resource-not-found-v1"
+      },
+      "requestContract": {
+        "contentType": "application/json",
+        "oneOfClosedBodies": [
+          {
+            "operation": {
+              "const": "pause"
+            }
+          },
+          {
+            "operation": {
+              "const": "resume"
+            }
+          },
+          {
+            "operation": {
+              "const": "stop"
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
+          }
+        ],
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "counterpartAccountId",
+          "subjectId",
+          "pairId",
+          "grantIds"
+        ]
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "operation-derived",
+        "target": "exact-route-family-person-and-the-counterpart-account-it-resolves-to; p_account_id-is-the-session-account-and-p_counterpart_account_id-is-server-resolved-never-a-request-field",
+        "operationCases": {
+          "pause": {
+            "jurisdictionBypass": true,
+            "rpc": "public.pause_family_sharing_v1(p_account_id, p_counterpart_account_id)",
+            "effect": "one-current-public.family_sharing_pauses-row-between-the-two-accounts; no-grant-row-changes; private.resource_authorized_v1-denies-every-scoped-grant-and-pair-on-the-next-check; idempotent-while-paused"
+          },
+          "resume": {
+            "jurisdictionBypass": false,
+            "resolver": "purpose-to-capability-v1",
+            "rpc": "public.resume_family_sharing_v1(p_account_id, p_counterpart_account_id)",
+            "effect": "ends-the-current-pause-row; only-grants-that-remain-unrevoked-and-unexpired-become-live-again"
+          },
+          "stop": {
+            "jurisdictionBypass": true,
+            "rpc": "public.stop_family_sharing_v1(p_account_id, p_counterpart_account_id)",
+            "effect": "revokes-every-grant-both-ways-deletes-portrait_results-for-the-pairs-and-every-chat-message-attributable-to-the-other-sides-subjects-sets-family_pairs.status-revoked-writes-the-public.family_sharing_stops-tombstone-and-enqueues-the-purpose.derived-60s-revoke_purge-worker-job-for-each-side; returns-ended_at-and-deleted_counts-for-the-tombstone"
+          }
+        },
+        "sameMechanismAs": "api.subject-sharing",
+        "dispositionContract": "family-sharing-state-v1",
+        "contracts": [
+          "resource-authorization-v1",
+          "jurisdiction-v1"
+        ]
+      },
+      "successResponseContract": "sharing-updated-v1",
+      "disposition": "kept"
+    },
+    {
       "id": "api.consents",
       "path": "/api/consents",
       "kind": "endpoint",
@@ -15613,7 +15876,17 @@
         "actionResolution": "sign-artifact-derives-a-closed-artifact-and-target-class-case; grant-purpose-delegates-to-purpose-to-capability-v1-and-policyContracts.directional-purpose-grant-v1-and-persists-no-grant-unless-both-resolve-the-identical-endpoints; unknown-or-mismatched-cases-deny",
         "targetResolution": "resolve-exactly-one-database-owned-subject-account-owned-subject-draft-cohort-or-account-owned-cohort-draft-from-the-declared-target-field-and-never-infer-a-cohort-from-an-embryo-subject-id",
         "purposeGrantOrchestration": "in-the-same-grant-purpose-transaction-lock-the-exact-current-source-and-normalization-revision; when-normalization_complete-conditionally-enqueue-or-reuse-only-the-selected-purpose-matrix-job-after-every-live-gate-recheck; otherwise-commit-the-current-purpose-grant-and-conditionally-enqueue-or-reuse-the-one-ingest.normalize-job-under-analysis-eligibility-v1-with-zero-analytic-job-then-let-that-normalization-completion-recheck-and-enqueue-current-purpose-rows; a-grant-never-marks-normalization-complete-and-a-normalization-job-never-creates-a-purpose-grant",
-        "draftConversion": "only-the-exact-current-artifact-set-resolved-by-consent-action-capability-v1.draftConversion-and-policyResolvers.embryo-basis-authority-v1.caseArtifactMatrix-may-convert; true-two-parent-requires-zero-single-parent-basis-artifacts-and-each-single-authority-case-requires-exactly-one-from-its-one-required-principal; donor-attribution-preserves-its-donor-principal-and-remains-nonparent; analytic-purpose-grants-never-target-or-convert-from-a-draft"
+        "draftConversion": "only-the-exact-current-artifact-set-resolved-by-consent-action-capability-v1.draftConversion-and-policyResolvers.embryo-basis-authority-v1.caseArtifactMatrix-may-convert; true-two-parent-requires-zero-single-parent-basis-artifacts-and-each-single-authority-case-requires-exactly-one-from-its-one-required-principal; donor-attribution-preserves-its-donor-principal-and-remains-nonparent; analytic-purpose-grants-never-target-or-convert-from-a-draft",
+        "directionalGrantTransaction": {
+          "rpc": "public.grant_directional_purpose_v1(p_account_id, p_data_subject_id, p_recipient_principal_id, p_purpose, p_artifact_key, p_artifact_version, p_token_nonce)",
+          "caller": "the-authenticated-route-through-the-service-role-client-only; p_account_id-is-the-session-account-and-p_data_subject_id-p_recipient_principal_id-p_purpose-p_artifact_key-and-p_artifact_version-are-recomputed-from-the-verified-artifactPresentationToken-never-copied-from-the-request",
+          "nonce": "the-route-verifies-the-token-signature-and-expiry-and-passes-only-its-nonce; the-RPC-records-sha256(nonce)-in-public.purpose_grant_nonces-before-any-grant-write-and-a-reused-nonce-fails-with-zero-grant-side-effect",
+          "artifact": "consent.share-with-adult-at-its-current-version-is-the-only-artifact-a-directional-subject-grant-signs",
+          "persistence": "one-consent_signatures-row-then-the-purpose_grants-base-row-and-the-directional_grants-direction-row-at-one-identical-revision-under-the-deferred-pair-check; an-identical-live-grant-is-returned-rather-than-duplicated",
+          "familyPortraitPair": "a-family.portrait-grant-creates-the-public.family_pairs-row-between-the-data-subject-and-the-recipients-self-subject-with-status-pending-when-absent-and-promotes-it-to-current-when-both-own-session-directions-are-live; every-other-purpose-carries-a-current-family_member-subject_relationships-row",
+          "independentLoginCheckpoint": "family.heritability-and-family.portrait-require-subjects.independent_login_at-on-the-data-subject-before-the-grant-writes",
+          "pausedSharing": "a-current-public.family_sharing_pauses-row-between-the-two-accounts-refuses-a-new-grant-until-resume"
+        }
       },
       "successResponseContract": "consent-recorded-v1",
       "disposition": "kept"
@@ -15908,6 +16181,7 @@
         },
         "mutuallyExclusiveClassifier": "first-match-is-forbidden; derive-one-normalized-consent-kind-principal-role-target-class-and-current-revision-in-the-database-and-require-exactly-one-case",
         "unknownConsentKind": "fail-closed-with-no-write",
+        "directionalGrantRevocation": "public.revoke_directional_purpose_v1(p_account_id, p_grant_id)-terminalises-the-purpose_grants-base-row-and-the-directional_grants-direction-row-together-only-for-the-account-that-holds-the-data-subject-principal-deletes-the-exact-subject-and-purpose-derived-rows-the-recipient-held-returns-a-family.portrait-pair-to-pending-and-enqueues-the-purpose.derived-60s-revoke_purge-worker-job",
         "writesAudit": true,
         "contracts": [
           "resource-authorization-v1",

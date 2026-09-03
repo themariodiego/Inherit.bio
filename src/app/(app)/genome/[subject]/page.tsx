@@ -1,59 +1,78 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
+import { NAV_LABELS } from "@/copy/navigation";
+import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
+import { getSubjectFileCount } from "@/lib/genome/load";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "My Genome" };
+const DOMAIN_LABEL = NAV_LABELS["my-genome"];
+
+const loadSubject = cache(async (segment: string) => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const subject = await resolveSubjectForAccount(user.id, segment);
+  return subject ? { user, subject } : null;
+});
+
+export async function generateMetadata(
+  props: PageProps<"/genome/[subject]">,
+): Promise<Metadata> {
+  const { subject: segment } = await props.params;
+  const context = await loadSubject(segment);
+  return {
+    title: context ? `${context.subject.displayLabel} · ${DOMAIN_LABEL}` : DOMAIN_LABEL,
+  };
+}
 
 export default async function GenomePage(
   props: PageProps<"/genome/[subject]">,
 ) {
   const { subject: segment } = await props.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  if (!subject) notFound();
-  const files = await getSubjectProcessedFiles(createAdminClient(), subject.id);
-  const base = `/genome/${subject.routeSegment}`;
+  const context = await loadSubject(segment);
+  if (!context) notFound();
+  const { user, subject } = context;
+  // The subject bar counts every file in the record, whatever its status.
+  const fileCount = await getSubjectFileCount(createAdminClient(), subject.id);
+  const subjectParams = { subject: subject.routeSegment };
+  const base = route("genome.subject", subjectParams);
 
-  const entries = [
-    { href: `${base}/reports`, title: "Reports", copy: "Evidence-labelled interpretations with explicit coverage states." },
-    { href: `${base}/ancestry`, title: "Ancestry", copy: "Reference-panel estimates and resolution limits supported by the files." },
-    { href: `${base}/data`, title: "Data", copy: "Source files, variant exploration, and provenance." },
-    { href: `/copilot/${subject.routeSegment}`, title: "Copilot", copy: "Questions grounded in this subject scope, with model and consent controls." },
+  const tiles = [
+    { href: route("genome.reports", subjectParams), title: "Reports", copy: "Each report says what your file shows and what it cannot tell you." },
+    { href: route("genome.ancestry", subjectParams), title: "Ancestry", copy: "What your file supports about broad regions and parent lines." },
+    { href: route("copilot.scope", { scope: subject.routeSegment }), title: "Copilot", copy: "Ask questions about your own reports in plain language." },
   ];
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <header className="space-y-3">
-        <p className="eyebrow">My Genome</p>
-        <h1 className="display text-3xl">{subject.displayLabel}</h1>
-        <p className="text-base text-ink-muted">
-          {files.length} processed {files.length === 1 ? "file" : "files"} in this subject record.
-        </p>
-      </header>
-      <section className="grid gap-4 sm:grid-cols-2" aria-label="Genome tools">
-        {entries.map((entry) => (
-          <article key={entry.href} className="flex flex-col rounded-2xl border border-line bg-card p-5">
-            <h2 className="display text-2xl">{entry.title}</h2>
-            <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{entry.copy}</p>
+      <Breadcrumbs items={[{ label: DOMAIN_LABEL, href: base }, { label: subject.displayLabel }]} />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+      <h1 className="display text-3xl">{DOMAIN_LABEL}</h1>
+      <section className="grid gap-4 sm:grid-cols-3" aria-label="Genome tools">
+        {tiles.map((tile) => (
+          <article key={tile.href} className="flex flex-col rounded-2xl border border-line bg-card p-5">
+            <h2 className="display text-2xl">{tile.title}</h2>
+            <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
             <Button asChild variant="outline" className="mt-5">
-              <Link href={entry.href}>Open {entry.title}</Link>
+              <Link href={tile.href}>Open {tile.title}</Link>
             </Button>
           </article>
         ))}
       </section>
       <Button asChild>
-        <Link href="/files/upload">Add a file</Link>
+        <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
       </Button>
-      <p className="text-xs text-ink-muted">
-        Inherit is not a medical test and cannot tell you what will happen.
-      </p>
+      <p className="max-w-prose text-sm text-ink-muted">{NOT_DIAGNOSTIC}</p>
     </div>
   );
 }

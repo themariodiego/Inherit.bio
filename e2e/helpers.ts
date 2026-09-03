@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Page } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
 
 export const SUPABASE_URL = "http://127.0.0.1:54321";
 export const ANON_KEY =
@@ -157,4 +159,50 @@ export async function ingestFileAs(
     throw new Error(`process: ${res.status()} ${await res.text()}`);
   }
   return fileId;
+}
+
+/**
+ * Seeded, non-fixture report templates in data/templates — the only library
+ * count a product surface may show. Read from disk so no spec hard-codes the
+ * number; fixture templates (auto-e2e-*) published by the research spec are
+ * excluded by isFixtureSlug on every surface.
+ */
+export function seededTemplateCount(): number {
+  const dir = path.join(process.cwd(), "data/templates");
+  let count = 0;
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    const templates = JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")) as {
+      slug: string;
+    }[];
+    count += templates.filter((t) => !t.slug.startsWith("auto-e2e-")).length;
+  }
+  return count;
+}
+
+/**
+ * X6.1 basis, identical to scripts/density-baseline/capture.mjs: rendered
+ * interactive elements whose top edge is inside the first viewport, excluding
+ * persistent navigation (anything inside a `nav`), the skip link and the
+ * Copilot entry control. Shared by the specs that pin the first-viewport
+ * budget (`overview.spec.ts`, `genome-data.spec.ts`).
+ */
+export async function firstViewportInteractives(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const selector =
+      'a[href],button,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]:not([tabindex="-1"])';
+    const found: string[] = [];
+    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+      if (element.matches('a[href="#main"]')) continue;
+      if (element.closest("nav,[data-copilot-entry]")) continue;
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) continue;
+      if (element.getClientRects().length === 0) continue;
+      if (rect.top >= window.innerHeight) continue;
+      found.push(
+        `${element.tagName.toLowerCase()}:${(element.textContent ?? "").trim().slice(0, 40)}`,
+      );
+    }
+    return found;
+  });
 }

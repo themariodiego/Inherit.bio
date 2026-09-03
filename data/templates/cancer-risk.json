@@ -3,8 +3,8 @@
     "slug": "prostate-colorectal-8q24-rs6983267",
     "category": "cancer-risk",
     "title": "Prostate & colorectal cancer · 8q24 region",
-    "summary": "The 8q24 region contains no protein-coding gene but is one of the most consistently replicated cancer-risk loci in the genome. Each copy of the G allele at rs6983267 is associated on average with roughly 1.2-1.3x the odds of prostate cancer and about 1.2x the odds of colorectal cancer.",
-    "evidence": "moderate",
+    "summary": "The 8q24 region contains no protein-coding gene. Even so, it is one of the most consistently replicated cancer-risk loci in the genome. Each copy of the G allele at rs6983267 is linked on average to higher odds of prostate cancer and of colorectal cancer: a small shift for each.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6983267,
@@ -14,8 +14,8 @@
         "ref": "G",
         "alt": "T",
         "interpretations": {
-          "GG": "Two copies of the G allele, a common genotype. On average this is associated with roughly 1.4-1.6x the odds of prostate cancer and about 1.4x the odds of colorectal cancer compared with TT. This is one small factor among many; age, family history, and screening status matter far more for any individual.",
-          "GT": "One copy of the G risk allele. Associated on average with roughly 1.2-1.3x the odds of prostate cancer and about 1.2x the odds of colorectal cancer compared with TT. This shifts probability modestly and is only one of many genetic and lifestyle factors involved.",
+          "GG": "Two copies of the G allele, a common genotype. On average this is linked to higher odds of prostate cancer than TT: a small to moderate shift. It is also linked to higher odds of colorectal cancer than TT: a small shift. This is one small factor among many. Age, family history, and screening status matter far more for any individual.",
+          "GT": "One copy of the G risk allele. Linked on average to higher odds of prostate cancer and of colorectal cancer than TT: a small shift for each. This shifts probability modestly and is only one of many genetic and lifestyle factors involved.",
           "TT": "Two copies of the T allele. This genotype is associated with somewhat lower average odds of prostate and colorectal cancer at this locus. It does not remove risk from other genetic and lifestyle factors, and standard screening guidance still applies."
         }
       }
@@ -30,8 +30,8 @@
     "slug": "breast-cancer-fgfr2-rs2981582",
     "category": "cancer-risk",
     "title": "Breast cancer · FGFR2",
-    "summary": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 (often reported as the T allele on the opposite strand) is associated on average with roughly 1.2-1.3x the odds of breast cancer, mainly estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test — a reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
-    "evidence": "moderate",
+    "summary": "An intronic variant in FGFR2 is among the most consistently replicated common breast cancer risk variants. Each copy of the A allele at rs2981582 is linked on average to higher odds of breast cancer: a small shift. It is often reported as the T allele on the opposite strand. The link is mainly with estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test. A reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2981582,
@@ -41,8 +41,8 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A risk allele, carried by roughly 15% of people of European ancestry. Associated on average with about 1.6x the odds of breast cancer compared with GG. This is a modest probability shift from one common variant; family history, reproductive factors, and many other variants together matter more.",
-          "AG": "One copy of the A risk allele. On average this is associated with roughly 1.2-1.3x the odds of breast cancer compared with GG. This is one small factor among many influences on breast cancer risk and does not predict disease on its own.",
+          "AA": "Two copies of the A risk allele, carried by roughly 15% of people of European ancestry. Associated on average with higher odds of breast cancer compared with GG: a moderate shift. This is a modest probability shift from one common variant; family history, reproductive factors, and many other variants together matter more.",
+          "AG": "One copy of the A risk allele. On average this is associated with higher odds of breast cancer compared with GG: a small shift. This is one small factor among many influences on breast cancer risk and does not predict disease on its own.",
           "GG": "Two copies of the G allele, the most common genotype. Associated with somewhat lower average odds of breast cancer at this locus. Overall risk still depends on family history, other genetic variants, and non-genetic factors, and routine screening guidance is unchanged."
         }
       }
@@ -56,8 +56,8 @@
     "slug": "breast-cancer-2q35-rs13387042",
     "category": "cancer-risk",
     "title": "Breast cancer · 2q35 region",
-    "summary": "A variant in a gene-free stretch of chromosome 2q35 was one of the first replicated common breast cancer risk loci found by genome-wide studies. Each copy of the A allele at rs13387042 is associated on average with roughly 1.2x the odds of breast cancer, primarily estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test — a reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
-    "evidence": "moderate",
+    "summary": "rs13387042 lies in a gene-free part of chromosome 2q35. Large studies first linked this region to common breast cancer risk. Each A copy is tied to higher average odds, mainly for estrogen-receptor-positive cancer: a small shift. This is not a BRCA1 or BRCA2 test. A reassuring result cannot rule out inherited breast or ovarian cancer risk. For a personal or family history, ask about clinical testing.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 13387042,
@@ -67,8 +67,8 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A risk allele, a common genotype (roughly a quarter of people of European ancestry). Associated on average with about 1.4x the odds of breast cancer compared with GG. This remains a modest shift in probability from one small factor among many.",
-          "AG": "One copy of the A risk allele. On average associated with roughly 1.2x the odds of breast cancer compared with GG. Common variants like this one each contribute only a small amount to overall risk.",
+          "AA": "Two copies of the A risk allele, a common genotype (roughly a quarter of people of European ancestry). Associated on average with higher odds of breast cancer compared with GG: a small shift. This remains a modest shift in probability from one small factor among many.",
+          "AG": "One copy of the A risk allele. On average associated with higher odds of breast cancer compared with GG: a small shift. Common variants like this one each contribute only a small amount to overall risk.",
           "GG": "Two copies of the G allele. Associated with somewhat lower average odds of breast cancer at this locus. Many other genetic and non-genetic factors still shape overall risk, so screening recommendations are unchanged."
         }
       }
@@ -82,7 +82,7 @@
     "slug": "tp53-codon-72-rs1042522",
     "category": "cancer-risk",
     "title": "TP53 codon 72 (Pro72Arg)",
-    "summary": "TP53 encodes p53, a central tumor-suppressor protein. The common codon-72 polymorphism swaps proline (G allele on the forward strand) for arginine (C allele). The two forms differ subtly in laboratory assays, but decades of association studies across cancer types have produced inconsistent results, so any risk effect is likely very small.",
+    "summary": "TP53 makes p53, a protein that helps stop damaged cells from becoming tumors. At codon 72, genomic G makes proline and C makes arginine. Lab tests show small differences between the forms. Cancer studies disagree, so any effect on risk is likely tiny.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -93,9 +93,9 @@
         "ref": "G",
         "alt": "C",
         "interpretations": {
-          "GG": "Two copies of the G allele (proline at codon 72 on both gene copies), more common in people of African ancestry. Some studies have reported small associations with certain cancers for this form, but results are inconsistent and any effect is likely very small. This is one small, uncertain factor among the many that influence cancer risk.",
-          "CG": "One proline and one arginine form of p53 codon 72, a very common combination. Association studies comparing the two forms have been inconsistent, and no reliable difference in overall cancer risk has been established for this genotype. This is at most one small factor among many.",
-          "CC": "Two copies of the C allele (arginine at codon 72 on both gene copies), the most common genotype in European populations. The arginine form behaves slightly differently in laboratory assays, but association studies across cancers are inconsistent, so this genotype should not be read as meaningfully changing risk. It is one small, uncertain factor among many."
+          "GG": "Two G copies make proline at codon 72. This result is more common in people with African ancestry. Some studies link this form to small changes in risk for certain cancers. Other studies do not. Any effect is uncertain and likely tiny compared with the many other causes of cancer.",
+          "CG": "One proline and one arginine form of p53 codon 72, a very common combination. Studies that compare the two forms do not agree, and no reliable difference in overall cancer risk has been shown for this genotype. This is at most one small factor among many.",
+          "CC": "Two C copies make arginine at codon 72. This is the most common result in European populations. The arginine form acts a little differently in lab tests. Human studies do not show a clear change in cancer risk. View this as a small and uncertain factor."
         }
       }
     ],
@@ -108,8 +108,8 @@
     "slug": "melanoma-mc1r-r151c",
     "category": "cancer-risk",
     "title": "Melanoma · MC1R R151C",
-    "summary": "MC1R shapes skin and hair pigmentation, and its R151C variant (rs1805007 T allele) is one of the classic red-hair-associated variants. Meta-analysis associates each copy with roughly 1.5-2x the odds of melanoma on average, partly but not entirely through fair, sun-sensitive skin.",
-    "evidence": "moderate",
+    "summary": "MC1R affects skin and hair color. R151C (T at rs1805007) is strongly linked to red hair. Studies tie each copy to higher average melanoma odds: a moderate shift. The risk link may not depend only on visible coloring.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1805007,
@@ -120,8 +120,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the R151C variant. Melanoma risk at this position is not elevated, though other MC1R variants and, above all, sun exposure history and skin type remain the dominant factors. Sun protection matters for every genotype.",
-          "CT": "One copy of the R151C variant, associated on average with roughly 1.5-2x the odds of melanoma and with fairer, more sun-sensitive skin and a tendency toward red hair. This is a modest probability shift; UV exposure and skin type are far stronger determinants, so sun protection is worthwhile regardless.",
-          "TT": "Two copies of the R151C variant, strongly associated with red hair and fair, sun-sensitive skin, and on average with roughly 2-3x the odds of melanoma compared with non-carriers. This remains a probabilistic association, and sun behavior is the biggest modifiable factor for any genotype."
+          "CT": "One R151C copy. Studies link this result to red hair and higher average melanoma odds: a moderate shift, not a forecast. UV exposure and sun habits remain major factors, so sun protection matters for every genotype.",
+          "TT": "Two R151C copies. This result is strongly linked to red hair. Studies find higher average melanoma odds than non-carriers: a moderate to large shift. This is not a prediction. UV exposure and sun habits remain key factors for every genotype."
         }
       }
     ],
@@ -134,8 +134,8 @@
     "slug": "lung-cancer-chrna3-rs1051730",
     "category": "cancer-risk",
     "title": "Lung cancer & smoking intensity · CHRNA3 (15q25)",
-    "summary": "The 15q25 nicotinic-receptor gene cluster (CHRNA3/CHRNA5) is the strongest common-variant locus for lung cancer. Each copy of the A allele at rs1051730 is associated on average with about 1.3x the odds of lung cancer and with smoking slightly more heavily among smokers; smoking itself dwarfs any genetic effect here.",
-    "evidence": "moderate",
+    "summary": "The 15q25 region includes genes for nicotine receptors, such as CHRNA3 and CHRNA5. It is a strong common genetic signal for lung cancer. Each A copy at rs1051730 is linked to higher average lung-cancer odds: a small shift. Smokers with A may also take in more nicotine. Smoking has a much larger effect than this variant.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1051730,
@@ -145,23 +145,24 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "AA": "Two copies of the A risk allele. Associated on average with roughly 1.7x the odds of lung cancer compared with GG, and among smokers with somewhat heavier smoking and greater nicotine dependence. Smoking status remains overwhelmingly the dominant factor: not smoking lowers risk far more than any genotype raises it.",
-          "AG": "One copy of the A risk allele, associated on average with about 1.3x the odds of lung cancer compared with GG and with slightly heavier smoking among smokers. This is one small factor; whether and how much a person smokes matters vastly more than this variant.",
+          "AA": "Two copies of the A risk allele. Associated on average with higher odds of lung cancer compared with GG: a moderate shift. Among smokers, it is also associated with somewhat heavier smoking and greater nicotine dependence. Smoking status remains overwhelmingly the dominant factor: not smoking lowers risk far more than any genotype raises it.",
+          "AG": "One copy of the A risk allele, associated on average with higher odds of lung cancer compared with GG: a small shift. Among smokers, it is also associated with slightly heavier smoking. This is one small factor; whether and how much a person smokes matters vastly more than this variant.",
           "GG": "No copies of the A risk allele. Average lung cancer odds at this locus are lower, but this offers no meaningful protection against the effects of smoking, which remains by far the largest determinant of lung cancer risk."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18385738", "label": "Hung et al., Nature 2008" }
+      { "pmid": "18385738", "label": "Hung et al., Nature 2008" },
+      { "pmid": "19628476", "label": "Keskitalo et al., Hum Mol Genet 2009" }
     ]
   },
   {
     "slug": "colorectal-apc-i1307k",
     "category": "cancer-risk",
     "title": "Colorectal cancer · APC I1307K",
-    "summary": "The APC I1307K variant (rs1801155 A allele) creates a small unstable DNA tract in the APC tumor-suppressor gene. Carried by roughly 6-7% of people of Ashkenazi Jewish ancestry and rare elsewhere, it is associated on average with about 1.5-2x the odds of colorectal cancer — a moderate risk factor, not a high-penetrance syndrome like familial adenomatous polyposis.",
-    "evidence": "moderate",
+    "summary": "APC I1307K (A at rs1801155) makes a short DNA stretch less stable. About 6-7% of people with Ashkenazi Jewish ancestry carry it. Carriers have higher average odds of colorectal cancer: a moderate shift. I1307K does not cause the high-risk condition called familial adenomatous polyposis.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1801155,
@@ -171,23 +172,24 @@
         "ref": "T",
         "alt": "A",
         "interpretations": {
-          "TT": "No copies of the I1307K variant. Colorectal cancer risk at this position is not elevated. Family history, age, lifestyle, and other genetic factors still shape overall risk, and standard screening guidance applies.",
-          "AT": "One copy of the I1307K variant, most often seen in people with Ashkenazi Jewish ancestry. Associated on average with roughly 1.5-2x the odds of colorectal cancer. This is a moderate, probabilistic risk factor — not a polyposis syndrome — and it is one factor among many; discussing family history and screening timing with a clinician can put it in context.",
-          "AA": "Two copies of the I1307K variant, which is uncommon even in populations where the variant circulates. Average colorectal cancer odds are likely somewhat higher than for carriers of one copy, though data on homozygotes are limited. This remains a probabilistic association; family history and screening are the more informative levers."
+          "TT": "No copies of the I1307K variant. Colorectal cancer risk at this position is not elevated. Family history, age, lifestyle, and other genetic factors still shape overall risk. Standard screening guidance applies.",
+          "AT": "One copy of the I1307K variant, most often seen in people with Ashkenazi Jewish ancestry. Associated on average with higher odds of colorectal cancer: a moderate shift. This is a moderate, probabilistic risk factor, not a polyposis syndrome. It is one factor among many. Discussing family history and screening timing with a clinician can put it in context.",
+          "AA": "Two I1307K copies. This result is rare, even among people with Ashkenazi Jewish ancestry. Too few people with this result have been studied to estimate its cancer risk. Do not assume it carries twice the risk of one copy. Family history and screening advice are more useful for care."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997" }
+      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997" },
+      { "pmid": "37076288", "label": "Valle et al., J Med Genet 2023" }
     ]
   },
   {
     "slug": "prostate-cancer-msmb-rs10993994",
     "category": "cancer-risk",
     "title": "Prostate cancer · MSMB",
-    "summary": "A variant in the promoter of MSMB, which encodes the prostate-secreted protein PSP94, is a well-replicated prostate cancer risk locus. Each copy of the A allele at rs10993994 (reported as the T allele in the original GRCh37-orientation studies) is associated on average with roughly 1.2-1.25x the odds of prostate cancer.",
-    "evidence": "moderate",
+    "summary": "MSMB encodes PSP94, a protein the prostate secretes. A variant in its promoter is a well-replicated prostate cancer risk locus. Each copy of the A allele at rs10993994 is linked on average to higher odds of prostate cancer: a small shift. The original studies, in GRCh37 orientation, reported it as the T allele.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10993994,
@@ -197,8 +199,8 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the risk allele at this MSMB promoter variant, associated on average with roughly 1.4-1.6x the odds of prostate cancer compared with GG, and with lower levels of the PSP94 protein. This is a modest shift from one common variant; age, ancestry, and family history remain the major factors.",
-          "AG": "One copy of the risk allele, associated on average with roughly 1.2-1.25x the odds of prostate cancer compared with GG. This is one small factor among the many common variants and non-genetic factors that together shape prostate cancer risk.",
+          "AA": "Two copies of the risk allele at this MSMB promoter variant. Linked on average to higher odds of prostate cancer than GG, a small to moderate shift, and to lower levels of the PSP94 protein. This is a modest shift from one common variant; age, ancestry, and family history remain the major factors.",
+          "AG": "One copy of the risk allele, linked on average to higher odds of prostate cancer than GG: a small shift. This is one small factor among the many common variants and non-genetic factors that together shape prostate cancer risk.",
           "GG": "No copies of the risk allele at this locus, associated with somewhat lower average odds of prostate cancer. Other genetic and non-genetic factors still apply, and this result does not change screening conversations with a clinician."
         }
       }
@@ -212,8 +214,8 @@
     "slug": "colorectal-smad7-rs4939827",
     "category": "cancer-risk",
     "title": "Colorectal cancer · SMAD7 (18q21)",
-    "summary": "A common intronic variant in SMAD7, part of the TGF-beta signaling pathway, is a replicated colorectal cancer locus. The T allele at rs4939827 is associated on average with roughly 1.16-1.2x the odds of colorectal cancer per copy, while the C allele is associated with modestly lower odds.",
-    "evidence": "moderate",
+    "summary": "A common intronic variant in SMAD7, part of the TGF-beta signaling pathway, is a replicated colorectal cancer locus. The T allele at rs4939827 is associated on average with higher odds of colorectal cancer per copy: a small shift. The C allele is associated with modestly lower odds.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4939827,
@@ -223,9 +225,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "TT": "Two copies of the T risk allele, a common genotype. Associated on average with roughly 1.3-1.4x the odds of colorectal cancer compared with CC. This is a small probability shift from one variant among many; diet, lifestyle, family history, and screening matter more.",
-          "CT": "One copy each of the T and C alleles, associated with average colorectal cancer odds between the two homozygous groups. This variant is one small factor among many genetic and lifestyle influences on colorectal cancer risk.",
-          "CC": "Two copies of the C allele, associated on average with modestly lower odds of colorectal cancer at this locus. Standard age-appropriate screening remains just as relevant, since this is only one small factor."
+          "TT": "Two copies of the T risk allele, a common genotype. Associated on average with higher odds of colorectal cancer compared with CC: a small shift. This is a small probability shift from one variant among many; diet, lifestyle, family history, and screening matter more.",
+          "CT": "One copy each of the T and C alleles. Associated with average colorectal cancer odds between the two homozygous groups. This variant is one small factor among many genetic and lifestyle influences on colorectal cancer risk.",
+          "CC": "Two copies of the C allele. Associated on average with modestly lower odds of colorectal cancer at this locus. Standard age-appropriate screening remains just as relevant, since this is only one small factor."
         }
       }
     ],
@@ -238,8 +240,8 @@
     "slug": "lung-cancer-tert-rs2736100",
     "category": "cancer-risk",
     "title": "Lung cancer & glioma · TERT (5p15.33)",
-    "summary": "TERT encodes the catalytic subunit of telomerase, and common variation at 5p15.33 influences risk of several cancers. Each copy of the C allele at rs2736100 is associated on average with roughly 1.1-1.3x the odds of lung adenocarcinoma — including in never-smokers — and around 1.3x the odds of glioma.",
-    "evidence": "moderate",
+    "summary": "TERT helps cells maintain the ends of chromosomes. Common variation near TERT is linked to several cancers. Each C copy at rs2736100 is tied to higher average odds of lung adenocarcinoma: a small shift. The link also appears in people who never smoked. C is also tied to higher average odds of glioma: a small shift.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2736100,
@@ -249,16 +251,17 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "CC": "Two copies of the C risk allele. Associated on average with roughly 1.3-1.6x the odds of lung adenocarcinoma and around 1.6x the odds of glioma compared with AA. Both cancers are uncommon, so even the higher relative odds correspond to small absolute changes; this is one small factor, and for lung cancer smoking remains the dominant risk factor.",
-          "AC": "One copy of the C risk allele, associated on average with roughly 1.1-1.3x the odds of lung adenocarcinoma and glioma compared with AA. This is a modest probabilistic shift from one common variant among many influences.",
-          "AA": "Two copies of the A allele, associated with somewhat lower average odds of lung adenocarcinoma and glioma at this locus. This offers no protection against smoking-related risk, which remains by far the largest factor for lung cancer."
+          "CC": "Two C copies. Studies link this result to higher average odds of lung adenocarcinoma than AA: a small to moderate shift. They also link it to higher average odds of glioma than AA: a moderate shift. Both cancers are uncommon, so the change in absolute risk is small. Smoking remains the main risk factor for lung cancer.",
+          "AC": "One copy of the C risk allele. Associated on average with higher odds of lung adenocarcinoma and glioma compared with AA: a very small to small shift. This is a modest probabilistic shift from one common variant among many influences.",
+          "AA": "Two A copies. This result is linked to lower average odds of lung adenocarcinoma and glioma at this site. It does not protect against either cancer. Smoking remains by far the largest avoidable risk factor for lung cancer."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
       { "pmid": "19836008", "label": "Landi et al., Am J Hum Genet 2009" },
-      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008" }
+      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008" },
+      { "pmid": "19578367", "label": "Shete et al., Nat Genet 2009" }
     ]
   }
 ]

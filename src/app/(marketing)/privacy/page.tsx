@@ -30,11 +30,10 @@ export default function PrivacyPage() {
             <Link href="/terms">terms of service</Link>.
           </p>
           <p>
-            The short version: we collect the minimum needed to run the
-            service, we run no third-party trackers of any kind, your genome
-            never leaves our infrastructure unless you explicitly send it
-            somewhere, deletion is immediate and real, and export is free
-            forever.
+            The short version: we collect only what is needed to run the
+            service. We do not use third-party trackers. Your genome stays on
+            our systems unless you choose to send it elsewhere. Deletion is
+            immediate and real. Export is always free.
           </p>
         </>
       }
@@ -79,12 +78,10 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>No third-party trackers of any kind.</strong> No
-                  Meta (Facebook) pixel, no Google tags or analytics, no
-                  Microsoft advertising pixel, no session-replay scripts, no
-                  ad-tech beacons. These are not just absent — they are banned
-                  by an automated network audit in our continuous-integration
-                  pipeline, which fails any build that introduces a request to
-                  a tracking domain.
+                  Meta (Facebook) pixel, Google tags or analytics, Microsoft
+                  ad pixel, session replay, or ad-tech beacons. An automated
+                  network audit enforces this rule in CI. A build fails if it
+                  requests a tracking domain.
                 </li>
                 <li>
                   <strong>No behavioral advertising profiles.</strong> We have
@@ -100,13 +97,12 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                The hosted service runs on two infrastructure providers acting
-                as our data processors: <strong>Supabase</strong> (database and
-                file storage, including your genome files and derived
-                variants) and <strong>Vercel</strong> (application hosting).
-                Both process data solely on our instructions under data
-                processing agreements; neither has any right to use your data
-                for its own purposes.
+                The hosted service uses two infrastructure providers as data
+                processors. <strong>Supabase</strong> handles the database and
+                file storage, including your genome files and derived variants.
+                <strong>Vercel</strong> hosts the app. Each provider works only
+                on our instructions under a data processing agreement. Neither
+                may use your data for its own purposes.
               </p>
               <p>
                 If you prefer that no company — including us — hold your
@@ -127,12 +123,11 @@ export default function PrivacyPage() {
             <>
               <p>
                 We use <strong>no third-party analytics services</strong>. The
-                only operational measurements we make are first-party server
-                logs (for security and debugging) and aggregate counts with no
-                per-user tracking. No analytics vendor, ad network, or data
-                broker receives anything from Inherit — not even “anonymized”
-                or “aggregated” genetic statistics, which we do not share
-                either.
+                only logs we keep are first-party server logs for security and
+                debugging. We also count aggregate activity without tracking
+                individual users. No analytics vendor, ad network, or data
+                broker gets data from Inherit. We do not share even
+                “anonymized” or “aggregated” genetic statistics.
               </p>
             </>
           ),
@@ -146,16 +141,14 @@ export default function PrivacyPage() {
                 <strong>
                   Your genome data is never sent to a third party
                 </strong>
-                , with exactly one exception, and it is one you initiate: the{" "}
-                <strong>AI chat feature</strong>. If you choose to chat with an
-                AI model hosted by an external provider, the excerpts of your
-                reports or variants needed to answer your question are sent to
-                that provider — but only after you grant an explicit,
-                per-provider consent naming the specific company (for example,
-                a consent that names Anthropic covers Anthropic only). Until
-                you grant that consent, the chat feature cannot transmit
-                anything, and you can also point chat at a local model so
-                nothing leaves your machine at all.
+                , with one exception that you control: the{" "}
+                <strong>AI chat feature</strong>. If you choose an external AI
+                provider, Inherit sends only the report or variant excerpts
+                needed to answer your question. This happens only after you
+                give separate consent for that named provider. For example,
+                consent for Anthropic covers only Anthropic. Until you consent,
+                chat cannot send anything. You can also use a local model, so
+                nothing leaves your machine.
               </p>
               <ul>
                 <li>
@@ -163,28 +156,28 @@ export default function PrivacyPage() {
                   blanket “AI partners” checkbox.
                 </li>
                 <li>
-                  You can review and revoke every grant at any time in{" "}
-                  <Link href="/settings">Settings</Link>; revocation stops all
-                  future transmission immediately.
+                  You can review and revoke each grant at any time in{" "}
+                  <Link href="/settings">Settings</Link>. Revocation stops all
+                  future transmission at once.
                 </li>
                 <li>
-                  Our related legal commitments — including that we run no
-                  research-sharing program — are documented at{" "}
+                  Our related legal commitments are set out at{" "}
                   <Link href="/legal/research-consent">
                     /legal/research-consent
                   </Link>
-                  .
+                  . They include our promise not to run a research-sharing
+                  program.
                 </li>
               </ul>
               <p>
-                Beyond that single user-initiated exception, we disclose data
-                only when compelled by valid legal process, under the strict
-                policy published at{" "}
+                Apart from that choice, we disclose data only if valid legal
+                process compels us. Our strict policy at{" "}
                 <Link href="/legal/law-enforcement">
                   /legal/law-enforcement
                 </Link>{" "}
-                — which includes notice to you unless we are legally barred,
-                minimal-scope responses, and a public transparency report.
+                governs each response. It requires notice to you unless the
+                law bars notice, the narrowest possible response, and a public
+                transparency report.
               </p>
             </>
           ),
@@ -228,14 +221,13 @@ export default function PrivacyPage() {
               </p>
               <ul>
                 <li>
-                  Database rows (account, variants, reports, chat history,
-                  consents) are deleted at the moment you confirm — not flagged
-                  as hidden, not queued for later.
+                  Database rows are deleted as soon as you confirm. This covers
+                  your account, variants, reports, chat history, and consents.
+                  We do not mark them hidden or queue them for later.
                 </li>
                 <li>
-                  Storage objects — the raw genome files themselves — are
-                  deleted from the storage buckets in the same operation, not
-                  merely unlinked.
+                  We delete the raw genome files from storage in the same
+                  operation. We do not merely unlink them.
                 </li>
                 <li>
                   There is <strong>no grace period and no resurrection</strong>
@@ -258,13 +250,13 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                You can export everything — your original uploaded files, all
-                derived variants, all reports, and your chat history — at any
-                time, in open formats, <strong>at no charge, forever</strong>.
-                We will never introduce a data-transfer, egress, or
-                “download your own genome” fee. This is a contractual promise,
-                restated in our <Link href="/terms">terms of service</Link>,
-                not a courtesy we can quietly withdraw.
+                You can export everything at any time and in open formats. This
+                includes your original files, derived variants, reports, and
+                chat history. Export is <strong>free forever</strong>. We will
+                never charge a data-transfer, egress, or “download your own
+                genome” fee. Our <Link href="/terms">terms of service</Link>{" "}
+                make this a contractual promise, not a courtesy we can
+                withdraw.
               </p>
             </>
           ),
@@ -282,16 +274,15 @@ export default function PrivacyPage() {
                 process data from anyone under 18.
               </p>
               <p>
-                Under the United States Children’s Online Privacy Protection
-                Act (COPPA), the definition of “personal information” at 16
-                CFR § 312.2 expressly includes genetic data. We do not
-                knowingly process any minor’s personal information, genetic or
-                otherwise. If we learn that data of a person under 18 has been
-                uploaded — whether their own account or their file uploaded by
-                someone else — we will delete it promptly upon notice, using
-                the same immediate, unrecoverable deletion described above.
-                Reports of suspected minors’ data should go to
-                privacy@inherit.bio.
+                COPPA is the United States Children’s Online Privacy Protection
+                Act. Its definition of “personal information” at 16 CFR §
+                312.2 expressly includes genetic data. We do not knowingly
+                process any minor’s genetic or other personal information. If
+                we learn that we hold data about a person under 18, we will
+                delete it promptly after notice. This applies whether the minor
+                opened the account or another person uploaded the file. We use
+                the immediate, unrecoverable deletion described above. Report
+                suspected minors’ data to privacy@inherit.bio.
               </p>
             </>
           ),
@@ -302,10 +293,10 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                Genomics companies get acquired, and databases have a way of
-                becoming the asset that changes hands. Here is exactly what
-                happens if Inherit is ever acquired, merged, or transferred,
-                or enters bankruptcy or receivership:
+                Genomics companies can be acquired, and their databases may
+                change hands. The following rules apply if Inherit is acquired,
+                merged, or transferred. They also apply in bankruptcy or
+                receivership:
               </p>
               <ul>
                 <li>
@@ -342,32 +333,30 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                Inherit was created by Plus Bio as an open-source project for
-                the public good, and it operates as a legally separate entity.
-                Creation is not access: the legal separation exists precisely
-                so that your genetic data can never become an asset of any
-                commercial business, Plus Bio&rsquo;s included. As a matter of
-                binding policy:
+                Plus Bio created Inherit as an open-source project for the
+                public good. Inherit operates as a legally separate entity.
+                Creation does not mean access. The separation keeps your
+                genetic data from becoming an asset of Plus Bio or any other
+                commercial business. The following rules are binding:
               </p>
               <ul>
                 <li>
-                  Inherit and Plus Bio&rsquo;s commercial services run on
-                  separate domains with separate accounts, and there is no
-                  single sign-on between them.
+                  Inherit and Plus Bio&rsquo;s commercial services use separate
+                  domains and accounts. They do not share a single sign-on
+                  system.
                 </li>
                 <li>
                   <strong>
-                    No personal, health, or genetic data flows between Inherit
-                    and any Plus Bio service, in either direction
+                    No personal, health, or genetic data moves between Inherit
+                    and any Plus Bio service.
                   </strong>{" "}
-                  — no uploads, no derived data, no account details, no usage
-                  events.
+                  This rule applies in both directions. It covers uploads,
+                  derived data, account details, and usage events.
                 </li>
                 <li>
-                  Nothing in this policy grants Plus Bio&rsquo;s commercial
-                  operations any access to Inherit data, and Inherit&rsquo;s
-                  legal separation means a change of control at Plus Bio does
-                  not transfer your data anywhere.
+                  Plus Bio&rsquo;s commercial operations have no access to
+                  Inherit data under this policy. Inherit is legally separate.
+                  A change of control at Plus Bio cannot transfer your data.
                 </li>
               </ul>
             </>
@@ -393,16 +382,16 @@ export default function PrivacyPage() {
                   data (GDPR Article 16).
                 </li>
                 <li>
-                  <strong>Erasure</strong> — delete any file or your entire
-                  account, immediately (GDPR Article 17; CCPA right to
-                  delete).
+                  <strong>Erasure</strong> — immediately delete any file or
+                  your entire account. This covers GDPR Article 17 and the CCPA
+                  right to delete.
                 </li>
                 <li>
                   <strong>Restriction and objection</strong> — restrict or
-                  object to processing (GDPR Articles 18 and 21); since we do
-                  no marketing profiling or automated decision-making with
-                  legal effect, there is little to object to, but the right
-                  stands.
+                  object to processing under GDPR Articles 18 and 21. We do not
+                  use marketing profiles or automated decisions with legal
+                  effect. There is little to object to, but the right still
+                  applies.
                 </li>
                 <li>
                   <strong>Withdraw consent</strong> — revoke any LLM-provider
@@ -411,18 +400,18 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong>No sale, no sharing</strong> — we do not sell or
-                  share personal information as the CCPA/CPRA defines those
-                  terms, so there is nothing to opt out of; the right to
-                  opt out is satisfied by default.
+                  share personal information under the CCPA/CPRA definitions.
+                  There is nothing to opt out of because we meet the right by
+                  default.
                 </li>
                 <li>
                   <strong>No discrimination</strong> — exercising any right
                   never degrades your service.
                 </li>
                 <li>
-                  <strong>Complaint</strong> — you may lodge a complaint with
-                  your local supervisory authority (GDPR Article 77) or your
-                  state attorney general.
+                  <strong>Complaint</strong> — you may complain to your local
+                  supervisory authority. GDPR Article 77 protects this right.
+                  You may also complain to your state attorney general.
                 </li>
               </ul>
               <p>
@@ -439,11 +428,10 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                If we change this policy, we will post the new version here
-                with a new effective date and email account holders about any
-                material change before it takes effect. Changes never apply
-                retroactively to weaken protections on data already collected
-                without your affirmative consent.
+                We will post any new version here with a new effective date.
+                We will email account holders before a material change takes
+                effect. A change cannot weaken protections for data already
+                collected unless you affirmatively consent.
               </p>
               <p>
                 Privacy questions and data-rights requests:{" "}

@@ -105,6 +105,8 @@ async function processRelease(
         summary: draft.summary,
         status: "review",
         evidence: draft.evidence,
+        layer: draft.layer,
+        estimate_kind: draft.estimate_kind,
         variants: draft.variants as never,
         pgs_id: draft.pgs_id,
         citations: draft.citations as never,

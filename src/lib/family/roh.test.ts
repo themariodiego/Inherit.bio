@@ -1,0 +1,105 @@
+import { describe, expect, it } from "vitest";
+import {
+  F_ROH_THRESHOLD,
+  ROH_TOTAL_THRESHOLD_BASES,
+  belowRohThreshold,
+  measureRunsOfHomozygosity,
+  readsTheSameOnBothCopies,
+  type RohCall,
+} from "./roh";
+
+/**
+ * The within-one-file measure (design §5, §6.1). Every fixture here is one
+ * file's own calls: nothing in this suite pairs two files, and nothing the
+ * module exports could.
+ */
+
+/** A synthetic sorted-genotype file: `homozygous` letters repeated at `step`. */
+function run(chrom: number, start: number, step: number, count: number, genotype: string): RohCall[] {
+  return Array.from({ length: count }, (_, index) => ({
+    chrom,
+    pos: start + index * step,
+    genotype,
+  }));
+}
+
+describe("zygosity of one call", () => {
+  it("reads two identical letters as the same on both copies and nothing else", () => {
+    expect(readsTheSameOnBothCopies("A/A")).toBe(true);
+    expect(readsTheSameOnBothCopies("C/C")).toBe(true);
+    expect(readsTheSameOnBothCopies("A/G")).toBe(false);
+    // A single letter does not say how many copies were read, and a no-call
+    // says nothing at all: neither extends a run.
+    expect(readsTheSameOnBothCopies("A")).toBe(false);
+    expect(readsTheSameOnBothCopies("--")).toBe(false);
+    expect(readsTheSameOnBothCopies("")).toBe(false);
+  });
+});
+
+describe("runs of homozygosity in one file", () => {
+  it("measures one 120 Mb run as above the threshold the brief states", () => {
+    // 121 calls a megabase apart, all reading the same: a 120 Mb run.
+    const measure = measureRunsOfHomozygosity(run(1, 1_000_000, 1_000_000, 121, "A/A"));
+    expect(measure.status).toBe("measured");
+    if (measure.status !== "measured") return;
+    expect(measure.runCount).toBe(1);
+    expect(measure.totalRunBases).toBe(120_000_000);
+    expect(measure.totalRunBases).toBeGreaterThan(ROH_TOTAL_THRESHOLD_BASES);
+    expect(measure.aboveThreshold).toBe(true);
+    expect(belowRohThreshold(measure)).toBe(false);
+  });
+
+  it("measures a short run inside a wide span as below both thresholds", () => {
+    const calls = [
+      ...run(1, 1_000, 1_000, 3, "A/A"),
+      ...run(1, 50_000_000, 1_000_000, 40, "A/G"),
+      ...run(2, 1_000, 1_000_000, 40, "C/T"),
+    ];
+    const measure = measureRunsOfHomozygosity(calls);
+    expect(measure.status).toBe("measured");
+    if (measure.status !== "measured") return;
+    expect(measure.runCount).toBe(1);
+    expect(measure.totalRunBases).toBe(2_000);
+    expect(measure.totalRunBases).toBeLessThan(ROH_TOTAL_THRESHOLD_BASES);
+    expect(measure.fRoh).toBeLessThan(F_ROH_THRESHOLD);
+    expect(measure.aboveThreshold).toBe(false);
+    expect(belowRohThreshold(measure)).toBe(true);
+  });
+
+  it("refuses a file that lists only the places a reader differs", () => {
+    // Every row is a difference, none reads the same on both copies, so no
+    // stretch of same-reading positions exists to measure.
+    const measure = measureRunsOfHomozygosity([
+      { chrom: 1, pos: 1_000_000, genotype: "A/G" },
+      { chrom: 1, pos: 40_000_000, genotype: "C/T" },
+      { chrom: 7, pos: 5_000_000, genotype: "G/T" },
+      { chrom: 12, pos: 900_000, genotype: "--" },
+    ]);
+    expect(measure).toEqual({ status: "not_measurable", reason: "no-runs-reported" });
+    expect(belowRohThreshold(measure)).toBe(false);
+  });
+
+  it("counts only autosomes and does not depend on the order rows arrive in", () => {
+    const autosomal = run(1, 1_000, 1_000, 3, "A/A");
+    const sex = run(23, 1_000, 1_000, 30, "A/A");
+    const shuffled = [...sex, ...autosomal].reverse();
+    const measure = measureRunsOfHomozygosity(shuffled);
+    expect(measure.status).toBe("measured");
+    if (measure.status !== "measured") return;
+    expect(measure.runCount).toBe(1);
+    expect(measure.totalRunBases).toBe(2_000);
+    expect(measure.coveredSpanBases).toBe(2_000);
+  });
+
+  it("never combines two files: each measure answers for its own calls", () => {
+    const one = measureRunsOfHomozygosity(run(1, 1_000, 1_000_000, 121, "A/A"));
+    const other = measureRunsOfHomozygosity([
+      ...run(1, 1_000, 1_000, 3, "A/A"),
+      ...run(1, 50_000_000, 1_000_000, 40, "A/G"),
+    ]);
+    expect(belowRohThreshold(one)).toBe(false);
+    expect(belowRohThreshold(other)).toBe(true);
+    // The two answers stand apart; the module offers nothing that merges them.
+    expect(Object.keys({ one, other })).toHaveLength(2);
+  });
+});

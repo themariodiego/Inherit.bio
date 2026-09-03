@@ -1,0 +1,294 @@
+{
+  "release_id": "ancestry-regions-v1",
+  "name": "Five continental regions for the 168-marker ancestry panel",
+  "provenance": "data/ref/regions/PROVENANCE.md",
+  "panel": {
+    "id": "aims-kidd-seldin-168",
+    "version": "2026-08-28",
+    "markers": 168,
+    "provenance": "data/ref/AIMS_PROVENANCE.md"
+  },
+  "geometry": {
+    "file": "public/geo/regions.topo.json",
+    "provenance": "public/geo/GEOMETRY_PROVENANCE.md"
+  },
+  "regions": [
+    {
+      "code": "africa-south-of-sahara",
+      "display_name": "Africa south of the Sahara",
+      "tier": "continental",
+      "superpop": "AFR",
+      "min_markers": 42,
+      "population_codes": [
+        "YRI",
+        "ESN",
+        "GWD",
+        "MSL",
+        "LWK",
+        "ASW",
+        "ACB"
+      ],
+      "populations": [
+        {
+          "code": "YRI",
+          "n": 108,
+          "sampled_in": "Ibadan, Nigeria",
+          "diaspora": false
+        },
+        {
+          "code": "ESN",
+          "n": 99,
+          "sampled_in": "Nigeria",
+          "diaspora": false
+        },
+        {
+          "code": "GWD",
+          "n": 113,
+          "sampled_in": "Western Division, The Gambia",
+          "diaspora": false
+        },
+        {
+          "code": "MSL",
+          "n": 85,
+          "sampled_in": "Sierra Leone",
+          "diaspora": false
+        },
+        {
+          "code": "LWK",
+          "n": 99,
+          "sampled_in": "Webuye, Kenya",
+          "diaspora": false
+        },
+        {
+          "code": "ASW",
+          "n": 61,
+          "sampled_in": "the southwest United States",
+          "diaspora": true
+        },
+        {
+          "code": "ACB",
+          "n": 96,
+          "sampled_in": "Barbados",
+          "diaspora": true
+        }
+      ],
+      "n_total": 661,
+      "centroid_lon": 16.76,
+      "centroid_lat": -8.91,
+      "sort_order": 0,
+      "citation_ids": [
+        "doi:10.1038/nature15393"
+      ],
+      "geometry_recipe": "AFRICA (Continent) over the 110m land polygons, cut at the parallel 17°N (only land south of it is kept); MADAGASCAR (Island) excluded."
+    },
+    {
+      "code": "central-america-caribbean-andes",
+      "display_name": "Central America, the Caribbean and the Andes",
+      "tier": "continental",
+      "superpop": "AMR",
+      "min_markers": 42,
+      "population_codes": [
+        "PUR",
+        "CLM",
+        "PEL",
+        "MXL"
+      ],
+      "populations": [
+        {
+          "code": "PUR",
+          "n": 104,
+          "sampled_in": "Puerto Rico",
+          "diaspora": false
+        },
+        {
+          "code": "CLM",
+          "n": 94,
+          "sampled_in": "Medellín, Colombia",
+          "diaspora": false
+        },
+        {
+          "code": "PEL",
+          "n": 85,
+          "sampled_in": "Lima, Peru",
+          "diaspora": false
+        },
+        {
+          "code": "MXL",
+          "n": 64,
+          "sampled_in": "Los Angeles, California",
+          "diaspora": true
+        }
+      ],
+      "n_total": 347,
+      "centroid_lon": -78.22,
+      "centroid_lat": -14.14,
+      "sort_order": 1,
+      "citation_ids": [
+        "doi:10.1038/nature15393"
+      ],
+      "geometry_recipe": "CENTRAL AMERICA (Isthmus) ∪ WEST INDIES (Island group) ∪ ANDES (Range/mtn) over the 110m land polygons; no clipping."
+    },
+    {
+      "code": "east-and-southeast-asia",
+      "display_name": "East and Southeast Asia",
+      "tier": "continental",
+      "superpop": "EAS",
+      "min_markers": 42,
+      "population_codes": [
+        "CHB",
+        "CHS",
+        "CDX",
+        "JPT",
+        "KHV"
+      ],
+      "populations": [
+        {
+          "code": "CHB",
+          "n": 103,
+          "sampled_in": "Beijing, China",
+          "diaspora": false
+        },
+        {
+          "code": "CHS",
+          "n": 105,
+          "sampled_in": "southern China",
+          "diaspora": false
+        },
+        {
+          "code": "CDX",
+          "n": 93,
+          "sampled_in": "Xishuangbanna, Yunnan, China",
+          "diaspora": false
+        },
+        {
+          "code": "JPT",
+          "n": 104,
+          "sampled_in": "Tokyo, Japan",
+          "diaspora": false
+        },
+        {
+          "code": "KHV",
+          "n": 99,
+          "sampled_in": "Ho Chi Minh City, Vietnam",
+          "diaspora": false
+        }
+      ],
+      "n_total": 504,
+      "centroid_lon": 121.28,
+      "centroid_lat": 27,
+      "sort_order": 2,
+      "citation_ids": [
+        "doi:10.1038/nature15393"
+      ],
+      "geometry_recipe": "ASIA (Continent) ∩ the box 97°E–146°E × 8°N–46°N over the 110m land polygons, minus PLATEAU OF TIBET (Plateau); plus JAPAN (Island group)."
+    },
+    {
+      "code": "europe",
+      "display_name": "Europe",
+      "tier": "continental",
+      "superpop": "EUR",
+      "min_markers": 42,
+      "population_codes": [
+        "GBR",
+        "FIN",
+        "IBS",
+        "TSI",
+        "CEU"
+      ],
+      "populations": [
+        {
+          "code": "GBR",
+          "n": 91,
+          "sampled_in": "England and Scotland",
+          "diaspora": false
+        },
+        {
+          "code": "FIN",
+          "n": 99,
+          "sampled_in": "Finland",
+          "diaspora": false
+        },
+        {
+          "code": "IBS",
+          "n": 107,
+          "sampled_in": "Spain",
+          "diaspora": false
+        },
+        {
+          "code": "TSI",
+          "n": 107,
+          "sampled_in": "Tuscany, Italy",
+          "diaspora": false
+        },
+        {
+          "code": "CEU",
+          "n": 99,
+          "sampled_in": "Utah, United States",
+          "diaspora": true
+        }
+      ],
+      "n_total": 503,
+      "centroid_lon": 28.42,
+      "centroid_lat": 53.05,
+      "sort_order": 3,
+      "citation_ids": [
+        "doi:10.1038/nature15393"
+      ],
+      "geometry_recipe": "EUROPE (Continent) over the 110m land polygons — the British Isles and Scandinavia included, bounded east by Natural Earth's Urals/Caucasus line; ICELAND (Island) excluded."
+    },
+    {
+      "code": "south-asia",
+      "display_name": "South Asia",
+      "tier": "continental",
+      "superpop": "SAS",
+      "min_markers": 42,
+      "population_codes": [
+        "PJL",
+        "BEB",
+        "GIH",
+        "ITU",
+        "STU"
+      ],
+      "populations": [
+        {
+          "code": "PJL",
+          "n": 96,
+          "sampled_in": "Lahore, Pakistan",
+          "diaspora": false
+        },
+        {
+          "code": "BEB",
+          "n": 86,
+          "sampled_in": "Bangladesh",
+          "diaspora": false
+        },
+        {
+          "code": "GIH",
+          "n": 103,
+          "sampled_in": "Houston, Texas",
+          "diaspora": true
+        },
+        {
+          "code": "ITU",
+          "n": 102,
+          "sampled_in": "the United Kingdom",
+          "diaspora": true
+        },
+        {
+          "code": "STU",
+          "n": 102,
+          "sampled_in": "the United Kingdom",
+          "diaspora": true
+        }
+      ],
+      "n_total": 489,
+      "centroid_lon": 79.12,
+      "centroid_lat": 20.49,
+      "sort_order": 4,
+      "citation_ids": [
+        "doi:10.1038/nature15393"
+      ],
+      "geometry_recipe": "INDIA (Pen/cape) over the 110m land polygons, plus the land polygon whose centroid falls at ≈80.7°E 7.9°N (Sri Lanka)."
+    }
+  ]
+}
