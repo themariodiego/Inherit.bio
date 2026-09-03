@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DigestToggle } from "@/components/settings/digest-toggle";
+import { DATA_AND_METHODS } from "@/copy/reports/strings";
+import { route } from "@/lib/primary-routes";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -40,8 +42,13 @@ export default async function SettingsPage() {
           <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
         </section>
       ) : null}
-      <footer className="border-t border-line pt-6 text-sm text-ink-muted">
+      <footer className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm text-ink-muted">
         <Link href="/about#accessibility" className="underline underline-offset-4 hover:text-ink">Accessibility</Link>
+        {/* The third of the expert path's three entry points (brief §7.3); the
+            other two are every report footer and the ancestry page. */}
+        <Link href={route("genome.data", { subject: "me" })} className="underline underline-offset-4 hover:text-ink">
+          {DATA_AND_METHODS}
+        </Link>
       </footer>
     </div>
   );

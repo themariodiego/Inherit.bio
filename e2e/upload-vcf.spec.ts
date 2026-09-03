@@ -58,6 +58,15 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   await expect(table).toBeVisible();
   const rows = table.locator("tbody tr");
   expect(await rows.count()).toBeGreaterThan(0);
+  // The results table is one attributed claim block (X4) under the
+  // four-level breadcrumb of brief §1.4, with the subject's full name.
+  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  await expect(page.locator("[data-claim-block] table")).toHaveCount(1);
+  const name = (await page.locator('[data-slot="subject-name"]').textContent())?.trim();
+  expect(name).toBeTruthy();
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+    `My Genome / ${name} / Data / Genome browser`,
+  );
 
   const browser = page.getByTestId("genome-browser");
   await expect(browser).toBeVisible();
@@ -68,7 +77,8 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   await expect(page.getByText(/does not contact an outside genome service/)).toBeVisible();
 
   // rsID search: pick an rsID from the table we just rendered, then search
-  // for it directly and assert the genotype chip appears.
+  // for it directly and assert the genotype renders as an observed
+  // `genotype` figure (X4), never as loose text.
   const firstRsid = await rows
     .first()
     .locator("td")
@@ -77,9 +87,12 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   if (firstRsid && firstRsid.startsWith("rs")) {
     await page.goto(`/genome/me/data/browser?q=${firstRsid.trim()}`);
     await expect(page.locator("table tbody tr").first()).toBeVisible();
-    await expect(
-      page.locator("table tbody tr").first().getByText(/^[ACGT](\/[ACGT])?$/),
-    ).toBeVisible();
+    const genotype = page
+      .locator("table tbody tr")
+      .first()
+      .locator('[data-figure-kind="genotype"] [data-slot="figure-value"]');
+    await expect(genotype).toBeVisible();
+    await expect(genotype).toHaveText(/^[ACGT](\/[ACGT])?$/);
   }
 });
 

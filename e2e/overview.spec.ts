@@ -3,6 +3,7 @@ import path from "node:path";
 import {
   adminClient,
   createConfirmedUser,
+  firstViewportInteractives,
   ingestFileAs,
   seededTemplateCount,
   signIn,
@@ -60,32 +61,6 @@ const STARTER_SLUGS = [
   "caffeine-metabolism-cyp1a2-rs762551",
   "lactase-persistence-lct-rs4988235",
 ];
-
-/**
- * X6.1 basis, identical to scripts/density-baseline/capture.mjs: rendered
- * interactive elements whose top edge is inside the first viewport, excluding
- * persistent navigation (anything inside a `nav`), the skip link and the
- * Copilot entry control.
- */
-async function firstViewportInteractives(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const selector =
-      'a[href],button,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]:not([tabindex="-1"])';
-    const found: string[] = [];
-    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-      if (element.matches('a[href="#main"]')) continue;
-      if (element.closest("nav,[data-copilot-entry]")) continue;
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) continue;
-      if (element.getClientRects().length === 0) continue;
-      if (rect.top >= window.innerHeight) continue;
-      found.push(
-        `${element.tagName.toLowerCase()}:${(element.textContent ?? "").trim().slice(0, 40)}`,
-      );
-    }
-    return found;
-  });
-}
 
 async function expectNoFiguresOrDashes(page: Page) {
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);

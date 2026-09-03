@@ -46,8 +46,10 @@ render them.
   percentage points; an ancestry share renders only with its range.
 - The local ESLint rule `inherit/no-raw-figure` fails the build on a numeric
   or genotypic literal rendered on a result surface outside these components.
-  The ancestry page and the variant browser are listed as exceptions until
-  their rewrites land; every other result surface is enforced.
+  Every result surface is enforced with no exception: the ancestry page and
+  the genome browser, once listed as exceptions pending their rewrites, now
+  render through the contract (the browser's genotypes as observed `genotype`
+  figures inside one claim block per results table).
 
 ## Alternatives rejected
 
