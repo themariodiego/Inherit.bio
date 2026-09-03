@@ -18,3 +18,4 @@ One workstream per path prefix. Other streams request changes through
 | `data/jurisdictions.json`, `content/legal/`, `src/app/(marketing)/legal/` | Consent, identity and jurisdiction | |
 | `scripts/`, `.github/workflows/` | Platform | gates and CI |
 | `docs/` | Orchestrator | ledgers are append-only |
+| `src/lib/family/`, `src/copy/family/`, `src/app/(family-hub)/`, `src/app/api/family/`, `data/family-trait-allowlist.json` | Family | W9 graph, access, gate, grants, carrier pairs, Portrait libraries |
