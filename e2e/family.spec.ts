@@ -322,7 +322,7 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
 
   const estimates = yours
     .locator('[data-slot="permission-row"]')
-    .filter({ hasText: "Statistical estimates" });
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
   await estimates.getByRole("button", { name: "Turn on" }).click();
   await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("On");
 
@@ -337,7 +337,10 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
 
   // Portrait cannot be turned on from the session the invitation was
   // accepted in: the row is locked with its reason, not a dead control.
-  const portrait = yours.locator('[data-slot="permission-row"]').filter({ hasText: "Portrait" });
+  // By the row's own label: the lock reason on other rows could otherwise match.
+  const portrait = yours
+    .locator('[data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
   await expect(portrait.locator('[data-slot="permission-locked"]')).toHaveText(
     INDEPENDENT_LOGIN_REQUIRED,
   );
@@ -356,7 +359,7 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
   const portraitAfter = page
     .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
-    .filter({ hasText: "Portrait" });
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
   await expect(portraitAfter.locator('[data-slot="permission-locked"]')).toHaveCount(0);
   await portraitAfter.getByRole("button", { name: "Turn on" }).click();
   await expect(portraitAfter.locator('[data-slot="permission-state"]')).toHaveText("On");

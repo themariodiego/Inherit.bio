@@ -168,4 +168,4 @@ export const SHARING_ERROR_STATUS = "That did not save. Nothing was changed.";
  * `independentLoginMarker`; `grant_directional_purpose_v1`).
  */
 export const INDEPENDENT_LOGIN_REQUIRED =
-  "Portrait needs a sign-in of your own first. Sign out, sign in again, and this row can be turned on.";
+  "This row needs a sign-in of your own first. Sign out, sign in again, and it can be turned on.";
