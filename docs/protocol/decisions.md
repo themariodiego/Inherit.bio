@@ -328,3 +328,29 @@ work is sequenced after the ancestry surface because both change
   four contract attributes, breadcrumbs, the heading cap, the interactive
   budget, the three entry points and the absence of percent text on the
   data page.
+
+## 2026-09-03 — Ancestry surface (W7), part A: decisions taken while building the foundations
+
+- The named Natural Earth features are drawn at a finer resolution than the
+  1:110m land they mask, so a literal `land ∩ feature` cut produced ragged
+  double coastlines and a 439 KB file. Each feature that selects land is
+  simplified and dilated by 0.4° before the cut; features subtracted to keep
+  a continental division (Asia and Africa from Europe, Asia and Europe from
+  Africa, the Tibetan plateau from East Asia) stay exact, so the Urals,
+  Caucasus and Suez lines are Natural Earth's own. Interior edges of dilated
+  features therefore sit up to 0.4° outside the named feature; both
+  provenance documents say so.
+- The geometry file's `land` object is the land outside every region, so the
+  six objects tile the map without overlap and share arcs; the page draws the
+  remaining land as one path with no runtime clipping, and the build fails if
+  any two regions overlap.
+- Population sizes were counted from the 1000 Genomes phase 3 sample panel
+  fetched by the build (55,156 bytes, SHA-256 recorded), and each `sampled_in`
+  place was taken from the Ensembl populations endpoint's descriptions on the
+  same day; nothing was copied from the design note.
+- Citation ids on the region set use the repository's `doi:` form; the
+  `allowed-external-names` register gains Natural Earth (public-domain
+  reference dataset) and the raw GitHub host the provenance URLs use, because
+  the names gate scans `docs/` and provenance must name its sources.
+- Antarctica's land polygons are not shipped: the projection clamps latitude
+  at −56° and nothing is drawn below Cape Horn.
