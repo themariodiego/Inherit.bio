@@ -189,4 +189,4 @@ export const LIBRARY_EMPTY = "The report library has not been seeded on this dep
  * depends on more than one DNA position, and Inherit reads one at a time.
  */
 export const MEDICINES_ABSENT =
-  "Inherit has no reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.";
+  "Inherit does not offer reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.";

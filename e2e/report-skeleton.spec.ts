@@ -270,13 +270,18 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
   await expect(page.locator("#cancer")).toHaveCount(1);
   await expect(page.locator("#medicines")).toHaveCount(0);
-  // X15: the empty Medicines category is stated in one place, never silent,
-  // and never as a section a link could target.
+  // X15: the withheld Medicines category is stated in one place, never
+  // silent, and never as a section a link could target. The sentence is the
+  // dossier's UI state (docs/withheld/pharmacogenomics.md, element 7): it
+  // says "not offered", and carries none of "coming soon", "soon", "yet" or
+  // "currently", because the testable condition is outside the operator's
+  // control.
   const medicinesAbsent = page.locator('[data-slot="category-absent"][data-category="medicines"]');
   await expect(medicinesAbsent).toHaveCount(1);
   await expect(medicinesAbsent).toHaveText(
-    "Inherit has no reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.",
+    "Inherit does not offer reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.",
   );
+  await expect(medicinesAbsent).not.toContainText(/coming soon|\bsoon\b|\byet\b|\bcurrently\b/i);
   // Adjacent category sections keep the baseline's 96px gap at 1280.
   await expectBaselineSectionGaps(
     page,

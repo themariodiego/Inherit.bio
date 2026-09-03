@@ -460,3 +460,56 @@ its recommended default.
   F1 (graph, hub, person, permissions, invite copy) → F2 (health picture and
   carrier pairs) → F3 (Portrait); the pure libraries may be written in
   parallel with F1.
+
+## 2026-09-03 — Medicines category (X15): pharmacogenomics is withheld, on three built designs
+
+Dossier: `docs/withheld/pharmacogenomics.md`; ADR:
+`docs/adr/0018-pharmacogenomics-withheld.md`; research:
+`docs/design/pharmacogenomics-research-2026-09-03.md` (every URL read
+2026-09-03). This closes the decision the earlier Medicines entry left open and
+the brief records at line 2785.
+
+- Three materially different designs were built and kept as evidence under
+  `docs/withheld/pharmacogenomics/designs/`, each with its fixture and a
+  `gate-output.md` recording the command, exit code and verbatim output of
+  `pnpm gate:templates` and `pnpm gate:readability`. Guideline-level response
+  statements fail both gates (`BANNED_PATTERNS`; grade 12.0 and 10.4 against 9,
+  plus four unregistered title words). Bare single-position reports pass both
+  and are kept as the control; they fail the taxonomy, §7.1 slot 2 and the FTC
+  net-impression standard instead. The diplotype caller fails `bad ref/alt` on
+  rs1142345’s two alt alleles, and its two-entry workaround passes the gate
+  while dropping the *41 allele silently in `scripts/seed.ts`.
+- Every run was made in an isolated worktree of `b6c6877` (`git worktree add`,
+  `node_modules` symlinked) with one preparatory change applied there only:
+  `"pharmacogenomics"` in the validator’s `CATEGORIES` and in the taxonomy’s
+  legacy slugs and defaults (→ `medicines`), so each design fails on its own
+  defect rather than on `bad category`. No fixture was ever placed under
+  `data/templates/` in the main tree, and the worktree was removed afterwards.
+- The obstacle is classified **safety (primary), scientific (supporting)**. Not
+  legal: the guideline body’s curated content is CC0 1.0 and PubMed citation
+  needs no new licence entry. Not data-availability: the research pass retrieved
+  the data. Two legal questions stay live and unresolved, recorded rather than
+  assumed — whether the companion knowledge base’s research-use term survives its
+  CC BY-SA 4.0 grant, and the allele registry’s terms, which could not be read at
+  all and are UNVERIFIED.
+- The §6.4 blocklist rows enter the gate: `\bdosage\b`, `\bsupplement\b` and
+  `we recommend you take` join `BANNED_PATTERNS` in
+  `scripts/validate-templates.ts` under the label `treatment advice (§6.4)`,
+  pinned by the new `scripts/validate-templates.test.ts`. Brief line 913 bans
+  them outside a refusal string and template prose is never a refusal string.
+  No shipped template uses them, so the rule lands green.
+- The UI state changes from "Inherit has no reports about medicines." to
+  "Inherit does not offer reports about medicines." A withholding states that the
+  capability is not offered; "has no reports" reads as an inventory gap that will
+  fill. The sentence is 33 words at grade 6.58 and carries none of "coming soon",
+  "soon", "yet" or "currently", because dossier element 6’s conditions depend on
+  outside parties: a guideline body’s published position on consumer wording, a
+  net-impression judgement by a competent reviewer, and what sequencing providers
+  put in a file. `e2e/report-skeleton.spec.ts` pins both the sentence and the
+  absence of those four words.
+- Registers moved with it: the capability register’s Pharmacogenomics row is
+  `withheld` with the dossier, ADR and the three gate outputs as evidence, and
+  its counts line reads withheld 1 · not shipped 9; the acceptance matrix reports
+  one withheld capability at the top and G7.4’s evidence names the dossier (the
+  gate stays NO while nine rows carry `not shipped`); D-015 is fixed; the
+  approach registry carries one rejected row per design.

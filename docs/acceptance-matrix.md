@@ -7,6 +7,13 @@ G1.2 non-test-code baseline/current counts over the same population:
 `@ts-expect-error` 0/0; `@ts-ignore` 0/0; `as any` 1/1;
 `eslint-disable` 0/0.
 
+**Withheld capabilities: 1** (§8, alternative complete outcome 1).
+Pharmacogenomics — the Medicines category — is withheld on an obstacle
+classified safety (primary) and scientific (supporting); its dossier is
+`docs/withheld/pharmacogenomics.md` and its ADR is
+`docs/adr/0018-pharmacogenomics-withheld.md`. No other gate is degraded,
+blocked or excused by it.
+
 Evidence for each Section-2 acceptance item. "E2E" refers to a Playwright
 spec run against a production build backed by the local Supabase stack (real
 PostgREST/Storage/Auth/Mailpit); "unit" to a vitest test; "live" to the
@@ -120,7 +127,7 @@ revocation, notification, or ownership-transfer contract is complete.
 | G7.1 | Required gating ADRs exist from 0006 onward. | NO | `docs/adr/` holds 0006–0011 and 0016 (0008 readability contract, 0009 statistical presentation contract, 0010 Overview information architecture, 0011 report taxonomy); the minimum set in the brief still lacks the embryo-comparison presentation model, the jurisdiction-gating mechanism, the third-party-subject consent and revocation model, the future-child preview scope and the density contract, each waiting on its workstream. |
 | G7.2 | Core docs/env are current and a clean-clone run is recorded. | NO | `docs/self-hosting.md` now names `Inherit.bio`, but the full new surfaces and a current clean-clone record are incomplete. |
 | G7.3 | Acceptance matrix covers every G gate with concrete evidence. | YES | This G1.1–G8.6 table in `docs/acceptance-matrix.md`; gate ids are complete and NO rows name the missing command, test, or path. |
-| G7.4 | Capability and all named evidence registers exist and are current. | NO | `docs/capability-register.md` exists (created 2026-09-03: 22 capability rows and 3 declared gaps; 10 rows carry `not shipped`, which is not a terminal status, and no `docs/withheld/` dossier exists), `docs/test-diff-register.md`, `docs/retention.md` and `docs/density-baseline.json` exist; `docs/fixture-paths.md`, `docs/figures-register.json` and `docs/release-checklist.md` are absent. |
+| G7.4 | Capability and all named evidence registers exist and are current. | NO | `docs/capability-register.md` exists (created 2026-09-03: 22 capability rows and 3 declared gaps; the Pharmacogenomics row reached a terminal status on 2026-09-03 and is now `withheld`, referencing the dossier `docs/withheld/pharmacogenomics.md` — the nine elements, three designs actually built with their fixtures and the verbatim gate output under `docs/withheld/pharmacogenomics/designs/`, and ADR 0018; 9 rows still carry `not shipped`, which is not a terminal status), `docs/test-diff-register.md`, `docs/retention.md` and `docs/density-baseline.json` exist; `docs/fixture-paths.md`, `docs/figures-register.json` and `docs/release-checklist.md` are absent. |
 | G8.1 | All pre-existing E2E tests pass without weakening. | YES | `pnpm e2e` passes all 57 tests; `docs/test-diff-register.md` records the runner change and confirms no pre-existing E2E test changed. |
 | G8.2 | Production routes cannot render demo/fixture data as user data. | NO | Required `docs/fixture-paths.md` and `scripts/mock-token-allowlist.json` are absent. |
 | G8.3 | Every registered figure differs correctly across two seeds. | NO | Required two-seed E2E and `docs/figures-register.json` are absent. |
