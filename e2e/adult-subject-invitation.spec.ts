@@ -61,7 +61,11 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await expect(statement).toHaveText(PRE_CONSENT_STATEMENT);
   await expect(page.locator("details", { hasText: PRE_CONSENT_STATEMENT })).toHaveCount(0);
   const statementBox = await statement.boundingBox();
-  const formBox = await page.locator("form").boundingBox();
+  // The invite form, not the shell's sign-out form in the account landmark.
+  const formBox = await page
+    .locator("form")
+    .filter({ has: page.getByLabel("Their email address") })
+    .boundingBox();
   expect(statementBox!.y).toBeLessThan(formBox!.y);
   await page.getByLabel("Their email address").fill(RECIPIENT.email);
   await page.getByRole("checkbox").check();

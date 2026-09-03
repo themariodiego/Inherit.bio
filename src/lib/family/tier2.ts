@@ -55,6 +55,22 @@ export function authSessionIdFromAccessToken(accessToken: string): string | null
   }
 }
 
+/**
+ * The id of the auth session this request carries, read from the access
+ * token's claims. Nothing here verifies it: every consumer binds it to a
+ * digest (the gate cookie) or hands it to a routine that checks it against
+ * `auth.sessions` for this account (the independent-login marker), so a
+ * forged id never authorises anything.
+ */
+export async function currentAuthSessionId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+  return authSessionIdFromAccessToken(session.access_token);
+}
+
 /** The cookie attributes the acknowledgement is written with, in one place. */
 export function tier2CookieAttributes() {
   return {
@@ -71,12 +87,7 @@ export function tier2CookieAttributes() {
  * nothing about the other adult.
  */
 export async function acknowledged(user: { id: string }): Promise<boolean> {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) return false;
-  const sessionId = authSessionIdFromAccessToken(session.access_token);
+  const sessionId = await currentAuthSessionId();
   if (!sessionId) return false;
   const store = await cookies();
   return tier2CookieMatches(store.get(TIER2_COOKIE_NAME)?.value, user.id, sessionId);

@@ -146,6 +146,26 @@ describe("permission columns", () => {
     expect(html).not.toContain('data-slot="permission-control"');
   });
 
+  it("locks one row of the settable column with its own reason and keeps its state", () => {
+    const html = renderToStaticMarkup(
+      h(PermissionColumn, {
+        heading: permissions.yourColumnHeading("Bo"),
+        headingId: "your-column",
+        personName: "Bo",
+        rows: rows.map((row) =>
+          row.id === "family.portrait"
+            ? { ...row, lockedReason: permissions.INDEPENDENT_LOGIN_REQUIRED }
+            : { ...row, action: { kind: "revoke" as const, grantId: "55555555-5555-4555-8555-555555555555" } },
+        ),
+      }),
+    );
+    expect(html).toContain('data-settable="true"');
+    expect(html.match(/data-slot="permission-control"/g)).toHaveLength(4);
+    expect(html.match(/data-slot="permission-locked"/g)).toHaveLength(1);
+    expect(html).toContain(permissions.INDEPENDENT_LOGIN_REQUIRED);
+    expect(html.match(/data-permission-state="off"/g)).toHaveLength(5);
+  });
+
   it("shows permission state as a glyph plus a word, never as colour alone", () => {
     const html = renderToStaticMarkup(
       h(PermissionGrantRow, {

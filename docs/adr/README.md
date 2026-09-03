@@ -19,5 +19,6 @@ writing a superseding ADR, not silently drifting.
 | [0011](./0011-report-taxonomy-and-evidence-rubric.md) | Report taxonomy and evidence rubric: two layers, five levels, nine categories, disclosed remap | Accepted |
 | [0012](./0012-jargon-register-everyday-words.md) | Everyday words leave the jargon register; nine genuine terms join it | Accepted |
 | [0013](./0013-offline-map-rendering.md) | Offline map rendering: Natural Earth reduced at build time, committed TopoJSON, server-side decode, inline SVG | Accepted |
+| [0014](./0014-third-party-adult-consent-and-revocation.md) | Third-party adult subject: consent, sharing and revocation model | Accepted |
 | [0016](./0016-supersede-large-file-transport-and-compute.md) | Supersede large-file transport, formats, and compute placement (supersedes 0001) | Accepted |
 | [0018](./0018-pharmacogenomics-withheld.md) | Pharmacogenomics is withheld; the Medicines category ships as a stated absence | Accepted |

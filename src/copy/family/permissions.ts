@@ -150,3 +150,12 @@ export const TOMBSTONE_ITEMS_HEADING = "What was deleted";
 
 /** The request failed; nothing changed. */
 export const SHARING_ERROR_STATUS = "That did not save. Nothing was changed.";
+
+/**
+ * The Portrait row before the independent-login marker is stamped: the row
+ * is real and its state is shown, but it cannot be turned on from the
+ * session the invitation was accepted in (register auth.callback
+ * `independentLoginMarker`; `grant_directional_purpose_v1`).
+ */
+export const INDEPENDENT_LOGIN_REQUIRED =
+  "Portrait needs a sign-in of your own first. Sign out, sign in again, and this row can be turned on.";

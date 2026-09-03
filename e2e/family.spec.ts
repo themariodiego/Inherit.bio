@@ -10,6 +10,7 @@ import {
   ingestFileAs,
   signIn,
 } from "./helpers";
+import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
 
 /**
  * Family surfaces (design docs/design/w9-family-surfaces.md §6.2): the hub,
@@ -114,9 +115,16 @@ async function expectNoResults(page: Page) {
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
 }
 
+/**
+ * Axe in both themes, each on a fresh load in that theme, as every other
+ * spec does: the theme provider flips the class on the live page and the
+ * chrome animates its colours, so an audit taken on a page that was loaded
+ * in the other theme samples mid-transition colours.
+ */
 async function expectAxeClean(page: Page) {
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
+    await page.reload();
     await page.waitForLoadState("networkidle");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(
@@ -322,6 +330,48 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
     .is("revoked_at", null);
   expect(grants).toHaveLength(1);
   expect(grants![0]).toMatchObject({ purpose: "reports.polygenic" });
+
+  // Portrait cannot be turned on from the session the invitation was
+  // accepted in: the row is locked with its reason, not a dead control.
+  const portrait = yours.locator('[data-slot="permission-row"]').filter({ hasText: "Portrait" });
+  await expect(portrait.locator('[data-slot="permission-locked"]')).toHaveText(
+    INDEPENDENT_LOGIN_REQUIRED,
+  );
+  await expect(portrait.locator('[data-slot="permission-control"]')).toHaveCount(0);
+  const { data: beforeMarker } = await admin
+    .from("subjects")
+    .select("independent_login_at")
+    .eq("id", selfSubjectB)
+    .single();
+  expect((beforeMarker as { independent_login_at: string | null }).independent_login_at).toBeNull();
+
+  // A sign-in of B's own, after the acceptance, stamps the marker and makes
+  // the row settable; the grant then succeeds from B's own session.
+  await page.request.post("/auth/sign-out");
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}/permissions`);
+  const portraitAfter = page
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ hasText: "Portrait" });
+  await expect(portraitAfter.locator('[data-slot="permission-locked"]')).toHaveCount(0);
+  await portraitAfter.getByRole("button", { name: "Turn on" }).click();
+  await expect(portraitAfter.locator('[data-slot="permission-state"]')).toHaveText("On");
+  const { data: afterMarker } = await admin
+    .from("subjects")
+    .select("independent_login_at")
+    .eq("id", selfSubjectB)
+    .single();
+  expect((afterMarker as { independent_login_at: string | null }).independent_login_at).not.toBeNull();
+  const { data: grantsAfter } = await admin
+    .from("purpose_grants")
+    .select("purpose")
+    .eq("target_id", selfSubjectB)
+    .is("revoked_at", null)
+    .order("purpose");
+  expect((grantsAfter ?? []).map((row) => row.purpose)).toEqual([
+    "family.portrait",
+    "reports.polygenic",
+  ]);
 });
 
 test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's own subject", async ({

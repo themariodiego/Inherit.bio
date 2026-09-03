@@ -586,3 +586,28 @@ design records the superseded line:
 - The subject chip now reads another account's self record as a shared
   adult: the invitee's view of the inviter is that person's own self
   subject, which the previous rule chipped as the viewer.
+
+## 2026-09-03 — Family surfaces (W9), part F1 follow-up: the independent-login marker, ADR 0014 and two spec fixes
+
+- The independent-login marker is stamped from two places, not one. The
+  register names the auth callback, but the password sign-in runs in the
+  browser and never passes through a server route, so the marker would never
+  be set on the common path and every Portrait grant would fail (D-023). The
+  proof that the session is the invitee's own lives in
+  `mark_independent_login_v1` (a server-verified session that post-dates
+  every accepted invitation, stamped once), so calling it from the
+  permissions page's server render loses nothing and makes the Portrait row
+  real. The register is not edited: the routine's contract is unchanged, and
+  the page-side call is recorded here and in ADR 0014.
+- Until the marker is stamped, the Portrait row renders locked with its
+  reason rather than as a control that would answer 409: a control without
+  its mechanism is a dead control, and the row's state still shows.
+- ADR 0014 is written from the model the F0 migration and the F1 surfaces
+  implement, with the alternatives the repository's own constraints reject
+  (one self subject per account, one purpose per grant, no reversible grant
+  status, no device storage for the Tier-2 choice). The A.12 name is kept as
+  the ADR's stated G7.1 name; the number is the next free one.
+- The two browser assertions F1 added and CI first executed were wrong, not
+  the product: the invitation spec's `form` locator is now scoped to the
+  invite form, and the hub's axe helper reloads in each theme before
+  auditing, as every other spec does (D-024, D-025).

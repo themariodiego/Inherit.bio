@@ -8,6 +8,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { NAV_LABELS } from "@/copy/navigation";
 import {
+  INDEPENDENT_LOGIN_REQUIRED,
   PERMISSIONS_H1,
   PERMISSION_ROWS,
   TOMBSTONE_ITEMS_HEADING,
@@ -21,6 +22,7 @@ import {
 import { STOP_DELETES } from "@/copy/family/permissions";
 import { permits, personCapability } from "@/lib/family/access";
 import { resolveFamilyPerson, type Purpose } from "@/lib/family/graph";
+import { markIndependentLogin } from "@/lib/family/independent-login";
 import {
   SHARE_WITH_ADULT_ARTIFACT,
   SHARE_WITH_ADULT_STATEMENT_KEYS,
@@ -84,11 +86,13 @@ export default async function FamilyPermissionsPage(
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  // Idempotent, and a no-op from the session an invitation was accepted in.
+  await markIndependentLogin(user.id);
   const [{ data: mySelf }, { data: profile }, { data: artifact }, { data: stop }] =
     await Promise.all([
       admin
         .from("subjects")
-        .select("id, subject_binding_revision")
+        .select("id, subject_binding_revision, independent_login_at")
         .eq("subject_account_id", user.id)
         .eq("subject_class", "self")
         .eq("lifecycle", "active")
@@ -203,11 +207,21 @@ export default async function FamilyPermissionsPage(
     id: row.id,
     state: person.grantsToViewer.has(row.id as Purpose) ? "on" : "off",
   }));
-  const yourColumn: ColumnRow[] = PERMISSION_ROWS.map((row) => ({
-    id: row.id,
-    state: outbound.get(row.id as Purpose)?.state ?? "off",
-    action: actionFor(row.id as Purpose),
-  }));
+  // Portrait needs the independent-login marker on the signer's own subject
+  // (grant_directional_purpose_v1); without it the row is locked, not dead.
+  const portraitLocked = Boolean(mySelf) && mySelf!.independent_login_at === null;
+  const yourColumn: ColumnRow[] = PERMISSION_ROWS.map((row) => {
+    const purpose = row.id as Purpose;
+    const action = actionFor(purpose);
+    const locked =
+      purpose === "family.portrait" && portraitLocked && action?.kind !== "revoke";
+    return {
+      id: row.id,
+      state: outbound.get(purpose)?.state ?? "off",
+      action: locked ? undefined : action,
+      lockedReason: locked ? INDEPENDENT_LOGIN_REQUIRED : undefined,
+    };
+  });
 
   const theySeeSomething = yourColumn.some((row) => row.state === "on");
   const youSeeNothing = theirColumn.every((row) => row.state !== "on");

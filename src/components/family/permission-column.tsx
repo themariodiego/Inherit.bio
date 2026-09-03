@@ -6,7 +6,9 @@
  * The column headed "What you will see about {name}" can be set only from
  * that person's own session, so here every one of its rows is disabled and
  * says so. The mirror column on their own permissions screen is where they
- * set it.
+ * set it. A single row of the settable column may also be locked with its
+ * own reason (the Portrait row before the independent-login marker): the
+ * row and its state still render, and the sentence replaces the control.
  */
 import { PermissionGrantRow, type RowAction } from "@/components/family/permission-grant-row";
 import { COLUMN_DEFAULT_NOTE, PERMISSION_ROWS, type PermissionState } from "@/copy/family/permissions";
@@ -16,6 +18,8 @@ export interface ColumnRow {
   id: PermissionRowId;
   state: PermissionState;
   action?: RowAction;
+  /** Set when this one row cannot be changed from this session; renders in place of its control. */
+  lockedReason?: string;
 }
 
 export function PermissionColumn({
@@ -47,6 +51,7 @@ export function PermissionColumn({
       <ul className="mt-2">
         {PERMISSION_ROWS.map((row) => {
           const state = byId.get(row.id);
+          const locked = disabledReason ?? state?.lockedReason;
           return (
             <PermissionGrantRow
               key={row.id}
@@ -54,8 +59,8 @@ export function PermissionColumn({
               consequence={row.consequence}
               personName={personName}
               state={state?.state ?? "off"}
-              action={disabledReason ? undefined : state?.action}
-              disabledReason={disabledReason}
+              action={locked ? undefined : state?.action}
+              disabledReason={locked}
             />
           );
         })}
