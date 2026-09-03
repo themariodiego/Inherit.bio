@@ -36,6 +36,9 @@ const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
 const LIMIT_OF_FILE = "This is a limit of your file, not a result about you.";
 const ESTIMATE_DEFINITION =
   "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.";
+const DOESNT_MEAN_GENERIC = "It does not say what will happen to you.";
+const DOESNT_MEAN_NOT_COVERED = "A missing result is not a negative result.";
+const SKELETON_H2 = '[data-slot="report-skeleton"] h2';
 
 const CATEGORY_HEADINGS_ON_SEED = [
   "Everyday traits",
@@ -68,11 +71,28 @@ test("a covered estimate report renders the six headings, one attributed genotyp
 
   await page.goto(CAFFEINE);
 
-  // The six fixed h2s, in DOM order, with their fixed ids.
+  // The six fixed h2s, in DOM order, with their fixed ids; nothing else in
+  // the skeleton is an h2 (the support panel, when present, sits after it).
   await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+  await expect(page.locator(SKELETON_H2)).toHaveCount(6);
 
-  // Exactly one claim block, attributed to the subject.
+  // The report name is the title up to its gene suffix; the eyebrow above it
+  // is the nine-category label, never the legacy one.
+  await expect(page.locator("main h1")).toHaveText("Caffeine metabolism");
+  await expect(page.locator("main article header p").first()).toHaveText(
+    "Food, drink and metabolism",
+  );
+
+  // Exactly one claim block, attributed to the subject, named by its locus,
+  // and the page's primary claim for density measurement.
   await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  await expect(
+    page.locator('[data-claim-block][aria-label="CYP1A2 rs762551"][data-density-primary-claim="true"]'),
+  ).toHaveCount(1);
+  // A single-variant report has no per-variant locus line in "Your result".
+  await expect(
+    page.locator('section[aria-labelledby="your-result"] [data-slot="variant-locus"]'),
+  ).toHaveCount(0);
 
   // One observed genotype figure with the four contract attributes.
   const genotype = page.locator(
@@ -88,11 +108,26 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   // The one not-diagnostic line.
   await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
 
+  // "What this doesn’t mean": the one generic bullet on a covered report.
+  await expect(
+    page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
+  ).toHaveText([DOESNT_MEAN_GENERIC]);
+
+  // "Where this comes from": the Sources h3 above the citations, then the
+  // variant provenance row whose rsID links to dbSNP.
+  const whereFrom = page.locator('section[aria-labelledby="where-this-comes-from"]');
+  await expect(whereFrom.getByRole("heading", { level: 3, name: "Sources" })).toBeVisible();
+  await expect(whereFrom.getByRole("link", { name: "rs762551" })).toHaveAttribute(
+    "href",
+    "https://www.ncbi.nlm.nih.gov/snp/rs762551",
+  );
+  await expect(whereFrom).toContainText("CYP1A2 · rs762551 · chr15:74749576 C→A");
+
   // Breadcrumb "My Genome / {name} / Reports / {report}" with the full name.
   const name = (await page.locator('[data-slot="subject-name"]').textContent())?.trim();
   expect(name).toBeTruthy();
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
-  await expect(breadcrumb).toContainText(`My Genome / ${name} / Reports / `);
+  await expect(breadcrumb).toContainText(`My Genome / ${name} / Reports / Caffeine metabolism`);
   await expect(breadcrumb.getByRole("link", { name: "My Genome" })).toHaveAttribute(
     "href",
     "/genome/me",
@@ -129,6 +164,20 @@ test("a not-covered report keeps the not-covered strings at full ink and every s
   await page.goto(APOE_REVEALED);
 
   await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+  await expect(page.locator(SKELETON_H2)).toHaveCount(6);
+  await expect(page.locator("main h1")).toHaveText("Alzheimer's disease");
+
+  // The support panel renders with the result, after the skeleton, never
+  // inside "How sure we are".
+  await expect(page.getByTestId("support-panel")).toBeVisible();
+  await expect(
+    page.locator('[data-slot="report-skeleton"] [data-testid="support-panel"]'),
+  ).toHaveCount(0);
+
+  // Two variants: each block in "Your result" is labelled by its locus.
+  await expect(
+    page.locator('section[aria-labelledby="your-result"] [data-slot="variant-locus"]'),
+  ).toHaveText(["APOE · rs429358", "APOE · rs7412"]);
 
   const notCovered = page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first();
   const limit = page.getByText(LIMIT_OF_FILE).first();
@@ -148,10 +197,12 @@ test("a not-covered report keeps the not-covered strings at full ink and every s
   await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
   await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
 
-  // "What this doesn’t mean" and "How sure we are" are never empty.
+  // "What this doesn’t mean" and "How sure we are" are never empty: the
+  // generic bullet plus the missing-result bullet when a position is not
+  // covered.
   await expect(
     page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
-  ).toHaveCount(2);
+  ).toHaveText([DOESNT_MEAN_GENERIC, DOESNT_MEAN_NOT_COVERED]);
   const howSure = page.locator('section[aria-labelledby="how-sure-we-are"]');
   await expect(howSure).toContainText("2 supporting studies");
   await expect(howSure).toContainText(
@@ -171,14 +222,19 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   // The definition sentence renders once, at the top of the group.
   await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
 
-  // The count is layer-labelled and never merged (fixture auto-e2e-* slugs
-  // are excluded from the library by isFixtureSlug).
+  // The counts are layer-labelled and never merged (fixture auto-e2e-* slugs
+  // are excluded from the library by isFixtureSlug): the covered count, then
+  // the layer total, both carrying the layer noun.
   const seeded = seededTemplateCount();
   const count = page.locator(
     `[data-slot="count"][data-figure-class="estimate"][data-metric-value="${seeded}"]`,
   );
   await expect(count).toHaveText(`${seeded} statistical estimates`);
+  const counts = page.locator('[data-slot="count"][data-figure-class="estimate"]');
+  await expect(counts).toHaveCount(2);
+  await expect(counts.first()).toHaveText(/^\d+ statistical estimates? covered by your file$/);
   await expect(page.locator('[data-slot="count"]:not([data-figure-class])')).toHaveCount(0);
+  await expect(page.getByText("Your file does not cover this variant.")).toHaveCount(0);
 
   // Category sections in taxonomy order; Medicines absent while empty.
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
@@ -190,6 +246,21 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   await expect(page.getByText("Polygenic scores", { exact: true })).toHaveCount(0);
   const headings = await page.locator("h2").allTextContents();
   expect(headings.filter((text) => text.includes("%"))).toEqual([]);
+
+  // The category strip is a collapsed "Filter reports" disclosure; the
+  // labelled search box filters by title, gene or category client-side and
+  // hides a category whose cards all filter out.
+  const library = page.locator("[data-library-layer]");
+  await expect(library.locator("details > summary")).toHaveText("Filter reports");
+  await expect(library.locator("details > summary")).toBeVisible();
+  const search = library.getByLabel("Search reports by title, gene, or category");
+  await expect(search).toHaveAttribute("id", "report-search");
+  await expect(search).toHaveAttribute("type", "search");
+  await search.fill("cyp1a2");
+  await expect(library.locator('a[href^="/genome/me/reports/"]')).toHaveCount(1);
+  await expect(page.locator('h2[id$="-heading"]')).toHaveText(["Food, drink and metabolism"]);
+  await search.fill("");
+  await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
 });
 
 test("the hub is titled My Genome with three tiles and one primary button", async ({

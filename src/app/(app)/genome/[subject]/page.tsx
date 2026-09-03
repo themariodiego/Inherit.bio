@@ -7,7 +7,7 @@ import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
+import { getSubjectFileCount } from "@/lib/genome/load";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -20,24 +20,29 @@ const loadSubject = cache(async (segment: string) => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  return resolveSubjectForAccount(user.id, segment);
+  const subject = await resolveSubjectForAccount(user.id, segment);
+  return subject ? { user, subject } : null;
 });
 
 export async function generateMetadata(
   props: PageProps<"/genome/[subject]">,
 ): Promise<Metadata> {
   const { subject: segment } = await props.params;
-  const subject = await loadSubject(segment);
-  return { title: subject ? `${subject.displayLabel} · ${DOMAIN_LABEL}` : DOMAIN_LABEL };
+  const context = await loadSubject(segment);
+  return {
+    title: context ? `${context.subject.displayLabel} · ${DOMAIN_LABEL}` : DOMAIN_LABEL,
+  };
 }
 
 export default async function GenomePage(
   props: PageProps<"/genome/[subject]">,
 ) {
   const { subject: segment } = await props.params;
-  const subject = await loadSubject(segment);
-  if (!subject) notFound();
-  const files = await getSubjectProcessedFiles(createAdminClient(), subject.id);
+  const context = await loadSubject(segment);
+  if (!context) notFound();
+  const { user, subject } = context;
+  // The subject bar counts every file in the record, whatever its status.
+  const fileCount = await getSubjectFileCount(createAdminClient(), subject.id);
   const base = `/genome/${subject.routeSegment}`;
 
   const tiles = [
@@ -49,7 +54,7 @@ export default async function GenomePage(
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <Breadcrumbs items={[{ label: DOMAIN_LABEL, href: base }, { label: subject.displayLabel }]} />
-      <SubjectBar subject={subject} fileCount={files.length} />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{DOMAIN_LABEL}</h1>
       <section className="grid gap-4 sm:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (

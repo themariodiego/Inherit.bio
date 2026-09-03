@@ -1,17 +1,23 @@
 "use client";
 
-// Client half of the report library for ONE layer: the sticky "On this
-// page" category strip (one disclosure, so the first viewport stays under
-// the interactive budget) and the per-category "Show all {n}" control. All
-// data is fetched by the server page and passed down as serializable props.
-// The two layers never share a list container (§4 §1.3); the page renders
-// one <ReportLibrary> per layer.
+// Client half of the report library for ONE layer: the search box, the
+// sticky "Filter reports" category strip and the per-category "Show all {n}"
+// control. All data is fetched by the server page and passed down as
+// serializable props. The two layers never share a list container (§4 §1.3);
+// the page renders one <ReportLibrary> per layer.
 
 import { useState, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { COVERAGE_PILLS, ON_THIS_PAGE, showAll } from "@/copy/reports/strings";
+import { Input } from "@/components/ui/input";
+import {
+  COVERAGE_PILLS,
+  FILTER_REPORTS,
+  NO_SEARCH_MATCHES,
+  SEARCH_REPORTS_LABEL,
+  showAll,
+} from "@/copy/reports/strings";
 import { cn } from "@/lib/utils";
 
 export type CoverageStatus = keyof typeof COVERAGE_PILLS;
@@ -21,6 +27,8 @@ export interface LibraryCard {
   title: string;
   summary: string;
   evidenceLabel: string;
+  /** Gene symbol of every template variant; searched alongside the title. */
+  genes: string[];
   status: CoverageStatus;
 }
 
@@ -37,6 +45,16 @@ export type LibraryLayerClass = "variant-call" | "estimate";
 
 /** A category section shows at most this many cards before "Show all {n}". */
 export const CARDS_BEFORE_SHOW_ALL = 12;
+
+/** Case-insensitive substring over the title, each gene symbol and the category label. */
+export function cardMatches(card: LibraryCard, categoryLabel: string, needle: string): boolean {
+  if (needle === "") return true;
+  return (
+    card.title.toLowerCase().includes(needle) ||
+    card.genes.some((gene) => gene.toLowerCase().includes(needle)) ||
+    categoryLabel.toLowerCase().includes(needle)
+  );
+}
 
 function StatusPill({ status }: { status: CoverageStatus }) {
   return (
@@ -120,6 +138,8 @@ export function ReportLibrary({
   layerClass: LibraryLayerClass;
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [query, setQuery] = useState("");
+  const searchId = "report-search";
 
   /**
    * Category jump: move scroll AND focus to the section without pushing a
@@ -140,14 +160,39 @@ export function ReportLibrary({
     setExpanded((current) => new Set([...current, id]));
   };
 
+  // The search filters client-side; an empty query shows everything and a
+  // category whose cards all filter out is hidden, chip included.
+  const needle = query.trim().toLowerCase();
+  const visibleGroups = groups
+    .map((g) => ({ ...g, cards: g.cards.filter((card) => cardMatches(card, g.label, needle)) }))
+    .filter((g) => g.cards.length > 0);
+
   const Card = layerClass === "estimate" ? EstimateCard : VariantCallRow;
 
   return (
     <div data-library-layer={layerClass} className="space-y-8">
+      <div className="space-y-1">
+        <label htmlFor={searchId} className="block text-sm text-ink-muted">
+          {SEARCH_REPORTS_LABEL}
+        </label>
+        <Input
+          id={searchId}
+          type="search"
+          value={query}
+          autoComplete="off"
+          onChange={(event) => setQuery(event.target.value)}
+          className="max-w-md bg-card"
+        />
+      </div>
+
+      {/* The category strip stays a collapsed disclosure at EVERY width: the
+          first-viewport interactive budget (≤12, docs/density-baseline.json)
+          cannot hold the subject bar (2) + "Why?" (1) + the search box (1) +
+          eight category chips + the first row of three cards. */}
       <details className="sticky top-0 z-10 -mx-1 border-b border-line bg-paper px-1 py-2">
-        <summary className="cursor-pointer text-sm text-ink-muted">{ON_THIS_PAGE}</summary>
-        <nav aria-label="On this page" className="mt-2 flex flex-wrap gap-2 pb-1">
-          {groups.map((g) => (
+        <summary className="cursor-pointer text-sm text-ink-muted">{FILTER_REPORTS}</summary>
+        <nav aria-label={FILTER_REPORTS} className="mt-2 flex flex-wrap gap-2 pb-1">
+          {visibleGroups.map((g) => (
             <a
               key={g.id}
               href={`#${g.id}`}
@@ -160,8 +205,15 @@ export function ReportLibrary({
         </nav>
       </details>
 
-      {groups.map((g) => {
+      {needle !== "" && visibleGroups.length === 0 ? (
+        <p aria-live="polite" className="text-sm text-ink-muted">
+          {NO_SEARCH_MATCHES}
+        </p>
+      ) : null}
+
+      {visibleGroups.map((g) => {
         const open = expanded.has(g.id);
+        // "Show all {n}" counts and reveals the filtered list, never the unfiltered one.
         const visibleCards = open ? g.cards : g.cards.slice(0, CARDS_BEFORE_SHOW_ALL);
         return (
           <section

@@ -7,12 +7,13 @@
  * caller's <ClaimBlock> (or the gate that withholds it); the not-diagnostic
  * line renders at the end of that section on every report, gated or not.
  *
- * Density (docs/density-baseline.json measurementSelectors): headings 1–3
- * and the not-diagnostic line sit in the primary claim block
- * (data-density-primary-claim); headings 4–6 in the primary content block
- * (data-density-primary-content). Nothing here collapses; the only
- * <details> a report page may render are the caller's citations beyond the
- * first three and the strand-flip technical note.
+ * Density (docs/density-baseline.json measurementSelectors): each of the six
+ * <section>s is a top-level section (data-density-top-level-section); the
+ * not-diagnostic line is a required-accuracy statement
+ * (data-density-required-accuracy). The primary-claim and primary-content
+ * markers are the caller's: the first <ClaimBlock> and the <article>.
+ * Nothing here collapses; the only <details> a report page may render are
+ * the caller's citations beyond the first three and the technical notes.
  */
 import type { ReactNode } from "react";
 import {
@@ -43,6 +44,8 @@ const SLOT_KEYS: Record<ReportHeading, keyof Omit<ReportSkeletonProps, "variant"
   "Where this comes from": "whereThisComesFrom",
 };
 
+const YOUR_RESULT: ReportHeading = "Your result";
+
 function Section({
   heading,
   variant,
@@ -54,7 +57,12 @@ function Section({
 }) {
   const id = REPORT_HEADING_IDS[heading];
   return (
-    <section aria-labelledby={id} data-report-section={id} className="space-y-3">
+    <section
+      aria-labelledby={id}
+      data-report-section={id}
+      data-density-top-level-section="true"
+      className="space-y-3"
+    >
       <h2 id={id} className="text-lg font-semibold text-ink">
         {headingText(heading, variant)}
       </h2>
@@ -64,34 +72,23 @@ function Section({
 }
 
 export function ReportSkeleton({ variant = "adult", ...slots }: ReportSkeletonProps) {
-  const [whatThisIs, yourResult, whatThisDoesntMean, ...rest] = REPORT_HEADINGS;
   return (
     <div data-slot="report-skeleton" className="space-y-10">
-      <div data-density-primary-claim="true" className="space-y-10">
-        <Section heading={whatThisIs} variant={variant}>
-          {slots[SLOT_KEYS[whatThisIs]]}
+      {REPORT_HEADINGS.map((heading) => (
+        <Section key={heading} heading={heading} variant={variant}>
+          {slots[SLOT_KEYS[heading]]}
+          {heading === YOUR_RESULT ? (
+            <p
+              data-testid="report-disclaimer"
+              data-not-diagnostic="true"
+              data-density-required-accuracy="true"
+              className="text-sm leading-relaxed text-ink"
+            >
+              {NOT_DIAGNOSTIC}
+            </p>
+          ) : null}
         </Section>
-        <Section heading={yourResult} variant={variant}>
-          {slots[SLOT_KEYS[yourResult]]}
-          <p
-            data-testid="report-disclaimer"
-            data-not-diagnostic="true"
-            className="text-sm leading-relaxed text-ink"
-          >
-            {NOT_DIAGNOSTIC}
-          </p>
-        </Section>
-        <Section heading={whatThisDoesntMean} variant={variant}>
-          {slots[SLOT_KEYS[whatThisDoesntMean]]}
-        </Section>
-      </div>
-      <div data-density-primary-content="true" className="space-y-10">
-        {rest.map((heading) => (
-          <Section key={heading} heading={heading} variant={variant}>
-            {slots[SLOT_KEYS[heading]]}
-          </Section>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }

@@ -54,14 +54,15 @@ describe("ReportSkeleton", () => {
     expect(html.match(/data-testid="report-disclaimer"/g)).toHaveLength(1);
   });
 
-  it("marks the primary claim block (headings 1–3) and the primary content block (4–6)", () => {
+  it("marks every section as a top-level density section and the not-diagnostic line as required accuracy", () => {
     const html = render();
-    const claim = html.indexOf("data-density-primary-claim");
-    const content = html.indexOf("data-density-primary-content");
-    expect(claim).toBeGreaterThan(-1);
-    expect(content).toBeGreaterThan(claim);
-    expect(html.indexOf('id="what-this-doesnt-mean"')).toBeLessThan(content);
-    expect(html.indexOf('id="how-sure-we-are"')).toBeGreaterThan(content);
+    expect(html.match(/<section [^>]*data-density-top-level-section="true"/g)).toHaveLength(6);
+    // The primary-claim and primary-content markers belong to the caller
+    // (the first ClaimBlock and the article), never to the skeleton.
+    expect(html).not.toContain("data-density-primary-claim");
+    expect(html).not.toContain("data-density-primary-content");
+    const disclaimer = html.match(/<p [^>]*data-testid="report-disclaimer"[^>]*>/)?.[0] ?? "";
+    expect(disclaimer).toContain('data-density-required-accuracy="true"');
     expect(html).not.toContain("<details");
   });
 });

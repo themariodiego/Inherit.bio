@@ -73,13 +73,16 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await expect(page.getByText(LIMIT_OF_FILE)).toHaveCount(0);
 
   // Header, summary, sources, and the not-diagnostic line stay visible
-  // around the gate.
+  // around the gate. The h1 is the report name (the title up to its gene
+  // suffix; the seed apostrophe is U+0027 and is not normalised).
   await expect(
     page.getByRole("heading", { name: /Alzheimer's disease/ }),
   ).toBeVisible();
+  await expect(page.locator("main h1")).toHaveText("Alzheimer's disease");
   await expect(
     page.getByRole("heading", { name: "Where this comes from" }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: "Sources" })).toBeVisible();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
 
   // Click through the gate: "Show my result" is a link to the same URL with

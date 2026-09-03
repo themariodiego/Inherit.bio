@@ -34,10 +34,12 @@ import {
   NO_RANGE_YET,
   PROVENANCE_LINE,
   REPORTS_TITLE,
+  SOURCES_HEADING,
   STRAND_FLIP_NOTE,
   TECHNICAL_NOTE,
   UNRECOGNIZED_NOTE,
-  WHAT_THIS_DOESNT_MEAN_DEFAULT,
+  WHAT_THIS_DOESNT_MEAN_GENERIC,
+  WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
   coverageSentence,
   supportingStudies,
 } from "@/copy/reports/strings";
@@ -45,6 +47,7 @@ import type { FigureClass } from "@/lib/figures/contract";
 import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
+  getSubjectFileCount,
   getSubjectGenotypesByRsid,
   getSubjectProcessedFiles,
 } from "@/lib/genome/load";
@@ -57,6 +60,7 @@ import {
 } from "@/lib/genome/reports";
 import {
   categoryFor,
+  categoryLabel,
   isGatedTemplate,
   type CategoryId,
   type FindingLayer,
@@ -69,6 +73,7 @@ const VCF_TYPES = new Set<string>(["vcf", "gvcf"]);
 const VISIBLE_CITATIONS = 3;
 const CHIP =
   "inline-flex items-center rounded-full border border-line px-2 py-0.5 text-sm text-ink";
+const REQUIRED_ACCURACY = { "data-density-required-accuracy": "true" } as const;
 
 /** A template with an unmapped legacy category still renders; "Not now" then returns to the list top. */
 function safeCategoryFor(template: ReportTemplate): CategoryId | null {
@@ -77,6 +82,17 @@ function safeCategoryFor(template: ReportTemplate): CategoryId | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * The report name is the title up to its gene suffix (`Caffeine metabolism ·
+ * CYP1A2` → `Caffeine metabolism`); the whole title when there is none. The
+ * gene suffix is provenance, rendered in "Where this comes from", never a
+ * heading.
+ */
+function reportNameOf(title: string): string {
+  const index = title.indexOf(" · ");
+  return index === -1 ? title : title.slice(0, index);
 }
 
 /** Sorted genotype key ("AC") → the two letters ("A/C"); longer keys render as stored. */
@@ -97,7 +113,9 @@ const loadReport = cache(async (segment: string, slug: string) => {
   const subject = await resolveSubjectForAccount(user.id, segment);
   if (!subject) return null;
   const admin = createAdminClient();
-  const [{ data: raw }, files] = await Promise.all([
+  // The results read the processed files; the subject bar counts every file
+  // in the record, whatever its status.
+  const [{ data: raw }, files, fileCount] = await Promise.all([
     admin
       .from("report_templates")
       .select(
@@ -107,9 +125,10 @@ const loadReport = cache(async (segment: string, slug: string) => {
       .eq("status", "published")
       .maybeSingle(),
     getSubjectProcessedFiles(admin, subject.id),
+    getSubjectFileCount(admin, subject.id),
   ]);
   if (!raw) return null;
-  return { user, subject, files, template: raw as unknown as ReportTemplate };
+  return { user, subject, files, fileCount, template: raw as unknown as ReportTemplate };
 });
 
 export async function generateMetadata(
@@ -118,7 +137,9 @@ export async function generateMetadata(
   const { slug, subject: segment } = await props.params;
   const context = await loadReport(segment, slug);
   return {
-    title: context ? `${context.subject.displayLabel} · ${context.template.title}` : "Report",
+    title: context
+      ? `${context.subject.displayLabel} · ${reportNameOf(context.template.title)}`
+      : "Report",
   };
 }
 
@@ -168,6 +189,8 @@ function VariantResult({
   figureClass,
   layer,
   notCovered,
+  showLocus,
+  densityPrimaryClaim,
 }: {
   variant: TemplateVariant;
   outcome: VariantOutcome;
@@ -176,10 +199,20 @@ function VariantResult({
   figureClass: FigureClass;
   layer: FindingLayer;
   notCovered: string;
+  /** Only a multi-variant report labels each block; with one variant there is nothing to tell apart. */
+  showLocus: boolean;
+  densityPrimaryClaim: boolean;
 }) {
+  // Built outside JSX so the readability gate scans the rendered text, not a
+  // template with placeholder slots.
+  const locusLabel = `${variant.gene} rs${variant.rsid}`;
   let body: ReactNode;
   if (conflict) {
-    body = <p className="text-sm text-ink">{FILES_DISAGREE}</p>;
+    body = (
+      <p {...REQUIRED_ACCURACY} className="text-sm text-ink">
+        {FILES_DISAGREE}
+      </p>
+    );
   } else if (outcome.status === "genotyped") {
     const figure: GenotypeSpec = {
       kind: "genotype",
@@ -190,10 +223,17 @@ function VariantResult({
       label: GENOTYPE_LABEL,
     };
     body = (
-      <ClaimBlock subject={{ subjectId }} figures={[figure]}>
+      <ClaimBlock
+        subject={{ subjectId }}
+        figures={[figure]}
+        aria-label={locusLabel}
+        densityPrimaryClaim={densityPrimaryClaim}
+      >
         <p className="mt-3 text-sm leading-relaxed text-ink">{outcome.interpretation}</p>
         {layer === "estimate" ? (
-          <p className="mt-2 text-sm text-ink">{NO_RANGE_YET}</p>
+          <p {...REQUIRED_ACCURACY} className="mt-2 text-sm text-ink">
+            {NO_RANGE_YET}
+          </p>
         ) : null}
         {outcome.strandFlipped ? <TechnicalNote>{STRAND_FLIP_NOTE}</TechnicalNote> : null}
       </ClaimBlock>
@@ -201,8 +241,8 @@ function VariantResult({
   } else if (outcome.status === "not-covered") {
     body = (
       <div data-outcome="not-covered" className="space-y-1 text-sm leading-relaxed text-ink">
-        <p>{notCovered}</p>
-        <p>{LIMIT_OF_FILE}</p>
+        <p {...REQUIRED_ACCURACY}>{notCovered}</p>
+        <p {...REQUIRED_ACCURACY}>{LIMIT_OF_FILE}</p>
       </div>
     );
   } else {
@@ -210,8 +250,8 @@ function VariantResult({
     // mismatch is noted, never reinterpreted, and the letters are not shown.
     body = (
       <div data-outcome={outcome.status} className="space-y-1 text-sm leading-relaxed text-ink">
-        <p>{NO_CALL}</p>
-        <p>{LIMIT_OF_FILE}</p>
+        <p {...REQUIRED_ACCURACY}>{NO_CALL}</p>
+        <p {...REQUIRED_ACCURACY}>{LIMIT_OF_FILE}</p>
         {outcome.status === "unrecognized" ? (
           <TechnicalNote>{UNRECOGNIZED_NOTE}</TechnicalNote>
         ) : null}
@@ -221,9 +261,11 @@ function VariantResult({
 
   return (
     <div data-variant-result={variant.rsid} className="space-y-2">
-      <p className="font-mono text-sm text-ink-muted">
-        {variant.gene} · rs{variant.rsid} · chr{chromosomeName(variant.chrom)}
-      </p>
+      {showLocus ? (
+        <p data-slot="variant-locus" className="font-mono text-sm text-ink-muted">
+          {variant.gene} · rs{variant.rsid}
+        </p>
+      ) : null}
       {body}
     </div>
   );
@@ -241,8 +283,9 @@ export default async function ReportDetailPage(
 
   const context = await loadReport(subjectSegment, slug);
   if (!context) notFound();
-  const { user, subject, files, template } = context;
+  const { user, subject, files, fileCount, template } = context;
 
+  const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";
   const figureClass: FigureClass = layer === "variant_call" ? "variant-call" : "estimate";
   const categoryId = safeCategoryFor(template);
@@ -266,12 +309,17 @@ export default async function ReportDetailPage(
   const revealHref = `${reportsHref}/${encodeURIComponent(template.slug)}?reveal=1`;
 
   // Array files and VCF files fail to cover a position for different
-  // reasons; when the subject has both kinds the array explanation is used.
-  const hasArray = files.some((file) => !VCF_TYPES.has(file.file_type));
-  const notCovered = hasArray ? NOT_COVERED_ARRAY : NOT_COVERED_VCF;
+  // reasons. A VCF usually lists only the positions where the subject
+  // differs from the reference, so whenever ANY processed file is a VCF or
+  // gVCF the missing position may be "tested and normal" and the VCF
+  // explanation is the honest one; only an all-array record gets the
+  // fixed-probe-set explanation.
+  const hasVcf = files.some((file) => VCF_TYPES.has(file.file_type));
+  const notCovered = hasVcf ? NOT_COVERED_VCF : NOT_COVERED_ARRAY;
 
   let yourResult: ReactNode;
   let coveredPositions = 0;
+  let anyNotCovered = false;
   if (showResults) {
     const { genotypes, conflicts } = hasData
       ? await getSubjectGenotypesByRsid(
@@ -284,6 +332,14 @@ export default async function ReportDetailPage(
     coveredPositions = resolved.variants.filter(
       (item) => item.outcome.status === "genotyped",
     ).length;
+    anyNotCovered =
+      hasData && resolved.variants.some((item) => item.outcome.status === "not-covered");
+    // The first claim block on the page is the density measurement's primary
+    // claim (docs/density-baseline.json); a variant without a genotype
+    // renders no block, so the marker goes to the first that does.
+    const primaryClaimRsid = resolved.variants.find(
+      ({ variant, outcome }) => outcome.status === "genotyped" && !conflicts.has(variant.rsid),
+    )?.variant.rsid;
 
     yourResult = hasData ? (
       <div className="space-y-6">
@@ -297,6 +353,8 @@ export default async function ReportDetailPage(
             figureClass={figureClass}
             layer={layer}
             notCovered={notCovered}
+            showLocus={template.variants.length > 1}
+            densityPrimaryClaim={variant.rsid === primaryClaimRsid}
           />
         ))}
       </div>
@@ -316,23 +374,50 @@ export default async function ReportDetailPage(
     );
   }
 
+  // D16, "fewer claims, not more caveats": one generic bullet that is true
+  // for traits and conditions alike, and a second only when a shown result
+  // has a position the file does not cover.
+  const doesntMeanBullets = anyNotCovered
+    ? [WHAT_THIS_DOESNT_MEAN_GENERIC, WHAT_THIS_DOESNT_MEAN_NOT_COVERED]
+    : [WHAT_THIS_DOESNT_MEAN_GENERIC];
+
+  // The mandated coverage sentence (§2 §4.4e) names "this estimate", so it
+  // renders on that layer only, and only with a shown result.
+  const coverageLine =
+    showResults && hasData && layer === "estimate"
+      ? coverageSentence(coveredPositions, template.variants.length)
+      : null;
+
   const visibleCitations = template.citations.slice(0, VISIBLE_CITATIONS);
   const moreCitations = template.citations.slice(VISIBLE_CITATIONS);
 
   return (
-    <article className="mx-auto max-w-[44rem] space-y-8">
+    <article
+      data-surface="reading"
+      data-density-primary-content="true"
+      className="mx-auto max-w-[44rem] space-y-8"
+    >
       <Breadcrumbs
         items={[
           { label: NAV_LABELS["my-genome"], href: hubHref },
           { label: subject.displayLabel },
           { label: REPORTS_TITLE, href: reportsHref },
-          { label: template.title },
+          { label: reportName },
         ]}
       />
-      <SubjectBar subject={subject} fileCount={files.length} />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
 
       <header className="space-y-4">
-        <h1 className="display text-3xl">{template.title}</h1>
+        <div className="space-y-1">
+          {categoryId ? (
+            // The nine-category label, never the legacy one; utility classes,
+            // not the `.eyebrow` class (D31).
+            <p className="text-[13px] uppercase tracking-[0.14em] text-ink-muted">
+              {categoryLabel(categoryId)}
+            </p>
+          ) : null}
+          <h1 className="display text-3xl">{reportName}</h1>
+        </div>
         <ul data-slot="chip-row" className="space-y-2 text-sm">
           <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span data-chip="layer" className={CHIP}>
@@ -363,7 +448,7 @@ export default async function ReportDetailPage(
         yourResult={yourResult}
         whatThisDoesntMean={
           <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
-            {WHAT_THIS_DOESNT_MEAN_DEFAULT.map((bullet) => (
+            {doesntMeanBullets.map((bullet) => (
               <li key={bullet}>{bullet}</li>
             ))}
           </ul>
@@ -374,25 +459,26 @@ export default async function ReportDetailPage(
               <span className="font-medium">{evidenceLabel}</span>
               <span className="text-ink-muted">{` — ${evidenceDefinition}`}</span>
             </p>
+            {/* inherit-figure-exempt: a count of the template's citations, not a result figure */}
             <p>{supportingStudies(template.citations.length)}</p>
-            {showResults && hasData && layer === "estimate" ? (
-              // The mandated coverage sentence (§2 §4.4e): the numerals are
-              // counts of template positions read from the file, not a risk
-              // figure. It names "this estimate", so it renders on that layer only.
-              <p>{coverageSentence(coveredPositions, template.variants.length)}</p>
-            ) : null}
+            {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure */}
+            {coverageLine ? <p>{coverageLine}</p> : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
               <div data-confirmation-block="true" className="space-y-1">
-                <p>{CONFIRMATION_BLOCK}</p>
+                <p {...REQUIRED_ACCURACY}>{CONFIRMATION_BLOCK}</p>
                 <p>{COUNSELLOR_NO_ROUTE}</p>
               </div>
             ) : null}
-            {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
           </div>
         }
-        whatYouCanDo={<p className="text-sm leading-relaxed text-ink">{NOTHING_TO_DO}</p>}
+        whatYouCanDo={
+          <p {...REQUIRED_ACCURACY} className="text-sm leading-relaxed text-ink">
+            {NOTHING_TO_DO}
+          </p>
+        }
         whereThisComesFrom={
           <div className="space-y-3 text-sm leading-relaxed">
+            <h3 className="font-medium text-ink">{SOURCES_HEADING}</h3>
             <ul className="space-y-1">
               {visibleCitations.map((citation, index) => (
                 <li key={`${citation.label}-${index}`}>
@@ -412,10 +498,30 @@ export default async function ReportDetailPage(
                 </ul>
               </details>
             ) : null}
+            {/* The template's variants: gene, dbSNP record and GRCh38 locus. */}
+            <ul data-slot="variant-provenance" className="space-y-1 font-mono text-ink-muted">
+              {template.variants.map((variant) => (
+                <li key={variant.rsid}>
+                  {variant.gene} ·{" "}
+                  <a
+                    href={`https://www.ncbi.nlm.nih.gov/snp/rs${variant.rsid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    rs{variant.rsid}
+                  </a>
+                  {/* inherit-figure-exempt: variant coordinates are provenance, not a result figure */}
+                  {` · chr${chromosomeName(variant.chrom)}:${variant.pos38} ${variant.ref}→${variant.alt}`}
+                </li>
+              ))}
+            </ul>
             <p className="text-ink-muted">{PROVENANCE_LINE}</p>
           </div>
         }
       />
+
+      {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
 
       <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <Link href={`${hubHref}/data`} className="underline underline-offset-2">

@@ -51,11 +51,14 @@ export const CONFIRMATION_BLOCK =
 export const COUNSELLOR_NO_ROUTE =
   "We don’t have a counsellor to point you to where you are. Your doctor can refer you.";
 
-/** Used when a template supplies no bullets; both are true for every association report. */
-export const WHAT_THIS_DOESNT_MEAN_DEFAULT = [
-  "It does not tell you whether you will get this condition.",
-  "It is not a medical test result.",
-] as const;
+/**
+ * "What this doesn’t mean" (D16: fewer claims, not more caveats). One generic
+ * bullet on every report — true for traits and for conditions — and one more
+ * only when a shown result has a position the file does not cover.
+ */
+export const WHAT_THIS_DOESNT_MEAN_GENERIC = "It does not say what will happen to you.";
+
+export const WHAT_THIS_DOESNT_MEAN_NOT_COVERED = "A missing result is not a negative result.";
 
 // ---------------------------------------------------------------------------
 // Layer labels and definitions (§4 §1.3; X5.1). The definition is repeated
@@ -126,7 +129,12 @@ export const ASK_ABOUT_THIS = "Ask about this";
 export const ALL_REPORTS = "← All reports";
 export const ADD_A_FILE = "Add a file";
 export const MORE_SOURCES = "More sources";
-export const ON_THIS_PAGE = "On this page";
+/** The reports list: the collapsed category strip and the search box above it. */
+export const FILTER_REPORTS = "Filter reports";
+export const SEARCH_REPORTS_LABEL = "Search reports by title, gene, or category";
+export const NO_SEARCH_MATCHES = "No reports match your search.";
+/** The h3 above the citations in "Where this comes from". */
+export const SOURCES_HEADING = "Sources";
 export const TECHNICAL_NOTE = "Technical note";
 export const REPORTS_TITLE = "Reports";
 

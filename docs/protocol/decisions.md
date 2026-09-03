@@ -144,3 +144,49 @@ the shipped code follows.
   single-attributed-ancestor rule is unaffected.
 - The printable export shows the public evidence label; the machine-readable
   JSON export keeps the enum value so its schema does not change.
+
+## 2026-09-03 — Review round on the report and Overview surfaces
+
+Two of the four adversarial reviewers completed before the session's usage
+limit stopped the refuters; their 22 findings were triaged by hand against
+the specification digest and the code. Nineteen were confirmed and fixed,
+three are recorded as follow-ups. Decisions taken while fixing:
+
+- The report `h1`, the last breadcrumb crumb and the document title are the
+  template title up to the first ` · ` (§4.3 item 3); the gene symbol is
+  provenance, listed under "Where this comes from" with a dbSNP link and
+  `chr:pos ref→alt`. A per-variant label stays in "Your result" only when a
+  template has more than one variant, so a reader can tell the blocks apart.
+- The coverage sentence and the study count are counts of positions and
+  citations, not result figures: they render as text with the
+  `inherit-figure-exempt` marker rather than as a second attributed claim
+  block (`e2e/report-skeleton.spec.ts` pins exactly one block per
+  single-variant report).
+- "What this doesn’t mean" ships one generic bullet, `It does not say what
+  will happen to you.`, true for traits and conditions, plus `A missing
+  result is not a negative result.` when a position is not covered (D16);
+  the former second bullet restated the not-diagnostic line.
+- The reports list keeps the search input (`#report-search`, §4.4 item 7)
+  but the category strip stays inside a `Filter reports` disclosure at every
+  width: subject bar (2) + Why? (1) + search (1) + eight chips + three cards
+  exceeds the twelve-interactive first-viewport budget at 1280×800.
+- The kind chip is derived relative to the viewer: an adult record whose
+  subject account is the viewer (an accepted invitation) is the viewer's own
+  genome and reads "You"; a `minor` record renders no chip (D11); "Add a
+  file" renders only on the `self` record because the upload path binds every
+  file to the caller's own record.
+- The subject-bar file count is the count of every file in the record,
+  whatever its status, because the link lands on `/files`, which lists them all.
+- Overview resolves State B (any file in flight) before C/D; a record bound
+  to the viewer is never listed as another adult; the ancestry line renders
+  only when the too-few-markers statement is true and never a "regions
+  found" count (D26); the sidebar's second disclaimer is removed.
+- Follow-ups, not fixed here: runtime links still use literal paths (task:
+  `src/lib/primary-routes.ts`); the report h1 identity is re-checked by
+  `gate:templates` once the prose checks land; the upload path honouring a
+  subject segment belongs to the Family workstream (G2.6).
+- The Overview's variant-call count carries a twelve-word-cap note shortened
+  from the mandated definition (`Results read from one spot in your DNA.`)
+  with the full definition rendered adjacent, mirroring the estimate half;
+  the definition itself is eighteen words and X9.1 caps every metric note at
+  twelve. Dormant until a `variant_call` template is published.

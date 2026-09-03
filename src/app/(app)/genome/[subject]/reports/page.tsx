@@ -21,12 +21,12 @@ import {
   LAYER_LABELS,
   LIBRARY_EMPTY,
   LIST_NO_FILE,
-  NOT_COVERED_VCF,
   REPORTS_TITLE,
   cannotNumberSentence,
 } from "@/copy/reports/strings";
 import {
   getPublishedTemplates,
+  getSubjectFileCount,
   getSubjectGenotypesByRsid,
   getSubjectProcessedFiles,
   templateRsids,
@@ -48,8 +48,6 @@ const LAYER_CLASS: Record<FindingLayer, CountClass> = {
   variant_call: "variant-call",
   estimate: "estimate",
 };
-
-const VCF_TYPES = new Set<string>(["vcf", "gvcf"]);
 
 /** Templates carry a legacy category; an unmapped one is left out rather than crashing the list. */
 function safeCategoryFor(template: ReportTemplate): CategoryId | null {
@@ -89,11 +87,14 @@ export default async function ReportsPage(
   ]);
   const context = await loadSubject(subjectSegment);
   if (!context) notFound();
-  const { subject } = context;
+  const { user, subject } = context;
 
   const admin = createAdminClient();
-  const [files, allTemplates] = await Promise.all([
+  // The results read the processed files; the subject bar counts every file
+  // in the record, whatever its status.
+  const [files, fileCount, allTemplates] = await Promise.all([
     getSubjectProcessedFiles(admin, subject.id),
+    getSubjectFileCount(admin, subject.id),
     getPublishedTemplates(admin),
   ]);
   // Test fixtures never reach the user-facing library.
@@ -108,7 +109,6 @@ export default async function ReportsPage(
   );
 
   const hasData = files.length > 0;
-  const hasVcf = files.some((file) => VCF_TYPES.has(file.file_type));
   const hubHref = `/genome/${subject.routeSegment}`;
   const reportsHref = `${hubHref}/reports`;
 
@@ -126,9 +126,6 @@ export default async function ReportsPage(
     nonEmptyLayers.find((layer) => layer === requestedLayer) ?? nonEmptyLayers[0];
 
   const estimateCount = byLayer.get("estimate")!.length;
-  const coveredEstimates = byLayer
-    .get("estimate")!
-    .filter((report) => report.covered).length;
 
   let groups: LibraryGroup[] = [];
   if (activeLayer) {
@@ -142,6 +139,7 @@ export default async function ReportsPage(
         title: template.title,
         summary: template.summary,
         evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
+        genes: template.variants.map((variant) => variant.gene),
         status: hasData ? (covered ? "covered" : "not-covered") : "awaiting",
       });
       byCategory.set(category, list);
@@ -165,25 +163,40 @@ export default async function ReportsPage(
           { label: REPORTS_TITLE },
         ]}
       />
-      <SubjectBar subject={subject} fileCount={files.length} />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
 
       <header className="space-y-3">
         <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
-        {hasData ? (
-          <p className="text-sm">
-            <Count
-              value={coveredEstimates}
-              layerClass="estimate"
-              qualifier="covered by your file"
-              describedBy={definitionId}
-            />
-          </p>
-        ) : (
-          <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p>
-        )}
-        {hasData && coveredEstimates === 0 && hasVcf ? (
-          <p className="max-w-prose text-sm leading-relaxed text-ink">{NOT_COVERED_VCF}</p>
-        ) : null}
+        {!hasData ? <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p> : null}
+        {/* One count line per non-empty layer, each carrying its own layer
+            noun (G4.3), so a future variant_call layer is never described
+            as estimates: the covered count, then the layer total. */}
+        {nonEmptyLayers.map((layer) => {
+          const reports = byLayer.get(layer)!;
+          const covered = reports.filter((report) => report.covered).length;
+          const describedBy = layer === activeLayer ? definitionId : undefined;
+          return (
+            <p key={layer} className="text-sm">
+              {hasData ? (
+                <>
+                  <Count
+                    value={covered}
+                    layerClass={LAYER_CLASS[layer]}
+                    qualifier="covered by your file"
+                    describedBy={describedBy}
+                  />
+                  {", out of "}
+                </>
+              ) : null}
+              <Count
+                value={reports.length}
+                layerClass={LAYER_CLASS[layer]}
+                describedBy={describedBy}
+              />
+              {" in the library."}
+            </p>
+          );
+        })}
         {estimateCount > 0 ? (
           <p className="text-sm text-ink-muted">
             {cannotNumberSentence(estimateCount)}{" "}
@@ -226,13 +239,6 @@ export default async function ReportsPage(
             </p>
             <p id={definitionId} className="max-w-prose text-sm text-ink-muted">
               {LAYER_DEFINITIONS[activeLayer]}
-            </p>
-            <p className="text-sm">
-              <Count
-                value={byLayer.get(activeLayer)!.length}
-                layerClass={LAYER_CLASS[activeLayer]}
-                describedBy={definitionId}
-              />
             </p>
           </div>
           <ReportLibrary

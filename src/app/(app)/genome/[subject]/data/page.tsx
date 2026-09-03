@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
 import type { CoverageSpec } from "@/lib/figures/spec";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
+import { getSubjectFileCount, getSubjectProcessedFiles } from "@/lib/genome/load";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +25,12 @@ export default async function GenomeDataPage(
   const base = `/genome/${subject.routeSegment}`;
 
   const admin = createAdminClient();
-  const files = await getSubjectProcessedFiles(admin, subject.id);
+  // The coverage facts read the processed files; the subject bar counts
+  // every file in the record, whatever its status.
+  const [files, fileCount] = await Promise.all([
+    getSubjectProcessedFiles(admin, subject.id),
+    getSubjectFileCount(admin, subject.id),
+  ]);
 
   // Per-score panel coverage facts (name, id, matched of n, coverage share,
   // ancestry note). No percentile renders anywhere: every shipped score can
@@ -61,7 +66,7 @@ export default async function GenomeDataPage(
           { label: "Data" },
         ]}
       />
-      <SubjectBar subject={subject} fileCount={files.length} />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <header className="space-y-3">
         <p className="eyebrow">Data</p>
         <h1 className="display text-3xl">{subject.displayLabel}&apos;s genome data</h1>

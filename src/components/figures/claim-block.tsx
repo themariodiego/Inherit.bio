@@ -29,6 +29,12 @@ export interface ClaimBlockProps {
   subject: SubjectAttribution;
   figures: StandaloneFigureSpec[];
   "aria-label"?: string;
+  /**
+   * Emits `data-density-primary-claim` on the container: the one block a
+   * page's density measurement treats as its primary claim
+   * (docs/density-baseline.json measurementSelectors). At most one per page.
+   */
+  densityPrimaryClaim?: boolean;
   children?: ReactNode;
   className?: string;
 }
@@ -37,6 +43,7 @@ export function ClaimBlock({
   subject,
   figures,
   "aria-label": ariaLabel,
+  densityPrimaryClaim,
   children,
   className,
 }: ClaimBlockProps) {
@@ -47,6 +54,7 @@ export function ClaimBlock({
       data-slot="claim-block"
       data-claim-block="true"
       {...subjectAttributes(subject)}
+      data-density-primary-claim={densityPrimaryClaim ? "true" : undefined}
       aria-label={ariaLabel}
       className={cn("rounded-2xl border border-line bg-card p-4 text-ink", className)}
     >
