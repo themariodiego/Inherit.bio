@@ -13,9 +13,9 @@ import { currentAuthSessionId } from "./tier2";
  * the invitation link cannot sign both columns.
  *
  * The proof lives in the routine, not here. `mark_independent_login_v1`
- * stamps a subject only from a server-verified session of this account that
- * post-dates every accepted invitation for that subject, once, and every
- * later call is a no-op. This helper therefore runs wherever a signed-in
+ * stamps this account's subjects only from a server-verified session that
+ * post-dates every adult-subject invitation this account accepted, once, and
+ * every later call is a no-op. This helper therefore runs wherever a signed-in
  * request reaches the server — the callback exchange, and the permissions
  * page before it decides whether the Portrait row is settable — because a
  * password sign-in completes in the browser and passes through no server

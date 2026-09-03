@@ -1,5 +1,5 @@
 begin;
-select plan(81);
+select plan(85);
 
 -- Two adults, Alpha and Beta, each with a provisioned self subject and an
 -- auth session; Gamma is an unrelated account.
@@ -381,6 +381,36 @@ select throws_ok(
   '55000', 'no family sharing between these accounts',
   'a second stop has nothing left to act on'
 );
+
+-- Marker, per account (D-028): the session an invitation was accepted in ---
+-- Gamma opens a session, then accepts an adult-subject invitation from Alpha
+-- in it; that session stamps nothing, and neither would an older one.
+insert into auth.sessions (id, user_id, created_at, updated_at, aal)
+values ('75000000-0000-4000-8000-000000000013', (select gamma from fx),
+        clock_timestamp() - interval '1 minute', clock_timestamp() - interval '1 minute', 'aal1');
+insert into public.subject_invitations (
+  target_kind, target_id, inviter_principal_id, invitee_principal_id, email_hmac, token_hash,
+  invitation_kind, status, expires_at, accepted_at, terminal_at
+) values (
+  'subject', (select alpha_subject from fx), (select alpha_principal from fx),
+  (select id from public.subject_principals
+     where account_id = (select gamma from fx) and principal_kind = 'account_subject' and status = 'active'),
+  repeat('a', 64), repeat('b', 64), 'adult_subject', 'accepted',
+  clock_timestamp() + interval '1 day', clock_timestamp(), clock_timestamp()
+);
+select is(public.mark_independent_login_v1((select gamma from fx), '75000000-0000-4000-8000-000000000013'), 0,
+  'the session an invitation was accepted in stamps nothing');
+select is((select independent_login_at from public.subjects
+  where subject_account_id = (select gamma from fx) and subject_class = 'self'), null,
+  'the accepting account''s own self record stays unstamped');
+insert into auth.sessions (id, user_id, created_at, updated_at, aal)
+values ('75000000-0000-4000-8000-000000000014', (select gamma from fx),
+        clock_timestamp() + interval '1 minute', clock_timestamp() + interval '1 minute', 'aal1');
+select is(public.mark_independent_login_v1((select gamma from fx), '75000000-0000-4000-8000-000000000014'), 1,
+  'a session opened after the acceptance stamps the account''s self record');
+select isnt((select independent_login_at from public.subjects
+  where subject_account_id = (select gamma from fx) and subject_class = 'self'), null,
+  'the marker is set from the later session');
 
 select * from finish();
 rollback;
