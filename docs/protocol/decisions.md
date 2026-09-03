@@ -689,3 +689,42 @@ file that reports no reference-homozygous call (a differences-only VCF)
 cannot show a run and is `not_measurable`. The citation renders beside
 the carrier block as its provenance, and the constants have one home in
 `src/lib/family/roh.ts`.
+
+## 2026-09-03 — Medicines: the operator lifts the withholding for the honest subset
+
+Context: `docs/withheld/pharmacogenomics.md` (D-015, ADR 0018) classified the
+obstacle as safety (primary) and scientific (supporting) and named two
+testable conditions, parts of which depend on a person's judgement rather
+than on code. On 2026-09-03 the operator, in this session, approved shipping
+the Pharmacogenomics ("Medicines") section in full and directed that no other
+section be degraded.
+
+Decision, and what the approval does and does not change:
+- The approval is the operator's judgement on the safety class (dossier
+  condition A, items 3 and 4): the "What you can do" collision is resolved by
+  a Medicines-specific string that is true and is not treatment advice, and
+  the category's net impression is accepted by the operator. No competent
+  reviewer's claim entry exists; the register says so until one does.
+- Condition A, item 1 (the Copilot intent guard of brief line 2262) is inside
+  the operator's control and is built before the category renders; item 2
+  (the §6.4 blocklist rows) stays in force.
+- The approval does not change the science (condition B): a metabolizer
+  phenotype needs the pair of gene copies, which an unphased consumer file
+  cannot supply, so no report states a phenotype, a dose, a drug choice or a
+  response. What ships is what is true: per-position reports in the
+  `variant_call` layer, where brief line 1163 places pharmacogenomic star
+  alleles, saying which letters the file shows at a position a CPIC guideline
+  names, which named forms carry that letter, and what the position cannot
+  tell the reader; sources are CPIC (CC0 1.0), dbSNP and PubMed only, with
+  the guideline's PMID and the access date on every template.
+- Candidates excluded on the research note's verified facts stay excluded and
+  are named in ADR 0021: CYP2D6 (structural variation), HLA-B*57:01 (a proxy
+  that must not be imputed), IFNL3 (retired), UGT1A1*28 and TPMT *3C
+  (multi-allelic, outside the schema), G6PD (X-linked, no haploid key).
+- The category description no longer promises "how your body may respond";
+  it says what the reports are.
+- Currency: every template carries the guideline PMID and the date it was
+  read; the register records that CPIC content is subject to updates and
+  that Inherit has no automatic detection of a superseded guideline yet.
+- Nothing else is removed or weakened: the only subtraction is the absence
+  paragraph the category replaces.
