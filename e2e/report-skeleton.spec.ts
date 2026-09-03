@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { createConfirmedUser, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
 
@@ -57,6 +57,30 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
 
+
+/**
+ * Adjacent top-level sections keep the baseline gap at 1280×800
+ * (docs/density-baseline.json adjacentTopLevelSectionGapPx.atOrAbove1024Min
+ * = 96px; measured as next.top − previous.bottom in DOM order, the same
+ * arithmetic as e2e/overview.spec.ts).
+ */
+async function expectBaselineSectionGaps(page: Page, selector: string, expectedCount: number) {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.evaluate(() => document.fonts.ready);
+  const sections = page.locator(selector);
+  await expect(sections).toHaveCount(expectedCount);
+  const rects = [] as { y: number; height: number }[];
+  for (let i = 0; i < expectedCount; i++) {
+    const rect = await sections.nth(i).boundingBox();
+    expect(rect).not.toBeNull();
+    rects.push({ y: rect!.y, height: rect!.height });
+  }
+  for (let i = 1; i < rects.length; i++) {
+    const gap = rects[i].y - (rects[i - 1].y + rects[i - 1].height);
+    expect(gap, `gap between top-level sections ${i - 1} and ${i}`).toBeGreaterThanOrEqual(95.5);
+  }
+}
+
 test("a covered estimate report renders the six headings, one attributed genotype figure and no percentile", async ({
   page,
 }) => {
@@ -75,6 +99,12 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   // the skeleton is an h2 (the support panel, when present, sits after it).
   await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
   await expect(page.locator(SKELETON_H2)).toHaveCount(6);
+  // The six sections keep the baseline's 96px gap at 1280 (defect D-011).
+  await expectBaselineSectionGaps(
+    page,
+    '[data-slot="report-skeleton"] [data-density-top-level-section]',
+    6,
+  );
 
   // The report name is the title up to its gene suffix; the eyebrow above it
   // is the nine-category label, never the legacy one.
@@ -240,6 +270,12 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
   await expect(page.locator("#cancer")).toHaveCount(1);
   await expect(page.locator("#medicines")).toHaveCount(0);
+  // Adjacent category sections keep the baseline's 96px gap at 1280.
+  await expectBaselineSectionGaps(
+    page,
+    '[data-library-layer="estimate"] [data-density-top-level-section]',
+    CATEGORY_HEADINGS_ON_SEED.length,
+  );
 
   // No percentile, no "Polygenic scores" section, no percent sign in any h2.
   await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);

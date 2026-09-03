@@ -8,7 +8,9 @@
  * line renders at the end of that section on every report, gated or not.
  *
  * Density (docs/density-baseline.json measurementSelectors): each of the six
- * <section>s is a top-level section (data-density-top-level-section); the
+ * <section>s is a top-level section (data-density-top-level-section) and the
+ * container keeps the baseline's adjacent-section gap (64px below 768px, 80px
+ * to 1023px, 96px from 1024px: adjacentTopLevelSectionGapPx); the
  * not-diagnostic line is a required-accuracy statement
  * (data-density-required-accuracy). The primary-claim and primary-content
  * markers are the caller's: the first <ClaimBlock> and the <article>.
@@ -73,7 +75,7 @@ function Section({
 
 export function ReportSkeleton({ variant = "adult", ...slots }: ReportSkeletonProps) {
   return (
-    <div data-slot="report-skeleton" className="space-y-10">
+    <div data-slot="report-skeleton" className="space-y-16 md:space-y-20 lg:space-y-24">
       {REPORT_HEADINGS.map((heading) => (
         <Section key={heading} heading={heading} variant={variant}>
           {slots[SLOT_KEYS[heading]]}

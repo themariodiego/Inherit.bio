@@ -213,40 +213,44 @@ export function ReportLibrary({
         </p>
       ) : null}
 
-      {visibleGroups.map((g) => {
-        const open = expanded.has(g.id);
-        // "Show all {n}" counts and reveals the filtered list, never the unfiltered one.
-        const visibleCards = open ? g.cards : g.cards.slice(0, CARDS_BEFORE_SHOW_ALL);
-        return (
-          <section
-            key={g.id}
-            id={g.id}
-            aria-labelledby={`${g.id}-heading`}
-            data-density-top-level-section="true"
-            className="scroll-mt-24 space-y-3"
-          >
-            <h2 id={`${g.id}-heading`} tabIndex={-1} className="text-lg font-semibold text-ink">
-              {g.label}
-            </h2>
-            <p className="max-w-prose text-sm text-ink-muted">{g.description}</p>
-            <ul
-              className={cn(
-                "gap-3",
-                layerClass === "estimate" ? "grid sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col",
-              )}
+      {/* Adjacent top-level sections keep the baseline gap
+          (docs/density-baseline.json adjacentTopLevelSectionGapPx). */}
+      <div className="space-y-16 md:space-y-20 lg:space-y-24">
+        {visibleGroups.map((g) => {
+          const open = expanded.has(g.id);
+          // "Show all {n}" counts and reveals the filtered list, never the unfiltered one.
+          const visibleCards = open ? g.cards : g.cards.slice(0, CARDS_BEFORE_SHOW_ALL);
+          return (
+            <section
+              key={g.id}
+              id={g.id}
+              aria-labelledby={`${g.id}-heading`}
+              data-density-top-level-section="true"
+              className="scroll-mt-24 space-y-3"
             >
-              {visibleCards.map((c) => (
-                <Card key={c.slug} card={c} subject={subject} />
-              ))}
-            </ul>
-            {visibleCards.length < g.cards.length ? (
-              <Button type="button" variant="outline" size="sm" onClick={() => expand(g.id)}>
-                {showAll(g.cards.length)}
-              </Button>
-            ) : null}
-          </section>
-        );
-      })}
+              <h2 id={`${g.id}-heading`} tabIndex={-1} className="text-lg font-semibold text-ink">
+                {g.label}
+              </h2>
+              <p className="max-w-prose text-sm text-ink-muted">{g.description}</p>
+              <ul
+                className={cn(
+                  "gap-3",
+                  layerClass === "estimate" ? "grid sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col",
+                )}
+              >
+                {visibleCards.map((c) => (
+                  <Card key={c.slug} card={c} subject={subject} />
+                ))}
+              </ul>
+              {visibleCards.length < g.cards.length ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => expand(g.id)}>
+                  {showAll(g.cards.length)}
+                </Button>
+              ) : null}
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
