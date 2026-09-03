@@ -17,7 +17,7 @@ export default function GinaPage() {
           GINA, <span className="accent">explained.</span>
         </>
       }
-      effectiveDate="2026-08-28"
+      effectiveDate="2026-09-01"
       intro={
         <>
           <p>
@@ -43,30 +43,28 @@ export default function GinaPage() {
               <p>GINA has two main titles, covering two domains:</p>
               <ul>
                 <li>
-                  <strong>Health insurance (Title I).</strong> Health insurers
-                  and group health plans may not use your genetic information
-                  — including test results and family history — to determine
-                  eligibility, set premiums, or treat a genetic predisposition
-                  as a preexisting condition. They also may not request or
-                  require genetic testing for underwriting.
+                  <strong>Health insurance (Title I).</strong> Health plans and
+                  insurers may not use genetic information to decide
+                  eligibility or set premiums. This includes test results and
+                  family history. They also may not ask for a genetic test for
+                  underwriting or before enrollment.
                 </li>
                 <li>
-                  <strong>Employment (Title II).</strong> Employers with 15 or
-                  more employees may not use genetic information in hiring,
-                  firing, pay, promotion, or any other employment decision,
-                  and may not request, require, or purchase genetic
-                  information about employees or their family members, with
-                  narrow exceptions (such as inadvertent acquisition or
-                  voluntary wellness programs with strict consent rules).
+                  <strong>Employment (Title II).</strong> An employer with 15
+                  or more employees may not use genetic information to make
+                  job decisions. This includes hiring, firing, pay, and
+                  promotion. It may not ask for or buy this information except
+                  in narrow cases. Examples include accidental receipt and
+                  voluntary health programs that meet strict rules.
                 </li>
               </ul>
               <p>
-                “Genetic information” under GINA is broad: your test results,
-                your family members’ test results, and family medical history
-                all count. The Affordable Care Act’s ban on preexisting-
-                condition discrimination reinforces the health-insurance side:
-                once a genetic condition has actually manifested as disease,
-                ACA protections apply where GINA’s stop.
+                GINA defines genetic information broadly. It includes your
+                genetic tests, family members’ tests, and family medical
+                history. GINA focuses on risk before symptoms appear. If a
+                condition develops, other laws may apply. These include the
+                Affordable Care Act for health coverage and the Americans with
+                Disabilities Act at work.
               </p>
             </>
           ),
@@ -90,8 +88,8 @@ export default function GinaPage() {
                 </li>
                 <li>
                   <strong>Disability insurance.</strong> Same gap: genetic
-                  results can lawfully be considered in underwriting
-                  individual disability policies in most states.
+                  results may be used to review an individual policy unless
+                  state law adds protection.
                 </li>
                 <li>
                   <strong>Long-term-care insurance.</strong> Same gap again —
@@ -100,12 +98,11 @@ export default function GinaPage() {
                 </li>
               </ul>
               <p>
-                Other limits worth knowing: Title II does not apply to
-                employers with fewer than 15 employees; members of the US
-                military and, in certain respects, federal programs like the
-                Indian Health Service sit under different frameworks; and
-                GINA restricts use of a genetic <em>predisposition</em>, not
-                of a condition that has already manifested.
+                Title II generally covers employers with at least 15 workers.
+                GINA does not cover life, disability, or long-term-care
+                insurance. Other laws may protect people or settings outside
+                GINA. GINA focuses on a genetic <em>predisposition</em>, not a
+                condition that has already developed.
               </p>
             </>
           ),
@@ -115,18 +112,13 @@ export default function GinaPage() {
           heading: "State law varies",
           body: (
             <p>
-              Some states go further than GINA. Florida, for example,
-              prohibits life, disability, and long-term-care insurers from
-              using genetic test results in underwriting; California’s
-              GINA-style statute (CalGINA) extends nondiscrimination beyond
-              insurance and employment into housing, education, and public
-              accommodations; and a number of other states restrict specific
-              lines of insurance or add consent requirements. Many states,
-              however, add little or nothing beyond the federal floor. Your
-              actual protection depends on where you live, which is one
-              reason Inherit’s optional location field is a country/state
-              dropdown — it lets us surface relevant law without collecting
-              your address.
+              Some states add protection. Florida protects health, life, and
+              long-term-care insurance in defined cases. California protects
+              genetic information in housing, public accommodations, and
+              state-funded programs. Other states may cover certain policy
+              types or require consent. The rules depend on your state and
+              the type of insurance. Inherit asks only for country and state
+              so it can show relevant rules without collecting your address.
             </p>
           ),
         },
@@ -141,32 +133,28 @@ export default function GinaPage() {
               </p>
               <ul>
                 <li>
-                  Insurance applications commonly ask whether you have had
-                  genetic testing. Answering dishonestly can void a policy, so
-                  the time to think about life, disability, or long-term-care
-                  coverage is <em>before</em> testing, while there are no
-                  results to disclose.
+                  An insurance form may ask about testing, health, or family
+                  history. Read each question closely and answer truthfully.
+                  False answers may affect coverage or a later claim. If this
+                  worries you, seek legal or insurance advice before testing.
                 </li>
                 <li>
-                  A consumer report from Inherit is informational rather than
-                  clinical, but underwriting questions are often phrased
-                  broadly enough to include consumer testing. Read the actual
-                  question on any application.
+                  An Inherit report is for information, not diagnosis. An
+                  insurance question may still cover consumer testing. Read
+                  the exact question on the form.
                 </li>
                 <li>
-                  Results you never generate cannot be demanded: Inherit
-                  computes only the reports you open, and deleting your data
-                  here is immediate and real (see the{" "}
-                  <Link href="/privacy">privacy policy</Link>). Deletion does
-                  not, of course, undo disclosures you have already made
-                  elsewhere.
+                  Inherit creates only the reports you choose to open. You can
+                  delete stored files and reports under our{" "}
+                  <Link href="/privacy">privacy policy</Link>. Deletion cannot
+                  undo a copy that you already shared or that another party
+                  already holds.
                 </li>
                 <li>
-                  Clinical genetic testing ordered through a physician or
-                  genetic counselor comes with formal pre- and post-test
-                  counseling, where these tradeoffs are discussed for your
-                  specific situation. For medically significant findings,
-                  that route is the appropriate one.
+                  A genetic counselor can explain test choices, limits, and
+                  possible insurance effects. A doctor can help confirm a
+                  finding and plan care. Seek clinical advice for any result
+                  that could affect your health.
                 </li>
               </ul>
               <p>

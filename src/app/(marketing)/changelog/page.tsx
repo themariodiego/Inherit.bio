@@ -22,9 +22,9 @@ export default async function ChangelogPage() {
         New reports, <span className="accent">continuously.</span>
       </h1>
       <p className="mt-4 max-w-xl text-ink-muted">
-        A scheduled pipeline watches GWAS Catalog, PGS Catalog, and ClinVar
-        releases, drafts candidate reports into a human review queue, and
-        publishes here. Opt into the email digest in Settings.
+        Inherit checks GWAS Catalog, PGS Catalog, and ClinVar on a schedule. New
+        report drafts go to people for review before they are published here.
+        You can turn on email updates in Settings.
       </p>
       <ol className="mt-10 space-y-8 border-l border-line pl-6">
         {(entries ?? []).map((e) => (

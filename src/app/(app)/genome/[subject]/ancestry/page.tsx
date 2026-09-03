@@ -108,10 +108,10 @@ export default async function AncestryPage(
         <p className="eyebrow mb-2">Ancestry</p>
         <h1 className="display text-3xl">What your file supports</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Ancestry estimates depend on which positions your file covers. Every
-          panel below says exactly what it could and couldn&apos;t measure —
-          continental estimates from {PANEL_SIZE} informative markers are
-          coarse by design, not a percentage of your identity.
+          Your file must cover certain DNA positions for us to estimate
+          ancestry. Each panel says what we could and could not measure. These
+          broad regions use {PANEL_SIZE} useful markers. They do not measure
+          your identity.
         </p>
       </div>
 
@@ -210,10 +210,10 @@ export default async function AncestryPage(
       </div>
 
       <p className="rounded-xl border border-line p-4 text-xs leading-relaxed text-ink-muted">
-        These are statistical estimates against public reference panels (1000
-        Genomes phase 3), informational only. Haplogroup calls state how many
-        defining markers your file actually covered; array files cover far
-        fewer than whole-genome data.
+        We compare your file with public data from 1000 Genomes phase 3. This
+        is for information only. Each haplogroup result says how many key
+        markers your file covered. Array files cover far fewer markers than
+        whole-genome files.
       </p>
     </div>
   );

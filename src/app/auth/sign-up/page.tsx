@@ -27,7 +27,7 @@ export default function SignUpPage() {
       <div>
         <h1 className="display text-2xl">Create your account</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Inherit is for adults (18+), and only for your own DNA — you
+          Inherit is for adults (18+) and only for your own DNA. You
           can&rsquo;t upload a child&rsquo;s or relative&rsquo;s file (
           <Link
             href="/terms#eligibility"

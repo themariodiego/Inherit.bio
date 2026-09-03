@@ -224,7 +224,9 @@ export function validateAllowlist(
 function scanTrackedTree(repositoryRoot: string): SecretFinding[] {
   const findings: SecretFinding[] = [];
   for (const relativePath of trackedPaths(repositoryRoot)) {
-    const buffer = fs.readFileSync(path.join(repositoryRoot, relativePath));
+    const absolutePath = path.join(repositoryRoot, relativePath);
+    if (!fs.existsSync(absolutePath)) continue;
+    const buffer = fs.readFileSync(absolutePath);
     if (isProbablyBinary(buffer)) continue;
     findings.push(...scanText(buffer.toString("utf8"), relativePath));
   }
@@ -261,7 +263,9 @@ function scanTrackedAllowlistOccurrences(
 ): SecretFinding[] {
   const findings: SecretFinding[] = [];
   for (const relativePath of trackedPaths(repositoryRoot)) {
-    const buffer = fs.readFileSync(path.join(repositoryRoot, relativePath));
+    const absolutePath = path.join(repositoryRoot, relativePath);
+    if (!fs.existsSync(absolutePath)) continue;
+    const buffer = fs.readFileSync(absolutePath);
     if (isProbablyBinary(buffer)) continue;
     findings.push(
       ...scanExactAllowlistOccurrences(

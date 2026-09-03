@@ -124,12 +124,12 @@ export default async function ChatPage(
                 </li>
               </ol>
               <p className="text-ink-muted">
-                An API key is like a password that lets Inherit send{" "}
-                <strong>your</strong> questions to the AI service you chose —
-                with your explicit consent each time, and a typical cost of
-                pennies per question. Before any genome-derived data is sent,
-                a consent dialog will name the provider and the exact data
-                classes; the grant is revocable any time.
+                An API key is like a password. It lets Inherit send{" "}
+                <strong>your</strong> questions to the AI service you chose. We
+                ask for your explicit consent each time. A question typically
+                costs pennies. Before Inherit sends any genome-derived data, a
+                consent dialog names the provider and exact data classes. You
+                can revoke the grant at any time.
               </p>
             </div>
 
@@ -138,7 +138,7 @@ export default async function ChatPage(
                 Advanced: run a private AI on your own computer (most private)
               </summary>
               <p className="mt-3 leading-relaxed text-ink-muted">
-                The privacy-preferred option: run{" "}
+                For the privacy-preferred option, run{" "}
                 <a
                   href="https://ollama.com"
                   target="_blank"
@@ -147,8 +147,8 @@ export default async function ChatPage(
                 >
                   Ollama
                 </a>{" "}
-                or LM Studio on your machine, then in Settings choose
-                &ldquo;OpenAI-compatible&rdquo; with base URL{" "}
+                or LM Studio on your machine. Then choose
+                &ldquo;OpenAI-compatible&rdquo; in Settings. Use the base URL{" "}
                 <code className="rounded bg-tint px-1.5 py-0.5 font-mono text-xs">
                   http://localhost:11434/v1
                 </code>{" "}
@@ -157,9 +157,9 @@ export default async function ChatPage(
                   llama3.1
                 </code>
                 . Nothing about your genome ever leaves your infrastructure.
-                (Local endpoints require running Inherit itself locally or
-                self-hosted on the same network — the hosted demo cannot reach
-                your localhost.)
+                Local endpoints require Inherit to run locally or be
+                self-hosted on the same network. The hosted demo cannot reach
+                your localhost.
               </p>
             </details>
           </div>

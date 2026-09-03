@@ -23,7 +23,7 @@ importing `igv/dist/igv.esm.js` directly.
 | --- | --- | --- | --- |
 | A1 | Clean clone → self-hosting guide → local app runs; deviations fixed and guide re-run clean | ✅ | Clean-room audit followed `docs/self-hosting.md`, found the `worker/.env.example` + `CRON_SECRET` deviations; both fixed and re-verified (`docs/audit-report.md`). Every documented `pnpm` script exists; every required env var is in `.env.example`/`worker/.env.example`. |
 | A2 | Sign-up → Resend verification email → verified session; password reset works | ✅ | `e2e/auth.spec.ts`: sign-up shows "Check your email", the Mailpit-captured verification link yields a signed-in session; reset link flow changes the password and the new password signs in. `enable_confirmations=true`. |
-| A3 | ≥12 real providers, each with source URL + last-verified date this run; US→NY flags NY exclusions; Buy links resolve | ✅ | 16 verified providers (`data/providers/providers.json`, `last_verified 2026-08-28`, source URLs). `e2e/providers.spec.ts`: ≥12 rendered with verification metadata, NY exclusion flag on Nucleus, buy links are external provider URLs. `scripts/check-provider-links.ts` for live link resolution. |
+| A3 | ≥12 real providers, each with source URL + last-verified date this run; US→NY flags NY exclusions; Buy links resolve | ✅ | 16 providers with canonical source URLs and `last_verified 2026-09-01`. The live checker resolved 14/16 buy/privacy pairs directly; the two automation-blocked pages were confirmed through current official pages indexed within the prior month. `e2e/providers.spec.ts` covers rendering, NY exclusion, and external buy links. |
 | A4 | Synthetic 23andMe sample renders ≥100 reports with genotype-specific results + honest not-covered states | ✅ | `data/samples/synthetic_23andme.txt` covers all 135 template variants (GRCh37, liftover-exercising). `e2e/upload-vcf.spec.ts` + report resolution over 151 templates; reports page shows covered vs "your file does not cover this variant". |
 | A5 | GIAB HG001 VCF (chr20–22): parse → annotate → report; genome browser at a locus; rsID + gene search | ✅ | `e2e/upload-vcf.spec.ts` uploads the real 187k-variant GIAB subset through the UI, processes to `annotated`, renders the igv.js browser and rsID/gene/locus search. `src/lib/genome/pipeline-integration.test.ts` (unit) parses the full GIAB file and resolves every template. |
 | A6 | ≥1 PRS with percentile + ancestry-portability caveat + numeric coverage | ✅ | 3 real PGS Catalog scores seeded; `src/lib/genome/prs.ts` (unit-tested) computes raw/z/percentile/coverage; report page renders percentile bar, mandatory `ancestry_note`, and numeric coverage fraction. |
@@ -54,7 +54,7 @@ importing `igv/dist/igv.esm.js` directly.
 
 ## Full-resolution gates (G1–G8)
 
-Current audited state: **9/65 YES**. `NO` means the exact gate is not yet
+Current audited state: **15/65 YES**. `NO` means the exact gate is not yet
 proved; partial implementations are intentionally not rounded up. The adult
 subject invitation work adds a safe TEST-LOCAL reservation and acceptance
 boundary, but it does not claim the class-(b) upload, quarantine, purpose,
@@ -65,13 +65,13 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.1 | Production build exits cleanly without source warnings. | YES | `pnpm build` exits 0; `package.json`; verified 2026-09-01. |
 | G1.2 | Typecheck passes and suppression counts do not exceed baseline. | YES | `pnpm typecheck`; baseline/current counts are recorded above and reproducible with `git grep` over non-test `*.ts,*.tsx,*.js,*.jsx`. |
 | G1.3 | Lint treats warnings as failures and passes. | YES | `pnpm lint`; `package.json` uses `eslint --max-warnings=0`. |
-| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (128 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
-| G1.5 | E2E has zero failures, skips, retries, or quarantine. | YES | `pnpm e2e` (57 tests); `playwright.config.ts` has `retries: 0`; `scripts/run-e2e.ts` validates `test-results/results.json`; `docs/test-diff-register.md`. |
+| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (168 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
+| G1.5 | E2E has zero failures, skips, retries, or quarantine. | YES | `pnpm e2e` (61 tests); `playwright.config.ts` has `retries: 0`; `scripts/run-e2e.ts` validates `test-results/results.json`; `docs/test-diff-register.md`. |
 | G1.6 | Extended RLS attack suite covers every new table and revocation. | NO | `e2e/rls.spec.ts` does not yet cover all tables in `supabase/migrations/20260831*.sql`; adult invitation database invariants are narrower in `supabase/tests/adult_subject_invitation.sql`. |
 | G1.7 | Network audit covers every registered route/state/theme/auth mode. | NO | `e2e/network-audit.spec.ts` covers only its existing route subset; compare `docs/route-register.json`. |
 | G1.8 | Legal gate runs rendered-page mode over all required routes. | NO | `pnpm gate:legal` passes static checks, but `scripts/legal-placeholder-gate.ts` lacks the complete rendered-route G5.7/G5.8 contract. |
-| G1.9 | Name gate passes. | NO | Required `gate:names` script is absent from `package.json`. |
-| G1.10 | Readability and vocabulary gate passes with self-test. | NO | Required `gate:readability`, `data/plain-vocabulary.json`, and `scripts/readability-fixtures.json` are absent. |
+| G1.9 | Name gate passes. | YES | `pnpm gate:names`; `scripts/name-gate.ts`; the private denylist is supplied through `NAME_DENYLIST_FILE` and is never committed. |
+| G1.10 | Readability and vocabulary gate passes with self-test. | NO | `pnpm gate:readability` runs the pinned ten-case self-test and scans 1,489 extracted blocks using `data/plain-vocabulary.json` and `data/jargon.json`, but exits non-zero on 12 long-block grade findings after the application, public-page, provider-metadata, all fifteen report-template categories, privacy-policy, GINA-explainer, deceased-account-policy, law-enforcement-policy, research-consent-policy, Copilot-setup, appeals-policy, Future Person Charter, GDPR-status, and incident-response remediation passes. See `docs/readability-audit.md`; CI is intentionally unchanged until the corpus is clean. |
 | G1.11 | Claims/provenance gate passes. | NO | Required `gate:claims` and `data/citations.json` are absent. |
 | G1.12 | Route/state register gate and titled tests pass. | NO | `docs/route-register.json` exists; required `gate:routes` and complete route/state E2E coverage do not. |
 | G1.13a | Full axe tag matrix passes on every registered route. | NO | `e2e/a11y.spec.ts` does not yet cover the complete tag/route/auth/viewport matrix. |
@@ -79,7 +79,7 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.14 | Lighthouse passes exact route and threshold contract. | NO | `scripts/lighthouse-check.ts` does not yet implement per-category thresholds and authenticated exact-final-URL checks. |
 | G1.15 | Template integrity gate passes without baseline loss. | YES | `pnpm gate:templates`; `scripts/validate-templates.ts` validates 151 templates and genotype/citation structure. |
 | G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs build, template, secret, local Supabase, seed, and E2E, but the complete G1.8–G1.12 command set does not yet exist. |
-| G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | YES | `pnpm gate:secrets`; `scripts/secret-gate.ts`; exact local-only values and paths in `scripts/secret-allowlist.json`; accepted ADR 0006; current tree, 20 authored non-merge commits, `.env.production` paths, and three tracked genome fixtures verified on 2026-09-01. CI uses a full-history checkout so the pinned baseline is present. |
+| G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | YES | `pnpm gate:secrets`; `scripts/secret-gate.ts`; exact local-only values and paths in `scripts/secret-allowlist.json`; accepted ADR 0006; the current tree, all authored non-merge commits after the baseline, `.env.production` paths, and three tracked genome fixtures are checked. CI uses a full-history checkout. |
 | G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists, but several Family/Embryo routes still render `src/components/capability-unavailable.tsx`. |
 | G2.2 | Every route declares and tests every required state. | NO | `docs/route-register.json` is not backed by one substantive E2E per required route/state pair. |
 | G2.3 | Every pre-existing route has a verified kept/redirect/gone disposition. | NO | Required `gate:routes` is absent; `docs/route-register.json` is not fully live-verified. |
@@ -112,11 +112,11 @@ revocation, notification, or ownership-transfer contract is complete.
 | G5.7 | No fee path exists and the legal gate proves it. | NO | No payment code is present, but the required route-wide origin/submission and legal-copy gate is not implemented. |
 | G5.8 | Protective legal anchors exist and are tested by id. | NO | Existing `e2e/legal.spec.ts` does not prove every required stable anchor across every consent document. |
 | G5.9 | Future-child preview satisfies all bounded-harm assertions. | NO | Future-child preview implementation and named E2E assertions are absent. |
-| G6.1 | Whole-tree and new-commit name scan passes. | NO | Required `gate:names` and scanner fixtures are absent. |
-| G6.2 | External-name allowlist has only the permitted categories. | NO | Required `data/allowed-external-names.json` is absent. |
-| G6.3 | Out-of-tree denylist and provider carve-out are enforced in CI. | NO | `NAME_DENYLIST_FILE` handling is absent from `.github/workflows/ci.yml`. |
-| G6.4 | End-state scan is clean and all 16 providers remain sourced. | NO | Provider data remains in `data/providers/providers.json`; no runnable `gate:names` proves the rest of the tree. |
-| G6.5 | Provider names have no evaluative proximity. | NO | Required `scripts/evaluative-tokens.json` and proximity check are absent. |
+| G6.1 | Whole-tree and new-commit name scan passes. | YES | `pnpm gate:names` scans tracked and untracked non-ignored files plus every reachable commit message with a committer timestamp after the baseline. `scripts/name-gate-fixtures.json` proves lowercase-domain and camelCase detection. |
+| G6.2 | External-name allowlist has only the permitted categories. | YES | `data/allowed-external-names.json`; the gate rejects unknown categories, orphaned provider entries, non-exact provider reasons, missing evidence paths, and incomplete provider source/date fields. |
+| G6.3 | Out-of-tree denylist and provider carve-out are enforced in CI. | YES | Accepted ADR 0007; `.github/workflows/ci.yml` fails when the encrypted `NAME_DENYLIST` secret is absent, writes it only under `RUNNER_TEMP`, and exports `NAME_DENYLIST_FILE`; unit tests prove carve-out and override behavior. |
+| G6.4 | End-state scan is clean and all 16 providers remain sourced. | YES | `pnpm gate:names` returns zero findings; all 16 rows retain their source arrays and expose matching canonical `source_url` and `last_verified` fields refreshed on 2026-09-01. Fourteen live link pairs resolved directly and two automation-blocked pages were confirmed from current official indexed pages. |
+| G6.5 | Provider names have no evaluative proximity. | YES | `scripts/evaluative-tokens.json`; the gate scans all `docs/`, `src/`, and comments for a provider name within 200 characters of a registered evaluative token; boundary behavior is unit-tested. |
 | G7.1 | Required gating ADRs exist from 0006 onward. | NO | `docs/adr/` lacks the complete named G7.1 decision set. |
 | G7.2 | Core docs/env are current and a clean-clone run is recorded. | NO | `docs/self-hosting.md` now names `Inherit.bio`, but the full new surfaces and a current clean-clone record are incomplete. |
 | G7.3 | Acceptance matrix covers every G gate with concrete evidence. | YES | This G1.1–G8.6 table in `docs/acceptance-matrix.md`; gate ids are complete and NO rows name the missing command, test, or path. |

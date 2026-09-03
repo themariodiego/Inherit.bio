@@ -56,7 +56,7 @@
     "slug": "breast-cancer-2q35-rs13387042",
     "category": "cancer-risk",
     "title": "Breast cancer · 2q35 region",
-    "summary": "A variant in a gene-free stretch of chromosome 2q35 was one of the first replicated common breast cancer risk loci found by genome-wide studies. Each copy of the A allele at rs13387042 is associated on average with roughly 1.2x the odds of breast cancer, primarily estrogen-receptor-positive disease. This is not a BRCA1/BRCA2 or hereditary-cancer test — a reassuring result here says nothing about hereditary breast or ovarian cancer risk. If there is a personal or family history, clinical genetic testing is the right route.",
+    "summary": "rs13387042 lies in a gene-free part of chromosome 2q35. Large studies first linked this region to common breast cancer risk. Each A copy is tied to about 1.2x the average odds, mainly for estrogen-receptor-positive cancer. This is not a BRCA1 or BRCA2 test. A reassuring result cannot rule out inherited breast or ovarian cancer risk. For a personal or family history, ask about clinical testing.",
     "evidence": "moderate",
     "variants": [
       {
@@ -82,7 +82,7 @@
     "slug": "tp53-codon-72-rs1042522",
     "category": "cancer-risk",
     "title": "TP53 codon 72 (Pro72Arg)",
-    "summary": "TP53 encodes p53, a central tumor-suppressor protein. The common codon-72 polymorphism swaps proline (G allele on the forward strand) for arginine (C allele). The two forms differ subtly in laboratory assays, but decades of association studies across cancer types have produced inconsistent results, so any risk effect is likely very small.",
+    "summary": "TP53 makes p53, a protein that helps stop damaged cells from becoming tumors. At codon 72, genomic G makes proline and C makes arginine. Lab tests show small differences between the forms. Cancer studies disagree, so any effect on risk is likely tiny.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -93,9 +93,9 @@
         "ref": "G",
         "alt": "C",
         "interpretations": {
-          "GG": "Two copies of the G allele (proline at codon 72 on both gene copies), more common in people of African ancestry. Some studies have reported small associations with certain cancers for this form, but results are inconsistent and any effect is likely very small. This is one small, uncertain factor among the many that influence cancer risk.",
+          "GG": "Two G copies make proline at codon 72. This result is more common in people with African ancestry. Some studies link this form to small changes in risk for certain cancers. Other studies do not. Any effect is uncertain and likely tiny compared with the many other causes of cancer.",
           "CG": "One proline and one arginine form of p53 codon 72, a very common combination. Association studies comparing the two forms have been inconsistent, and no reliable difference in overall cancer risk has been established for this genotype. This is at most one small factor among many.",
-          "CC": "Two copies of the C allele (arginine at codon 72 on both gene copies), the most common genotype in European populations. The arginine form behaves slightly differently in laboratory assays, but association studies across cancers are inconsistent, so this genotype should not be read as meaningfully changing risk. It is one small, uncertain factor among many."
+          "CC": "Two C copies make arginine at codon 72. This is the most common result in European populations. The arginine form acts a little differently in lab tests. Human studies do not show a clear change in cancer risk. View this as a small and uncertain factor."
         }
       }
     ],
@@ -108,7 +108,7 @@
     "slug": "melanoma-mc1r-r151c",
     "category": "cancer-risk",
     "title": "Melanoma · MC1R R151C",
-    "summary": "MC1R shapes skin and hair pigmentation, and its R151C variant (rs1805007 T allele) is one of the classic red-hair-associated variants. Meta-analysis associates each copy with roughly 1.5-2x the odds of melanoma on average, partly but not entirely through fair, sun-sensitive skin.",
+    "summary": "MC1R affects skin and hair color. R151C (T at rs1805007) is strongly linked to red hair. Studies tie each copy to about 1.5-2x the average melanoma odds. The risk link may not depend only on visible coloring.",
     "evidence": "moderate",
     "variants": [
       {
@@ -120,8 +120,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the R151C variant. Melanoma risk at this position is not elevated, though other MC1R variants and, above all, sun exposure history and skin type remain the dominant factors. Sun protection matters for every genotype.",
-          "CT": "One copy of the R151C variant, associated on average with roughly 1.5-2x the odds of melanoma and with fairer, more sun-sensitive skin and a tendency toward red hair. This is a modest probability shift; UV exposure and skin type are far stronger determinants, so sun protection is worthwhile regardless.",
-          "TT": "Two copies of the R151C variant, strongly associated with red hair and fair, sun-sensitive skin, and on average with roughly 2-3x the odds of melanoma compared with non-carriers. This remains a probabilistic association, and sun behavior is the biggest modifiable factor for any genotype."
+          "CT": "One R151C copy. Studies link this result to red hair and about 1.5-2x the average melanoma odds. It is a modest shift, not a forecast. UV exposure and sun habits remain major factors, so sun protection matters for every genotype.",
+          "TT": "Two R151C copies. This result is strongly linked to red hair. Studies find about 2-3x the average melanoma odds of non-carriers. This is not a prediction. UV exposure and sun habits remain key factors for every genotype."
         }
       }
     ],
@@ -134,7 +134,7 @@
     "slug": "lung-cancer-chrna3-rs1051730",
     "category": "cancer-risk",
     "title": "Lung cancer & smoking intensity · CHRNA3 (15q25)",
-    "summary": "The 15q25 nicotinic-receptor gene cluster (CHRNA3/CHRNA5) is the strongest common-variant locus for lung cancer. Each copy of the A allele at rs1051730 is associated on average with about 1.3x the odds of lung cancer and with smoking slightly more heavily among smokers; smoking itself dwarfs any genetic effect here.",
+    "summary": "The 15q25 region includes genes for nicotine receptors, such as CHRNA3 and CHRNA5. It is a strong common genetic signal for lung cancer. Each A copy at rs1051730 is linked to about 1.3x the average lung-cancer odds. Smokers with A may also take in more nicotine. Smoking has a much larger effect than this variant.",
     "evidence": "moderate",
     "variants": [
       {
@@ -153,14 +153,15 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18385738", "label": "Hung et al., Nature 2008" }
+      { "pmid": "18385738", "label": "Hung et al., Nature 2008" },
+      { "pmid": "19628476", "label": "Keskitalo et al., Hum Mol Genet 2009" }
     ]
   },
   {
     "slug": "colorectal-apc-i1307k",
     "category": "cancer-risk",
     "title": "Colorectal cancer · APC I1307K",
-    "summary": "The APC I1307K variant (rs1801155 A allele) creates a small unstable DNA tract in the APC tumor-suppressor gene. Carried by roughly 6-7% of people of Ashkenazi Jewish ancestry and rare elsewhere, it is associated on average with about 1.5-2x the odds of colorectal cancer — a moderate risk factor, not a high-penetrance syndrome like familial adenomatous polyposis.",
+    "summary": "APC I1307K (A at rs1801155) makes a short DNA stretch less stable. About 6-7% of people with Ashkenazi Jewish ancestry carry it. Carriers have about 1.5-2x the average odds of colorectal cancer. I1307K does not cause the high-risk condition called familial adenomatous polyposis.",
     "evidence": "moderate",
     "variants": [
       {
@@ -173,13 +174,14 @@
         "interpretations": {
           "TT": "No copies of the I1307K variant. Colorectal cancer risk at this position is not elevated. Family history, age, lifestyle, and other genetic factors still shape overall risk, and standard screening guidance applies.",
           "AT": "One copy of the I1307K variant, most often seen in people with Ashkenazi Jewish ancestry. Associated on average with roughly 1.5-2x the odds of colorectal cancer. This is a moderate, probabilistic risk factor — not a polyposis syndrome — and it is one factor among many; discussing family history and screening timing with a clinician can put it in context.",
-          "AA": "Two copies of the I1307K variant, which is uncommon even in populations where the variant circulates. Average colorectal cancer odds are likely somewhat higher than for carriers of one copy, though data on homozygotes are limited. This remains a probabilistic association; family history and screening are the more informative levers."
+          "AA": "Two I1307K copies. This result is rare, even among people with Ashkenazi Jewish ancestry. Too few people with this result have been studied to estimate its cancer risk. Do not assume it carries twice the risk of one copy. Family history and screening advice are more useful for care."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997" }
+      { "pmid": "9288102", "label": "Laken et al., Nat Genet 1997" },
+      { "pmid": "37076288", "label": "Valle et al., J Med Genet 2023" }
     ]
   },
   {
@@ -238,7 +240,7 @@
     "slug": "lung-cancer-tert-rs2736100",
     "category": "cancer-risk",
     "title": "Lung cancer & glioma · TERT (5p15.33)",
-    "summary": "TERT encodes the catalytic subunit of telomerase, and common variation at 5p15.33 influences risk of several cancers. Each copy of the C allele at rs2736100 is associated on average with roughly 1.1-1.3x the odds of lung adenocarcinoma — including in never-smokers — and around 1.3x the odds of glioma.",
+    "summary": "TERT helps cells maintain the ends of chromosomes. Common variation near TERT is linked to several cancers. Each C copy at rs2736100 is tied to about 1.2x the average odds of lung adenocarcinoma. The link also appears in people who never smoked. C is also tied to about 1.3x the average odds of glioma.",
     "evidence": "moderate",
     "variants": [
       {
@@ -249,16 +251,17 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "CC": "Two copies of the C risk allele. Associated on average with roughly 1.3-1.6x the odds of lung adenocarcinoma and around 1.6x the odds of glioma compared with AA. Both cancers are uncommon, so even the higher relative odds correspond to small absolute changes; this is one small factor, and for lung cancer smoking remains the dominant risk factor.",
+          "CC": "Two C copies. Studies link this result to about 1.3-1.6x the average odds of lung adenocarcinoma and about 1.6x the average odds of glioma, compared with AA. Both cancers are uncommon, so the change in absolute risk is small. Smoking remains the main risk factor for lung cancer.",
           "AC": "One copy of the C risk allele, associated on average with roughly 1.1-1.3x the odds of lung adenocarcinoma and glioma compared with AA. This is a modest probabilistic shift from one common variant among many influences.",
-          "AA": "Two copies of the A allele, associated with somewhat lower average odds of lung adenocarcinoma and glioma at this locus. This offers no protection against smoking-related risk, which remains by far the largest factor for lung cancer."
+          "AA": "Two A copies. This result is linked to lower average odds of lung adenocarcinoma and glioma at this site. It does not protect against either cancer. Smoking remains by far the largest avoidable risk factor for lung cancer."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
       { "pmid": "19836008", "label": "Landi et al., Am J Hum Genet 2009" },
-      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008" }
+      { "pmid": "18978790", "label": "McKay et al., Nat Genet 2008" },
+      { "pmid": "19578367", "label": "Shete et al., Nat Genet 2009" }
     ]
   }
 ]

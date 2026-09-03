@@ -5,7 +5,7 @@ const steps = [
   {
     n: "01",
     title: "Find a provider",
-    body: "Compare real sequencing providers that ship to you — depth, price, turnaround, and exactly which raw files you get back. You buy from them directly; Inherit never takes a cut of sequencing.",
+    body: "Compare labs that ship to you. See depth, price, timing, and which raw files you get. You pay each lab directly. A clearly marked affiliate link may earn Inherit a commission without changing your price.",
   },
   {
     n: "02",
@@ -26,7 +26,7 @@ const steps = [
 
 const candor = [
   "No diagnosis. Inherit is informational, not a medical device.",
-  "No sequencing sales. We route you to providers; money never passes through us.",
+  "No sequencing sales. We route you to labs, which you pay directly.",
   "No trackers. Zero ad pixels or third-party analytics, verified by an automated network audit in CI.",
   "No data sharing with anyone — including Plus Bio. Separate service, separate accounts, no data flow.",
 ];
@@ -40,10 +40,10 @@ export default function LandingPage() {
           Your genome, <span className="accent">on your terms.</span>
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink-muted">
-          Inherit helps you buy sequencing from a real provider, then turns
-          your raw DNA file into reports, ancestry, and polygenic scores
-          (combined estimates from many small genetic effects) — on
-          infrastructure you can read, audit, and self-host.
+          Inherit helps you buy DNA sequencing from an independent lab. You can
+          turn your raw DNA file into reports and ancestry results. You can also
+          see polygenic scores, which combine many small genetic effects. You
+          can inspect, audit, or run the system yourself.
         </p>
         <p className="mt-4 max-w-xl text-ink-muted">
           Inherit itself is free — you only ever pay a sequencing provider,
@@ -95,9 +95,9 @@ export default function LandingPage() {
               ))}
             </ul>
             <p className="mt-8 border-t border-line pt-6 text-sm leading-relaxed text-ink-muted">
-              How is that possible? Created and funded by Plus Bio as a
-              public-good project — Inherit has no revenue model and nothing
-              to sell.
+              Plus Bio created and funds this public-good project. The core
+              software is free. Some marked provider links may earn a
+              commission, but Inherit does not sell DNA tests or your data.
             </p>
           </div>
           <div className="rounded-2xl border border-line bg-card p-6">
