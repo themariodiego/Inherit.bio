@@ -1,6 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Response headers every page or endpoint that can read or write user,
+ * subject, consent, chat, file or derived data must carry (route register
+ * `sensitiveResponseHeaders.authenticatedUserData`): nothing user-derived may
+ * be cached by the browser, a CDN or a shared cache, and no such response may
+ * be framed. Redirects on those paths carry the same set.
+ */
+export const SENSITIVE_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
+  "Cache-Control": "private, no-store",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+  Pragma: "no-cache",
+  "Referrer-Policy": "same-origin",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": "frame-ancestors 'none'",
+  "X-Frame-Options": "DENY",
+};
+
+function withSensitiveHeaders<T extends NextResponse>(response: T): T {
+  for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+    response.headers.set(name, value);
+  }
+  return response;
+}
+
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
 // fresh and gates the authenticated app shell.
 export async function proxy(request: NextRequest) {
@@ -49,11 +74,13 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
+  const sensitive = isProtected || path.startsWith("/api/");
+
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/sign-in";
     url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return withSensitiveHeaders(NextResponse.redirect(url));
   }
 
   if (user && (isProtected || path.startsWith("/api/"))) {
@@ -72,21 +99,23 @@ export async function proxy(request: NextRequest) {
         path.startsWith("/api/subjects/transfer");
 
       if (path.startsWith("/api/") && !allowedApi) {
-        return NextResponse.json(
-          { error: "account_deletion_notice_period" },
-          { status: 423 },
+        return withSensitiveHeaders(
+          NextResponse.json(
+            { error: "account_deletion_notice_period" },
+            { status: 423 },
+          ),
         );
       }
       if (isProtected && path !== "/settings/data") {
         const url = request.nextUrl.clone();
         url.pathname = "/settings/data";
         url.search = "";
-        return NextResponse.redirect(url);
+        return withSensitiveHeaders(NextResponse.redirect(url));
       }
     }
   }
 
-  return response;
+  return sensitive ? withSensitiveHeaders(response) : response;
 }
 
 export const config = {
