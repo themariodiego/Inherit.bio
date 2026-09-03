@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { NAV_LABELS } from "@/copy/navigation";
 
 export const metadata: Metadata = { title: "Family" };
 
@@ -8,7 +9,7 @@ export default function FamilyPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
       <p className="eyebrow">Family</p>
-      <h1 className="display mt-4 text-4xl sm:text-5xl">Understand shared inheritance.</h1>
+      <h1 className="display mt-4 text-4xl sm:text-5xl">{NAV_LABELS.family}</h1>
       <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-muted">Each adult needs their own account and must choose what they share. A legal expert must also approve the feature for their country.</p>
       <section className="mt-10 rounded-2xl border border-line bg-card p-6">
         <h2 className="font-medium">Not available in any production jurisdiction yet</h2>

@@ -36,6 +36,9 @@ pointed at the in-test mock Resend API.
 | `legal.spec.ts` | A15 | legal pages complete + placeholder-free; disclaimers on report surface; Plus Bio disclosure |
 | `a11y.spec.ts` | A16 | axe WCAG 2 AA on key pages, both themes; design tokens present |
 | `research.spec.ts` | A7 | fixtured release → review-queue draft → publish → changelog + digest |
+| `report-gate.spec.ts` | — | sensitive reports withhold the result server-side until `?reveal=1`; the choice is remembered per user and category |
+| `report-skeleton.spec.ts` | — | six fixed report headings; one attributed genotype figure per covered variant; exact not-covered, partial-state and not-diagnostic strings; layer-labelled counts and nine-category order |
+| `overview.spec.ts` | — | Overview hub: four headings, nine box links named exactly by their labels, one primary button per state, counts with unit noun and note, no figures or dashes, X6.1 first-viewport budgets at 1280×800 and 390×844, phone bottom bar (five 44px labelled items, `aria-current`), State C split count, ancestry line and starter list |
 
 Lighthouse ≥90 (A16) is checked by `scripts/lighthouse-check.ts` (run against
 the served build); a11y coverage here is axe-based and stricter per-rule.
