@@ -84,12 +84,13 @@ export default function TermsPage() {
               </p>
               <p>
                 So that we can operate the service, you grant Inherit only a{" "}
-                <strong>limited, revocable processing license</strong>: the
-                right to store, parse, and analyze your data solely to provide
-                the features you use, on your instructions. This license exists
-                only to serve you — it does not permit us to sell, license,
-                share, or use your data for research, advertising, or model
-                training, and it ends when you delete the data or your account.
+                <strong>limited, revocable processing license</strong>. That
+                license is the right to store, parse, and analyze your data
+                solely to provide the features you use, on your instructions.
+                This license exists only to serve you. It does not permit us to
+                sell, license, share, or use your data for research,
+                advertising, or model training. It ends when you delete the
+                data or your account.
               </p>
             </>
           ),
@@ -110,13 +111,13 @@ export default function TermsPage() {
                 <li>
                   <strong>Real deletion.</strong> When you delete a file or
                   your account, we delete the database rows and the storage
-                  objects immediately, with no grace-period recovery and no
-                  restoration from backups, as detailed in the{" "}
+                  objects immediately. There is no grace-period recovery and no
+                  restoration from backups. The process is detailed in the{" "}
                   <Link href="/privacy">privacy policy</Link>.
                 </li>
               </ul>
               <p>
-                These clauses survive any change of control of Inherit and
+                These clauses survive any change of control of Inherit. They
                 bind any successor for data collected under these terms.
               </p>
             </>
@@ -168,14 +169,14 @@ export default function TermsPage() {
               <p>
                 The service is provided <strong>“as is”</strong> and{" "}
                 <strong>“as available”</strong>, without warranty of any kind,
-                express or implied — including the implied warranties of
-                merchantability, fitness for a particular purpose, accuracy,
-                and non-infringement. Genomic interpretation is probabilistic
-                and evolves as research evolves; we do not warrant that any
-                report is complete, current, or correct for you, and coverage
-                of your particular file may be partial. Some jurisdictions do
-                not allow certain warranty exclusions, so parts of this
-                section may not apply to you.
+                express or implied. That exclusion includes the implied
+                warranties of merchantability, fitness for a particular
+                purpose, accuracy, and non-infringement. Genomic interpretation
+                is probabilistic. It evolves as research evolves. We do not
+                warrant that any report is complete, current, or correct for
+                you. Coverage of your particular file may be partial. Some
+                jurisdictions do not allow certain warranty exclusions, so
+                parts of this section may not apply to you.
               </p>
             </>
           ),
@@ -188,14 +189,15 @@ export default function TermsPage() {
               <p>
                 To the maximum extent permitted by law, Inherit and its
                 contributors will not be liable for indirect, incidental,
-                special, consequential, or punitive damages, or for lost
-                profits or data, arising from your use of the service. Our
-                total aggregate liability for all claims relating to the
-                service is capped at the greater of one hundred US dollars
-                (US$100) or the amount you paid us for the service in the
-                twelve months before the claim arose. Nothing in this section
-                limits liability that cannot be limited by law, including
-                liability for willful misconduct.
+                special, consequential, or punitive damages arising from your
+                use of the service. Nor will they be liable for lost profits or
+                data arising from your use of the service. Our total aggregate
+                liability for all claims relating to the service is capped. The
+                cap is the greater of one hundred US dollars (US$100) or the
+                amount you paid us for the service in the twelve months before
+                the claim arose. Nothing in this section limits liability that
+                cannot be limited by law. That includes liability for willful
+                misconduct.
               </p>
             </>
           ),
@@ -213,11 +215,11 @@ export default function TermsPage() {
                 first.
               </p>
               <p>
-                Either way, <strong>termination equals deletion</strong>: when
+                Either way, <strong>termination equals deletion</strong>. When
                 an account closes, all of its data — rows and storage objects —
-                is deleted under the same immediate, unrecoverable process as
-                a user-initiated deletion. We do not retain “residual copies”
-                of closed accounts.
+                is deleted. That deletion uses the same immediate, unrecoverable
+                process as a user-initiated deletion. We do not retain
+                “residual copies” of closed accounts.
               </p>
             </>
           ),
@@ -232,10 +234,10 @@ export default function TermsPage() {
                 <strong>State of Delaware, United States of America</strong>,
                 without regard to its conflict-of-laws rules. Any dispute that
                 cannot be resolved informally will be brought in the state or
-                federal courts located in Delaware, and both parties consent
-                to their jurisdiction. If you are a consumer in a jurisdiction
-                whose law grants you non-waivable protections or a home-court
-                right, those protections remain yours.
+                federal courts located in Delaware. Both parties consent to the
+                jurisdiction of those courts. If you are a consumer in a
+                jurisdiction whose law grants you non-waivable protections or a
+                home-court right, those protections remain yours.
               </p>
             </>
           ),
@@ -247,11 +249,11 @@ export default function TermsPage() {
             <>
               <p>
                 If we materially change these terms, we will email account
-                holders at least 30 days before the change takes effect, and
-                the protective commitments in sections 3 and 4 will never be
-                weakened for existing data without your affirmative consent.
-                Continuing to use the service after the effective date of
-                other changes constitutes acceptance.
+                holders. That email will go out at least 30 days before the
+                change takes effect. The protective commitments in sections 3
+                and 4 will never be weakened for existing data without your
+                affirmative consent. Continuing to use the service after the
+                effective date of other changes constitutes acceptance.
               </p>
               <p>
                 Questions about these terms:{" "}

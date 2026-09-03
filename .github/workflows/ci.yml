@@ -58,6 +58,8 @@ jobs:
         run: pnpm gate:names
       - name: Template integrity gate
         run: pnpm gate:templates
+      - name: Readability and vocabulary gate
+        run: pnpm gate:readability
       - name: Repository and history secret gate
         run: pnpm gate:secrets
       - name: Start local Supabase

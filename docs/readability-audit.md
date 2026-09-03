@@ -294,3 +294,67 @@ Punctuation-only splits are acceptable only when both resulting sentences are
 grammatical. Any wording change to a scientific template must retain the same
 direction, magnitude, population, evidence status, and limitation before the
 gate can be promoted to required CI.
+
+## 2026-09-03 — twenty-ninth pass: terms and remaining legal policies
+
+The twenty-ninth remediation pass removed the final 12 long-block findings,
+all on legal routes: 8 in the terms of service, 2 in the self-hosting policy,
+and 2 in the state genetic privacy policy. Every rewrite splits a long sentence
+or replaces one long word with a plain one. No caveat, right, obligation,
+limitation, warranty exclusion, survival clause, governing-law statement,
+notice period, statutory reference, or defined term was deleted; each clause of
+the original survives, sometimes in a new sentence. Quoted terms of art such as
+"as is", "as available", "consequential", and "State of Delaware, United
+States of America" are unchanged, and no heading, section id, anchor, or link
+target was touched.
+
+Terms of service (`src/app/(marketing)/terms/page.tsx`):
+
+- Section 3: the limited, revocable processing license is now defined in its
+  own sentence. The bar on selling, licensing, sharing, or using data for
+  research, advertising, or model training and the end-on-deletion clause are
+  separate sentences.
+- Section 4: real deletion keeps immediate row and storage-object deletion,
+  no grace-period recovery, no restoration from backups, and the privacy-policy
+  cross-reference. The change-of-control survival and successor clause is now
+  two sentences.
+- Section 7: "as is", "as available", the express-and-implied disclaimer, the
+  four named implied warranties, the probabilistic and evolving-research
+  caveats, the no-warranty-of-completeness statement, the partial-coverage
+  caveat, and the jurisdiction carve-out all remain.
+- Section 8: the damages exclusion, the "arising from your use of the service"
+  scope (now stated in both sentences it governs), the US$100-or-twelve-months
+  cap, and the non-limitable-liability and willful-misconduct clauses remain.
+- Section 9: termination equals deletion keeps the same immediate,
+  unrecoverable process and the no-residual-copies statement.
+- Section 10: Delaware governing law, the conflict-of-laws exclusion, the
+  Delaware state and federal forum, both parties' consent to that
+  jurisdiction, and the consumer-protection carve-out remain.
+- Section 11: the material-change email, the 30-day notice period, the
+  never-weakened-without-affirmative-consent protection for sections 3 and 4,
+  and continued-use acceptance remain.
+
+Self-hosting policy (`src/app/(marketing)/legal/self-hosting/page.tsx`): the
+operator remains responsible for security, backups, retention, legal basis,
+notices, provider contracts, and incident response in that deployment. Source
+availability still enables no restricted Family or Embryo capabilities and is
+still no legal or medical endorsement.
+
+State genetic privacy (`src/app/(marketing)/legal/state-genetic-privacy/page.tsx`):
+the versioned jurisdiction registry, the current-source-citation and
+human-review requirements, jurisdiction correction in Settings, renewed policy
+acknowledgement, and the cooling-off period remain.
+
+Clean state: `pnpm gate:readability` now exits 0 and reports 1489 blocks, 942
+long, 397 short-role, 252 sentence-capped, with zero findings. The scorer
+self-test, short-role vocabulary, and sentence-cap rules are also clean.
+`pnpm gate:legal`, `pnpm typecheck`, `pnpm lint`, and `pnpm test` (168 tests)
+pass; `pnpm gate:names` reports only that `NAME_DENYLIST_FILE` is unset, which
+is expected outside CI. This pass changed no script, test, or data file, so no
+page-level regression was added for these three pages.
+
+With the corpus clean, the gate is now a required pull-request CI step
+(`Readability and vocabulary gate` in `.github/workflows/ci.yml`), as ADR 0008
+provides. G1.10 remains NO in the acceptance matrix only because the extractor
+does not yet cover runtime-generated copy; that extension is the next
+readability task.
