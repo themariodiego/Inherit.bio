@@ -513,3 +513,41 @@ the brief records at line 2785.
   one withheld capability at the top and G7.4’s evidence names the dossier (the
   gate stays NO while nine rows carry `not shipped`); D-015 is fixed; the
   approach registry carries one rejected row per design.
+
+## 2026-09-03 — Embryo surfaces (W10): decisions taken from the design pass
+
+Design: `docs/design/w10-embryo-surfaces.md`; every open decision takes its
+recommended default. Where the brief's own text conflicts with a later
+cross-cutting rule or a canonical row, the later rule governs (X0.1) and the
+design records the superseded line:
+
+- An embryo is named only by its ordinal, derived from the laboratory's
+  column order and never from its text; no sample, cycle or clinic label is
+  persisted, rendered or logged. Every embryo's disc is identical, so no
+  subject colour is assigned: uniform treatment is mandated for a comparison
+  where a colour would read as a verdict.
+- Sex is filtered at ingest and appears in no response shape, so the
+  consented sex disclosure the surface section describes is not built; it is
+  a refusal, not a withheld capability.
+- The comparison renders in ordinal order with no sort control and no lead
+  count. The joint-selection constraint is satisfied by statement and by
+  naming one real conflict, never by a computed ranking; the passages that
+  would order conditions by spread or count how many rows an embryo leads
+  are superseded and are not built.
+- A laboratory PDF is refused before any durable byte, so the acceptance
+  item requiring a stored, hashed PDF record is superseded by the accepted
+  transport decision and is recorded as such rather than left failing.
+- Nothing is shown for one embryo before the whole set publishes: a partial
+  ingest failure resolves as one terminal transaction, and the progress
+  panel carries no ordinal, count or existence signal.
+- Today the condition registry is deliberately empty, so both result
+  surfaces render one sentence saying no calibrated model is registered
+  while the quality check remains real. That is `not shipped` with an
+  honest state, not a withholding: a withheld dossier needs three built
+  designs and primary-source evidence the science dimension has not
+  produced.
+- The result gate is shared with Family, with one cookie per domain, so an
+  acknowledgement on one boundary never silently opens the other.
+- Build order: platform prerequisites, then the surfaces in their honest
+  states, then the ingest flow, then the findings, which wait on the science
+  dimension and the mandated reviews.
