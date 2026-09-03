@@ -3,8 +3,8 @@
     "slug": "apoe-e4-alzheimers-risk",
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · APOE ε2/ε3/ε4",
-    "summary": "The APOE ε4 allele is the strongest common genetic risk factor for late-onset Alzheimer's disease, and the ε2 allele is associated with lower average risk. APOE status is defined by the combination (haplotype) of two SNPs, rs429358 and rs7412; this report shows each variant separately, and both are needed to infer ε2/ε3/ε4 status. Genotype is one factor among many — age, cardiovascular health, and other genes and environment all contribute, and no APOE genotype guarantees or rules out the condition.",
-    "evidence": "established",
+    "summary": "APOE ε4 is the strongest common genetic link to late-onset Alzheimer's disease. ε2 is linked to lower average risk. Two variants, rs429358 and rs7412, work together to define ε2, ε3, and ε4. This report shows them separately, so both are needed. APOE does not predict an outcome. Age, heart health, other genes, and environment also shape risk.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 429358,
@@ -15,8 +15,8 @@
         "alt": "C",
         "interpretations": {
           "TT": "In plain words: this means no ε4 allele — together with your rs7412 result below, it determines whether your type is ε2/ε2, ε2/ε3, or ε3/ε3. No copies of the ε4-tagging C allele at rs429358. Combined with rs7412, this typically corresponds to ε2 or ε3 alleles, which are associated with average or lower-than-average Alzheimer's risk. Genetics is only one small factor in overall risk.",
-          "CT": "In plain words: this corresponds to one ε4 allele — your rs7412 result below completes the picture: C/C there means ε3/ε4, while a T there almost always means ε2/ε4. One copy of the ε4-tagging C allele. If rs7412 is C on the same chromosome, this indicates one ε4 allele, associated on average with roughly 2-4 fold higher odds of late-onset Alzheimer's disease in European-ancestry studies (effect sizes differ by ancestry). Many people with one ε4 allele never develop the condition — this is one factor among many, not a prediction.",
-          "CC": "In plain words: this corresponds to ε4/ε4. Two copies of the ε4-tagging C allele, consistent with an ε4/ε4 genotype (rs7412 is essentially always C on ε4 chromosomes). ε4/ε4 is associated on average with substantially higher odds of late-onset Alzheimer's disease — around 8-12 fold in European-ancestry studies, with lower estimates in some other ancestries. Even so, a large fraction of ε4/ε4 carriers never develop dementia; this is a risk association, not a certainty, and lifestyle and other genes matter too."
+          "CT": "Plainly, this often means one ε4 allele. Your rs7412 result completes the picture. C/C there means ε3/ε4. A T there almost always means ε2/ε4. One C copy at rs429358 tags ε4. With rs7412 C on the same chromosome, studies link it to higher odds of late-onset Alzheimer’s disease: a moderate to large shift. The effect differs by ancestry. Many carriers never develop the condition.",
+          "CC": "Plainly, this often means ε4/ε4. Two C copies tag two ε4 alleles, and rs7412 is almost always C on those chromosomes. European-ancestry studies link ε4/ε4 to higher odds of late-onset Alzheimer’s disease: a large shift. Some other ancestry groups have lower estimates. Many carriers never develop dementia. This is a risk link, not a certainty."
         }
       },
       {
@@ -43,8 +43,8 @@
     "slug": "lrrk2-g2019s-parkinsons",
     "category": "neurodegenerative",
     "title": "Parkinson's disease · LRRK2 G2019S",
-    "summary": "The LRRK2 G2019S variant (rs34637584) is the most common known single-gene contributor to Parkinson's disease, found in about 1% of sporadic and 4% of familial cases overall, and far more often in people of Ashkenazi Jewish or North African Berber ancestry. It is rare in the general population, and most carriers never develop Parkinson's — estimated penetrance is roughly 25-45% by age 80.",
-    "evidence": "established",
+    "summary": "LRRK2 G2019S (rs34637584) is the most common known single-gene contributor to Parkinson's disease. It appears in about 1% of cases without a family history and 4% of family-linked cases. It is more common in people with Ashkenazi Jewish or North African ancestry. Most carriers do not develop Parkinson's disease. Later family studies estimate that about 25% to 43% develop it by age 80, with wide ranges between groups.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 34637584,
@@ -55,22 +55,24 @@
         "alt": "A",
         "interpretations": {
           "GG": "No copies of the G2019S variant. This is the result for the vast majority of people. It says nothing about the many other genetic and non-genetic factors that influence Parkinson's risk.",
-          "AG": "One copy of the G2019S variant (the A allele). Carriers show substantially higher average risk of Parkinson's disease, but penetrance is incomplete — studies estimate roughly 25-45% of carriers develop the condition by age 80, meaning most carriers do not. Because array results can be wrong for rare variants, an unexpected positive result here deserves confirmation and discussion with a genetic counselor before drawing conclusions. This variant is one factor among many.",
+          "AG": "One copy of the G2019S variant (the A allele). Carriers have a much higher average risk of Parkinson’s disease, but not all carriers get it: studies estimate that roughly 25-45% of carriers develop the condition by age 80, so most do not. Array results can be wrong for rare variants, so an unexpected positive result here deserves confirmation and a talk with a genetic counselor before drawing conclusions. This variant is one factor among many.",
           "AA": "Two copies of the G2019S variant — an extremely rare result. Homozygous carriers appear to have a similar disease course to heterozygous carriers. Penetrance remains incomplete, and an unexpected result of this kind should be confirmed with clinical-quality sequencing and discussed with a genetic counselor."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "18539534", "label": "Healy et al., Lancet Neurol 2008" }
+      { "pmid": "18539534", "label": "Healy et al., Lancet Neurol 2008" },
+      { "pmid": "26062626", "label": "Marder et al., Neurology 2015" },
+      { "pmid": "28639421", "label": "Lee et al., Mov Disord 2017" }
     ]
   },
   {
     "slug": "gba1-n370s-parkinsons",
     "category": "neurodegenerative",
     "title": "Parkinson's disease · GBA1 N370S",
-    "summary": "The GBA1 N370S variant (rs76763715, also called N409S) is one of the strongest common genetic risk factors for Parkinson's disease: carrying one copy is associated with roughly 5-fold higher average odds. It is most frequent in people of Ashkenazi Jewish ancestry. Even so, the large majority of carriers never develop Parkinson's. On the Ensembl forward strand this variant is a T-to-C change.",
-    "evidence": "established",
+    "summary": "GBA1 N370S (rs76763715, also called N409S) is a strong genetic risk factor for Parkinson's disease. In a large study, carriers of GBA1 variants that included N370S had about five times the average odds. N370S is most common in people with Ashkenazi Jewish ancestry. Most carriers never develop Parkinson's disease. On the Ensembl forward strand, this variant changes T to C.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 76763715,
@@ -81,8 +83,8 @@
         "alt": "C",
         "interpretations": {
           "TT": "No copies of the N370S variant. This is the most common result and carries no particular association with Parkinson's risk from this variant. Many other factors, genetic and otherwise, contribute to overall risk.",
-          "CT": "One copy of the N370S variant (the C allele on the forward strand). In a large multicenter study, GBA1 variant carriers had about 5-fold higher average odds of Parkinson's disease, sometimes with earlier onset. The absolute lifetime risk for carriers is still estimated at well under 30%, so most carriers are never affected — this is one factor among many. Rare-variant array calls can be unreliable; confirmation is sensible before acting on this result.",
-          "CC": "Two copies of the N370S variant. This genotype is found in individuals with type 1 Gaucher disease, a recessive condition that varies widely in severity, and is also associated with elevated Parkinson's risk. Array-based results for rare variants warrant confirmation with clinical-quality testing, and a genetic counselor can help interpret what this means for you and your family."
+          "CT": "One copy of N370S, the C allele on the forward strand. A large study found about five times the odds of Parkinson's disease across GBA1 variant carriers. Some developed it earlier. Lifetime risk for carriers is still estimated below 30%, so most are never affected. Rare array calls can be wrong, so confirm before acting.",
+          "CC": "Two copies of N370S. This result can cause type 1 Gaucher disease, a recessive condition with a wide range of severity. It is also linked to higher Parkinson's risk. Rare array calls need confirmation with clinical testing. A genetic counselor can help explain what it may mean for you and your family."
         }
       }
     ],
@@ -94,9 +96,9 @@
   {
     "slug": "mapt-h1-h2-tauopathy",
     "category": "neurodegenerative",
-    "title": "Tauopathy risk · MAPT H1/H2 haplotype",
-    "summary": "A common inversion on chromosome 17 splits the tau gene (MAPT) region into two ancient haplotypes, H1 and H2, tagged by rs8070723. The more common H1 haplotype is associated with higher average risk of the tauopathy progressive supranuclear palsy (PSP) and, more modestly, Parkinson's disease; H2 is associated with lower average risk. These are shifts in relative risk for conditions that remain rare either way.",
-    "evidence": "moderate",
+    "title": "Tauopathy risk · MAPT H1/H2",
+    "summary": "A common chromosome 17 inversion creates two old forms of the MAPT region, called H1 and H2. rs8070723 tags them. H1 is more common and is linked to higher average odds of progressive supranuclear palsy (PSP), a rare tau disease. It also has a smaller link to Parkinson's disease. H2 is linked to lower average odds. Both conditions stay uncommon.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 8070723,
@@ -121,9 +123,9 @@
   {
     "slug": "unc13a-als-susceptibility",
     "category": "neurodegenerative",
-    "title": "ALS susceptibility · UNC13A",
-    "summary": "The UNC13A variant rs12608932 is a replicated susceptibility marker for amyotrophic lateral sclerosis (ALS) and frontotemporal dementia, with a small effect on average odds (about 1.1-1.2 fold per C allele). Note: the most important known genetic factor in ALS, the C9orf72 repeat expansion, is a structural variant that genotyping arrays cannot detect — its absence from this report is a limitation of the technology, not evidence you lack it.",
-    "evidence": "moderate",
+    "title": "Tendency to ALS · UNC13A",
+    "summary": "The UNC13A variant rs12608932 is a replicated susceptibility marker for amyotrophic lateral sclerosis (ALS) and frontotemporal dementia. Each C allele is linked to higher average odds: a very small to small shift. Note: the most important known genetic factor in ALS is the C9orf72 repeat expansion. Genotyping arrays cannot detect this structural variant. Its absence from this report is a limitation of the technology, not evidence you lack it.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12608932,
@@ -134,22 +136,23 @@
         "alt": "C",
         "interpretations": {
           "AA": "No copies of the C risk allele. Average odds of ALS at this locus. ALS is rare (lifetime risk around 1 in 300-400), and this common variant is one very small factor among many genetic and environmental influences.",
-          "AC": "One copy of the C allele, associated on average with slightly higher odds of ALS (roughly 1.1-1.2 fold per allele). Because ALS is rare, this barely changes absolute risk. Some studies also link this allele to shorter survival after onset. One very small factor among many.",
-          "CC": "Two copies of the C allele — a common genotype associated on average with modestly higher odds of ALS and of frontotemporal dementia with TDP-43 pathology. The absolute risk remains low, and this variant is one very small factor among many; most people with this genotype are never affected."
+          "AC": "One copy of the C allele, associated on average with slightly higher odds of ALS: a very small to small shift per allele. Because ALS is rare, this barely changes absolute risk. Some studies also link this allele to shorter survival after onset. One very small factor among many.",
+          "CC": "Two C copies, a common genotype linked to slightly higher average odds of ALS. Studies also link it to frontotemporal dementia with TDP-43 changes. The absolute risk stays low. Most people with this genotype are never affected, and it is one small factor among many."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19734901", "label": "van Es et al., Nat Genet 2009" }
+      { "pmid": "19734901", "label": "van Es et al., Nat Genet 2009" },
+      { "pmid": "30368160", "label": "Placek et al., Neurobiol Aging 2019" }
     ]
   },
   {
     "slug": "snca-rs356182-parkinsons",
     "category": "neurodegenerative",
     "title": "Parkinson's disease · SNCA",
-    "summary": "Common variation near SNCA, the gene for alpha-synuclein, shows the strongest genome-wide association with sporadic Parkinson's disease. The tag SNP rs356182 shifts average odds by about 1.3 fold per G allele. Because Parkinson's affects roughly 1-2% of people over 65, this common variant moves absolute risk only slightly and is one small factor among many.",
-    "evidence": "moderate",
+    "summary": "Common variation near SNCA, the gene for alpha-synuclein, shows the strongest genome-wide association with sporadic Parkinson’s disease. Each G allele at the tag SNP rs356182 shifts average odds upward: a small shift. Because Parkinson’s affects roughly 1-2% of people over 65, this common variant moves absolute risk only slightly and is one small factor among many.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 356182,
@@ -161,7 +164,7 @@
         "interpretations": {
           "AA": "Two copies of the A allele, associated on average with somewhat lower odds of Parkinson's disease at this locus. A modest average effect — one small factor among the many genes and exposures that shape risk.",
           "AG": "One G and one A allele — an intermediate, near-average result for Parkinson's odds at this locus. This common variant is one small factor among many.",
-          "GG": "Two copies of the G allele, which large genome-wide studies associate with higher average odds of Parkinson's disease (about 1.3 fold per allele). The absolute change in risk is small, and this is one small factor among many genetic and environmental influences; most people with this genotype are never affected."
+          "GG": "Two copies of the G allele. Large genome-wide studies associate this result with higher average odds of Parkinson’s disease: a small shift per allele. The absolute change in risk is small. This is one small factor among many genetic and environmental influences. Most people with this genotype are never affected."
         }
       }
     ],
@@ -174,8 +177,8 @@
     "slug": "trem2-r47h-alzheimers",
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · TREM2 R47H",
-    "summary": "The rare TREM2 R47H variant (rs75932628, a C-to-T change on the forward strand) is associated with roughly 2-4 fold higher average odds of late-onset Alzheimer's disease — an effect size approaching that of one APOE ε4 allele. It is carried by fewer than 1 in 200 people of European ancestry and is rarer in other populations. Most carriers never develop the condition.",
-    "evidence": "moderate",
+    "summary": "The rare TREM2 R47H variant (rs75932628, a C-to-T change on the forward strand) is associated with higher average odds of late-onset Alzheimer’s disease — a moderate to large shift, an effect size approaching that of one APOE ε4 allele. It is carried by fewer than 1 in 200 people of European ancestry and is rarer in other populations. Most carriers never develop the condition.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 75932628,
@@ -186,8 +189,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the R47H variant — the result for over 99% of people. This says nothing about other Alzheimer's risk factors such as APOE, age, or cardiovascular health.",
-          "CT": "One copy of the R47H variant (the T allele). Two independent 2013 studies associated this variant with roughly 2-4 fold higher average odds of late-onset Alzheimer's disease, thought to act through reduced microglial function. Absolute risk still depends far more on age and other factors, and many carriers are never affected — this is one factor among many. Rare-variant array calls can be unreliable, so confirmation is sensible.",
-          "TT": "Two copies of the R47H variant — an extremely rare result that has been reported only a handful of times. An unexpected homozygous call on an array for a variant this rare is quite likely a genotyping artifact; confirmation with clinical-quality sequencing would be needed before interpreting it."
+          "CT": "One copy of the R47H variant (the T allele). Two independent 2013 studies associated this variant with higher average odds of late-onset Alzheimer’s disease: a moderate to large shift. The variant is thought to act through reduced microglial function. Absolute risk still depends far more on age and other factors. Many carriers are never affected. This is one factor among many. Rare-variant array calls can be unreliable, so confirmation is sensible.",
+          "TT": "Two copies of R47H. This result is extremely rare and has been reported only a few times. An array call this rare is likely to be a test error. Confirm it with clinical-quality sequencing before trying to interpret it."
         }
       }
     ],
@@ -201,8 +204,8 @@
     "slug": "clu-rs11136000-alzheimers",
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · CLU",
-    "summary": "Common variation in the clusterin gene (CLU) was among the first loci beyond APOE to show genome-wide-significant association with late-onset Alzheimer's disease. The minor T allele of rs11136000 is associated with modestly lower average odds (about 0.86 fold per allele). The effect is small: this variant is one small factor among many and shifts absolute risk only slightly.",
-    "evidence": "moderate",
+    "summary": "Common variation in the clusterin gene (CLU) was among the first loci beyond APOE to show genome-wide-significant association with late-onset Alzheimer’s disease. The minor T allele of rs11136000 is associated with modestly lower average odds per allele: a small shift. The effect is small: this variant is one small factor among many and shifts absolute risk only slightly.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 11136000,
@@ -212,9 +215,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "TT": "Two copies of the T allele, associated on average with modestly lower odds of late-onset Alzheimer's disease (about 0.86 fold per T allele in the discovery studies). A small average effect — one small factor among many influences on risk.",
+          "TT": "Two copies of T, linked to modestly lower average odds of late-onset Alzheimer’s disease. Discovery studies found lower odds per T copy: a small shift. This is a small average effect and one factor among many.",
           "CT": "One C and one T allele — a common, intermediate result associated with roughly average odds of late-onset Alzheimer's disease at this locus. One small factor among many.",
-          "CC": "Two copies of the more common C allele, associated on average with slightly higher odds of late-onset Alzheimer's disease relative to T carriers. The effect is small compared with age and APOE genotype, and this is one small factor among many; it does not meaningfully predict whether any individual will be affected."
+          "CC": "Two copies of the common C allele. This result is linked to slightly higher average odds of late-onset Alzheimer's disease than results with T. The effect is small beside age and APOE. It cannot predict whether one person will be affected."
         }
       }
     ],
@@ -227,8 +230,8 @@
     "slug": "bin1-rs6733839-alzheimers",
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · BIN1",
-    "summary": "BIN1 is the second-most significant common risk locus for late-onset Alzheimer's disease after APOE in large genome-wide meta-analyses. The T allele of rs6733839 is associated with about 1.2 fold higher average odds per copy. As with all common risk variants, the absolute effect is small and this is one small factor among many.",
-    "evidence": "moderate",
+    "summary": "BIN1 is the second-most significant common risk locus for late-onset Alzheimer’s disease after APOE in large genome-wide meta-analyses. The T allele of rs6733839 is associated with higher average odds per copy: a small shift. As with all common risk variants, the absolute effect is small and this is one small factor among many.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6733839,
@@ -239,8 +242,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the T risk allele — associated with average-to-slightly-lower odds of late-onset Alzheimer's disease at this locus. One small factor among the many genes and lifestyle influences that shape risk.",
-          "CT": "One copy of the T allele, associated on average with about 1.2 fold higher odds of late-onset Alzheimer's disease. This is a small shift compared with the effects of age or APOE ε4, and one small factor among many.",
-          "TT": "Two copies of the T allele — a common genotype (roughly 15% of people) associated on average with modestly higher odds of late-onset Alzheimer's disease. The absolute difference is small, most people with this genotype are never affected, and this is one small factor among many."
+          "CT": "One copy of the T allele, associated on average with higher odds of late-onset Alzheimer’s disease. This is a small shift compared with the effects of age or APOE ε4, and one small factor among many.",
+          "TT": "Two copies of T, a common genotype found in about 15% of people. On average, this result is linked to modestly higher odds of late-onset Alzheimer’s disease. The absolute difference is small, and most people with this result are never affected. It is one factor among many."
         }
       }
     ],
@@ -253,8 +256,8 @@
     "slug": "tmem106b-ftd-modifier",
     "category": "neurodegenerative",
     "title": "Frontotemporal dementia · TMEM106B",
-    "summary": "Common variants near TMEM106B were identified in a genome-wide study of frontotemporal lobar degeneration with TDP-43 pathology (FTLD-TDP). The A allele of rs1990622 (forward strand) is associated with higher average odds, and the G allele with lower odds — an effect that appears strongest in people carrying rare GRN or C9orf72 mutations. FTD is uncommon, so absolute risk shifts from this variant alone are small.",
-    "evidence": "moderate",
+    "summary": "Common variants near TMEM106B were found in a genome-wide study of frontotemporal lobar degeneration with TDP-43 changes (FTLD-TDP). rs1990622 A is linked to higher average odds, while G is linked to lower odds. The effect seems strongest in people with rare GRN mutations or C9orf72 repeat expansions. FTD is uncommon, so this variant alone changes absolute risk little.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1990622,
@@ -264,7 +267,7 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele, associated on average with higher odds of FTLD-TDP — an effect mainly documented as a modifier in carriers of rare GRN or C9orf72 mutations. In people without such mutations the absolute risk of FTD remains low; this common genotype is one small factor among many.",
+          "AA": "Two copies of A, linked to higher average odds of FTLD-TDP. Studies mainly show this as a risk modifier in people with rare GRN mutations or C9orf72 repeat expansions. Without those variants, absolute FTD risk stays low. This common result is one factor among many.",
           "AG": "One A and one G allele — an intermediate result associated with near-average odds of FTLD-TDP at this locus. One small factor among many influences on neurodegenerative risk.",
           "GG": "Two copies of the G allele, associated on average with lower odds of FTLD-TDP; in studies of GRN and C9orf72 mutation carriers this genotype tracked with reduced penetrance. A modest protective association on average, not a guarantee — and one small factor among many."
         }
@@ -272,7 +275,8 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "20154673", "label": "Van Deerlin et al., Nat Genet 2010" }
+      { "pmid": "20154673", "label": "Van Deerlin et al., Nat Genet 2010" },
+      { "pmid": "24385136", "label": "van Blitterswijk et al., Acta Neuropathol 2014" }
     ]
   }
 ]

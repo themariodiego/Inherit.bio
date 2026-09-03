@@ -7,7 +7,12 @@ import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 // neurodegenerative, mental-health, plus templates recommending clinical
 // confirmation) must NOT show the result section until the user explicitly
 // opts in ("prefer not to know" is a first-class choice). The header,
-// summary, citations, and the legal disclaimer stay visible either way.
+// summary, sources, and the not-diagnostic line stay visible either way.
+//
+// Result content is pinned by the figure contract, not by prose: a genotype
+// is a `[data-figure-kind="genotype"]` node inside `[data-claim-block]`, and
+// a not-covered position renders the exact §2 §4.5 VCF string followed by
+// "This is a limit of your file, not a result about you."
 //
 // The reveal is a SERVER-side decision carried by ?reveal=1: a gated
 // response must not contain the result anywhere — rendered markup, inline
@@ -21,6 +26,10 @@ import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 const USER = { email: "gate-user@e2e.local", password: "e2e-gate-pw" };
 
 const FGFR2_SLUG = "breast-cancer-fgfr2-rs2981582";
+
+const GENOTYPE_NODE = '[data-figure-kind="genotype"]';
+const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
+const LIMIT_OF_FILE = "This is a limit of your file, not a result about you.";
 
 test.describe.configure({ mode: "serial" });
 
@@ -45,8 +54,9 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   const gatedRes = await page.request.get("/genome/me/reports/apoe-e4-alzheimers-risk");
   expect(gatedRes.ok()).toBe(true);
   const gatedHtml = await gatedRes.text();
-  expect(gatedHtml).not.toContain("Your genotype");
-  expect(gatedHtml).not.toContain("does not cover this variant");
+  expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
+  expect(gatedHtml).not.toContain(NOT_COVERED_VCF_FIRST_SENTENCE);
+  expect(gatedHtml).not.toContain(LIMIT_OF_FILE);
 
   await page.goto("/genome/me/reports/apoe-e4-alzheimers-risk");
 
@@ -58,16 +68,21 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
     "applies to all Neurodegenerative reports",
   );
   await expect(gate).toContainText("remembered on this device");
-  await expect(page.getByText("Your genotype")).toHaveCount(0);
-  await expect(
-    page.getByText(/Your file does not cover this variant/),
-  ).toHaveCount(0);
+  await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
+  await expect(page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE)).toHaveCount(0);
+  await expect(page.getByText(LIMIT_OF_FILE)).toHaveCount(0);
 
-  // Header, summary, sources, and disclaimer stay visible around the gate.
+  // Header, summary, sources, and the not-diagnostic line stay visible
+  // around the gate. The h1 is the report name (the title up to its gene
+  // suffix; the seed apostrophe is U+0027 and is not normalised).
   await expect(
     page.getByRole("heading", { name: /Alzheimer's disease/ }),
   ).toBeVisible();
-  await expect(page.getByText("Sources")).toBeVisible();
+  await expect(page.locator("main h1")).toHaveText("Alzheimer's disease");
+  await expect(
+    page.getByRole("heading", { name: "Where this comes from" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: "Sources" })).toBeVisible();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
 
   // Click through the gate: "Show my result" is a link to the same URL with
@@ -77,8 +92,9 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await page.waitForURL(/reveal=1/);
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
   await expect(
-    page.getByText(/files do not cover this variant/).first(),
+    page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first(),
   ).toBeVisible();
+  await expect(page.getByText(LIMIT_OF_FILE).first()).toBeVisible();
 
   // Support pathway appears with the result.
   const support = page.getByTestId("support-panel");
@@ -97,8 +113,9 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   await page.goto("/genome/me/reports/apoe-e4-alzheimers-risk");
   await page.waitForURL(/reveal=1/);
   await expect(
-    page.getByText(/files do not cover this variant/).first(),
+    page.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first(),
   ).toBeVisible();
+  await expect(page.getByText(LIMIT_OF_FILE).first()).toBeVisible();
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
 });
 
@@ -110,10 +127,12 @@ test("'Not now' returns to the library at the report's category section", async 
   // sensitive category (cancer-risk) anyway to keep tests independent.
   await page.goto(`/genome/me/reports/${FGFR2_SLUG}`);
   await expect(page.getByTestId("sensitive-gate")).toBeVisible();
-  await expect(page.getByText("Your genotype")).toHaveCount(0);
+  await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
+  // "Not now" lands on the user-facing category section (nine-category
+  // taxonomy id), not the storage category slug.
   await page.getByRole("link", { name: "Not now" }).click();
-  await page.waitForURL(/\/genome\/me\/reports#cancer-risk$/);
-  await expect(page.locator("#cancer-risk")).toBeVisible();
+  await page.waitForURL(/\/genome\/me\/reports#cancer$/);
+  await expect(page.locator("#cancer")).toBeVisible();
 });
 
 test("non-sensitive report shows its result directly, with no gate", async ({
@@ -125,7 +144,10 @@ test("non-sensitive report shows its result directly, with no gate", async ({
   // parser drops reference calls, so ALDH2 resolves not-covered.)
   await page.goto("/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551");
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
-  await expect(page.getByText("Your genotype")).toBeVisible();
+  const genotype = page.locator(GENOTYPE_NODE);
+  await expect(genotype).toHaveCount(1);
+  await expect(genotype).toBeVisible();
+  await expect(genotype.locator('[data-slot="figure-value"]')).toHaveText("A/C");
   await expect(page.getByText("A/C")).toBeVisible();
 });
 
@@ -158,7 +180,7 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   const gatedRes = await page.request.get(`/genome/me/reports/${FGFR2_SLUG}`);
   expect(gatedRes.ok()).toBe(true);
   const gatedHtml = await gatedRes.text();
-  expect(gatedHtml).not.toContain("Your genotype");
+  expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain("A/G");
   expect(gatedHtml).not.toContain("One copy of the A risk allele");
 
@@ -168,7 +190,7 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   );
   expect(revealedRes.ok()).toBe(true);
   const revealedHtml = await revealedRes.text();
-  expect(revealedHtml).toContain("Your genotype");
+  expect(revealedHtml).toContain(GENOTYPE_NODE.slice(1, -1));
   expect(revealedHtml).toContain("A/G");
   expect(revealedHtml).toContain("One copy of the A risk allele");
 
@@ -195,7 +217,10 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
   // Clicking through reveals the real genotype in the page.
   await page.getByRole("link", { name: "Show my result" }).click();
   await page.waitForURL(/reveal=1/);
-  await expect(page.getByText("Your genotype")).toBeVisible();
+  await expect(page.locator(GENOTYPE_NODE)).toBeVisible();
+  await expect(
+    page.locator(GENOTYPE_NODE).locator('[data-slot="figure-value"]'),
+  ).toHaveText("A/G");
   await expect(page.getByText("A/G")).toBeVisible();
 });
 
@@ -220,7 +245,10 @@ test("blocked localStorage: gate still shows and reveal still works — only the
   // The reveal is server-side (?reveal=1), so it works without storage.
   await page.getByRole("link", { name: "Show my result" }).click();
   await page.waitForURL(/reveal=1/);
-  await expect(page.getByText("Your genotype")).toBeVisible();
+  await expect(page.locator(GENOTYPE_NODE)).toBeVisible();
+  await expect(
+    page.locator(GENOTYPE_NODE).locator('[data-slot="figure-value"]'),
+  ).toHaveText("A/G");
   await expect(page.getByText("A/G")).toBeVisible();
 
   // No memory could be written: the next plain visit is gated again (and

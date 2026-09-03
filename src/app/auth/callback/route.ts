@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { markIndependentLogin } from "@/lib/family/independent-login";
 import { createClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 
@@ -14,19 +15,27 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
 
+  // After a successful exchange and before the redirect, the ordinary
+  // sign-in stamps the independent-login marker (register auth.callback
+  // `independentLoginMarker`). The routine itself proves the session is not
+  // the one an invitation was accepted in, and is a no-op thereafter.
+  const completed = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) await markIndependentLogin(user.id);
+    return NextResponse.redirect(new URL(safeNext, url.origin));
+  };
+
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(new URL(safeNext, url.origin));
-    }
+    if (!error) return completed();
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash: tokenHash,
     });
-    if (!error) {
-      return NextResponse.redirect(new URL(safeNext, url.origin));
-    }
+    if (!error) return completed();
   }
 
   return NextResponse.redirect(

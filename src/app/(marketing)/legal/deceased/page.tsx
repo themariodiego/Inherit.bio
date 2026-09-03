@@ -3,9 +3,9 @@ import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
-  title: "Deceased customers",
+  title: "Deceased people",
   description:
-    "The documented next-of-kin process for a deceased Inherit customer's account: what a representative must provide, and what Inherit will do within 30 days.",
+    "How Inherit protects genetic records after a death, checks estate authority, and limits deletion or disclosure.",
 };
 
 export default function DeceasedPage() {
@@ -14,37 +14,58 @@ export default function DeceasedPage() {
       eyebrow="Trust"
       title={
         <>
-          Deceased <span className="accent">customers.</span>
+          Deceased <span className="accent">people.</span>
         </>
       }
-      effectiveDate="2026-08-28"
+      effectiveDate="2026-09-01"
       intro={
         <p>
-          A genome outlives its owner, and it carries information about
-          relatives who never agreed to share it. This page documents exactly
-          how Inherit handles the account of a customer who has died — a
-          process families should not have to discover mid-grief.
+          Genetic data can reveal facts about living relatives. We therefore
+          protect a person’s records after death. We disclose them only through
+          the process below.
         </p>
       }
       sections={[
         {
-          id: "default",
-          heading: "The default: non-disclosure",
+          id: "scope",
+          heading: "Records this policy covers",
           body: (
             <>
               <p>
-                Unless and until a verified representative completes the
-                process below, a deceased customer’s account and data are
-                treated exactly as they were in life:{" "}
-                <strong>closed to everyone</strong>. We do not disclose
-                account contents to family members, heirs, employers,
-                insurers, or anyone else on request, sympathy, or assertion of
-                kinship alone. Legal process from investigators is handled
-                under our separate{" "}
+                Inherit does not accept a new upload for a person who has died.
+                We do not analyze that person’s genome.
+              </p>
+              <p>This policy covers four types of existing record:</p>
+              <ul>
+                <li>an account holder’s own data;</li>
+                <li>data about another adult who later dies;</li>
+                <li>an embryo record after a genetic parent dies; and</li>
+                <li>a future-person record.</li>
+              </ul>
+              <p>
+                More than one person may hold rights in a record. We check each
+                person’s rights before we act.
+              </p>
+            </>
+          ),
+        },
+        {
+          id: "default",
+          heading: "The default is no disclosure",
+          body: (
+            <>
+              <p>
+                A death does not open an account or record. It stays closed
+                while we review a request. We do not disclose it based only on
+                a family link, inheritance claim, or request from an employer
+                or insurer.
+              </p>
+              <p>
+                Investigators must use the process in our separate{" "}
                 <Link href="/legal/law-enforcement">
                   law-enforcement policy
                 </Link>
-                , which applies unchanged after death.
+                . That policy still applies after death.
               </p>
             </>
           ),
@@ -55,35 +76,76 @@ export default function DeceasedPage() {
           body: (
             <>
               <p>
-                We act only for an authorized representative of the estate.
-                To start, email <strong>legal@inherit.bio</strong> with
-                all three of the following:
+                Email <strong>legal@inherit.bio</strong> with all three items
+                below. We charge no fee.
               </p>
               <ol>
                 <li>
-                  <strong>A death certificate</strong> — a certified copy or a
-                  clear scan of one, issued by the relevant civil authority.
+                  <strong>A death certificate.</strong> Send a clear copy from
+                  the civil authority that recorded the death.
                 </li>
                 <li>
-                  <strong>Proof of authority to act for the estate</strong> —
-                  letters testamentary or letters of administration naming you
-                  as executor or administrator, a court order, or the
-                  equivalent instrument in your jurisdiction. Where the estate
-                  is small enough that no such instrument exists, a
-                  small-estate affidavit valid in the deceased’s jurisdiction
-                  is acceptable.
+                  <strong>Proof that you may act.</strong> This may be a court’s
+                  letters testamentary, letters of administration, or an equal
+                  document in your area. A small-estate affidavit may qualify
+                  only where local law accepts it.
                 </li>
                 <li>
-                  <strong>The email address of the account</strong> — so we
-                  can locate it. If you do not know it, we can attempt to
-                  locate an account from the deceased’s known email addresses,
-                  but we will not confirm whether an account exists until the
-                  first two documents are verified.
+                  <strong>Details that identify the record.</strong> Include
+                  the account email if you know it. For other records, give the
+                  minimum details needed to locate the record.
                 </li>
               </ol>
               <p>
-                We may ask follow-up questions to verify the documents. We do
-                not charge a fee for any part of this process.
+                A human reviewer checks the death, the documents, and the
+                representative’s authority. We may ask for more proof. We do
+                not confirm that a record exists until the first two checks
+                pass.
+              </p>
+            </>
+          ),
+        },
+        {
+          id: "wishes-and-notice",
+          heading: "Recorded wishes and 30 days’ notice",
+          body: (
+            <>
+              <p>
+                The deceased person’s recorded choice comes first. A
+                representative cannot replace it. For example, a request to
+                delete bars an estate export. A request for no disclosure also
+                bars an export.
+              </p>
+              <p>
+                If no choice is on file, an authorized representative may ask
+                for deletion or a permitted export. Before any disclosure, we
+                give 30 days’ notice through each available contact channel
+                tied to the record. No data leaves Inherit during that period.
+              </p>
+              <p>
+                We use the notice period to check for a conflict, a later
+                recorded choice, or another person’s rights. A conflict stops
+                disclosure and returns the request to human review.
+              </p>
+            </>
+          ),
+        },
+        {
+          id: "living-relatives",
+          heading: "Living relatives remain protected",
+          body: (
+            <>
+              <p>
+                We never give a representative a genome in a form that shows a
+                living relative’s genotype unless that relative consents. We
+                remove the protected material. If we cannot separate it safely,
+                we refuse the export.
+              </p>
+              <p>
+                Estate authority does not replace the rights of a living adult
+                subject or a future person. The{" "}
+                <Link href="/legal/future-person">Future Person Charter</Link>
+                {" "}continues to govern future-person records.
               </p>
             </>
           ),
@@ -92,39 +154,26 @@ export default function DeceasedPage() {
           id: "what-we-do",
           heading: "What Inherit will do",
           body: (
-            <>
-              <p>
-                Once the documentation is verified, the representative chooses
-                one of two actions, and we complete it{" "}
-                <strong>within 30 days</strong> of verification:
-              </p>
-              <ul>
-                <li>
-                  <strong>Deletion.</strong> The account and all of its data —
-                  database rows and storage objects, including the raw genome
-                  files — are deleted under the same immediate, unrecoverable
-                  process described in the{" "}
-                  <Link href="/privacy">privacy policy</Link>. This is the
-                  default if the representative expresses no preference.
-                </li>
-                <li>
-                  <strong>Export to the estate.</strong> A complete export of
-                  the account — original uploaded files, derived variants,
-                  reports, and chat history — is delivered to the verified
-                  representative, free of charge, after which the account is
-                  deleted. We deliver the export to the representative only;
-                  distributing it further is the estate’s decision and
-                  responsibility.
-                </li>
-              </ul>
-              <p>
-                We do not keep deceased customers’ genomes as a matter of
-                course, and we do not use them for any purpose while a request
-                is pending. If no representative ever comes forward, the
-                account simply remains closed and untouched, subject to the
-                retention and deletion rules of the privacy policy.
-              </p>
-            </>
+            <ul>
+              <li>
+                <strong>Deletion.</strong> We delete only the records that the
+                verified request may control. Account deletion uses its fixed
+                seven-day notice and purge process. Rights held by another
+                living person may require us to preserve or transfer that
+                person’s record instead.
+              </li>
+              <li>
+                <strong>Permitted export.</strong> After the 30-day notice, we
+                give the verified representative only the approved parts. The
+                export is free. It excludes any record or genotype protected by
+                another person’s rights.
+              </li>
+              <li>
+                <strong>No request.</strong> If no representative comes
+                forward, the record stays closed. Its normal retention and
+                deletion rules still apply.
+              </li>
+            </ul>
           ),
         },
         {
@@ -132,13 +181,10 @@ export default function DeceasedPage() {
           heading: "Planning ahead",
           body: (
             <p>
-              The simplest gift to your estate is a note. If you use Inherit,
-              consider recording the account email address and your preference
-              — delete or export — wherever you keep your will or password
-              manager’s emergency access. You can also simply export your data
-              at any time (free, forever) and store it with your papers, or
-              delete your account yourself if you no longer want the data to
-              exist at all.
+              Record whether you prefer deletion or a permitted estate export.
+              Keep that choice with your will or emergency account details. You
+              can also export your data for free or request account deletion in{" "}
+              <Link href="/settings">Settings</Link> while you are alive.
             </p>
           ),
         },

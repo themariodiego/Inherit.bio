@@ -3,8 +3,8 @@
     "slug": "lactase-persistence-lct-rs4988235",
     "category": "gastrointestinal",
     "title": "Lactose tolerance · LCT/MCM6",
-    "summary": "The rs4988235 variant upstream of the lactase gene (in an MCM6 intron, often written -13910C>T) is the main determinant of adult lactase persistence in people of European ancestry. Carrying at least one A allele (the forward-strand equivalent of the persistence T allele) keeps lactase expression switched on into adulthood, so dairy is usually well tolerated. The linked variant rs182549 (-22018, T allele) travels with it and supports the same interpretation.",
-    "evidence": "established",
+    "summary": "rs4988235 sits near the lactase gene, inside MCM6. It is often called -13910C>T. In people with European ancestry, this is the main DNA change linked to making lactase as adults. One A copy, equal to T in papers, usually keeps the enzyme active, so most dairy is tolerated. A linked change, rs182549 or -22018, often travels with it and supports the same result.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4988235,
@@ -14,9 +14,9 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the ancestral G allele, the genotype associated with lactase non-persistence: lactase production typically declines after childhood, and larger servings of milk are more likely to cause bloating, gas, or loose stools. Tolerance varies a lot in practice, and fermented or low-lactose dairy is often handled comfortably. In some non-European populations, separate persistence variants not covered here can keep lactase active despite a GG result.",
-          "AG": "One copy of the A allele (the lactase-persistence allele). Lactase expression is generally maintained into adulthood, and most people with this genotype digest ordinary amounts of dairy without symptoms.",
-          "AA": "Two copies of the A allele, the genotype associated with full lactase persistence. Lactase continues to be produced in adulthood and dairy is typically well tolerated. Digestive symptoms after dairy in AA carriers usually have other explanations."
+          "GG": "Two G copies mark the older form and are linked to less lactase after childhood. Large servings of milk may then cause bloating, gas, or loose stools. Tolerance varies, and fermented or low-lactose dairy is often easier. Other DNA changes can keep lactase active in some non-European groups, so GG does not always mean low lactase.",
+          "AG": "One A copy marks lactase persistence. Lactase usually stays active in adults with this type. Most can digest ordinary amounts of dairy without symptoms.",
+          "AA": "Two A copies are linked to full lactase persistence. Lactase usually stays active in adulthood, and most dairy is well tolerated. Symptoms after dairy often have another cause."
         }
       },
       {
@@ -29,7 +29,7 @@
         "interpretations": {
           "CC": "Two copies of the ancestral C allele at the linked -22018 site, consistent with lactase non-persistence. This variant is almost always inherited together with rs4988235, so the two results usually agree.",
           "CT": "One copy of the T allele at the linked -22018 site, consistent with maintained adult lactase activity. This variant travels on the same haplotype as rs4988235 and mainly serves to confirm that result.",
-          "TT": "Two copies of the T allele at the linked -22018 site, consistent with full lactase persistence and comfortable dairy digestion for most carriers."
+          "TT": "Two T copies at the linked -22018 site support full lactase persistence. Most people with this type digest dairy comfortably."
         }
       }
     ],
@@ -42,8 +42,8 @@
     "slug": "alcohol-flush-aldh2-rs671",
     "category": "gastrointestinal",
     "title": "Alcohol flush reaction · ALDH2",
-    "summary": "ALDH2 rs671 (Glu504Lys, ALDH2*2) largely inactivates the enzyme that clears acetaldehyde, the toxic first breakdown product of alcohol. The A allele, common in East Asian populations and rare elsewhere, is associated with facial flushing, nausea, and rapid heartbeat after drinking, and in people who drink heavily despite flushing, with substantially higher odds of esophageal cancer.",
-    "evidence": "established",
+    "summary": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The rs671 change, also called Glu504Lys or ALDH2*2, makes this enzyme much less active. The A copy is common in East Asian groups and rare elsewhere. It is linked to flushing, nausea, and a fast heartbeat after alcohol. Heavy drinking despite flushing is linked to much higher odds of esophageal cancer.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 671,
@@ -54,8 +54,8 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G (Glu504) allele: fully active ALDH2. Acetaldehyde is cleared at the typical rate and the classic alcohol flush reaction is not expected from this gene.",
-          "AG": "One copy of the A (Lys504) allele. Because the enzyme works as a tetramer, one inactive copy reduces ALDH2 activity far more than half, and most carriers flush and feel unwell after alcohol. Studies associate heavy drinking in AG carriers with several-fold higher odds of esophageal squamous cell cancer compared with GG heavy drinkers; carriers who drink little or not at all do not show this excess. This is one factor among many in cancer risk.",
-          "AA": "Two copies of the A (Lys504) allele: very little ALDH2 activity. Even small amounts of alcohol typically cause strong flushing and discomfort, and most AA carriers drink rarely, which in practice limits alcohol-related harm. Acetaldehyde accumulates markedly when alcohol is consumed."
+          "AG": "One copy of the A (Lys504) allele. Because the enzyme works as a tetramer, one inactive copy reduces ALDH2 activity far more than half, and most carriers flush and feel unwell after alcohol. Studies link heavy drinking in AG carriers to higher odds of esophageal squamous cell cancer than in GG heavy drinkers: a large shift. Carriers who drink little or not at all do not show this excess. This is one factor among many in cancer risk.",
+          "AA": "Two A copies mark the Lys504 form and leave very little ALDH2 activity. Even a small amount of alcohol often causes strong flushing and discomfort. Most people with AA drink rarely, which limits alcohol harm in practice. If alcohol is used, acetaldehyde rises sharply."
         }
       }
     ],
@@ -68,8 +68,8 @@
     "slug": "alcohol-metabolism-adh1b-rs1229984",
     "category": "gastrointestinal",
     "title": "Alcohol metabolism speed · ADH1B",
-    "summary": "ADH1B rs1229984 (His48Arg) changes how fast alcohol is converted to acetaldehyde in the liver. The T allele (His48, the ADH1B*2 form, common in East Asia and present at low frequency elsewhere) encodes an enzyme that is roughly 40-fold faster in vitro. Faster conversion produces a brief acetaldehyde surge that makes drinking less pleasant, and the His48 allele is consistently associated with lower average alcohol intake and lower odds of alcohol use disorder.",
-    "evidence": "established",
+    "summary": "ADH1B turns alcohol into acetaldehyde in the liver. The rs1229984 change is also called His48Arg. The T copy marks His48, or ADH1B*2. It is common in East Asia and less common elsewhere. In lab tests, this enzyme works faster: a large shift. The brief rise in acetaldehyde can make drinking less pleasant. Studies link T to less alcohol use and lower odds of alcohol use disorder.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1229984,
@@ -79,9 +79,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "CC": "Two copies of the C (Arg48) allele, the most common genotype in European and African populations: standard-speed ADH1B. Alcohol is converted to acetaldehyde at the typical rate, and this gene contributes no unusual push toward or away from drinking.",
-          "CT": "One copy of the fast T (His48) allele. Alcohol is oxidized to acetaldehyde noticeably faster, which on average is associated with drinking less and with lower odds of alcohol dependence compared with CC carriers. Behavior and environment remain far larger factors.",
-          "TT": "Two copies of the fast T (His48) allele, the most common genotype in East Asian populations. Rapid conversion of alcohol to acetaldehyde tends to make drinking less rewarding, and this genotype shows the strongest average association with lower alcohol intake and lower odds of alcohol use disorder at this gene."
+          "CC": "Two C copies mark Arg48 and are most common in European and African groups. This is the usual-speed form of ADH1B. Alcohol becomes acetaldehyde at the typical rate. This gene adds no unusual push toward or away from drinking.",
+          "CT": "One T copy marks the fast His48 form. It turns alcohol into acetaldehyde more quickly. On average, this type is linked to less drinking and lower odds of alcohol dependence than CC. Behavior and surroundings matter much more.",
+          "TT": "Two T copies mark the fast His48 form and are most common in East Asian groups. Alcohol turns into acetaldehyde quickly, which can make drinking less rewarding. At this gene, this type has the strongest average link to less alcohol use and lower odds of alcohol use disorder."
         }
       }
     ],
@@ -93,9 +93,9 @@
   {
     "slug": "hemochromatosis-hfe-c282y-rs1800562",
     "category": "gastrointestinal",
-    "title": "Iron overload (C282Y) · HFE",
-    "summary": "HFE rs1800562 (C282Y) is the main variant behind hereditary hemochromatosis, a recessive tendency to absorb too much dietary iron, which over decades can affect the liver, joints, and other organs. About 1 in 200 people of northern European ancestry carries two copies, but most who do never develop iron-overload disease: in a large cohort roughly 28% of male and about 1% of female homozygotes developed documented iron-overload-related disease. This is carrier-style information, not a health assessment.",
-    "evidence": "established",
+    "title": "Iron buildup (C282Y) · HFE",
+    "summary": "HFE rs1800562, or C282Y, is the main DNA change behind inherited hemochromatosis. This recessive trait causes too much iron to be taken in from food. Over decades, excess iron can harm the liver, joints, and other organs. About 1 in 200 people with northern European ancestry have two copies. Most never develop disease. In a large study, iron-related disease affected about 28% of men and 1% of women with two copies. This reports inherited risk, not current health.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1800562,
@@ -106,8 +106,8 @@
         "alt": "A",
         "interpretations": {
           "GG": "No copies of the C282Y (A) allele. No increased iron-loading tendency from this variant, though the milder H63D variant (reported separately) and non-HFE causes are not excluded.",
-          "AG": "One copy of the C282Y (A) allele: a carrier. Carriers absorb slightly more iron on average but almost never develop iron overload from this alone (a compound effect is possible when combined with H63D). Mainly relevant as family-planning information, since children could inherit two copies if the other parent is also a carrier.",
-          "AA": "Two copies of the C282Y (A) allele, the genotype found in most people with hereditary hemochromatosis. Iron absorption is increased, but penetrance is limited: many homozygotes, especially women, maintain normal iron levels lifelong, while roughly a quarter of male homozygotes eventually develop iron-overload-related problems. Iron status is easily checked with routine blood tests (ferritin, transferrin saturation), which is worth mentioning to a clinician — this report describes an inherited tendency, not current iron levels."
+          "AG": "One C282Y A copy marks a carrier. Carriers take in slightly more iron on average but almost never develop overload from this change alone. Risk can rise when H63D is also present. This result mainly matters for family planning, because a child could receive two copies if the other parent is also a carrier.",
+          "AA": "Two C282Y A copies are found in most people with inherited hemochromatosis. Iron absorption is higher, but many people, especially women, keep normal levels for life. About one quarter of men with two copies develop iron-related problems. Ferritin and transferrin saturation blood tests can show current iron status. A clinician can review them. This result shows an inherited tendency, not current iron levels."
         }
       }
     ],
@@ -120,9 +120,9 @@
   {
     "slug": "hemochromatosis-hfe-h63d-rs1799945",
     "category": "gastrointestinal",
-    "title": "Iron overload (H63D) · HFE",
-    "summary": "HFE rs1799945 (H63D) is the milder of the two common hemochromatosis variants. On its own it rarely causes meaningful iron overload, even with two copies; it matters mainly in combination with C282Y (compound heterozygosity), and even then most carriers stay well. Around a quarter of people of European ancestry carry at least one G (Asp63) allele.",
-    "evidence": "established",
+    "title": "Iron buildup (H63D) · HFE",
+    "summary": "HFE rs1799945, or H63D, is the milder of two common changes linked to hemochromatosis. Alone, it rarely causes harmful iron overload, even with two copies. It matters most when C282Y is also present, but most people with both changes stay well. About one quarter of people with European ancestry carry at least one G copy, called Asp63.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1799945,
@@ -133,7 +133,7 @@
         "alt": "G",
         "interpretations": {
           "CC": "No copies of the H63D (G) allele. No iron-loading contribution from this variant; the separate C282Y report covers the higher-impact HFE variant.",
-          "CG": "One copy of the H63D (G) allele, a common finding of little consequence by itself. Its main relevance is in combination with one C282Y allele (compound heterozygosity), which modestly raises average iron measures, though iron-overload disease remains uncommon even then.",
+          "CG": "One H63D G copy is common and has little effect by itself. Its main importance is when one C282Y copy is also present. Together, they modestly raise average iron measures, but iron-overload disease is still uncommon.",
           "GG": "Two copies of the H63D (G) allele. Average iron measures run slightly higher, but iron-overload disease attributable to this genotype alone is rare. As with C282Y, actual iron status is a blood-test question rather than a genetic one."
         }
       }
@@ -147,9 +147,9 @@
   {
     "slug": "gilbert-syndrome-ugt1a1-rs887829",
     "category": "gastrointestinal",
-    "title": "Bilirubin processing · UGT1A1",
-    "summary": "UGT1A1 rs887829 tags reduced activity of the enzyme that conjugates bilirubin for excretion; the T allele travels almost perfectly with the UGT1A1*28 promoter repeat behind Gilbert syndrome. Two T copies are associated with mildly elevated unconjugated bilirubin — a benign trait carried by roughly 10% of Europeans that can show up as slight yellowing of the eyes during fasting, illness, or stress, and as a flagged bilirubin value on routine blood panels.",
-    "evidence": "established",
+    "title": "Gilbert’s · UGT1A1",
+    "summary": "UGT1A1 helps the body prepare bilirubin for removal. The T copy at rs887829 tracks lower enzyme activity. It almost always travels with the UGT1A1*28 repeat behind Gilbert syndrome. Two T copies are linked to a mild rise in unconjugated bilirubin. About 10% of Europeans have this harmless trait. Fasting, illness, or stress may cause slight yellowing of the eyes or a flagged bilirubin blood result.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 887829,
@@ -159,9 +159,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C allele: typical UGT1A1 activity and typical bilirubin levels, with no Gilbert-pattern tendency from this locus.",
+          "CC": "Two C copies are linked to usual UGT1A1 activity and bilirubin levels. This DNA site does not add a Gilbert-pattern tendency.",
           "CT": "One copy of the T allele. Average bilirubin runs slightly higher than in CC carriers but usually stays within the normal range; noticeable effects are uncommon.",
-          "TT": "Two copies of the T allele, the genotype associated with Gilbert syndrome: unconjugated bilirubin is on average roughly double that of CC carriers and can rise further with fasting or illness, occasionally causing mild, harmless yellowing of the eyes. Gilbert syndrome is benign — some studies even associate the higher bilirubin with slightly favorable cardiovascular markers — but it is worth knowing because reduced UGT1A1 activity also slows the processing of certain medications (for example irinotecan), something prescribers can take into account."
+          "TT": "Two T copies are linked to Gilbert syndrome. Unconjugated bilirubin averages about twice the level seen with CC and can rise during fasting or illness. This may cause mild, harmless yellowing of the eyes. Gilbert syndrome is benign, and some studies link higher bilirubin to slightly better heart markers. Lower UGT1A1 activity can also slow some drugs, such as irinotecan. Prescribers can account for this."
         }
       }
     ],
@@ -175,8 +175,8 @@
     "slug": "bitter-taste-tas2r38-rs713598",
     "category": "gastrointestinal",
     "title": "Bitter taste perception · TAS2R38",
-    "summary": "TAS2R38 rs713598 (Ala49Pro) is the lead variant of the classic taster/non-taster difference for PTC/PROP-type bitter compounds, which include the glucosinolates in cruciferous vegetables such as broccoli, kale, and Brussels sprouts. The G allele (Pro49, part of the taster PAV haplotype) is associated with perceiving these compounds as strongly bitter, which in some studies nudges vegetable preference and intake.",
-    "evidence": "established",
+    "summary": "rs713598 in TAS2R38 is also called Ala49Pro. It is the main DNA change in the classic taster or non-taster difference for PTC and PROP bitter compounds. These include chemicals in broccoli, kale, Brussels sprouts, and other cruciferous vegetables. The G copy, or Pro49, is part of the taster PAV type. It is linked to stronger bitterness. Some studies find a small effect on vegetable choice and intake.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 713598,
@@ -187,8 +187,8 @@
         "alt": "G",
         "interpretations": {
           "CC": "Two copies of the C (Ala49) allele, tagging the non-taster (AVI-type) receptor. PTC/PROP-class bitter compounds taste weak or absent, and cruciferous vegetables tend to taste milder. Two other linked positions in TAS2R38 fine-tune the phenotype, so perception still varies.",
-          "CG": "One taster (G/Pro49) and one non-taster (C/Ala49) allele: intermediate bitterness perception on average, with wide individual variation influenced by the other linked TAS2R38 positions and by experience.",
-          "GG": "Two copies of the G (Pro49) allele, tagging the taster (PAV-type) receptor. PTC/PROP-class compounds taste distinctly bitter, and on average GG carriers rate cruciferous vegetables as more bitter; whether that changes what anyone actually eats is mostly down to habit and preparation."
+          "CG": "One G/Pro49 taster copy and one C/Ala49 non-taster copy give a middle response to bitter tastes on average. People still vary widely. Two other linked TAS2R38 sites and past food experience also matter.",
+          "GG": "Two G/Pro49 copies mark the taster PAV type. PTC and PROP compounds taste clearly bitter on average. People with GG also rate cruciferous vegetables as more bitter. Habit and cooking methods matter most for whether a person eats them."
         }
       }
     ],
@@ -202,7 +202,7 @@
     "category": "gastrointestinal",
     "title": "Celiac disease HLA background · HLA-DQA1",
     "summary": "Celiac disease, an immune reaction to gluten, occurs almost exclusively in people carrying the HLA-DQ2.5 or DQ8 molecules. rs2187668 is a well-validated tag for the DQ2.5 haplotype (HLA-DQA1*05:01–DQB1*02:01), which is present in around 90% of people with celiac disease. The genetics are far more useful for ruling out than ruling in: about a quarter of Europeans carry DQ2.5, yet only a few percent of carriers ever develop celiac disease.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2187668,
@@ -214,7 +214,7 @@
         "interpretations": {
           "CC": "No copies of the DQ2.5 tag allele. This makes the highest-risk celiac HLA background unlikely, though it does not exclude DQ8 or the less common DQ2.2, which this single variant does not capture — so it cannot fully rule celiac disease out on its own.",
           "CT": "One copy of the T allele, tagging one DQ2.5 haplotype — the necessary immune background carried by most people with celiac disease. Carrying it is common (roughly a quarter of Europeans) and by itself means only a modestly elevated lifetime chance, on the order of a few percent. Persistent gut symptoms are a question for a clinician regardless of genotype.",
-          "TT": "Two copies of the T allele, consistent with a double dose of the DQ2.5 risk haplotype. Studies associate DQ2.5 homozygosity with the highest HLA-related celiac risk (several-fold above single-copy carriers), yet even here most carriers never develop celiac disease. This result describes an inherited immune background, one predisposing factor among several, not a statement about whether celiac disease is present."
+          "TT": "Two copies of the T allele, consistent with a double dose of the DQ2.5 risk haplotype. Studies link two copies of DQ2.5 with the highest HLA-related celiac risk: a large shift compared with one copy. Even so, most people with this result never develop celiac disease. It describes an inherited immune background, one factor among several, not whether celiac disease is present."
         }
       }
     ],
@@ -228,7 +228,7 @@
     "category": "gastrointestinal",
     "title": "Norovirus resistance (secretor status) · FUT2",
     "summary": "FUT2 rs601338 (Trp143Ter) determines secretor status: whether ABO-type sugar antigens are displayed on the gut lining, where common norovirus strains use them to attach. Two copies of the stop allele (A) make a person a non-secretor — about 20% of Europeans — which in challenge and outbreak studies is associated with strong resistance to Norwalk (GI.1) virus and to many globally dominant GII.4 stomach-bug strains. Non-secretors can still catch other norovirus genotypes.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 601338,
@@ -238,8 +238,8 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two functional FUT2 copies: a secretor. Gut-lining cells display the sugar antigens that Norwalk-type noroviruses bind, so susceptibility to these common winter vomiting bugs is typical. Secretor status also modestly shapes gut microbiome composition and average vitamin B12 levels in population studies.",
-          "AG": "One stop (A) allele and one working copy: still a secretor, since one functional FUT2 copy is enough to display the attachment antigens. Susceptibility to common norovirus strains is essentially the same as GG.",
+          "GG": "Two working FUT2 copies mark a secretor. Gut cells show the sugar targets used by Norwalk-type viruses, so risk from these common stomach bugs is typical. Secretor status also has small links to gut microbes and average vitamin B12 in group studies.",
+          "AG": "One stop A copy and one working copy still mark a secretor. One working FUT2 copy is enough to show the virus attachment targets in the gut. Risk from common norovirus strains is about the same as for GG.",
           "AA": "Two stop (A) alleles: a non-secretor. Without the attachment antigens on the gut lining, Norwalk (GI.1) virus infection was essentially absent in non-secretors in challenge studies, and resistance extends to many common GII.4 strains — a rare example of near-complete genetic protection. Other norovirus genotypes can still infect non-secretors, so this is not blanket immunity to stomach bugs. Non-secretor status has also been associated with slightly higher average B12 levels and, in some studies, modestly higher odds of Crohn's disease."
         }
       }
@@ -253,8 +253,8 @@
     "slug": "fatty-liver-pnpla3-rs738409",
     "category": "gastrointestinal",
     "title": "Liver fat tendency · PNPLA3",
-    "summary": "PNPLA3 rs738409 (Ile148Met) is the strongest and most replicated common variant for non-alcoholic fatty liver. Each G (Met148) allele is associated with higher liver fat content — roughly doubled in GG carriers in the discovery study — and with higher odds of liver inflammation in both metabolic and alcohol-related liver disease. The association is strongly amplified by adiposity and alcohol intake, and correspondingly small in lean, low-alcohol contexts.",
-    "evidence": "established",
+    "summary": "PNPLA3 rs738409, or Ile148Met, is the strongest repeated common DNA link to non-alcoholic fatty liver. Each G/Met148 copy is linked to more liver fat. In the first study, people with GG had about twice as much as people with CC. G is also linked to higher odds of liver inflammation from metabolic or alcohol-related disease. Extra weight and alcohol make the link much stronger. It is small in lean people who drink little.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 738409,
@@ -265,8 +265,8 @@
         "alt": "G",
         "interpretations": {
           "CC": "Two copies of the C (Ile148) allele: no added liver-fat tendency from this variant. Liver fat remains driven mainly by weight, metabolic health, and alcohol intake.",
-          "CG": "One copy of the G (Met148) allele, carried by roughly a third of people of European ancestry and more in Hispanic populations. Associated on average with modestly higher liver fat and somewhat higher odds of fatty liver, an effect that mostly surfaces alongside excess weight or regular alcohol use.",
-          "GG": "Two copies of the G (Met148) allele. Associated on average with about twice the liver fat of CC carriers and with higher odds of progressing from simple fatty liver to inflammation, particularly in combination with obesity or heavier drinking. This is a tendency, not a finding about the liver itself: many GG carriers have normal livers, and weight and alcohol remain the dominant, modifiable factors."
+          "CG": "One G/Met148 copy occurs in about one third of people with European ancestry and more often in Hispanic groups. It is linked to modestly more liver fat and somewhat higher odds of fatty liver. The effect appears most with excess weight or regular alcohol use.",
+          "GG": "Two G/Met148 copies are linked to about twice the liver fat seen with CC on average. They are also linked to higher odds that simple fatty liver develops inflammation, especially with obesity or heavier drinking. This is a tendency, not a finding about current liver health. Many people with GG have normal livers. Weight and alcohol remain the main factors that can be changed."
         }
       }
     ],

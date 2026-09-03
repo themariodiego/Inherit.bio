@@ -1,0 +1,107 @@
+[
+  {
+    "slug": "clopidogrel-response-cyp2c19-rs4244285",
+    "category": "pharmacogenomics",
+    "title": "Clopidogrel response · CYP2C19",
+    "summary": "CYP2C19 turns clopidogrel, a medicine that treats clots after a heart stent, into its active form. The *2 form of CYP2C19 is a no-function form, and the 2022 guideline (PMID 35034351) is keyed on metabolizer status. If you have two *2 copies you are a poor metabolizer and the medicine works less well for you.",
+    "evidence": "emerging",
+    "variants": [
+      {
+        "rsid": 4244285,
+        "gene": "CYP2C19",
+        "chrom": 10,
+        "pos38": 94781859,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "No *2 change at this position. Read on its own, this is the typical metabolizer status; the *3, *17 and *36 forms sit elsewhere in the gene and are not read here.",
+          "AG": "One *2 copy: an intermediate metabolizer, with less of the active drug formed. We recommend you take this result to the prescriber who manages your antiplatelet medicine and ask whether the dosage or the medicine should change.",
+          "AA": "Two *2 copies: a poor metabolizer under the guideline’s status table. The medicine treats clots less well at this status, and a different antiplatelet medicine may be chosen instead. We recommend you take this result to your cardiology team."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "35034351", "label": "CPIC guideline for CYP2C19 and clopidogrel, 2022 update, Clin Pharmacol Ther 2022" }
+    ]
+  },
+  {
+    "slug": "warfarin-response-vkorc1-cyp2c9",
+    "category": "pharmacogenomics",
+    "title": "Warfarin response · VKORC1 and CYP2C9",
+    "summary": "Warfarin treats and prevents clots, and the dose differs a lot between people. VKORC1 is the protein warfarin acts on, and CYP2C9 clears the drug. The 2017 dosing guideline (PMID 28198005) reads these three positions, so your letters here shift the starting dosage you are likely to need.",
+    "evidence": "emerging",
+    "variants": [
+      {
+        "rsid": 9923231,
+        "gene": "VKORC1",
+        "chrom": 16,
+        "pos38": 31096368,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Two C copies: the form CPIC calls the reference form of VKORC1. The dosing guideline starts its dosage arithmetic from this form.",
+          "CT": "One C and one T copy: one copy of the form CPIC calls the variant form. The dosing guideline lowers the expected dosage for this form.",
+          "TT": "Two T copies: both copies carry the variant form. The dosing guideline expects a lower dosage, and a standard dosage would be too much for you."
+        }
+      },
+      {
+        "rsid": 1799853,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94942290,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No *2 change at this position. CYP2C9 clears warfarin at the usual rate as far as this position can tell.",
+          "CT": "One *2 copy, a reduced-function form. Warfarin clears more slowly, and the dosing guideline lowers the dosage.",
+          "TT": "Two *2 copies. Warfarin clears slowly, and the dosing guideline lowers the dosage further."
+        }
+      },
+      {
+        "rsid": 1057910,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94981296,
+        "ref": "A",
+        "alt": "C",
+        "interpretations": {
+          "AA": "No *3 change at this position. This position does not change how warfarin is cleared.",
+          "AC": "One *3 copy, a reduced-function form. The dosing guideline lowers the dosage.",
+          "CC": "Two *3 copies. Very little warfarin is cleared this way, so the dosing guideline expects a low dosage."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "28198005", "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017" },
+      { "pmid": "32189324", "label": "CPIC guideline for CYP2C9 and NSAIDs, Clin Pharmacol Ther 2020" }
+    ]
+  },
+  {
+    "slug": "statin-muscle-symptoms-slco1b1-rs4149056",
+    "category": "pharmacogenomics",
+    "title": "Statin muscle symptoms · SLCO1B1",
+    "summary": "SLCO1B1 carries statins into the liver. The C letter at this position marks the decreased-function *5 form, so more statin stays in the blood and muscle symptoms are more likely. The 2022 guideline (PMID 35152405) reads SLCO1B1 with ABCG2 and CYP2C9. If you are going to start a statin, this result bears on which one and what dosage.",
+    "evidence": "emerging",
+    "variants": [
+      {
+        "rsid": 4149056,
+        "gene": "SLCO1B1",
+        "chrom": 12,
+        "pos38": 21178615,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "No *5 change at this position. Statins enter the liver as usual as far as this position can tell. No supplement changes this result.",
+          "CT": "One *5 copy, a decreased-function form. More statin stays in the blood, so muscle symptoms are more likely on a high dosage. We recommend you take this result to your prescriber before a statin is started.",
+          "CC": "Two *5 copies. Statin levels in the blood run high and muscle symptoms are most likely. A lower dosage or a different statin is the usual answer."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "35152405", "label": "CPIC guideline for SLCO1B1, ABCG2 and CYP2C9 and statin-associated musculoskeletal symptoms, Clin Pharmacol Ther 2022" }
+    ]
+  }
+]

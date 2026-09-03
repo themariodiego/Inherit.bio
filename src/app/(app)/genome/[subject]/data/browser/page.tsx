@@ -1,39 +1,261 @@
+/**
+ * /genome/[subject]/data/browser — the expert path's genome browser (brief
+ * §7.3, §1.4–§1.6, §2.2, X4, X6, X13). Server composition: auth and subject
+ * resolution, one search (an rsID, a gene symbol or a locus), one attributed
+ * claim block per results table with every genotype rendered as an observed
+ * `genotype` figure, and the embedded first-party track for the region.
+ *
+ * rsIDs, coordinates and allele letters are a position's identity, not
+ * result figures: they render as text without thousands grouping, marked
+ * with the exempt comment the report page uses. Nothing else numeric is
+ * shown: an allele frequency has no honest figure kind and a clinical
+ * classification beside a raw genotype would be a naked clinical claim.
+ *
+ * Three headings: the h1, "Results" and "Region". Every string comes from
+ * src/copy/genome/data.ts; every href from a route id.
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
-import {
-  CLINICAL_GENES,
-  matchTraitSuggestion,
-  SEARCH_EXAMPLES,
-  type TraitSuggestion,
-} from "@/components/browse/search-guidance";
+import { ClaimBlock } from "@/components/figures/claim-block";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
+import {
+  BROWSER_H1,
+  BROWSER_NO_FILE,
+  DATA_CRUMB,
+  FIRST_PARTY_NOTE,
+  FULL_LIBRARY,
+  OR_START_FROM_REPORTS,
+  POSITIONS_BUILD,
+  REGION_HEADING,
+  RESULTS_HEADING,
+  SEARCH_BUTTON,
+  SEARCH_LABEL,
+  SEARCH_PLACEHOLDER,
+  TABLE_HEADINGS,
+  TRAIT_TOPICS,
+  UNRECOGNIZED_CHROMOSOME,
+  clinicalGeneStatus,
+  lookingFor,
+  noReferenceMatch,
+  resultsLabel,
+  resultsTruncated,
+  rsidNotCovered,
+  rsidUnknown,
+} from "@/copy/genome/data";
+import { NAV_LABELS } from "@/copy/navigation";
+import { COVERAGE_PILLS, FILES_DISAGREE, GENOTYPE_LABEL } from "@/copy/reports/strings";
+import type { GenotypeSpec } from "@/lib/figures/spec";
+import {
+  getSubjectFileCount,
+  getSubjectGenotypesByRsid,
+  getSubjectProcessedFiles,
+  type Db,
+} from "@/lib/genome/load";
+import {
+  formatLocus,
+  locusAround,
+  locusSpanning,
+  parseLocusQuery,
+  type Locus,
+} from "@/lib/genome/locus";
+import { CLINICAL_GENES, matchTraitSuggestion, type TraitTopic } from "@/lib/genome/search-guidance";
+import { chromToName, parseRsid } from "@/lib/genome/types";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { chromToName, chromToNumber, parseRsid } from "@/lib/genome/types";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Browse genome" };
+export const metadata: Metadata = { title: BROWSER_H1 };
+
+/** Rows the region search returns at most; the page says so when it is reached. */
+const REGION_ROW_LIMIT = 200;
 
 interface Hit {
   rsid: number | null;
   chrom: number;
-  pos: number;
+  /** GRCh38 position; null for a reference row with no lifted position. */
+  pos: number | null;
   ref: string | null;
   alt: string | null;
-  genotype: string | null;
   gene: string | null;
-  clinvar: string | null;
-  gnomadAf: number | null;
+  /** The observed letters, or null when the file does not cover the position. */
+  genotype: string | null;
+  /** True when the subject's files disagree at this position. */
+  conflict: boolean;
 }
 
-export default async function BrowsePage(
-  props: PageProps<"/genome/[subject]/data/browser">,
-) {
-  const { subject: subjectSegment } = await props.params;
+interface SuggestedReport {
+  slug: string;
+  name: string;
+}
+
+interface Outcome {
+  hits: Hit[];
+  truncated: boolean;
+  locus: Locus | null;
+  message: string | null;
+  showReportsLink: boolean;
+  clinicalGene: string | null;
+  trait: { topic: TraitTopic; reports: SuggestedReport[] } | null;
+}
+
+const EMPTY: Outcome = {
+  hits: [],
+  truncated: false,
+  locus: null,
+  message: null,
+  showReportsLink: false,
+  clinicalGene: null,
+  trait: null,
+};
+
+/**
+ * The report name is the title up to its gene suffix (`Caffeine metabolism ·
+ * CYP1A2` → `Caffeine metabolism`), the same rule as the report page's h1.
+ */
+function reportNameOf(title: string): string {
+  const index = title.indexOf(" · ");
+  return index === -1 ? title : title.slice(0, index);
+}
+
+/** One rsID: the subject's files must agree, or the row says they disagree. */
+async function searchRsid(admin: Db, subjectId: string, rsid: number): Promise<Outcome> {
+  const [{ genotypes, conflicts }, { data: mine }, { data: reference }] = await Promise.all([
+    getSubjectGenotypesByRsid(admin, subjectId, [rsid]),
+    admin
+      .from("user_variants")
+      .select("chrom, pos, ref, alt")
+      .eq("subject_id", subjectId)
+      .eq("rsid", rsid)
+      .limit(1),
+    admin
+      .from("ref_variants")
+      .select("rsid, chrom, pos38, ref, alt, gene_symbol")
+      .eq("rsid", rsid)
+      .maybeSingle(),
+  ]);
+  const observed = mine?.[0];
+  const genotype = genotypes.get(rsid) ?? null;
+  const conflict = conflicts.has(rsid);
+  if (observed && (genotype !== null || conflict)) {
+    return {
+      ...EMPTY,
+      hits: [
+        {
+          rsid,
+          chrom: observed.chrom,
+          pos: observed.pos,
+          ref: observed.ref,
+          alt: observed.alt,
+          gene: reference?.gene_symbol ?? null,
+          genotype,
+          conflict,
+        },
+      ],
+      locus: locusAround(observed.chrom, observed.pos),
+    };
+  }
+  if (reference?.pos38) {
+    return {
+      ...EMPTY,
+      message: rsidNotCovered(rsid, reference.gene_symbol),
+      locus: locusAround(reference.chrom, reference.pos38),
+    };
+  }
+  return { ...EMPTY, message: rsidUnknown(rsid) };
+}
+
+/** A region of the active file, newest processed file first, capped at REGION_ROW_LIMIT rows. */
+async function searchLocus(admin: Db, fileId: string, locus: Locus): Promise<Outcome> {
+  const { data } = await admin
+    .from("user_variants")
+    .select("rsid, chrom, pos, ref, alt, genotype")
+    .eq("file_id", fileId)
+    .eq("chrom", locus.chrom)
+    .gte("pos", locus.start)
+    .lte("pos", locus.end)
+    .order("pos")
+    .limit(REGION_ROW_LIMIT);
+  const rows = data ?? [];
+  return {
+    ...EMPTY,
+    hits: rows.map((row) => ({ ...row, gene: null, conflict: false })),
+    truncated: rows.length === REGION_ROW_LIMIT,
+    locus,
+  };
+}
+
+/** A gene symbol: every reference position for it, joined to the subject's agreed genotypes. */
+async function searchGene(admin: Db, subjectId: string, query: string): Promise<Outcome | null> {
+  const { data: refs } = await admin
+    .from("ref_variants")
+    .select("rsid, chrom, pos38, ref, alt, gene_symbol")
+    .ilike("gene_symbol", query)
+    .order("pos38")
+    .limit(100);
+  if (!refs || refs.length === 0) return null;
+  const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
+    admin,
+    subjectId,
+    refs.map((row) => row.rsid),
+  );
+  const positions = refs.flatMap((row) => (row.pos38 ? [row.pos38] : []));
+  return {
+    ...EMPTY,
+    hits: refs.map((row) => ({
+      rsid: row.rsid,
+      chrom: row.chrom,
+      pos: row.pos38,
+      ref: row.ref,
+      alt: row.alt,
+      gene: row.gene_symbol,
+      genotype: genotypes.get(row.rsid) ?? null,
+      conflict: conflicts.has(row.rsid),
+    })),
+    locus: locusSpanning(refs[0].chrom, positions),
+  };
+}
+
+/** A trait word: the published reports the guidance names, by their current titles. */
+async function searchTrait(admin: Db, query: string): Promise<Outcome | null> {
+  const suggestion = matchTraitSuggestion(query);
+  if (!suggestion) return null;
+  const { data: templates } = await admin
+    .from("report_templates")
+    .select("slug, title")
+    .in("slug", [...suggestion.slugs])
+    .eq("status", "published");
+  const titleBySlug = new Map((templates ?? []).map((row) => [row.slug, row.title]));
+  const reports = suggestion.slugs.flatMap((slug) => {
+    const title = titleBySlug.get(slug);
+    return title ? [{ slug, name: reportNameOf(title) }] : [];
+  });
+  return reports.length > 0 ? { ...EMPTY, trait: { topic: suggestion.topic, reports } } : null;
+}
+
+async function search(admin: Db, subjectId: string, fileId: string, query: string): Promise<Outcome> {
+  const rsid = parseRsid(query);
+  if (rsid) return searchRsid(admin, subjectId, rsid);
+  const locusQuery = parseLocusQuery(query);
+  if (locusQuery?.kind === "unknown-chromosome") return { ...EMPTY, message: UNRECOGNIZED_CHROMOSOME };
+  if (locusQuery) return searchLocus(admin, fileId, locusQuery.locus);
+  const gene = await searchGene(admin, subjectId, query);
+  if (gene) return gene;
+  if (CLINICAL_GENES.has(query.toUpperCase())) {
+    return { ...EMPTY, clinicalGene: query.toUpperCase() };
+  }
+  const trait = await searchTrait(admin, query);
+  if (trait) return trait;
+  return { ...EMPTY, message: noReferenceMatch(query), showReportsLink: true };
+}
+
+export default async function BrowserPage(props: PageProps<"/genome/[subject]/data/browser">) {
+  const { subject: segment } = await props.params;
   const searchParams = await props.searchParams;
   const q = (typeof searchParams.q === "string" ? searchParams.q : "").trim();
 
@@ -42,307 +264,215 @@ export default async function BrowsePage(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, subjectSegment);
+  const subject = await resolveSubjectForAccount(user.id, segment);
   if (!subject) notFound();
+  const subjectParams = { subject: subject.routeSegment };
+
   const admin = createAdminClient();
-  const files = await getSubjectProcessedFiles(admin, subject.id);
+  // The search reads the processed files; the subject bar counts every file
+  // in the record, whatever its status.
+  const [files, fileCount] = await Promise.all([
+    getSubjectProcessedFiles(admin, subject.id),
+    getSubjectFileCount(admin, subject.id),
+  ]);
   const active = files[0] ?? null;
-  const routeBase = `/genome/${subject.routeSegment}`;
+  const outcome = q && active ? await search(admin, subject.id, active.id, q) : EMPTY;
+  const { hits, truncated, locus, message, showReportsLink, clinicalGene, trait } = outcome;
 
-  let hits: Hit[] = [];
-  let locus: { chrom: number; start: number; end: number } | null = null;
-  let message: string | null = null;
-  let showReportsLink = false;
-  let clinicalGene: string | null = null;
-  let traitSuggestion: TraitSuggestion | null = null;
+  // One genotype figure per covered row; the block owns the attribution and
+  // hands the rendered nodes back for the table layout.
+  const specs: GenotypeSpec[] = [];
+  const figureIndex = hits.map((hit) => {
+    if (hit.genotype === null) return null;
+    specs.push({
+      kind: "genotype",
+      class: "variant-call",
+      basis: "observed",
+      provenance: { kind: "computed", module: "genome/browser" },
+      genotype: hit.genotype,
+      label: GENOTYPE_LABEL,
+    });
+    return specs.length - 1;
+  });
 
-  if (q && active) {
-    const rsid = parseRsid(q);
-    const locusMatch = /^(chr)?([0-9XYM T]+):([\d,]+)(?:-([\d,]+))?$/i.exec(q);
-
-    if (rsid) {
-      const [{ data: mine }, { data: ann }] = await Promise.all([
-        admin
-          .from("user_variants")
-          .select("rsid, chrom, pos, ref, alt, genotype")
-          .eq("subject_id", subject.id)
-          .eq("rsid", rsid)
-          .limit(1),
-        admin
-          .from("ref_variants")
-          .select("rsid, chrom, pos38, ref, alt, gene_symbol, clinvar_significance, gnomad_af")
-          .eq("rsid", rsid)
-          .maybeSingle(),
-      ]);
-      const v = mine?.[0];
-      if (v) {
-        hits = [
-          {
-            rsid,
-            chrom: v.chrom,
-            pos: v.pos,
-            ref: v.ref,
-            alt: v.alt,
-            genotype: v.genotype,
-            gene: ann?.gene_symbol ?? null,
-            clinvar: ann?.clinvar_significance ?? null,
-            gnomadAf: ann?.gnomad_af ?? null,
-          },
-        ];
-        locus = { chrom: v.chrom, start: Math.max(1, v.pos - 5000), end: v.pos + 5000 };
-      } else if (ann?.pos38) {
-        message = `Your file does not cover rs${rsid}${ann.gene_symbol ? ` (${ann.gene_symbol})` : ""}.`;
-        locus = {
-          chrom: ann.chrom,
-          start: Math.max(1, ann.pos38 - 5000),
-          end: ann.pos38 + 5000,
-        };
-      } else {
-        message = `rs${rsid} is not in your file and not in the reference store.`;
-      }
-    } else if (locusMatch) {
-      const chrom = chromToNumber(locusMatch[2]);
-      const start = Number(locusMatch[3].replace(/,/g, ""));
-      const end = locusMatch[4]
-        ? Number(locusMatch[4].replace(/,/g, ""))
-        : start + 10000;
-      if (chrom) {
-        locus = { chrom, start: Math.max(1, start - 1), end };
-        const { data } = await admin
-          .from("user_variants")
-          .select("rsid, chrom, pos, ref, alt, genotype")
-          .eq("subject_id", subject.id)
-          .eq("chrom", chrom)
-          .gte("pos", start)
-          .lte("pos", end)
-          .order("pos")
-          .limit(200);
-        hits = (data ?? []).map((v) => ({
-          ...v,
-          gene: null,
-          clinvar: null,
-          gnomadAf: null,
-        }));
-      } else {
-        message = "Unrecognized chromosome.";
-      }
-    } else {
-      const { data: refs } = await admin
-        .from("ref_variants")
-        .select("rsid, chrom, pos38, ref, alt, gene_symbol, clinvar_significance, gnomad_af")
-        .ilike("gene_symbol", q)
-        .order("pos38")
-        .limit(100);
-      if (refs && refs.length > 0) {
-        const rsids = refs.map((r) => r.rsid);
-        const { data: mine } = await admin
-          .from("user_variants")
-          .select("rsid, genotype")
-          .eq("subject_id", subject.id)
-          .in("rsid", rsids);
-        const genotypeOf = new Map(
-          (mine ?? []).map((m) => [m.rsid, m.genotype]),
-        );
-        hits = refs.map((r) => ({
-          rsid: r.rsid,
-          chrom: r.chrom,
-          pos: r.pos38 ?? 0,
-          ref: r.ref,
-          alt: r.alt,
-          genotype: genotypeOf.get(r.rsid) ?? null,
-          gene: r.gene_symbol,
-          clinvar: r.clinvar_significance,
-          gnomadAf: r.gnomad_af,
-        }));
-        const positions = refs.map((r) => r.pos38 ?? 0).filter(Boolean);
-        if (positions.length > 0) {
-          locus = {
-            chrom: refs[0].chrom,
-            start: Math.max(1, Math.min(...positions) - 10000),
-            end: Math.max(...positions) + 10000,
-          };
-        }
-      } else if (CLINICAL_GENES.has(q.toUpperCase())) {
-        // A silent empty result for a hereditary-risk gene reads as
-        // reassurance. Say what is actually going on instead.
-        clinicalGene = q.toUpperCase();
-      } else {
-        traitSuggestion = matchTraitSuggestion(q);
-        if (!traitSuggestion) {
-          message = `No reference variants known for "${q}" — try an rsID (rs123…), a gene symbol (CYP1A2), or a position (chr15:74749576).`;
-          showReportsLink = true;
-        }
-      }
-    }
-  }
+  const showResults = hits.length > 0;
+  const showRegion = locus !== null && active !== null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <p className="eyebrow mb-2">Exploration</p>
-        <h1 className="display text-3xl">Browse your genome</h1>
-        {active ? (
-          <p className="mt-2 text-sm text-ink-muted">
-            Searching {subject.displayLabel}&apos;s {files.length} processed {files.length === 1 ? "file" : "files"}
-            — by rsID, gene symbol, or position.
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-ink-muted">
-            Process a file first to explore your variants.
-          </p>
-        )}
-      </div>
+    <div
+      data-surface="standard"
+      data-density-primary-content="true"
+      className="mx-auto max-w-5xl space-y-8"
+    >
+      <Breadcrumbs
+        items={[
+          { label: NAV_LABELS["my-genome"], href: route("genome.subject", subjectParams) },
+          { label: subject.displayLabel },
+          { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
+          { label: BROWSER_H1 },
+        ]}
+      />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
 
-      <div className="space-y-2">
-        <form className="flex gap-2" action={`${routeBase}/data/browser`} method="get">
-          <Input
-            name="q"
-            defaultValue={q}
-            placeholder="rs762551 · CYP1A2 · chr20:1000000-1100000"
-            aria-label="Search variants"
-            className="max-w-md font-mono text-sm"
-          />
-          <Button type="submit">Search</Button>
-        </form>
-        <p className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-          <span>Try:</span>
-          {SEARCH_EXAMPLES.map((ex) => (
-            <Link
-              key={ex.q}
-              href={`${routeBase}/data/browser?q=${encodeURIComponent(ex.q)}`}
-              className="rounded-full border border-line bg-card px-3 py-1 transition-colors hover:border-forest"
-            >
-              <span className="font-mono">{ex.q}</span> ({ex.hint})
-            </Link>
-          ))}
-        </p>
-      </div>
+      <header className="space-y-4">
+        <h1 className="display text-3xl">{BROWSER_H1}</h1>
+        {active ? (
+          <form className="flex gap-2" action={route("genome.browser", subjectParams)} method="get">
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder={SEARCH_PLACEHOLDER}
+              aria-label={SEARCH_LABEL}
+              className="max-w-md font-mono text-sm"
+            />
+            <Button type="submit">{SEARCH_BUTTON}</Button>
+          </form>
+        ) : (
+          <p className="max-w-prose text-sm text-ink-muted">{BROWSER_NO_FILE}</p>
+        )}
+      </header>
 
       {clinicalGene ? (
-        <div
-          role="status"
-          className="rounded-xl border border-line bg-card p-4 text-sm"
-        >
-          <p>
-            Inherit&apos;s reference doesn&apos;t include clinical{" "}
-            {clinicalGene} variants, and consumer array files can&apos;t
-            reliably assess hereditary cancer risk — that requires clinical
-            genetic testing. A result here saying nothing is{" "}
-            <strong>NOT</strong> reassurance.
-          </p>
+        <div role="status" className="rounded-xl border border-line bg-card p-4 text-sm">
+          <p className="max-w-prose">{clinicalGeneStatus(clinicalGene)}</p>
         </div>
       ) : null}
 
-      {traitSuggestion ? (
+      {trait ? (
         <div className="rounded-xl border border-line bg-card p-4 text-sm">
-          <p>Looking for {traitSuggestion.topic}? See these reports →</p>
+          <p className="max-w-prose">{lookingFor(TRAIT_TOPICS[trait.topic])}</p>
           <ul className="mt-2 space-y-1">
-            {traitSuggestion.reports.map((r) => (
-              <li key={r.slug}>
+            {trait.reports.map((report) => (
+              <li key={report.slug}>
                 <Link
-                  href={`${routeBase}/reports/${r.slug}`}
+                  href={route("genome.report", { subject: subject.routeSegment, slug: report.slug })}
                   className="underline underline-offset-2 hover:text-forest"
                 >
-                  {r.title}
+                  {report.name}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-ink-muted">
-            <Link href={`${routeBase}/reports`} className="underline underline-offset-2">
-              Browse the full report library
+          <p className="mt-3 max-w-prose text-xs text-ink-muted">
+            <Link href={route("genome.reports", subjectParams)} className="underline underline-offset-2">
+              {FULL_LIBRARY}
             </Link>
           </p>
         </div>
       ) : null}
 
       {message ? (
-        <p className="rounded-xl border border-line bg-card p-4 text-sm text-ink-muted">
+        <p className="max-w-prose rounded-xl border border-line bg-card p-4 text-sm text-ink-muted">
           {message}
           {showReportsLink ? (
             <>
               {" "}
-              Or{" "}
-              <Link href={`${routeBase}/reports`} className="underline underline-offset-2">
-                start from your reports
-              </Link>{" "}
-              instead.
+              <Link href={route("genome.reports", subjectParams)} className="underline underline-offset-2">
+                {OR_START_FROM_REPORTS}
+              </Link>
             </>
           ) : null}
         </p>
       ) : null}
 
-      {hits.length > 0 ? (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-card">
-          <table className="w-full min-w-[42rem] text-left text-sm">
-            <thead>
-              <tr className="border-b border-line text-xs text-ink-muted">
-                <th className="px-4 py-2 font-normal">Variant</th>
-                <th className="px-4 py-2 font-normal">Position (GRCh38)</th>
-                <th className="px-4 py-2 font-normal">Gene</th>
-                <th className="px-4 py-2 font-normal">Your genotype</th>
-                <th
-                  className="cursor-help px-4 py-2 font-normal underline decoration-dotted underline-offset-2"
-                  title="ClinVar: public database of medical variant classifications"
-                  aria-label="ClinVar — public database of medical variant classifications"
-                >
-                  ClinVar
-                </th>
-                <th
-                  className="cursor-help px-4 py-2 font-normal underline decoration-dotted underline-offset-2"
-                  title="gnomAD allele frequency: how common this variant is worldwide (allele frequency)"
-                  aria-label="gnomAD AF — how common this variant is worldwide (allele frequency)"
-                >
-                  gnomAD AF
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {hits.map((h, i) => (
-                <tr key={i} className="border-b border-line last:border-0">
-                  <td className="px-4 py-2 font-mono">
-                    {h.rsid ? `rs${h.rsid}` : "—"}
-                  </td>
-                  <td className="px-4 py-2 font-mono text-xs">
-                    chr{chromToName(h.chrom)}:{h.pos.toLocaleString()}
-                    {h.ref && h.alt ? ` ${h.ref}→${h.alt}` : ""}
-                  </td>
-                  <td className="px-4 py-2">{h.gene ?? "—"}</td>
-                  <td className="px-4 py-2">
-                    {h.genotype ? (
-                      <span className="rounded-full bg-tint px-2.5 py-0.5 font-mono">
-                        {h.genotype}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-ink-muted">
-                        not covered
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-xs">{h.clinvar ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">
-                    {h.gnomadAf != null ? h.gnomadAf.toFixed(4) : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+      {showResults || showRegion ? (
+        <div className="space-y-16 md:space-y-20 lg:space-y-24">
+          {showResults ? (
+            <section
+              id="results"
+              aria-labelledby="results-heading"
+              data-density-top-level-section="true"
+              className="space-y-4"
+            >
+              <h2 id="results-heading" className="text-lg font-semibold text-ink">
+                {RESULTS_HEADING}
+              </h2>
+              <p className="max-w-prose text-sm text-ink-muted">{POSITIONS_BUILD}</p>
+              <ClaimBlock
+                subject={{ subjectId: subject.id }}
+                figures={specs}
+                aria-label={resultsLabel(q)}
+                className="overflow-x-auto p-0"
+                renderFigures={(nodes) => (
+                  <table className="w-full min-w-[36rem] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-line text-ink-muted">
+                        <th scope="col" className="px-4 py-2 font-normal">
+                          {TABLE_HEADINGS.variant}
+                        </th>
+                        <th scope="col" className="px-4 py-2 font-normal">
+                          {TABLE_HEADINGS.position}
+                        </th>
+                        <th scope="col" className="px-4 py-2 font-normal">
+                          {TABLE_HEADINGS.gene}
+                        </th>
+                        <th scope="col" className="px-4 py-2 font-normal">
+                          {TABLE_HEADINGS.genotype}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hits.map((hit, index) => {
+                        const figure = figureIndex[index];
+                        return (
+                          <tr
+                            key={`${hit.chrom}:${hit.pos ?? "none"}:${hit.rsid ?? "none"}:${index}`}
+                            className="border-b border-line last:border-0"
+                          >
+                            <td className="px-4 py-2 font-mono">
+                              {hit.rsid !== null ? `rs${hit.rsid}` : "—"}
+                            </td>
+                            <td className="px-4 py-2 font-mono text-xs">
+                              {/* inherit-figure-exempt: genomic coordinates and the reference/alternate letters are the position’s identity, not a result figure */}
+                              {hit.pos === null
+                                ? "—"
+                                : `chr${chromToName(hit.chrom)}:${hit.pos}${hit.ref && hit.alt ? ` ${hit.ref}→${hit.alt}` : ""}`}
+                            </td>
+                            <td className="px-4 py-2">{hit.gene ?? "—"}</td>
+                            <td className="px-4 py-2">
+                              {figure !== null ? (
+                                nodes[figure]
+                              ) : hit.conflict ? (
+                                <span className="text-sm text-ink">{FILES_DISAGREE}</span>
+                              ) : (
+                                <span className="text-sm text-ink-muted">{COVERAGE_PILLS["not-covered"]}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              >
+                {truncated ? (
+                  <p className="max-w-prose px-4 py-3 text-sm text-ink-muted">
+                    {/* inherit-figure-exempt: a row limit, not a result figure */}
+                    {resultsTruncated(REGION_ROW_LIMIT)}
+                  </p>
+                ) : null}
+              </ClaimBlock>
+            </section>
+          ) : null}
 
-      {locus && active ? (
-        <section>
-          <h2 className="eyebrow mb-2">
-            Genome browser · chr{chromToName(locus.chrom)}:
-            {locus.start.toLocaleString()}-{locus.end.toLocaleString()}
-          </h2>
-          <GenomeBrowser fileId={active.id} locus={locus} />
-          <p className="mt-2 text-xs text-ink-muted">
-            Rendered from your own variant store only — no external genome
-            service is contacted (the reference here is positions-only, served
-            by this deployment).
-          </p>
-        </section>
+          {showRegion ? (
+            <section
+              aria-labelledby="region-heading"
+              data-density-top-level-section="true"
+              className="space-y-4"
+            >
+              <h2 id="region-heading" className="text-lg font-semibold text-ink">
+                {REGION_HEADING}
+              </h2>
+              <p className="max-w-prose font-mono text-sm text-ink-muted">
+                {/* inherit-figure-exempt: the region shown is a coordinate range, not a result figure */}
+                {formatLocus(locus)}
+              </p>
+              <GenomeBrowser fileId={active.id} locus={locus} />
+              <p className="max-w-prose text-sm text-ink-muted">{FIRST_PARTY_NOTE}</p>
+            </section>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

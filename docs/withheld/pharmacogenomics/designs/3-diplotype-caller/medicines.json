@@ -1,0 +1,97 @@
+[
+  {
+    "slug": "tpmt-three-positions-diplotype",
+    "category": "pharmacogenomics",
+    "title": "Medicines, three positions · TPMT",
+    "summary": "This reads three TPMT positions and tries to name the pair of TPMT forms you carry, which the 2025 guideline (PMID 41618934) needs. It cannot always do so. When one copy carries the *3B change and one copy carries the *3C change, the file does not say whether they sit on the same copy (*1/*3A) or on different copies (*3B/*3C), and those two pairs get different answers.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 1800462,
+        "gene": "TPMT",
+        "chrom": 6,
+        "pos38": 18143724,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "No *2 change at this position on either copy.",
+          "CG": "One copy carries the *2 change at this position.",
+          "GG": "Both copies carry the *2 change at this position."
+        }
+      },
+      {
+        "rsid": 1800460,
+        "gene": "TPMT",
+        "chrom": 6,
+        "pos38": 18138997,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No *3B change at this position on either copy.",
+          "CT": "One copy carries the *3B change at this position. With one *3C change too, the pair is *1/*3A or *3B/*3C and the file cannot tell which.",
+          "TT": "Both copies carry the *3B change at this position."
+        }
+      },
+      {
+        "rsid": 1142345,
+        "gene": "TPMT",
+        "chrom": 6,
+        "pos38": 18130687,
+        "ref": "T",
+        "alt": "C,G",
+        "interpretations": {
+          "TT": "No change at this position on either copy.",
+          "CT": "One copy carries the *3C change (C) at this position. With one *3B change too, the pair is *1/*3A or *3B/*3C and the file cannot tell which.",
+          "CC": "Both copies carry the *3C change (C) at this position.",
+          "GT": "One copy carries the *41 change (G) at this position.",
+          "GG": "Both copies carry the *41 change (G) at this position."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "41618934", "label": "CPIC guideline for TPMT and NUDT15 and thiopurine dosing, 2025 update, Clin Pharmacol Ther 2026" }
+    ]
+  },
+  {
+    "slug": "g6pd-two-positions-x-chromosome",
+    "category": "pharmacogenomics",
+    "title": "Medicines, two positions · G6PD",
+    "summary": "This reads two G6PD positions. G6PD sits on the X chromosome, so a person with one X has one copy and a person with two has two. For a gene on the X chromosome, one copy or two changes what a result means, and this reads two positions out of the 173 CPIC uses. The guideline (PMID 36049896) names a Variable status for a person with two copies who carries one change.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "variants": [
+      {
+        "rsid": 1050828,
+        "gene": "G6PD",
+        "chrom": 23,
+        "pos38": 154536002,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "No change at this position on either copy.",
+          "CT": "One copy carries the change at this position. With two X copies the guideline calls this Variable.",
+          "TT": "Both copies carry the change at this position."
+        }
+      },
+      {
+        "rsid": 1050829,
+        "gene": "G6PD",
+        "chrom": 23,
+        "pos38": 154535277,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "No change at this position on either copy.",
+          "CT": "One copy carries the change at this position. With two X copies the guideline calls this Variable.",
+          "CC": "Both copies carry the change at this position."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      { "pmid": "36049896", "label": "CPIC expanded guideline for medication use in the context of G6PD genotype, Clin Pharmacol Ther 2023" }
+    ]
+  }
+]

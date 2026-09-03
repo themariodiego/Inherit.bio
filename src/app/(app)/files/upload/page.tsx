@@ -11,9 +11,8 @@ export default function FileUploadPage() {
         <p className="eyebrow">Files</p>
         <h1 className="display text-3xl">Add your genome file</h1>
         <p className="text-base leading-relaxed text-ink-muted">
-          This entry point currently accepts only your own genome. Family and
-          embryo uploads stay disabled until their separate consent and legal
-          requirements are available.
+          You can add only your own genome here. Family and embryo uploads stay
+          off until their separate consent and legal rules are met.
         </p>
       </header>
       <Uploader />

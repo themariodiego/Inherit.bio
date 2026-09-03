@@ -8,6 +8,7 @@ import {
   type Db,
 } from "@/lib/genome/load";
 import { resolveTemplate } from "@/lib/genome/reports";
+import { EVIDENCE_PUBLIC_LABELS } from "@/lib/genome/taxonomy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -257,7 +258,9 @@ function renderReportsTxt(
     file.reports.forEach((report, i) => {
       out.push("");
       out.push(`${i + 1}. ${report.title}`);
-      out.push(`   Category: ${report.category} — Evidence: ${report.evidence}`);
+      out.push(
+        `   Category: ${report.category} — Evidence: ${EVIDENCE_PUBLIC_LABELS[report.evidence] ?? report.evidence}`,
+      );
       out.push("");
       out.push(wrapText(report.summary, "   "));
       out.push("");

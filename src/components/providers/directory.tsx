@@ -440,7 +440,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
                   </a>
                 ))}
                 {p.affiliate
-                  ? "· Affiliate link — Inherit may earn a commission (disclosed here because it must be)."
+                  ? "· Inherit may earn a commission if you buy through this affiliate link. We show this here so you can see it."
                   : "· No affiliate relationship."}
               </p>
             </div>

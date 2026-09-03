@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { estimateAdmixture } from "@/lib/genome/admixture";
-import { classify } from "@/lib/genome/haplogroups";
+import { PANEL } from "@/lib/ancestry/panel";
+import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
+import { classify, type HaplogroupCall } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
 import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
 import { computePrs } from "@/lib/genome/prs";
@@ -147,10 +148,40 @@ export async function POST(
     };
 
     await admin.from("ancestry_results").delete().eq("file_id", id);
-    const ancestryRows = [];
+    // One row shape for the whole bulk insert: PostgREST fills a key that
+    // some rows omit with null, not the column default, so every row states
+    // its state columns explicitly (a null result_state violates NOT NULL).
+    type AncestryRow = {
+      user_id: string;
+      subject_id: string;
+      file_id: string;
+      kind: "admixture" | "mtdna" | "ydna";
+      result: never;
+      support_note: string;
+      model_id: string | null;
+      model_version: string | null;
+      coverage: number | null;
+      result_state: "available" | "partial" | "not_covered";
+    };
+    const ancestryRows: AncestryRow[] = [];
+    // A lineage row's state: available when a haplogroup was called, partial
+    // when markers were tested but no call was supported, not covered when
+    // the file has no positions on that chromosome. The haplogroup trees carry
+    // no registered model id yet, so those columns stay null (D-019).
+    const lineageColumns = (call: HaplogroupCall | null) => ({
+      model_id: null,
+      model_version: null,
+      coverage: call && call.tested > 0 ? call.matched / call.tested : null,
+      result_state: call === null ? "not_covered" : call.haplogroup ? "available" : "partial",
+    } as const);
 
     const admix = await estimateAdmixture(getGenotype);
     if (admix) {
+      // The panel the estimate was computed against and the state it is in:
+      // available once the file supplies the reliable fraction of the panel,
+      // partial below it, not covered when it supplies no marker at all. The
+      // ancestry page reads the stored result, never these columns.
+      const coverage = admix.markersUsed / AIMS.length;
       ancestryRows.push({
         user_id: user.id,
         subject_id: file.subject_id,
@@ -158,6 +189,11 @@ export async function POST(
         kind: "admixture",
         result: admix as never,
         support_note: admix.note,
+        model_id: PANEL.id,
+        model_version: PANEL.version,
+        coverage,
+        result_state:
+          admix.markersUsed === 0 ? "not_covered" : coverage >= RELIABLE_FRACTION ? "available" : "partial",
       });
     }
 
@@ -172,6 +208,7 @@ export async function POST(
       support_note: mt
         ? mt.note
         : "Your file contains no mitochondrial positions, so an mtDNA haplogroup cannot be estimated from it.",
+      ...lineageColumns(mt),
     });
 
     const hasY = records.some((r) => r.chrom === 24);
@@ -185,6 +222,7 @@ export async function POST(
       support_note: y
         ? y.note
         : "Your file contains no Y-chromosome positions (expected for XX genomes and some file types), so no Y haplogroup is estimated.",
+      ...lineageColumns(y),
     });
 
     const { error: ancestryError } = await admin

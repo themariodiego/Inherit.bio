@@ -31,6 +31,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Prepare private comparator denylist
+        env:
+          PRIVATE_NAME_DENYLIST: ${{ secrets.NAME_DENYLIST }}
+        run: |
+          if [ -z "$PRIVATE_NAME_DENYLIST" ]; then
+            echo "::error::NAME_DENYLIST repository or organization secret is required"
+            exit 1
+          fi
+          denylist_path="$RUNNER_TEMP/inherit-name-denylist.txt"
+          printf '%s\n' "$PRIVATE_NAME_DENYLIST" > "$denylist_path"
+          echo "NAME_DENYLIST_FILE=$denylist_path" >> "$GITHUB_ENV"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Typecheck
@@ -43,8 +54,12 @@ jobs:
         run: pnpm test
       - name: Legal placeholder gate
         run: pnpm gate:legal
+      - name: No-comparator name gate
+        run: pnpm gate:names
       - name: Template integrity gate
         run: pnpm gate:templates
+      - name: Readability and vocabulary gate
+        run: pnpm gate:readability
       - name: Repository and history secret gate
         run: pnpm gate:secrets
       - name: Start local Supabase
@@ -55,6 +70,8 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Database tests (pgTAP)
+        run: pnpm exec supabase test db
       - name: Seed local Supabase
         run: pnpm seed
       - name: Full browser suite

@@ -34,7 +34,18 @@ const accountDeletionCancelledPayload = z
   })
   .strict();
 
-const adultSubjectInvitationPayload = z.object({}).strict();
+const adultSubjectInvitationPayload = z
+  .object({
+    // The optional note the inviter wrote (brief §5 §5.2); plain words only.
+    note: z
+      .string()
+      .trim()
+      .min(1)
+      .max(500)
+      .regex(/^[^\u0000-\u0008\u000b-\u001f\u007f]+$/)
+      .optional(),
+  })
+  .strict();
 
 function applicationUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.inherit.bio";
@@ -71,7 +82,7 @@ function parseMail(
     };
   }
   if (templateId === "adult-subject-invitation") {
-    adultSubjectInvitationPayload.parse(payload);
+    const parsed = adultSubjectInvitationPayload.parse(payload);
     if (!deliveryToken || !/^[A-Za-z0-9_-]{43}$/.test(deliveryToken)) {
       throw new Error("mail_token_unavailable");
     }
@@ -79,6 +90,7 @@ function parseMail(
       id: templateId,
       payload: {
         invitationUrl: applicationUrl(`/withdraw/${deliveryToken}`),
+        note: parsed.note,
       },
     };
   }

@@ -23,6 +23,13 @@ export interface AimMarker {
 
 export const AIMS: AimMarker[] = aimsJson as AimMarker[];
 
+/**
+ * Below this fraction of usable panel markers the EM estimate is noise. The
+ * one home for the threshold Overview reads; the ancestry page states the same
+ * value locally beside its empty-state copy.
+ */
+export const RELIABLE_FRACTION = 0.25;
+
 export interface AdmixtureResult {
   /** Mixture proportions on the simplex, rounded to 3 decimals, summing to 1. */
   proportions: Record<Pop, number>;

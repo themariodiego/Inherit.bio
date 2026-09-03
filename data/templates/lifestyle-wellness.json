@@ -3,8 +3,8 @@
     "slug": "caffeine-metabolism-cyp1a2-rs762551",
     "category": "lifestyle-wellness",
     "title": "Caffeine metabolism · CYP1A2",
-    "summary": "The liver enzyme CYP1A2 clears most of the caffeine you drink. A common variant in its promoter (rs762551, often written as CYP1A2 -163C>A) is associated with how inducible the enzyme is: A-allele homozygotes are, on average, faster caffeine metabolizers, while C-allele carriers clear caffeine more slowly.",
-    "evidence": "moderate",
+    "summary": "CYP1A2 is a liver enzyme that clears most caffeine. A common DNA change, rs762551, affects how strongly this enzyme responds. The change is often written as CYP1A2 -163C>A. People with two A copies clear caffeine faster on average. People with a C copy clear it more slowly.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 762551,
@@ -16,7 +16,7 @@
         "interpretations": {
           "AA": "Two copies of the A allele, the genotype associated with faster caffeine clearance on average (sometimes called the 'fast metabolizer' genotype). In the Cornelis 2006 study, heavy coffee intake was not linked to higher heart-attack risk in this group. Actual caffeine sensitivity still varies a lot with smoking, medications, body size and habit.",
           "AC": "One A and one C allele. The C allele is associated with lower CYP1A2 inducibility, so caffeine tends to be cleared somewhat more slowly than in AA individuals, on average. Many other factors (smoking strongly induces CYP1A2, some medications inhibit it) shift caffeine clearance more than this genotype does.",
-          "CC": "Two copies of the C allele, the genotype associated with slower caffeine clearance on average ('slow metabolizer'). Slower metabolizers in some studies reported more caffeine-related sleep disturbance and, in the Cornelis 2006 study, showed a modestly higher heart-attack risk at very high coffee intakes. This is an average association, not a prediction for any individual."
+          "CC": "Two C copies are linked to slower caffeine clearance on average. Some studies found more sleep problems after caffeine. Cornelis 2006 also found a modest rise in heart attack risk with very high coffee intake. These are group averages, not a forecast for one person."
         }
       }
     ],
@@ -29,8 +29,8 @@
     "slug": "muscle-composition-actn3-rs1815739",
     "category": "lifestyle-wellness",
     "title": "Muscle composition · ACTN3 R577X",
-    "summary": "ACTN3 makes alpha-actinin-3, a protein found only in fast-twitch muscle fibers. The rs1815739 T allele (R577X) introduces a stop signal, and people with two T copies make no alpha-actinin-3 at all — a common, harmless difference that is over-represented among elite endurance athletes and under-represented among elite sprint/power athletes.",
-    "evidence": "established",
+    "summary": "ACTN3 makes alpha-actinin-3, a protein in fast-twitch muscle fibers. The T copy of rs1815739, also called R577X, adds a stop signal. People with two T copies make none of this protein. This common, harmless type is seen more often in elite endurance athletes and less often in elite sprint or power athletes.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1815739,
@@ -40,9 +40,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two working copies of ACTN3 (577RR): fast-twitch muscle fibers contain alpha-actinin-3. This genotype is over-represented among elite sprint and power athletes in multiple studies. For everyday training the effect is small — training history and many other genes matter far more.",
-          "CT": "One working copy and one stop-codon copy (577RX): alpha-actinin-3 is still produced. Studies of elite athletes generally place heterozygotes between the two homozygous groups, with no consistent everyday performance difference.",
-          "TT": "Two stop-codon copies (577XX): no alpha-actinin-3 protein is made, which is true of roughly one in five people of European ancestry and causes no health problem. This genotype is slightly over-represented among elite endurance athletes and rare among elite sprinters, but on its own it says very little about any individual's athletic potential."
+          "CC": "Two working ACTN3 copies are also called 577RR. Fast-twitch muscle fibers make alpha-actinin-3. Studies find this type more often in elite sprint and power athletes. For daily training, the effect is small. Training history and many other genes matter much more.",
+          "CT": "One working copy and one stop copy are also called 577RX. The body still makes alpha-actinin-3. Studies of elite athletes often place this type between the other two groups. They show no stable effect on daily performance.",
+          "TT": "Two stop copies are also called 577XX. The body makes no alpha-actinin-3. About one in five people with European ancestry share this harmless type. It is seen a little more often in elite endurance athletes and less often in elite sprinters. It says very little about one person's athletic ability."
         }
       }
     ],
@@ -55,7 +55,7 @@
     "slug": "endurance-trainability-ppargc1a-rs8192678",
     "category": "lifestyle-wellness",
     "title": "Endurance trainability · PPARGC1A Gly482Ser",
-    "summary": "PPARGC1A encodes PGC-1α, a master regulator of mitochondrial biogenesis in muscle. The Gly482Ser variant (rs8192678; the T allele here corresponds to Ser482) has been linked in candidate-gene studies and meta-analyses to endurance athlete status and aerobic trainability, with the Gly482 form more frequent among endurance athletes. Results across studies are mixed, so this is a weak signal.",
+    "summary": "PPARGC1A makes PGC-1α, which helps muscle cells build mitochondria. The Gly482Ser change is rs8192678. The T copy here marks Ser482. Some studies link Gly482 to endurance athletes and response to aerobic training. Other studies do not, so this is a weak signal.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -66,9 +66,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the Gly482 form (C on the forward strand). Meta-analyses report this genotype is somewhat more frequent among endurance athletes than in the general population. Any individual effect on aerobic capacity is small compared with training, and several cohorts found no association at all.",
+          "CC": "Two Gly482 copies are shown as C on the forward strand. Reviews find this type a little more often in endurance athletes than in the public. Any effect on aerobic ability is small beside training. Several studies found no link at all.",
           "CT": "One Gly482 and one Ser482 copy. Studies that report a difference generally place heterozygotes in between the homozygous groups; many studies find no measurable difference for carriers of one Ser482 allele.",
-          "TT": "Two copies of the Ser482 form (T on the forward strand, reported as the A allele in gene-strand papers). Some studies associate this genotype with slightly lower aerobic trainability and it appears less often among elite endurance athletes, but the literature is inconsistent and the effect, if real, is small."
+          "TT": "Two Ser482 copies are shown as T on the forward strand and A in gene-strand papers. Some studies link this type to a slightly weaker response to aerobic training. It is also seen less often in elite endurance athletes. Results conflict, and any real effect is small."
         }
       }
     ],
@@ -81,8 +81,8 @@
     "slug": "vitamin-d-cyp2r1-rs10741657",
     "category": "lifestyle-wellness",
     "title": "Vitamin D levels · CYP2R1",
-    "summary": "CYP2R1 encodes the main liver enzyme that converts vitamin D into circulating 25-hydroxyvitamin D, the form measured in blood tests. In genome-wide studies, rs10741657 near CYP2R1 is reproducibly associated with 25-hydroxyvitamin D concentration: the A allele with slightly higher levels, the G allele with slightly lower levels. Sun exposure, diet, latitude, season and body weight all matter far more.",
-    "evidence": "moderate",
+    "summary": "CYP2R1 makes the main liver enzyme that turns vitamin D into the form measured in blood, 25-hydroxyvitamin D. Studies repeatedly link rs10741657 near this gene to blood levels. The A copy is linked to slightly higher levels and G to slightly lower levels. Sun, food, latitude, season, and body weight matter much more.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10741657,
@@ -92,9 +92,9 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele, associated on average with slightly higher circulating 25-hydroxyvitamin D. The per-allele effect in the Wang 2010 genome-wide study was small — a few percent of the typical blood level — so this genotype does not guarantee adequate vitamin D status.",
+          "AA": "Two A copies are linked to slightly higher 25-hydroxyvitamin D in blood on average. Wang 2010 found only a small effect for each copy, a few percent of a usual blood level. This type does not ensure that a vitamin D level is high enough.",
           "AG": "One A and one G allele: intermediate on average. The difference between genotype groups is a small shift in average blood 25-hydroxyvitamin D; lifestyle and season shift levels far more than this variant does.",
-          "GG": "Two copies of the G allele, associated on average with slightly lower circulating 25-hydroxyvitamin D and, in the Wang 2010 study, modestly higher odds of measuring below common sufficiency thresholds. This is a small average shift, not a statement about your actual level — only a blood test measures that."
+          "GG": "Two G copies are linked to slightly lower 25-hydroxyvitamin D in blood on average. Wang 2010 found a modest rise in the chance of falling below common target levels. The shift is small. Only a blood test can show the actual level."
         }
       }
     ],
@@ -107,8 +107,8 @@
     "slug": "vitamin-b12-fut2-rs602662",
     "category": "lifestyle-wellness",
     "title": "Vitamin B12 levels · FUT2",
-    "summary": "FUT2 controls 'secretor status' — whether certain sugars appear on gut-lining cells. Variants that reduce FUT2 function are reproducibly associated with higher measured plasma vitamin B12, likely via effects on gut bacteria such as H. pylori that interfere with B12 absorption. At rs602662, the A allele tags reduced secretor function and slightly higher average B12; the G allele tags secretor status and slightly lower average B12.",
-    "evidence": "moderate",
+    "summary": "FUT2 helps decide whether certain sugars appear on cells in the gut. Some DNA changes reduce this secretor function. They are repeatedly linked to higher vitamin B12 in blood, perhaps through gut bacteria such as H. pylori. At rs602662, A marks reduced function and slightly higher B12. G marks secretor status and slightly lower B12.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 602662,
@@ -118,9 +118,9 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the G (secretor-linked) allele, associated on average with somewhat lower measured plasma vitamin B12 in genome-wide studies. This is a shift in the population average, not a deficiency finding — dietary intake and absorption conditions matter far more for actual B12 status.",
+          "GG": "Two G copies mark secretor function. Large studies link this type to somewhat lower vitamin B12 in blood on average. This is not a finding of deficiency. Food and health conditions that affect absorption matter much more.",
           "AG": "One G and one A allele: average measured B12 in this group falls between the two homozygous groups in large cohort studies. The genotype effect is modest relative to diet and other absorption factors.",
-          "AA": "Two copies of the A allele, which tags reduced FUT2 secretor function and is associated on average with higher measured plasma vitamin B12. Note this reflects measured blood levels in populations; it does not exempt anyone from B12 deficiency, especially on low-B12 diets."
+          "AA": "Two A copies mark reduced FUT2 secretor function. Studies link this type to higher vitamin B12 in blood on average. This group result does not rule out a B12 deficiency, especially when a diet contains little B12."
         }
       }
     ],
@@ -133,8 +133,8 @@
     "slug": "omega-3-conversion-fads1-rs174537",
     "category": "lifestyle-wellness",
     "title": "Omega-3/6 fatty acid conversion · FADS1",
-    "summary": "The FADS1 enzyme converts shorter plant-derived omega-3 and omega-6 fats (like ALA from flax) into long-chain forms (like EPA and arachidonic acid). rs174537 near FADS1 is the strongest common signal for blood long-chain polyunsaturated fatty acid levels: G-allele carriers convert precursors more efficiently on average, while T-allele carriers show lower conversion and may get relatively more benefit from preformed EPA/DHA sources such as fish.",
-    "evidence": "moderate",
+    "summary": "FADS1 helps turn short plant fats, such as ALA from flax, into long-chain omega-3 and omega-6 fats, such as EPA and arachidonic acid. The nearby rs174537 change strongly tracks blood levels of these fats. G copies are linked to better conversion and T copies to lower conversion. People with T copies may gain more from ready-made EPA and DHA in fish.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 174537,
@@ -144,9 +144,9 @@
         "ref": "G",
         "alt": "T",
         "interpretations": {
-          "GG": "Two copies of the G allele, associated with more efficient desaturase activity and higher average blood levels of long-chain fatty acids such as arachidonic acid and EPA for a given diet. In the Tanaka 2009 genome-wide study this locus explained a sizable share of arachidonic acid variation — unusually large for a common variant.",
-          "GT": "One G and one T allele: intermediate conversion efficiency on average, with blood long-chain fatty acid levels typically between the two homozygous groups for a comparable diet.",
-          "TT": "Two copies of the T allele, associated with lower average conversion of plant-derived precursors (like ALA) into long-chain omega-3 and omega-6 fats. On average, people in this group show lower arachidonic acid and EPA for the same intake; dietary sources of preformed EPA/DHA contribute relatively more to their long-chain omega-3 levels."
+          "GG": "Two G copies are linked to a more active FADS1 enzyme. For the same diet, this group has more long-chain fats in the blood. These include arachidonic acid and EPA. Tanaka 2009 found that this DNA region explained a large part of the difference in arachidonic acid.",
+          "GT": "One G and one T copy give conversion in the middle on average. With a similar diet, long-chain fat levels in blood tend to fall between the two other groups.",
+          "TT": "Two T copies are linked to weaker conversion of plant fats such as ALA into long-chain omega-3 and omega-6 fats. With the same intake, this group has lower arachidonic acid and EPA on average. Ready-made EPA and DHA from food add more to their long-chain omega-3 levels."
         }
       }
     ],
@@ -159,8 +159,8 @@
     "slug": "iron-status-tmprss6-rs855791",
     "category": "lifestyle-wellness",
     "title": "Iron status · TMPRSS6 V736A",
-    "summary": "TMPRSS6 helps regulate hepcidin, the hormone that controls how much iron the gut absorbs. The common missense variant rs855791 (V736A) is reproducibly associated with iron measures: the A allele (valine form) with slightly lower average serum iron and hemoglobin, the G allele (alanine form) with slightly higher. The shifts are small and sit well within the normal range for most people.",
-    "evidence": "moderate",
+    "summary": "TMPRSS6 helps control hepcidin, a hormone that sets how much iron the gut takes in. The common rs855791 change, also called V736A, is repeatedly linked to iron measures. A, the valine form, tracks slightly lower iron and hemoglobin. G, the alanine form, tracks slightly higher levels. Most shifts are small and within the usual range.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 855791,
@@ -170,7 +170,7 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele (736Val), associated on average with slightly lower serum iron, transferrin saturation and hemoglobin in genome-wide studies. The per-allele effect is a fraction of a gram of hemoglobin per liter — far smaller than the impact of diet, menstruation or blood donation. Only blood tests establish actual iron status.",
+          "AA": "Two A copies mark the 736Val form. Studies link this type to slightly lower iron, transferrin saturation, and hemoglobin on average. Each copy changes hemoglobin by less than one gram per liter. Food, periods, and blood donation matter much more. Only a blood test shows iron status.",
           "AG": "One A and one G allele: iron measures in this group average between the two homozygous groups in large population studies. The genotype contributes only a small nudge relative to dietary and physiological factors.",
           "GG": "Two copies of the G allele (736Ala), associated on average with slightly higher serum iron and hemoglobin. This is a modest population-level shift, not protection against iron deficiency or a sign of iron overload."
         }
@@ -185,7 +185,7 @@
     "slug": "sleep-duration-abcc9-rs11046205",
     "category": "lifestyle-wellness",
     "title": "Sleep duration · ABCC9",
-    "summary": "ABCC9 encodes part of an ATP-sensitive potassium channel that acts as a cellular energy sensor. A 2013 meta-analysis of European cohorts linked the intronic variant rs11046205 to habitual sleep duration, estimating it explained around 5% of variation, and knocking down the fly version of the gene disrupted sleep in Drosophila. A much larger UK Biobank analysis later found no association at this variant, so this result should be read as unconfirmed.",
+    "summary": "ABCC9 helps form a potassium channel that senses energy in cells. A 2013 review of European groups linked rs11046205 to usual sleep length and estimated that it explained about 5% of the difference. A fly study also changed sleep by reducing the matching gene. A much larger UK Biobank study found no link, so this result is not confirmed.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -196,9 +196,9 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "The most common genotype at this ABCC9 variant. In the 2013 discovery meta-analysis, this group reported somewhat shorter average sleep than A-allele carriers, but a later UK Biobank analysis of over 127,000 people found essentially no effect at this variant, so no confident conclusion about your sleep need can be drawn from it.",
-          "AG": "One copy of the minor A allele, which the 2013 discovery meta-analysis associated with longer average self-reported sleep. Because the association did not replicate in the much larger UK Biobank study, this genotype is best read as inconclusive for sleep duration.",
-          "AA": "Two copies of the minor A allele, the genotype the 2013 discovery meta-analysis associated with the longest average self-reported sleep. That finding did not replicate in a much larger later study, so this remains an unconfirmed, preliminary association rather than a reliable indicator of sleep need."
+          "GG": "This is the most common type at the ABCC9 change. The 2013 study linked it to somewhat shorter sleep than types with an A copy. A later UK Biobank study of more than 127,000 people found almost no effect. This result cannot show how much sleep one person needs.",
+          "AG": "One A copy was linked to longer sleep reported by participants in the 2013 study. The much larger UK Biobank study did not find the same link. This result is unclear for sleep length.",
+          "AA": "Two A copies were linked to the longest sleep reported by participants in the 2013 study. A much larger later study did not find the same result. This is an early, unconfirmed link, not a sound guide to sleep needs."
         }
       }
     ],
@@ -212,8 +212,8 @@
     "slug": "morning-chronotype-rgs16-rs516134",
     "category": "lifestyle-wellness",
     "title": "Morning chronotype · RGS16",
-    "summary": "Whether someone is naturally a 'morning person' is partly heritable, and the strongest single signal in a 23andMe genome-wide study of 89,283 people sits near RGS16, a regulator of circadian signaling. At rs516134, the less common C allele was associated with about 1.2-fold higher odds of self-reporting as a morning person. Chronotype is highly polygenic: this one variant moves the needle only slightly, and age, light exposure and habits matter greatly.",
-    "evidence": "moderate",
+    "summary": "Being a morning person is partly inherited. In a 23andMe study of 89,283 people, the strongest single signal was near RGS16, which helps control body-clock signals. At rs516134, the rare C copy was linked to a higher chance of calling yourself a morning person: a small shift. Hundreds of genes, age, light, and habits matter, so this change has little effect.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 516134,
@@ -223,9 +223,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the morningness-associated C allele — a rare genotype (the C allele is found in only a few percent of people of European ancestry). On average this group has modestly higher odds of identifying as a morning person, but a single variant explains only a sliver of chronotype, which involves hundreds of loci.",
-          "CT": "One copy of the C allele, associated with roughly 1.2-fold higher odds of self-reporting as a morning person in the Hu 2016 genome-wide study. This is a small average shift in a highly polygenic trait, not a determinant of your actual sleep timing.",
-          "TT": "The most common genotype at this variant, carrying no copies of the morningness-associated C allele. This says very little by itself: chronotype reflects hundreds of genetic variants plus age, light exposure and daily routine, and plenty of TT individuals are strong morning types."
+          "CC": "Two C copies are linked to morning preference. This type is rare; only a few percent of people with European ancestry carry C. The group has a modest rise in the chance of calling themselves a morning person. One DNA change explains very little because hundreds help shape sleep timing.",
+          "CT": "One copy of the C allele, associated with higher odds of self-reporting as a morning person in the Hu 2016 genome-wide study. This is a small shift on average in a highly polygenic trait, not a determinant of your actual sleep timing.",
+          "TT": "This is the most common type and has no C copy linked to morning preference. The result says little on its own. Hundreds of DNA changes, age, light, and daily habits shape sleep timing. Many people with TT strongly prefer mornings."
         }
       }
     ],
@@ -238,8 +238,8 @@
     "slug": "vitamin-c-slc23a1-rs33972313",
     "category": "lifestyle-wellness",
     "title": "Vitamin C levels · SLC23A1",
-    "summary": "SLC23A1 encodes a transporter that moves vitamin C (L-ascorbic acid) from the gut and kidney into the bloodstream. The uncommon missense variant rs33972313 is associated with circulating vitamin C: in a meta-analysis of about 15,000 people, each copy of the T allele was associated with roughly 6 micromol/L lower plasma ascorbate — a noticeable but modest shift given typical levels of 40-60 micromol/L. Fruit and vegetable intake remains the dominant factor.",
-    "evidence": "moderate",
+    "summary": "SLC23A1 moves vitamin C from the gut and kidneys into blood. The uncommon rs33972313 change is linked to vitamin C in blood. In a study of about 15,000 people, each T copy tracked about 6 micromoles per liter less vitamin C. Usual levels are 40 to 60 micromoles per liter, so this shift is modest. Fruit and vegetables matter most.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 33972313,
@@ -249,9 +249,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "The common genotype, carrying no copies of the T variant that reduces transporter efficiency. Circulating vitamin C in this group depends essentially on diet; this genotype implies no unusual genetic effect on vitamin C handling.",
-          "CT": "One copy of the T allele, associated with roughly 6 micromol/L lower average circulating vitamin C in the Timpson 2010 meta-analysis. That is a modest average shift; usual dietary intake shifts levels considerably more, and this result says nothing about your actual measured level.",
-          "TT": "Two copies of the T allele — a rare genotype (the T allele is carried by only a few percent of people of European ancestry) associated with the lowest average circulating vitamin C of the three groups. The estimated effect remains modest relative to dietary influence, and the association describes population averages, not individual status."
+          "CC": "The common type has no T copy that reduces transport. Vitamin C still depends mainly on food. This result suggests no unusual effect from this DNA change on how the body handles vitamin C.",
+          "CT": "One T copy was linked to about 6 micromoles per liter less vitamin C in blood on average in Timpson 2010. This is a modest group shift. Food changes levels much more, and this result does not show a measured level.",
+          "TT": "Two T copies form a rare type. Only a few percent of people with European ancestry carry T. This group had the lowest vitamin C in blood on average. The estimated effect is still small beside food. It describes a group average, not one person's level."
         }
       }
     ],

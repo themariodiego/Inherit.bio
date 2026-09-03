@@ -9,6 +9,14 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+      // `server-only` is a Next.js marker package resolved by the bundler's
+      // `react-server` condition, not by Node. The unit suite runs server
+      // modules (src/lib/family/*, src/lib/subjects.ts) directly, so it
+      // resolves the marker to the same empty module Next uses.
+      "server-only": path.resolve(
+        __dirname,
+        "node_modules/next/dist/compiled/server-only/empty.js",
+      ),
     },
   },
 });

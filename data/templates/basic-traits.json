@@ -3,8 +3,8 @@
     "slug": "bitter-taste-tas2r38",
     "category": "basic-traits",
     "title": "Bitter taste perception (PTC/PROP) · TAS2R38",
-    "summary": "TAS2R38 encodes a bitter taste receptor that detects thiourea compounds such as PTC and PROP, and related bitter chemicals in vegetables like broccoli and Brussels sprouts. Two missense variants, rs713598 (Ala49Pro) and rs1726866 (Val262Ala), tag the classic taster (PAV) and non-taster (AVI) haplotypes and together explain most person-to-person variation in tasting these compounds. Roughly 70% of people of European ancestry carry at least one taster haplotype.",
-    "evidence": "established",
+    "summary": "TAS2R38 makes a receptor that detects bitter PTC and PROP chemicals. It also responds to similar chemicals in broccoli and Brussels sprouts. Two changes, rs713598 and rs1726866, mark the common PAV taster and AVI non-taster forms. Together, they explain most differences in tasting PTC and PROP. About 70% of people with European ancestry carry at least one taster form.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 713598,
@@ -14,8 +14,8 @@
         "ref": "C",
         "alt": "G",
         "interpretations": {
-          "CC": "Two copies of the C allele, which codes Ala49 — the non-taster (AVI-type) form at this position. On average this genotype is associated with weak or absent perception of PTC/PROP bitterness, and often with milder perceived bitterness in cruciferous vegetables. Food preference itself still varies widely with culture and habit.",
-          "CG": "One C (Ala49, non-taster-type) and one G (Pro49, taster-type) allele. Heterozygotes usually taste PTC/PROP as bitter, though on average less intensely than GG carriers, and perceived intensity varies substantially between individuals with this genotype.",
+          "CC": "Two C copies make Ala49, the non-taster form at this site. On average, this type gives weak or no PTC and PROP taste. It can also make some green vegetables taste less bitter. Food choice still varies widely with culture and habit.",
+          "CG": "One C copy makes Ala49, a non-taster form. One G copy makes Pro49, a taster form. People with CG usually taste PTC and PROP as bitter. On average, the taste is less strong than with GG. It still varies widely among people with CG.",
           "GG": "Two copies of the G allele, coding Pro49 on both chromosomes — consistent with the taster (PAV-type) receptor. This genotype is associated on average with strong bitter perception of PTC/PROP and related compounds in some green vegetables. Whether that translates into disliking those foods differs a lot from person to person."
         }
       },
@@ -49,8 +49,8 @@
     "slug": "cilantro-soapy-taste-or6a2",
     "category": "basic-traits",
     "title": "Cilantro soapy taste · OR6A2 region",
-    "summary": "Whether cilantro (coriander leaf) tastes fresh or soapy is partly genetic. In a 23andMe GWAS of about 26,000 people, rs72921001 — sitting in a cluster of olfactory receptor genes that includes OR6A2, a receptor for the aldehydes that give cilantro its aroma — was associated with soapy-taste perception (odds ratio 0.81 per A allele) and confirmed in an independent cilantro-preference cohort. The effect is real but small: the variant explains only about 0.5% of the variation in soapy-taste perception.",
-    "evidence": "moderate",
+    "summary": "Genes play a small part in whether cilantro tastes fresh or soapy. A study of about 26,000 people found a link near several smell receptor genes. The site, rs72921001, is close to OR6A2. This receptor detects chemicals that give cilantro its smell. Each A copy was linked to lower odds of a soapy taste: a small shift. A second group confirmed the link. Still, this site explains only about 0.5% of the difference between people.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 72921001,
@@ -60,9 +60,9 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "CC": "Two copies of the C allele, the version associated with modestly higher odds of perceiving a soapy taste in cilantro and of disliking it. The shift is small — plenty of CC carriers love cilantro — and exposure and culinary habit strongly shape preference.",
+          "CC": "Two C copies are linked to slightly higher odds that cilantro tastes soapy. They are also linked to a little more dislike of cilantro. The shift is small, and many people with CC love it. Exposure and cooking habits strongly shape preference.",
           "AC": "One C and one A allele. Intermediate on average: somewhat lower odds of the soapy perception than CC. This variant is a minor nudge, not a determinant, and many other genetic and environmental factors are involved.",
-          "AA": "Two copies of the A allele, associated with the lowest average odds of perceiving cilantro as soapy at this locus (odds ratio about 0.81 per A copy in the discovery study). Taste experience still varies widely among people with this genotype."
+          "AA": "Two A copies mark the lowest average odds of a soapy cilantro taste at this site. In the first study, each A copy was linked to lower odds: a small shift. Taste still varies widely among people with AA."
         }
       }
     ],
@@ -77,9 +77,9 @@
   {
     "slug": "asparagus-odor-detection-or2m7",
     "category": "basic-traits",
-    "title": "Asparagus metabolite smell · olfactory receptor cluster (OR2M7)",
-    "summary": "After eating asparagus, most people excrete sulfurous metabolites in urine — but the majority cannot smell them. This 'asparagus anosmia' maps to a cluster of olfactory receptor genes on chromosome 1, tagged by rs4481887. In cohorts of nearly 7,000 people, each G allele was associated with about 1.7-fold higher odds of being unable to detect the odor; roughly 60% of participants overall could not smell it.",
-    "evidence": "moderate",
+    "title": "Asparagus metabolite smell · OR2M7",
+    "summary": "Most people make sulfur-smelling chemicals in urine after eating asparagus. Yet most people cannot smell them. This smell difference maps to a group of receptor genes on chromosome 1. rs4481887 marks the region near OR2M7. In studies of almost 7,000 people, each G copy was linked to higher odds of not smelling the odor: a moderate shift. About 60% of all people studied could not smell it.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4481887,
@@ -89,9 +89,9 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele, the version associated with the highest average likelihood of detecting the sulfurous asparagus odor in urine. Detection also depends on odor concentration and on many other olfactory receptor variants, so this is a probability, not a certainty.",
-          "AG": "One A and one G allele. Intermediate on average: the G copy is associated with roughly 1.7-fold higher odds of not detecting the asparagus odor, so heterozygotes fall between the two homozygous groups in group studies.",
-          "GG": "Two copies of the G allele, associated with the highest average odds of asparagus anosmia at this locus — being unable to smell the metabolites even though they are still produced. This is a harmless perceptual difference shared by the majority of people studied."
+          "AA": "Two A copies mark the highest average chance of smelling the sulfur odor after asparagus. The amount of odor and many other smell receptor genes also matter. This result changes the chance; it does not give a sure answer.",
+          "AG": "One A and one G allele. Intermediate on average: the G copy is linked to higher odds of not detecting the asparagus odor, a moderate shift, so heterozygotes fall between the two homozygous groups in group studies.",
+          "GG": "Two G copies mark the highest average odds of not smelling asparagus waste chemicals. The body still makes them. This harmless smell difference occurred in most people in the studies."
         }
       }
     ],
@@ -111,8 +111,8 @@
     "slug": "photic-sneeze-reflex-2q22",
     "category": "basic-traits",
     "title": "Photic sneeze reflex · 2q22 region (near ZEB2)",
-    "summary": "The photic sneeze reflex — sneezing when moving from dim light into bright sunlight — affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2 (odds ratio about 1.3 per C allele in European-ancestry participants), and the same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
-    "evidence": "moderate",
+    "summary": "The photic sneeze reflex is sneezing when moving from dim light into bright sunlight. It affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2. Each C allele was linked to higher odds in European-ancestry participants: a small shift. The same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10427255,
@@ -122,9 +122,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C allele, the version associated in the original European-ancestry study with the highest average odds of the photic sneeze reflex at this locus (roughly 1.3-fold per C copy). Many CC carriers never sun-sneeze; this common variant explains only a small part of the trait.",
+          "CC": "Two copies of the C allele, the version associated in the original European-ancestry study with the highest average odds of the photic sneeze reflex at this locus. Each C copy is linked to higher odds: a small shift. Many CC carriers never sun-sneeze; this common variant explains only a small part of the trait.",
           "CT": "One C and one T allele, associated on average with intermediate odds of the photic sneeze reflex. Reported effect sizes are modest and have differed somewhat between populations, so the genotype shifts probability only slightly either way.",
-          "TT": "Two copies of the T allele, associated in the original study with the lowest average odds of sun-induced sneezing at this locus. Some people with this genotype still have the reflex — other genetic and physiological factors clearly contribute."
+          "TT": "Two T copies mark the lowest average odds of sun sneezing in the first study. Some people with TT still have the reflex. Other genes and body processes also play a part."
         }
       }
     ],
@@ -144,8 +144,8 @@
     "slug": "earlobe-attachment-edar",
     "category": "basic-traits",
     "title": "Earlobe attachment · EDAR",
-    "summary": "Free versus attached earlobes were once taught as a single-gene trait, but modern GWAS show the trait is continuous and highly polygenic — one multiethnic study of about 74,000 people found 49 contributing loci. Among the strongest is the EDAR Val370Ala variant (rs3827760): the derived G allele, common in East Asian and Indigenous American populations and rare elsewhere, is associated with higher odds of attached earlobes as well as other hair, tooth, and ear-shape differences.",
-    "evidence": "moderate",
+    "summary": "Earlobes are not a simple one-gene trait. Their shape varies on a scale, and many genes play a part. A study of about 74,000 people from several ancestry groups found 49 linked regions. One strong link was the EDAR Val370Ala change, rs3827760. The G copy is common in East Asian and Indigenous American groups but rare elsewhere. It is linked to higher odds of attached earlobes and to small differences in hair, teeth, and ear shape.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 3827760,
@@ -155,7 +155,7 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele (Val370), the usual genotype in European and African ancestry populations. On average associated with lower odds of attached earlobes at this locus, but earlobe form is shaped by dozens of other loci, so this genotype alone predicts little.",
+          "AA": "Two A copies make the Val370 form. This is the usual type in people with European or African ancestry. It is linked to lower odds of attached earlobes at this site. Dozens of other DNA regions shape earlobes, so AA alone tells little.",
           "AG": "One A and one G allele. The G (Ala370) copy is associated on average with somewhat higher odds of attached or smaller earlobes, along with EDAR's other subtle effects on hair thickness and tooth shape. Earlobe attachment is a continuum, and this is one contributor among many.",
           "GG": "Two copies of the G allele (Ala370), very common in East Asian and Indigenous American ancestry. Associated on average with higher odds of attached earlobes and smaller lobes, plus straighter, thicker scalp hair. All of these are average tendencies across populations, not fixed outcomes."
         }
@@ -178,7 +178,7 @@
     "category": "basic-traits",
     "title": "Wet or dry earwax · ABCC11",
     "summary": "Earwax type is one of the clearest single-gene common traits in humans. The rs17822931 variant in ABCC11 (Gly180Arg; forward-strand C>T) determines it almost completely: T/T gives dry, flaky earwax, while carrying at least one C allele gives the wet type, which is dominant. The dry type is the norm in East Asian populations and rare in people of European or African ancestry. The same transporter variant reduces apocrine sweat-gland secretions, so the T allele is also associated with less underarm odor.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17822931,
@@ -190,7 +190,7 @@
         "interpretations": {
           "CC": "Two copies of the C (Gly180) allele. This genotype corresponds to the wet, sticky earwax type in essentially all studies, and on average to more apocrine sweat secretion and stronger underarm odor than T-allele carriers. All types of earwax are normal and need no particular care.",
           "CT": "One C and one T allele. Because the wet type is dominant, this genotype corresponds to wet earwax in nearly everyone, on average slightly less so than CC. It also means carrying one copy of the reduced-secretion allele.",
-          "TT": "Two copies of the T (Arg180) allele, the genotype for dry, flaky earwax — near-universal in Korean and northern Chinese populations and uncommon in European and African ancestry. It is also associated with fewer odor-producing apocrine secretions. A harmless, well-understood biochemical difference."
+          "TT": "Two T copies make the Arg180 form and lead to dry, flaky earwax. This type occurs in almost everyone in Korean and northern Chinese groups but is uncommon in European and African groups. It is also linked to less sweat that causes underarm odor. This is a harmless and well-known body difference."
         }
       }
     ],
@@ -205,8 +205,8 @@
   {
     "slug": "misophonia-chewing-sounds-tenm2",
     "category": "basic-traits",
-    "title": "Sensitivity to chewing sounds (misophonia) · TENM2 region",
-    "summary": "Misophonia is an unusually strong negative reaction — irritation or even rage — to specific everyday sounds, classically other people chewing. A GWAS using 23andMe data on the single question of feeling rage at eating sounds found one robust locus: rs2937573, intronic to TENM2, a gene active in brain development. The association is statistically strong but the effect on any individual is small, the phenotype was a single self-report item, and independent replication is limited — hence the preliminary rating.",
+    "title": "Reaction to chewing sounds (misophonia) · TENM2",
+    "summary": "Misophonia is a very strong negative response to certain daily sounds. Chewing is a common trigger, and some people feel anger or rage. A 23andMe DNA study used one question about rage at eating sounds. It found one strong signal at rs2937573 inside TENM2, a gene active in brain growth. The effect on one person is small. The study used only one self-report question, and few other studies have tested the result. The evidence is therefore early.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -217,7 +217,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the G allele, the version associated with modestly higher average odds of reporting rage at the sound of others eating. This is one small statistical factor: most GG carriers are not bothered by chewing sounds, and genuine misophonia involves many genetic and experiential influences.",
+          "GG": "Two G copies are linked to slightly higher odds of reporting rage at eating sounds. This is one small group link. Most people with GG are not upset by chewing sounds. Many genes and life experiences play a part in true misophonia.",
           "AG": "One G and one A allele, associated on average with intermediate odds of strong reactions to eating sounds. The per-allele effect found in the study is small, so this genotype says very little about any one person's sound sensitivity.",
           "AA": "Two copies of the A allele, associated with the lowest average odds at this locus of reporting rage at chewing sounds. People with this genotype can still experience misophonia; this single variant captures only a sliver of the trait."
         }
@@ -235,8 +235,8 @@
     "slug": "sprint-power-actn3",
     "category": "basic-traits",
     "title": "Sprint and power muscle fiber · ACTN3",
-    "summary": "ACTN3 encodes alpha-actinin-3, a structural protein made only in fast-twitch (sprint/power) muscle fibers. The common R577X variant (rs1815739 C>T) creates a premature stop: T/T carriers — roughly one in five people of European ancestry — make no alpha-actinin-3 at all, which is completely benign. In the classic study of elite Australian athletes, the T/T genotype was strikingly underrepresented among Olympic-level sprinters, while endurance athletes carried it at least as often as controls.",
-    "evidence": "established",
+    "summary": "ACTN3 makes alpha-actinin-3, a protein found only in fast muscle fibers used for sprinting and power. The common R577X change, rs1815739 C>T, can stop the protein from being made. People with TT make none of it, yet this causes no illness. TT occurs in about one in five people with European ancestry. In a well-known study of top Australian athletes, TT was rare among Olympic sprinters. Endurance athletes had it at least as often as other people.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1815739,
@@ -246,9 +246,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C (Arg577) allele, so both gene copies produce alpha-actinin-3 in fast-twitch fibers. This genotype is overrepresented among elite sprint and power athletes and associated on average with slightly better sprint performance in some cohorts. At the individual level, training history dwarfs this variant's effect.",
-          "CT": "One functional (C) and one stop (T) copy — alpha-actinin-3 is still produced. Group studies place heterozygotes between the homozygous groups for sprint-related measures, with differences too small to notice outside elite competition.",
-          "TT": "Two copies of the T (577X) allele: no alpha-actinin-3 is produced, and a related protein (alpha-actinin-2) fills in. This genotype was rare among elite sprinters in athlete studies and has been associated on average with slightly lower muscle power and possibly better endurance economy. It has no known health consequence, and plenty of strong, fast people carry it."
+          "CC": "Two C copies make Arg577, so both gene copies produce alpha-actinin-3 in fast muscle fibers. CC appears more often among top sprint and power athletes. Some studies also link it to slightly better sprint results. For one person, training history matters far more than this DNA site.",
+          "CT": "One C copy works, and one T copy stops early. The body still makes alpha-actinin-3. In group studies, CT falls between CC and TT on sprint measures. The differences are too small to notice outside top-level sport.",
+          "TT": "Two T copies make the R577X stop form, so the body makes no alpha-actinin-3. A related protein, alpha-actinin-2, takes its place. TT was rare among top sprinters in athlete studies. On average, it is linked to slightly less muscle power and perhaps better endurance economy. It has no known health effect, and many strong, fast people have TT."
         }
       }
     ],
@@ -268,8 +268,8 @@
     "slug": "androstenone-smell-or7d4",
     "category": "basic-traits",
     "title": "Androstenone smell perception · OR7D4",
-    "summary": "Androstenone, a steroid found in sweat (and in boar meat), smells intensely unpleasant to some people, faint or even sweet to others, and like nothing at all to the rest. Much of this difference traces to the odorant receptor OR7D4: the rs61729907 variant (Arg88Trp, tagging the reduced-function WM form of the receptor, which usually travels with Thr133Met) impairs the receptor's response to androstenone. Carriers of the impaired form rate the odor as less intense and less unpleasant on average.",
-    "evidence": "moderate",
+    "summary": "Androstenone is a chemical in sweat and boar meat. To some people, it smells very bad. Others find it faint, sweet, or have no smell at all. Much of this difference comes from the OR7D4 smell receptor. The rs61729907 change makes Arg88Trp and marks the weaker WM receptor form. This form usually travels with the Thr133Met change. It weakens the receptor's response. On average, carriers find the smell less strong and less unpleasant.",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 61729907,
@@ -280,7 +280,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G (Arg88) allele — the fully functional RT form of OR7D4 on both chromosomes. On average this genotype is associated with perceiving androstenone as more intense and more unpleasant (sweaty, urinous). Perception still varies with overall olfactory sensitivity and other receptor genes.",
-          "AG": "One functional (G) and one impaired (A, Trp88) copy. In the original study, heterozygotes rated androstenone as significantly less intense and less unpleasant than GG carriers on average — an example of a single receptor gene measurably shifting odor experience.",
+          "AG": "One G copy makes the working receptor, and one A copy makes the weaker Trp88 form. In the first study, AG rated the smell as much less strong and less unpleasant than GG on average. This shows how one smell receptor can shift odor experience.",
           "AA": "Two copies of the A (Trp88) allele, consistent with the impaired WM receptor on both chromosomes. Associated on average with reduced sensitivity to androstenone; some people with this genotype describe it as faint, sweet, or vanilla-like, or cannot smell it at all. A harmless perceptual difference."
         }
       }
@@ -296,8 +296,8 @@
   {
     "slug": "sweet-taste-sensitivity-tas1r3",
     "category": "basic-traits",
-    "title": "Sweet taste sensitivity · TAS1R3 promoter",
-    "summary": "TAS1R3 encodes half of the main sweet taste receptor. Two variants in its promoter — rs35744813 (shown here) and the tightly linked rs307355 — reduce how strongly the gene is switched on in taste tissue: in reporter assays the T alleles lower promoter activity, and in taste testing they were associated with reduced sensitivity to sucrose, together explaining up to about 16% of the variation in that study. Evidence comes mainly from one well-designed study with functional follow-up, so it is rated preliminary.",
+    "title": "Sweet taste perception · TAS1R3",
+    "summary": "TAS1R3 makes half of the main receptor for sweet taste. Two changes in its control region are rs35744813, shown here, and the closely linked rs307355. In lab tests, the T copies lowered how strongly the gene switched on. In taste tests, they were linked to lower sensitivity to sucrose. Together, they explained up to about 16% of the differences in that study. The evidence comes mainly from one strong study with lab follow-up, so it is still early.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -309,8 +309,8 @@
         "alt": "C",
         "interpretations": {
           "TT": "Two copies of the T allele, the version shown to lower TAS1R3 promoter activity. Associated on average with reduced sensitivity to low concentrations of sucrose — needing a bit more sugar to notice sweetness. This is a subtle threshold shift, not a change in liking sweet foods, which is shaped by many factors.",
-          "CT": "One T and one C allele, associated on average with intermediate sweet-taste sensitivity in the original study. Day-to-day perception of sweetness is influenced far more by context, temperature, and habituation than by this genotype.",
-          "CC": "Two copies of the C allele, the higher-activity promoter version, associated on average with greater sensitivity to dilute sucrose — detecting sweetness at slightly lower concentrations. The T alleles are notably more common in African-ancestry populations, so average sensitivity differences track ancestry at this locus."
+          "CT": "One T and one C copy gave a middle level of sweet taste sensitivity in the first study. Context, food temperature, and repeated exposure affect daily sweet taste far more than this DNA type.",
+          "CC": "Two C copies make the more active control form. On average, CC could detect sweetness in weaker sugar water. T copies are much more common in people with African ancestry. This helps explain average ancestry-linked differences at this site."
         }
       }
     ],

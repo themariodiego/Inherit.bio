@@ -24,14 +24,15 @@ export function CapabilityUnavailable({
       >
         <h2 className="font-medium">Not available in this jurisdiction yet</h2>
         <p className="text-base leading-relaxed text-ink-muted">
-          Inherit has not received the jurisdiction-specific human legal review
-          required to enable this capability. It remains off, and no analysis
-          or consent record is created.
+          Inherit needs a legal expert to review each country before this
+          feature can run there. That review is missing here, so the feature
+          stays off. We create no analysis or consent record.
         </p>
         {children}
         <p className="text-sm leading-relaxed text-ink-muted">
-          This is a deployment restriction—not a result about you or anyone
-          else. Inherit fails closed when legal authority is unknown.
+          This limit comes from how this Inherit site is set up. It says nothing
+          about you or anyone else. When the law is unclear, Inherit keeps the
+          feature off.
         </p>
         <Button asChild variant="outline">
           <Link href={backHref}>Go back</Link>

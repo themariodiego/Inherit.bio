@@ -87,6 +87,8 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Evaluative proximity tokens | `scripts/evaluative-tokens.json` | names gate |
 | Anti-patterns | `docs/anti-patterns.md` | tests, code comments and review checklist cite ids only |
 | Ancestry region definitions, population mappings and minimum-marker thresholds | `data/ref/regions/regions.json` | ancestry computation and map |
+| Ancestry region geometry (quantized TopoJSON) and its build provenance | `public/geo/regions.topo.json`, `public/geo/GEOMETRY_PROVENANCE.md` | the ancestry map, decoded and projected on the server by `src/lib/geo/`; regenerated only by `scripts/build-region-geometry.ts` (ADR 0013) |
+| Forbidden ancestry label words (demonyms and ethnonyms; never a company or product name) | `data/ref/regions/label-denylist.json` | region unit tests and the ancestry E2E |
 | Retention clocks and artifact dispositions | `docs/retention.md` | route disposition IDs, purge jobs, export/deletion UI and legal copy |
 | Legal artifacts and exact versions | `content/legal/{artifact_key}/v{n}.md` | legal routes, consent artifact seed, signatures |
 | Legal rendered-string anchors and review status | `docs/legal-register.json` | legal gate and review checklist |
@@ -152,7 +154,10 @@ No authenticated client may insert, update or delete a derived genetic result, c
 | Natural-frequency algorithm | `src/lib/figures/natural-frequency.ts` |
 | Reference-group vocabulary and term definitions | `src/copy/figures/reference-groups.ts`; `src/lib/figures/copy.ts` is a generated/re-exporting consumer |
 | Fixed report headings | `src/copy/reports/headings.ts`; `src/components/reports/report-skeleton.tsx` is the renderer |
+| Ancestry surface copy: headings, map caption, toggle, chips, table headers, panel, grey state, lineage and Neanderthal sentences | `src/copy/ancestry.ts`; `src/components/results/ancestry/*` and `src/app/(app)/genome/[subject]/ancestry/page.tsx` are the renderers; the panel constants they name come from `src/lib/ancestry/panel.ts` |
 | Evidence labels and accessible words | `src/copy/reports/evidence.ts`; glyph selection and renderers consume the copy IDs |
+| Family surface copy: hub tiles and card state lines, the Tier-2 gate, the person-page states, the two permission columns and their five rows, pause/stop/tombstone and the invitation screen | `src/copy/family/{index,person,permissions,invite}.ts`; `src/app/(family-hub)/family/`, `src/app/(app)/family/**` and `src/components/family/*` are the renderers |
+| Family people graph: the handle, its data subject, the two grant directions and the pause flag | `src/lib/family/graph.ts`; `src/lib/family/{access,subject-route}.ts` and every Family surface are consumers, and `src/lib/subjects.ts` carries the `dataSubjectId` it resolves |
 | Portrait and future-child trait allowlist | `data/family-trait-allowlist.json`; TypeScript is a generated consumer |
 | Embryo autosomal-only ingest, persistence, computation and export prohibition | `docs/route-register.json#policyContracts.embryo-autosomal-only-v1`; `src/lib/embryos/policy.ts`, upload handlers, parser filters, database constraints and export guards are enforcement consumers |
 | Embryo QC metric definitions, X10.4 thresholds, null handling and interval-widening behavior | `src/lib/embryos/qc-policy.ts` | `embryo_qc` constraints, worker computations, detail/comparison RSC DTOs, exports, science disclosure and exact-threshold tests; no consumer may restate the numbers |

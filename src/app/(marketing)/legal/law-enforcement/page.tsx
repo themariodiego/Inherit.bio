@@ -3,16 +3,22 @@ import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
 
 const report2026 = [
-  { metric: "Requests received (all types)", count: 0 },
-  { metric: "Requests complied with (in whole or in part)", count: 0 },
-  { metric: "User accounts affected", count: 0 },
-  { metric: "National Security Letters received", count: 0 },
+  { metric: "Requests received — all jurisdictions", count: 0 },
+  { metric: "Requests resisted — all jurisdictions", count: 0 },
+  { metric: "Requests complied with — all jurisdictions", count: 0 },
+  { metric: "Accounts affected — all jurisdictions", count: 0 },
+] as const;
+
+const claimReport2026 = [
+  { metric: "Future-person claims received", count: 0 },
+  { metric: "Future-person claims approved", count: 0 },
+  { metric: "Future-person claims refused", count: 0 },
 ] as const;
 
 export const metadata: Metadata = {
   title: "Law enforcement & transparency",
   description:
-    "How Inherit handles government and law-enforcement requests: valid legal process required, user notice unless barred, minimal-scope responses, and a public transparency report.",
+    "How Inherit resists demands for genetic data, requires judicial process, gives notice, and reports request counts.",
 };
 
 export default function LawEnforcementPage() {
@@ -21,17 +27,15 @@ export default function LawEnforcementPage() {
       eyebrow="Trust"
       title={
         <>
-          Law enforcement &{" "}
-          <span className="accent">transparency.</span>
+          Law enforcement & <span className="accent">transparency.</span>
         </>
       }
-      effectiveDate="2026-08-28"
+      effectiveDate="2026-09-01"
       intro={
         <p>
-          Genetic databases are attractive to investigators, and the industry
-          record on this is mixed. This page states exactly how Inherit
-          responds to government and law-enforcement requests, and publishes
-          the running count of every request we receive.
+          Genetic records can draw government interest. This page states the
+          process we require before any disclosure. It also publishes every
+          count that the law lets us report.
         </p>
       }
       sections={[
@@ -42,43 +46,47 @@ export default function LawEnforcementPage() {
             <>
               <ul>
                 <li>
-                  <strong>Valid legal process, always.</strong> We disclose
-                  user data only in response to valid, binding legal process —
-                  a search warrant, court order, or subpoena of appropriate
-                  scope, properly served and jurisdictionally valid. We do not
-                  respond to informal requests, and we do not grant any
-                  government voluntary or standing access to our systems or
-                  data. We do not participate in genetic-genealogy searching
-                  for investigators.
+                  <strong>We resist before disclosure.</strong> We first
+                  challenge any demand for genetic data. We disclose it only
+                  when valid legal process compels us after that challenge. We
+                  reject informal requests and never give standing access.
                 </li>
                 <li>
-                  <strong>We notify you unless legally barred.</strong> If we
-                  receive legal process seeking your data, we will notify you
-                  before complying so you can seek to challenge it — unless a
-                  court order or statute legally prohibits notice. Where
-                  notice is delayed by a gag order, we will notify you as soon
-                  as the prohibition lapses.
+                  <strong>Content needs a judicial order.</strong> We require a
+                  search warrant or an equal judicial order for genome files,
+                  derived results, chat, or other stored content. A subpoena
+                  alone is not enough. We resist subpoenas for genetic data.
                 </li>
                 <li>
-                  <strong>Minimal-scope responses.</strong> We challenge
-                  overbroad requests and, when compelled to respond, produce
-                  the narrowest set of data that satisfies the order — never
-                  the whole account when a single field is demanded, and never
-                  genome data when account metadata is what was ordered.
+                  <strong>We give notice.</strong> We notify each affected
+                  person before we comply, unless the law bars notice. We send
+                  notice as soon as that bar ends. This gives the person time
+                  to seek a challenge.
                 </li>
                 <li>
-                  <strong>Every request is published.</strong> Each request we
-                  receive is counted in the transparency report below, in the
-                  most granular form the law allows.
+                  <strong>We limit the response.</strong> We challenge requests
+                  that are too broad. If we must respond, we give only the data
+                  named in the order. A request for account details does not
+                  open a genome.
+                </li>
+                <li>
+                  <strong>No forensic matching.</strong> We never upload data
+                  to a law-enforcement or forensic genealogy database. We do
+                  not let either kind of database match against Inherit data.
                 </li>
               </ul>
               <p>
-                Note the structural limits, too: we hold no street addresses,
-                no third-party tracking profiles, and no data for deleted
-                accounts — deletion is immediate and unrecoverable, as
-                described in the <Link href="/privacy">privacy policy</Link> —
-                so much of what investigators typically seek simply does not
-                exist here.
+                These rules also cover records about another adult subject and
+                future-person records. Account ownership does not lower the
+                standard. Notice follows the rights and contact rules for the
+                person whose data is involved.
+              </p>
+              <p>
+                We hold no street address or third-party tracking profile. Once
+                a purge finishes, its covered rows and storage objects are
+                gone. A record may remain if another person has a separate
+                right to it. See our <Link href="/privacy">privacy policy</Link>
+                .
               </p>
             </>
           ),
@@ -89,8 +97,10 @@ export default function LawEnforcementPage() {
           body: (
             <>
               <p>
-                Covering January 1, 2026 through the effective date above. We
-                have received no requests of any kind.
+                This annual report covers January 1, 2026 through the effective
+                date above. We received no government or law-enforcement
+                request during that period. When a reportable request arrives,
+                we add a row for its requesting jurisdiction.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
@@ -117,12 +127,46 @@ export default function LawEnforcementPage() {
                 </table>
               </div>
               <p>
-                On National Security Letters: the count above reflects the
-                most precise reporting United States law permits. As of the
-                effective date, Inherit has never received a National
-                Security Letter or an order under the Foreign Intelligence
-                Surveillance Act.
+                We report national-security demands only in the form and after
+                the delay that law allows. We do not use a warrant canary. Any
+                permitted count will appear in the next report.
               </p>
+            </>
+          ),
+        },
+        {
+          id: "future-person-claims",
+          heading: "Future-person claim volume — 2026",
+          body: (
+            <>
+              <p>
+                These are rights claims, not law-enforcement requests. We
+                publish their volume here each year.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-line">
+                      <th className="py-2.5 pr-4 font-medium text-ink">
+                        Metric
+                      </th>
+                      <th className="py-2.5 text-right font-medium text-ink">
+                        2026
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {claimReport2026.map((row) => (
+                      <tr key={row.metric} className="border-b border-line">
+                        <td className="py-2.5 pr-4">{row.metric}</td>
+                        <td className="py-2.5 text-right font-mono text-ink">
+                          {row.count}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           ),
         },
@@ -131,11 +175,10 @@ export default function LawEnforcementPage() {
           heading: "Update cadence",
           body: (
             <p>
-              We update this report <strong>every six months</strong> — by
-              January 31 and July 31 of each year — and additionally within 30
-              days of complying with any request, so a non-zero number never
-              waits half a year to appear. Each update states its coverage
-              period. Prior periods remain published permanently.
+              We update this annual report twice each year, by January 31 and
+              July 31. We also update it within 30 days after we comply with
+              any reportable request. National-security reporting waits for any
+              required delay. Prior reports remain public.
             </p>
           ),
         },
@@ -144,14 +187,11 @@ export default function LawEnforcementPage() {
           heading: "For law enforcement",
           body: (
             <p>
-              Serve valid legal process to{" "}
-              <strong>legal@inherit.bio</strong>. Include the requesting
-              agency, the responsible officer, the legal authority relied
-              upon, and the specific account identifier and data sought.
-              Emergency disclosure requests are evaluated under the standard
-              of imminent danger of death or serious physical injury, must be
-              certified in writing by a supervising officer, and are counted
-              in the report above like any other request.
+              Serve valid legal process to <strong>legal@inherit.bio</strong>.
+              Name the agency, responsible officer, legal authority, account,
+              and exact data sought. The process must be valid in the serving
+              jurisdiction. Calling a request an emergency does not waive these
+              rules.
             </p>
           ),
         },

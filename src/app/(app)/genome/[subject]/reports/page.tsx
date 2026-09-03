@@ -1,310 +1,297 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORY_LABELS, EVIDENCE_LABELS } from "@/lib/genome/categories";
-import {
-  getPublishedTemplates,
-  getSubjectGenotypesByRsid,
-  getSubjectProcessedFiles,
-  templateRsids,
-} from "@/lib/genome/load";
-import { resolveTemplate } from "@/lib/genome/reports";
-import { createClient } from "@/lib/supabase/server";
-import { categoryRank, isFixtureSlug } from "@/components/reports/library";
+import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
+import { Count, type CountClass } from "@/components/reports/count";
+import { isFixtureSlug } from "@/components/reports/library";
 import {
   ReportLibrary,
   type LibraryCard,
   type LibraryGroup,
 } from "@/components/reports/report-library";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { SubjectBar } from "@/components/subjects/subject-bar";
+import { NAV_LABELS } from "@/copy/navigation";
+import { EVIDENCE_PUBLIC_LABELS } from "@/copy/reports/evidence";
+import {
+  CANNOT_NUMBER_HREF,
+  CANNOT_NUMBER_WHY,
+  CATEGORY_DESCRIPTIONS,
+  LAYER_DEFINITIONS,
+  LAYER_LABELS,
+  LIBRARY_EMPTY,
+  LIST_NO_FILE,
+  MEDICINES_ABSENT,
+  REPORTS_TITLE,
+  cannotNumberSentence,
+} from "@/copy/reports/strings";
+import {
+  getPublishedTemplates,
+  getSubjectFileCount,
+  getSubjectGenotypesByRsid,
+  getSubjectProcessedFiles,
+  templateRsids,
+} from "@/lib/genome/load";
+import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import {
+  CATEGORY_TAXONOMY,
+  LAYERS,
+  categoryFor,
+  type CategoryId,
+  type FindingLayer,
+} from "@/lib/genome/taxonomy";
+import { grantedLayers } from "@/lib/family/access";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
+import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveSubjectForAccount } from "@/lib/subjects";
-import { notFound } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Reports" };
+const LAYER_CLASS: Record<FindingLayer, CountClass> = {
+  variant_call: "variant-call",
+  estimate: "estimate",
+};
+
+/** Templates carry a legacy category; an unmapped one is left out rather than crashing the list. */
+function safeCategoryFor(template: ReportTemplate): CategoryId | null {
+  try {
+    return categoryFor(template);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One resolver for both domains (design §2.2): the account's own records, and
+ * another adult's shared record reached through the Family graph. A family
+ * segment reads its rows from that person's own subject, renders only the
+ * layers they granted, and answers nothing at all before the Tier-2 gate.
+ */
+const loadSubject = cache(async (segment: string) =>
+  resolveSubjectRoute(segment, { anyOf: ["reports.monogenic", "reports.polygenic"] }),
+);
+
+export async function generateMetadata(
+  props: PageProps<"/genome/[subject]/reports">,
+): Promise<Metadata> {
+  const { subject: segment } = await props.params;
+  const context = await loadSubject(segment);
+  return {
+    title: context.kind === "ok" ? `${context.displayLabel} · ${REPORTS_TITLE}` : REPORTS_TITLE,
+  };
+}
 
 export default async function ReportsPage(
   props: PageProps<"/genome/[subject]/reports">,
 ) {
-  const { subject: subjectSegment } = await props.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, subjectSegment);
-  if (!subject) notFound();
+  const [{ subject: subjectSegment }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
+  const context = await loadSubject(subjectSegment);
+  if (context.kind === "not-found") notFound();
+  // The one Tier-2 gate of the Family domain lives on the person page; a
+  // report list reached before it is sent there and fetches nothing.
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={REPORTS_TITLE}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, person, domain } = context;
+  // A layer another adult has not shared is not listed at all; with no layer
+  // granted the record answers like an unknown one.
+  const allowedLayers = person ? grantedLayers(person) : LAYERS;
+  if (allowedLayers.length === 0) notFound();
+
   const admin = createAdminClient();
-  const [files, allTemplates] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
+  // The results read the processed files; the subject bar counts every file
+  // in the record, whatever its status.
+  const [files, fileCount, allTemplates] = await Promise.all([
+    getSubjectProcessedFiles(admin, dataSubjectId),
+    getSubjectFileCount(admin, dataSubjectId),
     getPublishedTemplates(admin),
   ]);
   // Test fixtures never reach the user-facing library.
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
   const { genotypes } = await getSubjectGenotypesByRsid(
     admin,
-    subject.id,
+    dataSubjectId,
     templateRsids(templates),
   );
-
   const resolved = templates.map((t) =>
     resolveTemplate(t, (rsid) => genotypes.get(rsid)),
   );
-  const coveredCount = resolved.filter((r) => r.covered).length;
 
-  // The user's polygenic scores for the active file, joined with score
-  // metadata (same tables the report detail page's PGS block reads).
-  const { data: prsRows } = files.length > 0
-    ? await admin
-        .from("user_prs")
-        .select("pgs_id, percentile, coverage, matched")
-        .eq("subject_id", subject.id)
-    : { data: [] };
-  const pgsIds = (prsRows ?? []).map((r) => r.pgs_id);
-  const { data: prsMeta } = pgsIds.length
-    ? await admin
-        .from("prs_scores")
-        .select("pgs_id, name, trait, n_variants, ancestry_note")
-        .in("pgs_id", pgsIds)
-    : { data: [] };
-  const metaById = new Map((prsMeta ?? []).map((m) => [m.pgs_id, m]));
-  const reportByPgs = new Map<string, string>();
-  for (const t of templates) {
-    if (t.pgs_id && !reportByPgs.has(t.pgs_id)) {
-      reportByPgs.set(t.pgs_id, t.slug);
+  const hasData = files.length > 0;
+  const subjectParams = { subject: subject.routeSegment };
+
+  // One group per layer; a layer with zero templates is absent, not empty.
+  const byLayer = new Map<FindingLayer, typeof resolved>(
+    LAYERS.map((layer) => [layer, []]),
+  );
+  for (const report of resolved) {
+    byLayer.get(report.template.layer ?? "estimate")!.push(report);
+  }
+  const nonEmptyLayers = LAYERS.filter(
+    (layer) => allowedLayers.includes(layer) && byLayer.get(layer)!.length > 0,
+  );
+  const requestedLayer =
+    typeof searchParams.layer === "string" ? searchParams.layer : undefined;
+  const activeLayer: FindingLayer | undefined =
+    nonEmptyLayers.find((layer) => layer === requestedLayer) ?? nonEmptyLayers[0];
+
+  // The "cannot give you a number" line counts only a layer this reader may
+  // actually open.
+  const estimateCount = allowedLayers.includes("estimate")
+    ? byLayer.get("estimate")!.length
+    : 0;
+
+  let groups: LibraryGroup[] = [];
+  if (activeLayer) {
+    const byCategory = new Map<CategoryId, LibraryCard[]>();
+    for (const { template, covered } of byLayer.get(activeLayer)!) {
+      const category = safeCategoryFor(template);
+      if (!category) continue;
+      const list = byCategory.get(category) ?? [];
+      list.push({
+        slug: template.slug,
+        title: template.title,
+        summary: template.summary,
+        evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
+        genes: template.variants.map((variant) => variant.gene),
+        status: hasData ? (covered ? "covered" : "not-covered") : "awaiting",
+      });
+      byCategory.set(category, list);
     }
-  }
-  const scores = (prsRows ?? [])
-    .flatMap((row) => {
-      const meta = metaById.get(row.pgs_id);
-      return meta ? [{ row, meta }] : [];
-    })
-    .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
-  const computedScoreCount = scores.filter(
-    ({ row }) => row.percentile != null,
-  ).length;
-
-  const byCategory = new Map<string, LibraryCard[]>();
-  for (const { template, covered } of resolved) {
-    const list = byCategory.get(template.category) ?? [];
-    list.push({
-      slug: template.slug,
-      title: template.title,
-      summary: template.summary,
-      evidenceLabel: EVIDENCE_LABELS[template.evidence] ?? template.evidence,
-      genes: [...new Set(template.variants.map((v) => v.gene))],
-      status: files.length > 0 ? (covered ? "covered" : "not-covered") : "awaiting",
+    groups = CATEGORY_TAXONOMY.flatMap((category) => {
+      const cards = byCategory.get(category.id);
+      return cards && cards.length > 0
+        ? [{ id: category.id, label: category.label, description: CATEGORY_DESCRIPTIONS[category.id], cards }]
+        : [];
     });
-    byCategory.set(template.category, list);
   }
-  const groups: LibraryGroup[] = [...byCategory.entries()]
-    .map(([category, cards]) => ({
-      id: category,
-      label: CATEGORY_LABELS[category] ?? category,
-      cards,
-    }))
-    .sort(
-      (a, b) =>
-        categoryRank(a.id) - categoryRank(b.id) ||
-        a.label.localeCompare(b.label),
-    );
+
+  const definitionId = activeLayer ? `layer-${activeLayer}-definition` : undefined;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <p className="eyebrow mb-2">Report library</p>
-        <h1 className="display text-3xl">Reports</h1>
-        {files.length > 0 ? (
-          <p className="mt-2 text-sm text-ink-muted">
-            {subject.displayLabel}&apos;s {files.length === 1 ? "file covers" : "files together cover"}{" "}
-            {coveredCount} of {templates.length} reports. When files disagree
-            at a position, Inherit shows no result there.
-            {coveredCount < templates.length ? (
-              <>
-                {" "}
-                The rest state honestly that your file doesn&apos;t cover
-                their variants.
-              </>
-            ) : null}
-            {coveredCount === 0 &&
-            files.some((file) => file.file_type === "vcf" || file.file_type === "gvcf") ? (
-              <>
-                {" "}
-                <strong>Why zero?</strong> VCF files from clinical or targeted
-                tests usually list only positions where you differ from the
-                reference, so Inherit cannot tell &ldquo;tested and
-                normal&rdquo; apart from &ldquo;not tested&rdquo; — this is a
-                limit of the file, not of your test. Ask your lab for a gVCF
-                or whole-genome file to unlock these reports.
-              </>
-            ) : null}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-ink-muted">
-            Upload and process a raw data file to see which reports it covers
-            — each result is computed only when you open a report. The full
-            library is browsable meanwhile.
-          </p>
-        )}
-      </div>
-
-      <section
-        id="polygenic-scores"
-        aria-labelledby="polygenic-scores-heading"
-        className="scroll-mt-24"
-      >
-        <h2 id="polygenic-scores-heading" className="eyebrow mb-1">
-          Polygenic scores
-        </h2>
-        {scores.length > 0 && computedScoreCount === 0 ? (
-          // Nothing was computable: one compact, honest line instead of a
-          // wall of per-score failure cards. Per-score coverage sits behind
-          // an explicit disclosure.
-          <div className="text-sm text-ink-muted">
-            <p>
-              Your file doesn&apos;t cover enough of the score panels to
-              compute percentiles.
-            </p>
-            <details className="mt-1">
-              <summary className="cursor-pointer text-xs underline underline-offset-2">
-                Per-score coverage details
-              </summary>
-              <ul className="mt-2 space-y-1.5 text-xs">
-                {scores.map(({ row, meta }) => (
-                  <li key={row.pgs_id}>
-                    <span className="font-medium text-ink">{meta.name}</span>{" "}
-                    <span className="font-mono text-[10px]">
-                      {row.pgs_id}
-                    </span>{" "}
-                    — your file covered {row.matched.toLocaleString()} of{" "}
-                    {meta.n_variants.toLocaleString()} variants (
-                    {(row.coverage * 100).toFixed(1)}%); not computable from
-                    your file.
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </div>
-        ) : scores.length > 0 ? (
-          <>
-            <p className="mb-3 text-sm text-ink-muted">
-              A polygenic score combines many small genetic effects into one
-              estimate.
-            </p>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {scores.map(({ row, meta }) => {
-                const reportSlug = reportByPgs.get(row.pgs_id);
-                return (
-                  <li
-                    key={row.pgs_id}
-                    className="rounded-xl border border-line bg-card p-4"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-medium">
-                        {reportSlug ? (
-                          <Link
-                            href={`/genome/${subject.routeSegment}/reports/${reportSlug}`}
-                            className="underline-offset-2 hover:underline"
-                          >
-                            {meta.name}
-                          </Link>
-                        ) : (
-                          meta.name
-                        )}
-                      </h3>
-                      <span className="shrink-0 font-mono text-[10px] text-ink-muted">
-                        {row.pgs_id}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-ink-muted">{meta.trait}</p>
-                    {row.percentile != null ? (
-                      <>
-                        <p className="mt-3 text-sm">
-                          Approximately the{" "}
-                          <strong>
-                            {Math.round(row.percentile)}th percentile
-                          </strong>{" "}
-                          of a population-reference distribution.
-                        </p>
-                        <div
-                          role="img"
-                          aria-label={`Score percentile ${Math.round(row.percentile)}`}
-                          className="relative mt-2 h-2 overflow-hidden rounded-full bg-tint"
-                        >
-                          <span
-                            className="absolute top-0 h-full w-1.5 rounded-full bg-forest"
-                            style={{
-                              left: `${Math.min(99, Math.max(1, row.percentile))}%`,
-                            }}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm text-ink-muted">
-                        Not computable from your file.
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-ink-muted">
-                      {row.matched === 0 ? (
-                        <>
-                          Coverage: your file covered none of this
-                          score&apos;s {meta.n_variants.toLocaleString()}{" "}
-                          variants.
-                        </>
-                      ) : (
-                        <>
-                          Coverage: your file covered{" "}
-                          {(row.coverage * 100).toFixed(1)}% of this
-                          score&apos;s variants ({row.matched.toLocaleString()}{" "}
-                          of {meta.n_variants.toLocaleString()})
-                          {row.percentile != null
-                            ? " — treat it as an approximation."
-                            : " — not enough to compute a percentile."}
-                        </>
-                      )}
-                    </p>
-                    <details className="group mt-3 rounded-lg bg-tint p-2.5 text-xs leading-relaxed">
-                      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                        <span className="line-clamp-2 group-open:line-clamp-none">
-                          <strong>Ancestry portability:</strong>{" "}
-                          {meta.ancestry_note}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="mt-1 inline-block text-ink-muted underline underline-offset-2 group-open:hidden"
-                        >
-                          more
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="mt-1 hidden text-ink-muted underline underline-offset-2 group-open:inline-block"
-                        >
-                          less
-                        </span>
-                      </summary>
-                    </details>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        ) : (
-          <p className="rounded-xl border border-dashed border-line p-4 text-sm text-ink-muted">
-            No polygenic scores yet — they are computed when your file is
-            processed.{" "}
-            {files.length > 0
-              ? `None are available for ${subject.displayLabel}.`
-              : "Upload and process a raw data file to see yours."}
-          </p>
-        )}
-      </section>
-
-      <ReportLibrary
-        groups={groups}
-        baseHref={`/genome/${subject.routeSegment}/reports`}
+      <Breadcrumbs
+        items={[
+          { label: domain.label, href: domain.href },
+          {
+            label: subject.displayLabel,
+            href: person
+              ? route("family.person", { person: subject.routeSegment })
+              : undefined,
+          },
+          { label: REPORTS_TITLE },
+        ]}
       />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
 
-      {templates.length === 0 ? (
-        <p className="text-sm text-ink-muted">
-          The report library has not been seeded on this deployment yet.
-        </p>
+      <header className="space-y-3">
+        <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
+        {!hasData ? <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p> : null}
+        {/* One count line per non-empty layer, each carrying its own layer
+            noun (G4.3), so a future variant_call layer is never described
+            as estimates: the covered count, then the layer total. */}
+        {nonEmptyLayers.map((layer) => {
+          const reports = byLayer.get(layer)!;
+          const covered = reports.filter((report) => report.covered).length;
+          const describedBy = layer === activeLayer ? definitionId : undefined;
+          return (
+            <p key={layer} className="text-sm">
+              {hasData ? (
+                <>
+                  <Count
+                    value={covered}
+                    layerClass={LAYER_CLASS[layer]}
+                    qualifier="covered by your file"
+                    describedBy={describedBy}
+                  />
+                  {", out of "}
+                </>
+              ) : null}
+              <Count
+                value={reports.length}
+                layerClass={LAYER_CLASS[layer]}
+                describedBy={describedBy}
+              />
+              {" in the library."}
+            </p>
+          );
+        })}
+        {estimateCount > 0 ? (
+          <p className="text-sm text-ink-muted">
+            {cannotNumberSentence(estimateCount)}{" "}
+            <Link href={CANNOT_NUMBER_HREF} className="underline underline-offset-2">
+              {CANNOT_NUMBER_WHY}
+            </Link>
+          </p>
+        ) : null}
+      </header>
+
+      {nonEmptyLayers.length > 1 ? (
+        <nav aria-label="Report groups" className="flex gap-1 border-b border-line">
+          {nonEmptyLayers.map((layer) => (
+            <Link
+              key={layer}
+              href={route("genome.reports", subjectParams, { query: { layer } })}
+              aria-current={layer === activeLayer ? "page" : undefined}
+              className={cn(
+                "-mb-px border-b-2 px-3 py-2 text-sm",
+                layer === activeLayer
+                  ? "border-forest font-medium text-ink"
+                  : "border-transparent text-ink-muted hover:text-ink",
+              )}
+            >
+              {LAYER_LABELS[layer]}
+            </Link>
+          ))}
+        </nav>
       ) : null}
+
+      {activeLayer ? (
+        <section
+          aria-labelledby={`layer-${activeLayer}-title`}
+          data-layer={activeLayer}
+          className="space-y-6"
+        >
+          <div className="space-y-2">
+            <p id={`layer-${activeLayer}-title`} className="text-lg font-semibold text-ink">
+              {LAYER_LABELS[activeLayer]}
+            </p>
+            <p id={definitionId} className="max-w-prose text-sm text-ink-muted">
+              {LAYER_DEFINITIONS[activeLayer]}
+            </p>
+          </div>
+          <ReportLibrary
+            groups={groups}
+            subject={subject.routeSegment}
+            layerClass={LAYER_CLASS[activeLayer]}
+          />
+          {/* X15: a category with no report is stated, never silent. Not a
+              section and not #medicines, so nothing links to an empty group. */}
+          {groups.some((group) => group.id === "medicines") ? null : (
+            <p
+              data-slot="category-absent"
+              data-category="medicines"
+              className="max-w-prose text-sm text-ink-muted"
+            >
+              {MEDICINES_ABSENT}
+            </p>
+          )}
+        </section>
+      ) : (
+        <p className="text-sm text-ink-muted">{LIBRARY_EMPTY}</p>
+      )}
     </div>
   );
 }
