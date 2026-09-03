@@ -38,6 +38,10 @@ const ROUTE_PATTERNS = {
   "files.index": "/files",
   "files.upload": "/files/upload",
   "settings.index": "/settings",
+  "settings.data": "/settings/data",
+  "settings.copilot": "/settings/copilot",
+  "settings.people": "/settings/people",
+  "settings.consents": "/settings/consents",
   "marketing.providers": "/providers",
   "science.index": "/science",
 } as const;

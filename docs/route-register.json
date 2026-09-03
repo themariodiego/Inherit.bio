@@ -10259,6 +10259,35 @@
       "emptyAfterRevocation": "return-the-readable-chat-with-an-empty-messages-array-or-opaque-404-when-the-scope-itself-is-unreadable",
       "cohortRevisionGuard": "before-serializing-each-cohort-turn-pair-chat-history-projection-v1-matches-its-immutable-basis-case-basis-revision-all-five-participant-set-memberships-and-set-revisions-and-donor-classification-slot-artifact-and-attribution-revision-or-explicit-donor-neutral-no-donor-classification-to-the-current-resolvers; stale-pairs-and-dependents-are-omitted-in-full"
     },
+    "search-results-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "groups": [
+          {
+            "id": {
+              "enum": [
+                "people",
+                "reports",
+                "ancestry",
+                "settings"
+              ]
+            },
+            "label": "the-registered-group-label-from-src/copy/search.ts",
+            "results": [
+              {
+                "label": "safe-plain-destination-label",
+                "href": "same-origin-path-built-from-a-src/lib/primary-routes.ts-route-id",
+                "chip": "optional-subject-kind-chip-word-present-on-every-subject-derived-row"
+              }
+            ]
+          }
+        ]
+      },
+      "ordering": "groups-in-the-registered-order-only-non-empty-groups-at-most-four-groups-and-at-most-eight-results-per-group",
+      "unknownFieldsRecursively": "forbidden",
+      "genotypePercentileRiskValueOrAncestryShare": "forbidden-in-every-field"
+    },
     "llm-settings-v1": {
       "post": {
         "status": 200,
@@ -11997,6 +12026,9 @@
         "embryo-closed-schema-v1",
         "revoked-resource-v1",
         "resource-not-found-v1"
+      ],
+      "api.search": [
+        "search-results-v1"
       ],
       "api.browse-region": [
         "raw-region-v1",
@@ -14501,6 +14533,57 @@
         ]
       },
       "successResponseContract": "chat-history-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.search",
+      "path": "/api/search",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": {
+          "q": "optional-plain-text-search-query-cut-to-100-characters-and-matched-only-after-normalisation"
+        }
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "actorRole": "acting-account",
+        "operation": "global-search-destinations-read",
+        "sources": {
+          "people": "every-subject-listSubjectsForAccount-returns-for-the-acting-account-matched-on-its-display-label-and-chipped-relative-to-the-viewer-exactly-as-the-subject-bar-chips-it; a-record-that-can-carry-no-chip-is-not-listed",
+          "reports": "published-non-fixture-report-templates-matched-on-title-gene-symbols-and-nine-category-label-linking-to-genome.report-for-subject-me-with-the-self-chip",
+          "ancestry": "no-ancestry-region-source-exists-so-the-group-is-omitted-rather-than-fabricated; never-a-share",
+          "settings": "settings.index-settings.data-settings.copilot-settings.people-and-settings.consents-matched-on-their-labels"
+        },
+        "groupsInOrder": [
+          "People and embryos",
+          "Reports",
+          "Ancestry regions",
+          "Settings"
+        ],
+        "helpGroup": "forbidden",
+        "maximumResultsPerGroup": 8,
+        "maximumGroups": 4,
+        "emptyGroups": "omitted",
+        "hrefs": "built-only-by-src/lib/primary-routes.ts-route-ids",
+        "subjectDerivedRows": "carry-that-subjects-kind-chip-word-from-src/copy/reports/strings.ts-KIND_CHIPS",
+        "forbiddenInEveryField": [
+          "genotype",
+          "percentile",
+          "risk-value",
+          "ancestry-share"
+        ],
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "search-results-v1",
       "disposition": "kept"
     },
     {

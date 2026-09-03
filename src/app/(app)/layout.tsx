@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/site/app-nav";
+import { GlobalSearch } from "@/components/site/global-search";
 import { SkipLink } from "@/components/site/skip-link";
 import { ThemeToggle } from "@/components/site/theme-toggle";
 import { Attribution, Wordmark } from "@/components/site/wordmark";
@@ -31,7 +32,12 @@ export default async function AppLayout({
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-end gap-3 border-b border-line px-4 py-2.5 md:px-8">
+        {/* py-1 around the 44px search button keeps the header at the height
+            the 32px account controls gave it (52px), so nothing below moves. */}
+        <header className="flex items-center justify-end gap-3 border-b border-line px-4 py-1 md:px-8">
+          {/* The global search is page chrome, outside the account landmark:
+              its one button counts toward the first-viewport density budget. */}
+          <GlobalSearch />
           {/* Persistent chrome lives inside a navigation landmark so density
               budgets (persistent navigation excluded) count page content only. */}
           <nav

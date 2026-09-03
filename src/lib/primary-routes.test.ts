@@ -45,6 +45,10 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "files.index",
   "files.upload",
   "settings.index",
+  "settings.data",
+  "settings.copilot",
+  "settings.people",
+  "settings.consents",
   "marketing.providers",
   "science.index",
 ];
@@ -143,6 +147,10 @@ describe("primary routes", () => {
     expect(route("embryos.upload")).toBe("/embryos/upload");
     expect(route("embryos.compare")).toBe("/embryos/compare");
     expect(route("settings.index")).toBe("/settings");
+    expect(route("settings.data")).toBe("/settings/data");
+    expect(route("settings.copilot")).toBe("/settings/copilot");
+    expect(route("settings.people")).toBe("/settings/people");
+    expect(route("settings.consents")).toBe("/settings/consents");
     expect(route("marketing.providers")).toBe("/providers");
     expect(route("science.index", { hash: "polygenic" })).toBe("/science#polygenic");
   });
