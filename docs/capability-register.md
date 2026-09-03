@@ -1,0 +1,59 @@
+# Capability register
+
+Status: binding (brief X15, X16.6, G7.4). Authority for the ship/withhold
+status of every capability in Inherit's service category. One row per
+capability; silence about a capability is never a withholding.
+
+A row carries one of three terminal statuses:
+
+- `shipped` — a person can reach it end to end on the hosted service.
+- `shipped-degraded` — it ships in a narrower form and the row names the
+  honest UI state that tells the person so.
+- `withheld` — withheld on evidenced impossibility; the row references the
+  dossier under `docs/withheld/<capability>.md`.
+
+A row that has not reached a terminal status carries `not shipped` and names
+the surface a person meets today and the workstream that owns it. `not
+shipped` is not a withholding: no dossier exists for it and nothing in the
+product says it is impossible. G7.4 stays NO while any row carries it.
+
+Counts on this revision: shipped 9 · shipped-degraded 3 · withheld 0 ·
+not shipped 10. Withheld capabilities: 0.
+
+## Capabilities
+
+| Capability | Status | Honest UI state today | Evidence | Open work |
+| --- | --- | --- | --- | --- |
+| Array ingest (consumer raw-text files) | shipped | Upload accepts the four consumer array formats; a position an array did not test renders the exact not-covered sentence ("Your file does not cover this position. Array files test a fixed set of positions, and this one isn't on it. Inherit never guesses a genotype it hasn't seen."). | `src/lib/genome/parsers/array.ts`, `src/lib/genome/parsers/sniff.ts`, `src/app/api/files/[id]/process/route.ts`, `src/copy/reports/strings.ts` (`NOT_COVERED_ARRAY`), `e2e/upload-vcf.spec.ts` | — |
+| Sequence ingest (VCF, gVCF) | shipped | VCF and gVCF are parsed, lifted over and annotated; a variant a VCF omits renders the exact §2 §4.5 not-covered sentence. | `src/lib/genome/parsers/vcf.ts`, `src/lib/genome/liftover.ts`, `src/app/api/files/[id]/process/route.ts`, `e2e/upload-vcf.spec.ts`, `e2e/report-skeleton.spec.ts` | — |
+| Sequence ingest (BAM, CRAM) | shipped-degraded | Stored, hashed and downloadable, never analysed on the hosted service. The uploader says so: "BAM/CRAM up to 5.0 GB are stored, hashed and downloadable; analysis needs the self-host worker." and the file list labels the row "Stored (Tier 2)". | `src/components/uploads/uploader.tsx`, `src/app/(app)/files/page.tsx`, `src/app/api/files/[id]/process/route.ts` (refuses Tier 2), ADR 0016 | — |
+| Single-variant reports | shipped | 151 seeded templates in nine categories; each report renders the six-heading skeleton with one attributed genotype figure, the exact not-covered sentences and the not-diagnostic line. | `src/app/(app)/genome/[subject]/reports/[slug]/page.tsx`, `src/components/reports/report-skeleton.tsx`, `data/templates/*.json`, `e2e/report-skeleton.spec.ts`, `e2e/report-gate.spec.ts` | Every seeded template is `layer='estimate'`; the "Specific variants" layer has no templates and renders absent (D-014). |
+| Polygenic reports | shipped-degraded | Scores are computed and stored; no percentile or risk number renders anywhere because no shipped score is checked in people like the reader. The report says "We can't put a range on this yet, so we don't show a single number." and the list says "{k} of these reports cannot give you a number yet." with a "Why?" link to the science page's "Why a report may show no number yet". The expert page shows panel coverage only. | `src/lib/genome/prs.ts`, `src/app/api/files/[id]/process/route.ts`, `src/app/(app)/genome/[subject]/data/page.tsx`, `src/app/(marketing)/science/page.tsx#polygenic`, `src/copy/reports/strings.ts` (`NO_RANGE_YET`, `cannotNumberSentence`) | Portability check per score (G4.4) before any number renders. |
+| Carrier status | not shipped | No template, page or category names carrier status. The only carrier sentence is the support panel's partner-testing note on reproductive reports. | `src/components/reports/support-panel.tsx`, `src/lib/figures/spec.ts` (`carrier-status` figure kind, uninstantiated) | Reports workstream: carrier templates on the `carrier-status` figure, or a dossier. |
+| Pharmacogenomics | not shipped | The "Medicines" category exists in the taxonomy with zero templates and is omitted from the reports list entirely; no sentence tells the reader it is absent (D-015). | `src/lib/genome/taxonomy.ts` (`medicines`), `src/app/(app)/genome/[subject]/reports/page.tsx` (empty categories are dropped) | Populate the category from primary sources or complete `docs/withheld/pharmacogenomics.md`; until then the list must state the absence. |
+| Traits and wellness | shipped | "Everyday traits" (33 templates) and "Food, drink and metabolism" (27) render through the report skeleton. | `data/templates/{basic-traits,aesthetic-cosmetic,environmental-sensitivity,lifestyle-wellness,metabolic-obesity,gastrointestinal}.json`, `e2e/report-skeleton.spec.ts` | — |
+| Continental ancestry | shipped-degraded | Five broad groups from the 168-marker panel. Below 25% panel coverage the page says "Not enough data for an estimate — your file covered only {n} of {N} ancestry markers, so no meaningful percentages can be computed. This is a limitation of the file, not a result about you." with the raw numbers one activation away. No map, no range and no place-based region names yet. | `src/lib/genome/admixture.ts`, `src/app/(app)/genome/[subject]/ancestry/page.tsx`, `e2e/upload-vcf.spec.ts` | W7 (in progress): place-named regions on an in-app map, one-decimal shares with the explicit "no range yet" statement, the G4.4 provenance block. |
+| Sub-continental ancestry | not shipped | Nothing on the ancestry page states that the panel cannot resolve below five regions. Schema for regions exists and is unused. | `supabase/migrations/20260831224117_ancestry_regions.sql`, `src/app/(app)/genome/[subject]/ancestry/page.tsx` | W7 (in progress) ships the one-sentence statement and registers this row `shipped-degraded`; a licence-clean sub-continental panel is a science-dimension task (X16.6). |
+| Maternal line (mtDNA) | shipped | Haplogroup with matched and tested marker counts and the stored support note; with no mitochondrial positions the card says "Not determined." and "Your file contains no mitochondrial positions, so an mtDNA haplogroup cannot be estimated from it." | `src/lib/genome/haplogroups.ts`, `data/ref/haplogroups/mtdna.json`, `src/app/(app)/genome/[subject]/ancestry/page.tsx`, `e2e/upload-vcf.spec.ts` | W7 renders the card through the figure contract without a dated map route (none is sourced). |
+| Paternal line (Y) | shipped | As the maternal line; with no Y positions the card says "Not determined.", the stored support note, and the plain gloss "this is expected when the file comes from someone without a Y chromosome". | as above, `data/ref/haplogroups/y.json` | as above |
+| Neanderthal ancestry | not shipped | No card, no anchor, no sentence. The mandated card and its fallback sentence do not exist in the tree. | `grep -rn Neanderthal src/` is empty | W7 (in progress) ships the `#neanderthal` card with the true reason (the marker list has not been built and licence-checked); a dossier or a licence-checked marker list decides the terminal status. |
+| Family risk comparison | not shipped | `/family/[person]` and `/family/health-picture` render the jurisdiction state: "Not available in this jurisdiction yet. Inherit needs a legal expert to review each country before this feature can run there. That review is missing here, so the feature stays off. We create no analysis or consent record." The Overview still describes the capability. | `src/app/(app)/family/[person]/page.tsx`, `src/app/(app)/family/health-picture/page.tsx`, `src/components/capability-unavailable.tsx`, `src/copy/overview.ts` | Family workstream (§4 §7.6, X16.3) with the jurisdiction-gating ADR. |
+| Carrier-pair arithmetic | not shipped | No library, route, template or sentence. | schema only (`portrait_results.family_pair_id`) | Family workstream. |
+| Future-child preview (portrait) | not shipped | `/family/portrait/[pairId]` renders the jurisdiction state; the Overview's "Portrait" box links to the Family landing. | `src/app/(app)/family/portrait/[pairId]/page.tsx`, `src/copy/overview.ts` | Family workstream with the future-child preview scope ADR. |
+| Embryo ingest | not shipped | `/embryos/upload` and `/embryos/request-data` render the jurisdiction state; the Embryos landing ends "No embryo analysis model is currently allowlisted on this deployment." | `src/app/(app)/embryos/upload/page.tsx`, `src/app/(app)/embryos/request-data/page.tsx`, `src/app/(app)/embryos/page.tsx`, `supabase/migrations/20260831223301_embryo_cohorts_and_authority.sql` | Embryos workstream (A.10, ADR 0016 transport). |
+| Embryo quality | not shipped | `/embryos/[embryoId]` renders the jurisdiction state; the Overview's State E counts are wired to `embryo_qc` but unreachable because no ingest path creates rows. | `src/app/(app)/embryos/[embryoId]/page.tsx`, `src/app/(app)/overview/page.tsx`, `src/copy/overview.ts` (`STATE_E`) | Embryos workstream. |
+| Embryo comparison | not shipped | `/embryos/compare` renders the jurisdiction state; the Overview still offers "Compare your embryos". | `src/app/(app)/embryos/compare/page.tsx`, `src/copy/overview.ts` | Embryos workstream with the embryo-comparison presentation ADR. |
+| Chat over one's own genome (Copilot) | shipped | `/copilot/[scope]` for the self and each adult subject, with per-provider consent grants; with no AI connected the page says "Questions like these become askable as soon as an AI is connected." and explains that Inherit bundles no AI. Family and cohort scopes answer 404 and their Overview boxes link to the domain landing instead. | `src/app/(app)/copilot/[scope]/page.tsx`, `src/app/api/chat/route.ts`, `src/app/(app)/settings/copilot/page.tsx`, ADR 0004, `e2e/copilot.spec.ts` | Family and cohort scopes with their workstreams. |
+| Export | shipped | Settings → Your data → "Export everything": one ZIP with originals, variants, results, consents, legal audit records and saved chats. | `src/app/api/export/route.ts`, `src/app/(app)/settings/data/page.tsx`, `e2e/deletion-export.spec.ts` | — |
+| Deletion | shipped | "Delete account" schedules deletion after a seven-day notice, cancellable, with export still available; the scheduled state names the date. | `src/app/api/account/delete/route.ts`, `src/lib/account-deletion.ts`, `src/components/settings/danger-zone.tsx`, `e2e/deletion-export.spec.ts` | — |
+
+## Declared gaps
+
+Three category services are declared gaps with a published reason, never
+silent omissions. A gap is declared only where the product says so.
+
+| Gap | Declared where | Evidence | Open work |
+| --- | --- | --- | --- |
+| Relative matching, relatedness or any shared-DNA quantity | Nowhere yet. Inherit computes and displays none of it (`grep` for shared DNA, centimorgan, kinship, IBD and relative matching across `src/` finds no computation and no display). The appeals page's sentence "After a relative objects, Inherit turns off relative matching … and shared-segment output" implies a capability that does not exist (D-016). | `src/app/(marketing)/legal/appeals/page.tsx` | Publish the one statement that Inherit does not match relatives or compute shared DNA; correct the appeals sentence. |
+| Prenatal and newborn screening | Nowhere yet. No code, copy or document mentions it. | — | Publish the one statement that Inherit does not offer prenatal or newborn screening. |
+| Denisovan ancestry | Nowhere yet. The mandated sentence "Inherit does not estimate Denisovan ancestry yet, so this number is about Neanderthals only." has no host surface until the Neanderthal card exists. | — | W7 (in progress) ships the sentence on the ancestry surface. |
