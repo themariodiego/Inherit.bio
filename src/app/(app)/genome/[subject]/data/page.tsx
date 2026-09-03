@@ -123,7 +123,12 @@ export default async function GenomeDataPage(
                       {" · "}
                       <span className="text-ink-muted">{meta.trait}</span>
                     </p>
-                    <p className="mt-1 max-w-prose text-sm text-ink-muted">{meta.ancestry_note}</p>
+                    {/* inherit-figure-exempt: the score's seeded ancestry-portability
+                        statement names the composition of its source cohort (provenance
+                        from the score catalogue), not a result about the subject */}
+                    <p data-slot="ancestry-note" className="mt-1 max-w-prose text-sm text-ink-muted">
+                      {meta.ancestry_note}
+                    </p>
                   </ClaimBlock>
                 </li>
               );

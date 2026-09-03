@@ -234,8 +234,18 @@ test("the data page is titled Data and methods with one coverage figure per scor
   expect(count).toBeGreaterThan(0);
   await expect(page.locator('[data-figure-kind="coverage"]')).toHaveCount(count);
   await expect(items.locator("[data-claim-block][data-subject-id]")).toHaveCount(count);
-  for (const text of await items.allTextContents()) {
-    expect(text).not.toMatch(/\d%/);
+  // Each score carries its seeded ancestry-portability statement (provenance
+  // about the score's source cohort, which may quote the cohort's own
+  // percentages); outside that note no percent text renders — the former
+  // "12.3% of this score's positions" sentence is gone.
+  await expect(items.locator('[data-slot="ancestry-note"]')).toHaveCount(count);
+  for (let index = 0; index < count; index++) {
+    const outsideNote = await items.nth(index).evaluate((element) => {
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('[data-slot="ancestry-note"]').forEach((node) => node.remove());
+      return clone.textContent ?? "";
+    });
+    expect(outsideNote).not.toMatch(/\d%/);
   }
   await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
 });
