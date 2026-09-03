@@ -106,3 +106,41 @@ the shipped code follows.
   in `src/proxy.ts` to every protected page, every `/api/` response and the
   proxy's own redirects. No such headers were set before; this is a
   privacy defect fixed under legality/security precedence.
+
+## 2026-09-03 — Report skeleton, Overview and readability extension
+
+- ADR numbering: the specification's A.12 names `0006`–`0015` for decisions
+  the tree had already numbered differently (`0006` secret fixtures, `0007`
+  name denylist, `0008` readability, `0016` transport). Accepted ADRs keep
+  their numbers (the repository is ground truth, C1); new gating ADRs
+  continue from `0009` and take the next free number, so the A.12 names are
+  retitled, never renumbered over an accepted record. `0009` statistical
+  presentation, `0010` Overview information architecture and `0011` report
+  taxonomy are written from decisions this branch implemented; the
+  jurisdiction, third-party consent, embryo-comparison, future-child and
+  density ADRs wait for their workstreams so nothing in them is invented.
+- The coverage sentence (`Your file covered {x} of the {y} positions this
+  estimate uses.`) renders on the estimate layer only: it names "this
+  estimate", so on a variant-call report it would be a false description.
+- Copilot boxes for Family and Embryos link to `/family` and `/embryos`
+  while `src/app/(app)/copilot/[scope]` serves only `me` and `s-{uuid}`; a
+  dead link is never shipped (same rule as the example item).
+- One home per mandated sentence: the not-diagnostic line and the estimate
+  definition live in `src/copy/reports/strings.ts` and Overview re-exports
+  them; the nav labels live in `src/copy/navigation.ts` and every breadcrumb
+  and domain heading reads them from there.
+- The plain-vocabulary check reads contractions as their full words
+  (`don’t` is `do not`), because the mandated label `I don’t have one yet`
+  must be checked on real words and registering `dont` as a word would make
+  the register lie about what is plain.
+- `classification` (alias `clinical classification`) joins the jargon
+  register so the mandated layer definition (brief line 1178) grades at 6.3
+  under the registered-term rule instead of failing at 9.1; the sentence is
+  not reworded because it ships character-for-character.
+- E2E specs read the seeded template count from `data/templates` through
+  `seededTemplateCount()`; no spec hard-codes the library size.
+- The subject chip and the subject bar carry `data-subject-id` as §2 §4.3
+  and §2 §2.3 require; neither is an ancestor of a figure, so the X4
+  single-attributed-ancestor rule is unaffected.
+- The printable export shows the public evidence label; the machine-readable
+  JSON export keeps the enum value so its schema does not change.

@@ -54,7 +54,7 @@ importing `igv/dist/igv.esm.js` directly.
 
 ## Full-resolution gates (G1–G8)
 
-Current audited state: **15/65 YES**. `NO` means the exact gate is not yet
+Current audited state: **16/65 YES**. `NO` means the exact gate is not yet
 proved; partial implementations are intentionally not rounded up. The adult
 subject invitation work adds a safe TEST-LOCAL reservation and acceptance
 boundary, but it does not claim the class-(b) upload, quarantine, purpose,
@@ -65,7 +65,7 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.1 | Production build exits cleanly without source warnings. | YES | `pnpm build` exits 0; `package.json`; verified 2026-09-01. |
 | G1.2 | Typecheck passes and suppression counts do not exceed baseline. | YES | `pnpm typecheck`; baseline/current counts are recorded above and reproducible with `git grep` over non-test `*.ts,*.tsx,*.js,*.jsx`. |
 | G1.3 | Lint treats warnings as failures and passes. | YES | `pnpm lint`; `package.json` uses `eslint --max-warnings=0`. |
-| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (168 tests); unit specs under `src/lib/**/*.test.ts` and `scripts/**/*.test.ts`. |
+| G1.4 | Unit suite and required pure-module coverage pass. | YES | `pnpm test` (290 tests across 36 files as of `31e1d7c`); unit specs under `src/lib/**/*.test.ts`, `src/copy/**/*.test.ts`, `src/components/**/*.test.ts` and `scripts/**/*.test.ts`. |
 | G1.5 | E2E has zero failures, skips, retries, or quarantine. | YES | `pnpm e2e` (61 tests); `playwright.config.ts` has `retries: 0`; `scripts/run-e2e.ts` validates `test-results/results.json`; `docs/test-diff-register.md`. |
 | G1.6 | Extended RLS attack suite covers every new table and revocation. | NO | `e2e/rls.spec.ts` does not yet cover all tables in `supabase/migrations/20260831*.sql`; adult invitation database invariants are narrower in `supabase/tests/adult_subject_invitation.sql`. |
 | G1.7 | Network audit covers every registered route/state/theme/auth mode. | NO | `e2e/network-audit.spec.ts` covers only its existing route subset; compare `docs/route-register.json`. |
@@ -78,23 +78,23 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.13b | Reflow, target size, keyboard order, and alternatives pass. | NO | Named Playwright coverage for the complete non-axe matrix is absent from `e2e/a11y.spec.ts`. |
 | G1.14 | Lighthouse passes exact route and threshold contract. | NO | `scripts/lighthouse-check.ts` does not yet implement per-category thresholds and authenticated exact-final-URL checks. |
 | G1.15 | Template integrity gate passes without baseline loss. | YES | `pnpm gate:templates`; `scripts/validate-templates.ts` validates 151 templates and genotype/citation structure. |
-| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs build, template, secret, local Supabase, seed, and E2E, but the complete G1.8–G1.12 command set does not yet exist. |
+| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs typecheck, lint, build, unit, legal, names, templates, readability, secrets, local Supabase, pgTAP (`supabase test db`), seed and the full browser suite, and every run on pull request #41 is green; the row stays NO because `gate:claims` (G1.11) and `gate:routes` (G1.12) do not exist yet. |
 | G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | YES | `pnpm gate:secrets`; `scripts/secret-gate.ts`; exact local-only values and paths in `scripts/secret-allowlist.json`; accepted ADR 0006; the current tree, all authored non-merge commits after the baseline, `.env.production` paths, and three tracked genome fixtures are checked. CI uses a full-history checkout. |
-| G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists, but several Family/Embryo routes still render `src/components/capability-unavailable.tsx`. |
-| G2.2 | Every route declares and tests every required state. | NO | `docs/route-register.json` is not backed by one substantive E2E per required route/state pair. |
+| G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists and `/overview`, the five-item navigation and the My Genome routes now match it (`e2e/overview.spec.ts`, `e2e/report-skeleton.spec.ts`); several Family and Embryo routes still render `src/components/capability-unavailable.tsx`. |
+| G2.2 | Every route declares and tests every required state. | NO | `e2e/overview.spec.ts` covers Overview states A and C and `e2e/report-skeleton.spec.ts` the covered, not-covered and no-file report states; `docs/route-register.json` is not yet backed by one substantive E2E per required route/state pair. |
 | G2.3 | Every pre-existing route has a verified kept/redirect/gone disposition. | NO | Required `gate:routes` is absent; `docs/route-register.json` is not fully live-verified. |
 | G2.4 | Reachability and instrumented task-depth limits pass. | NO | No complete action-count suite exists under `e2e/`. |
 | G2.5 | Numeric white-space and density budgets pass against baseline. | NO | `docs/density-baseline.json` exists; complete `e2e/density.spec.ts` route and viewport enforcement is absent. |
 | G2.6 | All four upload-subject paths work end to end under TEST-LOCAL. | NO | `e2e/adult-subject-invitation.spec.ts` covers reservation/acceptance only; `src/app/api/uploads/route.ts` still accepts only the self subject and embryo paths are unavailable. |
-| G2.7 | Frozen visual identity and all-new-route theme checks pass. | NO | Baseline tokens remain in `src/app/globals.css`, but every new route is not yet covered in both themes by unmodified assertions. |
+| G2.7 | Frozen visual identity and all-new-route theme checks pass. | NO | `src/lib/design/tokens.test.ts` pins every baseline token value and the Fraunces/Inter pairing in `src/app/globals.css` and the 3:1 floor of the eight added `--subject-N` tokens in both themes; every new route is not yet covered in both themes by unmodified assertions (`e2e/a11y.spec.ts` covers its existing route set only). |
 | G3.1 | Thirty-persona comprehension harness exists and records raw runs. | NO | Required `scripts/comprehension/` and `docs/comprehension-runs/` are absent. |
 | G3.2 | Ten comprehension tasks are bound to exact fixtures/surfaces. | NO | Required `docs/comprehension-protocol.md` is absent. |
 | G3.3 | Scored comprehension thresholds pass twice. | NO | No runnable comprehension command or committed run exists under `scripts/comprehension/`. |
 | G3.4 | Human comprehension round is recorded without fabricated evidence. | NO | No consented human-run artifact exists under `docs/comprehension-runs/`; this remains an operator obligation. |
 | G3.5 | Failed comprehension produces a blocking release state. | NO | Required release integration is absent from `docs/release-checklist.md` (file absent). |
-| G4.1 | Every result uses the complete plain-language result anatomy. | NO | Result surfaces under `src/app/(app)/genome/` predate the full G4 contract. |
+| G4.1 | Every result uses the complete plain-language result anatomy. | NO | Report pages under `src/app/(app)/genome/[subject]/reports/` render the six-heading skeleton (`src/components/reports/report-skeleton.tsx`) through the figure contract (`src/lib/figures/contract.ts`, ADR 0009), pinned by `e2e/report-skeleton.spec.ts`; the ancestry page and the variant browser still render raw values (listed as `inherit/no-raw-figure` exceptions in `eslint.config.mjs`) and no `docs/figures-register.json` exists. |
 | G4.2 | Risk figures include absolute values and required uncertainty. | NO | No full gate/test maps every risk figure in `docs/figures-register.json` (file absent). |
-| G4.3 | Single-variant and carrier claims follow the bounded vocabulary. | NO | Required claim/language gates are absent from `package.json`. |
+| G4.3 | Single-variant and carrier claims follow the bounded vocabulary. | NO | Genotypes render only as `data-figure-kind="genotype"` figures inside attributed claim blocks, and `inherit/no-raw-figure` fails lint on a raw genotype or numeral on every result surface except the two listed exceptions; the required claim/language gate over template interpretation text (51 templates carry bare relative tokens) is absent from `package.json`. |
 | G4.4 | Polygenic estimates satisfy coverage and portability rules. | NO | Existing PRS tests do not prove every rendered surface against the full G4.4 contract. |
 | G4.5 | Ancestry outputs satisfy geographic and comparability bounds. | NO | `src/app/(app)/genome/[subject]/ancestry/page.tsx` lacks complete registered-figure proof. |
 | G4.6 | Embryo comparison obeys non-ranking, uncertainty, and QC rules. | NO | `src/app/(app)/embryos/compare/page.tsx` is unavailable. |
@@ -117,7 +117,7 @@ revocation, notification, or ownership-transfer contract is complete.
 | G6.3 | Out-of-tree denylist and provider carve-out are enforced in CI. | YES | Accepted ADR 0007; `.github/workflows/ci.yml` fails when the encrypted `NAME_DENYLIST` secret is absent, writes it only under `RUNNER_TEMP`, and exports `NAME_DENYLIST_FILE`; unit tests prove carve-out and override behavior. |
 | G6.4 | End-state scan is clean and all 16 providers remain sourced. | YES | `pnpm gate:names` returns zero findings; all 16 rows retain their source arrays and expose matching canonical `source_url` and `last_verified` fields refreshed on 2026-09-01. Fourteen live link pairs resolved directly and two automation-blocked pages were confirmed from current official indexed pages. |
 | G6.5 | Provider names have no evaluative proximity. | YES | `scripts/evaluative-tokens.json`; the gate scans all `docs/`, `src/`, and comments for a provider name within 200 characters of a registered evaluative token; boundary behavior is unit-tested. |
-| G7.1 | Required gating ADRs exist from 0006 onward. | NO | `docs/adr/` lacks the complete named G7.1 decision set. |
+| G7.1 | Required gating ADRs exist from 0006 onward. | NO | `docs/adr/` holds 0006–0011 and 0016 (0008 readability contract, 0009 statistical presentation contract, 0010 Overview information architecture, 0011 report taxonomy); the minimum set in the brief still lacks the embryo-comparison presentation model, the jurisdiction-gating mechanism, the third-party-subject consent and revocation model, the future-child preview scope and the density contract, each waiting on its workstream. |
 | G7.2 | Core docs/env are current and a clean-clone run is recorded. | NO | `docs/self-hosting.md` now names `Inherit.bio`, but the full new surfaces and a current clean-clone record are incomplete. |
 | G7.3 | Acceptance matrix covers every G gate with concrete evidence. | YES | This G1.1–G8.6 table in `docs/acceptance-matrix.md`; gate ids are complete and NO rows name the missing command, test, or path. |
 | G7.4 | Capability and all named evidence registers exist and are current. | NO | `docs/test-diff-register.md`, `docs/retention.md`, and `docs/density-baseline.json` exist; `docs/capability-register.md`, `docs/fixture-paths.md`, `docs/figures-register.json`, and `docs/release-checklist.md` are absent. |

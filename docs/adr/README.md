@@ -14,4 +14,7 @@ writing a superseding ADR, not silently drifting.
 | [0006](./0006-secret-fixture-allowlist.md) | Local credential fixtures and secret scanning | Accepted |
 | [0007](./0007-private-name-denylist.md) | Private external-name denylist and provider carve-out | Accepted |
 | [0008](./0008-readability-contract.md) | Readability scoring and vocabulary contract | Accepted |
+| [0009](./0009-statistical-presentation-contract.md) | Statistical presentation contract: one figure vocabulary, claim blocks, denominator ladder | Accepted |
+| [0010](./0010-overview-information-architecture.md) | Overview information architecture: hub that informs nothing, nine boxes, five-item navigation | Accepted |
+| [0011](./0011-report-taxonomy-and-evidence-rubric.md) | Report taxonomy and evidence rubric: two layers, five levels, nine categories, disclosed remap | Accepted |
 | [0016](./0016-supersede-large-file-transport-and-compute.md) | Supersede large-file transport, formats, and compute placement (supersedes 0001) | Accepted |
