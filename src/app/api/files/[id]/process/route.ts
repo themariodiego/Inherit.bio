@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PANEL } from "@/lib/ancestry/panel";
-import { measureRunsOfHomozygosity, rohColumns } from "@/lib/family/roh";
+import { measureRunsOfHomozygosity, rohCallsFromParse, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
 import { classify, type HaplogroupCall } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
@@ -110,6 +110,13 @@ export async function POST(
     } else {
       throw new Error(`unsupported tier-1 type ${file.file_type}`);
     }
+
+    // Runs of homozygosity, measured once in the file's own coordinates from
+    // the variant records and the reference calls the parser kept (chrom,
+    // pos, genotype, ref), before any liftover so the two share one build
+    // and no call is lost to an unmapped interval; stored with the file
+    // below (ADR 0017 §7, D-030, D-040). A fact about this one file.
+    const runs = measureRunsOfHomozygosity(rohCallsFromParse(parsed));
 
     let records = parsed.records;
     let unmapped = 0;
@@ -274,11 +281,6 @@ export async function POST(
       if (prsError) throw new Error(`prs insert failed: ${prsError.code}`);
     }
 
-    // Runs of homozygosity, measured once from the same parsed records the
-    // variant rows were built from (chrom, pos, genotype) and stored with the
-    // file (ADR 0017 §7, D-030). A fact about this one file; nothing here
-    // reads another file.
-    const runs = measureRunsOfHomozygosity(records);
     const finishedAt = new Date().toISOString();
     const { error: fileError } = await admin
       .from("genome_files")

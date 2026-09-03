@@ -16,10 +16,11 @@
 //      than the classified one (GT 0/2 against ALT G,T), so both accounts
 //      that ingest this file cover those two positions without either
 //      showing the classified change — the count the empty sentence prints;
-//   2. two short pairs of same-reading rows, so the file's runs of
-//      homozygosity are measurable at all and sit far below both thresholds
-//      the brief states — without them the file would list only differences
-//      and the rule would refuse the arithmetic (src/lib/family/roh.ts);
+//   2. one real run of homozygosity by the cited definition — thirty rows
+//      called homozygous for the reference (GT 0/0), 60 kb apart, spanning
+//      1.74 Mb — so the file is measurable at all (a differences-only VCF is
+//      not) and its measure sits below both thresholds the brief states
+//      (src/lib/family/roh.ts, D-040);
 //   3. the four positions of `tiny-grch38.vcf`, so the side-by-side table has
 //      the same covered reports the other Family specs use.
 //

@@ -1,6 +1,6 @@
 // Streaming VCF / gVCF parser (single-sample: FORMAT + first sample column).
 
-import type { Build, ParseResult, VariantRecord } from "../types";
+import type { Build, ParseResult, ReferenceCall, VariantRecord } from "../types";
 import { chromToNumber, parseRsid } from "../types";
 
 // chr1 lengths pin the reference build.
@@ -31,13 +31,18 @@ function buildFromHeader(line: string): Build | null {
  * - Only GT-referenced ALT alleles are kept (multiallelic rows keep just the
  *   called alleles).
  * - "./." (or any missing allele) is a no-call, counted in `skipped`.
- * - Homozygous-reference rows and <NON_REF>-only gVCF blocks are reference,
- *   not variants: dropped without counting.
+ * - Homozygous-reference rows (`0/0`) are reference, not variants: they
+ *   never become variant records, but they are kept in `referenceCalls`,
+ *   because they are the file's own evidence of what it recorded between
+ *   its differences (runs of homozygosity, D-040). gVCF rows whose ALT
+ *   carries <NON_REF> describe a range, not a call, and are dropped without
+ *   counting, so a gVCF contributes no reference call.
  */
 export async function parseVcf(
   lines: AsyncIterable<string>
 ): Promise<ParseResult> {
   const records: VariantRecord[] = [];
+  const referenceCalls: ReferenceCall[] = [];
   let skipped = 0;
   let build: Build = "unknown";
 
@@ -99,7 +104,23 @@ export async function parseVcf(
     const calledAlts = [
       ...new Set(gtAlleles.filter((a) => a !== ref && a !== "<NON_REF>")),
     ];
-    if (calledAlts.length === 0) continue;
+    if (calledAlts.length === 0) {
+      // A row that calls the reference on every copy is a reference call:
+      // not a variant, but a recorded position all the same. A row whose
+      // ALT list carries <NON_REF> is a gVCF block (a range, with END= in
+      // INFO), not a call at one position, so it is not one; a gVCF that
+      // records its reference only as blocks therefore yields no reference
+      // call, and the runs measure says it cannot measure it.
+      if (!alts.includes("<NON_REF>")) {
+        referenceCalls.push({
+          chrom,
+          pos,
+          genotype: gtAlleles.length === 1 ? gtAlleles[0] : gtAlleles.slice().sort().join("/"),
+          ref,
+        });
+      }
+      continue;
+    }
     if (gtAlleles.includes("<NON_REF>")) continue; // half-block oddity
 
     const genotype =
@@ -117,5 +138,5 @@ export async function parseVcf(
     });
   }
 
-  return { build, records, skipped };
+  return { build, records, referenceCalls, skipped };
 }

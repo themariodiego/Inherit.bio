@@ -222,6 +222,20 @@ export function personVariantLine(
 /** Rendered under every pair block until a counsellor directory exists (X16.2). */
 export { COUNSELLOR_NO_ROUTE };
 
+/**
+ * The provenance of the runs check, rendered once in the panel when at
+ * least one pair block renders (D-040): the definition of a run is
+ * McQuillan et al. 2008's (American Journal of Human Genetics 83(3):359–372),
+ * and the link text is the DOI itself. Two sentences, because the one-sentence
+ * form graded above 9.
+ */
+export const RUNS_PROVENANCE =
+  "Inherit measured long runs of matching letters in each file. It did so the way McQuillan and colleagues did in 2008.";
+
+export const RUNS_SOURCE_DOI = "10.1016/j.ajhg.2008.08.007";
+
+export const RUNS_SOURCE_URL = `https://doi.org/${RUNS_SOURCE_DOI}`;
+
 // ---------------------------------------------------------------------------
 // How sure we are, and where this comes from (X13).
 // ---------------------------------------------------------------------------

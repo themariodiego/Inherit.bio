@@ -15,7 +15,7 @@ import { parseVcf } from "../../src/lib/genome/parsers/vcf";
 import {
   belowRohThreshold,
   measureRunsOfHomozygosity,
-  type RohCall,
+  rohCallsFromParse,
   type RohMeasure,
 } from "../../src/lib/family/roh";
 import {
@@ -37,8 +37,18 @@ interface Row {
   gt: string;
 }
 
-/** Two same-reading rows a kilobase apart make one short measurable run. */
-const SAME_READING_PAIRS: readonly number[] = [5_000_000, 6_000_000];
+/**
+ * One real run of homozygosity by the cited definition (McQuillan et al.
+ * 2008; src/lib/family/roh.ts): thirty rows called homozygous for the
+ * reference (GT 0/0), 60 kb apart, from 5.00 Mb to 6.74 Mb on chromosome 1
+ * — at least 25 calls spanning at least 1.5 Mb, well under the brief's
+ * 100 Mb in total, and the reference calls that make the file measurable
+ * at all. Against the 185 Mb the file covers on chromosome 1 the run puts
+ * F_ROH near 0.009, below the brief's 0.0156.
+ */
+const RUN_START = 5_000_000;
+const RUN_STEP = 60_000;
+const RUN_CALLS = 30;
 
 /** The four positions `tiny-grch38.vcf` covers, so the table has its rows. */
 const TINY_ROWS: readonly Row[] = [
@@ -50,17 +60,19 @@ const TINY_ROWS: readonly Row[] = [
 
 export function buildRows(): Row[] {
   const rows: Row[] = [];
-  for (const start of SAME_READING_PAIRS) {
-    for (const pos of [start, start + 1_000]) {
-      rows.push({ chrom: "chr1", pos, id: ".", ref: "A", alt: "G", gt: "1/1" });
-    }
-    // A differing row after each pair, so the two pairs stay two short runs
-    // rather than joining across the gap between them.
-    rows.push({ chrom: "chr1", pos: start + 500_000, id: ".", ref: "C", alt: "T", gt: "0/1" });
+  for (let index = 0; index < RUN_CALLS; index++) {
+    rows.push({
+      chrom: "chr1",
+      pos: RUN_START + index * RUN_STEP,
+      id: ".",
+      ref: "A",
+      alt: "G",
+      gt: "0/0",
+    });
   }
-  // Differing rows across chromosome 1, so the span the runs are measured
-  // against is the whole of what this file reports, and so no classified
-  // row sits next to a same-reading one.
+  // Heterozygous rows every 10 Mb across chromosome 1: they end the run,
+  // keep every other same-reading row on its own, and make the span the
+  // run is measured against the whole of what this file reports.
   for (let pos = 10_000_000; pos <= 190_000_000; pos += 10_000_000) {
     rows.push({ chrom: "chr1", pos, id: ".", ref: "C", alt: "T", gt: "0/1" });
   }
@@ -113,15 +125,12 @@ export interface FixtureCheck {
   reasons: string[];
 }
 
-/** The two properties the browser spec depends on, checked with the real code. */
+/** The properties the browser spec depends on, checked with the real code. */
 export async function verify(lines: readonly string[]): Promise<FixtureCheck> {
   const parsed = await parseVcf(asLines(lines));
-  const calls: RohCall[] = parsed.records.map((record) => ({
-    chrom: record.chrom,
-    pos: record.pos,
-    genotype: record.genotype,
-  }));
-  const measure = measureRunsOfHomozygosity(calls);
+  // The same calls the processing route measures: the variant records and
+  // the reference calls the parser kept, in the file's own build.
+  const measure = measureRunsOfHomozygosity(rohCallsFromParse(parsed));
   const byRsid = new Map(parsed.records.map((record) => [record.rsid, record.genotype]));
   const carrierGenotypes = Object.fromEntries(
     CARRIER_FIXTURE_POSITIONS.map((entry) => [entry.rsid, byRsid.get(entry.rsid)]),
@@ -139,6 +148,9 @@ export async function verify(lines: readonly string[]): Promise<FixtureCheck> {
     reasons.push(
       `the runs measure is ${measure.status === "measured" ? "above the threshold" : measure.reason}: the rule would refuse the arithmetic`,
     );
+  }
+  if (measure.status === "measured" && measure.runCount < 1) {
+    reasons.push("the file holds no run by the cited definition, so the measure is not exercised");
   }
   return { ok: reasons.length === 0, measure, carrierGenotypes, reasons };
 }

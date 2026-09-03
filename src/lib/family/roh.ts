@@ -1,9 +1,10 @@
 import { genotypeKey } from "@/lib/genome/reports";
 import type { Db } from "@/lib/genome/load";
+import type { ParseResult } from "@/lib/genome/types";
 
 /**
  * Runs of homozygosity, measured inside ONE file (design §5; brief §4 §5.3;
- * ADR 0017 §7, D-030).
+ * ADR 0017 §7, D-030, D-040).
  *
  * **This is not a relatedness quantity.** It is a fact about a single file:
  * how much of what that file reports is made of long stretches where both
@@ -15,24 +16,29 @@ import type { Db } from "@/lib/genome/load";
  * every one of them is below the threshold; it never compares them (X15,
  * brief line 348, acceptance 20).
  *
- * The only numbers here are the two the brief states at line 1349 — a total
- * of 100 Mb of runs, and an F_ROH of 0.0156 — and the positions the file
- * itself reports. No genome length is assumed: the denominator is the
- * autosomal span the file covers (first to last reported position on each
- * autosome), so the quantity is about the file that was read rather than
- * about a reference genome nobody uploaded.
+ * A run is what McQuillan et al. 2008 call one (American Journal of Human
+ * Genetics 83(3):359–372, doi:10.1016/j.ajhg.2008.08.007): a stretch of
+ * consecutive reported autosomal calls in which all but at most one call
+ * read the same on both copies, counted only when it holds at least 25
+ * calls and spans at least 1.5 Mb (span = last call position − first call
+ * position of the run). A gap between reported positions does not break a
+ * run: the paper tolerates missing calls. The thresholds the surface
+ * applies are the brief's own (line 1349): 100 Mb of runs, F_ROH 0.0156.
+ * F_ROH is the sum of run lengths over the autosomal span the file covers
+ * (first to last reported position on each autosome). The denominator is
+ * Inherit's choice, not the paper's, which divides by the autosomal length
+ * its panel covers: applied to a sparse file it can only make F_ROH larger,
+ * so it can only refuse more, never less. No genome length is assumed.
  *
  * The measure is taken once, at ingest, from the parsed calls the
  * processing route already holds, and stored on `genome_files` (migration
  * `20260903200000_genome_files_runs_of_homozygosity.sql`). Readers never
- * re-derive it from `user_variants`: a request-time read budget made every
- * real array or sequence file unmeasurable (D-030). What cannot be measured
- * is said, never guessed. A file that lists only the places where a reader
- * differs from the reference reports no stretch of same-reading positions
- * at all: between its rows the genome is unrecorded, not identical. Such a
- * file is stored as `not_measurable`, and the surface above refuses the
- * arithmetic with that reason rather than assuming the file is safe to
- * compute from.
+ * re-derive it from `user_variants` (D-030). What cannot be measured is
+ * said, never guessed: a file that reports no call homozygous for the
+ * reference lists only its differences, and the positions between its rows
+ * are unrecorded, not identical, so it is stored as `not_measurable` and
+ * the surface above refuses the arithmetic with that reason rather than
+ * assuming the file is safe to compute from.
  *
  * The module carries no `server-only` marker: it is pure arithmetic plus one
  * reader that takes its database client as a parameter, exactly as
@@ -47,25 +53,60 @@ export const ROH_TOTAL_THRESHOLD_BASES = 100_000_000;
 export const F_ROH_THRESHOLD = 0.0156;
 
 /**
- * Why a file cannot be measured. `no-runs-reported`: the file reports no
- * stretch of same-reading autosomal calls (a file of differences only).
- * `no-autosomal-calls`: the file reports no autosomal call at all. These
- * are the two values `genome_files.roh_reason` admits.
+ * The least a run may span, in bases: 1.5 Mb (McQuillan et al. 2008,
+ * doi:10.1016/j.ajhg.2008.08.007).
  */
-export const ROH_UNMEASURABLE_REASONS = ["no-runs-reported", "no-autosomal-calls"] as const;
+export const ROH_MIN_RUN_BASES = 1_500_000;
+
+/**
+ * The fewest calls a run may hold: 25 contiguous homozygous SNPs (McQuillan
+ * et al. 2008, doi:10.1016/j.ajhg.2008.08.007).
+ */
+export const ROH_MIN_RUN_CALLS = 25;
+
+/**
+ * How many calls inside a run may read differently on the two copies: one
+ * heterozygous call per window (McQuillan et al. 2008,
+ * doi:10.1016/j.ajhg.2008.08.007).
+ */
+export const ROH_MAX_HETEROZYGOUS_IN_RUN = 1;
+
+/**
+ * Why a file cannot be measured. `no-autosomal-calls`: the file reports no
+ * autosomal call at all. `no-reference-calls`: the file reports no call
+ * homozygous for the reference, the shape of a differences-only VCF, whose
+ * unrecorded positions cannot be read as identical. `no-runs-reported`:
+ * the file covers no autosomal stretch at all (one reported position per
+ * autosome), so it could report no run and has no denominator. These are
+ * the values `genome_files.roh_reason` admits.
+ */
+export const ROH_UNMEASURABLE_REASONS = [
+  "no-runs-reported",
+  "no-autosomal-calls",
+  "no-reference-calls",
+] as const;
 export type RohUnmeasurableReason = (typeof ROH_UNMEASURABLE_REASONS)[number];
 
-/** One call as this measure reads it: an autosome, a position and the letters. */
+/**
+ * One call as this measure reads it: an autosome, a position, the letters
+ * and, where the parser carries it, the reference allele at that position.
+ */
 export interface RohCall {
   chrom: number;
   pos: number;
   genotype: string;
+  /**
+   * The reference allele, or null / absent where the file carries none. A
+   * VCF record and a VCF reference call carry it; an array record carries
+   * null, because the vendors' files list no reference allele.
+   */
+  ref?: string | null;
 }
 
 export type RohMeasure =
   | {
       status: "measured";
-      /** Number of runs of two or more consecutive same-reading calls. */
+      /** Number of runs by the cited definition; zero is a measured answer. */
       runCount: number;
       /** Sum of the runs' spans, in bases. */
       totalRunBases: number;
@@ -90,9 +131,11 @@ export function exceedsRohThreshold(totalRunBases: number, fRoh: number): boolea
 
 /**
  * Whether one call reads the same on both copies. A call that does not show
- * two readable letters (a no-call, or a single letter) is neither: it breaks
- * a run rather than extending it, because an unreadable position is not
- * evidence of anything.
+ * two readable letters (a no-call, or a single letter) is neither: it counts
+ * against a run's tolerance like a heterozygous call, because an unreadable
+ * position is not evidence of anything. (No-calls never reach this measure
+ * as records — both parsers skip them — so in practice the calls that do
+ * not read the same are heterozygous ones.)
  */
 export function readsTheSameOnBothCopies(genotype: string): boolean {
   const key = genotypeKey(genotype);
@@ -100,62 +143,133 @@ export function readsTheSameOnBothCopies(genotype: string): boolean {
 }
 
 /**
+ * Whether one call is homozygous for the reference: the file's own evidence
+ * that it recorded a position which does not differ. What the parsers
+ * expose decides how that is read:
+ *   - a VCF record and a VCF reference call carry `ref`, so a same-reading
+ *     call is reference-homozygous only when both letters are the
+ *     reference (the parser keeps such `0/0` rows in `referenceCalls`;
+ *     a `1/1` row is same-reading but is a difference);
+ *   - an array record carries no reference allele (`ref` is null on every
+ *     one, the vendors' files list none), and an array file lists every
+ *     probed position whether or not it differs, so a same-reading array
+ *     call is read as a reported non-difference position.
+ */
+export function isReferenceHomozygous(call: RohCall): boolean {
+  const key = genotypeKey(call.genotype);
+  if (key === null || key.length !== 2 || key[0] !== key[1]) return false;
+  if (call.ref === null || call.ref === undefined) return true;
+  const ref = call.ref.trim().toUpperCase();
+  return ref.length === 1 && ref === key[0];
+}
+
+/**
+ * The calls the measure reads from one parse: the variant records and the
+ * reference calls the parser kept, each with the reference allele it
+ * carries. The route calls this before any liftover, so both share the
+ * file's own build.
+ */
+export function rohCallsFromParse(parsed: ParseResult): RohCall[] {
+  const calls: RohCall[] = [];
+  for (const record of parsed.records) {
+    calls.push({ chrom: record.chrom, pos: record.pos, genotype: record.genotype, ref: record.ref });
+  }
+  for (const call of parsed.referenceCalls) {
+    calls.push({ chrom: call.chrom, pos: call.pos, genotype: call.genotype, ref: call.ref });
+  }
+  return calls;
+}
+
+/**
+ * The runs of one autosome, as spans. Every maximal stretch of consecutive
+ * calls holding at most one call that does not read the same is a
+ * candidate; a candidate is a run when, trimmed to start and end on a
+ * same-reading call, it holds at least `ROH_MIN_RUN_CALLS` calls and spans
+ * at least `ROH_MIN_RUN_BASES`. Candidates that qualify and overlap (they
+ * can share the calls on either side of one tolerated call) are merged, so
+ * no base is counted twice.
+ */
+function runsOfOneAutosome(sorted: readonly RohCall[]): { start: number; end: number }[] {
+  const same = sorted.map((call) => readsTheSameOnBothCopies(call.genotype));
+  const qualified: { start: number; end: number }[] = [];
+  const consider = (from: number, to: number) => {
+    let start = from;
+    let end = to;
+    while (start <= end && !same[start]) start++;
+    while (end >= start && !same[end]) end--;
+    if (end < start) return;
+    const calls = end - start + 1;
+    const span = sorted[end].pos - sorted[start].pos;
+    if (calls >= ROH_MIN_RUN_CALLS && span >= ROH_MIN_RUN_BASES) {
+      qualified.push({ start: sorted[start].pos, end: sorted[end].pos });
+    }
+  };
+
+  // Every maximal window with at most ROH_MAX_HETEROZYGOUS_IN_RUN calls that
+  // do not read the same: when one more arrives, the window so far is a
+  // candidate, and the next window begins after the earliest tolerated one.
+  let windowStart = 0;
+  const tolerated: number[] = [];
+  for (let index = 0; index < sorted.length; index++) {
+    if (same[index]) continue;
+    tolerated.push(index);
+    if (tolerated.length > ROH_MAX_HETEROZYGOUS_IN_RUN) {
+      consider(windowStart, index - 1);
+      windowStart = tolerated[0] + 1;
+      tolerated.shift();
+    }
+  }
+  consider(windowStart, sorted.length - 1);
+
+  // Candidates arrive in order of their start; merge any that overlap.
+  const merged: { start: number; end: number }[] = [];
+  for (const run of qualified) {
+    const last = merged[merged.length - 1];
+    if (last && run.start <= last.end) last.end = Math.max(last.end, run.end);
+    else merged.push({ ...run });
+  }
+  return merged;
+}
+
+/**
  * The measure. Calls arrive in any order; autosomes are grouped and sorted
- * here so the answer does not depend on the order rows came back in. The
- * parsed records of the processing route are passed as they are: only
- * `chrom`, `pos` and `genotype` are read, the same three fields the variant
- * rows are built from.
+ * here so the answer does not depend on the order rows came back in. A
+ * measurable file with no run is measured at zero: that is an answer, and
+ * it is below both thresholds.
  */
 export function measureRunsOfHomozygosity(calls: readonly RohCall[]): RohMeasure {
   const byChrom = new Map<number, RohCall[]>();
+  let referenceCalls = 0;
   for (const call of calls) {
     if (!isAutosome(call.chrom) || !Number.isFinite(call.pos)) continue;
+    if (isReferenceHomozygous(call)) referenceCalls++;
     const bucket = byChrom.get(call.chrom);
     if (bucket) bucket.push(call);
     else byChrom.set(call.chrom, [call]);
   }
   if (byChrom.size === 0) return { status: "not_measurable", reason: "no-autosomal-calls" };
+  // A file that reports no position as identical to the reference lists
+  // only its differences: between its rows the genome is unrecorded, not
+  // identical, so no run in it could be read as one.
+  if (referenceCalls === 0) return { status: "not_measurable", reason: "no-reference-calls" };
 
   let runCount = 0;
   let totalRunBases = 0;
   let coveredSpanBases = 0;
-
   for (const bucket of byChrom.values()) {
     const sorted = [...bucket].sort((left, right) => left.pos - right.pos);
     coveredSpanBases += sorted[sorted.length - 1].pos - sorted[0].pos;
-
-    let runStart: number | null = null;
-    let runEnd = 0;
-    let runLength = 0;
-    // A run is a stretch: two or more same-reading calls at distinct
-    // positions. Two rows at one position span no bases and are no run.
-    const closeRun = () => {
-      if (runStart !== null && runLength >= 2 && runEnd > runStart) {
-        runCount++;
-        totalRunBases += runEnd - runStart;
-      }
-      runStart = null;
-      runLength = 0;
-    };
-    for (const call of sorted) {
-      if (readsTheSameOnBothCopies(call.genotype)) {
-        if (runStart === null) runStart = call.pos;
-        runEnd = call.pos;
-        runLength++;
-        continue;
-      }
-      closeRun();
+    for (const run of runsOfOneAutosome(sorted)) {
+      runCount++;
+      totalRunBases += run.end - run.start;
     }
-    closeRun();
   }
+  // No autosomal stretch at all: nothing a run could lie in, and no
+  // denominator (the stored shape requires a positive covered span).
+  if (coveredSpanBases === 0) return { status: "not_measurable", reason: "no-runs-reported" };
 
-  // A file that reports no stretch of same-reading positions cannot answer
-  // the question at all: the space between its rows is unrecorded, not
-  // identical. That is the shape of a file listing only differences.
-  if (runCount === 0) return { status: "not_measurable", reason: "no-runs-reported" };
-
-  // A run lies inside its autosome's span, so the span is positive here and
-  // the fraction is in [0, 1]: the shape `genome_files_roh_shape` requires.
+  // A run lies inside its autosome's span, so the fraction is in [0, 1]:
+  // the shape `genome_files_roh_shape` requires.
   const fRoh = totalRunBases / coveredSpanBases;
   return {
     status: "measured",

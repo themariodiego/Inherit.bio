@@ -668,3 +668,24 @@ positions a file reports, a fact about the file's reach and not a result
 about the person, and the joint comparison cannot be described without
 it. Anything that reads a letter from another adult's file needs that
 layer's grant.
+
+## 2026-09-03 — Runs of homozygosity follow a cited definition
+
+Context: D-040. The brief (line 1349) mandates F_ROH from total runs of
+homozygosity with the thresholds 100 Mb and 0.0156, but gives no
+definition of a run; the first measure counted any two adjacent
+same-reading calls and refused every real array file.
+
+Decision: a run is defined as McQuillan et al. 2008 define it (American
+Journal of Human Genetics 83(3):359–372, doi:10.1016/j.ajhg.2008.08.007;
+read at PubMed Central on 2026-09-03): a stretch of at least 25
+contiguous same-reading autosomal calls spanning at least 1.5 Mb, with at
+most one heterozygous call inside it. F_ROH is the sum of run lengths
+over the autosomal span the file covers; the paper divides by the
+autosomal length its panel covers (2,673,768 kb), and Inherit's
+file-covered span is the same idea applied to the file at hand, which
+for a sparse file only raises F_ROH and so refuses more, never less. A
+file that reports no reference-homozygous call (a differences-only VCF)
+cannot show a run and is `not_measurable`. The citation renders beside
+the carrier block as its provenance, and the constants have one home in
+`src/lib/family/roh.ts`.

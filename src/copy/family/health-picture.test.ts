@@ -121,6 +121,14 @@ describe("health-picture copy", () => {
     );
   });
 
+  it("cites the definition of a run by its DOI, and links to it (D-040)", () => {
+    expect(copy.RUNS_SOURCE_DOI).toBe("10.1016/j.ajhg.2008.08.007");
+    expect(copy.RUNS_SOURCE_URL).toBe("https://doi.org/10.1016/j.ajhg.2008.08.007");
+    expect(copy.RUNS_PROVENANCE).toContain("McQuillan");
+    expect(copy.RUNS_PROVENANCE).toContain("2008");
+    expect(fleschKincaidGrade(copy.RUNS_PROVENANCE)).toBeLessThanOrEqual(9);
+  });
+
   it("names the cell of a layer another adult has not shared, in words and without a figure (D-038)", () => {
     expect(copy.CELL_NOT_SHARED).toBe("Not shared with you");
     expect(copy.CELL_NOT_SHARED).not.toMatch(/\d/);
