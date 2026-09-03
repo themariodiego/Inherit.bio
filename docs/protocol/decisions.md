@@ -53,3 +53,43 @@ evidence is interpreted.
   matching regex must admit 100.
 - Consequence: `src/lib/figures/natural-frequency.ts` implements the rule;
   tests pin the worked vectors.
+
+## 2026-09-03 — Presentation decisions taken from the reconciled spec
+
+Each item names the competing texts and the rule that decided it. The full
+reconciliation is in the session's spec derivation; these are the defaults
+the shipped code follows.
+
+- Percentile withheld. Today's percentile is computed against one
+  cohort-wide reference distribution with no named panel, no size and no
+  interval, and no absolute risk exists beside it. X4.2 and §4 §2.5 forbid
+  rendering a percentile in that state, so no surface renders one; coverage
+  facts move to the expert data page.
+- One not-diagnostic line everywhere: the §5 §6.1 sentence ("This is not a
+  diagnosis. Inherit is not a doctor and no clinician has reviewed this.
+  Talk to a qualified professional before acting on anything here."). G4.8's
+  alternative sentence is not added as a second line; legality precedence.
+- "What you can do" empty state uses §3 §2.2's sentence ("There is nothing
+  you need to do about this result. It does not change what any doctor
+  would advise for you today.") because X13.1 adopted that heading and §3
+  defines the heading and its empty string as one unit.
+- Layer group labels are "Specific variants" and "Statistical estimates"
+  with §4 §1.3's definition sentences (X5.1); §2's "Single-gene findings"
+  and "Whole-genome estimates" are not used.
+- Starter list selects `layer = 'variant_call'` or
+  `estimate_kind = 'single_locus'`, evidence in (clinical, established,
+  emerging), categories outside Brain, memory and mood and Cancer, covered
+  by the subject's files; the same reasoning X5.3 applied to the evidence
+  clause applies to the layer clause (a day-one empty state would be false).
+- Overview `h1` is "Overview" (nav-label identity, route register); §2's
+  "Welcome to Inherit." sub-line survives as the State A lede. Section
+  headings are "My Genome", "Family", "Embryos" (X9, nav labels).
+- Copilot is a route, not a dock (X1.2); report-scoped chats use
+  `/copilot/{subject}?report={slug}`.
+- Legacy redirects are all 308 (route register is canonical, X1); the two
+  temporary `redirect()` stubs are to be changed to `permanentRedirect()`.
+- The State A "Show me what this looks like first" item renders only once
+  `/example/report` exists; a dead link is never shipped.
+- The eight subject colour tokens are added to `src/app/globals.css` as an
+  extension (X2.4); a unit test pins the frozen identity tokens (G2.7) and
+  the 3:1 contrast on both grounds in both themes.
