@@ -1,229 +1,200 @@
+/**
+ * /genome/[subject]/ancestry — what the file supports about broad regions
+ * and parent lines (brief §4.6, §4 §7.3–7.6, A.8, G4.4, X16.5). Server
+ * composition: auth and subject resolution, the three stored ancestry
+ * results, the region arithmetic (`presentShares` → `regionsView`) and the
+ * committed map geometry decoded once per process, handed to the client
+ * regions section as plain data. The engines (`src/lib/genome/admixture.ts`,
+ * `haplogroups.ts`) are untouched; nothing here recomputes an estimate.
+ *
+ * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
+ * Neanderthals, where this comes from). No segmented control renders while
+ * only the continental tier qualifies (design §4.3).
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AIMS } from "@/lib/genome/admixture";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
+import { cache } from "react";
+import { AncestryRegions, type AncestryResultView } from "@/components/results/ancestry/ancestry-regions";
+import { LineageCard, type LineageCall } from "@/components/results/ancestry/lineage-card";
+import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { SubjectBar } from "@/components/subjects/subject-bar";
+import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING } from "@/copy/ancestry";
+import { NAV_LABELS } from "@/copy/navigation";
+import { DATA_AND_METHODS } from "@/copy/reports/strings";
+import { mapShapes } from "@/lib/ancestry/geometry";
+import { MIN_MARKERS, PANEL, SOURCES } from "@/lib/ancestry/panel";
+import { presentShares } from "@/lib/ancestry/present";
+import { tierQualifies } from "@/lib/ancestry/regions";
+import { regionsView } from "@/lib/ancestry/view";
+import { POPS, type Pop } from "@/lib/genome/admixture";
+import { getSubjectFileCount } from "@/lib/genome/load";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Ancestry" };
+const DOMAIN_LABEL = NAV_LABELS["my-genome"];
 
-const POP_LABELS: Record<string, string> = {
-  AFR: "African",
-  AMR: "Admixed American",
-  EAS: "East Asian",
-  EUR: "European",
-  SAS: "South Asian",
-};
-
-interface AdmixtureResult {
-  proportions: Record<string, number>;
-  markersUsed: number;
-  note: string;
-}
-
-/** Size of the ancestry-informative-marker panel the estimator runs on. */
-const PANEL_SIZE = AIMS.length;
-
-/**
- * Below this fraction of usable panel markers, the EM estimate is noise:
- * hide the percentages behind an honest empty state instead of charting them.
- */
-const RELIABLE_FRACTION = 0.25;
-
-function AdmixtureBars({
-  proportions,
-  muted,
-}: {
-  proportions: Record<string, number>;
-  muted?: boolean;
-}) {
-  return (
-    <ul className={`mt-4 space-y-2${muted ? " opacity-50" : ""}`}>
-      {Object.entries(proportions)
-        .sort(([, a], [, b]) => b - a)
-        .map(([pop, frac]) => (
-          <li key={pop} className="flex items-center gap-3 text-sm">
-            <span className="w-40 shrink-0">{POP_LABELS[pop] ?? pop}</span>
-            <div
-              aria-hidden="true"
-              className="h-2 flex-1 overflow-hidden rounded-full bg-tint"
-            >
-              <div
-                className="h-full rounded-full bg-forest"
-                style={{ width: `${Math.round(frac * 100)}%` }}
-              />
-            </div>
-            <span className="w-12 text-right font-mono text-xs">
-              {Math.round(frac * 100)}%
-            </span>
-          </li>
-        ))}
-    </ul>
-  );
-}
-
-interface HaploResult {
-  haplogroup: string | null;
-  path?: string[];
-  matched?: number;
-  tested?: number;
-  support?: string;
-  note?: string;
-}
-
-export default async function AncestryPage(
-  props: PageProps<"/genome/[subject]/ancestry">,
-) {
-  const { subject: subjectSegment } = await props.params;
+const loadSubject = cache(async (segment: string) => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, subjectSegment);
-  if (!subject) notFound();
+  if (!user) return null;
+  const subject = await resolveSubjectForAccount(user.id, segment);
+  return subject ? { user, subject } : null;
+});
+
+export async function generateMetadata(
+  props: PageProps<"/genome/[subject]/ancestry">,
+): Promise<Metadata> {
+  const { subject: segment } = await props.params;
+  const context = await loadSubject(segment);
+  return {
+    title: context ? `${context.subject.displayLabel} · ${SECTION_LABEL}` : SECTION_LABEL,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** The stored `AdmixtureResult`, checked field by field; anything else renders as no result. */
+function admixtureView(raw: unknown, supportNote: string): AncestryResultView | null {
+  if (!isRecord(raw) || !isRecord(raw.proportions) || typeof raw.markersUsed !== "number") return null;
+  const proportions = {} as Record<Pop, number>;
+  for (const pop of POPS) {
+    const value = raw.proportions[pop];
+    if (typeof value !== "number" || !Number.isFinite(value)) return null;
+    proportions[pop] = value;
+  }
+  const markersUsed = raw.markersUsed;
+  return {
+    markersUsed,
+    supportNote,
+    shown: tierQualifies("continental", markersUsed),
+    view: regionsView(presentShares({ proportions })),
+  };
+}
+
+/** The stored `HaplogroupCall`, or the `{ haplogroup: null }` row written when the file has no such chromosome. */
+function lineageCall(raw: unknown): LineageCall | null {
+  if (!isRecord(raw)) return null;
+  return {
+    haplogroup: typeof raw.haplogroup === "string" ? raw.haplogroup : null,
+    path: Array.isArray(raw.path) ? raw.path.filter((step): step is string => typeof step === "string") : undefined,
+    matched: typeof raw.matched === "number" ? raw.matched : undefined,
+    tested: typeof raw.tested === "number" ? raw.tested : undefined,
+  };
+}
+
+const DOI_PREFIX = "doi:";
+
+export default async function AncestryPage(
+  props: PageProps<"/genome/[subject]/ancestry">,
+) {
+  const { subject: segment } = await props.params;
+  const context = await loadSubject(segment);
+  if (!context) notFound();
+  const { user, subject } = context;
 
   const admin = createAdminClient();
-  const [files, { data: results }] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
+  const [fileCount, { data: results }] = await Promise.all([
+    // The subject bar counts every file in the record, whatever its status.
+    getSubjectFileCount(admin, subject.id),
     admin
-        .from("ancestry_results")
-        .select("kind, result, support_note")
-        .eq("subject_id", subject.id)
-        .order("created_at", { ascending: false }),
+      .from("ancestry_results")
+      .select("kind, result, support_note")
+      .eq("subject_id", subject.id)
+      .order("created_at", { ascending: false }),
   ]);
 
-  const admix = results?.find((r) => r.kind === "admixture");
-  const mt = results?.find((r) => r.kind === "mtdna");
-  const y = results?.find((r) => r.kind === "ydna");
+  const admix = results?.find((row) => row.kind === "admixture");
+  const mt = results?.find((row) => row.kind === "mtdna");
+  const y = results?.find((row) => row.kind === "ydna");
+  const regions = admix ? admixtureView(admix.result, admix.support_note) : null;
 
-  const admixData = admix?.result as unknown as AdmixtureResult | undefined;
-  const mtData = mt?.result as unknown as HaploResult | undefined;
-  const yData = y?.result as unknown as HaploResult | undefined;
+  const subjectParams = { subject: subject.routeSegment };
+  const hubHref = route("genome.subject", subjectParams);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <p className="eyebrow mb-2">Ancestry</p>
-        <h1 className="display text-3xl">What your file supports</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          Your file must cover certain DNA positions for us to estimate
-          ancestry. Each panel says what we could and could not measure. These
-          broad regions use {PANEL_SIZE} useful markers. They do not measure
-          your identity.
-        </p>
+    <div className="mx-auto max-w-5xl space-y-8">
+      <Breadcrumbs
+        items={[
+          { label: DOMAIN_LABEL, href: hubHref },
+          { label: subject.displayLabel },
+          { label: SECTION_LABEL },
+        ]}
+      />
+      <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
+      <h1 className="display text-3xl">{H1}</h1>
+
+      <section data-testid="admixture" aria-labelledby="regions-heading" className="space-y-4">
+        <h2 id="regions-heading" className="text-lg font-semibold text-ink">
+          {REGIONS_HEADING}
+        </h2>
+        <AncestryRegions
+          subjectId={subject.id}
+          shapes={mapShapes()}
+          panel={{ markers: PANEL.markers, version: PANEL.version }}
+          minMarkers={MIN_MARKERS}
+          result={regions}
+        />
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <LineageCard
+          parent="mother"
+          subjectId={subject.id}
+          call={mt ? lineageCall(mt.result) : null}
+          supportNote={mt?.support_note ?? null}
+          defineTerm
+        />
+        <LineageCard
+          parent="father"
+          subjectId={subject.id}
+          call={y ? lineageCall(y.result) : null}
+          supportNote={y?.support_note ?? null}
+          defineTerm={false}
+        />
       </div>
 
-      {files.length === 0 ? (
-        <p className="rounded-xl border border-line bg-card p-6 text-sm text-ink-muted">
-          Process a raw data file for {subject.displayLabel} to see ancestry estimates.
-        </p>
-      ) : null}
+      <NeanderthalCard />
 
-      {admixData ? (
-        <section
-          data-testid="admixture"
-          className="rounded-2xl border border-line bg-card p-5"
-        >
-          <h2 className="font-medium">Continental admixture estimate</h2>
-          {admixData.markersUsed / PANEL_SIZE < RELIABLE_FRACTION ? (
-            <>
-              <p className="mt-3 text-sm text-ink-muted">
-                Not enough data for an estimate — your file covered only{" "}
-                {admixData.markersUsed} of {PANEL_SIZE} ancestry markers, so no
-                meaningful percentages can be computed. This is a limitation of
-                the file, not a result about you.
-              </p>
-              <details className="mt-4">
-                <summary className="cursor-pointer text-xs text-ink-muted underline decoration-dotted underline-offset-2">
-                  Show the unreliable raw numbers anyway
-                </summary>
-                <p className="mt-3 text-xs text-ink-muted">
-                  {admix?.support_note} Treat these as statistical noise, not
-                  as an estimate of your ancestry.
-                </p>
-                <AdmixtureBars proportions={admixData.proportions} muted />
-              </details>
-            </>
-          ) : (
-            <>
-              <p className="mt-3 text-xs text-ink-muted">
-                {admix?.support_note}
-              </p>
-              <AdmixtureBars proportions={admixData.proportions} />
-            </>
-          )}
-        </section>
-      ) : null}
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <section
-          data-testid="mtdna"
-          className="rounded-2xl border border-line bg-card p-5"
-        >
-          <h2 className="font-medium">mtDNA haplogroup (maternal line)</h2>
-          {mtData?.haplogroup ? (
-            <>
-              <p className="display mt-3 text-4xl text-forest">
-                {mtData.haplogroup}
-              </p>
-              {mtData.path ? (
-                <p className="mt-2 font-mono text-xs text-ink-muted">
-                  {mtData.path.join(" → ")}
-                </p>
+      <section aria-labelledby="sources-heading" className="space-y-3">
+        <h2 id="sources-heading" className="text-lg font-semibold text-ink">
+          {SOURCES_HEADING}
+        </h2>
+        <ul data-slot="ancestry-sources" className="space-y-2 text-sm leading-relaxed">
+          {SOURCES.map((source) => (
+            <li key={source.id}>
+              <span className="font-medium text-ink">{source.title}</span>
+              <span className="text-ink-muted">{` — ${source.detail}`}</span>
+              {source.id.startsWith(DOI_PREFIX) ? (
+                <>
+                  {" "}
+                  <a
+                    href={`https://doi.org/${source.id.slice(DOI_PREFIX.length)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink-muted underline underline-offset-2"
+                  >
+                    {source.id}
+                  </a>
+                </>
               ) : null}
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-ink-muted">Not determined.</p>
-          )}
-          <p className="mt-3 text-xs text-ink-muted">{mt?.support_note}</p>
-        </section>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <section
-          data-testid="ydna"
-          className="rounded-2xl border border-line bg-card p-5"
-        >
-          <h2 className="font-medium">Y haplogroup (paternal line)</h2>
-          {yData?.haplogroup ? (
-            <>
-              <p className="display mt-3 text-4xl text-forest">
-                {yData.haplogroup}
-              </p>
-              {yData.path ? (
-                <p className="mt-2 font-mono text-xs text-ink-muted">
-                  {yData.path.join(" → ")}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-ink-muted">Not determined.</p>
-          )}
-          <p className="mt-3 text-xs text-ink-muted">{y?.support_note}</p>
-          {y?.support_note?.includes("XX genomes") ? (
-            <p className="mt-1 text-xs text-ink-muted">
-              In plain terms: this is expected when the file comes from someone
-              without a Y chromosome, e.g. most women.
-            </p>
-          ) : null}
-        </section>
-      </div>
-
-      <p className="rounded-xl border border-line p-4 text-xs leading-relaxed text-ink-muted">
-        We compare your file with public data from 1000 Genomes phase 3. This
-        is for information only. Each haplogroup result says how many key
-        markers your file covered. Array files cover far fewer markers than
-        whole-genome files.
-      </p>
-      <p className="text-sm">
-        <Link
-          href={`/genome/${subject.routeSegment}/data`}
-          className="underline underline-offset-2"
-        >
-          Data and methods
+      <footer className="text-sm">
+        <Link href={route("genome.data", subjectParams)} className="underline underline-offset-2">
+          {DATA_AND_METHODS}
         </Link>
-      </p>
+      </footer>
     </div>
   );
 }

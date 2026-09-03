@@ -114,16 +114,13 @@ test("ancestry page states what a chr20-22 file cannot support", async ({
     /without a Y chromosome/i,
   );
 
-  // chr20-22 covers almost none of the AIM panel, so the admixture card must
-  // refuse to show confident percentage bars and render the honest empty
-  // state instead.
+  // chr20-22 covers almost none of the AIM panel, so the regions section
+  // renders the grey state: the mandated §4.6 sentence, character for
+  // character, with the measured counts (the subset's marker count is read
+  // from the file, never fixed here), and no percentages.
   const admixture = page.getByTestId("admixture");
-  await expect(admixture).toContainText(/Not enough data for an estimate/i);
-  await expect(admixture).toContainText(
-    /covered only \d+ of \d+ ancestry markers/i,
-  );
-  await expect(admixture).toContainText(
-    /a limitation of the file, not a result about you/i,
+  await expect(admixture.locator('[data-slot="grey-state"]')).toHaveText(
+    /^Your file covers only \d+ of \d+ ancestry markers — too few to draw a map\. This is a limit of the file, not a result about you\.$/,
   );
   // The raw numbers stay hidden behind an explicit disclosure...
   const rawList = admixture.getByRole("list");

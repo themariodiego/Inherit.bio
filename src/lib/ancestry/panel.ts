@@ -43,7 +43,7 @@ export const SOURCES: readonly PanelSource[] = [
   {
     id: "doi:10.1038/s41598-019-55175-x",
     title: "Pakstis and colleagues, 2019",
-    detail: "The combined list of the two panels that the shipped 168 markers were taken from.",
+    detail: "The combined list of the two panels the shipped markers were taken from.",
   },
   {
     id: "doi:10.1038/nature15393",

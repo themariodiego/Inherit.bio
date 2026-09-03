@@ -18,4 +18,5 @@ writing a superseding ADR, not silently drifting.
 | [0010](./0010-overview-information-architecture.md) | Overview information architecture: hub that informs nothing, nine boxes, five-item navigation | Accepted |
 | [0011](./0011-report-taxonomy-and-evidence-rubric.md) | Report taxonomy and evidence rubric: two layers, five levels, nine categories, disclosed remap | Accepted |
 | [0012](./0012-jargon-register-everyday-words.md) | Everyday words leave the jargon register; nine genuine terms join it | Accepted |
+| [0013](./0013-offline-map-rendering.md) | Offline map rendering: Natural Earth reduced at build time, committed TopoJSON, server-side decode, inline SVG | Accepted |
 | [0016](./0016-supersede-large-file-transport-and-compute.md) | Supersede large-file transport, formats, and compute placement (supersedes 0001) | Accepted |

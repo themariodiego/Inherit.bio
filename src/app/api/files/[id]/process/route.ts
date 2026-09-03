@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { estimateAdmixture } from "@/lib/genome/admixture";
+import { PANEL } from "@/lib/ancestry/panel";
+import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
 import { classify } from "@/lib/genome/haplogroups";
 import { buildLiftover } from "@/lib/genome/liftover";
 import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
@@ -151,6 +152,11 @@ export async function POST(
 
     const admix = await estimateAdmixture(getGenotype);
     if (admix) {
+      // The panel the estimate was computed against and the state it is in:
+      // available once the file supplies the reliable fraction of the panel,
+      // partial below it, not covered when it supplies no marker at all. The
+      // ancestry page reads the stored result, never these columns.
+      const coverage = admix.markersUsed / AIMS.length;
       ancestryRows.push({
         user_id: user.id,
         subject_id: file.subject_id,
@@ -158,6 +164,11 @@ export async function POST(
         kind: "admixture",
         result: admix as never,
         support_note: admix.note,
+        model_id: PANEL.id,
+        model_version: PANEL.version,
+        coverage,
+        result_state:
+          admix.markersUsed === 0 ? "not_covered" : coverage >= RELIABLE_FRACTION ? "available" : "partial",
       });
     }
 

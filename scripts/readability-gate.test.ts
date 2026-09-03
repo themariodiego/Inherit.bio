@@ -456,6 +456,8 @@ describe("copy registry and runtime copy extraction", () => {
       "we", "cannot", "and", "will", "not", "guess", "it", "does", "not",
     ]);
     expect(vocabularyWords("We can’t and you’re")).toEqual(["we", "cannot", "and", "you", "are"]);
+    expect(vocabularyWords("Show only what’s well supported")).toEqual(["show", "only", "what", "is", "well", "supported"]);
+    expect(vocabularyWords("An adult’s file")).toEqual(["an", "adults", "file"]);
     expect(vocabularyWords("I’m sure they’ll, we’ve, let’s, she’d")).toEqual([
       "i", "am", "sure", "they", "will", "we", "have", "let", "us", "she", "would",
     ]);

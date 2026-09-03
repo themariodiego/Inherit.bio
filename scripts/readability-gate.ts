@@ -737,6 +737,7 @@ const CONTRACTION_EXPANSIONS: ReadonlyArray<readonly [RegExp, string]> = [
   [/^([a-z]+)n't$/, "$1 not"],
   [/^i'm$/, "i am"],
   [/^let's$/, "let us"],
+  [/^(what|that|it|there|here|who|where|how)'s$/, "$1 is"],
   [/^([a-z]+)'re$/, "$1 are"],
   [/^([a-z]+)'ve$/, "$1 have"],
   [/^([a-z]+)'ll$/, "$1 will"],
@@ -745,8 +746,8 @@ const CONTRACTION_EXPANSIONS: ReadonlyArray<readonly [RegExp, string]> = [
 
 /**
  * The plain words a short string is checked against: contractions expand
- * (`don’t` → `do not`, `you’re` → `you are`); any other apostrophe, which is
- * a possessive, is dropped (`adult’s` → `adults`).
+ * (`don’t` → `do not`, `you’re` → `you are`, `what’s` → `what is`); any
+ * other apostrophe, which is a possessive, is dropped (`adult’s` → `adults`).
  */
 export function vocabularyWords(value: string): string[] {
   return readabilityWords(value).flatMap((token) => {
