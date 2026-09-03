@@ -178,7 +178,8 @@ describe("permission columns", () => {
     );
     expect(html).toContain('data-slot="permission-glyph"');
     expect(html).toMatch(/data-slot="permission-state"[^>]*>On</);
-    expect(html).toContain('aria-label="Ancestry for Bo"');
+    // The accessible name starts with the visible words (WCAG 2.5.3).
+    expect(html).toContain('aria-label="Turn off Ancestry for Bo"');
     expect(html).not.toMatch(/text-(?:danger|forest|green|red)/);
   });
 });

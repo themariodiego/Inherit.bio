@@ -99,9 +99,13 @@ export type PermissionState = keyof typeof PERMISSION_STATES;
 export const TURN_ON_BUTTON = "Turn on";
 export const TURN_OFF_BUTTON = "Turn off";
 
-/** The accessible name of one row's control, so two columns never collide. */
-export function rowControlLabel(label: string, name: string): string {
-  return `${label} for ${name}`;
+/**
+ * The accessible name of one row's control. It starts with the control's
+ * visible words (WCAG 2.5.3: the visible label is part of the name) and
+ * names the row and the person, so two columns never collide.
+ */
+export function rowControlLabel(verb: string, label: string, name: string): string {
+  return `${verb} ${label} for ${name}`;
 }
 
 // ---------------------------------------------------------------------------

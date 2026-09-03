@@ -56,7 +56,11 @@ export function PermissionGrantRow({
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const controlName = rowControlLabel(label, personName);
+  const controlName = rowControlLabel(
+    action?.kind === "grant" ? TURN_ON_BUTTON : TURN_OFF_BUTTON,
+    label,
+    personName,
+  );
 
   return (
     <li

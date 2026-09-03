@@ -49,7 +49,9 @@ describe("tier 2 family gate", () => {
     expect(tier2CookieMatches(digest, ACCOUNT, "session-two")).toBe(false);
     expect(tier2CookieMatches("1", ACCOUNT, SESSION)).toBe(false);
     expect(tier2CookieMatches(undefined, ACCOUNT, SESSION)).toBe(false);
-    expect(tier2CookieMatches(`${digest.slice(0, 63)}0`, ACCOUNT, SESSION)).toBe(false);
+    // A tampered last character that is guaranteed to differ from the real one.
+    const tampered = `${digest.slice(0, 63)}${digest.endsWith("0") ? "1" : "0"}`;
+    expect(tier2CookieMatches(tampered, ACCOUNT, SESSION)).toBe(false);
   });
 
   it("reads the session id from the access token, or nothing at all", () => {
