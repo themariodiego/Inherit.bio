@@ -33,8 +33,11 @@ export type FigureClass = (typeof FIGURE_CLASSES)[number];
 /**
  * `observed` = read directly from the file (a genotype, a coverage count).
  * `modelled` = any statistical estimate.
+ * `exact` = arithmetic that follows from observed inputs with no model in
+ *   between (a Mendelian fraction, brief §3 §8.4). It carries EXACT_MARKER
+ *   and never MODELLED_MARKER; a block never mixes the two (W9 §3.1).
  */
-export const FIGURE_BASES = ["observed", "modelled"] as const;
+export const FIGURE_BASES = ["observed", "modelled", "exact"] as const;
 export type FigureBasis = (typeof FIGURE_BASES)[number];
 
 export type FigureProvenance =
@@ -73,10 +76,17 @@ export const DATA_ATTRIBUTES = {
   subjectId: "data-subject-id",
   subjectPair: "data-subject-pair",
   modelledMarker: "data-modelled-marker",
+  exactMarker: "data-exact-marker",
 } as const;
 
 /** Rendered once per claim block that contains at least one modelled figure; never per figure. */
 export const MODELLED_MARKER = "This is a model, not an observed outcome.";
+
+/**
+ * Rendered once per claim block that contains at least one exact figure and
+ * no modelled one (brief line 1254); never per figure.
+ */
+export const EXACT_MARKER = "This is exact arithmetic, not an estimate.";
 
 /** The unit of an ancestry share whose range is unavailable (G4.4): the explicit statement, never a blank. */
 export const ANCESTRY_RANGE_UNAVAILABLE = "no range yet";

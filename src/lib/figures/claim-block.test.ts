@@ -37,9 +37,75 @@ describe("claimBlock summary", () => {
         subject: 0.12, comparator: 0.004, subjectGroup: "a", comparatorGroup: "b",
       },
     ];
-    expect(claimBlock(figures)).toEqual({ hasModelled: true, needsDenominator: true, denominator: 1000 });
+    expect(claimBlock(figures)).toEqual({ hasModelled: true, hasExact: false, needsDenominator: true, denominator: 1000 });
     expect(claimBlock([{ kind: "coverage", class: "quality", basis: "observed", provenance, read: 1, needed: 2 }]))
-      .toEqual({ hasModelled: false, needsDenominator: false, denominator: null });
+      .toEqual({ hasModelled: false, hasExact: false, needsDenominator: false, denominator: null });
+  });
+
+  describe("exact basis (W9 §3.1)", () => {
+    const exact = { class: "variant-call", basis: "exact", provenance } as const;
+    const quarter: FigureSpec = { ...exact, kind: "natural-frequency", value: 0.25 };
+    const half: FigureSpec = { ...exact, kind: "natural-frequency", value: 0.5 };
+    const observed: FigureSpec = {
+      kind: "carrier-status", class: "variant-call", basis: "observed", provenance, status: "one copy",
+    };
+    const modelled: FigureSpec = {
+      kind: "interval", class: "variant-call", basis: "modelled", provenance, point: 0.12, low: 0.08, high: 0.17,
+    };
+
+    it("flags exact when any figure is exact, and never modelled at the same time", () => {
+      expect(claimBlock([quarter, half, quarter])).toEqual({
+        hasModelled: false, hasExact: true, needsDenominator: true, denominator: 100,
+      });
+      expect(claimBlock([quarter, observed]).hasExact).toBe(true);
+      expect(claimBlock([observed]).hasExact).toBe(false);
+    });
+
+    it("refuses a block that mixes exact and modelled figures", () => {
+      expect(() => claimBlock([quarter, modelled])).toThrow(/mix exact and modelled/);
+      expect(() => claimBlock([modelled, observed, quarter])).toThrow(/mix exact and modelled/);
+      expect(claimBlock([modelled, observed]).hasModelled).toBe(true);
+    });
+  });
+
+  describe("forced denominator", () => {
+    const exact = { class: "variant-call", basis: "exact", provenance } as const;
+
+    it("forces 100 where the ladder would otherwise climb", () => {
+      const close: FigureSpec[] = [
+        { ...exact, kind: "natural-frequency", value: 0.1251 },
+        { ...exact, kind: "natural-frequency", value: 0.1302 },
+      ];
+      expect(claimBlock(close).denominator).toBe(1000);
+      expect(claimBlock(close, { denominator: 100 })).toEqual({
+        hasModelled: false, hasExact: true, needsDenominator: true, denominator: 100,
+      });
+    });
+
+    it("keeps 100 on a block with no natural frequency", () => {
+      const observed: FigureSpec = {
+        kind: "carrier-status", class: "variant-call", basis: "observed", provenance, status: "one copy",
+      };
+      expect(claimBlock([observed], { denominator: 100 })).toEqual({
+        hasModelled: false, hasExact: false, needsDenominator: false, denominator: 100,
+      });
+    });
+
+    it("throws when any value rounds below 1 in 100", () => {
+      const tiny: FigureSpec[] = [
+        { ...exact, kind: "natural-frequency", value: 0.25 },
+        { ...exact, kind: "natural-frequency", value: 0.004 },
+      ];
+      expect(() => claimBlock(tiny, { denominator: 100 })).toThrow(/rounds below 1 in 100/);
+      expect(() => claimBlock([{ ...exact, kind: "absolute", value: 0.0049, group: "children" }], { denominator: 100 }))
+        .toThrow(/rounds below 1 in 100/);
+      // 0.005 rounds to 1 in 100 and is allowed.
+      expect(claimBlock([{ ...exact, kind: "natural-frequency", value: 0.005 }], { denominator: 100 }).denominator).toBe(100);
+    });
+
+    it("accepts only 100", () => {
+      expect(() => claimBlock([], { denominator: 1000 as unknown as 100 })).toThrow(/only the denominator 100/);
+    });
   });
 });
 

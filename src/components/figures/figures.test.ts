@@ -4,6 +4,7 @@ import { createElement as h, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
+  EXACT_MARKER,
   FIGURE_BASES,
   FIGURE_CLASSES,
   FIGURE_KINDS,
@@ -62,6 +63,65 @@ describe("ClaimBlock", () => {
     const html = renderToStaticMarkup(h(ClaimBlock, { subject: { subjectId: "s1" }, figures }));
     expect(html).not.toContain(MODELLED_MARKER);
     expect(html).not.toContain("data-modelled-marker");
+    expect(html).not.toContain(EXACT_MARKER);
+    expect(html).not.toContain("data-exact-marker");
+  });
+
+  describe("exact basis (W9 §3.1)", () => {
+    const exact = { class: "variant-call", basis: "exact", provenance } as const;
+    const derivation: StandaloneFigureSpec[] = [
+      { ...exact, kind: "natural-frequency", value: 0.25 },
+      { ...exact, kind: "natural-frequency", value: 0.5 },
+      { ...exact, kind: "natural-frequency", value: 0.25 },
+      { ...observed, kind: "carrier-status", status: "one copy" },
+    ];
+
+    it("renders the exact marker exactly once, and never the modelled one", () => {
+      const html = renderToStaticMarkup(
+        h(ClaimBlock, { subject: { subjectPair: ["a", "b"] }, figures: derivation }),
+      );
+      expect(html.split(EXACT_MARKER).length - 1).toBe(1);
+      expect(openingTags(html).filter((tag) => "data-exact-marker" in tag.attrs)).toHaveLength(1);
+      expect(html.endsWith(`${EXACT_MARKER}</p></section>`)).toBe(true);
+      expect(html).not.toContain(MODELLED_MARKER);
+      expect(html).not.toContain("data-modelled-marker");
+      for (const node of figureNodes(html).slice(0, 3)) {
+        expect(node.attrs["data-figure-basis"]).toBe("exact");
+      }
+      expect(html).toContain("about 25 in 100");
+      expect(html).toContain("about 50 in 100");
+    });
+
+    it("throws at render when a block mixes exact and modelled figures", () => {
+      const mixed: StandaloneFigureSpec[] = [
+        derivation[0],
+        { ...estimate, kind: "interval", class: "variant-call", point: 0.12, low: 0.08, high: 0.17 },
+      ];
+      expect(() =>
+        renderToStaticMarkup(h(ClaimBlock, { subject: { subjectPair: ["a", "b"] }, figures: mixed })),
+      ).toThrow(/mix exact and modelled/);
+    });
+
+    it("forces the block denominator onto 100 for the distribution renderers", () => {
+      const close: StandaloneFigureSpec[] = [
+        { ...exact, kind: "natural-frequency", value: 0.1251 },
+        { ...exact, kind: "natural-frequency", value: 0.1302 },
+      ];
+      const ladder = renderToStaticMarkup(h(ClaimBlock, { subject: { subjectId: "s1" }, figures: close }));
+      expect(ladder).toContain("in 1,000");
+      const forced = renderToStaticMarkup(
+        h(ClaimBlock, { subject: { subjectId: "s1" }, figures: close, denominator: 100 }),
+      );
+      expect(forced).not.toContain("in 1,000");
+      expect(forced.match(/about 13 in 100/g)).toHaveLength(2);
+    });
+
+    it("throws at render when a forced denominator cannot show a value", () => {
+      const tiny: StandaloneFigureSpec[] = [derivation[0], { ...exact, kind: "natural-frequency", value: 0.004 }];
+      expect(() =>
+        renderToStaticMarkup(h(ClaimBlock, { subject: { subjectId: "s1" }, figures: tiny, denominator: 100 })),
+      ).toThrow(/rounds below 1 in 100/);
+    });
   });
 
   it("gives every figure node the four attributes with valid values", () => {

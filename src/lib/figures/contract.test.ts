@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DATA_ATTRIBUTES,
+  EXACT_MARKER,
   FIGURE_BASES,
   FIGURE_CLASSES,
   FIGURE_KINDS,
@@ -28,9 +29,10 @@ describe("figure contract vocabulary", () => {
       "carrier-status",
     ]);
     expect(FIGURE_CLASSES).toEqual(["variant-call", "estimate", "ancestry", "quality"]);
-    expect(FIGURE_BASES).toEqual(["observed", "modelled"]);
+    expect(FIGURE_BASES).toEqual(["observed", "modelled", "exact"]);
     expect(NATURAL_FREQUENCY_DENOMINATORS).toEqual([100, 1000, 10000, 100000, 1000000]);
     expect(MODELLED_MARKER).toBe("This is a model, not an observed outcome.");
+    expect(EXACT_MARKER).toBe("This is exact arithmetic, not an estimate.");
     expect(NATURAL_FREQUENCY_FLOOR).toBe(
       "Fewer than 1 in a million, both for you and for the comparison group.",
     );
@@ -45,6 +47,7 @@ describe("figure contract vocabulary", () => {
       "data-subject-id",
       "data-subject-pair",
       "data-modelled-marker",
+      "data-exact-marker",
     ]);
   });
 

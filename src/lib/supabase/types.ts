@@ -1123,6 +1123,7 @@ export type Database = {
           citation_ids: string[]
           condition_id: string
           condition_name: string
+          gene_symbols: string[]
           inheritance_mode: string | null
           phenotype_class: string
           registry_revision: number
@@ -1133,6 +1134,7 @@ export type Database = {
           citation_ids?: string[]
           condition_id: string
           condition_name: string
+          gene_symbols?: string[]
           inheritance_mode?: string | null
           phenotype_class: string
           registry_revision: number
@@ -1143,6 +1145,7 @@ export type Database = {
           citation_ids?: string[]
           condition_id?: string
           condition_name?: string
+          gene_symbols?: string[]
           inheritance_mode?: string | null
           phenotype_class?: string
           registry_revision?: number
@@ -2869,6 +2872,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      family_sharing_pauses: {
+        Row: {
+          account_high_id: string
+          account_low_id: string
+          end_reason: string | null
+          ended_at: string | null
+          ended_by_account_id: string | null
+          id: string
+          paused_at: string
+          paused_by_account_id: string
+        }
+        Insert: {
+          account_high_id: string
+          account_low_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by_account_id?: string | null
+          id?: string
+          paused_at?: string
+          paused_by_account_id: string
+        }
+        Update: {
+          account_high_id?: string
+          account_low_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ended_by_account_id?: string | null
+          id?: string
+          paused_at?: string
+          paused_by_account_id?: string
+        }
+        Relationships: []
+      }
+      family_sharing_stops: {
+        Row: {
+          account_high_id: string
+          account_low_id: string
+          deleted_counts: Json
+          ended_at: string
+          id: string
+          stopped_by_account_id: string
+        }
+        Insert: {
+          account_high_id: string
+          account_low_id: string
+          deleted_counts?: Json
+          ended_at?: string
+          id?: string
+          stopped_by_account_id: string
+        }
+        Update: {
+          account_high_id?: string
+          account_low_id?: string
+          deleted_counts?: Json
+          ended_at?: string
+          id?: string
+          stopped_by_account_id?: string
+        }
+        Relationships: []
       }
       future_person_claim_assignments: {
         Row: {
@@ -5165,6 +5228,35 @@ export type Database = {
         }
         Relationships: []
       }
+      purpose_grant_nonces: {
+        Row: {
+          account_id: string
+          consumed_at: string
+          grant_id: string | null
+          nonce_hash: string
+        }
+        Insert: {
+          account_id: string
+          consumed_at?: string
+          grant_id?: string | null
+          nonce_hash: string
+        }
+        Update: {
+          account_id?: string
+          consumed_at?: string
+          grant_id?: string | null
+          nonce_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purpose_grant_nonces_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "purpose_grants"
+            referencedColumns: ["grant_id"]
+          },
+        ]
+      }
       purpose_grants: {
         Row: {
           artifact_body_sha256: string
@@ -6353,9 +6445,11 @@ export type Database = {
           created_at: string
           display_label: string
           id: string
+          independent_login_at: string | null
           lifecycle: string
           lifecycle_revision: number
           owner_account_id: string | null
+          portrait_acknowledged_at: string | null
           subject_account_id: string | null
           subject_binding_revision: number
           subject_class: string
@@ -6367,9 +6461,11 @@ export type Database = {
           created_at?: string
           display_label: string
           id?: string
+          independent_login_at?: string | null
           lifecycle?: string
           lifecycle_revision?: number
           owner_account_id?: string | null
+          portrait_acknowledged_at?: string | null
           subject_account_id?: string | null
           subject_binding_revision?: number
           subject_class: string
@@ -6381,9 +6477,11 @@ export type Database = {
           created_at?: string
           display_label?: string
           id?: string
+          independent_login_at?: string | null
           lifecycle?: string
           lifecycle_revision?: number
           owner_account_id?: string | null
+          portrait_acknowledged_at?: string | null
           subject_account_id?: string | null
           subject_binding_revision?: number
           subject_class?: string
@@ -6971,6 +7069,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_portrait_v1: {
+        Args: { p_account_id: string; p_subject_id: string }
+        Returns: string
+      }
       cancel_account_deletion_v1: {
         Args: {
           p_account_id: string
@@ -7088,6 +7190,18 @@ export type Database = {
         }
         Returns: string
       }
+      grant_directional_purpose_v1: {
+        Args: {
+          p_account_id: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_data_subject_id: string
+          p_purpose: string
+          p_recipient_principal_id: string
+          p_token_nonce: string
+        }
+        Returns: string
+      }
       issue_account_operation_nonce_v1: {
         Args: {
           p_account_id: string
@@ -7097,6 +7211,14 @@ export type Database = {
           p_session_id: string
         }
         Returns: undefined
+      }
+      mark_independent_login_v1: {
+        Args: { p_account_id: string; p_auth_session_id: string }
+        Returns: number
+      }
+      pause_family_sharing_v1: {
+        Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: number
       }
       processing_time_stats: {
         Args: never
@@ -7151,9 +7273,24 @@ export type Database = {
         }
         Returns: string
       }
+      resume_family_sharing_v1: {
+        Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: number
+      }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }
         Returns: boolean
+      }
+      revoke_directional_purpose_v1: {
+        Args: { p_account_id: string; p_grant_id: string }
+        Returns: string
+      }
+      stop_family_sharing_v1: {
+        Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
       }
     }
     Enums: {
