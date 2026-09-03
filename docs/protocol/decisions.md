@@ -190,3 +190,40 @@ three are recorded as follow-ups. Decisions taken while fixing:
   with the full definition rendered adjacent, mirroring the estimate half;
   the definition itself is eighteen words and X9.1 caps every metric note at
   twelve. Dormant until a `variant_call` template is published.
+
+## 2026-09-03 — Template prose: titles without jargon, no naked relative figures (W5)
+
+- `pnpm gate:templates` applies §4 §2.4 to `report_templates.summary` and
+  `variants[].interpretations` exactly as the brief's binding check defines
+  adjacency (a `%`, `x`, `×` or `-fold` token within 40 characters of
+  "lower", "higher", "reduction", "increase", "less likely", "more likely" or
+  "times"), and additionally treats any numeric multiplier ("1.4x the odds",
+  "about 5 to 7 times", "1.7-fold") as a relative figure wherever it stands,
+  because §2.4 bans the odds ratio itself, not only its symbols beside a
+  comparison word. An `x` counts only when a digit precedes it, so
+  "X chromosome" and "x-linked" are never findings.
+- Inherit holds no absolute baseline to pair a ratio with, so a rewritten
+  sentence keeps the direction and replaces the number with one phrase from a
+  bounded set chosen from the ratio removed: below 1.15 "a very small
+  shift", 1.15–1.5 "a small shift", 1.5–2.5 "a moderate shift", above 2.5
+  "a large shift" (inverses for protective results; a range spanning two
+  bands reads "a small to moderate shift"). Percentages that state how common
+  a result is, and absolute differences with a unit, are not relative
+  figures and stay. Nothing is added: no number, study, population,
+  mechanism, caveat or advice the original lacked.
+- The first-glance title (G3.5) is checked on the stored title: at most
+  twelve words, no term or alias from `data/jargon.json`, no bare figure
+  (a decimal, a percentage, a multiplier, or an integer followed by a
+  quantity word; an integer inside a name such as "Type 1 diabetes" or
+  "codon 72" is not a figure). Titles keep the existing `Topic · GENE` shape
+  and change only the words that fail; the report page's h1 already drops
+  the gene suffix.
+- ADR 0012 widened from cancer/immune/embryo to every everyday word the
+  specification itself mandates in a heading or a report needs for its
+  condition's name (disease, vitamin, hormone, celiac, metabolism, trait,
+  genome), because a register that forbids a mandated heading is a
+  contradiction, not a rule; thirteen genuine terms keep it above 200.
+- Each rewrite was produced against a written rulebook and a checker, then
+  reviewed sentence by sentence by a second agent for preserved meaning; the
+  five sentences that rose above grade 9 only because of the register change
+  were rewritten by hand with the same rules.

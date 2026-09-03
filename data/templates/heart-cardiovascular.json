@@ -3,7 +3,7 @@
     "slug": "coronary-artery-disease-9p21",
     "category": "heart-cardiovascular",
     "title": "Coronary artery disease · 9p21 region",
-    "summary": "The 9p21.3 region near CDKN2B-AS1 is the most consistently replicated common genetic locus for coronary artery disease. Each copy of the risk allele at rs1333049 is associated with roughly 20-30% higher odds of coronary disease on average, independent of cholesterol and blood pressure.",
+    "summary": "The 9p21.3 region near CDKN2B-AS1 is the most consistently replicated common genetic locus for coronary artery disease. Each copy of the risk allele at rs1333049 is linked on average to higher odds of coronary disease: a small shift. This holds independent of cholesterol and blood pressure.",
     "evidence": "emerging",
     "variants": [
       {
@@ -15,8 +15,8 @@
         "alt": "C",
         "interpretations": {
           "GG": "Two copies of the lower-risk G allele. This genotype is associated with somewhat lower average odds of coronary artery disease at this locus. Overall risk still depends far more on lifestyle, lipids, blood pressure, and family history.",
-          "CG": "One copy of the C risk allele. On average this is associated with roughly 20-30% higher odds of coronary artery disease compared with GG. This is one common variant among many; it does not predict disease on its own.",
-          "CC": "Two copies of the C risk allele, carried by roughly a quarter of people of European ancestry. Associated on average with about 1.4-1.6x the odds of coronary artery disease relative to GG. This remains a modest shift in probability, not a determination."
+          "CG": "One copy of the C risk allele. On average this is linked to higher odds of coronary artery disease than GG: a small shift. This is one common variant among many; it does not predict disease on its own.",
+          "CC": "Two copies of the C risk allele, carried by roughly a quarter of people of European ancestry. Linked on average to higher odds of coronary artery disease than GG: a small to moderate shift. This remains a modest shift in probability, not a determination."
         }
       }
     ],
@@ -29,7 +29,7 @@
     "slug": "lipoprotein-a-lpa-rs10455872",
     "category": "heart-cardiovascular",
     "title": "Lipoprotein(a) · LPA",
-    "summary": "Lipoprotein(a), or Lp(a), is a cholesterol-carrying particle whose blood level is largely set by genetics at the LPA locus. The rs10455872 G allele is associated with substantially higher Lp(a) levels and, on average, roughly 1.5x the odds of coronary disease per copy. Lp(a) can be measured directly with a blood test.",
+    "summary": "Lipoprotein(a), or Lp(a), is a cholesterol-carrying particle whose blood level is largely set by genetics at the LPA locus. The rs10455872 G allele is associated with substantially higher Lp(a) levels. Per copy, it is also linked on average to higher odds of coronary disease: a small to moderate shift. Lp(a) can be measured directly with a blood test.",
     "evidence": "emerging",
     "variants": [
       {
@@ -41,8 +41,8 @@
         "alt": "G",
         "interpretations": {
           "AA": "The common genotype, not associated with elevated Lp(a) through this particular variant. Lp(a) is influenced by other LPA-region variation too, so a blood test remains the only way to know an actual level.",
-          "AG": "One copy of the G allele, found in roughly 7% of people of European ancestry. Associated with markedly higher average Lp(a) levels and about 1.5x the average odds of coronary disease. An Lp(a) blood test can show whether levels are actually elevated.",
-          "GG": "Two copies of the G allele, which is rare. Associated on average with substantially elevated Lp(a) and roughly 2-2.5x the odds of coronary disease. This is a probabilistic association; measuring Lp(a) directly gives far more information than genotype alone."
+          "AG": "One copy of the G allele, found in roughly 7% of people of European ancestry. Associated with markedly higher average Lp(a) levels and higher average odds of coronary disease: a small to moderate shift. An Lp(a) blood test can show whether levels are actually elevated.",
+          "GG": "Two copies of the G allele, which is rare. Associated on average with substantially elevated Lp(a) and higher odds of coronary disease: a moderate shift. This is a probabilistic association; measuring Lp(a) directly gives far more information than genotype alone."
         }
       }
     ],
@@ -55,7 +55,7 @@
     "slug": "ldl-cholesterol-sort1-rs599839",
     "category": "heart-cardiovascular",
     "title": "LDL cholesterol · SORT1 region (1p13)",
-    "summary": "The 1p13 region near SORT1, CELSR2, and PSRC1 strongly affects LDL, often called bad cholesterol. At rs599839, each A copy is linked to LDL that is a few mg/dL higher. Each A is also linked to about 10% higher odds of coronary disease.",
+    "summary": "The 1p13 region near SORT1, CELSR2, and PSRC1 strongly affects LDL, often called bad cholesterol. At rs599839, each A copy is linked to LDL that is a few mg/dL higher. Each A is also linked to slightly higher odds of coronary disease: a very small shift.",
     "evidence": "emerging",
     "variants": [
       {
@@ -68,7 +68,7 @@
         "interpretations": {
           "GG": "Two G copies mark lower LDL at this site. Average LDL is about 5 to 7 mg/dL lower than with AA. GG is also linked to slightly lower odds of coronary disease.",
           "AG": "One copy of each allele. Associated with intermediate average LDL cholesterol between the two homozygous groups. The effect is small compared with diet, weight, and other genetic factors combined.",
-          "AA": "Two copies of the A allele, the most common genotype in most populations. Associated with slightly higher average LDL cholesterol and roughly 10-20% higher odds of coronary disease compared with GG. A lipid panel measures actual cholesterol far better than genotype."
+          "AA": "Two copies of the A allele, the most common genotype in most populations. Associated with slightly higher average LDL cholesterol and higher odds of coronary disease compared with GG: a very small to small shift. A lipid panel measures actual cholesterol far better than genotype."
         }
       }
     ],
@@ -94,7 +94,7 @@
         "alt": "T",
         "interpretations": {
           "GG": "The most common genotype (roughly 80% of people of European ancestry). Average LDL cholesterol for this locus; no protective effect from this particular variant. Actual LDL depends on many genes and on lifestyle.",
-          "GT": "One copy of the T allele, associated with roughly 6-7 mg/dL lower average LDL cholesterol and about 10% lower average odds of coronary disease. A favorable but small shift; a lipid panel still tells the real story.",
+          "GT": "One copy of the T allele. It is associated with roughly 6-7 mg/dL lower average LDL cholesterol. It is also linked to slightly lower average odds of coronary disease: a very small shift. A favorable but small change; a lipid panel still tells the real story.",
           "TT": "Two copies of the less common T allele. Associated with the lowest average LDL cholesterol at this locus (roughly 12-14 mg/dL below GG on average) and modestly lower average coronary disease odds. This does not rule out high cholesterol from other causes."
         }
       }
@@ -146,8 +146,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "No Factor V Leiden copy was found at this site. CC has the usual population clot risk from this gene. Other genes and situations still matter, such as surgery, little movement, and hormones.",
-          "CT": "One Factor V Leiden T copy is linked to about 5 to 7 times the usual risk of a vein clot. The lifetime chance is still modest for most carriers, and most never have a clot. Surgery, long periods without movement, pregnancy, and estrogen medicines can add to the risk. A clinician can explain the result with personal history.",
-          "TT": "Two Factor V Leiden T copies are rare. TT is linked to much higher vein-clot risk, often about 20 to 80 times the usual risk. This is a tendency, not a sure outcome. It is sensible to discuss TT with a clinician or genetic counselor."
+          "CT": "One Factor V Leiden T copy is linked to a large shift upward in the chance of a vein clot. The lifetime chance is still modest for most carriers, and most never have a clot. Surgery, long periods without movement, pregnancy, and estrogen medicines can add to the risk. A clinician can explain the result with personal history.",
+          "TT": "Two Factor V Leiden T copies are rare. TT is linked to much higher vein-clot risk than usual: a large shift. This is a tendency, not a sure outcome. It is sensible to discuss TT with a clinician or genetic counselor."
         }
       }
     ],
@@ -172,7 +172,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "No prothrombin G20210A copy was found. GG has the usual population clot risk from this site. Surgery, little movement, and hormone treatment can still raise risk for anyone.",
-          "AG": "One copy of the 20210A allele. Associated with roughly 30% higher average prothrombin levels and about 2-3x the baseline risk of venous thromboembolism. Absolute risk for most carriers stays low, and most never experience a clot; a clinician can help interpret this alongside personal and family history.",
+          "AG": "One copy of the 20210A allele. Associated with higher average prothrombin levels: a small shift. Also linked to a higher risk of venous thromboembolism than baseline: a moderate to large shift. Absolute risk for most carriers stays low, and most never experience a clot; a clinician can help interpret this alongside personal and family history.",
           "AA": "Two copies of the 20210A allele, which is rare. Associated with a further elevated risk of venous thromboembolism beyond heterozygous carriers, though precise estimates are uncertain because this genotype is so uncommon. Worth discussing with a clinician or genetic counselor."
         }
       }
@@ -197,7 +197,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "The 677CC form: full MTHFR enzyme activity. Homocysteine levels at this locus are expected to be in the typical range, though they also depend on B-vitamin status, kidney function, and other genes.",
+          "GG": "The 677CC form: full MTHFR enzyme activity. Homocysteine levels linked to this spot are expected to fall in the usual range. They also depend on B-vitamin status, kidney function and other genes.",
           "AG": "The 677CT form has about 65% to 70% of usual enzyme activity. It often has little or no effect that can be measured in homocysteine. About 40% of many groups have CT. It is generally seen as having little impact.",
           "AA": "The 677TT form occurs in about 10% of people with European ancestry. It has about 30% of usual enzyme activity. Average homocysteine is moderately higher, mainly when folate intake is low. Links to actual heart events are weak and mixed. This is a small metabolic trait, not a heart-disease result."
         }
@@ -212,7 +212,7 @@
     "slug": "atrial-fibrillation-pitx2-rs2200733",
     "category": "heart-cardiovascular",
     "title": "Atrial fibrillation · PITX2 region (4q25)",
-    "summary": "The chromosome 4q25 region before PITX2 has the strongest common gene link to atrial fibrillation. PITX2 plays a key role in heart growth. Atrial fibrillation is an uneven heart rhythm. Each T copy at rs2200733 is linked to about 1.7 times the average odds.",
+    "summary": "The chromosome 4q25 region before PITX2 has the strongest common gene link to atrial fibrillation. PITX2 plays a key role in heart growth. Atrial fibrillation is an uneven heart rhythm. Each T copy at rs2200733 is linked to higher average odds: a moderate shift.",
     "evidence": "emerging",
     "variants": [
       {
@@ -224,8 +224,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "Two copies of the more common C allele. Baseline average odds of atrial fibrillation from this locus. Age, blood pressure, alcohol intake, and overall heart health matter far more than any single common variant.",
-          "CT": "One copy of the T allele, carried by roughly a third of people of European ancestry. Associated on average with about 1.7x the odds of atrial fibrillation. This is a shift in probability for a condition most carriers will still never develop at a given age.",
-          "TT": "Two copies of the T allele. Associated on average with roughly 2.5-3x the odds of atrial fibrillation compared with CC. Still a probabilistic association: this genotype is common in people with entirely normal heart rhythm."
+          "CT": "One copy of the T allele, carried by roughly a third of people of European ancestry. Linked on average to higher odds of atrial fibrillation: a moderate shift. This is a shift in probability for a condition most carriers will still never develop at a given age.",
+          "TT": "Two copies of the T allele. Linked on average to higher odds of atrial fibrillation than CC: a moderate to large shift. Still a probabilistic association: this genotype is common in people with entirely normal heart rhythm."
         }
       }
     ],
@@ -251,7 +251,7 @@
         "interpretations": {
           "GG": "The B1B1 form, the most common genotype: typical CETP activity and, on average, the lowest HDL cholesterol of the three genotypes at this locus. HDL is also strongly shaped by exercise, weight, smoking, and other genes.",
           "AG": "The B1B2 form: intermediate average CETP activity and HDL cholesterol, between the two homozygous groups. A small effect in the context of everything else that moves HDL.",
-          "AA": "The B2B2 form occurs in about 15% to 20% of people with European ancestry. It marks less CETP activity and HDL about 4 to 5 mg/dL higher than B1B1. The cited review found only a small coronary-risk difference, about 10% lower odds for B2B2 versus B1B1. A lipid panel measures actual HDL directly."
+          "AA": "The B2B2 form occurs in about 15% to 20% of people with European ancestry. It marks less CETP activity and HDL about 4 to 5 mg/dL higher than B1B1. The cited review found only a small coronary-risk difference, with slightly lower odds for B2B2 versus B1B1: a very small shift. A lipid panel measures actual HDL directly."
         }
       }
     ],

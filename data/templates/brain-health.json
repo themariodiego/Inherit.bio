@@ -81,7 +81,7 @@
     "slug": "cognition-cacna1c-rs1006737",
     "category": "brain-health",
     "title": "Cognition & mood circuitry · CACNA1C",
-    "summary": "CACNA1C makes part of a calcium channel that helps brain cells send signals. The A copy at rs1006737 is among the most often repeated common DNA links to bipolar disorder. Each copy is linked to about 1.1 to 1.2 times the average odds. Small brain-scan studies also link it to changes in the hippocampus and front of the brain during memory tasks. Any effect on daily thinking is subtle.",
+    "summary": "CACNA1C makes part of a calcium channel that helps brain cells send signals. The A copy at rs1006737 is among the most often repeated common DNA links to bipolar disorder. Each copy is linked to higher average odds: a very small to small shift. Small brain-scan studies also link it to changes in the hippocampus and front of the brain during memory tasks. Any effect on daily thinking is subtle.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -93,7 +93,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G allele, the most common genotype. Not associated with the small increases in mood-disorder odds or the imaging differences reported for A carriers at this locus. Mood and cognition remain shaped by thousands of variants and by life circumstances.",
-          "AG": "One A copy is found in a large minority of people. On average, it is linked to about 1.1 to 1.2 times the odds of bipolar disorder. Small brain-scan studies also find subtle differences during memory and emotion tasks. This is one small factor among many. It cannot define one person's mood or thinking.",
+          "AG": "One A copy is found in a large minority of people. On average, it is linked to higher odds of bipolar disorder: a very small to small shift. Small brain-scan studies also find subtle differences during memory and emotion tasks. This is one small factor among many. It cannot define one person’s mood or thinking.",
           "AA": "Two A copies are linked to modestly higher average odds of bipolar disorder. Group studies also report subtle differences on brain scans during thinking tasks. This is one small factor among thousands of genetic and life influences. Most people with this type never develop a mood disorder."
         }
       }

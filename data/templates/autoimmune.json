@@ -69,7 +69,7 @@
     "slug": "rheumatoid-arthritis-ptpn22",
     "category": "autoimmune",
     "title": "Rheumatoid arthritis · PTPN22 R620W",
-    "summary": "PTPN22 encodes a phosphatase that dampens immune-cell signaling. The R620W missense variant (rs2476601) is one of the strongest common non-HLA risk factors for rheumatoid arthritis, associated with roughly 1.5-1.9x higher odds of seropositive disease per copy, and it also shows associations with type 1 diabetes and other autoimmune conditions. Note that on GRCh38 the reference allele A corresponds to the risk (620W) form; G is the common non-risk allele.",
+    "summary": "PTPN22 encodes a phosphatase that dampens immune-cell signaling. The R620W missense variant (rs2476601) is one of the strongest common non-HLA risk factors for rheumatoid arthritis. Each copy is linked to higher odds of seropositive disease: a moderate shift. It also shows associations with type 1 diabetes and other autoimmune conditions. Note that on GRCh38 the reference allele A corresponds to the risk (620W) form; G is the common non-risk allele.",
     "evidence": "emerging",
     "variants": [
       {
@@ -81,7 +81,7 @@
         "alt": "G",
         "interpretations": {
           "AA": "Two copies of risk-linked A (620W), found in about 1% of people with European ancestry. Studies link this result to several times the average odds of antibody-positive rheumatoid arthritis versus GG. It is also linked to some other autoimmune conditions. Most people with this result are never affected.",
-          "AG": "One copy of the risk-associated A allele (620W). Associated on average with about 1.5-1.9x the odds of seropositive rheumatoid arthritis compared with GG. This is one susceptibility factor among many genetic and environmental influences, including smoking; it does not predict disease.",
+          "AG": "One copy of the risk-associated A allele (620W). Linked on average to higher odds of seropositive rheumatoid arthritis than GG: a moderate shift. This is one susceptibility factor among many genetic and environmental influences, including smoking. It does not predict disease.",
           "GG": "Two copies of the common G allele (620R). This genotype does not carry the PTPN22 R620W risk association; average odds of rheumatoid arthritis at this variant are the population baseline. Many other genetic and environmental factors still shape overall susceptibility."
         }
       }
@@ -95,7 +95,7 @@
     "slug": "multiple-sclerosis-hla-drb1-1501",
     "category": "autoimmune",
     "title": "Multiple sclerosis · HLA-DRB1*15:01 tag",
-    "summary": "HLA-DRB1*15:01 is the strongest genetic risk factor for multiple sclerosis, associated with roughly 2-3x higher odds per copy. rs3135388 is a widely used tag for this HLA allele: the A allele marks DRB1*15:01 carriage (on GRCh38 the reference base at this position is the tag allele A). Because MS affects well under 1% of most populations, even the elevated odds in carriers leave absolute risk low.",
+    "summary": "HLA-DRB1*15:01 is the strongest genetic risk factor for multiple sclerosis. Each copy is linked to higher odds: a moderate to large shift. rs3135388 is a widely used tag for this HLA allele: the A allele marks DRB1*15:01 carriage (on GRCh38 the reference base at this position is the tag allele A). Because MS affects well under 1% of most populations, even the elevated odds in carriers leave absolute risk low.",
     "evidence": "emerging",
     "variants": [
       {
@@ -107,7 +107,7 @@
         "alt": "G",
         "interpretations": {
           "AA": "Two copies of A, which tags HLA-DRB1*15:01. Studies link two copies to several times the odds of multiple sclerosis versus no copies. MS is rare, so most people with this result do not develop it. This is one factor among many, including EBV exposure and vitamin D.",
-          "AG": "One copy of the A allele tagging HLA-DRB1*15:01, carried by roughly 15-30% of people of European ancestry. Associated on average with about 2-3x the odds of multiple sclerosis versus non-carriers. Because MS is uncommon, absolute risk remains low; this is a single susceptibility factor, not a prediction.",
+          "AG": "One copy of the A allele tagging HLA-DRB1*15:01, carried by roughly 15-30% of people of European ancestry. Linked on average to higher odds of multiple sclerosis than non-carriers: a moderate to large shift. Because MS is uncommon, absolute risk remains low; this is a single susceptibility factor, not a prediction.",
           "GG": "No copies of the DRB1*15:01 tag allele. Average odds of multiple sclerosis at this locus are at or slightly below the population baseline. Other genetic variants and environmental factors still contribute, and a tag SNP is an imperfect proxy for direct HLA typing."
         }
       }
@@ -121,7 +121,7 @@
     "slug": "crohns-disease-nod2",
     "category": "autoimmune",
     "title": "Crohn's disease · NOD2 (R702W, G908R)",
-    "summary": "NOD2 is a sensor inside immune cells that detects pieces of bacterial cell walls. Its variants were the first genetic risk factors found for Crohn's disease. R702W (rs2066844) and G908R (rs2066845) are each linked to about two to three times the odds per copy. Two NOD2 risk copies, including a frameshift not shown here, are linked to much higher odds. The link is strongest when Crohn's affects the last part of the small intestine.",
+    "summary": "NOD2 is a sensor inside immune cells that detects pieces of bacterial cell walls. Its variants were the first genetic risk factors found for Crohn’s disease. R702W (rs2066844) and G908R (rs2066845) are each linked to higher odds per copy: a moderate to large shift. Two NOD2 risk copies, including a frameshift not shown here, are linked to much higher odds. The link is strongest when Crohn’s affects the last part of the small intestine.",
     "evidence": "emerging",
     "variants": [
       {
@@ -133,8 +133,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "Two copies of the common C allele — no R702W variant. Average odds of Crohn's disease at this variant are the population baseline. NOD2 has other risk variants (G908R below, and a frameshift, 1007fs, that this report does not cover), and most Crohn's risk lies outside NOD2 altogether.",
-          "CT": "One copy of the T allele encoding R702W, the most common NOD2 risk variant in European-ancestry populations (about 4-5% allele frequency). Associated on average with roughly 2-3x the odds of Crohn's disease. Because Crohn's affects well under 1% of people, most carriers are never affected.",
-          "TT": "Two copies of the T allele encoding R702W. Carrying two NOD2 risk-variant copies is associated in studies with substantially higher average odds of Crohn's disease — estimates of several-fold up to more than tenfold, often with ileal involvement. Even so, absolute risk remains limited, and many people with two copies stay unaffected."
+          "CT": "One copy of the T allele encoding R702W, the most common NOD2 risk variant in European-ancestry populations (about 4-5% allele frequency). Associated on average with higher odds of Crohn’s disease: a moderate to large shift. Because Crohn’s affects well under 1% of people, most carriers are never affected.",
+          "TT": "Two copies of the T allele encoding R702W. Carrying two NOD2 risk-variant copies is associated in studies with substantially higher average odds of Crohn’s disease — a large shift, often with ileal involvement. Even so, absolute risk remains limited, and many people with two copies stay unaffected."
         }
       },
       {
@@ -146,7 +146,7 @@
         "alt": "C",
         "interpretations": {
           "GG": "Two copies of the common G allele — no G908R variant. Average odds of Crohn's disease at this variant are the population baseline. Other NOD2 variants (R702W above, and the 1007fs frameshift not covered here) and many non-NOD2 factors still contribute to overall susceptibility.",
-          "CG": "One copy of the C allele encoding G908R, a NOD2 risk variant carried by roughly 1-2% of European-ancestry chromosomes. Associated on average with roughly 2-3x the odds of Crohn's disease. Most carriers never develop Crohn's disease; this is one susceptibility factor among many.",
+          "CG": "One copy of the C allele encoding G908R, a NOD2 risk variant carried by roughly 1-2% of European-ancestry chromosomes. Associated on average with higher odds of Crohn’s disease: a moderate to large shift. Most carriers never develop Crohn’s disease; this is one susceptibility factor among many.",
           "CC": "Two copies of the C allele encoding G908R — a rare genotype. Two NOD2 risk-variant copies are associated with substantially higher average odds of Crohn's disease, often with ileal involvement. This remains a probabilistic association rather than a prediction, and many such carriers stay unaffected."
         }
       }
@@ -161,7 +161,7 @@
     "slug": "psoriasis-hla-c-0602",
     "category": "autoimmune",
     "title": "Psoriasis · HLA-C*06:02 tag",
-    "summary": "HLA-C*06:02 is the major genetic risk factor for psoriasis, especially early-onset and guttate forms, with per-copy odds ratios around 2-4 in most populations. rs10484554 is a commonly used tag for this HLA allele: the T allele marks likely C*06:02 carriage. About two-thirds of C*06:02 carriers never develop psoriasis.",
+    "summary": "HLA-C*06:02 is the major genetic risk factor for psoriasis, especially early-onset and guttate forms. Each copy is linked to higher odds in most populations: a moderate to large shift. rs10484554 is a commonly used tag for this HLA allele: the T allele marks likely C*06:02 carriage. About two-thirds of C*06:02 carriers never develop psoriasis.",
     "evidence": "emerging",
     "variants": [
       {
@@ -173,7 +173,7 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the HLA-C*06:02 tag allele. Average odds of psoriasis at this locus are at the population baseline. Psoriasis still occurs in non-carriers — dozens of other loci and environmental triggers contribute — and a tag SNP is an imperfect proxy for direct HLA typing.",
-          "CT": "One copy of the T allele tagging HLA-C*06:02. Associated on average with roughly 2-4x the odds of psoriasis compared with non-carriers, with a stronger association for early-onset and guttate forms. Most carriers never develop psoriasis; this is a susceptibility marker, not a determination.",
+          "CT": "One copy of the T allele tagging HLA-C*06:02. Linked on average to higher odds of psoriasis than non-carriers: a moderate to large shift, with a stronger association for early-onset and guttate forms. Most carriers never develop psoriasis; this is a susceptibility marker, not a determination.",
           "TT": "Two copies of the T allele tagging HLA-C*06:02. Homozygous carriage is associated with higher average odds of psoriasis than a single copy, again weighted toward early-onset disease. The association is probabilistic: many people with this genotype remain unaffected throughout life."
         }
       }
@@ -188,7 +188,7 @@
     "slug": "lupus-stat4",
     "category": "autoimmune",
     "title": "Systemic lupus erythematosus · STAT4",
-    "summary": "STAT4 helps immune cells respond to interferon and IL-12 signals. rs7574865 T is one of the most repeated non-HLA risk links for systemic lupus. Each copy is linked to about 1.5 times the odds. It has a smaller link to rheumatoid arthritis. On GRCh38, T is the risk-linked reference base, while G is common.",
+    "summary": "STAT4 helps immune cells respond to interferon and IL-12 signals. rs7574865 T is one of the most repeated non-HLA risk links for systemic lupus. Each copy is linked to higher odds: a small to moderate shift. It has a smaller link to rheumatoid arthritis. On GRCh38, T is the risk-linked reference base, while G is common.",
     "evidence": "emerging",
     "variants": [
       {
@@ -200,8 +200,8 @@
         "alt": "G",
         "interpretations": {
           "GG": "Two copies of the common G allele. Average odds of lupus at this variant are the population baseline. Lupus susceptibility involves many genetic variants plus hormonal and environmental factors, so this single result says little on its own.",
-          "GT": "One copy of the risk-associated T allele, carried by roughly a quarter to a third of many populations. Associated on average with about 1.5x the odds of systemic lupus erythematosus, and a smaller increase for rheumatoid arthritis. Lupus is rare, so absolute risk remains low; this is one small factor among many.",
-          "TT": "Two copies of the risk-associated T allele. Associated on average with roughly 2x or somewhat higher odds of systemic lupus erythematosus compared with GG. Because lupus affects well under 1% of most populations, absolute risk stays low even for this genotype; this is one small factor among many influences."
+          "GT": "One copy of the risk-associated T allele, carried by roughly a quarter to a third of many populations. Associated on average with higher odds of systemic lupus erythematosus: a small to moderate shift. The increase for rheumatoid arthritis is smaller. Lupus is rare, so absolute risk remains low; this is one small factor among many.",
+          "TT": "Two copies of the risk-associated T allele. Associated on average with higher odds of systemic lupus erythematosus compared with GG: a moderate shift. Because lupus affects well under 1% of most populations, absolute risk stays low even for this genotype; this is one small factor among many influences."
         }
       }
     ],
@@ -240,8 +240,8 @@
   {
     "slug": "autoimmune-thyroid-ctla4",
     "category": "autoimmune",
-    "title": "Autoimmune thyroid disease · CTLA4 (CT60)",
-    "summary": "CTLA-4 is a brake on T-cell activation, and the CT60 variant (rs3087243) in its 3' region is a replicated susceptibility factor for autoimmune thyroid disease. The common G allele is the susceptibility allele — associated with roughly 1.4-1.5x higher odds of Graves' disease per copy and weaker associations with autoimmune hypothyroidism and type 1 diabetes — while the A allele is associated with lower average odds.",
+    "title": "Thyroid disease from the immune system · CTLA4 (CT60)",
+    "summary": "CTLA-4 is a brake on T-cell activation, and the CT60 variant (rs3087243) in its 3’ region is a replicated susceptibility factor for autoimmune thyroid disease. The common G allele is the susceptibility allele. Each copy is associated with higher odds of Graves’ disease, a small shift, and with weaker associations with autoimmune hypothyroidism and type 1 diabetes. The A allele is associated with lower average odds.",
     "evidence": "emerging",
     "variants": [
       {
@@ -253,8 +253,8 @@
         "alt": "A",
         "interpretations": {
           "AA": "Two copies of A, linked to the lowest average odds of Graves' disease and autoimmune thyroid disease at this locus. The effect is small. Many other genes and environmental factors shape thyroid autoimmunity, so this result changes chance only slightly.",
-          "AG": "One copy of each allele, linked to average odds between AA and GG. Each G copy is linked to about 1.4 times the odds of Graves' disease. The effect is small and is one factor among many causes of thyroid autoimmunity.",
-          "GG": "Two copies of the susceptibility-associated G allele, the most common genotype in many populations. Associated on average with roughly 1.5-2x the odds of Graves' disease compared with AA, and weaker increases for autoimmune hypothyroidism. This remains a modest probabilistic shift, not a prediction."
+          "AG": "One copy of each allele, linked to average odds between AA and GG. Each G copy is linked to higher odds of Graves’ disease: a small shift. It is one factor among many causes of thyroid autoimmunity.",
+          "GG": "Two copies of the susceptibility-associated G allele, the most common genotype in many populations. Associated on average with higher odds of Graves’ disease than AA: a moderate shift, with weaker increases for autoimmune hypothyroidism. This remains a modest probabilistic shift, not a prediction."
         }
       }
     ],
@@ -267,7 +267,7 @@
     "slug": "inflammatory-bowel-disease-il23r",
     "category": "autoimmune",
     "title": "Inflammatory bowel disease · IL23R R381Q",
-    "summary": "IL23R makes a receptor for interleukin-23, an immune signal involved in gut swelling and damage. The rs11209026 A allele (R381Q) weakens this signal and is protective. Carriers have about two to three times lower average odds of Crohn's disease. Studies also link it to lower odds of ulcerative colitis and psoriasis. This finding helped guide research on the IL-23 pathway.",
+    "summary": "IL23R makes a receptor for interleukin-23, an immune signal involved in gut swelling and damage. The rs11209026 A allele (R381Q) weakens this signal and is protective. Carriers have lower average odds of Crohn’s disease: a moderate to large shift. Studies also link it to lower odds of ulcerative colitis and psoriasis. This finding helped guide research on the IL-23 pathway.",
     "evidence": "emerging",
     "variants": [
       {
@@ -279,7 +279,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the common G allele (381R), found in the large majority of people. Average odds of Crohn's disease and ulcerative colitis at this variant are the population baseline. Overall IBD susceptibility involves more than a hundred other loci plus environmental factors.",
-          "AG": "One copy of the protective A allele (381Q), carried by roughly 5-7% of people of European ancestry. Associated on average with about 2-3x lower odds of Crohn's disease, and lower odds of ulcerative colitis and psoriasis. Protection is partial — carriers can still develop IBD.",
+          "AG": "One copy of the protective A allele (381Q), carried by roughly 5-7% of people of European ancestry. Associated on average with lower odds of Crohn’s disease: a moderate to large shift. It is also linked to lower odds of ulcerative colitis and psoriasis. Protection is partial — carriers can still develop IBD.",
           "AA": "Two copies of protective A (381Q), a rare result. It is linked to much lower average odds of Crohn's disease and related inflammatory conditions at this locus. It lowers chance but does not rule out inflammatory bowel disease."
         }
       }

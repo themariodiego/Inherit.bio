@@ -2,7 +2,7 @@
   {
     "slug": "sun-sensitivity-mc1r-variants",
     "category": "environmental-sensitivity",
-    "title": "Sun sensitivity · MC1R R151C and R160W",
+    "title": "Skin response to sun · MC1R R151C and R160W",
     "summary": "Two of the best-characterised MC1R \"R\" variants. Carrying them is associated, on average, with fairer skin, more freckling, a poorer tanning response and a greater tendency to burn in sunlight. MC1R shapes the balance between red/yellow pheomelanin and dark eumelanin in skin.",
     "evidence": "emerging",
     "variants": [
@@ -69,7 +69,7 @@
   {
     "slug": "skin-uv-sensitivity-slc45a2",
     "category": "environmental-sensitivity",
-    "title": "UV sensitivity · SLC45A2 L374F",
+    "title": "Skin response to UV light · SLC45A2 L374F",
     "summary": "SLC45A2 transports material in melanosomes, the parts of cells that make pigment. rs16891982 changes amino acid 374 of this protein. The C (Leu374) allele is almost universal in European populations. It is linked to lighter skin and more reported sun sensitivity. The G (Phe374) allele is most common in African and East Asian populations.",
     "evidence": "emerging",
     "variants": [
@@ -108,7 +108,7 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of C. Both the original European-ancestry study and a later study in China linked C to a higher chance of sneezing in bright light. The first study found about 1.3-fold higher odds per copy.",
+          "CC": "Two copies of C. Both the original European-ancestry study and a later study in China linked C to a higher chance of sneezing in bright light. The first study found higher odds per copy: a small shift.",
           "CT": "One copy of each allele, an intermediate result. Reported effect sizes at this variant are modest, and plenty of people with any genotype here do or do not sneeze in sunlight.",
           "TT": "Two copies of T. Both cited studies linked C, rather than T, to a higher chance of the reflex. The effect is modest, and people with any genotype may or may not sneeze in bright light."
         }
@@ -175,7 +175,7 @@
   {
     "slug": "cold-sensitivity-trpm8",
     "category": "environmental-sensitivity",
-    "title": "Cold sensitivity · TRPM8",
+    "title": "Response to cold · TRPM8",
     "summary": "TRPM8 is the body's main cold receptor. The regulatory variant rs10166942 sits just upstream of the gene and tracks with TRPM8 expression, with reported effects on cold pain thresholds and a modest association with migraine. Its frequency follows a striking latitude gradient, from about 5% in Nigeria to 88% in Finland.",
     "evidence": "emerging",
     "variants": [
@@ -187,9 +187,9 @@
         "ref": "T",
         "alt": "C",
         "interpretations": {
-          "CC": "Two copies of C, the ancestral form common near the equator. This result is linked to lower TRPM8 expression and, on average, more tolerance before cold feels painful. It is also linked to slightly lower migraine odds, about 0.91 times.",
+          "CC": "Two copies of C, the ancestral form common near the equator. This result is linked to lower TRPM8 expression and, on average, more tolerance before cold feels painful. It is also linked to slightly lower migraine odds: a very small shift.",
           "CT": "One copy of each allele, an intermediate result. This variant has a small role in cold tolerance. Getting used to cold, body build and blood flow matter far more.",
-          "TT": "Two copies of the T allele, which rises in frequency toward colder latitudes and appears to have been favoured there. Associated with higher TRPM8 expression, on average a lower threshold for cold pain, and a modestly increased association with migraine (odds ratio around 1.18 per copy). This is one small factor among many."
+          "TT": "Two copies of the T allele, which rises in frequency toward colder latitudes and appears to have been favoured there. Associated with higher TRPM8 expression, on average a lower threshold for cold pain, and a modestly increased association with migraine: a small shift per copy. This is one small factor among many."
         }
       }
     ],
@@ -203,7 +203,7 @@
   {
     "slug": "motion-sickness-susceptibility",
     "category": "environmental-sensitivity",
-    "title": "Motion sickness susceptibility",
+    "title": "Tendency to motion sickness",
     "summary": "About one in three people is very prone to motion sickness. The trait has a strong inherited component. A study of car sickness in more than 80,000 people found dozens of variants with small effects. Several sit near genes involved in inner-ear and balance development. This report shows two of them.",
     "evidence": "emerging",
     "variants": [
@@ -282,7 +282,7 @@
         "alt": "G",
         "interpretations": {
           "GG": "Two copies of G. On average, this group had the lowest blood 25-hydroxyvitamin D of the three genotypes. Population studies also found a slightly higher chance of levels in the insufficient range.",
-          "GT": "One copy of the G allele, associated with intermediate average concentrations. Latitude, season, skin pigmentation, time outdoors and body composition each move vitamin D levels more than this variant does.",
+          "GT": "One copy of the G allele, linked to vitamin D levels in the middle of the average range. How far north you live, the season, your skin colour, time outdoors and body fat each move vitamin D levels more than this variant does.",
           "TT": "Two copies of the T allele, associated on average with the highest circulating 25-hydroxyvitamin D of the three genotypes. Genotype is a weak guide to actual status; a blood measurement is the only way to know."
         }
       }

@@ -3,7 +3,7 @@
     "slug": "nicotine-dependence-chrna5-rs16969968",
     "category": "addiction",
     "title": "Nicotine dependence · CHRNA5",
-    "summary": "CHRNA5 makes part of the brain receptor that nicotine binds to. rs16969968 changes Asp398 to Asn. It is one of the most repeated findings in addiction genetics. Among smokers, each A copy is linked to about one more cigarette per day. It is also linked to about 1.3 times the odds of heavy smoking and nicotine dependence.",
+    "summary": "CHRNA5 makes part of the brain receptor that nicotine binds to. rs16969968 changes Asp398 to Asn. It is one of the most repeated findings in addiction genetics. Among smokers, each A copy is linked to about one more cigarette per day. It is also linked to higher odds of heavy smoking and nicotine dependence: a small shift.",
     "evidence": "emerging",
     "variants": [
       {
@@ -15,8 +15,8 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G allele, the reference genotype. In large studies, smokers with this genotype smoke slightly fewer cigarettes per day on average and have lower odds of nicotine dependence than A-allele carriers. This locus says nothing about whether someone smokes at all — social environment and choice dominate that.",
-          "AG": "One copy of the A (Asn398) allele. Among people who smoke, this genotype is associated on average with slightly heavier smoking and modestly higher odds of nicotine dependence (roughly 1.3-fold per A allele). It is one small factor among many; it has no meaning for people who never smoke.",
-          "AA": "Two copies of the A (Asn398) allele. In smokers this genotype is associated with the heaviest average cigarette consumption at this locus and roughly 1.6- to 2-fold higher odds of nicotine dependence versus GG. The effect is an average across large groups — many AA individuals never smoke or quit without difficulty."
+          "AG": "One copy of the A (Asn398) allele. Among people who smoke, this genotype is associated on average with slightly heavier smoking and modestly higher odds of nicotine dependence per A allele: a small shift. It is one small factor among many; it has no meaning for people who never smoke.",
+          "AA": "Two copies of the A (Asn398) allele. Among smokers, this genotype is linked to the heaviest average cigarette use at this site. It also has higher odds of nicotine dependence than GG: a moderate shift. The effect is an average across large groups. Many AA people never smoke, or quit without trouble."
         }
       }
     ],
@@ -56,7 +56,7 @@
     "slug": "alcohol-dependence-adh1b-rs1229984",
     "category": "addiction",
     "title": "Alcohol dependence protection · ADH1B",
-    "summary": "ADH1B turns alcohol into acetaldehyde. The T copy at rs1229984 is His48, also called ADH1B*2. It makes the enzyme about 40 times faster. The quick acetaldehyde rise can make drinking less pleasant. Across many groups, T carriers have much lower rates of alcohol dependence. A large review found one of the strongest single-gene protective links in addiction genetics. This site has more than two forms; this report covers common T and C.",
+    "summary": "ADH1B turns alcohol into acetaldehyde. The T copy at rs1229984 is His48, also called ADH1B*2. It makes the enzyme work faster: a large shift, not a small one. The quick acetaldehyde rise can make drinking less pleasant. Across many groups, T carriers have much lower rates of alcohol dependence. A large review found one of the strongest single-gene protective links in addiction genetics. This site has more than two forms; this report covers common T and C.",
     "evidence": "emerging",
     "variants": [
       {
@@ -81,7 +81,7 @@
   {
     "slug": "opioid-response-oprm1-rs1799971",
     "category": "addiction",
-    "title": "Opioid receptor variation · OPRM1",
+    "title": "Response to opioid medicines · OPRM1",
     "summary": "OPRM1 makes the mu-opioid receptor. Opioid pain medicines and endorphins act mainly through this receptor. The G copy at rs1799971 changes Asn40 to Asp. A large joint review linked G to slightly lower overall likelihood of substance dependence. Some clinical studies link it to needing a little more opioid medicine for the same pain relief. Effects are small, and results for specific addictions do not agree.",
     "evidence": "emerging",
     "variants": [
@@ -108,8 +108,8 @@
   {
     "slug": "reward-sensitivity-ankk1-rs1800497",
     "category": "addiction",
-    "title": "Dopamine D2 signaling · ANKK1/DRD2 Taq1A",
-    "summary": "The Taq1A variant (rs1800497) sits in ANKK1 next to the dopamine D2 receptor gene DRD2. The A allele (historically 'A1') is associated with reduced D2 receptor availability in brain imaging and, in meta-analyses, with modestly higher odds of alcohol dependence (roughly 1.2-fold). It is one of the oldest findings in addiction genetics, but the literature shows publication bias and the true effect is likely small.",
+    "title": "Brain reward signaling · ANKK1/DRD2 Taq1A",
+    "summary": "The Taq1A variant (rs1800497) sits in ANKK1, next to the dopamine D2 receptor gene DRD2. The A allele was once called “A1”. Brain imaging links it to fewer available D2 receptors. In meta-analyses it is linked to modestly higher odds of alcohol dependence: a small shift. It is one of the oldest findings in addiction genetics. But the literature shows publication bias, and the true effect is likely small.",
     "evidence": "emerging",
     "variants": [
       {
@@ -121,7 +121,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G ('A2') allele, the most common genotype in most populations. Striatal dopamine D2 receptor availability is at the reference baseline on average, and this genotype is the comparison group in addiction association studies at this locus.",
-          "AG": "One A copy, once called A1, occurs in about one third of people with European ancestry. Brain scans link A to somewhat fewer D2 receptors on average. Reviews link it to about 1.2 times the odds of alcohol dependence. This is a weak group link. It is one small factor among hundreds of gene and life effects on reward and habit.",
+          "AG": "One A copy, once called A1, occurs in about one third of people with European ancestry. Brain scans link A to somewhat fewer D2 receptors on average. Reviews link it to higher odds of alcohol dependence: a small shift. This is a weak group link. It is one small factor among hundreds of gene and life effects on reward and habit.",
           "AA": "Two A ('A1') alleles, a less common genotype. Associated on average with the lowest D2 receptor availability at this locus and, in meta-analyses, slightly elevated odds of alcohol and other substance dependence. The effect size is small and studies conflict; most people with this genotype never develop any substance problem."
         }
       }
@@ -134,7 +134,7 @@
   {
     "slug": "cannabis-dependence-cnr1-rs2023239",
     "category": "addiction",
-    "title": "Cannabinoid receptor · CNR1",
+    "title": "Cannabinoid response · CNR1",
     "summary": "CNR1 makes the CB1 receptor, the main brain target of THC. In small studies of cannabis users, people with C at rs2023239 reported more craving and withdrawal while not using cannabis. Their reward brain regions also responded differently to cannabis cues. The study groups were small, and later results have not been steady. This is an early and uncertain link.",
     "evidence": "preliminary",
     "variants": [
@@ -239,7 +239,7 @@
     "slug": "smoking-initiation-bdnf-rs6265",
     "category": "addiction",
     "title": "Smoking initiation · BDNF",
-    "summary": "The Tobacco and Genetics Consortium studied more than 70,000 people. Its review found a broad-study signal for the BDNF Val66Met change, rs6265. The common C/Val copy was linked to about 1.06 times the odds of ever smoking often. The effect is tiny. Social setting, time period, and other life factors matter far more to whether someone starts smoking.",
+    "summary": "The Tobacco and Genetics Consortium studied more than 70,000 people. Its review found a broad-study signal for the BDNF Val66Met change, rs6265. The common C/Val copy was linked to slightly higher odds of ever smoking often: a very small shift. The effect is tiny. Social setting, time period, and other life factors matter far more to whether someone starts smoking.",
     "evidence": "emerging",
     "variants": [
       {
@@ -250,7 +250,7 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C (Val) allele. Associated in large meta-analyses with very slightly higher odds of ever taking up regular smoking (around 6% higher odds per C allele). This is a barely-detectable statistical tilt found only in huge samples — one small factor, dwarfed by social environment.",
+          "CC": "Two copies of the C (Val) allele. Associated in large meta-analyses with very slightly higher odds of ever taking up regular smoking per C allele: a very small shift. This is a barely-detectable statistical tilt found only in huge samples — one small factor, dwarfed by social environment.",
           "CT": "One C/Val and one T/Met copy give a middle result at this site. The average difference in smoking-start odds is very small. This type has almost no power to predict one person's smoking behavior.",
           "TT": "Two T (Met) alleles, an uncommon genotype in most populations. Associated on average with slightly lower odds of ever becoming a regular smoker. As with the other genotypes here, the effect is tiny and only visible when averaging across tens of thousands of people."
         }

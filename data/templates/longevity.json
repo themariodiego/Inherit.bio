@@ -3,7 +3,7 @@
     "slug": "longevity-foxo3-rs2802292",
     "category": "longevity",
     "title": "Exceptional longevity · FOXO3",
-    "summary": "FOXO3 is one of the two most consistently replicated human longevity genes. The G allele at rs2802292 is enriched among centenarians across Japanese, German, and other cohorts; GG homozygotes had roughly 1.5-2.7x the odds of reaching very old age in the original studies. The effect is on probability of long survival, not a guarantee for any individual.",
+    "summary": "FOXO3 is one of the two most consistently replicated human longevity genes. The G allele at rs2802292 is found more often among centenarians in Japanese, German, and other cohorts. In the first studies, GG homozygotes had higher odds of reaching very old age: a moderate to large shift. The effect is on the probability of long survival. It is not a guarantee for any one person.",
     "evidence": "emerging",
     "variants": [
       {
@@ -14,7 +14,7 @@
         "ref": "G",
         "alt": "T",
         "interpretations": {
-          "GG": "Two copies of the longevity-associated G allele. In studies of long-lived people, this genotype was found more often than expected — roughly 1.5-2.7x the odds of reaching exceptional old age compared with TT. This shifts probability modestly; lifestyle and chance still dominate individual lifespan.",
+          "GG": "Two copies of the longevity-associated G allele. In studies of long-lived people, this genotype was found more often than expected. It had higher odds of reaching exceptional old age than TT: a moderate to large shift. This shifts probability modestly. Lifestyle and chance still dominate each person’s lifespan.",
           "GT": "One G copy linked to longevity gives a middle result between GG and TT on average. Studies find a smaller rise in G carriers among people who live to very old ages. This is one small chance factor among many influences on lifespan.",
           "TT": "No copies of the longevity-associated G allele. This is a common genotype and simply lacks the modest statistical advantage seen for G carriers in longevity cohorts. Plenty of centenarians carry this genotype; the variant explains only a small slice of survival differences."
         }
@@ -42,7 +42,7 @@
         "alt": "C",
         "interpretations": {
           "TT": "No e4-defining C allele at this position. Combined with rs7412, this genotype corresponds to the e2 or e3 forms of APOE, which are not associated with the reduced odds of reaching extreme old age seen for e4.",
-          "CT": "One C allele, which usually corresponds to one copy of APOE e4. On average, each e4 copy is associated with lower odds of surviving to extreme old age (roughly 30-50% lower odds of centenarian status in various cohorts). This is a statistical shift; many e4 carriers reach their 90s and beyond.",
+          "CT": "One C allele, which usually corresponds to one copy of APOE e4. On average, each e4 copy is linked to lower odds of surviving to extreme old age, a small to moderate shift seen in various cohorts. This is a statistical shift; many e4 carriers reach their 90s and beyond.",
           "CC": "Two C copies usually mark APOE e4/e4, found in about 2% to 3% of people. This type is least common among people who reach very old ages. It is still only one factor. Health, habits, and chance strongly shape lifespan."
         }
       },
@@ -227,7 +227,7 @@
     "slug": "longevity-tp53-pro72-rs1042522",
     "category": "longevity",
     "title": "Survival at older ages · TP53 codon 72",
-    "summary": "p53 helps guard against cancer by making damaged cells die. Stronger p53 activity may also reduce tissue repair. At codon 72, the proline form, shown here as G, has weaker cell-death activity. In a Danish study of 9,219 people, Pro/Pro was linked to about 6% higher survival over 12 years than Arg/Arg. The median survival gap was about three years. This link is still debated.",
+    "summary": "p53 helps guard against cancer by making damaged cells die. Stronger p53 activity may also reduce tissue repair. At codon 72, the proline form, shown here as G, has weaker cell-death activity. In a Danish study of 9,219 people, Pro/Pro was linked to higher survival over 12 years than Arg/Arg: a very small shift. The median survival gap was about three years. This link is still debated.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -239,8 +239,8 @@
         "alt": "C",
         "interpretations": {
           "CC": "Two copies of the C (arginine-72) allele, the most common genotype in European populations. In the Danish study this group served as the reference and had somewhat lower 12-year survival than Pro/Pro homozygotes. The absolute difference was modest and other cohorts have reported mixed results.",
-          "CG": "One arginine and one proline copy were linked to about 3% higher survival over 12 years than Arg/Arg in the Danish study. This small group difference still needs to be confirmed in other populations.",
-          "GG": "Two G copies mark proline-72. In the Danish study, this type was linked to about 6% higher survival over 12 years and about three more years of median survival than Arg/Arg. Better survival after serious illness may help explain it. This remains a small, debated factor, not a forecast for one person."
+          "CG": "One arginine and one proline copy were linked to slightly higher survival over 12 years than Arg/Arg in the Danish study: a very small shift. This small group difference still needs to be confirmed in other populations.",
+          "GG": "Two G copies mark proline-72. In the Danish study, this type was linked to higher survival over 12 years than Arg/Arg, a very small shift, and to about three more years of median survival. Better survival after serious illness may help explain it. This remains a small, debated factor, not a forecast for one person."
         }
       }
     ],
@@ -253,7 +253,7 @@
   {
     "slug": "longevity-il6-rs1800795",
     "category": "longevity",
-    "title": "Inflammation and aging · IL6 -174",
+    "title": "Inflammatory signaling and aging · IL6 -174",
     "summary": "Long-term, low-level inflammation is linked to many conditions that rise with age. Interleukin-6 is one of its main signals. The IL6 promoter change -174G/C, or rs1800795, affects IL-6 activity in some settings. One Danish study found GG a little more often at older ages. Other studies disagree on the effect and even its direction.",
     "evidence": "preliminary",
     "variants": [

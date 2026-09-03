@@ -2,7 +2,7 @@
   {
     "slug": "cystic-fibrosis-cftr-f508del-informational",
     "category": "reproductive-family",
-    "title": "CFTR F508del carrier status (informational) · CFTR",
+    "title": "CFTR F508del status (informational) · CFTR",
     "summary": "F508del is the most common cystic fibrosis (CF) variant. It makes up about 70% of CF alleles in people with European ancestry. About 1 in 25 to 30 people in that group carries one copy. This report checks only F508del. It is not carrier screening. Clinical screening tests many CFTR variants. If you are planning a family and want carrier information, ask a doctor or genetic counselor about proper testing.",
     "evidence": "emerging",
     "variants": [
@@ -31,7 +31,7 @@
   {
     "slug": "fsh-levels-fshb-promoter-rs10835638",
     "category": "reproductive-family",
-    "title": "FSH hormone levels · FSHB promoter (-211G>T)",
+    "title": "FSH hormone levels · FSHB (-211G>T)",
     "summary": "Follicle-stimulating hormone (FSH) helps eggs mature and supports sperm production. rs10835638 lies in the FSHB promoter and lowers gene transcription. The T allele is linked to lower average blood FSH. In men, studies also link it to slightly smaller testes and lower sperm measures. Effects on fertility are small and differ across studies. A blood test measures FSH far better than genotype.",
     "evidence": "preliminary",
     "variants": [
@@ -60,8 +60,8 @@
   {
     "slug": "recurrent-pregnancy-loss-anxa5-m2",
     "category": "reproductive-family",
-    "title": "Recurrent pregnancy loss · ANXA5 M2 haplotype",
-    "summary": "Annexin A5 forms a protective anticoagulant shield on the placental surface. The M2 haplotype of the ANXA5 promoter, tagged here by rs112782763, reduces ANXA5 expression and has been associated with roughly 2x the odds of recurrent pregnancy loss in some case-control studies. The evidence base is small and results are mixed across populations, so this should be read as a preliminary association, not a prediction. Pregnancy loss is common and usually unrelated to this haplotype.",
+    "title": "Recurrent pregnancy loss · ANXA5 M2",
+    "summary": "Annexin A5 forms a protective anticoagulant shield on the placental surface. The M2 haplotype of the ANXA5 promoter, tagged here by rs112782763, reduces ANXA5 expression. Some case-control studies have linked it to higher odds of recurrent pregnancy loss: a moderate shift. The evidence base is small and results are mixed across populations, so this should be read as a preliminary association, not a prediction. Pregnancy loss is common and usually unrelated to this haplotype.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -73,7 +73,7 @@
         "alt": "T",
         "interpretations": {
           "CC": "No copies of the M2-tagging allele at this position. This genotype is not associated with the reduced ANXA5 promoter activity linked to the M2 haplotype. Most pregnancy losses have causes unrelated to ANXA5, so this result says little either way about individual pregnancy outcomes.",
-          "CT": "One copy of the T allele that tags the M2 haplotype, carried by roughly 10-15% of people of European ancestry. Some studies associate M2 carriage with about 1.5-2x the average odds of recurrent pregnancy loss; others find no effect. This is one small, preliminary factor among many, and most carriers have uncomplicated pregnancies. Anyone experiencing recurrent loss deserves a full clinical evaluation regardless of this result.",
+          "CT": "One copy of the T allele that tags the M2 haplotype, carried by roughly 10-15% of people of European ancestry. Some studies link M2 carriage to higher average odds of recurrent pregnancy loss: a moderate shift. Others find no effect. This is one small, preliminary factor among many, and most carriers have uncomplicated pregnancies. Anyone experiencing recurrent loss deserves a full clinical evaluation regardless of this result.",
           "TT": "Two copies of the uncommon T allele that tags M2. Some studies link this result to the lowest average ANXA5 promoter activity and slightly higher odds of repeat pregnancy loss. Data on this rare genotype are thin. This is one early finding among many factors. A clinician or genetic counselor can review it as part of a full evaluation."
         }
       }
@@ -123,7 +123,7 @@
     "slug": "dizygotic-twinning-fshb-region",
     "category": "reproductive-family",
     "title": "Dizygotic twinning · FSHB region",
-    "summary": "Fraternal (dizygotic) twinning runs in families on the mother's side, partly through variants that raise follicle-stimulating hormone and make double ovulation more likely. Near the FSHB gene, the common rs11031006 G allele is associated with higher average FSH levels and roughly 1.2-1.3x the odds of being a mother of dizygotic twins per copy. This cross-references the FSHB promoter report: both loci act through FSH signaling. Identical twinning is unrelated to this variant.",
+    "summary": "Fraternal (dizygotic) twinning runs in families on the mother’s side. This is partly through variants that raise follicle-stimulating hormone and make double ovulation more likely. Near the FSHB gene, the common rs11031006 G allele is associated with higher average FSH levels. Each copy is also linked to higher odds of being a mother of dizygotic twins: a small shift. This cross-references the FSHB promoter report: both loci act through FSH signaling. Identical twinning is not linked to this variant.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -134,7 +134,7 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the common G allele, which is the twinning-associated allele at this locus. Associated with modestly higher average FSH and, in mothers, roughly 1.2-1.3x the odds of a dizygotic twin pregnancy per G copy compared with carrying A alleles. Dizygotic twinning still depends heavily on maternal age, ancestry, and chance.",
+          "GG": "Two copies of the common G allele, which is the twinning-associated allele at this locus. Associated with modestly higher average FSH and, in mothers, higher odds of a dizygotic twin pregnancy per G copy compared with carrying A alleles: a small shift. Dizygotic twinning still depends heavily on maternal age, ancestry, and chance.",
           "AG": "One copy of each allele. The A allele is associated with lower average FSH levels and somewhat lower odds of dizygotic twinning; this genotype sits in between the two homozygous groups on average. The absolute chance of a twin pregnancy remains low for all genotypes.",
           "AA": "Two copies of the less common A allele, which has about 8% frequency in European-ancestry groups. This result is linked to the lowest average FSH at this site and lower odds of a fraternal twin pregnancy. It matters only for the partner who makes eggs. Its effect is small next to age and family history."
         }
@@ -185,7 +185,7 @@
     "slug": "endometriosis-wnt4-region",
     "category": "reproductive-family",
     "title": "Endometriosis · WNT4 region (1p36)",
-    "summary": "Endometriosis is a condition in which tissue like the uterine lining grows outside the uterus. It affects about 1 in 10 people with a uterus and is partly inherited. The 1p36 site near WNT4 is one of the most often replicated genetic links. WNT4 helps form the female reproductive tract. Each rs7521902 A allele is linked to about 1.2 times the average odds of endometriosis.",
+    "summary": "Endometriosis is a condition in which tissue like the uterine lining grows outside the uterus. It affects about 1 in 10 people with a uterus and is partly inherited. The 1p36 site near WNT4 is one of the most often replicated genetic links. WNT4 helps form the female reproductive tract. Each rs7521902 A allele is linked to higher average odds of endometriosis: a small shift.",
     "evidence": "emerging",
     "variants": [
       {
@@ -197,8 +197,8 @@
         "alt": "A",
         "interpretations": {
           "CC": "No copies of the A risk allele. Associated with somewhat lower average odds of endometriosis at this locus. This does not rule anything out: most endometriosis risk comes from other genetic and non-genetic factors, and symptoms such as severe pelvic pain warrant medical attention regardless of genotype.",
-          "AC": "One copy of A. This result is linked to about 1.2 times the average odds of endometriosis compared with CC. It is a small shift from one of many sites, not a prediction. Only a clinical evaluation can establish the condition.",
-          "AA": "Two copies of the A allele, carried by roughly 7-8% of people of European ancestry. Associated on average with about 1.4-1.5x the odds of endometriosis relative to CC. Still one small factor among many: most people with this genotype never develop endometriosis, and most cases occur in people without it."
+          "AC": "One copy of A. This result is linked to higher average odds of endometriosis compared with CC: a small shift from one of many sites, not a prediction. Only a clinical evaluation can establish the condition.",
+          "AA": "Two copies of the A allele, carried by roughly 7-8% of people of European ancestry. Associated on average with higher odds of endometriosis relative to CC: a small shift. Still one small factor among many. Most people with this genotype never develop endometriosis, and most cases occur in people without it."
         }
       }
     ],
@@ -217,8 +217,8 @@
   {
     "slug": "polycystic-ovary-syndrome-dennd1a",
     "category": "reproductive-family",
-    "title": "Polycystic ovary syndrome · DENND1A",
-    "summary": "Polycystic ovary syndrome (PCOS) is a common hormone condition that can involve irregular ovulation and high androgen levels. DENND1A at 9q33.3 emerged from the first genome-wide PCOS studies in Han Chinese groups. Each rs2479106 G allele was linked to about 1.3 times the odds of PCOS. Studies of this variant in European-ancestry groups have had mixed results. The evidence is preliminary.",
+    "title": "PCOS · DENND1A",
+    "summary": "Polycystic ovary syndrome (PCOS) is a common hormone condition that can involve irregular ovulation and high androgen levels. DENND1A at 9q33.3 emerged from the first genome-wide PCOS studies in Han Chinese groups. Each rs2479106 G allele was linked to higher odds of PCOS: a small shift. Studies of this variant in European-ancestry groups have had mixed results. The evidence is preliminary.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -230,8 +230,8 @@
         "alt": "G",
         "interpretations": {
           "AA": "No copies of the G allele that was associated with PCOS in the discovery studies. Associated with average or somewhat lower odds at this locus. PCOS risk involves many genes plus weight, insulin signaling, and other factors, so this result carries little individual weight.",
-          "AG": "One copy of the G allele. In Han Chinese cohorts this was associated on average with roughly 1.3x the odds of PCOS; studies in European-ancestry populations have not consistently reproduced the finding. A preliminary, ancestry-dependent association and one small factor among many.",
-          "GG": "Two copies of the G allele, a common genotype worldwide. Associated in the discovery cohorts with the highest average odds at this locus (roughly 1.6-1.8x versus AA), but the inconsistent replication outside East Asian cohorts means this should be read cautiously. PCOS can only be established through clinical evaluation of symptoms and hormone levels."
+          "AG": "One copy of the G allele. In Han Chinese cohorts this was associated on average with higher odds of PCOS: a small shift. Studies in European-ancestry populations have not consistently reproduced the finding. A preliminary, ancestry-dependent association and one small factor among many.",
+          "GG": "Two copies of the G allele, a common genotype worldwide. Associated in the discovery cohorts with the highest average odds at this locus: a moderate shift versus AA. The inconsistent replication outside East Asian cohorts means this should be read cautiously. PCOS can only be established through clinical evaluation of symptoms and hormone levels."
         }
       }
     ],
@@ -250,7 +250,7 @@
   {
     "slug": "ovarian-fsh-response-fshr-asn680ser",
     "category": "reproductive-family",
-    "title": "FSH receptor sensitivity · FSHR Asn680Ser",
+    "title": "Ovary response to FSH · FSHR Asn680Ser",
     "summary": "FSH receptors on ovarian cells control how strongly the ovary responds to FSH. rs6166 changes amino acid 680 from asparagine to serine. Ser/Ser carriers have slightly higher average FSH at baseline. Early IVF studies found that they needed more stimulation medicine on average for the same response. Both forms are common and work with normal fertility. This result concerns average IVF response, not the ability to conceive.",
     "evidence": "emerging",
     "variants": [
@@ -280,7 +280,7 @@
     "slug": "pregnancy-thrombosis-factor-v-leiden",
     "category": "reproductive-family",
     "title": "Pregnancy and clotting · Factor V Leiden",
-    "summary": "Factor V Leiden (rs6025, Arg506Gln) is the most common inherited variant that raises clot risk. About 3% to 5% of people with European ancestry carry it. Pregnancy also raises clot risk. Carriers have higher average odds of a vein clot during pregnancy and after birth. Studies also link the variant to about 1.5 to 2 times the odds of pregnancy loss. Most carriers have pregnancies without these problems. This report is for information only. If you carry the variant and plan a pregnancy, consider speaking with a clinician or genetic counselor.",
+    "summary": "Factor V Leiden (rs6025, Arg506Gln) is the most common inherited variant that raises clot risk. About 3% to 5% of people with European ancestry carry it. Pregnancy also raises clot risk. Carriers have higher average odds of a vein clot during pregnancy and after birth. Studies also link the variant to higher odds of pregnancy loss: a moderate shift. Most carriers have pregnancies without these problems. This report is for information only. If you carry the variant and plan a pregnancy, consider speaking with a clinician or genetic counselor.",
     "evidence": "emerging",
     "variants": [
       {
@@ -292,7 +292,7 @@
         "alt": "T",
         "interpretations": {
           "CC": "No Factor V Leiden variant detected. Clotting tendency at this locus is typical. Other inherited and acquired factors can still affect clotting risk in pregnancy, and this single-variant result is not a full thrombophilia work-up.",
-          "CT": "One copy of Factor V Leiden. About 3% to 5% of people with European ancestry have this result. It is linked to several times the average odds of a vein clot. Pregnancy and medicines that contain estrogen raise that risk further. Studies also link it to about 1.5 to 2 times the odds of pregnancy loss. Most carriers never have a clot, and most pregnancies have no related problem. A clinical lab should confirm the result. A clinician or genetic counselor can put it in context.",
+          "CT": "One copy of Factor V Leiden. About 3% to 5% of people with European ancestry have this result. It is linked to several times the average odds of a vein clot. Pregnancy and medicines that contain estrogen raise that risk further. Studies also link it to higher odds of pregnancy loss: a moderate shift. Most carriers never have a clot, and most pregnancies have no related problem. A clinical lab should confirm the result. A clinician or genetic counselor can put it in context.",
           "TT": "Two copies of Factor V Leiden. This is rare, affecting about 1 in 1,000 to 2,500 people with European ancestry. It is linked to much higher average odds of a vein clot than one copy. Pregnancy raises that risk further. A clinical lab should confirm this result. Speak with a clinician or genetic counselor, especially before pregnancy. The result shifts probability; it does not make any outcome certain."
         }
       }

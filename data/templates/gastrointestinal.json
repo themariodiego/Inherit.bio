@@ -54,7 +54,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Two copies of the G (Glu504) allele: fully active ALDH2. Acetaldehyde is cleared at the typical rate and the classic alcohol flush reaction is not expected from this gene.",
-          "AG": "One copy of the A (Lys504) allele. Because the enzyme works as a tetramer, one inactive copy reduces ALDH2 activity far more than half, and most carriers flush and feel unwell after alcohol. Studies associate heavy drinking in AG carriers with several-fold higher odds of esophageal squamous cell cancer compared with GG heavy drinkers; carriers who drink little or not at all do not show this excess. This is one factor among many in cancer risk.",
+          "AG": "One copy of the A (Lys504) allele. Because the enzyme works as a tetramer, one inactive copy reduces ALDH2 activity far more than half, and most carriers flush and feel unwell after alcohol. Studies link heavy drinking in AG carriers to higher odds of esophageal squamous cell cancer than in GG heavy drinkers: a large shift. Carriers who drink little or not at all do not show this excess. This is one factor among many in cancer risk.",
           "AA": "Two A copies mark the Lys504 form and leave very little ALDH2 activity. Even a small amount of alcohol often causes strong flushing and discomfort. Most people with AA drink rarely, which limits alcohol harm in practice. If alcohol is used, acetaldehyde rises sharply."
         }
       }
@@ -68,7 +68,7 @@
     "slug": "alcohol-metabolism-adh1b-rs1229984",
     "category": "gastrointestinal",
     "title": "Alcohol metabolism speed · ADH1B",
-    "summary": "ADH1B turns alcohol into acetaldehyde in the liver. The rs1229984 change is also called His48Arg. The T copy marks His48, or ADH1B*2. It is common in East Asia and less common elsewhere. In lab tests, this enzyme works about 40 times faster. The brief rise in acetaldehyde can make drinking less pleasant. Studies link T to less alcohol use and lower odds of alcohol use disorder.",
+    "summary": "ADH1B turns alcohol into acetaldehyde in the liver. The rs1229984 change is also called His48Arg. The T copy marks His48, or ADH1B*2. It is common in East Asia and less common elsewhere. In lab tests, this enzyme works faster: a large shift. The brief rise in acetaldehyde can make drinking less pleasant. Studies link T to less alcohol use and lower odds of alcohol use disorder.",
     "evidence": "emerging",
     "variants": [
       {
@@ -93,7 +93,7 @@
   {
     "slug": "hemochromatosis-hfe-c282y-rs1800562",
     "category": "gastrointestinal",
-    "title": "Iron overload (C282Y) · HFE",
+    "title": "Iron buildup (C282Y) · HFE",
     "summary": "HFE rs1800562, or C282Y, is the main DNA change behind inherited hemochromatosis. This recessive trait causes too much iron to be taken in from food. Over decades, excess iron can harm the liver, joints, and other organs. About 1 in 200 people with northern European ancestry have two copies. Most never develop disease. In a large study, iron-related disease affected about 28% of men and 1% of women with two copies. This reports inherited risk, not current health.",
     "evidence": "emerging",
     "variants": [
@@ -120,7 +120,7 @@
   {
     "slug": "hemochromatosis-hfe-h63d-rs1799945",
     "category": "gastrointestinal",
-    "title": "Iron overload (H63D) · HFE",
+    "title": "Iron buildup (H63D) · HFE",
     "summary": "HFE rs1799945, or H63D, is the milder of two common changes linked to hemochromatosis. Alone, it rarely causes harmful iron overload, even with two copies. It matters most when C282Y is also present, but most people with both changes stay well. About one quarter of people with European ancestry carry at least one G copy, called Asp63.",
     "evidence": "emerging",
     "variants": [
@@ -147,7 +147,7 @@
   {
     "slug": "gilbert-syndrome-ugt1a1-rs887829",
     "category": "gastrointestinal",
-    "title": "Bilirubin processing · UGT1A1",
+    "title": "Gilbert’s · UGT1A1",
     "summary": "UGT1A1 helps the body prepare bilirubin for removal. The T copy at rs887829 tracks lower enzyme activity. It almost always travels with the UGT1A1*28 repeat behind Gilbert syndrome. Two T copies are linked to a mild rise in unconjugated bilirubin. About 10% of Europeans have this harmless trait. Fasting, illness, or stress may cause slight yellowing of the eyes or a flagged bilirubin blood result.",
     "evidence": "emerging",
     "variants": [
@@ -214,7 +214,7 @@
         "interpretations": {
           "CC": "No copies of the DQ2.5 tag allele. This makes the highest-risk celiac HLA background unlikely, though it does not exclude DQ8 or the less common DQ2.2, which this single variant does not capture — so it cannot fully rule celiac disease out on its own.",
           "CT": "One copy of the T allele, tagging one DQ2.5 haplotype — the necessary immune background carried by most people with celiac disease. Carrying it is common (roughly a quarter of Europeans) and by itself means only a modestly elevated lifetime chance, on the order of a few percent. Persistent gut symptoms are a question for a clinician regardless of genotype.",
-          "TT": "Two copies of the T allele, consistent with a double dose of the DQ2.5 risk haplotype. Studies associate DQ2.5 homozygosity with the highest HLA-related celiac risk (several-fold above single-copy carriers), yet even here most carriers never develop celiac disease. This result describes an inherited immune background, one predisposing factor among several, not a statement about whether celiac disease is present."
+          "TT": "Two copies of the T allele, consistent with a double dose of the DQ2.5 risk haplotype. Studies link two copies of DQ2.5 with the highest HLA-related celiac risk: a large shift compared with one copy. Even so, most people with this result never develop celiac disease. It describes an inherited immune background, one factor among several, not whether celiac disease is present."
         }
       }
     ],

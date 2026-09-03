@@ -212,7 +212,7 @@
     "slug": "morning-chronotype-rgs16-rs516134",
     "category": "lifestyle-wellness",
     "title": "Morning chronotype · RGS16",
-    "summary": "Being a morning person is partly inherited. In a 23andMe study of 89,283 people, the strongest single signal was near RGS16, which helps control body-clock signals. At rs516134, the rare C copy was linked to about 1.2 times the chance of calling yourself a morning person. Hundreds of genes, age, light, and habits matter, so this change has little effect.",
+    "summary": "Being a morning person is partly inherited. In a 23andMe study of 89,283 people, the strongest single signal was near RGS16, which helps control body-clock signals. At rs516134, the rare C copy was linked to a higher chance of calling yourself a morning person: a small shift. Hundreds of genes, age, light, and habits matter, so this change has little effect.",
     "evidence": "emerging",
     "variants": [
       {
@@ -224,7 +224,7 @@
         "alt": "T",
         "interpretations": {
           "CC": "Two C copies are linked to morning preference. This type is rare; only a few percent of people with European ancestry carry C. The group has a modest rise in the chance of calling themselves a morning person. One DNA change explains very little because hundreds help shape sleep timing.",
-          "CT": "One copy of the C allele, associated with roughly 1.2-fold higher odds of self-reporting as a morning person in the Hu 2016 genome-wide study. This is a small average shift in a highly polygenic trait, not a determinant of your actual sleep timing.",
+          "CT": "One copy of the C allele, associated with higher odds of self-reporting as a morning person in the Hu 2016 genome-wide study. This is a small shift on average in a highly polygenic trait, not a determinant of your actual sleep timing.",
           "TT": "This is the most common type and has no C copy linked to morning preference. The result says little on its own. Hundreds of DNA changes, age, light, and daily habits shape sleep timing. Many people with TT strongly prefer mornings."
         }
       }

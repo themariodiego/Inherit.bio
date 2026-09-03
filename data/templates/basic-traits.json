@@ -49,7 +49,7 @@
     "slug": "cilantro-soapy-taste-or6a2",
     "category": "basic-traits",
     "title": "Cilantro soapy taste · OR6A2 region",
-    "summary": "Genes play a small part in whether cilantro tastes fresh or soapy. A study of about 26,000 people found a link near several smell receptor genes. The site, rs72921001, is close to OR6A2. This receptor detects chemicals that give cilantro its smell. Each A copy was linked to 0.81 times the odds of a soapy taste. A second group confirmed the link. Still, this site explains only about 0.5% of the difference between people.",
+    "summary": "Genes play a small part in whether cilantro tastes fresh or soapy. A study of about 26,000 people found a link near several smell receptor genes. The site, rs72921001, is close to OR6A2. This receptor detects chemicals that give cilantro its smell. Each A copy was linked to lower odds of a soapy taste: a small shift. A second group confirmed the link. Still, this site explains only about 0.5% of the difference between people.",
     "evidence": "emerging",
     "variants": [
       {
@@ -62,7 +62,7 @@
         "interpretations": {
           "CC": "Two C copies are linked to slightly higher odds that cilantro tastes soapy. They are also linked to a little more dislike of cilantro. The shift is small, and many people with CC love it. Exposure and cooking habits strongly shape preference.",
           "AC": "One C and one A allele. Intermediate on average: somewhat lower odds of the soapy perception than CC. This variant is a minor nudge, not a determinant, and many other genetic and environmental factors are involved.",
-          "AA": "Two A copies mark the lowest average odds of a soapy cilantro taste at this site. In the first study, each A copy gave about 0.81 times the odds. Taste still varies widely among people with AA."
+          "AA": "Two A copies mark the lowest average odds of a soapy cilantro taste at this site. In the first study, each A copy was linked to lower odds: a small shift. Taste still varies widely among people with AA."
         }
       }
     ],
@@ -77,8 +77,8 @@
   {
     "slug": "asparagus-odor-detection-or2m7",
     "category": "basic-traits",
-    "title": "Asparagus metabolite smell · olfactory receptor cluster (OR2M7)",
-    "summary": "Most people make sulfur-smelling chemicals in urine after eating asparagus. Yet most people cannot smell them. This smell difference maps to a group of receptor genes on chromosome 1. rs4481887 marks the region near OR2M7. In studies of almost 7,000 people, each G copy gave about 1.7 times the odds of not smelling the odor. About 60% of all people studied could not smell it.",
+    "title": "Asparagus metabolite smell · OR2M7",
+    "summary": "Most people make sulfur-smelling chemicals in urine after eating asparagus. Yet most people cannot smell them. This smell difference maps to a group of receptor genes on chromosome 1. rs4481887 marks the region near OR2M7. In studies of almost 7,000 people, each G copy was linked to higher odds of not smelling the odor: a moderate shift. About 60% of all people studied could not smell it.",
     "evidence": "emerging",
     "variants": [
       {
@@ -90,7 +90,7 @@
         "alt": "G",
         "interpretations": {
           "AA": "Two A copies mark the highest average chance of smelling the sulfur odor after asparagus. The amount of odor and many other smell receptor genes also matter. This result changes the chance; it does not give a sure answer.",
-          "AG": "One A and one G allele. Intermediate on average: the G copy is associated with roughly 1.7-fold higher odds of not detecting the asparagus odor, so heterozygotes fall between the two homozygous groups in group studies.",
+          "AG": "One A and one G allele. Intermediate on average: the G copy is linked to higher odds of not detecting the asparagus odor, a moderate shift, so heterozygotes fall between the two homozygous groups in group studies.",
           "GG": "Two G copies mark the highest average odds of not smelling asparagus waste chemicals. The body still makes them. This harmless smell difference occurred in most people in the studies."
         }
       }
@@ -111,7 +111,7 @@
     "slug": "photic-sneeze-reflex-2q22",
     "category": "basic-traits",
     "title": "Photic sneeze reflex · 2q22 region (near ZEB2)",
-    "summary": "The photic sneeze reflex — sneezing when moving from dim light into bright sunlight — affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2 (odds ratio about 1.3 per C allele in European-ancestry participants), and the same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
+    "summary": "The photic sneeze reflex is sneezing when moving from dim light into bright sunlight. It affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2. Each C allele was linked to higher odds in European-ancestry participants: a small shift. The same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
     "evidence": "emerging",
     "variants": [
       {
@@ -122,7 +122,7 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C allele, the version associated in the original European-ancestry study with the highest average odds of the photic sneeze reflex at this locus (roughly 1.3-fold per C copy). Many CC carriers never sun-sneeze; this common variant explains only a small part of the trait.",
+          "CC": "Two copies of the C allele, the version associated in the original European-ancestry study with the highest average odds of the photic sneeze reflex at this locus. Each C copy is linked to higher odds: a small shift. Many CC carriers never sun-sneeze; this common variant explains only a small part of the trait.",
           "CT": "One C and one T allele, associated on average with intermediate odds of the photic sneeze reflex. Reported effect sizes are modest and have differed somewhat between populations, so the genotype shifts probability only slightly either way.",
           "TT": "Two T copies mark the lowest average odds of sun sneezing in the first study. Some people with TT still have the reflex. Other genes and body processes also play a part."
         }
@@ -205,7 +205,7 @@
   {
     "slug": "misophonia-chewing-sounds-tenm2",
     "category": "basic-traits",
-    "title": "Sensitivity to chewing sounds (misophonia) · TENM2 region",
+    "title": "Reaction to chewing sounds (misophonia) · TENM2",
     "summary": "Misophonia is a very strong negative response to certain daily sounds. Chewing is a common trigger, and some people feel anger or rage. A 23andMe DNA study used one question about rage at eating sounds. It found one strong signal at rs2937573 inside TENM2, a gene active in brain growth. The effect on one person is small. The study used only one self-report question, and few other studies have tested the result. The evidence is therefore early.",
     "evidence": "preliminary",
     "variants": [
@@ -248,7 +248,7 @@
         "interpretations": {
           "CC": "Two C copies make Arg577, so both gene copies produce alpha-actinin-3 in fast muscle fibers. CC appears more often among top sprint and power athletes. Some studies also link it to slightly better sprint results. For one person, training history matters far more than this DNA site.",
           "CT": "One C copy works, and one T copy stops early. The body still makes alpha-actinin-3. In group studies, CT falls between CC and TT on sprint measures. The differences are too small to notice outside top-level sport.",
-          "TT": "Two T copies make the 577X stop form, so the body makes no alpha-actinin-3. A related protein, alpha-actinin-2, takes its place. TT was rare among top sprinters in athlete studies. On average, it is linked to slightly less muscle power and perhaps better endurance economy. It has no known health effect, and many strong, fast people have TT."
+          "TT": "Two T copies make the R577X stop form, so the body makes no alpha-actinin-3. A related protein, alpha-actinin-2, takes its place. TT was rare among top sprinters in athlete studies. On average, it is linked to slightly less muscle power and perhaps better endurance economy. It has no known health effect, and many strong, fast people have TT."
         }
       }
     ],
@@ -296,7 +296,7 @@
   {
     "slug": "sweet-taste-sensitivity-tas1r3",
     "category": "basic-traits",
-    "title": "Sweet taste sensitivity · TAS1R3 promoter",
+    "title": "Sweet taste perception · TAS1R3",
     "summary": "TAS1R3 makes half of the main receptor for sweet taste. Two changes in its control region are rs35744813, shown here, and the closely linked rs307355. In lab tests, the T copies lowered how strongly the gene switched on. In taste tests, they were linked to lower sensitivity to sucrose. Together, they explained up to about 16% of the differences in that study. The evidence comes mainly from one strong study with lab follow-up, so it is still early.",
     "evidence": "preliminary",
     "variants": [

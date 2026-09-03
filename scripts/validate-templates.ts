@@ -8,6 +8,11 @@ import {
   LAYERS,
   categoryFor,
 } from "../src/lib/genome/taxonomy";
+import {
+  jargonTermList,
+  nakedRelativeFindings,
+  titleFindings,
+} from "../src/lib/genome/template-prose";
 
 const CATEGORIES = new Set([
   "heart-cardiovascular",
@@ -38,6 +43,11 @@ const BANNED_PATTERNS: [RegExp, string][] = [
   [/you (have|will develop|are going to)/i, "deterministic claim"],
   [/\bcures?\b|\btreats?\b/i, "treatment claim"],
 ];
+
+// G3.5: the report title is the first heading on the result page.
+const JARGON_TERMS = jargonTermList(
+  JSON.parse(fs.readFileSync(path.join(process.cwd(), "data", "jargon.json"), "utf8")),
+);
 
 const dir = path.join(process.cwd(), "data", "templates");
 const files = fs
@@ -71,6 +81,17 @@ for (const file of files) {
     if (!CATEGORIES.has(t.category)) errors.push(`${id}: bad category ${t.category}`);
     byCategory.set(t.category, (byCategory.get(t.category) ?? 0) + 1);
     if (!t.title) errors.push(`${id}: missing title`);
+    if (t.title) {
+      for (const finding of titleFindings(t.title, JARGON_TERMS)) {
+        errors.push(`${id}: title ${finding.rule}: ${finding.detail} ("${t.title}")`);
+      }
+    }
+    // §2.4: no naked relative figure in summary or interpretations.
+    if (typeof t.summary === "string") {
+      for (const finding of nakedRelativeFindings(t.summary)) {
+        errors.push(`${id}: summary ${finding.rule}: ${finding.detail}`);
+      }
+    }
     if (!t.summary || t.summary.length < 40) errors.push(`${id}: summary too short`);
     if (!EVIDENCE.has(t.evidence)) errors.push(`${id}: bad evidence ${t.evidence}`);
     // Seeds are always published, and 'insufficient' is never published.
@@ -146,6 +167,11 @@ for (const file of files) {
           errors.push(`${id}: interpretation key "${key}" contains "/" (reports.ts strips it; use the sorted no-separator form)`);
       }
       for (const [k, text] of Object.entries(interp)) {
+        if (typeof text === "string") {
+          for (const finding of nakedRelativeFindings(text)) {
+            errors.push(`${id}: interpretation ${k} ${finding.rule}: ${finding.detail}`);
+          }
+        }
         if (typeof text !== "string" || text.length < 20)
           errors.push(`${id}: interpretation ${k} too short`);
       }

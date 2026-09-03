@@ -460,3 +460,39 @@ vocabulary-checked and sentence-capped, and the `PRIMARY` button labels and
 `COVERAGE_PILLS` fall to the unchecked block role because neither key nor
 export name says `button`, `label`, or `chip`; renaming opts them in. G1.10
 is YES in the acceptance matrix as of this pass.
+
+## 2026-09-03 — thirty-first pass: everyday words leave the jargon register; template prose checks
+
+ADR 0012 shortens `data/jargon.json`: `cancer` (`tumor`, `tumour`), `immune`,
+`embryo` (`embryos`), `celiac`, `metabolism` (`metabolic`), `trait` (`traits`),
+`vitamin` (`vitamins`), `hormone` (`hormones`), the aliases `disease` and
+`diseases` of `condition`, and the aliases `genome` and `genomes` of `gene`
+leave the register; thirteen genuine terms join it (`prevalence`, `incidence`,
+`pathogenic`, `hazard ratio`, `odds ratio`, `genome-wide association study`,
+`linkage disequilibrium`, `reference panel`, `z-score`, `missense`,
+`frameshift`, `heritability`, `autosomal`). The register holds 203 terms and
+aliases. The reason is X7.3 and G3.5: a registered term may never appear in a
+heading, and the specification mandates `Cancer`, `Immune system and
+allergies`, `Embryos`, `Food, drink and metabolism`, `Everyday traits` and
+`My Genome` as headings, while report titles name the conditions they report.
+
+Because the scorer no longer replaces those words with a one-syllable
+placeholder, fourteen blocks rose above the grade-9 ceiling: one legal
+sentence on `/legal/self-hosting` (rewritten in place) and thirteen template
+sentences, eight of them in templates already being rewritten for a naked
+relative figure and five rewritten on their own. All were rewritten under the
+W5 rulebook (direction kept, ratio replaced by one bounded magnitude phrase,
+no new fact) and re-scored at or under 9.
+
+`pnpm gate:templates` now applies two prose rules from
+`src/lib/genome/template-prose.ts`: the first-glance title (G3.5: at most
+twelve words, no registered jargon term, no bare numeric figure) and the
+naked relative figure (§4 §2.4: no `%`, `x`, `×` or `-fold` token within 40
+characters of a comparison word, and no numeric multiplier at all). On the
+seed as it stood, 89 templates failed (37 jargon titles, 36 naked tokens,
+129 worded ratios); after the register change and the rewrites, 92
+templates changed (33 titles, the rest prose) and the gate exits 0.
+
+Clean state: `pnpm gate:readability` exits 0 over 1,613 blocks (956 long,
+434 short-role, 266 sentence-capped, 144 copy-registry) on the tree with the
+template rewrites applied.

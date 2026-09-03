@@ -2,7 +2,7 @@
   {
     "slug": "male-pattern-baldness-ar-rs6152",
     "category": "aesthetic-cosmetic",
-    "title": "Male-pattern hair loss · AR (X chromosome)",
+    "title": "Male-pattern hair loss · AR",
     "summary": "Changes in the androgen receptor gene, AR, are the strongest known gene factor for male-pattern hair loss. AR is on the X chromosome. G at rs6152 marks the higher-risk AR form. The less common A copy is linked to lower odds of early hair loss. Men get their X copy from their mother, so the maternal line can matter. Many other genes and age also shape hair loss.",
     "evidence": "emerging",
     "variants": [
@@ -28,8 +28,8 @@
   {
     "slug": "male-pattern-baldness-20p11-rs1160312",
     "category": "aesthetic-cosmetic",
-    "title": "Male-pattern hair loss · 20p11 locus",
-    "summary": "A region on chromosome 20p11 near the PAX1 and FOXA2 genes is the strongest baldness locus outside the X chromosome. Each copy of the A allele of rs1160312 was associated with roughly 1.6-fold higher odds of male-pattern hair loss in the discovery study, an effect independent of the androgen receptor locus. About one in seven European-ancestry men carries the higher-risk genotype at both loci.",
+    "title": "Male-pattern hair loss · PAX1/FOXA2",
+    "summary": "A region on chromosome 20p11 near the PAX1 and FOXA2 genes is the strongest baldness locus outside the X chromosome. Each copy of the A allele of rs1160312 was associated with higher odds of male-pattern hair loss in the discovery study: a moderate shift. That effect is independent of the androgen receptor locus. About one in seven European-ancestry men carries the higher-risk genotype at both loci.",
     "evidence": "emerging",
     "variants": [
       {
@@ -40,8 +40,8 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two copies of the A allele, the genotype associated with the highest odds of male-pattern hair loss at this locus (roughly 1.6-fold per A copy in the discovery cohort). This locus acts independently of the androgen receptor gene, so risk from the two loci adds up. It remains one factor among many: plenty of AA men bald late or not at all.",
-          "AG": "One A and one G allele, associated with intermediate odds of male-pattern hair loss at this locus, on average around 1.6-fold higher than GG. Age, the AR locus, and many smaller-effect variants matter at least as much.",
+          "AA": "Two copies of the A allele, the genotype associated with the highest odds of male-pattern hair loss at this locus: a moderate shift per A copy in the discovery cohort. This locus acts independently of the androgen receptor gene, so risk from the two loci adds up. It remains one factor among many: plenty of AA men bald late or not at all.",
+          "AG": "One A and one G allele, associated with intermediate odds of male-pattern hair loss at this locus, on average higher than GG: a moderate shift. Age, the AR locus, and many smaller-effect variants matter at least as much.",
           "GG": "Two copies of the G allele, the genotype associated with the lowest odds of pattern hair loss at this locus. This does not rule out balding driven by the androgen receptor locus or other genes."
         }
       }
@@ -133,7 +133,7 @@
   {
     "slug": "skin-pigmentation-tanning-slc45a2-rs16891982",
     "category": "aesthetic-cosmetic",
-    "title": "Skin pigmentation and tanning · SLC45A2",
+    "title": "Skin color and tanning · SLC45A2",
     "summary": "SLC45A2, also called MATP, moves materials needed to make melanin. The Leu374Phe change, rs16891982, strongly contributes to skin tone. G/Leu374 is almost fixed in Europeans and is linked to lighter skin. C/Phe374 is the main copy in most non-European groups. It is linked to darker skin and easier tanning. Many genes shape skin and tanning, and every type needs sun protection.",
     "evidence": "emerging",
     "variants": [
@@ -159,7 +159,7 @@
   {
     "slug": "freckling-sun-sensitivity-irf4-rs12203592",
     "category": "aesthetic-cosmetic",
-    "title": "Freckling and sun sensitivity · IRF4",
+    "title": "Freckling and skin response to sun · IRF4",
     "summary": "rs12203592 sits in a control region inside IRF4. IRF4 works with MITF to turn on the pigment enzyme tyrosinase. T weakens this control region. It is linked to more freckles, higher sun sensitivity, and lighter eyes. A separate study also linked it to earlier gray hair. Effects are small and add by copy. MC1R and sun exposure also matter a lot.",
     "evidence": "emerging",
     "variants": [
@@ -240,7 +240,7 @@
     "slug": "blond-hair-kitlg-rs12821256",
     "category": "aesthetic-cosmetic",
     "title": "Blond hair · KITLG enhancer",
-    "summary": "rs12821256 sits in a control region about 350 kb before KITLG. KITLG is a growth factor that supports pigment cells in hair roots. C lowers control-region activity by about 20% in hair-root cells. It is linked to higher odds of blond hair in Northern Europeans. This is a small change in gene control, not a broken gene. Many genes set hair color, so C only shifts the odds.",
+    "summary": "rs12821256 sits in a control region about 350 kb before KITLG. KITLG is a growth factor that supports pigment cells in hair roots. C is linked to higher odds of blond hair in Northern Europeans. In hair-root cells, it lowers control-region activity by about 20%. This is a small change in gene control, not a broken gene. Many genes set hair color, so C only shifts the odds.",
     "evidence": "emerging",
     "variants": [
       {
