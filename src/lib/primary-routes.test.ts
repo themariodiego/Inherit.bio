@@ -43,7 +43,9 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "family.portrait",
   "embryos.index",
   "embryos.upload",
+  "embryos.request-data",
   "embryos.compare",
+  "embryos.detail",
   "copilot.scope",
   "files.index",
   "files.upload",
@@ -151,6 +153,9 @@ describe("primary routes", () => {
     expect(route("embryos.index")).toBe("/embryos");
     expect(route("embryos.upload")).toBe("/embryos/upload");
     expect(route("embryos.compare")).toBe("/embryos/compare");
+    expect(route("embryos.request-data")).toBe("/embryos/request-data");
+    expect(route("embryos.compare", { query: { cohort: "c-1" } })).toBe("/embryos/compare?cohort=c-1");
+    expect(route("embryos.detail", { embryoId: "e-1" })).toBe("/embryos/e-1");
     expect(route("settings.index")).toBe("/settings");
     expect(route("settings.data")).toBe("/settings/data");
     expect(route("settings.copilot")).toBe("/settings/copilot");

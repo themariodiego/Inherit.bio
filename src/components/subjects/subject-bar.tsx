@@ -92,7 +92,10 @@ export interface SubjectBarProps {
 
 export function SubjectBar({ subject, fileCount: files, viewerAccountId, className }: SubjectBarProps) {
   const kind = subjectKind(subject, viewerAccountId);
-  const colour = subjectColourIndex(subject);
+  // An embryo carries no subject colour (X2.4; brief line 689): every
+  // embryo's disc is identical, on the neutral ground, so no colour can read
+  // as a verdict. The colour tokens are never used for embryos.
+  const colour = subject.subjectClass === "embryo" ? null : subjectColourIndex(subject);
   // The upload path binds every file to the caller's own `self` record
   // (src/app/api/uploads/route.ts), so only that record may offer the action;
   // an "Add a file" that lands the file elsewhere would be a false affordance.
@@ -112,8 +115,8 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         aria-hidden="true"
         data-slot="subject-disc"
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none text-paper",
-          DISC_CLASSES[colour],
+          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold leading-none",
+          colour === null ? "border border-line bg-tint text-ink" : `text-paper ${DISC_CLASSES[colour]}`,
         )}
       >
         {subjectInitial(subject.displayLabel)}
