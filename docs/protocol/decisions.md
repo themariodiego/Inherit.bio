@@ -93,3 +93,16 @@ the shipped code follows.
 - The eight subject colour tokens are added to `src/app/globals.css` as an
   extension (X2.4); a unit test pins the frozen identity tokens (G2.7) and
   the 3:1 contrast on both grounds in both themes.
+
+## 2026-09-03 — Example surfaces and response headers
+
+- Decision: no `/example/*` or `/demo` route is built. The route register's
+  `supersededProposals` and `docs/canonical-artifacts.md` already reject
+  every production, user-reachable example or fixture-derived result surface
+  under G8.2, anti-pattern 2 and C6; the brief's X1.3 permission is the
+  earlier draft. The Overview "Start here" strip therefore renders two items
+  until an example surface exists, never a dead link.
+- Decision: the register's `authenticatedUserData` header profile is applied
+  in `src/proxy.ts` to every protected page, every `/api/` response and the
+  proxy's own redirects. No such headers were set before; this is a
+  privacy defect fixed under legality/security precedence.

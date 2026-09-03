@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default function ReportsRedirect() {
-  redirect("/genome/me/reports");
+  permanentRedirect("/genome/me/reports");
 }
