@@ -3,7 +3,11 @@
  * §4 §7.5). Server component. The haplogroup name is text, not a figure (it
  * is not a number); the marker support renders as an observed `coverage`
  * figure in a small <ClaimBlock>; the stored support note is kept; the
- * mandated single-line sentence renders only when a line was read. The card
+ * mandated single-line sentence renders only when a line was read. A rendered
+ * call also names the tree it was read against and its version, states that
+ * no range is put on the name, and gives the tree's resolution limit in plain
+ * words (G4.4, which covers every quantity read against a reference panel).
+ * The card
  * with no Y data leads with the §2 sentence and keeps the XX gloss. The
  * term "haplogroup" is defined inline on its first occurrence per page
  * (`defineTerm`), never in a heading.
@@ -12,12 +16,16 @@ import { ClaimBlock } from "@/components/figures/claim-block";
 import { TermDefinition } from "@/components/figures/term-definition";
 import {
   FATHER_LINE_HEADING,
+  LINEAGE_NO_RANGE,
+  LINEAGE_RESOLUTION_LIMIT,
   MOTHER_LINE_HEADING,
   NOTHING_READ,
   NO_Y_LEAD,
   XX_GLOSS,
   lineageSentence,
+  treeLine,
 } from "@/copy/ancestry";
+import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import type { CoverageSpec } from "@/lib/figures/spec";
 
 /** The stored `HaplogroupCall`, or the `{ haplogroup: null }` row the process route writes when the file has no such chromosome. */
@@ -90,6 +98,11 @@ export function LineageCard({ parent, subjectId, call, supportNote, defineTerm }
             </p>
           ) : null}
           {coverage ? <ClaimBlock subject={{ subjectId }} figures={[coverage]} className="p-3" /> : null}
+          <div data-slot="lineage-provenance" className="space-y-1 text-sm text-ink-muted">
+            <p>{treeLine(LINEAGE_TREES[parent])}</p>
+            <p>{LINEAGE_NO_RANGE}</p>
+            <p>{LINEAGE_RESOLUTION_LIMIT}</p>
+          </div>
           {supportNote ? <p className="text-sm text-ink-muted">{supportNote}</p> : null}
           <p className="text-sm text-ink">{lineageSentence(parent)}</p>
         </>

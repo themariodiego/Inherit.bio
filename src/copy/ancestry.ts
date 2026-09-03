@@ -144,6 +144,26 @@ export function lineageSentence(parent: "mother" | "father"): string {
   return `This traces one single line — your ${parent}’s ${parent}’s ${parent}, and so on. It says nothing about the rest of your ancestry. Ten generations back you have about 1,024 ancestors; this line is one of them.`;
 }
 
+/**
+ * The tree a line was read against, its version and when the shipped subset
+ * was curated (G4.4). The facts are passed in from `LINEAGE_TREES`.
+ */
+export function treeLine(tree: { name: string; version: string; curated: string }): string {
+  return `Read against ${tree.name}, ${tree.version}. The copy Inherit ships was curated ${tree.curated}.`;
+}
+
+/**
+ * G4.4's disjunction for a line: there is no interval, and the page says so
+ * rather than implying certainty. The marker counts render beside it as a
+ * coverage figure.
+ */
+export const LINEAGE_NO_RANGE =
+  "Inherit puts no range on this name. It shows how many of the markers it tested matched, and nothing more.";
+
+/** G4.4's resolution limit, in plain words: the shipped trees are broad on purpose. */
+export const LINEAGE_RESOLUTION_LIMIT =
+  "The tree Inherit ships holds the main branches only. A finer branch name would need a fuller tree.";
+
 /** Brief §2 §4.6: the lead of the father's-line card when the file has no Y data. */
 export const NO_Y_LEAD =
   "Your file has no Y-chromosome data, so no father’s line can be read from it. This says nothing about who your father was.";

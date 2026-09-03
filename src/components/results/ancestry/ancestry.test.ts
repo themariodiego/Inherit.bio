@@ -20,12 +20,15 @@ import {
   TOGGLE_LABEL,
   XX_GLOSS,
   greyState,
+  LINEAGE_NO_RANGE,
+  LINEAGE_RESOLUTION_LIMIT,
   lineageSentence,
+  treeLine,
   markersLine,
   panelLine,
 } from "@/copy/ancestry";
 import { mapShapes } from "@/lib/ancestry/geometry";
-import { MIN_MARKERS, PANEL } from "@/lib/ancestry/panel";
+import { LINEAGE_TREES, MIN_MARKERS, PANEL } from "@/lib/ancestry/panel";
 import { OPACITY_FLOOR, presentShares } from "@/lib/ancestry/present";
 import { tierQualifies } from "@/lib/ancestry/regions";
 import { regionsView } from "@/lib/ancestry/view";
@@ -300,6 +303,11 @@ describe("LineageCard", () => {
     expect(openingTags(html).filter((tag) => "data-claim-block" in tag.attrs)).toHaveLength(1);
     expect(html).toContain(call.note);
     expect(html).toContain(lineageSentence("mother"));
+    // G4.4 for a call read against a reference tree: the tree and its version,
+    // the explicit absence of a range, and the resolution limit in plain words.
+    expect(html).toContain(treeLine(LINEAGE_TREES.mother));
+    expect(html).toContain(LINEAGE_NO_RANGE);
+    expect(html).toContain(LINEAGE_RESOLUTION_LIMIT);
     expect(lineageSentence("mother")).toContain("your mother’s mother’s mother");
     expect(html).not.toContain(NO_Y_LEAD);
   });

@@ -21,6 +21,38 @@ export const PANEL = {
  */
 export const MIN_MARKERS = Math.ceil(RELIABLE_FRACTION * AIMS.length);
 
+/**
+ * The reference trees a haplogroup call is read against, named once (G4.4:
+ * every quantity derived from a reference panel names its panel and version
+ * on the surface). The facts come from `data/ref/haplogroups/PROVENANCE.md`;
+ * the trees themselves carry no version field, so it is stated here and
+ * nowhere else.
+ */
+export interface LineageTree {
+  /** The published tree the topology and defining positions were taken from. */
+  name: string;
+  /** Its build, as the publisher names it. */
+  version: string;
+  /** The day the shipped subset was curated. */
+  curated: string;
+  provenance: string;
+}
+
+export const LINEAGE_TREES: Readonly<Record<"mother" | "father", LineageTree>> = {
+  mother: {
+    name: "PhyloTree",
+    version: "Build 17, Forensic Update 1a",
+    curated: "2026-08-28",
+    provenance: "data/ref/haplogroups/PROVENANCE.md",
+  },
+  father: {
+    name: "the ISOGG Y-SNP index",
+    version: "2016 index (4 January 2016)",
+    curated: "2026-08-28",
+    provenance: "data/ref/haplogroups/PROVENANCE.md",
+  },
+} as const;
+
 export interface PanelSource {
   /** A citation id in the repository's `doi:` form, or a dataset id. */
   id: string;
