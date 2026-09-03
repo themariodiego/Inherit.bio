@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "status": "withheld_until_genotype_phenotype_tables_are_registered",
+  "constraint": "Closed by brief X10.1 (docs/inherit-v2-brief.md line 2480) to exactly ABO blood type, Rh type, red hair (MC1R), lactase persistence and earwax type, plus recessive and X-linked carrier arithmetic, which is not a trait. Nothing is added without editing that constraint. Eye colour, and hair colour beyond MC1R red hair, are excluded by the same line.",
+  "withheld_because": "No trait entry can be registered until data/citations.json exists and carries, for that trait, a published genotype-to-phenotype table and a stated accuracy figure (brief lines 354, 1351, 2480). No such file exists in this repository, so every source-bearing field below is null and every trait is unregistered. Nothing here is invented (brief C5, line 2734).",
+  "entry_requirements": {
+    "layer": "variant_call",
+    "evidence": ["clinical", "established"],
+    "rendering": ["exact-fraction", "band-with-interval"],
+    "genotype_phenotype_table_citation_id": "required_before_status_registered",
+    "accuracy_citation_id": "required_before_status_registered",
+    "status": ["unregistered", "registered"]
+  },
+  "denied_key_patterns": [
+    "cognitive",
+    "cognition",
+    "intelligence",
+    "iq",
+    "education",
+    "academic",
+    "height",
+    "weight",
+    "bmi",
+    "personality",
+    "temperament",
+    "behaviour",
+    "behavior",
+    "mental_health",
+    "depression",
+    "anxiety",
+    "schizophrenia",
+    "bipolar",
+    "appearance",
+    "attractiveness",
+    "ranking",
+    "sex",
+    "gender",
+    "longevity",
+    "lifespan",
+    "athletic",
+    "eye_colour",
+    "eye_color",
+    "hair_colour",
+    "hair_color",
+    "success"
+  ],
+  "classes": {
+    "carrier_arithmetic": {
+      "kind": "arithmetic_not_trait",
+      "layer": "variant_call",
+      "patterns": ["autosomal_recessive", "x_linked"],
+      "rendering": "exact-fraction",
+      "status": "available"
+    }
+  },
+  "traits": {
+    "abo": {
+      "layer": "variant_call",
+      "evidence": null,
+      "rendering": "exact-fraction",
+      "genotype_phenotype_table_citation_id": null,
+      "accuracy_citation_id": null,
+      "status": "unregistered"
+    },
+    "rh": {
+      "layer": "variant_call",
+      "evidence": null,
+      "rendering": "exact-fraction",
+      "genotype_phenotype_table_citation_id": null,
+      "accuracy_citation_id": null,
+      "status": "unregistered"
+    },
+    "red_hair": {
+      "layer": "variant_call",
+      "evidence": null,
+      "rendering": "band-with-interval",
+      "genotype_phenotype_table_citation_id": null,
+      "accuracy_citation_id": null,
+      "status": "unregistered"
+    },
+    "lactase_persistence": {
+      "layer": "variant_call",
+      "evidence": null,
+      "rendering": "band-with-interval",
+      "genotype_phenotype_table_citation_id": null,
+      "accuracy_citation_id": null,
+      "status": "unregistered"
+    },
+    "earwax": {
+      "layer": "variant_call",
+      "evidence": null,
+      "rendering": "band-with-interval",
+      "genotype_phenotype_table_citation_id": null,
+      "accuracy_citation_id": null,
+      "status": "unregistered"
+    }
+  }
+}

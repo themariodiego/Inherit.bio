@@ -32,11 +32,22 @@ import {
   STARTER,
   STATE_A_LEDE,
   STATE_C,
+  STATE_D,
   STATE_E,
   type DomainId,
   type EntryBoxCopy,
 } from "@/copy/overview";
+import { familyCapability, permits, viewerMaySee } from "@/lib/family/access";
+import {
+  countCarrierMatches,
+  readCarrierConditions,
+  readClassifiedVariants,
+  resolveCarrierPair,
+} from "@/lib/family/carrier-pair";
 import { listFamilyPeople, type FamilyPerson } from "@/lib/family/graph";
+import { acknowledged } from "@/lib/family/tier2";
+import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
+import { subjectAttributes } from "@/lib/figures/contract";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
 import { getSubjectGenotypesByRsid, templateRsids } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
@@ -253,6 +264,38 @@ export default async function OverviewPage() {
     };
   }
 
+  // The carrier line of State D (brief §2 §3.5). It speaks about another
+  // adult, so nothing is read before the domain's one Tier-2 gate has been
+  // passed in this session; it renders only where a pair both carry one
+  // change, and it carries the pair, never a value. Today no reference
+  // position has a clinical classification, so this costs one query.
+  const carrierLines: { pair: [string, string]; count: number }[] = [];
+  const sharedSideBySide = family.filter(
+    (person: FamilyPerson) =>
+      viewerMaySee(person, "family.heritability") &&
+      person.grantsFromViewer.has("family.heritability"),
+  );
+  if (state === "D" && self && sharedSideBySide.length > 0 && (await acknowledged(user))) {
+    const decision = await familyCapability(
+      user.id,
+      sharedSideBySide.map((person: FamilyPerson) => person.counterpartAccountId),
+      "carrier_match",
+    );
+    const refVariants = permits(decision) ? await readClassifiedVariants(admin) : [];
+    const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+    for (const person of refVariants.length > 0 ? sharedSideBySide : []) {
+      const summary = await resolveCarrierPair(
+        admin,
+        { dataSubjectId: self.id, displayLabel: self.displayLabel },
+        { dataSubjectId: person.dataSubjectId, displayLabel: person.displayLabel },
+        refVariants,
+        conditions,
+      );
+      const count = countCarrierMatches(summary.matches);
+      if (count > 0) carrierLines.push({ pair: [self.id, person.dataSubjectId], count });
+    }
+  }
+
   const firstAdultSegment = family[0]?.handle.routeSegment ?? null;
   const boxesFor = (domain: DomainId): EntryBox[] =>
     ENTRY_BOXES.filter((box) => box.domain === domain).map((box) => ({
@@ -347,7 +390,24 @@ export default async function OverviewPage() {
             )
           ) : section.id === "family" ? (
             familyRows.length > 0 ? (
-              <PeopleList people={familyRows} viewerAccountId={user.id} />
+              <>
+                <PeopleList people={familyRows} viewerAccountId={user.id} />
+                {carrierLines.map((line) => (
+                  <p
+                    key={line.pair.join(":")}
+                    {...subjectAttributes({ subjectPair: line.pair })}
+                    className="text-base leading-relaxed"
+                  >
+                    <Link
+                      href={route("family.health-picture", { hash: CARRIER_MATCHES_ID })}
+                      className="text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+                    >
+                      {STATE_D.carrierMatches(line.count)}
+                    </Link>{" "}
+                    <span className="text-ink-muted">{STATE_D.carrierMeaning}</span>
+                  </p>
+                ))}
+              </>
             ) : hasReports ? (
               <p className="text-base leading-relaxed text-ink">{STATE_C.justYou}</p>
             ) : (

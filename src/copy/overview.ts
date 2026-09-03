@@ -254,6 +254,15 @@ export const STATE_C = {
 export const STATE_D = {
   more: (n: number) => `+${n} more`,
   peopleNote: "People in your family view.",
+  /**
+   * The carrier line (brief §2 §3.5). It renders only where a pair of people
+   * both carry one change, carries the pair rather than a value, and links to
+   * the panel that shows the arithmetic. Singular is spelled out, because
+   * "1 carrier matches" would be wrong.
+   */
+  carrierMatches: (n: number) =>
+    one(n) ? "1 carrier match to look at" : `${n} carrier matches to look at`,
+  carrierMeaning: "Two people carry a change in the same gene.",
 } as const;
 
 export const STATE_E = {
