@@ -214,7 +214,11 @@ test("/family/invite states the pre-consent sentence above the form and offers n
   // Non-collapsible, and above the form.
   await expect(page.locator("details", { hasText: PRE_CONSENT })).toHaveCount(0);
   const statementBox = await statement.boundingBox();
-  const formBox = await page.locator("form").boundingBox();
+  // The invite form, not the shell's sign-out form in the account landmark.
+  const formBox = await page
+    .locator("form")
+    .filter({ has: page.getByLabel("Their email address") })
+    .boundingBox();
   expect(statementBox!.y).toBeLessThan(formBox!.y);
 
   await expect(page.getByLabel("A note for them")).toBeVisible();
