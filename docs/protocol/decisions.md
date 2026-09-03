@@ -378,3 +378,32 @@ work is sequenced after the ancestry surface because both change
   and scientific (supporting), which requires three materially different
   designs to be built and shown failing a named gate; that work is open and
   the capability register keeps the row at `not shipped` until then.
+
+## 2026-09-03 — Ancestry surface (W7), part B: decisions taken while building the surface
+
+- The region table has three columns, Region · Share · In words: "Markers"
+  is a term of art and may not head a column, the markers-used count is a
+  property of the file rather than of a region, and the range is already the
+  share figure's own unit. The markers line and its coverage figure render
+  once under the table inside the same claim block.
+- The region panel lists each reference population as "{code} — sampled in
+  {place}" without the sample count: a count of people is a number no figure
+  kind carries, and the place is what the sentence is for.
+- The sub-continental sentence ships as two sentences; the design's single
+  sentence scored grade 9.0 in the gate.
+- A subject with no stored result sees the grey map and one sentence,
+  "Nothing to show until a file has been processed.", so the six headings
+  stay fixed across every state.
+- The §4 §7.5 single-line sentence renders only when a line was read; the
+  §2 no-Y lead renders only when the stored row has no tested markers (the
+  file carried no Y data), never for an insufficient call; the haplogroup
+  definition renders once, on the mother's card.
+- The toggle is a `<button role="switch">` at 44px because the shared switch
+  primitive is 1.15rem tall; it changes only which rows, paths and chip
+  values show.
+- The readability gate reads "what’s", "it’s", "that’s", "there’s", "here’s",
+  "who’s", "where’s" and "how’s" as two words, so the mandated toggle label
+  is checked on real words; a non-word entry in the plain vocabulary was
+  rejected.
+- The GIAB browser test pins the grey state to the exact mandated sentence
+  with the measured counts (`\d+ of \d+`), never a fixed number.
