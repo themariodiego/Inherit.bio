@@ -41,7 +41,9 @@ export async function getPublishedTemplates(
 ): Promise<ReportTemplate[]> {
   const { data } = await supabase
     .from("report_templates")
-    .select("slug, category, title, summary, evidence, variants, pgs_id, citations")
+    .select(
+      "slug, category, title, summary, evidence, variants, pgs_id, citations, layer, estimate_kind",
+    )
     .eq("status", "published")
     .order("category")
     .order("title");

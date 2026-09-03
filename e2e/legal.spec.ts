@@ -208,7 +208,8 @@ test("disclaimers appear on the report SURFACE, not only in ToS", async ({
   const firstReport = page.locator('a[href^="/genome/me/reports/"]').first();
   await firstReport.click();
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
-  await expect(page.getByTestId("report-disclaimer")).toContainText(
-    /informational, not medical advice/i,
+  // The one not-diagnostic line (§5 §6.1), character-for-character.
+  await expect(page.getByTestId("report-disclaimer")).toHaveText(
+    "This is not a diagnosis. Inherit is not a doctor and no clinician has reviewed this. Talk to a qualified professional before acting on anything here.",
   );
 });

@@ -61,8 +61,8 @@ export function AccountDeletionCancelledEmail({
           color: brand.inkMuted,
         }}
       >
-        Your deletion request was cancelled before physical deletion began.
-        Separately revoked, transferred, restricted, or expired data is not
+        Your deletion request was cancelled. No data had been destroyed yet.
+        Data you had already revoked, moved, restricted or let expire is not
         restored.
       </Text>
       <Button href={settingsUrl} style={button}>

@@ -11,6 +11,10 @@ export type SubjectSummary = {
   lifecycle: string;
   lifecycleRevision: number;
   routeSegment: string;
+  /** The account that owns this record (null only while a claimed record is unbound). */
+  ownerAccountId: string | null;
+  /** The account the subject themself holds, when they have one. */
+  subjectAccountId: string | null;
 };
 
 function asSubjectClass(value: string): SubjectSummary["subjectClass"] {
@@ -32,7 +36,9 @@ export async function resolveSubjectForAccount(
   const admin = createAdminClient();
   let query = admin
     .from("subjects")
-    .select("id, display_label, subject_class, lifecycle, lifecycle_revision")
+    .select(
+      "id, display_label, subject_class, lifecycle, lifecycle_revision, owner_account_id, subject_account_id",
+    )
     .in("lifecycle", ["active", "claimed_bound"]);
 
   if (segment === "me") {
@@ -56,6 +62,8 @@ export async function resolveSubjectForAccount(
     lifecycle: data.lifecycle,
     lifecycleRevision: data.lifecycle_revision,
     routeSegment: data.subject_class === "self" ? "me" : `s-${data.id}`,
+    ownerAccountId: data.owner_account_id,
+    subjectAccountId: data.subject_account_id,
   };
 }
 
@@ -65,7 +73,9 @@ export async function listSubjectsForAccount(
   const admin = createAdminClient();
   const { data } = await admin
     .from("subjects")
-    .select("id, display_label, subject_class, lifecycle, lifecycle_revision")
+    .select(
+      "id, display_label, subject_class, lifecycle, lifecycle_revision, owner_account_id, subject_account_id",
+    )
     .or(`owner_account_id.eq.${accountId},subject_account_id.eq.${accountId}`)
     .in("lifecycle", ["active", "claimed_bound"])
     .order("created_at");
@@ -77,5 +87,7 @@ export async function listSubjectsForAccount(
     lifecycle: subject.lifecycle,
     lifecycleRevision: subject.lifecycle_revision,
     routeSegment: subject.subject_class === "self" ? "me" : `s-${subject.id}`,
+    ownerAccountId: subject.owner_account_id,
+    subjectAccountId: subject.subject_account_id,
   }));
 }

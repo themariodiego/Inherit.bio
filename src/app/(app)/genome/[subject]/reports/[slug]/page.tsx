@@ -1,313 +1,436 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache, type ReactNode } from "react";
+import { ClaimBlock } from "@/components/figures/claim-block";
+import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
 import { SupportPanel } from "@/components/reports/support-panel";
-import { Badge } from "@/components/ui/badge";
-import { CATEGORY_LABELS, EVIDENCE_LABELS } from "@/lib/genome/categories";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { SubjectBar } from "@/components/subjects/subject-bar";
+import { NAV_LABELS } from "@/copy/navigation";
+import {
+  CONFIRMATION_LEVELS,
+  EVIDENCE_DEFINITIONS,
+  EVIDENCE_PUBLIC_LABELS,
+} from "@/copy/reports/evidence";
+import {
+  ALL_REPORTS,
+  ASK_ABOUT_THIS,
+  CONFIRMATION_BLOCK,
+  COUNSELLOR_NO_ROUTE,
+  DATA_AND_METHODS,
+  FILES_DISAGREE,
+  GENOTYPE_LABEL,
+  LAYER_DEFINITIONS,
+  LAYER_LABELS,
+  LIMIT_OF_FILE,
+  MORE_SOURCES,
+  NOTHING_TO_DO,
+  NOT_COVERED_ARRAY,
+  NOT_COVERED_VCF,
+  NO_CALL,
+  NO_FILE_YET,
+  NO_RANGE_YET,
+  PROVENANCE_LINE,
+  REPORTS_TITLE,
+  STRAND_FLIP_NOTE,
+  TECHNICAL_NOTE,
+  UNRECOGNIZED_NOTE,
+  WHAT_THIS_DOESNT_MEAN_DEFAULT,
+  coverageSentence,
+  supportingStudies,
+} from "@/copy/reports/strings";
+import type { FigureClass } from "@/lib/figures/contract";
+import type { GenotypeSpec } from "@/lib/figures/spec";
+import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectGenotypesByRsid,
   getSubjectProcessedFiles,
 } from "@/lib/genome/load";
-import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import {
-  CLINICAL_CONFIRMATION_RE,
-  GATED_LEGACY_CATEGORIES,
+  resolveTemplate,
+  type Citation,
+  type ReportTemplate,
+  type TemplateVariant,
+  type VariantOutcome,
+} from "@/lib/genome/reports";
+import {
+  categoryFor,
+  isGatedTemplate,
+  type CategoryId,
+  type FindingLayer,
 } from "@/lib/genome/taxonomy";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Report" };
+const VCF_TYPES = new Set<string>(["vcf", "gvcf"]);
+const VISIBLE_CITATIONS = 3;
+const CHIP =
+  "inline-flex items-center rounded-full border border-line px-2 py-0.5 text-sm text-ink";
 
-// The gated set (legacy sensitive categories + the clinical-confirmation
-// content rule) has one definition, in @/lib/genome/taxonomy.
-const SENSITIVE_CATEGORIES = GATED_LEGACY_CATEGORIES;
+/** A template with an unmapped legacy category still renders; "Not now" then returns to the list top. */
+function safeCategoryFor(template: ReportTemplate): CategoryId | null {
+  try {
+    return categoryFor(template);
+  } catch {
+    return null;
+  }
+}
 
-export default async function ReportDetailPage(
-  props: PageProps<"/genome/[subject]/reports/[slug]">,
-) {
-  const { slug, subject: subjectSegment } = await props.params;
-  const searchParams = await props.searchParams;
-  const revealParam =
-    typeof searchParams.reveal === "string" ? searchParams.reveal : undefined;
+/** Sorted genotype key ("AC") → the two letters ("A/C"); longer keys render as stored. */
+function genotypeLetters(key: string): string {
+  return key.length === 2 ? `${key[0]}/${key[1]}` : key;
+}
 
+function chromosomeName(chrom: number): string {
+  return chrom === 23 ? "X" : chrom === 24 ? "Y" : chrom === 25 ? "MT" : String(chrom);
+}
+
+const loadReport = cache(async (segment: string, slug: string) => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const subject = await resolveSubjectForAccount(user.id, subjectSegment);
-  if (!subject) notFound();
-
+  if (!user) return null;
+  const subject = await resolveSubjectForAccount(user.id, segment);
+  if (!subject) return null;
   const admin = createAdminClient();
   const [{ data: raw }, files] = await Promise.all([
     admin
       .from("report_templates")
-      .select("slug, category, title, summary, evidence, variants, pgs_id, citations")
+      .select(
+        "slug, category, title, summary, evidence, variants, pgs_id, citations, layer, estimate_kind",
+      )
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle(),
     getSubjectProcessedFiles(admin, subject.id),
   ]);
-  if (!raw) notFound();
-  const template = raw as unknown as ReportTemplate;
+  if (!raw) return null;
+  return { user, subject, files, template: raw as unknown as ReportTemplate };
+});
 
-  const recommendsClinicalConfirmation = template.variants.some((variant) =>
-    Object.values(variant.interpretations).some((text) =>
-      CLINICAL_CONFIRMATION_RE.test(text),
-    ),
+export async function generateMetadata(
+  props: PageProps<"/genome/[subject]/reports/[slug]">,
+): Promise<Metadata> {
+  const { slug, subject: segment } = await props.params;
+  const context = await loadReport(segment, slug);
+  return {
+    title: context ? `${context.subject.displayLabel} · ${context.template.title}` : "Report",
+  };
+}
+
+function CitationItem({ citation }: { citation: Citation }) {
+  const link = "underline underline-offset-2";
+  if (citation.pmid) {
+    return (
+      <a
+        href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={link}
+      >
+        {citation.label} (PMID {citation.pmid})
+      </a>
+    );
+  }
+  if (citation.doi) {
+    return (
+      <a
+        href={`https://doi.org/${citation.doi}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={link}
+      >
+        {citation.label} (doi:{citation.doi})
+      </a>
+    );
+  }
+  return <>{citation.label}</>;
+}
+
+function TechnicalNote({ children }: { children: ReactNode }) {
+  return (
+    <details className="mt-2 text-sm">
+      <summary className="cursor-pointer text-ink-muted">{TECHNICAL_NOTE}</summary>
+      <p className="mt-1 text-ink-muted">{children}</p>
+    </details>
   );
-  const sensitive =
-    SENSITIVE_CATEGORIES.has(template.category) ||
-    recommendsClinicalConfirmation;
+}
+
+function VariantResult({
+  variant,
+  outcome,
+  conflict,
+  subjectId,
+  figureClass,
+  layer,
+  notCovered,
+}: {
+  variant: TemplateVariant;
+  outcome: VariantOutcome;
+  conflict: boolean;
+  subjectId: string;
+  figureClass: FigureClass;
+  layer: FindingLayer;
+  notCovered: string;
+}) {
+  let body: ReactNode;
+  if (conflict) {
+    body = <p className="text-sm text-ink">{FILES_DISAGREE}</p>;
+  } else if (outcome.status === "genotyped") {
+    const figure: GenotypeSpec = {
+      kind: "genotype",
+      class: figureClass,
+      basis: "observed",
+      provenance: { kind: "computed", module: "genome/reports" },
+      genotype: genotypeLetters(outcome.genotype),
+      label: GENOTYPE_LABEL,
+    };
+    body = (
+      <ClaimBlock subject={{ subjectId }} figures={[figure]}>
+        <p className="mt-3 text-sm leading-relaxed text-ink">{outcome.interpretation}</p>
+        {layer === "estimate" ? (
+          <p className="mt-2 text-sm text-ink">{NO_RANGE_YET}</p>
+        ) : null}
+        {outcome.strandFlipped ? <TechnicalNote>{STRAND_FLIP_NOTE}</TechnicalNote> : null}
+      </ClaimBlock>
+    );
+  } else if (outcome.status === "not-covered") {
+    body = (
+      <div data-outcome="not-covered" className="space-y-1 text-sm leading-relaxed text-ink">
+        <p>{notCovered}</p>
+        <p>{LIMIT_OF_FILE}</p>
+      </div>
+    );
+  } else {
+    // no-call, and unrecognized treated as no-call for display (A14): the
+    // mismatch is noted, never reinterpreted, and the letters are not shown.
+    body = (
+      <div data-outcome={outcome.status} className="space-y-1 text-sm leading-relaxed text-ink">
+        <p>{NO_CALL}</p>
+        <p>{LIMIT_OF_FILE}</p>
+        {outcome.status === "unrecognized" ? (
+          <TechnicalNote>{UNRECOGNIZED_NOTE}</TechnicalNote>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div data-variant-result={variant.rsid} className="space-y-2">
+      <p className="font-mono text-sm text-ink-muted">
+        {variant.gene} · rs{variant.rsid} · chr{chromosomeName(variant.chrom)}
+      </p>
+      {body}
+    </div>
+  );
+}
+
+export default async function ReportDetailPage(
+  props: PageProps<"/genome/[subject]/reports/[slug]">,
+) {
+  const [{ slug, subject: subjectSegment }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
+  const revealParam =
+    typeof searchParams.reveal === "string" ? searchParams.reveal : undefined;
+
+  const context = await loadReport(subjectSegment, slug);
+  if (!context) notFound();
+  const { user, subject, files, template } = context;
+
+  const layer: FindingLayer = template.layer ?? "estimate";
+  const figureClass: FigureClass = layer === "variant_call" ? "variant-call" : "estimate";
+  const categoryId = safeCategoryFor(template);
+  const evidenceLabel = EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence;
+  const evidenceDefinition = EVIDENCE_DEFINITIONS[template.evidence];
+
+  // Gating is per template (legacy sensitive categories + the clinical-
+  // confirmation content rule), preserved template-for-template across the
+  // taxonomy change. The result is withheld SERVER-side: it is built only
+  // when showResults, so a gated response carries no result in markup or in
+  // the RSC payload.
+  const sensitive = isGatedTemplate(template);
   const carrierStyle = template.category === "reproductive-family";
   const carrier = /\bcarrier\b/i.test(template.title);
   const hasData = files.length > 0;
   const gated = sensitive && hasData;
   const showSupport = (sensitive || carrierStyle) && hasData;
   const showResults = !gated || revealParam === "1";
-  const reportsHref = `/genome/${subject.routeSegment}/reports`;
-  const revealHref = `/genome/${subject.routeSegment}/reports/${encodeURIComponent(template.slug)}?reveal=1`;
+  const hubHref = `/genome/${subject.routeSegment}`;
+  const reportsHref = `${hubHref}/reports`;
+  const revealHref = `${reportsHref}/${encodeURIComponent(template.slug)}?reveal=1`;
 
-  let resultsSection: ReactNode = null;
+  // Array files and VCF files fail to cover a position for different
+  // reasons; when the subject has both kinds the array explanation is used.
+  const hasArray = files.some((file) => !VCF_TYPES.has(file.file_type));
+  const notCovered = hasArray ? NOT_COVERED_ARRAY : NOT_COVERED_VCF;
+
+  let yourResult: ReactNode;
+  let coveredPositions = 0;
   if (showResults) {
     const { genotypes, conflicts } = hasData
       ? await getSubjectGenotypesByRsid(
-          admin,
+          createAdminClient(),
           subject.id,
           template.variants.map((variant) => variant.rsid),
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>() };
     const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
+    coveredPositions = resolved.variants.filter(
+      (item) => item.outcome.status === "genotyped",
+    ).length;
 
-    const [{ data: prsRows }, { data: prsMeta }] = await Promise.all([
-      template.pgs_id && hasData
-        ? admin
-            .from("user_prs")
-            .select("raw_score, zscore, percentile, coverage, matched, pgs_id, computed_at")
-            .eq("subject_id", subject.id)
-            .eq("pgs_id", template.pgs_id)
-            .order("computed_at", { ascending: false })
-            .limit(1)
-        : Promise.resolve({ data: [] }),
-      template.pgs_id
-        ? admin
-            .from("prs_scores")
-            .select("pgs_id, name, trait, n_variants, ancestry_note, citation, source_url")
-            .eq("pgs_id", template.pgs_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-    const prs = prsRows?.[0] ?? null;
-
-    resultsSection = (
-      <>
-        {template.variants.map((variant) => {
-          const outcome = resolved.variants.find(
-            (item) => item.variant.rsid === variant.rsid,
-          )!.outcome;
-          const conflict = conflicts.has(variant.rsid);
-          return (
-            <section
-              key={variant.rsid}
-              className="rounded-2xl border border-line bg-card p-5"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-medium">
-                  {variant.gene} ·{" "}
-                  <a
-                    href={`https://www.ncbi.nlm.nih.gov/snp/rs${variant.rsid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-sm underline underline-offset-2"
-                  >
-                    rs{variant.rsid}
-                  </a>
-                </h2>
-                <p className="font-mono text-xs text-ink-muted">
-                  chr{variant.chrom === 23 ? "X" : variant.chrom === 24 ? "Y" : variant.chrom === 25 ? "MT" : variant.chrom}
-                  :{variant.pos38.toLocaleString()} {variant.ref}→{variant.alt}
-                </p>
-              </div>
-              <div className="mt-4">
-                {!hasData ? (
-                  <p className="text-sm text-ink-muted">
-                    Upload and process a file to see a result here.
-                  </p>
-                ) : conflict ? (
-                  <p className="text-sm text-ink-muted">
-                    This subject&apos;s processed files disagree at this position,
-                    so Inherit shows no interpretation.
-                  </p>
-                ) : outcome.status === "genotyped" ? (
-                  <>
-                    <p className="text-sm">
-                      <span className="mr-2 rounded-full bg-tint px-3 py-1 font-mono">
-                        {outcome.genotype.length === 2
-                          ? `${outcome.genotype[0]}/${outcome.genotype[1]}`
-                          : outcome.genotype}
-                      </span>
-                      Your genotype
-                      {outcome.strandFlipped ? (
-                        <span className="ml-2 text-xs text-ink-muted">
-                          (opposite strand, resolved unambiguously)
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="mt-3 text-sm leading-relaxed">
-                      {outcome.interpretation}
-                    </p>
-                  </>
-                ) : outcome.status === "not-covered" ? (
-                  <p className="text-sm text-ink-muted">
-                    This subject&apos;s files do not cover this variant. Inherit
-                    never guesses an unobserved genotype.
-                  </p>
-                ) : outcome.status === "no-call" ? (
-                  <p className="text-sm text-ink-muted">
-                    The source includes this position but did not make a
-                    confident call, so no result is shown.
-                  </p>
-                ) : (
-                  <p className="text-sm text-ink-muted">
-                    The observed genotype ({outcome.genotype}) does not match
-                    this report&apos;s expected alleles, so no interpretation is
-                    shown.
-                  </p>
-                )}
-              </div>
-            </section>
-          );
-        })}
-
-        {prsMeta ? (
-          <section className="rounded-2xl border border-line bg-card p-5">
-            <h2 className="font-medium">Polygenic score · {prsMeta.pgs_id}</h2>
-            <p className="mt-1 text-xs text-ink-muted">
-              {prsMeta.name} ({prsMeta.n_variants.toLocaleString()} variants) ·{" "}
-              <a
-                href={prsMeta.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2"
-              >
-                PGS Catalog
-              </a>
-            </p>
-            {prs ? (
-              <div className="mt-4 space-y-3 text-sm">
-                <p>
-                  {prs.percentile == null ? (
-                    "A percentile could not be computed from the available coverage."
-                  ) : (
-                    <>
-                      Approximately the <strong>{Math.round(prs.percentile)}th percentile</strong>{" "}
-                      of a population-reference distribution.
-                    </>
-                  )}
-                </p>
-                <p>
-                  <strong>Coverage:</strong> {(prs.coverage * 100).toFixed(1)}%
-                  ({" "}{prs.matched.toLocaleString()} of {prsMeta.n_variants.toLocaleString()} variants).
-                  Treat this as an approximation.
-                </p>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-ink-muted">
-                No score has been computed for this subject.
-              </p>
-            )}
-            <p className="mt-4 rounded-lg bg-tint p-3 text-xs leading-relaxed">
-              <strong>Ancestry portability:</strong> {prsMeta.ancestry_note}
-            </p>
-          </section>
-        ) : null}
-
-        {showSupport ? <SupportPanel carrier={carrier} /> : null}
-      </>
+    yourResult = hasData ? (
+      <div className="space-y-6">
+        {resolved.variants.map(({ variant, outcome }) => (
+          <VariantResult
+            key={variant.rsid}
+            variant={variant}
+            outcome={outcome}
+            conflict={conflicts.has(variant.rsid)}
+            subjectId={subject.id}
+            figureClass={figureClass}
+            layer={layer}
+            notCovered={notCovered}
+          />
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-ink">{NO_FILE_YET}</p>
+    );
+  } else {
+    yourResult = (
+      <SensitiveGate
+        userId={user.id}
+        category={template.category}
+        categoryLabel={CATEGORY_LABELS[template.category] ?? template.category}
+        revealHref={revealHref}
+        returnHref={reportsHref}
+        returnAnchor={categoryId ?? undefined}
+      />
     );
   }
 
+  const visibleCitations = template.citations.slice(0, VISIBLE_CITATIONS);
+  const moreCitations = template.citations.slice(VISIBLE_CITATIONS);
+
   return (
-    <article className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <p className="eyebrow mb-2">
-          {CATEGORY_LABELS[template.category] ?? template.category}
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="display text-3xl">{template.title}</h1>
-          <Badge variant="secondary">
-            {EVIDENCE_LABELS[template.evidence] ?? template.evidence}
-          </Badge>
-        </div>
-        <p className="mt-3 text-ink-muted">{template.summary}</p>
-        {hasData ? (
-          <p className="mt-2 text-xs text-ink-muted">
-            Results combine {files.length} processed {files.length === 1 ? "file" : "files"} for {subject.displayLabel}.
-          </p>
-        ) : null}
-      </div>
+    <article className="mx-auto max-w-[44rem] space-y-8">
+      <Breadcrumbs
+        items={[
+          { label: NAV_LABELS["my-genome"], href: hubHref },
+          { label: subject.displayLabel },
+          { label: REPORTS_TITLE, href: reportsHref },
+          { label: template.title },
+        ]}
+      />
+      <SubjectBar subject={subject} fileCount={files.length} />
 
-      {showResults ? (
-        resultsSection
-      ) : (
-        <SensitiveGate
-          userId={user.id}
-          category={template.category}
-          categoryLabel={CATEGORY_LABELS[template.category] ?? template.category}
-          revealHref={revealHref}
-          returnHref={reportsHref}
-        />
-      )}
-
-      <section>
-        <h2 className="eyebrow mb-2">Sources</h2>
-        <ul className="space-y-1 text-sm">
-          {template.citations.map((citation, index) => (
-            <li key={`${citation.label}-${index}`}>
-              {citation.pmid ? (
-                <a
-                  href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  {citation.label} (PMID {citation.pmid})
-                </a>
-              ) : citation.doi ? (
-                <a
-                  href={`https://doi.org/${citation.doi}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  {citation.label} (doi:{citation.doi})
-                </a>
-              ) : (
-                citation.label
-              )}
-            </li>
-          ))}
+      <header className="space-y-4">
+        <h1 className="display text-3xl">{template.title}</h1>
+        <ul data-slot="chip-row" className="space-y-2 text-sm">
+          <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span data-chip="layer" className={CHIP}>
+              {LAYER_LABELS[layer]}
+            </span>
+            <span className="text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
+          </li>
+          <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <Link
+              href="/science#evidence"
+              data-chip="evidence"
+              className={`${CHIP} underline-offset-2 hover:underline`}
+            >
+              {evidenceLabel}
+            </Link>
+            <span className="text-ink-muted">{evidenceDefinition}</span>
+          </li>
+          <li>
+            <span data-chip="subject" data-subject-id={subject.id} className={CHIP}>
+              {subject.displayLabel}
+            </span>
+          </li>
         </ul>
-      </section>
+      </header>
 
-      <p
-        data-testid="report-disclaimer"
-        className="rounded-xl border border-line p-4 text-xs leading-relaxed text-ink-muted"
-      >
-        This report is informational, not medical advice, and Inherit is not a
-        diagnostic service. Talk to a clinician or genetic counselor before
-        acting on anything here.
-      </p>
+      <ReportSkeleton
+        whatThisIs={<p className="text-base leading-relaxed text-ink">{template.summary}</p>}
+        yourResult={yourResult}
+        whatThisDoesntMean={
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
+            {WHAT_THIS_DOESNT_MEAN_DEFAULT.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        }
+        howSureWeAre={
+          <div className="space-y-3 text-sm leading-relaxed text-ink">
+            <p>
+              <span className="font-medium">{evidenceLabel}</span>
+              <span className="text-ink-muted">{` — ${evidenceDefinition}`}</span>
+            </p>
+            <p>{supportingStudies(template.citations.length)}</p>
+            {showResults && hasData && layer === "estimate" ? (
+              // The mandated coverage sentence (§2 §4.4e): the numerals are
+              // counts of template positions read from the file, not a risk
+              // figure. It names "this estimate", so it renders on that layer only.
+              <p>{coverageSentence(coveredPositions, template.variants.length)}</p>
+            ) : null}
+            {CONFIRMATION_LEVELS.has(template.evidence) ? (
+              <div data-confirmation-block="true" className="space-y-1">
+                <p>{CONFIRMATION_BLOCK}</p>
+                <p>{COUNSELLOR_NO_ROUTE}</p>
+              </div>
+            ) : null}
+            {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
+          </div>
+        }
+        whatYouCanDo={<p className="text-sm leading-relaxed text-ink">{NOTHING_TO_DO}</p>}
+        whereThisComesFrom={
+          <div className="space-y-3 text-sm leading-relaxed">
+            <ul className="space-y-1">
+              {visibleCitations.map((citation, index) => (
+                <li key={`${citation.label}-${index}`}>
+                  <CitationItem citation={citation} />
+                </li>
+              ))}
+            </ul>
+            {moreCitations.length > 0 ? (
+              <details>
+                <summary className="cursor-pointer text-ink-muted">{MORE_SOURCES}</summary>
+                <ul className="mt-2 space-y-1">
+                  {moreCitations.map((citation, index) => (
+                    <li key={`${citation.label}-${index}`}>
+                      <CitationItem citation={citation} />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+            <p className="text-ink-muted">{PROVENANCE_LINE}</p>
+          </div>
+        }
+      />
 
-      <p className="text-sm">
-        <Link href={reportsHref} className="underline underline-offset-2">
-          ← All reports
+      <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <Link href={`${hubHref}/data`} className="underline underline-offset-2">
+          {DATA_AND_METHODS}
         </Link>
-      </p>
+        <Link
+          href={`/copilot/${subject.routeSegment}?report=${encodeURIComponent(template.slug)}`}
+          className="underline underline-offset-2"
+        >
+          {ASK_ABOUT_THIS}
+        </Link>
+        <Link href={reportsHref} className="underline underline-offset-2">
+          {ALL_REPORTS}
+        </Link>
+      </footer>
     </article>
   );
 }

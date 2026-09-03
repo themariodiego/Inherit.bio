@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AIMS } from "@/lib/genome/admixture";
 import { getSubjectProcessedFiles } from "@/lib/genome/load";
@@ -214,6 +215,14 @@ export default async function AncestryPage(
         is for information only. Each haplogroup result says how many key
         markers your file covered. Array files cover far fewer markers than
         whole-genome files.
+      </p>
+      <p className="text-sm">
+        <Link
+          href={`/genome/${subject.routeSegment}/data`}
+          className="underline underline-offset-2"
+        >
+          Data and methods
+        </Link>
       </p>
     </div>
   );

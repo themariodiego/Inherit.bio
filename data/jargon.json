@@ -18,6 +18,7 @@
     { "term": "celiac", "definition": "An immune condition triggered by gluten." },
     { "term": "chromosome", "aliases": ["chromosomes"], "definition": "A long package of DNA found in a cell." },
     { "term": "circulating", "definition": "Moving through the blood or another body fluid." },
+    { "term": "classification", "aliases": ["classifications", "clinical classification"], "definition": "A published list that sorts DNA changes by how likely they are to cause a condition." },
     { "term": "clinical", "definition": "Related to care delivered by qualified health professionals." },
     { "term": "clinician", "aliases": ["counselor", "counsellor"], "definition": "A qualified health professional who works with patients." },
     { "term": "cohort", "aliases": ["cohorts", "participants", "participant"], "definition": "A group of people studied together." },

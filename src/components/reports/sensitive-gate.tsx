@@ -34,6 +34,7 @@ export function SensitiveGate({
   categoryLabel,
   revealHref,
   returnHref,
+  returnAnchor,
 }: {
   userId: string;
   category: string;
@@ -43,6 +44,11 @@ export function SensitiveGate({
   revealHref: string;
   /** Subject-scoped report library URL. */
   returnHref: string;
+  /**
+   * Section anchor on the library page for "Not now" (the user-facing
+   * category id, e.g. "cancer"); defaults to the storage category.
+   */
+  returnAnchor?: string;
 }) {
   const router = useRouter();
 
@@ -99,7 +105,7 @@ export function SensitiveGate({
           </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href={`${returnHref}#${category}`}>Not now</Link>
+          <Link href={`${returnHref}#${returnAnchor ?? category}`}>Not now</Link>
         </Button>
       </div>
       <p className="mt-4 text-xs text-ink-muted">

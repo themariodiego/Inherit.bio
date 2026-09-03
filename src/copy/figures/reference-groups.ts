@@ -46,5 +46,5 @@ export const BASELINE_ABSENT =
   "Baseline not shown: Inherit does not know your sex and age band. Add them in Settings, or read the range on its own.";
 
 export function NO_BASELINE_STATE(condition: string, subjectLabel: string): string {
-  return `We cannot give you a number for ${condition}. The models for this condition have only been checked in groups that do not match ${subjectLabel}'s background, so any number we showed would be wrong in a direction we cannot measure.`;
+  return `We cannot give you a number for ${condition}. The models for this condition have only been checked in groups that do not match ${subjectLabel}’s background, so any number we showed would be wrong in a direction we cannot measure.`;
 }
