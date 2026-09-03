@@ -15,3 +15,4 @@ without all three is not evidence.
 | 2026-09-03 | G1.9 | `pnpm gate:names` | 0 (CI) / 1 (local: `NAME_DENYLIST_FILE` unset) | CI run 33728103297 |
 | 2026-09-03 | G1.10 (corpus) | `pnpm gate:readability` | 0 | 1,489 blocks; `a4e58b9` |
 | 2026-09-03 | G1.1–G1.5, G1.8 (static), G1.9, G1.10 (corpus), G1.15, G1.17 | GitHub Actions `checks` on `ce63b75` | 0 | CI run 33729602251, job 100566285867 (typecheck, lint, build, unit, legal, names, templates, readability, secrets, local Supabase seed, full browser suite) |
+| 2026-09-03 | G1.2–G1.4, G1.8 (static), G1.10 (corpus), G1.15, G1.17 | `pnpm typecheck && pnpm lint && pnpm test && pnpm gate:templates && pnpm gate:legal && pnpm gate:readability && pnpm gate:secrets` | 0 | tree with W1 (figure contract) and W2 (taxonomy migration): 233 unit tests in 26 files; readability 1,491 blocks |
