@@ -227,3 +227,9 @@ three are recorded as follow-ups. Decisions taken while fixing:
   reviewed sentence by sentence by a second agent for preserved meaning; the
   five sentences that rose above grade 9 only because of the register change
   were rewritten by hand with the same rules.
+- Global search (§2 §1.3) is a navigation surface separate from the
+  reports-list filter (§4.4 item 7): the first returns destinations and never
+  a value, the second narrows the visible library in place. Both ship; the
+  digest's A21 default (drop the in-page input) is not taken because the
+  list's disclosure already keeps the first-viewport budget and §4.4 pins
+  `#report-search` structurally.
