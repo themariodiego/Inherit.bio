@@ -104,6 +104,14 @@ export function cellNotCovered(name: string): string {
 /** The two files disagree about a position, so no letters are shown. */
 export const CELL_FILES_DISAGREE = "Two files disagree";
 
+/**
+ * Another adult's letters are an individual result of the layer, so they
+ * render only under that layer's own grant from that person; the joint
+ * grant (`family.heritability`) opens the column, never the cell (register
+ * `multiSubjectLayer`, D-038). Without the layer grant the cell says so.
+ */
+export const CELL_NOT_SHARED = "Not shared with you";
+
 /** The accessible name of the link from a cell to that person's own report. */
 export function openReportLabel(title: string, name: string): string {
   return `Open ${title} for ${name}`;

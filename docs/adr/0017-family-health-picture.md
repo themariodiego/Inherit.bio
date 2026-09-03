@@ -40,9 +40,14 @@ Three repository facts bound the design:
 2. **One table per layer, and cells are figures.** The observed genotype is
    the cell's figure (`class` = the layer's class, provenance
    `computed:genome/reports`), followed by the layer chip and one "Open"
-   link to that person's report page, rendered only where the viewer holds
-   the layer's own grant. Not covered and no-file states are words. The
-   table has no sortable header, no `aria-sort`, no button in any `<th>`.
+   link to that person's report page. Both the figure and the link render
+   for another adult only where the viewer holds that layer's own grant
+   from that person: the register's `multiSubjectLayer` rule makes
+   `family.heritability` the authority for the joint comparison and never
+   for an individual result layer, and a genotype in a cell is an
+   individual result. Without the layer grant the cell reads "Not shared
+   with you". Not covered and no-file states are words. The table has no
+   sortable header, no `aria-sort`, no button in any `<th>`.
 3. **Nothing is computed across columns.** No difference, ranking, family
    score or "highest" exists in the code; the browser suite asserts the
    absence of any ranking control and of any relatedness vocabulary.
@@ -62,10 +67,18 @@ Three repository facts bound the design:
    heterozygous, and runs of homozygosity below threshold in both files:
    the exact 25-in-100 sentence around one natural-frequency figure with
    basis `exact`, and the block names each person's variant and
-   classification. Any other case, a file that shows two changed copies
-   included: the exact "cannot turn that into a chance" sentence with one
-   reason from the closed table of eight. A failed trigger never drops a
-   pair from the panel.
+   classification. Where a file shows several classified changes in the
+   gene, the block names one, chosen by a fixed rule: pathogenic before
+   unknown before harmless, two copies before one before "not shown",
+   then the lower rsid; two copies wins because two copies of any
+   pathogenic change means every child gets one, so 1 in 4 would be
+   false. Any other case, a file that shows two changed copies included:
+   the exact "cannot turn that into a chance" sentence with one reason
+   from the closed table of eight, the two-copies reason judged after the
+   pattern checks and before the runs check. A gene where both files are
+   no-calls renders no block; a failed trigger never drops a pair from
+   the panel. The brief's wording ("in the same gene") won over the
+   design's narrower same-position rule.
 6. **A seventh reason, `sex-unknown`, for an X-linked pattern.** The design
    reserves the hundred-pregnancy distribution for Portrait and it needs each
    person's chromosomal sex, which Inherit does not record. Rendering
@@ -80,9 +93,12 @@ Three repository facts bound the design:
    autosomal span the file covers, so no genome length is assumed; the only
    constants are the brief's 100 Mb and 0.0156. The processing route writes
    the measure to `genome_files` (D-030), and the panel reads it: every
-   annotated file of a person must be measured and below threshold. A file
-   that reports no such stretch is `not_measurable`, which yields the
-   reason, never a number. Nothing is ever read from two files together.
+   annotated file of a person must be measured and below threshold. A run
+   must span more than zero bases; a file that reports no such stretch,
+   or no autosomal call, is `not_measurable`, which yields the reason,
+   never a number; a file processed before the measure existed (null
+   columns) counts as not below threshold; a re-run nulls the columns
+   before it starts. Nothing is ever read from two files together.
 8. **The heritability grant has its own permission row.** No screen granted
    `family.heritability` before this decision, so the two-column state was
    unreachable outside the test suite. The permissions page gains a sixth
@@ -115,6 +131,10 @@ Three repository facts bound the design:
   in the repository.
 - The empty carrier state says in words that no classified position exists
   yet; a count renders only over a non-empty classified set.
+- The Overview's carrier line and the page's carrier panel both require
+  `third_party_adult_analysis`, `family_heritability` and `carrier_match`
+  to permit before any row of another adult is read (register
+  `family:carrier-arithmetic`).
 - The capability register records "Family risk comparison (side by side)"
   and "Carrier-pair arithmetic" as shipped-degraded with these limits on
   the surface; G4.5's exact string is present and asserted.

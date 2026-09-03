@@ -9,13 +9,15 @@
  * report where the interpretation lives. Nothing is compared with the cell
  * beside it, nothing is added up, and no cell carries a word that ranks it.
  *
- * A cell that has no letters says which of the three reasons applies and
- * carries no figure at all: a missing result is never rendered as a value.
+ * A cell that has no letters says which of the four reasons applies and
+ * carries no figure at all: a missing result is never rendered as a value,
+ * and a result the viewer has not been granted is never rendered at all.
  */
 import Link from "next/link";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import {
   CELL_FILES_DISAGREE,
+  CELL_NOT_SHARED,
   CELL_NO_FILE,
   LAYER_CHIP_LABELS,
   OPEN_LINK,
@@ -26,12 +28,18 @@ import {
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 
-/** What one file had to say about one report's positions. */
+/**
+ * What one file had to say about one report's positions — or, for another
+ * adult whose layer grant the viewer does not hold, nothing at all: the
+ * joint grant opens the column, and only the layer's own grant opens the
+ * cell (register `multiSubjectLayer`, D-038).
+ */
 export type HealthPictureCellState =
   | { kind: "letters"; genotypes: readonly string[] }
   | { kind: "not-covered" }
   | { kind: "no-file" }
-  | { kind: "disagree" };
+  | { kind: "disagree" }
+  | { kind: "not-shared" };
 
 export interface HealthPictureCellProps {
   /** The subject the letters were read from. */
@@ -74,6 +82,8 @@ function absenceWord(state: HealthPictureCellState, personName: string): string 
       return CELL_NO_FILE;
     case "disagree":
       return CELL_FILES_DISAGREE;
+    case "not-shared":
+      return CELL_NOT_SHARED;
     case "letters":
       return null;
   }

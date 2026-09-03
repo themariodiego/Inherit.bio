@@ -57,6 +57,7 @@ function shortRoleStrings(): [string, string][] {
     ["genotypeLabel", copy.genotypeLabel("fact")],
     ["CELL_NO_FILE", copy.CELL_NO_FILE],
     ["CELL_FILES_DISAGREE", copy.CELL_FILES_DISAGREE],
+    ["CELL_NOT_SHARED", copy.CELL_NOT_SHARED],
     // `cellNotCovered` is deliberately absent: it renders in a paragraph, and
     // its one variable is a person's name, whose possessive can never be a
     // registered word.
@@ -118,6 +119,11 @@ describe("health-picture copy", () => {
     expect(copy.BASELINE_ABSENT).toBe(
       "No baseline: Inherit does not know this person’s sex and age band.",
     );
+  });
+
+  it("names the cell of a layer another adult has not shared, in words and without a figure (D-038)", () => {
+    expect(copy.CELL_NOT_SHARED).toBe("Not shared with you");
+    expect(copy.CELL_NOT_SHARED).not.toMatch(/\d/);
   });
 
   it("says in words that there is nothing to check when the reference table classifies nothing (D-034)", () => {

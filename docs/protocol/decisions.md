@@ -637,10 +637,12 @@ Context: the adversarial review of the F2 commit (`c6dd140`) held eight
 findings against brief line 346 and line 1349 (D-030 to D-037).
 
 Decisions:
-- The trigger is gene-level, as the brief says: each person's own
-  heterozygous pathogenic or likely pathogenic variant in the same gene,
-  same position or not; the block names each person's variant and
-  classification.
+- The trigger is gene-level, as the brief says (line 346, "in the same
+  gene"): each person's own heterozygous pathogenic or likely pathogenic
+  variant in the same gene, same position or not; the block names each
+  person's variant and classification. The design's same-position rule
+  was narrower than the brief and the brief wins (X0). One verifier read
+  the design as binding; the brief's text is quoted above.
 - The closed reason table is the design's six phrases plus two: `sex-unknown`
   (an X-linked pattern, until a sourced writer for chromosomal sex exists;
   D-031 stays open) and `two-copies` (a file that shows two changed copies).

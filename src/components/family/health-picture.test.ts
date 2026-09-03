@@ -172,7 +172,55 @@ describe("health picture table", () => {
   });
 });
 
+describe("health picture table without a layer grant", () => {
+  const html = renderToStaticMarkup(
+    h(HealthPictureTable, {
+      layer: "estimate",
+      columns: PEOPLE,
+      rows: [
+        {
+          ...ROW,
+          cells: [{ kind: "letters" as const, genotypes: ["A/C"] }, { kind: "not-shared" as const }],
+          hrefs: ["/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551", null],
+        },
+      ],
+      viewerAccountId: VIEWER,
+    }),
+  );
+
+  it("keeps the column and says the cell is not shared, with no figure and no link for it", () => {
+    expect(html.match(/<th[^>]*data-subject-id="/g)).toHaveLength(2);
+    expect(html).toContain(`data-subject-id="${SELF_B}"`);
+    expect(html).toContain(copy.CELL_NOT_SHARED);
+    // The viewer's own letters render; the other adult's cell carries none.
+    expect(html.match(/data-figure-kind="genotype"/g)).toHaveLength(1);
+    expect(html.match(/data-chip="layer"/g)).toHaveLength(1);
+    expect(html.match(/<a /g)).toHaveLength(1);
+    expect(html).not.toContain("Not in Bo’s file");
+  });
+});
+
 describe("health picture cell", () => {
+  it("renders the not-shared word for another adult's layer the viewer was not granted, and nothing else", () => {
+    const html = renderToStaticMarkup(
+      h(HealthPictureCell, {
+        dataSubjectId: SELF_B,
+        personName: "Bo",
+        reportTitle: "Caffeine metabolism",
+        layer: "estimate",
+        state: { kind: "not-shared" },
+        href: null,
+        captionId: "caption",
+      }),
+    );
+    expect(html).toContain(copy.CELL_NOT_SHARED);
+    expect(html).not.toContain("data-figure-kind");
+    expect(html).not.toContain("data-chip");
+    expect(html).not.toContain("<a ");
+    expect(html).toContain(`data-subject-id="${SELF_B}"`);
+  });
+
+
   it("renders no figure at all when a person has added no file", () => {
     const html = renderToStaticMarkup(
       h(HealthPictureCell, {

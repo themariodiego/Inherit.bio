@@ -70,7 +70,9 @@ import { createClient } from "@/lib/supabase/server";
  *
  * What this page never does: no cell is derived from another cell, no
  * column is summed, ranked or called highest, no header sorts, and nothing
- * anywhere computes how the people in it are related.
+ * anywhere computes how the people in it are related. A column opens on
+ * the joint grant in both directions; a cell of another adult renders their
+ * letters only under that layer's own grant from them (D-038).
  */
 
 export const metadata: Metadata = { title: HEALTH_PICTURE_H1 };
@@ -91,8 +93,18 @@ interface ColumnSource {
 function cellFor(
   source: ColumnSource,
   template: ReportTemplate,
+  layer: FindingLayer,
 ): { state: HealthPictureCellState; covered: boolean } {
   if (!source.hasFile) return { state: { kind: "no-file" }, covered: false };
+  // Another adult's letters are an individual result of this layer, so
+  // they render only under that layer's own grant from that person; the
+  // joint grant that opened the column is never the authority for a cell
+  // (register `multiSubjectLayer`, D-038). The viewer's own column needs no
+  // grant. An unshared cell counts as not covered, so no row exists on the
+  // strength of a file the viewer may not read.
+  if (source.person !== null && !viewerMaySee(source.person, LAYER_PURPOSES[layer])) {
+    return { state: { kind: "not-shared" }, covered: false };
+  }
   const resolved = resolveTemplate(template, (rsid) => source.genotypes.get(rsid));
   const letters = resolved.variants
     .map((entry) => (entry.outcome.status === "genotyped" ? entry.outcome.genotype : null))
@@ -181,7 +193,7 @@ export default async function FamilyHealthPicturePage() {
 
     for (const template of templates) {
       const layer: FindingLayer = template.layer ?? "estimate";
-      const cells = sources.map((source) => cellFor(source, template));
+      const cells = sources.map((source) => cellFor(source, template, layer));
       if (!cells.some((cell) => cell.covered)) continue;
       for (const variant of template.variants) shownRsids.add(variant.rsid);
       const hrefs = sources.map((source) =>

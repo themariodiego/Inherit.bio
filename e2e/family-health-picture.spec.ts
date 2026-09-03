@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   adminClient,
+  anonClient,
   createConfirmedUser,
   firstViewportInteractives,
   ingestFileAs,
@@ -25,18 +26,27 @@ import { buildCarrierPairVcf, verify, type FixtureCheck } from "./fixtures/carri
  * the 25-in-100 sentence and none anywhere else; the named reason on every
  * other match, the two-copies reason included; each person's own variant
  * and classification named in every block; the runs measure stored with
- * the file at ingest; the count sentence over a classified set with no
- * match and the plain sentence over an empty one; and no word about how
- * the two people are related.
+ * the file at ingest; another adult's cells reading "Not shared with you"
+ * without that layer's own grant while the column and the panel remain;
+ * the count sentence over a classified set with no match and the plain
+ * sentence over an empty one; and no word about how the two people are
+ * related.
  *
  * Setup. The permissions page carries a "Health picture" row for
  * `family.heritability` (ADR 0017), on the same own-session rules as the
- * other rows. This spec writes the two grants through the real routine
+ * other rows. This spec writes every grant through the real routine
  * (`grant_directional_purpose_v1`) with the service-role client, exactly as
- * the row does, so the surface is exercised without a second sign-in
- * dance. The seven classified positions are synthetic rows inserted here
- * and removed in `afterAll`: the shipped reference table has no
- * classification at all, so these branches have no other way to be proved.
+ * the rows do, and sets the independent-login marker through the real
+ * routine (`mark_independent_login_v1`) from a real session of each
+ * account, so the surface is exercised without a second sign-in dance. The
+ * seven classified positions are synthetic rows inserted here and removed
+ * in `afterAll`: the shipped reference table has no classification at all,
+ * so these branches have no other way to be proved.
+ *
+ * The Tier-2 gate is a session cookie keyed to the auth session
+ * (src/lib/family/tier2.ts), and every `test()` runs in a fresh browser
+ * context, so every test that reads a result passes the gate itself
+ * (`passGate`); the second test pins the gate's own behaviour explicitly.
  */
 
 const A = { email: "family-hp-a@e2e.local", password: "e2e-family-hp-pw" };
@@ -58,10 +68,16 @@ const CARRIER_SENTENCE =
   "For each pregnancy, about 25 in 100 — a 1 in 4 chance — that a child inherits both copies. Each pregnancy is independent; this is not 1 in 4 of your children.";
 const EXACT_MARKER = "This is exact arithmetic, not an estimate.";
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
+const GATE_BUTTON = "Show what’s shared";
 const NEEDS_TWO =
   "This page needs two people who have both agreed to be seen side by side. So far there is 1.";
 const NO_CLASSIFIED_POSITIONS =
   "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.";
+const NOT_SHARED_CELL = "Not shared with you";
+
+/** The three purposes each account grants the other: the joint one and the two report layers. */
+const GRANTED_PURPOSES = ["family.heritability", "reports.monogenic", "reports.polygenic"] as const;
+type GrantedPurpose = (typeof GRANTED_PURPOSES)[number];
 
 interface SyntheticEntry {
   gene: string;
@@ -152,7 +168,8 @@ let accountA = "";
 let accountB = "";
 let selfSubjectA = "";
 let selfSubjectB = "";
-let grantFromB = "";
+/** The grants B made toward A, by purpose, so a test can revoke one through the real routine. */
+const grantsFromB = new Map<GrantedPurpose, string>();
 /** The fixture as the generator builds it, checked with the real parser and the real runs measure. */
 let fixtureCheck: FixtureCheck;
 
@@ -187,23 +204,55 @@ async function principalOf(subjectId: string, accountId: string): Promise<string
   return (data as { id: string }).id;
 }
 
-/** One directional `family.heritability` grant, through the real routine. */
-async function grantSideBySide(
+/** The auth session id an access token carries, as `authSessionIdFromAccessToken` reads it server-side. */
+function authSessionIdOf(accessToken: string): string {
+  const payload = JSON.parse(
+    Buffer.from(accessToken.split(".")[1] ?? "", "base64url").toString("utf8"),
+  ) as { session_id?: unknown };
+  if (typeof payload.session_id !== "string") throw new Error("the access token carries no session id");
+  return payload.session_id;
+}
+
+/**
+ * The independent-login marker, through the real routine from a real
+ * session of the account: `grant_directional_purpose_v1` refuses
+ * `family.heritability` while it is unset, and the marker is otherwise
+ * stamped by a server-verified sign-in the harness cannot reproduce for two
+ * accounts in one browser context. These accounts accepted no invitation,
+ * so any session of theirs stamps.
+ */
+async function markIndependentLogin(account: { email: string; password: string }, accountId: string) {
+  const { data, error } = await anonClient().auth.signInWithPassword({
+    email: account.email,
+    password: account.password,
+  });
+  if (error || !data.session) throw new Error(`sign-in: ${error?.message}`);
+  const stamped = await adminClient().rpc("mark_independent_login_v1", {
+    p_account_id: accountId,
+    p_auth_session_id: authSessionIdOf(data.session.access_token),
+  });
+  expect(stamped.error).toBeNull();
+  expect(stamped.data).toBe(1);
+}
+
+/** One directional grant of one purpose, through the real routine. */
+async function grantPurpose(
+  purpose: GrantedPurpose,
   granterAccount: string,
   granterSubject: string,
   recipientPrincipal: string,
-  nonce: string,
 ): Promise<string> {
   const { data, error } = await adminClient().rpc("grant_directional_purpose_v1", {
     p_account_id: granterAccount,
     p_data_subject_id: granterSubject,
     p_recipient_principal_id: recipientPrincipal,
-    p_purpose: "family.heritability",
+    p_purpose: purpose,
     p_artifact_key: "consent.share-with-adult",
     p_artifact_version: 1,
-    p_token_nonce: nonce,
+    // The presentation nonce is single-use by design, so each grant mints its own.
+    p_token_nonce: `e2e-hp-${randomUUID()}`,
   });
-  if (error) throw new Error(`grant: ${error.message}`);
+  if (error) throw new Error(`grant ${purpose}: ${error.message}`);
   return data as unknown as string;
 }
 
@@ -216,9 +265,28 @@ async function declassify(rsids: readonly number[]) {
   expect(error).toBeNull();
 }
 
+/**
+ * Passes the domain's one Tier-2 gate in this browser context, after
+ * `signIn`: the gate cookie is keyed to the auth session, so a fresh
+ * context sees the gate again until it is acknowledged.
+ */
+async function passGate(page: Page) {
+  await page.goto("/family/health-picture");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: GATE_BUTTON }).click();
+  await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
+}
+
+/**
+ * Axe in both themes, each on a fresh load in that theme, as every other
+ * spec does (D-025): the theme provider flips the class on the live page
+ * and the chrome animates its colours, so an audit taken on a page that was
+ * loaded in the other theme samples mid-transition colours.
+ */
 async function expectAxeClean(page: Page) {
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
+    await page.reload();
     await page.waitForLoadState("networkidle");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(
@@ -279,6 +347,38 @@ test.beforeAll(async () => {
     });
     if (conditionError) throw new Error(`condition_registry: ${conditionError.message}`);
   }
+
+  // The two people, their self subjects (provisioned with the account) and
+  // the principals the grants are addressed to.
+  accountA = await accountIdFor(A.email);
+  accountB = await accountIdFor(B.email);
+  selfSubjectA = await selfSubjectOf(accountA);
+  selfSubjectB = await selfSubjectOf(accountB);
+  await markIndependentLogin(A, accountA);
+  await markIndependentLogin(B, accountB);
+  const principalA = await principalOf(selfSubjectA, accountA);
+  const principalB = await principalOf(selfSubjectB, accountB);
+
+  // Every grant in both directions: the joint one that opens the column
+  // and the panel, and the two report layers that open the cells (D-038).
+  for (const purpose of GRANTED_PURPOSES) {
+    await grantPurpose(purpose, accountA, selfSubjectA, principalB);
+    grantsFromB.set(purpose, await grantPurpose(purpose, accountB, selfSubjectB, principalA));
+  }
+  const { data: live } = await admin
+    .from("purpose_grants")
+    .select("purpose, target_id")
+    .in("target_id", [selfSubjectA, selfSubjectB])
+    .is("revoked_at", null);
+  expect(live).toHaveLength(GRANTED_PURPOSES.length * 2);
+  for (const target of [selfSubjectA, selfSubjectB]) {
+    expect(
+      (live as { purpose: string; target_id: string }[])
+        .filter((row) => row.target_id === target)
+        .map((row) => row.purpose)
+        .sort(),
+    ).toEqual([...GRANTED_PURPOSES].sort());
+  }
 });
 
 test.afterAll(async () => {
@@ -293,7 +393,7 @@ test.afterAll(async () => {
     .in("rsid", CARRIER_FIXTURE_POSITIONS.map((entry) => entry.rsid));
 });
 
-test("both adults add the synthetic file, its runs measure is stored with it, and both turn on being seen side by side", async ({
+test("both adults add the synthetic file, and its runs measure is stored with it", async ({
   page,
 }) => {
   const admin = adminClient();
@@ -344,39 +444,6 @@ test("both adults add the synthetic file, its runs measure is stored with it, an
 
     await page.request.post("/auth/sign-out");
   }
-
-  accountA = await accountIdFor(A.email);
-  accountB = await accountIdFor(B.email);
-  selfSubjectA = await selfSubjectOf(accountA);
-  selfSubjectB = await selfSubjectOf(accountB);
-
-  // The routine refuses `family.heritability` while the marker is unset, and
-  // it is stamped by a server-verified sign-in the test harness cannot
-  // reproduce for two accounts in one browser context.
-  const { error: markError } = await admin
-    .from("subjects")
-    .update({ independent_login_at: new Date().toISOString() })
-    .in("id", [selfSubjectA, selfSubjectB]);
-  expect(markError).toBeNull();
-
-  const principalA = await principalOf(selfSubjectA, accountA);
-  const principalB = await principalOf(selfSubjectB, accountB);
-  // The presentation nonce is single-use by design, so each run mints its own.
-  await grantSideBySide(accountA, selfSubjectA, principalB, `e2e-hp-${randomUUID()}`);
-  grantFromB = await grantSideBySide(
-    accountB,
-    selfSubjectB,
-    principalA,
-    `e2e-hp-${randomUUID()}`,
-  );
-
-  const { data: live } = await admin
-    .from("purpose_grants")
-    .select("purpose, target_id")
-    .in("target_id", [selfSubjectA, selfSubjectB])
-    .is("revoked_at", null);
-  expect(live).toHaveLength(2);
-  for (const row of live!) expect(row).toMatchObject({ purpose: "family.heritability" });
 });
 
 test("the page withholds every result until the one Tier-2 gate is passed", async ({ page }) => {
@@ -395,13 +462,13 @@ test("the page withholds every result until the one Tier-2 gate is passed", asyn
   for (const entry of SYNTHETIC) expect(gatedHtml).not.toContain(entry.gene);
 
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Show what’s shared" }).click();
+  await page.getByRole("button", { name: GATE_BUTTON }).click();
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 
 test("the side-by-side table compares nothing and offers no way to order it", async ({ page }) => {
   await signIn(page, A.email, A.password);
-  await page.goto("/family/health-picture");
+  await passGate(page);
 
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(
     "Family / Family health picture",
@@ -450,6 +517,14 @@ test("the side-by-side table compares nothing and offers no way to order it", as
     new Set([selfSubjectA, selfSubjectB]),
   );
 
+  // With both report layers granted, the other adult's cells carry their
+  // letters as observed genotype figures, and no cell says "not shared".
+  const lettersOfB = page.locator(
+    `[data-slot="health-picture-cell"] [data-claim-block][data-subject-id="${selfSubjectB}"] [data-figure-kind="genotype"]`,
+  );
+  expect(await lettersOfB.count()).toBeGreaterThan(0);
+  await expect(page.locator('[data-slot="cell-absence"]', { hasText: NOT_SHARED_CELL })).toHaveCount(0);
+
   // Nothing sorts, ranks or sums.
   await expect(page.locator("[aria-sort]")).toHaveCount(0);
   await expect(page.locator("th button")).toHaveCount(0);
@@ -472,7 +547,7 @@ test("the carrier panel gives one probability, names both variants, and names a 
   page,
 }) => {
   await signIn(page, A.email, A.password);
-  await page.goto("/family/health-picture");
+  await passGate(page);
 
   const panel = page.locator('[data-slot="carrier-panel"]');
   await expect(panel).toHaveCount(1);
@@ -555,7 +630,7 @@ test("the carrier panel gives one probability, names both variants, and names a 
 
 test("the page keeps its budgets and is clean in both themes", async ({ page }) => {
   await signIn(page, A.email, A.password);
-  await page.goto("/family/health-picture");
+  await passGate(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.evaluate(() => document.fonts.ready);
   const interactives = await firstViewportInteractives(page);
@@ -565,6 +640,9 @@ test("the page keeps its budgets and is clean in both themes", async ({ page }) 
 
 test("the Overview names the match, carries the pair and shows no value", async ({ page }) => {
   await signIn(page, A.email, A.password);
+  // The Overview's carrier line reads nothing before the domain's gate is
+  // passed in this session, so the gate is passed on the domain's page first.
+  await passGate(page);
   await page.goto("/overview");
   const line = page.locator(`[data-subject-pair="${selfSubjectA}:${selfSubjectB}"]`);
   await expect(line).toHaveCount(1);
@@ -578,6 +656,49 @@ test("the Overview names the match, carries the pair and shows no value", async 
   expect(await line.textContent()).not.toContain("25 in 100");
 });
 
+test("without that layer's own grant, the other adult's cells read as not shared while the column and the panel remain", async ({
+  page,
+}) => {
+  // B withdraws the estimates layer toward A; the joint grant and the
+  // variant layer stay. The column still opens on the joint grant, and so
+  // does the carrier panel; the cells of that layer do not (D-038).
+  const { error } = await adminClient().rpc("revoke_directional_purpose_v1", {
+    p_account_id: accountB,
+    p_grant_id: grantsFromB.get("reports.polygenic"),
+  });
+  expect(error).toBeNull();
+
+  await signIn(page, A.email, A.password);
+  await passGate(page);
+
+  const estimates = page.locator('[data-compare-surface][data-layer="estimate"]');
+  await expect(estimates).toHaveCount(1);
+  await expect(estimates.locator(`th[data-subject-id="${selfSubjectB}"]`)).toHaveCount(1);
+
+  const cellsOfB = estimates.locator(
+    `[data-slot="health-picture-cell"] [data-claim-block][data-subject-id="${selfSubjectB}"]`,
+  );
+  const count = await cellsOfB.count();
+  expect(count).toBeGreaterThan(0);
+  for (let index = 0; index < count; index++) {
+    await expect(cellsOfB.nth(index).locator('[data-slot="cell-absence"]')).toHaveText(NOT_SHARED_CELL);
+    await expect(cellsOfB.nth(index).locator("[data-figure-kind]")).toHaveCount(0);
+    await expect(cellsOfB.nth(index).locator("a")).toHaveCount(0);
+  }
+
+  // The viewer's own cells are untouched.
+  const lettersOfA = estimates.locator(
+    `[data-slot="health-picture-cell"] [data-claim-block][data-subject-id="${selfSubjectA}"] [data-figure-kind="genotype"]`,
+  );
+  expect(await lettersOfA.count()).toBeGreaterThan(0);
+
+  // The joint projection stays: the panel still lists every match.
+  await expect(page.locator('[data-slot="carrier-panel"] [data-claim-block]')).toHaveCount(
+    CARRIED.length,
+  );
+  await expect(page.locator('[data-slot="column-footer"]')).toHaveCount(2);
+});
+
 test("with no match left, the panel counts the classified positions both files cover", async ({
   page,
 }) => {
@@ -587,7 +708,7 @@ test("with no match left, the panel counts the classified positions both files c
   await declassify(CARRIED.map((entry) => entry.rsid));
 
   await signIn(page, A.email, A.password);
-  await page.goto("/family/health-picture");
+  await passGate(page);
   const panel = page.locator('[data-slot="carrier-panel"]');
   await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
   await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(
@@ -606,7 +727,7 @@ test("with no classified position at all, the panel says so in words, never a co
   await declassify(NOT_CARRIED.map((entry) => entry.rsid));
 
   await signIn(page, A.email, A.password);
-  await page.goto("/family/health-picture");
+  await passGate(page);
   const panel = page.locator('[data-slot="carrier-panel"]');
   await expect(panel).toHaveCount(1);
   await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
@@ -620,10 +741,11 @@ test("with no classified position at all, the panel says so in words, never a co
 test("revoking one direction empties the panel and the Overview line at once", async ({ page }) => {
   const { error } = await adminClient().rpc("revoke_directional_purpose_v1", {
     p_account_id: accountB,
-    p_grant_id: grantFromB,
+    p_grant_id: grantsFromB.get("family.heritability"),
   });
   expect(error).toBeNull();
 
+  // Under two columns the page states so before the gate: nothing to pass.
   await signIn(page, A.email, A.password);
   await page.goto("/family/health-picture");
   await expect(page.getByText(NEEDS_TWO, { exact: true })).toBeVisible();

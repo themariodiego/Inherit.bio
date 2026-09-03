@@ -198,7 +198,7 @@ changes.
   `<CarrierMatchBlock>`, on F0's `portrait_acknowledged_at` and
   `independent_login_at` columns and `acknowledge_portrait_v1`, and on the
   `<OutcomeDots>` renderer; the library exposes `canonicalCross`,
-  `autosomalCross`, `xLinkedCross`, `crossShares`, `distribute`,
+  `autosomalCross`, `xLinkedCross`, `crossShares` (returning `Partial<Record<MendelOutcome, number>>`, so an absent outcome is an absent key, never a zero), `distribute`,
   `readTraitAllowlist`, `traitStatus` and the copy for it to consume.
 - Reversing any part of this scope — a sixth trait, a polygenic
   distribution, a rendered sex card — means editing X10.1 or §4 §5.4 and

@@ -276,12 +276,17 @@ export default async function OverviewPage() {
       person.grantsFromViewer.has("family.heritability"),
   );
   if (state === "D" && self && sharedSideBySide.length > 0 && (await acknowledged(user))) {
-    const decision = await familyCapability(
-      user.id,
-      sharedSideBySide.map((person: FamilyPerson) => person.counterpartAccountId),
-      "carrier_match",
-    );
-    const refVariants = permits(decision) ? await readClassifiedVariants(admin) : [];
+    // The register's `family:carrier-arithmetic` needs all three to permit
+    // before any row of another adult is read, exactly as the health
+    // picture does (D-038).
+    const contributors = sharedSideBySide.map((person: FamilyPerson) => person.counterpartAccountId);
+    const decisions = await Promise.all([
+      familyCapability(user.id, contributors, "third_party_adult_analysis"),
+      familyCapability(user.id, contributors, "family_heritability"),
+      familyCapability(user.id, contributors, "carrier_match"),
+    ]);
+    const allowed = decisions.every(permits);
+    const refVariants = allowed ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
     for (const person of refVariants.length > 0 ? sharedSideBySide : []) {
       const summary = await resolveCarrierPair(
