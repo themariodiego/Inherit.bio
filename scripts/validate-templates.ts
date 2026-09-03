@@ -2,6 +2,12 @@
 // data/templates/SCHEMA.md. Run: pnpm tsx scripts/validate-templates.ts
 import fs from "node:fs";
 import path from "node:path";
+import {
+  ESTIMATE_KINDS,
+  EVIDENCE_LEVELS,
+  LAYERS,
+  categoryFor,
+} from "../src/lib/genome/taxonomy";
 
 const CATEGORIES = new Set([
   "heart-cardiovascular",
@@ -21,7 +27,9 @@ const CATEGORIES = new Set([
   "lifestyle-wellness",
 ]);
 
-const EVIDENCE = new Set(["established", "moderate", "preliminary"]);
+const EVIDENCE = new Set<string>(EVIDENCE_LEVELS);
+const LAYER_SET = new Set<string>(LAYERS);
+const ESTIMATE_KIND_SET = new Set<string>(ESTIMATE_KINDS);
 
 const BANNED_PATTERNS: [RegExp, string][] = [
   [/100%\s*of\s*your\s*DNA/i, "coverage inflation"],
@@ -65,6 +73,38 @@ for (const file of files) {
     if (!t.title) errors.push(`${id}: missing title`);
     if (!t.summary || t.summary.length < 40) errors.push(`${id}: summary too short`);
     if (!EVIDENCE.has(t.evidence)) errors.push(`${id}: bad evidence ${t.evidence}`);
+    // Seeds are always published, and 'insufficient' is never published.
+    if (t.evidence === "insufficient")
+      errors.push(`${id}: evidence 'insufficient' cannot be seeded (seeds publish)`);
+    if (CATEGORIES.has(t.category)) {
+      try {
+        categoryFor({ slug: t.slug, category: t.category });
+      } catch (err) {
+        errors.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    // Layer / estimate kind: optional in seed files, derived at seed time the
+    // same way scripts/seed.ts derives them; mirrors the report_templates
+    // CHECK constraints.
+    if (t.layer != null && !LAYER_SET.has(t.layer))
+      errors.push(`${id}: bad layer ${t.layer}`);
+    if (t.estimate_kind != null && !ESTIMATE_KIND_SET.has(t.estimate_kind))
+      errors.push(`${id}: bad estimate_kind ${t.estimate_kind}`);
+    const layer: string = t.layer ?? "estimate";
+    const estimateKind: string | null =
+      t.estimate_kind ?? (t.pgs_id != null ? "polygenic_score" : "single_locus");
+    if (layer === "estimate" && !ESTIMATE_KIND_SET.has(estimateKind ?? ""))
+      errors.push(`${id}: estimate templates need estimate_kind single_locus|polygenic_score`);
+    if (layer === "variant_call" && (t.pgs_id != null || (t.variants ?? []).length === 0))
+      errors.push(`${id}: variant_call templates need variants and no pgs_id`);
+    if (estimateKind === "polygenic_score" && t.pgs_id == null)
+      errors.push(`${id}: polygenic_score templates need a pgs_id`);
+    if (
+      estimateKind === "polygenic_score" &&
+      (t.evidence === "preliminary" || t.evidence === "insufficient")
+    )
+      errors.push(`${id}: a polygenic score cannot be published at ${t.evidence}`);
 
     const cites = t.citations ?? [];
     if (!Array.isArray(cites) || cites.length === 0)

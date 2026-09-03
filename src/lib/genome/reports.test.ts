@@ -132,7 +132,7 @@ describe("resolveTemplate", () => {
       category: "lifestyle-wellness",
       title: "t",
       summary: "s",
-      evidence: "moderate" as const,
+      evidence: "emerging" as const,
       variants: [cyp1a2],
       pgs_id: null,
       citations: [{ pmid: "16522833", label: "x" }],

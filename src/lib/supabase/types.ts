@@ -780,21 +780,30 @@ export type Database = {
       changelog_entries: {
         Row: {
           body: string
+          evidence_after: string | null
+          evidence_before: string | null
           id: string
+          kind: string | null
           published_at: string
           template_slug: string | null
           title: string
         }
         Insert: {
           body: string
+          evidence_after?: string | null
+          evidence_before?: string | null
           id?: string
+          kind?: string | null
           published_at?: string
           template_slug?: string | null
           title: string
         }
         Update: {
           body?: string
+          evidence_after?: string | null
+          evidence_before?: string | null
           id?: string
+          kind?: string | null
           published_at?: string
           template_slug?: string | null
           title?: string
@@ -5480,8 +5489,11 @@ export type Database = {
         Row: {
           category: string
           citations: Json
+          compliance_exempt_until: string | null
           created_at: string
+          estimate_kind: string | null
           evidence: Database["public"]["Enums"]["evidence_level"]
+          layer: Database["public"]["Enums"]["finding_layer"]
           pgs_id: string | null
           published_at: string | null
           slug: string
@@ -5494,8 +5506,11 @@ export type Database = {
         Insert: {
           category: string
           citations?: Json
+          compliance_exempt_until?: string | null
           created_at?: string
+          estimate_kind?: string | null
           evidence: Database["public"]["Enums"]["evidence_level"]
+          layer?: Database["public"]["Enums"]["finding_layer"]
           pgs_id?: string | null
           published_at?: string | null
           slug: string
@@ -5508,8 +5523,11 @@ export type Database = {
         Update: {
           category?: string
           citations?: Json
+          compliance_exempt_until?: string | null
           created_at?: string
+          estimate_kind?: string | null
           evidence?: Database["public"]["Enums"]["evidence_level"]
+          layer?: Database["public"]["Enums"]["finding_layer"]
           pgs_id?: string | null
           published_at?: string | null
           slug?: string
@@ -7139,7 +7157,13 @@ export type Database = {
       }
     }
     Enums: {
-      evidence_level: "established" | "moderate" | "preliminary"
+      evidence_level:
+        | "clinical"
+        | "established"
+        | "emerging"
+        | "preliminary"
+        | "insufficient"
+      finding_layer: "variant_call" | "estimate"
       genome_file_status:
         | "uploading"
         | "uploaded"
@@ -7290,7 +7314,14 @@ export const Constants = {
   },
   public: {
     Enums: {
-      evidence_level: ["established", "moderate", "preliminary"],
+      evidence_level: [
+        "clinical",
+        "established",
+        "emerging",
+        "preliminary",
+        "insufficient",
+      ],
+      finding_layer: ["variant_call", "estimate"],
       genome_file_status: [
         "uploading",
         "uploaded",

@@ -4,7 +4,7 @@
     "category": "basic-traits",
     "title": "Bitter taste perception (PTC/PROP) · TAS2R38",
     "summary": "TAS2R38 makes a receptor that detects bitter PTC and PROP chemicals. It also responds to similar chemicals in broccoli and Brussels sprouts. Two changes, rs713598 and rs1726866, mark the common PAV taster and AVI non-taster forms. Together, they explain most differences in tasting PTC and PROP. About 70% of people with European ancestry carry at least one taster form.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 713598,
@@ -50,7 +50,7 @@
     "category": "basic-traits",
     "title": "Cilantro soapy taste · OR6A2 region",
     "summary": "Genes play a small part in whether cilantro tastes fresh or soapy. A study of about 26,000 people found a link near several smell receptor genes. The site, rs72921001, is close to OR6A2. This receptor detects chemicals that give cilantro its smell. Each A copy was linked to 0.81 times the odds of a soapy taste. A second group confirmed the link. Still, this site explains only about 0.5% of the difference between people.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 72921001,
@@ -79,7 +79,7 @@
     "category": "basic-traits",
     "title": "Asparagus metabolite smell · olfactory receptor cluster (OR2M7)",
     "summary": "Most people make sulfur-smelling chemicals in urine after eating asparagus. Yet most people cannot smell them. This smell difference maps to a group of receptor genes on chromosome 1. rs4481887 marks the region near OR2M7. In studies of almost 7,000 people, each G copy gave about 1.7 times the odds of not smelling the odor. About 60% of all people studied could not smell it.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4481887,
@@ -112,7 +112,7 @@
     "category": "basic-traits",
     "title": "Photic sneeze reflex · 2q22 region (near ZEB2)",
     "summary": "The photic sneeze reflex — sneezing when moving from dim light into bright sunlight — affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2 (odds ratio about 1.3 per C allele in European-ancestry participants), and the same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10427255,
@@ -145,7 +145,7 @@
     "category": "basic-traits",
     "title": "Earlobe attachment · EDAR",
     "summary": "Earlobes are not a simple one-gene trait. Their shape varies on a scale, and many genes play a part. A study of about 74,000 people from several ancestry groups found 49 linked regions. One strong link was the EDAR Val370Ala change, rs3827760. The G copy is common in East Asian and Indigenous American groups but rare elsewhere. It is linked to higher odds of attached earlobes and to small differences in hair, teeth, and ear shape.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 3827760,
@@ -178,7 +178,7 @@
     "category": "basic-traits",
     "title": "Wet or dry earwax · ABCC11",
     "summary": "Earwax type is one of the clearest single-gene common traits in humans. The rs17822931 variant in ABCC11 (Gly180Arg; forward-strand C>T) determines it almost completely: T/T gives dry, flaky earwax, while carrying at least one C allele gives the wet type, which is dominant. The dry type is the norm in East Asian populations and rare in people of European or African ancestry. The same transporter variant reduces apocrine sweat-gland secretions, so the T allele is also associated with less underarm odor.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17822931,
@@ -236,7 +236,7 @@
     "category": "basic-traits",
     "title": "Sprint and power muscle fiber · ACTN3",
     "summary": "ACTN3 makes alpha-actinin-3, a protein found only in fast muscle fibers used for sprinting and power. The common R577X change, rs1815739 C>T, can stop the protein from being made. People with TT make none of it, yet this causes no illness. TT occurs in about one in five people with European ancestry. In a well-known study of top Australian athletes, TT was rare among Olympic sprinters. Endurance athletes had it at least as often as other people.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1815739,
@@ -269,7 +269,7 @@
     "category": "basic-traits",
     "title": "Androstenone smell perception · OR7D4",
     "summary": "Androstenone is a chemical in sweat and boar meat. To some people, it smells very bad. Others find it faint, sweet, or have no smell at all. Much of this difference comes from the OR7D4 smell receptor. The rs61729907 change makes Arg88Trp and marks the weaker WM receptor form. This form usually travels with the Thr133Met change. It weakens the receptor's response. On average, carriers find the smell less strong and less unpleasant.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 61729907,

@@ -4,7 +4,7 @@
     "category": "reproductive-family",
     "title": "CFTR F508del carrier status (informational) · CFTR",
     "summary": "F508del is the most common cystic fibrosis (CF) variant. It makes up about 70% of CF alleles in people with European ancestry. About 1 in 25 to 30 people in that group carries one copy. This report checks only F508del. It is not carrier screening. Clinical screening tests many CFTR variants. If you are planning a family and want carrier information, ask a doctor or genetic counselor about proper testing.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 113993960,
@@ -91,7 +91,7 @@
     "category": "reproductive-family",
     "title": "Age at natural menopause · MCM8",
     "summary": "MCM8 helps repair DNA in developing eggs. rs16991615 is one of the strongest single variants linked to menopause timing. Each A allele changes Glu341 to Lys. Each copy is linked to natural menopause about one year later and slightly higher anti-Mullerian hormone on average. People with the same genotype still differ by many years.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 16991615,
@@ -153,7 +153,7 @@
     "category": "reproductive-family",
     "title": "Age at first period · LIN28B",
     "summary": "LIN28B helps control when development happens. Variation near it was among the first genetic links to puberty timing found by genome-wide studies. At rs7759938, each C allele is linked to a first period about 1 to 1.5 months later. It is also linked to later puberty milestones in both sexes. This shift is tiny next to the normal range of several years.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 7759938,
@@ -186,7 +186,7 @@
     "category": "reproductive-family",
     "title": "Endometriosis · WNT4 region (1p36)",
     "summary": "Endometriosis is a condition in which tissue like the uterine lining grows outside the uterus. It affects about 1 in 10 people with a uterus and is partly inherited. The 1p36 site near WNT4 is one of the most often replicated genetic links. WNT4 helps form the female reproductive tract. Each rs7521902 A allele is linked to about 1.2 times the average odds of endometriosis.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 7521902,
@@ -252,7 +252,7 @@
     "category": "reproductive-family",
     "title": "FSH receptor sensitivity · FSHR Asn680Ser",
     "summary": "FSH receptors on ovarian cells control how strongly the ovary responds to FSH. rs6166 changes amino acid 680 from asparagine to serine. Ser/Ser carriers have slightly higher average FSH at baseline. Early IVF studies found that they needed more stimulation medicine on average for the same response. Both forms are common and work with normal fertility. This result concerns average IVF response, not the ability to conceive.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6166,
@@ -281,7 +281,7 @@
     "category": "reproductive-family",
     "title": "Pregnancy and clotting · Factor V Leiden",
     "summary": "Factor V Leiden (rs6025, Arg506Gln) is the most common inherited variant that raises clot risk. About 3% to 5% of people with European ancestry carry it. Pregnancy also raises clot risk. Carriers have higher average odds of a vein clot during pregnancy and after birth. Studies also link the variant to about 1.5 to 2 times the odds of pregnancy loss. Most carriers have pregnancies without these problems. This report is for information only. If you carry the variant and plan a pregnancy, consider speaking with a clinician or genetic counselor.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6025,

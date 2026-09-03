@@ -4,7 +4,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Male-pattern hair loss · AR (X chromosome)",
     "summary": "Changes in the androgen receptor gene, AR, are the strongest known gene factor for male-pattern hair loss. AR is on the X chromosome. G at rs6152 marks the higher-risk AR form. The less common A copy is linked to lower odds of early hair loss. Men get their X copy from their mother, so the maternal line can matter. Many other genes and age also shape hair loss.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6152,
@@ -30,7 +30,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Male-pattern hair loss · 20p11 locus",
     "summary": "A region on chromosome 20p11 near the PAX1 and FOXA2 genes is the strongest baldness locus outside the X chromosome. Each copy of the A allele of rs1160312 was associated with roughly 1.6-fold higher odds of male-pattern hair loss in the discovery study, an effect independent of the androgen receptor locus. About one in seven European-ancestry men carries the higher-risk genotype at both loci.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1160312,
@@ -56,7 +56,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Hair strand thickness · EDAR",
     "summary": "rs3827760 changes EDAR from Val370 to Ala370. It has a large effect on hair strand thickness. The G/Ala370 copy raises signaling through the EDAR receptor. It is linked to thicker, straighter scalp hair. G is very common in East Asian and Indigenous American groups but rare in European and African groups. It is also linked to shovel-shaped front teeth and differences in sweat gland count.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 3827760,
@@ -83,7 +83,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Straight vs. curly hair · TCHH",
     "summary": "TCHH helps join the inner root layer that shapes a growing hair strand. T at rs11803731 is found almost only in people with European ancestry. It is linked to straighter hair. In European groups, this site explains about 6% of the difference in hair curl. It shifts the odds and does not decide hair shape.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 11803731,
@@ -109,7 +109,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Blue vs. brown eye color · HERC2/OCA2",
     "summary": "rs12913832 sits inside HERC2 and acts as a switch for the nearby OCA2 pigment gene. It is the strongest single marker of blue versus brown eyes. G lowers OCA2 activity in the iris. In people with European ancestry, GG most often marks blue or gray eyes, while AA most often marks brown eyes. Other pigment genes create green, hazel, and other shades. The result is strong but not certain.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12913832,
@@ -135,7 +135,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Skin pigmentation and tanning · SLC45A2",
     "summary": "SLC45A2, also called MATP, moves materials needed to make melanin. The Leu374Phe change, rs16891982, strongly contributes to skin tone. G/Leu374 is almost fixed in Europeans and is linked to lighter skin. C/Phe374 is the main copy in most non-European groups. It is linked to darker skin and easier tanning. Many genes shape skin and tanning, and every type needs sun protection.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 16891982,
@@ -161,7 +161,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Freckling and sun sensitivity · IRF4",
     "summary": "rs12203592 sits in a control region inside IRF4. IRF4 works with MITF to turn on the pigment enzyme tyrosinase. T weakens this control region. It is linked to more freckles, higher sun sensitivity, and lighter eyes. A separate study also linked it to earlier gray hair. Effects are small and add by copy. MC1R and sun exposure also matter a lot.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12203592,
@@ -188,7 +188,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Earwax type and body odor · ABCC11",
     "summary": "One change in the ABCC11 transporter, rs17822931 Gly180Arg, largely sets wet or dry earwax. It also strongly affects underarm odor. T turns off the transporter that releases chemicals used by odor-making skin bacteria. TT marks dry earwax and very little of these odor chemicals. T is common in East Asia but rare in Europe and Africa. This is one of the clearest one-gene human traits.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17822931,
@@ -214,7 +214,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Red hair and fair skin · MC1R (R151C)",
     "summary": "MC1R switches pigment cells from red-yellow pigment to brown-black pigment. rs1805007 changes Arg151 to Cys. T is a common strong loss-of-function R copy in Europeans. It is linked to red hair, fair skin, freckles, poor tanning, and more UV sensitivity. Red hair usually needs two weak MC1R copies, which may include R160W or D294H. One T copy more often shows as fair, freckled skin or a red beard tint.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1805007,
@@ -241,7 +241,7 @@
     "category": "aesthetic-cosmetic",
     "title": "Blond hair · KITLG enhancer",
     "summary": "rs12821256 sits in a control region about 350 kb before KITLG. KITLG is a growth factor that supports pigment cells in hair roots. C lowers control-region activity by about 20% in hair-root cells. It is linked to higher odds of blond hair in Northern Europeans. This is a small change in gene control, not a broken gene. Many genes set hair color, so C only shifts the odds.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12821256,

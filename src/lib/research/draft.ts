@@ -47,6 +47,9 @@ export interface TemplateDraft {
   summary: string;
   status: "review";
   evidence: "preliminary";
+  /** Drafts are single-variant association reports: estimate / single_locus. */
+  layer: "estimate";
+  estimate_kind: "single_locus";
   variants: unknown[];
   pgs_id: null;
   citations: { pmid: string; label: string }[];
@@ -78,6 +81,8 @@ export function draftFromAssociation(
     summary: `A recently published association between ${a.gene} variant rs${a.rsid} and ${a.trait.toLowerCase()} (${a.effect_size}). Drafted automatically from ${releaseKey} and reviewed by a human before publication; treated as preliminary evidence.`,
     status: "review",
     evidence: "preliminary",
+    layer: "estimate",
+    estimate_kind: "single_locus",
     variants: [
       {
         rsid: a.rsid,

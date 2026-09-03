@@ -4,7 +4,7 @@
     "category": "heart-cardiovascular",
     "title": "Coronary artery disease · 9p21 region",
     "summary": "The 9p21.3 region near CDKN2B-AS1 is the most consistently replicated common genetic locus for coronary artery disease. Each copy of the risk allele at rs1333049 is associated with roughly 20-30% higher odds of coronary disease on average, independent of cholesterol and blood pressure.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1333049,
@@ -30,7 +30,7 @@
     "category": "heart-cardiovascular",
     "title": "Lipoprotein(a) · LPA",
     "summary": "Lipoprotein(a), or Lp(a), is a cholesterol-carrying particle whose blood level is largely set by genetics at the LPA locus. The rs10455872 G allele is associated with substantially higher Lp(a) levels and, on average, roughly 1.5x the odds of coronary disease per copy. Lp(a) can be measured directly with a blood test.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10455872,
@@ -56,7 +56,7 @@
     "category": "heart-cardiovascular",
     "title": "LDL cholesterol · SORT1 region (1p13)",
     "summary": "The 1p13 region near SORT1, CELSR2, and PSRC1 strongly affects LDL, often called bad cholesterol. At rs599839, each A copy is linked to LDL that is a few mg/dL higher. Each A is also linked to about 10% higher odds of coronary disease.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 599839,
@@ -83,7 +83,7 @@
     "category": "heart-cardiovascular",
     "title": "LDL cholesterol · LDLR",
     "summary": "LDLR makes the receptor that clears LDL cholesterol from blood. T at the common rs6511720 site is linked to LDL about 6 to 7 mg/dL lower per copy. It is also linked to lower average odds of coronary disease. This common site is not the same as rare LDLR changes that cause familial high cholesterol.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6511720,
@@ -109,7 +109,7 @@
     "category": "heart-cardiovascular",
     "title": "Blood pressure · AGT M235T",
     "summary": "AGT makes angiotensinogen, part of a hormone system that controls blood pressure. rs699 changes Met235 to Thr235. In this report, G on the reference strand marks Thr235. G is linked to slightly more angiotensinogen in blood. Many studies, but not all, also link it to slightly higher odds of high blood pressure.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 699,
@@ -135,7 +135,7 @@
     "category": "heart-cardiovascular",
     "title": "Factor V Leiden · F5",
     "summary": "Factor V Leiden is T at rs6025, which changes R506 to Q in clotting factor V. It makes factor V harder for activated protein C to turn off. This shifts blood chemistry toward clots. It is the most common inherited vein-clot risk in people with European ancestry. About 3% to 5% of that group carry it.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6025,
@@ -161,7 +161,7 @@
     "category": "heart-cardiovascular",
     "title": "Prothrombin G20210A · F2",
     "summary": "Prothrombin G20210A is A at rs1799963 in F2. It is linked to higher prothrombin levels. After Factor V Leiden, it is the second most common inherited vein-clot risk. About 2% of people with European ancestry carry it.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1799963,
@@ -187,7 +187,7 @@
     "category": "heart-cardiovascular",
     "title": "Homocysteine · MTHFR C677T",
     "summary": "The MTHFR C677T change is rs1801133. In this report, A on the reference strand marks the 677T form. It makes a heat-sensitive enzyme with less activity in folate use. TT is linked to more homocysteine, mainly when folate intake is low. Despite common online claims, its direct link to heart events is small and not steady.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1801133,
@@ -213,7 +213,7 @@
     "category": "heart-cardiovascular",
     "title": "Atrial fibrillation · PITX2 region (4q25)",
     "summary": "The chromosome 4q25 region before PITX2 has the strongest common gene link to atrial fibrillation. PITX2 plays a key role in heart growth. Atrial fibrillation is an uneven heart rhythm. Each T copy at rs2200733 is linked to about 1.7 times the average odds.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2200733,
@@ -239,7 +239,7 @@
     "category": "heart-cardiovascular",
     "title": "HDL cholesterol · CETP TaqIB",
     "summary": "CETP moves cholesterol between fat-carrying particles. The classic TaqIB change is rs708272. In this report, A marks the B2 form. B2 is linked to less CETP activity and higher HDL, often called good cholesterol. It is also linked to a small drop in average coronary risk.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 708272,

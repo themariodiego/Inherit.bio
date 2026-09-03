@@ -4,7 +4,7 @@
     "category": "lifestyle-wellness",
     "title": "Caffeine metabolism · CYP1A2",
     "summary": "CYP1A2 is a liver enzyme that clears most caffeine. A common DNA change, rs762551, affects how strongly this enzyme responds. The change is often written as CYP1A2 -163C>A. People with two A copies clear caffeine faster on average. People with a C copy clear it more slowly.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 762551,
@@ -30,7 +30,7 @@
     "category": "lifestyle-wellness",
     "title": "Muscle composition · ACTN3 R577X",
     "summary": "ACTN3 makes alpha-actinin-3, a protein in fast-twitch muscle fibers. The T copy of rs1815739, also called R577X, adds a stop signal. People with two T copies make none of this protein. This common, harmless type is seen more often in elite endurance athletes and less often in elite sprint or power athletes.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1815739,
@@ -82,7 +82,7 @@
     "category": "lifestyle-wellness",
     "title": "Vitamin D levels · CYP2R1",
     "summary": "CYP2R1 makes the main liver enzyme that turns vitamin D into the form measured in blood, 25-hydroxyvitamin D. Studies repeatedly link rs10741657 near this gene to blood levels. The A copy is linked to slightly higher levels and G to slightly lower levels. Sun, food, latitude, season, and body weight matter much more.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10741657,
@@ -108,7 +108,7 @@
     "category": "lifestyle-wellness",
     "title": "Vitamin B12 levels · FUT2",
     "summary": "FUT2 helps decide whether certain sugars appear on cells in the gut. Some DNA changes reduce this secretor function. They are repeatedly linked to higher vitamin B12 in blood, perhaps through gut bacteria such as H. pylori. At rs602662, A marks reduced function and slightly higher B12. G marks secretor status and slightly lower B12.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 602662,
@@ -134,7 +134,7 @@
     "category": "lifestyle-wellness",
     "title": "Omega-3/6 fatty acid conversion · FADS1",
     "summary": "FADS1 helps turn short plant fats, such as ALA from flax, into long-chain omega-3 and omega-6 fats, such as EPA and arachidonic acid. The nearby rs174537 change strongly tracks blood levels of these fats. G copies are linked to better conversion and T copies to lower conversion. People with T copies may gain more from ready-made EPA and DHA in fish.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 174537,
@@ -160,7 +160,7 @@
     "category": "lifestyle-wellness",
     "title": "Iron status · TMPRSS6 V736A",
     "summary": "TMPRSS6 helps control hepcidin, a hormone that sets how much iron the gut takes in. The common rs855791 change, also called V736A, is repeatedly linked to iron measures. A, the valine form, tracks slightly lower iron and hemoglobin. G, the alanine form, tracks slightly higher levels. Most shifts are small and within the usual range.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 855791,
@@ -213,7 +213,7 @@
     "category": "lifestyle-wellness",
     "title": "Morning chronotype · RGS16",
     "summary": "Being a morning person is partly inherited. In a 23andMe study of 89,283 people, the strongest single signal was near RGS16, which helps control body-clock signals. At rs516134, the rare C copy was linked to about 1.2 times the chance of calling yourself a morning person. Hundreds of genes, age, light, and habits matter, so this change has little effect.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 516134,
@@ -239,7 +239,7 @@
     "category": "lifestyle-wellness",
     "title": "Vitamin C levels · SLC23A1",
     "summary": "SLC23A1 moves vitamin C from the gut and kidneys into blood. The uncommon rs33972313 change is linked to vitamin C in blood. In a study of about 15,000 people, each T copy tracked about 6 micromoles per liter less vitamin C. Usual levels are 40 to 60 micromoles per liter, so this shift is modest. Fruit and vegetables matter most.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 33972313,

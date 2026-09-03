@@ -4,7 +4,7 @@
     "category": "mental-health",
     "title": "Stress hormone response · FKBP5",
     "summary": "FKBP5 helps control how the body turns off its stress hormone response. At rs1360780, the T copy is linked to a stronger cortisol response that takes longer to settle. In people with major stress early in life, T is also linked to a modest rise in depressive episodes and stress symptoms. The link is weak or absent without that exposure. This is an interaction with life experience, not a fixed risk.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1360780,
@@ -83,7 +83,7 @@
     "category": "mental-health",
     "title": "Stress & anxiety processing · COMT",
     "summary": "COMT clears dopamine from the front of the brain. The Val158Met change, rs4680, alters enzyme activity by three to four times. The A/Met form clears dopamine more slowly. On average, it is linked to slightly better working memory and, in some studies, higher anxiety-related trait scores, especially in women. Both forms are common and involve trade-offs; neither is simply better.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4680,
@@ -110,7 +110,7 @@
     "category": "mental-health",
     "title": "Bipolar disorder association · CACNA1C",
     "summary": "CACNA1C encodes a calcium-channel subunit active in neurons and is one of the most consistently replicated loci in psychiatric genetics. Each copy of the A allele at rs1006737 is associated on average with roughly 1.1-1.2x the odds of bipolar disorder, with smaller associations also reported for depression and schizophrenia. Bipolar disorder is highly polygenic; this single variant shifts probability only slightly.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1006737,
@@ -136,7 +136,7 @@
     "category": "mental-health",
     "title": "Bipolar disorder association · ANK3",
     "summary": "ANK3 makes ankyrin-G, which helps place ion channels where nerve cells fire. In a broad DNA study, the less common T copy at rs10994336 was linked to higher odds of bipolar disorder. The odds ratio was about 1.45 in the first analysis and smaller in later groups. Like other common psychiatric markers, this change explains very little of the overall likelihood.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10994336,
@@ -188,7 +188,7 @@
     "category": "mental-health",
     "title": "Depression association · OLFM4 region",
     "summary": "Depression is shaped by many genes. A study of more than 800,000 people found 102 separate DNA signals, each with a tiny effect. rs12552 near OLFM4 was among the strongest. Each A copy was linked to about 1.05 times the odds of depression. No single change, including this one, can describe one person's mood or outlook.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12552,

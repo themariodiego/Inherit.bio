@@ -4,7 +4,7 @@
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · APOE ε2/ε3/ε4",
     "summary": "APOE ε4 is the strongest common genetic link to late-onset Alzheimer's disease. ε2 is linked to lower average risk. Two variants, rs429358 and rs7412, work together to define ε2, ε3, and ε4. This report shows them separately, so both are needed. APOE does not predict an outcome. Age, heart health, other genes, and environment also shape risk.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 429358,
@@ -44,7 +44,7 @@
     "category": "neurodegenerative",
     "title": "Parkinson's disease · LRRK2 G2019S",
     "summary": "LRRK2 G2019S (rs34637584) is the most common known single-gene contributor to Parkinson's disease. It appears in about 1% of cases without a family history and 4% of family-linked cases. It is more common in people with Ashkenazi Jewish or North African ancestry. Most carriers do not develop Parkinson's disease. Later family studies estimate that about 25% to 43% develop it by age 80, with wide ranges between groups.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 34637584,
@@ -72,7 +72,7 @@
     "category": "neurodegenerative",
     "title": "Parkinson's disease · GBA1 N370S",
     "summary": "GBA1 N370S (rs76763715, also called N409S) is a strong genetic risk factor for Parkinson's disease. In a large study, carriers of GBA1 variants that included N370S had about five times the average odds. N370S is most common in people with Ashkenazi Jewish ancestry. Most carriers never develop Parkinson's disease. On the Ensembl forward strand, this variant changes T to C.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 76763715,
@@ -98,7 +98,7 @@
     "category": "neurodegenerative",
     "title": "Tauopathy risk · MAPT H1/H2 haplotype",
     "summary": "A common chromosome 17 inversion creates two old forms of the MAPT region, called H1 and H2. rs8070723 tags them. H1 is more common and is linked to higher average odds of progressive supranuclear palsy (PSP), a rare tau disease. It also has a smaller link to Parkinson's disease. H2 is linked to lower average odds. Both conditions stay uncommon.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 8070723,
@@ -125,7 +125,7 @@
     "category": "neurodegenerative",
     "title": "ALS susceptibility · UNC13A",
     "summary": "The UNC13A variant rs12608932 is a replicated susceptibility marker for amyotrophic lateral sclerosis (ALS) and frontotemporal dementia, with a small effect on average odds (about 1.1-1.2 fold per C allele). Note: the most important known genetic factor in ALS, the C9orf72 repeat expansion, is a structural variant that genotyping arrays cannot detect — its absence from this report is a limitation of the technology, not evidence you lack it.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12608932,
@@ -152,7 +152,7 @@
     "category": "neurodegenerative",
     "title": "Parkinson's disease · SNCA",
     "summary": "Common variation near SNCA, the gene for alpha-synuclein, shows the strongest genome-wide association with sporadic Parkinson's disease. The tag SNP rs356182 shifts average odds by about 1.3 fold per G allele. Because Parkinson's affects roughly 1-2% of people over 65, this common variant moves absolute risk only slightly and is one small factor among many.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 356182,
@@ -178,7 +178,7 @@
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · TREM2 R47H",
     "summary": "The rare TREM2 R47H variant (rs75932628, a C-to-T change on the forward strand) is associated with roughly 2-4 fold higher average odds of late-onset Alzheimer's disease — an effect size approaching that of one APOE ε4 allele. It is carried by fewer than 1 in 200 people of European ancestry and is rarer in other populations. Most carriers never develop the condition.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 75932628,
@@ -205,7 +205,7 @@
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · CLU",
     "summary": "Common variation in the clusterin gene (CLU) was among the first loci beyond APOE to show genome-wide-significant association with late-onset Alzheimer's disease. The minor T allele of rs11136000 is associated with modestly lower average odds (about 0.86 fold per allele). The effect is small: this variant is one small factor among many and shifts absolute risk only slightly.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 11136000,
@@ -231,7 +231,7 @@
     "category": "neurodegenerative",
     "title": "Alzheimer's disease · BIN1",
     "summary": "BIN1 is the second-most significant common risk locus for late-onset Alzheimer's disease after APOE in large genome-wide meta-analyses. The T allele of rs6733839 is associated with about 1.2 fold higher average odds per copy. As with all common risk variants, the absolute effect is small and this is one small factor among many.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6733839,
@@ -257,7 +257,7 @@
     "category": "neurodegenerative",
     "title": "Frontotemporal dementia · TMEM106B",
     "summary": "Common variants near TMEM106B were found in a genome-wide study of frontotemporal lobar degeneration with TDP-43 changes (FTLD-TDP). rs1990622 A is linked to higher average odds, while G is linked to lower odds. The effect seems strongest in people with rare GRN mutations or C9orf72 repeat expansions. FTD is uncommon, so this variant alone changes absolute risk little.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1990622,

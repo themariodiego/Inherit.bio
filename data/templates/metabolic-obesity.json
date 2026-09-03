@@ -4,7 +4,7 @@
     "category": "metabolic-obesity",
     "title": "Body weight tendency · FTO",
     "summary": "The FTO intron-1 variant rs9939609 is the most robustly replicated common variant for body weight. Each copy of the A allele is associated on average with about 0.4 kg/m2 higher BMI (roughly 1-1.5 kg for an average-height adult) and about 1.3x the odds of obesity. Physical activity and overall diet quality substantially attenuate this association.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 9939609,
@@ -30,7 +30,7 @@
     "category": "metabolic-obesity",
     "title": "Body weight tendency · MC4R region",
     "summary": "MC4R is a brain receptor that helps control appetite. Variation near it is the second most consistent common genetic link to body weight after FTO. Each rs17782313 C allele is linked to about 0.2 kg/m2 higher BMI and about 1.1 times the odds of obesity. Some studies also report slightly more hunger and snacking.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17782313,
@@ -56,7 +56,7 @@
     "category": "metabolic-obesity",
     "title": "Type 2 diabetes · TCF7L2",
     "summary": "TCF7L2 rs7903146 is the strongest common genetic variant for type 2 diabetes known, acting mainly through reduced insulin secretion. Each copy of the T allele is associated on average with roughly 1.4x the odds of type 2 diabetes; two copies with roughly 2x. Lifestyle factors such as weight, diet, and activity still dominate absolute risk.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 7903146,
@@ -82,7 +82,7 @@
     "category": "metabolic-obesity",
     "title": "Type 2 diabetes · PPARG Pro12Ala",
     "summary": "PPARG helps control fat-cell growth and insulin response. Pro12Ala (rs1801282) was one of the first type 2 diabetes variants confirmed across studies. The common C allele makes proline and is linked to slightly higher odds. Each G allele makes alanine and is linked to about 15% lower odds and slightly better insulin response.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1801282,
@@ -108,7 +108,7 @@
     "category": "metabolic-obesity",
     "title": "Type 2 diabetes · KCNJ11 E23K",
     "summary": "KCNJ11 makes part of a potassium channel that triggers insulin release from pancreatic beta cells. rs5219 changes amino acid 23 from glutamate to lysine. Each lysine copy, the T allele on the GRCh38 forward strand, is linked to about 1.15 times the odds of type 2 diabetes. It slightly lowers insulin release.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 5219,
@@ -134,7 +134,7 @@
     "category": "metabolic-obesity",
     "title": "Fasting glucose · MTNR1B",
     "summary": "MTNR1B encodes a melatonin receptor expressed in pancreatic beta cells, linking circadian signaling to insulin release. Each copy of the G allele at rs10830963 is associated on average with about 1.3 mg/dL (0.07 mmol/L) higher fasting glucose and roughly 1.1x the odds of type 2 diabetes.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10830963,
@@ -160,7 +160,7 @@
     "category": "metabolic-obesity",
     "title": "Insulin resistance · IRS1 region",
     "summary": "IRS1 helps pass insulin signals inside muscle and fat cells. The common rs2943641 C allele near IRS1 is linked to less insulin sensitivity and higher fasting insulin. Each copy is also linked to about 1.2 times the odds of type 2 diabetes. Unlike many diabetes variants, it acts through insulin response rather than insulin release.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2943641,
@@ -186,7 +186,7 @@
     "category": "metabolic-obesity",
     "title": "Adiponectin levels · ADIPOQ",
     "summary": "Fat tissue releases adiponectin, a hormone that helps the body respond to insulin. Levels tend to be lower with obesity and type 2 diabetes. The A allele of the ADIPOQ promoter variant rs17300539 is one of the strongest common genetic links to blood adiponectin. Each copy is linked to higher average levels.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17300539,
@@ -238,7 +238,7 @@
     "category": "metabolic-obesity",
     "title": "Diet response and body weight · GIPR",
     "summary": "GIPR makes the receptor for GIP, a gut hormone released after eating that helps trigger insulin release. The rs2287019 C allele is linked to slightly higher BMI in large studies. In the two-year POUNDS LOST trial, T carriers on low-fat diets lost more weight and had larger gains in fasting glucose and insulin response.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2287019,

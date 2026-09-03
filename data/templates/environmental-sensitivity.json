@@ -4,7 +4,7 @@
     "category": "environmental-sensitivity",
     "title": "Sun sensitivity · MC1R R151C and R160W",
     "summary": "Two of the best-characterised MC1R \"R\" variants. Carrying them is associated, on average, with fairer skin, more freckling, a poorer tanning response and a greater tendency to burn in sunlight. MC1R shapes the balance between red/yellow pheomelanin and dark eumelanin in skin.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1805007,
@@ -44,7 +44,7 @@
     "category": "environmental-sensitivity",
     "title": "Tanning response and freckling · IRF4",
     "summary": "rs12203592 in IRF4 is one of the strongest common signals for how skin responds to sunlight. The T allele is associated on average with lighter hair and skin, more freckling, and a weaker tanning response with a greater tendency to sunburn.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 12203592,
@@ -71,7 +71,7 @@
     "category": "environmental-sensitivity",
     "title": "UV sensitivity · SLC45A2 L374F",
     "summary": "SLC45A2 transports material in melanosomes, the parts of cells that make pigment. rs16891982 changes amino acid 374 of this protein. The C (Leu374) allele is almost universal in European populations. It is linked to lighter skin and more reported sun sensitivity. The G (Phe374) allele is most common in African and East Asian populations.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 16891982,
@@ -98,7 +98,7 @@
     "category": "environmental-sensitivity",
     "title": "Photic sneeze reflex · rs10427255",
     "summary": "Some people sneeze when they step into bright sunlight. This harmless quirk is called the photic sneeze reflex. rs10427255 lies near ZEB2 on chromosome 2. Studies in both European-ancestry and Chinese groups link the C allele to a higher chance of the reflex.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10427255,
@@ -177,7 +177,7 @@
     "category": "environmental-sensitivity",
     "title": "Cold sensitivity · TRPM8",
     "summary": "TRPM8 is the body's main cold receptor. The regulatory variant rs10166942 sits just upstream of the gene and tracks with TRPM8 expression, with reported effects on cold pain thresholds and a modest association with migraine. Its frequency follows a striking latitude gradient, from about 5% in Nigeria to 88% in Finland.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10166942,
@@ -205,7 +205,7 @@
     "category": "environmental-sensitivity",
     "title": "Motion sickness susceptibility",
     "summary": "About one in three people is very prone to motion sickness. The trait has a strong inherited component. A study of car sickness in more than 80,000 people found dozens of variants with small effects. Several sit near genes involved in inner-ear and balance development. This report shows two of them.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 66800491,
@@ -271,7 +271,7 @@
     "category": "environmental-sensitivity",
     "title": "Vitamin D from sunlight · GC",
     "summary": "Sunlight on skin provides most vitamin D. Blood levels also depend on the vitamin D binding protein made by GC. rs2282679 is the strongest common genetic signal for blood 25-hydroxyvitamin D. It explains only a small part of the difference between people.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2282679,
@@ -297,7 +297,7 @@
     "category": "environmental-sensitivity",
     "title": "Allergic sensitisation · IL13",
     "summary": "Interleukin-13 helps drive allergic inflammation and IgE production. rs20541 changes amino acid 130 from arginine to glutamine. Large studies have linked the A allele to higher blood IgE and to self-reported allergy. It has also been studied in eczema and asthma-related traits.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 20541,

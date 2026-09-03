@@ -11,20 +11,19 @@ import {
   getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import {
+  CLINICAL_CONFIRMATION_RE,
+  GATED_LEGACY_CATEGORIES,
+} from "@/lib/genome/taxonomy";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Report" };
 
-const SENSITIVE_CATEGORIES = new Set([
-  "cancer-risk",
-  "neurodegenerative",
-  "mental-health",
-]);
-
-const CLINICAL_CONFIRMATION_RE =
-  /confirm\w*\s+(?:by|with)\s+(?:a\s+)?clinical|clinical(?:[-\s](?:laboratory|quality))?\s+confirmation|confirmation\s+is\s+sensible|deserves\s+confirmation/i;
+// The gated set (legacy sensitive categories + the clinical-confirmation
+// content rule) has one definition, in @/lib/genome/taxonomy.
+const SENSITIVE_CATEGORIES = GATED_LEGACY_CATEGORIES;
 
 export default async function ReportDetailPage(
   props: PageProps<"/genome/[subject]/reports/[slug]">,
@@ -241,7 +240,7 @@ export default async function ReportDetailPage(
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="display text-3xl">{template.title}</h1>
           <Badge variant="secondary">
-            {EVIDENCE_LABELS[template.evidence]}
+            {EVIDENCE_LABELS[template.evidence] ?? template.evidence}
           </Badge>
         </div>
         <p className="mt-3 text-ink-muted">{template.summary}</p>

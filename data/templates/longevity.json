@@ -4,7 +4,7 @@
     "category": "longevity",
     "title": "Exceptional longevity · FOXO3",
     "summary": "FOXO3 is one of the two most consistently replicated human longevity genes. The G allele at rs2802292 is enriched among centenarians across Japanese, German, and other cohorts; GG homozygotes had roughly 1.5-2.7x the odds of reaching very old age in the original studies. The effect is on probability of long survival, not a guarantee for any individual.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2802292,
@@ -31,7 +31,7 @@
     "category": "longevity",
     "title": "Longevity · APOE (e2/e3/e4)",
     "summary": "APOE is the strongest common DNA factor linked to human lifespan so far. The two sites below combine to define the e2, e3, and e4 forms. The e4 form, marked by C at rs429358, appears less often in people who reach 100. The e2 form, marked by T at rs7412, appears a little more often. Many e4 carriers still live very long lives. These are shifts in odds, not fate.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 429358,
@@ -149,7 +149,7 @@
     "category": "longevity",
     "title": "Telomere length · TERT",
     "summary": "Telomeres protect the ends of chromosomes and grow shorter with age. Their average length is partly inherited. TERT makes the main working part of telomerase, which can extend telomeres. At rs2736100, the C copy is linked to slightly longer telomeres on average. Each copy shifts length by only a fraction of a standard deviation.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2736100,
@@ -175,7 +175,7 @@
     "category": "longevity",
     "title": "Telomere length · TERC region",
     "summary": "The TERC gene encodes the RNA template that telomerase uses to extend telomeres. rs10936599, near TERC, is one of the strongest common-variant influences on mean telomere length: the C allele is associated with longer average telomeres and the T allele with shorter. Effects are small relative to person-to-person variation.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 10936599,

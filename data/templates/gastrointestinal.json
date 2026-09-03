@@ -4,7 +4,7 @@
     "category": "gastrointestinal",
     "title": "Lactose tolerance · LCT/MCM6",
     "summary": "rs4988235 sits near the lactase gene, inside MCM6. It is often called -13910C>T. In people with European ancestry, this is the main DNA change linked to making lactase as adults. One A copy, equal to T in papers, usually keeps the enzyme active, so most dairy is tolerated. A linked change, rs182549 or -22018, often travels with it and supports the same result.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4988235,
@@ -43,7 +43,7 @@
     "category": "gastrointestinal",
     "title": "Alcohol flush reaction · ALDH2",
     "summary": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The rs671 change, also called Glu504Lys or ALDH2*2, makes this enzyme much less active. The A copy is common in East Asian groups and rare elsewhere. It is linked to flushing, nausea, and a fast heartbeat after alcohol. Heavy drinking despite flushing is linked to much higher odds of esophageal cancer.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 671,
@@ -69,7 +69,7 @@
     "category": "gastrointestinal",
     "title": "Alcohol metabolism speed · ADH1B",
     "summary": "ADH1B turns alcohol into acetaldehyde in the liver. The rs1229984 change is also called His48Arg. The T copy marks His48, or ADH1B*2. It is common in East Asia and less common elsewhere. In lab tests, this enzyme works about 40 times faster. The brief rise in acetaldehyde can make drinking less pleasant. Studies link T to less alcohol use and lower odds of alcohol use disorder.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1229984,
@@ -95,7 +95,7 @@
     "category": "gastrointestinal",
     "title": "Iron overload (C282Y) · HFE",
     "summary": "HFE rs1800562, or C282Y, is the main DNA change behind inherited hemochromatosis. This recessive trait causes too much iron to be taken in from food. Over decades, excess iron can harm the liver, joints, and other organs. About 1 in 200 people with northern European ancestry have two copies. Most never develop disease. In a large study, iron-related disease affected about 28% of men and 1% of women with two copies. This reports inherited risk, not current health.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1800562,
@@ -122,7 +122,7 @@
     "category": "gastrointestinal",
     "title": "Iron overload (H63D) · HFE",
     "summary": "HFE rs1799945, or H63D, is the milder of two common changes linked to hemochromatosis. Alone, it rarely causes harmful iron overload, even with two copies. It matters most when C282Y is also present, but most people with both changes stay well. About one quarter of people with European ancestry carry at least one G copy, called Asp63.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 1799945,
@@ -149,7 +149,7 @@
     "category": "gastrointestinal",
     "title": "Bilirubin processing · UGT1A1",
     "summary": "UGT1A1 helps the body prepare bilirubin for removal. The T copy at rs887829 tracks lower enzyme activity. It almost always travels with the UGT1A1*28 repeat behind Gilbert syndrome. Two T copies are linked to a mild rise in unconjugated bilirubin. About 10% of Europeans have this harmless trait. Fasting, illness, or stress may cause slight yellowing of the eyes or a flagged bilirubin blood result.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 887829,
@@ -176,7 +176,7 @@
     "category": "gastrointestinal",
     "title": "Bitter taste perception · TAS2R38",
     "summary": "rs713598 in TAS2R38 is also called Ala49Pro. It is the main DNA change in the classic taster or non-taster difference for PTC and PROP bitter compounds. These include chemicals in broccoli, kale, Brussels sprouts, and other cruciferous vegetables. The G copy, or Pro49, is part of the taster PAV type. It is linked to stronger bitterness. Some studies find a small effect on vegetable choice and intake.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 713598,
@@ -202,7 +202,7 @@
     "category": "gastrointestinal",
     "title": "Celiac disease HLA background · HLA-DQA1",
     "summary": "Celiac disease, an immune reaction to gluten, occurs almost exclusively in people carrying the HLA-DQ2.5 or DQ8 molecules. rs2187668 is a well-validated tag for the DQ2.5 haplotype (HLA-DQA1*05:01–DQB1*02:01), which is present in around 90% of people with celiac disease. The genetics are far more useful for ruling out than ruling in: about a quarter of Europeans carry DQ2.5, yet only a few percent of carriers ever develop celiac disease.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 2187668,
@@ -228,7 +228,7 @@
     "category": "gastrointestinal",
     "title": "Norovirus resistance (secretor status) · FUT2",
     "summary": "FUT2 rs601338 (Trp143Ter) determines secretor status: whether ABO-type sugar antigens are displayed on the gut lining, where common norovirus strains use them to attach. Two copies of the stop allele (A) make a person a non-secretor — about 20% of Europeans — which in challenge and outbreak studies is associated with strong resistance to Norwalk (GI.1) virus and to many globally dominant GII.4 stomach-bug strains. Non-secretors can still catch other norovirus genotypes.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 601338,
@@ -254,7 +254,7 @@
     "category": "gastrointestinal",
     "title": "Liver fat tendency · PNPLA3",
     "summary": "PNPLA3 rs738409, or Ile148Met, is the strongest repeated common DNA link to non-alcoholic fatty liver. Each G/Met148 copy is linked to more liver fat. In the first study, people with GG had about twice as much as people with CC. G is also linked to higher odds of liver inflammation from metabolic or alcohol-related disease. Extra weight and alcohol make the link much stronger. It is small in lean people who drink little.",
-    "evidence": "established",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 738409,

@@ -4,7 +4,7 @@
     "category": "brain-health",
     "title": "Memory & brain plasticity · BDNF",
     "summary": "BDNF, or brain-derived neurotrophic factor, helps brain cells grow and adapt. The Val66Met change, rs6265, affects how well BDNF is released where brain cells meet. People with a Met copy, shown as T on the forward strand, score slightly lower on memory tests on average. Brain scans also show small changes in the hippocampus. The effect is small, and most Met carriers have normal memory.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 6265,
@@ -30,7 +30,7 @@
     "category": "brain-health",
     "title": "Episodic memory · KIBRA",
     "summary": "KIBRA, made by the WWC1 gene, helps brain cells adapt in the hippocampus. In a genome-wide study of memory, people with a T copy at rs17070145 recalled more words after a delay on average than people without T. Several groups found the same link. This DNA change explains only a small part of the differences in memory between people.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 17070145,
@@ -56,7 +56,7 @@
     "category": "brain-health",
     "title": "Executive function & stress · COMT",
     "summary": "COMT clears dopamine from the front of the brain. The Val158Met change, rs4680, alters how fast the enzyme works. The Met form, shown as A, works several times more slowly and leaves more dopamine available. Met carriers score a little better on some planning and memory tasks on average. Val carriers may do a little better during sudden stress. The common 'worrier or warrior' label is too simple.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 4680,
@@ -160,7 +160,7 @@
     "category": "brain-health",
     "title": "Caffeine, anxiety & sleep · ADORA2A",
     "summary": "Caffeine keeps people alert by blocking adenosine A2A receptors. The ADORA2A gene provides the instructions for these receptors. Studies repeatedly link the T copy at rs5751876 to more anxiety after caffeine. People with TT were more likely to report anxiety after a moderate dose. On average, they also reported more sleep problems after caffeine.",
-    "evidence": "moderate",
+    "evidence": "emerging",
     "variants": [
       {
         "rsid": 5751876,

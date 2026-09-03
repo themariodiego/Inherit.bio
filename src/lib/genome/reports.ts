@@ -4,6 +4,8 @@
 // 'no-call', and a genotype that matches neither the template alleles nor
 // their strand complement is 'unrecognized' — never silently reinterpreted.
 
+import type { EstimateKind, EvidenceLevel, FindingLayer } from "./taxonomy";
+
 export interface TemplateVariant {
   rsid: number;
   gene: string;
@@ -25,10 +27,14 @@ export interface ReportTemplate {
   category: string;
   title: string;
   summary: string;
-  evidence: "established" | "moderate" | "preliminary";
+  evidence: EvidenceLevel;
   variants: TemplateVariant[];
   pgs_id: string | null;
   citations: Citation[];
+  /** Finding layer; present when the row was selected with it. */
+  layer?: FindingLayer;
+  /** Estimate kind for layer = 'estimate'; null for variant_call. */
+  estimate_kind?: EstimateKind | null;
 }
 
 export type VariantOutcome =
