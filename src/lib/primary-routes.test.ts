@@ -36,7 +36,9 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "genome.data",
   "genome.browser",
   "family.index",
+  "family.invite",
   "family.person",
+  "family.permissions",
   "family.portrait",
   "embryos.index",
   "embryos.upload",
@@ -51,6 +53,8 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "settings.consents",
   "marketing.providers",
   "science.index",
+  "legal.future-person",
+  "legal.where-inherit-works",
 ];
 
 describe("primary routes", () => {

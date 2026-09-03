@@ -3,6 +3,12 @@ import { EmailLayout, brand } from "./base";
 
 export interface AdultSubjectInvitationProps {
   invitationUrl: string;
+  /**
+   * The optional note the inviter wrote. It renders as words, never as a
+   * link and never inside the invitation button, so nothing the inviter
+   * types can become a destination in this mail.
+   */
+  note?: string;
 }
 
 const button = {
@@ -13,7 +19,7 @@ const button = {
   textDecoration: "none",
 };
 
-export function AdultSubjectInvitationEmail({ invitationUrl }: AdultSubjectInvitationProps) {
+export function AdultSubjectInvitationEmail({ invitationUrl, note }: AdultSubjectInvitationProps) {
   return (
     <EmailLayout heading="You were invited to Inherit">
       <Text style={{ fontSize: "14px", lineHeight: "1.6", color: brand.inkMuted }}>
@@ -25,6 +31,11 @@ export function AdultSubjectInvitationEmail({ invitationUrl }: AdultSubjectInvit
         You can accept through your own account, refuse, or delete the reserved
         record. The link expires after 30 days.
       </Text>
+      {note ? (
+        <Text style={{ fontSize: "14px", lineHeight: "1.6", color: brand.ink }}>
+          They wrote: {note}
+        </Text>
+      ) : null}
       <Button href={invitationUrl} style={button}>Review the invitation</Button>
     </EmailLayout>
   );

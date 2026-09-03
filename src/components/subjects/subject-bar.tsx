@@ -56,7 +56,14 @@ export function subjectKind(
 ): KindChip | null {
   switch (subject.subjectClass) {
     case "self":
-      return "self";
+      // A `self` record that is not the viewer's own belongs to another
+      // adult who shares it: the Family graph resolves an invitee to the
+      // inviter's own self subject, and "You" would name the wrong person.
+      return viewerAccountId &&
+        subject.subjectAccountId &&
+        subject.subjectAccountId !== viewerAccountId
+        ? "adult_shared"
+        : "self";
     case "embryo":
       return "embryo";
     case "minor":
@@ -71,8 +78,13 @@ export function subjectKind(
 
 export interface SubjectBarProps {
   subject: SubjectBarSubject;
-  /** Every file in this subject record, whatever its status (what /files lists). */
-  fileCount: number;
+  /**
+   * Every file in this subject record, whatever its status (what /files
+   * lists). `null` renders nothing: on a Family record the count is a fact
+   * about another adult's files, so it is withheld until a report layer is
+   * live (design §2.2).
+   */
+  fileCount: number | null;
   /** The signed-in account; decides whether an adult record is the viewer's own. */
   viewerAccountId?: string | null;
   className?: string;
@@ -117,13 +129,15 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
           {KIND_CHIPS[kind]}
         </span>
       ) : null}
-      <Link
-        href={route("files.index")}
-        data-slot="subject-files"
-        className="shrink-0 text-ink-muted underline-offset-2 hover:underline"
-      >
-        {fileCount(files)}
-      </Link>
+      {files === null ? null : (
+        <Link
+          href={route("files.index")}
+          data-slot="subject-files"
+          className="shrink-0 text-ink-muted underline-offset-2 hover:underline"
+        >
+          {fileCount(files)}
+        </Link>
+      )}
       {canAddFile ? (
         <Button asChild variant="outline" size="sm" className="ml-auto shrink-0">
           <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>

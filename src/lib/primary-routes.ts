@@ -29,7 +29,9 @@ const ROUTE_PATTERNS = {
   "genome.data": "/genome/[subject]/data",
   "genome.browser": "/genome/[subject]/data/browser",
   "family.index": "/family",
+  "family.invite": "/family/invite",
   "family.person": "/family/[person]",
+  "family.permissions": "/family/[person]/permissions",
   "family.portrait": "/family/portrait/[pairId]",
   "embryos.index": "/embryos",
   "embryos.upload": "/embryos/upload",
@@ -44,6 +46,8 @@ const ROUTE_PATTERNS = {
   "settings.consents": "/settings/consents",
   "marketing.providers": "/providers",
   "science.index": "/science",
+  "legal.future-person": "/legal/future-person",
+  "legal.where-inherit-works": "/legal/where-inherit-works",
 } as const;
 
 export type RouteId = keyof typeof ROUTE_PATTERNS;

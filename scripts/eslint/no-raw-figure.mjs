@@ -25,16 +25,17 @@
  */
 
 /**
- * The result surfaces this rule is meant to cover.
- * TODO(W3): eslint.config.mjs currently applies the rule only to
- * src/components/figures/** and src/components/results/**, because the pages
- * under these globs still render raw "12%"-style strings. W3 rewrites those
- * pages through the figure contract and widens the `files` entry to this list.
+ * The result surfaces this rule covers. eslint.config.mjs applies it to every
+ * glob here plus src/components/figures/**; nothing is exempt.
  */
 export const RESULT_SURFACE_GLOBS = [
   "src/app/(app)/genome/**/*.tsx",
   "src/app/(app)/family/**/*.tsx",
+  // The Family domain landing lives in its own route group, because one path
+  // serves a public page and a signed-in hub (W9 §1.2).
+  "src/app/(family-hub)/**/*.tsx",
   "src/app/(app)/embryos/**/*.tsx",
+  "src/components/family/**/*.tsx",
   "src/components/reports/**/*.tsx",
   "src/components/results/**/*.tsx",
 ];

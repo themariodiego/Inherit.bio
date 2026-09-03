@@ -47,6 +47,13 @@ describe("subjectKind", () => {
     expect(subjectKind(accepted)).toBe("adult_shared");
   });
 
+  it("reads another account's self record as shared with the viewer", () => {
+    // The Family graph resolves an invitee to the inviter's own self
+    // subject; "You" would then name the wrong person.
+    expect(subjectKind(subject(), OTHER)).toBe("adult_shared");
+    expect(subjectKind(subject(), OWNER)).toBe("self");
+  });
+
   it("renders no chip for a minor record (D11)", () => {
     expect(subjectKind(subject({ subjectClass: "minor", subjectAccountId: null }))).toBeNull();
   });
@@ -76,6 +83,17 @@ describe("SubjectBar", () => {
     expect(html).toMatch(/data-slot="subject-kind"[^>]*>Embryo</);
     expect(html).toContain(">3 files<");
     expect(html).not.toContain("/files/upload");
+  });
+
+  it("renders no file count when the count is withheld", () => {
+    const html = renderToStaticMarkup(
+      h(SubjectBar, {
+        subject: subject({ subjectClass: "other_adult", subjectAccountId: OTHER, routeSegment: "s-y" }),
+        fileCount: null,
+      }),
+    );
+    expect(html).not.toContain('data-slot="subject-files"');
+    expect(html).toMatch(/data-slot="subject-kind"[^>]*>Shared with you</);
   });
 
   it("uses a hashed colour token for other subjects", () => {

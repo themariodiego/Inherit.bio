@@ -13,8 +13,9 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { AncestryRegions, type AncestryResultView } from "@/components/results/ancestry/ancestry-regions";
 import { LineageCard, type LineageCall } from "@/components/results/ancestry/lineage-card";
 import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
@@ -30,22 +31,20 @@ import { tierQualifies } from "@/lib/ancestry/regions";
 import { regionsView } from "@/lib/ancestry/view";
 import { POPS, type Pop } from "@/lib/genome/admixture";
 import { getSubjectFileCount } from "@/lib/genome/load";
+import { viewerMaySee } from "@/lib/family/access";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
-import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
-const DOMAIN_LABEL = NAV_LABELS["my-genome"];
-
-const loadSubject = cache(async (segment: string) => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  return subject ? { user, subject } : null;
-});
+/**
+ * One resolver for both domains (design §2.2): this account's own records,
+ * and another adult's record reached through the Family graph, whose rows
+ * are read from their own subject and only while their `ancestry` grant is
+ * live.
+ */
+const loadSubject = cache(async (segment: string) =>
+  resolveSubjectRoute(segment, { anyOf: ["ancestry"] }),
+);
 
 export async function generateMetadata(
   props: PageProps<"/genome/[subject]/ancestry">,
@@ -53,7 +52,8 @@ export async function generateMetadata(
   const { subject: segment } = await props.params;
   const context = await loadSubject(segment);
   return {
-    title: context ? `${context.subject.displayLabel} · ${SECTION_LABEL}` : SECTION_LABEL,
+    title:
+      context.kind === "ok" ? `${context.displayLabel} · ${SECTION_LABEL}` : SECTION_LABEL,
   };
 }
 
@@ -97,17 +97,32 @@ export default async function AncestryPage(
 ) {
   const { subject: segment } = await props.params;
   const context = await loadSubject(segment);
-  if (!context) notFound();
-  const { user, subject } = context;
+  if (context.kind === "not-found") notFound();
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={SECTION_LABEL}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, person, domain } = context;
+  // Ancestry about another adult needs their own live grant for it; without
+  // one the record answers like an unknown one.
+  if (person && !viewerMaySee(person, "ancestry")) notFound();
 
   const admin = createAdminClient();
   const [fileCount, { data: results }] = await Promise.all([
     // The subject bar counts every file in the record, whatever its status.
-    getSubjectFileCount(admin, subject.id),
+    getSubjectFileCount(admin, dataSubjectId),
     admin
       .from("ancestry_results")
       .select("kind, result, support_note")
-      .eq("subject_id", subject.id)
+      .eq("subject_id", dataSubjectId)
       .order("created_at", { ascending: false }),
   ]);
 
@@ -117,14 +132,18 @@ export default async function AncestryPage(
   const regions = admix ? admixtureView(admix.result, admix.support_note) : null;
 
   const subjectParams = { subject: subject.routeSegment };
-  const hubHref = route("genome.subject", subjectParams);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
-          { label: DOMAIN_LABEL, href: hubHref },
-          { label: subject.displayLabel },
+          { label: domain.label, href: domain.href },
+          {
+            label: subject.displayLabel,
+            href: person
+              ? route("family.person", { person: subject.routeSegment })
+              : undefined,
+          },
           { label: SECTION_LABEL },
         ]}
       />
@@ -136,7 +155,7 @@ export default async function AncestryPage(
           {REGIONS_HEADING}
         </h2>
         <AncestryRegions
-          subjectId={subject.id}
+          subjectId={dataSubjectId}
           shapes={mapShapes()}
           panel={{ markers: PANEL.markers, version: PANEL.version }}
           minMarkers={MIN_MARKERS}
@@ -147,14 +166,14 @@ export default async function AncestryPage(
       <div className="grid gap-6 lg:grid-cols-2">
         <LineageCard
           parent="mother"
-          subjectId={subject.id}
+          subjectId={dataSubjectId}
           call={mt ? lineageCall(mt.result) : null}
           supportNote={mt?.support_note ?? null}
           defineTerm
         />
         <LineageCard
           parent="father"
-          subjectId={subject.id}
+          subjectId={dataSubjectId}
           call={y ? lineageCall(y.result) : null}
           supportNote={y?.support_note ?? null}
           defineTerm={false}

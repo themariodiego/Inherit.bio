@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache, type ReactNode } from "react";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
@@ -65,10 +66,10 @@ import {
   type CategoryId,
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
+import { LAYER_PURPOSES, viewerMaySee } from "@/lib/family/access";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
-import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
 const VCF_TYPES = new Set<string>(["vcf", "gvcf"]);
 const VISIBLE_CITATIONS = 3;
@@ -105,14 +106,17 @@ function chromosomeName(chrom: number): string {
   return chrom === 23 ? "X" : chrom === 24 ? "Y" : chrom === 25 ? "MT" : String(chrom);
 }
 
+/**
+ * One renderer, two domains (design §2.2): the account's own records and,
+ * through the Family graph, another adult's shared record. A family segment
+ * reads its genotypes from that person's own subject, is answered only after
+ * the Tier-2 gate, and only for the layer they granted.
+ */
 const loadReport = cache(async (segment: string, slug: string) => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  if (!subject) return null;
+  const context = await resolveSubjectRoute(segment, {
+    anyOf: ["reports.monogenic", "reports.polygenic"],
+  });
+  if (context.kind !== "ok") return context;
   const admin = createAdminClient();
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
@@ -125,11 +129,11 @@ const loadReport = cache(async (segment: string, slug: string) => {
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle(),
-    getSubjectProcessedFiles(admin, subject.id),
-    getSubjectFileCount(admin, subject.id),
+    getSubjectProcessedFiles(admin, context.dataSubjectId),
+    getSubjectFileCount(admin, context.dataSubjectId),
   ]);
-  if (!raw) return null;
-  return { user, subject, files, fileCount, template: raw as unknown as ReportTemplate };
+  if (!raw) return { kind: "not-found" } as const;
+  return { ...context, files, fileCount, template: raw as unknown as ReportTemplate };
 });
 
 export async function generateMetadata(
@@ -138,9 +142,10 @@ export async function generateMetadata(
   const { slug, subject: segment } = await props.params;
   const context = await loadReport(segment, slug);
   return {
-    title: context
-      ? `${context.subject.displayLabel} · ${reportNameOf(context.template.title)}`
-      : "Report",
+    title:
+      context.kind === "ok"
+        ? `${context.displayLabel} · ${reportNameOf(context.template.title)}`
+        : "Report",
   };
 }
 
@@ -283,11 +288,28 @@ export default async function ReportDetailPage(
     typeof searchParams.reveal === "string" ? searchParams.reveal : undefined;
 
   const context = await loadReport(subjectSegment, slug);
-  if (!context) notFound();
-  const { user, subject, files, fileCount, template } = context;
+  if (context.kind === "not-found") notFound();
+  // The Family domain has one gate, on the person page; a report reached
+  // before it is sent there and fetches nothing derived.
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={REPORTS_TITLE}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, person, domain, files, fileCount, template } = context;
 
   const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";
+  // A layer this person has not shared is not readable through a direct URL
+  // either; the answer is the one an unknown record gets.
+  if (person && !viewerMaySee(person, LAYER_PURPOSES[layer])) notFound();
   const figureClass: FigureClass = layer === "variant_call" ? "variant-call" : "estimate";
   const categoryId = safeCategoryFor(template);
   const evidenceLabel = EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence;
@@ -306,7 +328,6 @@ export default async function ReportDetailPage(
   const showSupport = (sensitive || carrierStyle) && hasData;
   const showResults = !gated || revealParam === "1";
   const subjectParams = { subject: subject.routeSegment };
-  const hubHref = route("genome.subject", subjectParams);
   const reportsHref = route("genome.reports", subjectParams);
   const revealHref = route(
     "genome.report",
@@ -335,7 +356,7 @@ export default async function ReportDetailPage(
     const { genotypes, conflicts } = hasData
       ? await getSubjectGenotypesByRsid(
           createAdminClient(),
-          subject.id,
+          dataSubjectId,
           template.variants.map((variant) => variant.rsid),
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>() };
@@ -360,7 +381,7 @@ export default async function ReportDetailPage(
             variant={variant}
             outcome={outcome}
             conflict={conflicts.has(variant.rsid)}
-            subjectId={subject.id}
+            subjectId={dataSubjectId}
             figureClass={figureClass}
             layer={layer}
             notCovered={notCovered}
@@ -409,8 +430,13 @@ export default async function ReportDetailPage(
     >
       <Breadcrumbs
         items={[
-          { label: NAV_LABELS["my-genome"], href: hubHref },
-          { label: subject.displayLabel },
+          { label: domain.label, href: domain.href },
+          {
+            label: subject.displayLabel,
+            href: person
+              ? route("family.person", { person: subject.routeSegment })
+              : undefined,
+          },
           { label: REPORTS_TITLE, href: reportsHref },
           { label: reportName },
         ]}
@@ -446,7 +472,9 @@ export default async function ReportDetailPage(
             <span className="text-ink-muted">{evidenceDefinition}</span>
           </li>
           <li>
-            <span data-chip="subject" data-subject-id={subject.id} className={CHIP}>
+            {/* X4: the chip names the subject the computation used, which is
+                the counterpart's own record on a Family route. */}
+            <span data-chip="subject" data-subject-id={dataSubjectId} className={CHIP}>
               {subject.displayLabel}
             </span>
           </li>

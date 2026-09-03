@@ -8,6 +8,9 @@ import {
 } from "./helpers";
 
 const INVITER = { email: "adult-inviter@e2e.local", password: "invite-test-pw" };
+/** Brief §5 §5.2: both invitation paths render this above the form, verbatim. */
+const PRE_CONSENT_STATEMENT =
+  "Comparing two people’s DNA can show that they are related, or not related, in ways neither expected. Inherit cannot un-see this.";
 const RECIPIENT = { email: "adult-recipient@e2e.local", password: "invite-test-pw" };
 
 interface CapturedEmail {
@@ -52,6 +55,14 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await signIn(page, INVITER.email, INVITER.password);
   await page.goto("/family/invite");
   await expect(page.getByRole("heading", { name: "Invite another adult" })).toBeVisible();
+  // The pre-consent statement is in the DOM above the form, verbatim, and
+  // inside no disclosure: it is read before anything is entered.
+  const statement = page.locator('[data-slot="pre-consent-statement"]');
+  await expect(statement).toHaveText(PRE_CONSENT_STATEMENT);
+  await expect(page.locator("details", { hasText: PRE_CONSENT_STATEMENT })).toHaveCount(0);
+  const statementBox = await statement.boundingBox();
+  const formBox = await page.locator("form").boundingBox();
+  expect(statementBox!.y).toBeLessThan(formBox!.y);
   await page.getByLabel("Their email address").fill(RECIPIENT.email);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();

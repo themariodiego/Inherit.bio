@@ -36,6 +36,7 @@ import {
   type DomainId,
   type EntryBoxCopy,
 } from "@/copy/overview";
+import { listFamilyPeople, type FamilyPerson } from "@/lib/family/graph";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
 import { getSubjectGenotypesByRsid, templateRsids } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
@@ -124,9 +125,14 @@ export default async function OverviewPage() {
   if (!user) redirect("/auth/sign-in");
 
   const admin = createAdminClient();
-  const [self, subjects, { data: fileRows }] = await Promise.all([
+  const [self, subjects, family, { data: fileRows }] = await Promise.all([
     resolveSubjectForAccount(user.id, "me"),
     listSubjectsForAccount(user.id),
+    // State D counts the people the Family graph resolves, not the records
+    // this account holds: an accepted invitation leaves the invited record
+    // bound to the invitee, so `listSubjectsForAccount` never returns it for
+    // the inviter (design §1.3, §1.4).
+    listFamilyPeople(user.id),
     // The user's own session (RLS) lists the files, as today's page does.
     supabase
       .from("genome_files")
@@ -139,12 +145,13 @@ export default async function OverviewPage() {
   );
   const annotated = selfFiles.filter((file) => file.status === "annotated");
   const inFlight = selfFiles.find((file) => STEP_FOR_STATUS[file.status] != null);
-  // An adult record whose subject account is the viewer is the viewer's own
-  // genome (an accepted invitation binds the record to the invitee), never
-  // another adult.
-  const otherAdults = subjects.filter(
-    (s) => s.subjectClass === "other_adult" && s.subjectAccountId !== user.id,
-  );
+  // The people the viewer shares a Family relationship with, from either
+  // side, each shown under the name the graph resolved rather than the label
+  // of the record that names them.
+  const familyRows = family.map((person: FamilyPerson) => ({
+    ...person.handle,
+    displayLabel: person.displayLabel,
+  }));
   const embryoSubjects = subjects.filter((s) => s.subjectClass === "embryo");
 
   // E, then B, then D/C, then A: a second upload in flight is never hidden
@@ -155,7 +162,7 @@ export default async function OverviewPage() {
       : inFlight
         ? "B"
         : annotated.length > 0
-          ? otherAdults.length > 0
+          ? familyRows.length > 0
             ? "D"
             : "C"
           : "A";
@@ -246,7 +253,7 @@ export default async function OverviewPage() {
     };
   }
 
-  const firstAdultSegment = otherAdults[0]?.routeSegment ?? null;
+  const firstAdultSegment = family[0]?.handle.routeSegment ?? null;
   const boxesFor = (domain: DomainId): EntryBox[] =>
     ENTRY_BOXES.filter((box) => box.domain === domain).map((box) => ({
       id: boxDomId(box.id),
@@ -339,8 +346,8 @@ export default async function OverviewPage() {
               </p>
             )
           ) : section.id === "family" ? (
-            otherAdults.length > 0 ? (
-              <PeopleList people={otherAdults} viewerAccountId={user.id} />
+            familyRows.length > 0 ? (
+              <PeopleList people={familyRows} viewerAccountId={user.id} />
             ) : hasReports ? (
               <p className="text-base leading-relaxed text-ink">{STATE_C.justYou}</p>
             ) : (

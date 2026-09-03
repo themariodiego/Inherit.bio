@@ -15,6 +15,15 @@ export type SubjectSummary = {
   ownerAccountId: string | null;
   /** The account the subject themself holds, when they have one. */
   subjectAccountId: string | null;
+  /**
+   * The subject whose genotype rows this record's results are read from.
+   * It is the record's own id for every subject an account holds directly.
+   * It differs only for a Family handle: an accepted adult invitation leaves
+   * a record bound to the invitee, while their file lives on their own
+   * `self` subject, so the Family graph sets this to that subject
+   * (src/lib/family/graph.ts, design §1.3).
+   */
+  dataSubjectId: string;
 };
 
 function asSubjectClass(value: string): SubjectSummary["subjectClass"] {
@@ -64,6 +73,7 @@ export async function resolveSubjectForAccount(
     routeSegment: data.subject_class === "self" ? "me" : `s-${data.id}`,
     ownerAccountId: data.owner_account_id,
     subjectAccountId: data.subject_account_id,
+    dataSubjectId: data.id,
   };
 }
 
@@ -89,5 +99,6 @@ export async function listSubjectsForAccount(
     routeSegment: subject.subject_class === "self" ? "me" : `s-${subject.id}`,
     ownerAccountId: subject.owner_account_id,
     subjectAccountId: subject.subject_account_id,
+    dataSubjectId: subject.id,
   }));
 }

@@ -15,8 +15,20 @@ const tester = new RuleTester({
 });
 
 describe("no-raw-figure globs", () => {
-  it("lists every intended result surface", () => {
-    if (RESULT_SURFACE_GLOBS.length !== 5) throw new Error("expected five result-surface globs");
+  it("lists every intended result surface, in order", () => {
+    const expected = [
+      "src/app/(app)/genome/**/*.tsx",
+      "src/app/(app)/family/**/*.tsx",
+      "src/app/(family-hub)/**/*.tsx",
+      "src/app/(app)/embryos/**/*.tsx",
+      "src/components/family/**/*.tsx",
+      "src/components/reports/**/*.tsx",
+      "src/components/results/**/*.tsx",
+    ];
+    const actual = [...RESULT_SURFACE_GLOBS];
+    if (actual.length !== expected.length || actual.some((glob, index) => glob !== expected[index])) {
+      throw new Error(`result-surface globs drifted: ${actual.join(", ")}`);
+    }
   });
 });
 

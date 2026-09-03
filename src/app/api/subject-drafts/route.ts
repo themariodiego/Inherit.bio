@@ -10,6 +10,16 @@ const requestSchema = z.object({
   email: z.email().max(320),
   adultAttestation: z.literal(true),
   requestId: z.uuid(),
+  // The optional note the invited person reads in the invitation mail
+  // (brief §5 §5.2). Plain text only: no control characters, so the mail
+  // template can render it as words and never as a link.
+  note: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .regex(/^[^\u0000-\u0008\u000b-\u001f\u007f]+$/)
+    .optional(),
 }).strict();
 
 function normalizedEmail(value: string): string {
@@ -45,18 +55,30 @@ export async function POST(request: Request) {
     ]),
     "mail-idempotency-v1",
   );
-  const { error } = await createAdminClient().rpc(
-    "create_adult_subject_invitation_v1",
-    {
-      p_account_id: user.id,
-      p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
-      p_contact_hmac: contactHmac,
-      p_idempotency_key: idempotencyKey,
-      p_test_jurisdiction: true,
-    },
-  );
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("create_adult_subject_invitation_v1", {
+    p_account_id: user.id,
+    p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
+    p_contact_hmac: contactHmac,
+    p_idempotency_key: idempotencyKey,
+    p_test_jurisdiction: true,
+  });
   if (error) {
     return NextResponse.json({ error: "invitation_unavailable" }, { status: 503 });
+  }
+
+  // The note travels in the queued mail's payload, never in the opaque
+  // invitation token and never in a link. The invitation itself is already
+  // recorded, so a payload that cannot be updated leaves the invitation
+  // standing without the note rather than failing the request.
+  const invitationId = data?.[0]?.invitation_id;
+  if (parsed.data.note && invitationId) {
+    await admin
+      .from("mail_outbox")
+      .update({ template_payload: { note: parsed.data.note } })
+      .eq("target_id", invitationId)
+      .eq("template_id", "adult-subject-invitation")
+      .eq("state", "queued");
   }
 
   return NextResponse.json({ accepted: true }, { status: 202 });

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { Count, type CountClass } from "@/components/reports/count";
 import { isFixtureSlug } from "@/components/reports/library";
 import {
@@ -40,10 +41,10 @@ import {
   type CategoryId,
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
+import { grantedLayers } from "@/lib/family/access";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
-import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 const LAYER_CLASS: Record<FindingLayer, CountClass> = {
@@ -60,15 +61,15 @@ function safeCategoryFor(template: ReportTemplate): CategoryId | null {
   }
 }
 
-const loadSubject = cache(async (segment: string) => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  return subject ? { user, subject } : null;
-});
+/**
+ * One resolver for both domains (design §2.2): the account's own records, and
+ * another adult's shared record reached through the Family graph. A family
+ * segment reads its rows from that person's own subject, renders only the
+ * layers they granted, and answers nothing at all before the Tier-2 gate.
+ */
+const loadSubject = cache(async (segment: string) =>
+  resolveSubjectRoute(segment, { anyOf: ["reports.monogenic", "reports.polygenic"] }),
+);
 
 export async function generateMetadata(
   props: PageProps<"/genome/[subject]/reports">,
@@ -76,7 +77,7 @@ export async function generateMetadata(
   const { subject: segment } = await props.params;
   const context = await loadSubject(segment);
   return {
-    title: context ? `${context.subject.displayLabel} · ${REPORTS_TITLE}` : REPORTS_TITLE,
+    title: context.kind === "ok" ? `${context.displayLabel} · ${REPORTS_TITLE}` : REPORTS_TITLE,
   };
 }
 
@@ -88,22 +89,40 @@ export default async function ReportsPage(
     props.searchParams,
   ]);
   const context = await loadSubject(subjectSegment);
-  if (!context) notFound();
-  const { user, subject } = context;
+  if (context.kind === "not-found") notFound();
+  // The one Tier-2 gate of the Family domain lives on the person page; a
+  // report list reached before it is sent there and fetches nothing.
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={REPORTS_TITLE}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, person, domain } = context;
+  // A layer another adult has not shared is not listed at all; with no layer
+  // granted the record answers like an unknown one.
+  const allowedLayers = person ? grantedLayers(person) : LAYERS;
+  if (allowedLayers.length === 0) notFound();
 
   const admin = createAdminClient();
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
   const [files, fileCount, allTemplates] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
-    getSubjectFileCount(admin, subject.id),
+    getSubjectProcessedFiles(admin, dataSubjectId),
+    getSubjectFileCount(admin, dataSubjectId),
     getPublishedTemplates(admin),
   ]);
   // Test fixtures never reach the user-facing library.
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
   const { genotypes } = await getSubjectGenotypesByRsid(
     admin,
-    subject.id,
+    dataSubjectId,
     templateRsids(templates),
   );
   const resolved = templates.map((t) =>
@@ -112,7 +131,6 @@ export default async function ReportsPage(
 
   const hasData = files.length > 0;
   const subjectParams = { subject: subject.routeSegment };
-  const hubHref = route("genome.subject", subjectParams);
 
   // One group per layer; a layer with zero templates is absent, not empty.
   const byLayer = new Map<FindingLayer, typeof resolved>(
@@ -121,13 +139,19 @@ export default async function ReportsPage(
   for (const report of resolved) {
     byLayer.get(report.template.layer ?? "estimate")!.push(report);
   }
-  const nonEmptyLayers = LAYERS.filter((layer) => byLayer.get(layer)!.length > 0);
+  const nonEmptyLayers = LAYERS.filter(
+    (layer) => allowedLayers.includes(layer) && byLayer.get(layer)!.length > 0,
+  );
   const requestedLayer =
     typeof searchParams.layer === "string" ? searchParams.layer : undefined;
   const activeLayer: FindingLayer | undefined =
     nonEmptyLayers.find((layer) => layer === requestedLayer) ?? nonEmptyLayers[0];
 
-  const estimateCount = byLayer.get("estimate")!.length;
+  // The "cannot give you a number" line counts only a layer this reader may
+  // actually open.
+  const estimateCount = allowedLayers.includes("estimate")
+    ? byLayer.get("estimate")!.length
+    : 0;
 
   let groups: LibraryGroup[] = [];
   if (activeLayer) {
@@ -160,8 +184,13 @@ export default async function ReportsPage(
     <div className="mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
-          { label: NAV_LABELS["my-genome"], href: hubHref },
-          { label: subject.displayLabel },
+          { label: domain.label, href: domain.href },
+          {
+            label: subject.displayLabel,
+            href: person
+              ? route("family.person", { person: subject.routeSegment })
+              : undefined,
+          },
           { label: REPORTS_TITLE },
         ]}
       />
