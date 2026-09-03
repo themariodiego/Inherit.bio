@@ -5,7 +5,7 @@ import { DomainSection } from "@/components/overview/domain-section";
 import type { EntryBox } from "@/components/overview/entry-box";
 import { formatDuration } from "@/components/overview/format";
 import { MetricLine } from "@/components/overview/metric-line";
-import { PeopleList, type PersonRow } from "@/components/overview/people-list";
+import { PeopleList } from "@/components/overview/people-list";
 import {
   ProcessingPanel,
   type ProcessingTiming,
@@ -15,6 +15,7 @@ import {
   isStarterCandidate,
   selectStarterReports,
 } from "@/components/overview/starter";
+import { countText } from "@/components/reports/count";
 import { isFixtureSlug } from "@/components/reports/library";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,17 +26,17 @@ import {
   NOT_DIAGNOSTIC,
   OVERVIEW_H1,
   PRIMARY,
-  SPLIT,
   SPLIT_NOTE,
+  SPLIT_NOTE_VARIANT_CALL,
+  VARIANT_CALL_DEFINITION,
   STARTER,
   STATE_A_LEDE,
   STATE_C,
   STATE_E,
-  VARIANT_CALL_NOTE,
   type DomainId,
   type EntryBoxCopy,
 } from "@/copy/overview";
-import { AIMS } from "@/lib/genome/admixture";
+import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
 import { getSubjectGenotypesByRsid, templateRsids } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
@@ -62,7 +63,10 @@ interface FileRow {
   created_at: string;
 }
 
-/** Statuses between "finalised" and "annotated"; the newest one is State B. */
+/**
+ * Statuses between "finalised" and "annotated": a file in any of these is in
+ * flight, and the newest one puts the page in State B.
+ */
 const STEP_FOR_STATUS: Partial<Record<FileStatus, number>> = {
   uploading: 0,
   uploaded: 0,
@@ -73,13 +77,8 @@ const STEP_FOR_STATUS: Partial<Record<FileStatus, number>> = {
 /** Below this many measured files the timing sentence would be a guess. */
 const MIN_TIMING_SAMPLE = 20;
 
-/** Same thresholds as the ancestry page: reliability, then "a region". */
-const PANEL_SIZE = AIMS.length;
-const RELIABLE_FRACTION = 0.25;
-const REGION_MIN_PROPORTION = 0.02;
-
-interface AdmixtureResult {
-  proportions?: Record<string, number>;
+/** The stored admixture JSON; only the marker count is read here. */
+interface StoredAdmixture {
   markersUsed?: number;
 }
 
@@ -137,18 +136,25 @@ export default async function OverviewPage() {
   );
   const annotated = selfFiles.filter((file) => file.status === "annotated");
   const inFlight = selfFiles.find((file) => STEP_FOR_STATUS[file.status] != null);
-  const otherAdults = subjects.filter((s) => s.subjectClass === "other_adult");
+  // An adult record whose subject account is the viewer is the viewer's own
+  // genome (an accepted invitation binds the record to the invitee), never
+  // another adult.
+  const otherAdults = subjects.filter(
+    (s) => s.subjectClass === "other_adult" && s.subjectAccountId !== user.id,
+  );
   const embryoSubjects = subjects.filter((s) => s.subjectClass === "embryo");
 
+  // E, then B, then D/C, then A: a second upload in flight is never hidden
+  // behind the processed file's State C.
   const state: OverviewState =
     embryoSubjects.length > 0
       ? "E"
-      : annotated.length > 0
-        ? otherAdults.length > 0
-          ? "D"
-          : "C"
-        : inFlight
-          ? "B"
+      : inFlight
+        ? "B"
+        : annotated.length > 0
+          ? otherAdults.length > 0
+            ? "D"
+            : "C"
           : "A";
   const hasReports = annotated.length > 0;
 
@@ -174,8 +180,9 @@ export default async function OverviewPage() {
   let estimateCount = 0;
   let variantCallCount = 0;
   let starter: ReportTemplate[] = [];
-  let ancestryLine: { value: string; note: string } | { text: string } | null =
-    null;
+  // The one ancestry line (D26): rendered only when an admixture result
+  // exists with too few usable markers; otherwise no ancestry line at all.
+  let ancestryTooFew = false;
   if (hasReports && self) {
     const { data: templateRows } = await admin
       .from("report_templates")
@@ -209,45 +216,12 @@ export default async function OverviewPage() {
       .limit(1)
       .maybeSingle();
     if (admixRow) {
-      const admix = admixRow.result as unknown as AdmixtureResult;
-      const markersUsed = admix.markersUsed ?? 0;
-      if (markersUsed / PANEL_SIZE >= RELIABLE_FRACTION) {
-        const regions = Object.values(admix.proportions ?? {}).filter(
-          (share) => share >= REGION_MIN_PROPORTION,
-        ).length;
-        ancestryLine = {
-          value: STATE_C.ancestryFound(regions),
-          note: STATE_C.ancestryNote,
-        };
-      } else {
-        ancestryLine = { text: STATE_C.ancestryTooFew };
-      }
+      const admix = admixRow.result as unknown as StoredAdmixture;
+      ancestryTooFew = (admix.markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION;
     }
   }
 
-  // ---- State D people and State E counts ---------------------------------
-  let people: PersonRow[] = [];
-  if (otherAdults.length > 0) {
-    const { data: rows } = await admin
-      .from("subjects")
-      .select("id, subject_account_id")
-      .in(
-        "id",
-        otherAdults.map((s) => s.id),
-      );
-    const ownAccount = new Map(
-      (rows ?? []).map((row) => [row.id, row.subject_account_id]),
-    );
-    people = otherAdults.map((s) => {
-      const holder = ownAccount.get(s.id);
-      return {
-        id: s.id,
-        name: s.displayLabel,
-        kind: holder && holder !== user.id ? "shared" : "uploaded",
-      };
-    });
-  }
-
+  // ---- State E counts -----------------------------------------------------
   let embryoCounts: { files: number; passed: number; notMeasured: number } | null =
     null;
   let cohortId: string | null = null;
@@ -324,7 +298,7 @@ export default async function OverviewPage() {
                 {estimateCount > 0 ? (
                   <>
                     <MetricLine
-                      value={SPLIT.estimates(estimateCount)}
+                      value={countText(estimateCount, "estimate")}
                       note={SPLIT_NOTE}
                     />
                     <p className="text-sm leading-relaxed text-ink-muted">
@@ -333,16 +307,19 @@ export default async function OverviewPage() {
                   </>
                 ) : null}
                 {variantCallCount > 0 ? (
-                  <MetricLine
-                    value={SPLIT.variantCalls(variantCallCount)}
-                    note={VARIANT_CALL_NOTE}
-                  />
+                  <>
+                    <MetricLine
+                      value={countText(variantCallCount, "variant-call")}
+                      note={SPLIT_NOTE_VARIANT_CALL}
+                    />
+                    <p className="text-sm leading-relaxed text-ink-muted">
+                      {VARIANT_CALL_DEFINITION}
+                    </p>
+                  </>
                 ) : null}
-                {ancestryLine && "value" in ancestryLine ? (
-                  <MetricLine value={ancestryLine.value} note={ancestryLine.note} />
-                ) : ancestryLine ? (
+                {ancestryTooFew ? (
                   <p className="text-base leading-relaxed text-ink">
-                    {ancestryLine.text}
+                    {STATE_C.ancestryTooFew}
                   </p>
                 ) : null}
                 {state === "C" || state === "D" ? (
@@ -357,8 +334,8 @@ export default async function OverviewPage() {
               </p>
             )
           ) : section.id === "family" ? (
-            people.length > 0 ? (
-              <PeopleList people={people} />
+            otherAdults.length > 0 ? (
+              <PeopleList people={otherAdults} viewerAccountId={user.id} />
             ) : hasReports ? (
               <p className="text-base leading-relaxed text-ink">{STATE_C.justYou}</p>
             ) : (

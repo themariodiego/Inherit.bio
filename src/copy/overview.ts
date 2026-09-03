@@ -5,10 +5,12 @@
  * typographic apostrophes (U+2019), sentence case, second person, grade ≤ 9.
  *
  * Counts are pluralised with Intl.PluralRules("en") and carry an explicit
- * singular form ("1 embryo file added"), never "1 files".
+ * singular form ("1 embryo file added"), never "1 files". The split report
+ * counts ("151 statistical estimates", "1 specific-variant report") are not
+ * defined here: their one home is countText in src/components/reports/count.tsx.
  */
 import { NAV_LABELS } from "./navigation";
-import { LAYER_DEFINITIONS, NOT_DIAGNOSTIC } from "./reports/strings";
+import { ADD_A_FILE, LAYER_DEFINITIONS, NOT_DIAGNOSTIC } from "./reports/strings";
 
 const plural = new Intl.PluralRules("en");
 
@@ -201,16 +203,19 @@ export const ENTRY_BOXES: readonly EntryBoxCopy[] = [
   },
 ];
 
-/** Primary-button labels, one per state. */
+/**
+ * Primary-button labels, one per state. Each label that also names something
+ * elsewhere is read from that one home rather than restated.
+ */
 export const PRIMARY = {
   /** State A — the first Start-here item. */
   haveFile: START_HERE.items[0].label,
-  /** State B. */
-  addFile: "Add a file",
+  /** State B — the same words as the subject bar's secondary action. */
+  addFile: ADD_A_FILE,
   /** States C and D. */
   openReports: "Open my reports",
-  /** State E. */
-  compareEmbryos: "Compare your embryos",
+  /** State E — the label of the Compare box. */
+  compareEmbryos: ENTRY_BOXES.find((box) => box.id === "embryos.compare")!.label,
 } as const;
 
 export const STATE_B = {
@@ -232,19 +237,19 @@ export const STATE_C = {
   justYou: "Just you so far.",
   noEmbryoFiles: "No embryo files added.",
   openReports: PRIMARY.openReports,
-  ancestryFound: (k: number) =>
-    one(k) ? "Ancestry: 1 region found" : `Ancestry: ${k} regions found`,
-  ancestryNote: "Places where DNA like yours is common.",
+  /**
+   * The only ancestry line Overview renders, and only when an admixture
+   * result exists with too few usable markers (D26). "{k} regions found" is
+   * not shipped: no region count exists that could make it true.
+   */
   ancestryTooFew:
     "Ancestry: your file covers too few markers to estimate regions.",
 } as const;
 
+/** The kind chip beside a person's name is KIND_CHIPS (reports/strings), as on the subject bar. */
 export const STATE_D = {
   more: (n: number) => `+${n} more`,
   peopleNote: "People in your family view.",
-  /** Kind chip next to a person's name. */
-  sharedWithYou: "Shared with you",
-  uploadedWithPermission: "Uploaded with their permission",
 } as const;
 
 export const STATE_E = {
@@ -270,20 +275,23 @@ export const STARTER = {
   // true. Add it with the view-tracking change, never before.
 } as const;
 
-/** The split-string halves (brief §4 §1.4): never summed, never merged. */
-export const SPLIT = {
-  estimates: (p: number) =>
-    one(p) ? "1 statistical estimate" : `${p} statistical estimates`,
-  variantCalls: (m: number) =>
-    one(m) ? "1 specific-variant report" : `${m} specific-variant reports`,
-} as const;
-
+/** The note beside the estimate half of the split string (brief §4 §1.4). */
 export const SPLIT_NOTE = "Statistical estimates from many small effects.";
 
-/** The X5.1 definition sentence, from its one home in src/copy/reports/strings.ts. */
-export const ESTIMATE_DEFINITION = LAYER_DEFINITIONS.estimate;
+/**
+ * The variant-call half's 1–12-word note (X9.1 caps every metric note at
+ * twelve words; the mandated definition is 18 and renders adjacent, exactly
+ * as the estimate half does). Shortened from the definition, not invented.
+ */
+export const SPLIT_NOTE_VARIANT_CALL = "Results read from one spot in your DNA.";
 
-export const VARIANT_CALL_NOTE = "One DNA position, read directly from your file.";
+export const VARIANT_CALL_DEFINITION = LAYER_DEFINITIONS.variant_call;
+
+/**
+ * The X5.1 definition sentence, from its one home in src/copy/reports/strings.ts.
+ * The variant-call half reads LAYER_DEFINITIONS.variant_call from the same home.
+ */
+export const ESTIMATE_DEFINITION = LAYER_DEFINITIONS.estimate;
 
 /** The one §5 §6.1 line, re-exported from its home so Overview and the reports share a single string. */
 export { NOT_DIAGNOSTIC };

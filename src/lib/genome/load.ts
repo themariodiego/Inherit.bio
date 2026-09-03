@@ -26,6 +26,15 @@ export async function getSubjectProcessedFiles(supabase: Db, subjectId: string) 
   return data ?? [];
 }
 
+/** Every file in the record, whatever its status: the count /files shows. */
+export async function getSubjectFileCount(supabase: Db, subjectId: string): Promise<number> {
+  const { count } = await supabase
+    .from("genome_files")
+    .select("id", { count: "exact", head: true })
+    .eq("subject_id", subjectId);
+  return count ?? 0;
+}
+
 export async function getProcessedFileById(supabase: Db, fileId: string) {
   const { data } = await supabase
     .from("genome_files")

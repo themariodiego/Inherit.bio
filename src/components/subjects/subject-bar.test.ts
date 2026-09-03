@@ -38,6 +38,18 @@ describe("subjectKind", () => {
       subjectKind(subject({ subjectClass: "other_adult", subjectAccountId: OWNER })),
     ).toBe("adult_uploaded");
   });
+
+  it("treats an adult record bound to the viewer's own account as the viewer's genome", () => {
+    // An accepted invitation clears the owner and binds the record to the invitee.
+    const accepted = subject({ subjectClass: "other_adult", ownerAccountId: null, subjectAccountId: OTHER });
+    expect(subjectKind(accepted, OTHER)).toBe("self");
+    expect(subjectKind(accepted, OWNER)).toBe("adult_shared");
+    expect(subjectKind(accepted)).toBe("adult_shared");
+  });
+
+  it("renders no chip for a minor record (D11)", () => {
+    expect(subjectKind(subject({ subjectClass: "minor", subjectAccountId: null }))).toBeNull();
+  });
 });
 
 describe("SubjectBar", () => {
@@ -76,5 +88,19 @@ describe("SubjectBar", () => {
     expect(html).toMatch(/bg-subject-[0-7]/);
     expect(html).toMatch(/data-slot="subject-kind"[^>]*>Shared with you</);
     expect(html).toContain(">0 files<");
+    // Uploads bind to the caller's self record, so no other bar offers the action.
+    expect(html).not.toContain("/files/upload");
+  });
+
+  it("renders no kind chip and no upload action on a minor bar", () => {
+    const html = renderToStaticMarkup(
+      h(SubjectBar, {
+        subject: subject({ subjectClass: "minor", subjectAccountId: null, routeSegment: "s-z" }),
+        fileCount: 0,
+      }),
+    );
+    expect(html).not.toContain('data-slot="subject-kind"');
+    expect(html).not.toContain("/files/upload");
+    expect(html).toMatch(/data-slot="subject-name"[^>]*>Maya</);
   });
 });

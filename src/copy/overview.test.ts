@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { countText } from "@/components/reports/count";
 import {
   DOMAIN_SECTIONS,
   ENTRY_BOXES,
+  ESTIMATE_DEFINITION,
   EXAMPLE_ROUTES_AVAILABLE,
   NOT_DIAGNOSTIC,
   OVERVIEW_H1,
-  SPLIT,
+  PRIMARY,
   SPLIT_NOTE,
   START_HERE,
   STARTER,
@@ -17,6 +19,7 @@ import {
   startHereItems,
 } from "./overview";
 import { NAV_ITEMS, NAV_LABELS } from "./navigation";
+import { ADD_A_FILE, KIND_CHIPS, LAYER_DEFINITIONS } from "./reports/strings";
 
 function words(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
@@ -100,13 +103,12 @@ describe("overview copy", () => {
     expect(STATE_E.filesAdded(4)).toBe("4 embryo files added");
     expect(STATE_E.passed(0)).toBe("0 passed the quality check");
     expect(STATE_E.notMeasured(2)).toBe("2 could not be measured");
-    expect(STATE_C.ancestryFound(1)).toBe("Ancestry: 1 region found");
-    expect(STATE_C.ancestryFound(3)).toBe("Ancestry: 3 regions found");
     expect(STATE_D.more(2)).toBe("+2 more");
-    expect(SPLIT.estimates(151)).toBe("151 statistical estimates");
-    expect(SPLIT.estimates(1)).toBe("1 statistical estimate");
-    expect(SPLIT.variantCalls(1)).toBe("1 specific-variant report");
-    expect(SPLIT.variantCalls(12)).toBe("12 specific-variant reports");
+    // The split halves come from their one home, src/components/reports/count.tsx.
+    expect(countText(151, "estimate")).toBe("151 statistical estimates");
+    expect(countText(1, "estimate")).toBe("1 statistical estimate");
+    expect(countText(1, "variant-call")).toBe("1 specific-variant report");
+    expect(countText(12, "variant-call")).toBe("12 specific-variant reports");
     expect(STARTER.some(1)).toBe(
       "1 report to read first. It’s the clearest one your file supports.",
     );
@@ -135,10 +137,32 @@ describe("overview copy", () => {
     ]);
     expect(STATE_C.justYou).toBe("Just you so far.");
     expect(STATE_C.noEmbryoFiles).toBe("No embryo files added.");
+    expect(STATE_C.ancestryTooFew).toBe(
+      "Ancestry: your file covers too few markers to estimate regions.",
+    );
+    expect(STATE_C).not.toHaveProperty("ancestryFound");
+    expect(SPLIT_NOTE).toBe("Statistical estimates from many small effects.");
     expect(words(SPLIT_NOTE)).toBeLessThanOrEqual(12);
+    expect(ESTIMATE_DEFINITION).toBe(LAYER_DEFINITIONS.estimate);
     expect(NOT_DIAGNOSTIC).toBe(
       "This is not a diagnosis. Inherit is not a doctor and no clinician has reviewed this. Talk to a qualified professional before acting on anything here.",
     );
+  });
+
+  it("reads every shared label from its one home", () => {
+    expect(PRIMARY.haveFile).toBe("I have a DNA file");
+    expect(PRIMARY.addFile).toBe("Add a file");
+    expect(PRIMARY.addFile).toBe(ADD_A_FILE);
+    expect(PRIMARY.openReports).toBe("Open my reports");
+    expect(PRIMARY.compareEmbryos).toBe("Compare your embryos");
+    expect(PRIMARY.compareEmbryos).toBe(
+      ENTRY_BOXES.find((box) => box.id === "embryos.compare")?.label,
+    );
+    expect(STATE_E.compareEmbryos).toBe(PRIMARY.compareEmbryos);
+    // The people list's kind chips are the subject bar's, not a second copy.
+    expect(STATE_D).not.toHaveProperty("sharedWithYou");
+    expect(KIND_CHIPS.adult_shared).toBe("Shared with you");
+    expect(KIND_CHIPS.adult_uploaded).toBe("Uploaded with their permission");
   });
 
   it("uses typographic apostrophes and no placeholder tokens anywhere", () => {
@@ -160,5 +184,18 @@ describe("overview copy", () => {
       expect(text, text).not.toMatch(/'/);
       expect(text, text).not.toMatch(/\bN\/A\b|\bTBD\b|Coming soon|—$/);
     }
+  });
+});
+
+describe("split-count notes", () => {
+  it("keeps both metric notes within twelve words and the definitions adjacent from their home", async () => {
+    const { SPLIT_NOTE, SPLIT_NOTE_VARIANT_CALL, ESTIMATE_DEFINITION, VARIANT_CALL_DEFINITION } = await import("./overview");
+    const { LAYER_DEFINITIONS } = await import("./reports/strings");
+    for (const note of [SPLIT_NOTE, SPLIT_NOTE_VARIANT_CALL]) {
+      expect(note.split(/\s+/).length).toBeLessThanOrEqual(12);
+      expect(note.split(/\s+/).length).toBeGreaterThanOrEqual(1);
+    }
+    expect(ESTIMATE_DEFINITION).toBe(LAYER_DEFINITIONS.estimate);
+    expect(VARIANT_CALL_DEFINITION).toBe(LAYER_DEFINITIONS.variant_call);
   });
 });

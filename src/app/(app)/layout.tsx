@@ -26,10 +26,7 @@ export default async function AppLayout({
           variant="sidebar"
           leading={<Wordmark className="px-2 text-xl" />}
         />
-        <div className="space-y-4 px-2">
-          <p className="text-xs text-ink-muted">
-            Informational, not medical advice.
-          </p>
+        <div className="px-2">
           <Attribution />
         </div>
       </aside>
