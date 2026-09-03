@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { Button } from "@/components/ui/button";
 import { PRIMARY, STATE_B } from "@/copy/overview";
+import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 
 // State B (brief §2 §3.3): a determinate step list for the newest file in
@@ -66,7 +67,7 @@ export function ProcessingPanel({
         {timing ? STATE_B.timing(timing.p50, timing.p95) : STATE_B.notEnough}
       </p>
       <Button asChild size="lg" className="mt-5 min-h-11">
-        <Link href="/files/upload">{PRIMARY.addFile}</Link>
+        <Link href={route("files.upload")}>{PRIMARY.addFile}</Link>
       </Button>
     </section>
   );

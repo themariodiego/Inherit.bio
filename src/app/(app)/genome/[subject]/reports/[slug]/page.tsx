@@ -65,6 +65,7 @@ import {
   type CategoryId,
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -304,9 +305,19 @@ export default async function ReportDetailPage(
   const gated = sensitive && hasData;
   const showSupport = (sensitive || carrierStyle) && hasData;
   const showResults = !gated || revealParam === "1";
-  const hubHref = `/genome/${subject.routeSegment}`;
-  const reportsHref = `${hubHref}/reports`;
-  const revealHref = `${reportsHref}/${encodeURIComponent(template.slug)}?reveal=1`;
+  const subjectParams = { subject: subject.routeSegment };
+  const hubHref = route("genome.subject", subjectParams);
+  const reportsHref = route("genome.reports", subjectParams);
+  const revealHref = route(
+    "genome.report",
+    { ...subjectParams, slug: template.slug },
+    { query: { reveal: "1" } },
+  );
+  // "Not now" returns to the library at this report's category section; a
+  // template with an unmapped legacy category returns to that category's id.
+  const returnHref = route("genome.reports", subjectParams, {
+    hash: categoryId ?? template.category,
+  });
 
   // Array files and VCF files fail to cover a position for different
   // reasons. A VCF usually lists only the positions where the subject
@@ -368,8 +379,7 @@ export default async function ReportDetailPage(
         category={template.category}
         categoryLabel={CATEGORY_LABELS[template.category] ?? template.category}
         revealHref={revealHref}
-        returnHref={reportsHref}
-        returnAnchor={categoryId ?? undefined}
+        returnHref={returnHref}
       />
     );
   }
@@ -427,7 +437,7 @@ export default async function ReportDetailPage(
           </li>
           <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <Link
-              href="/science#evidence"
+              href={route("science.index", { hash: "evidence" })}
               data-chip="evidence"
               className={`${CHIP} underline-offset-2 hover:underline`}
             >
@@ -524,11 +534,15 @@ export default async function ReportDetailPage(
       {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
 
       <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Link href={`${hubHref}/data`} className="underline underline-offset-2">
+        <Link href={route("genome.data", subjectParams)} className="underline underline-offset-2">
           {DATA_AND_METHODS}
         </Link>
         <Link
-          href={`/copilot/${subject.routeSegment}?report=${encodeURIComponent(template.slug)}`}
+          href={route(
+            "copilot.scope",
+            { scope: subject.routeSegment },
+            { query: { report: template.slug } },
+          )}
           className="underline underline-offset-2"
         >
           {ASK_ABOUT_THIS}

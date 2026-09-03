@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { getSubjectFileCount } from "@/lib/genome/load";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -43,12 +44,13 @@ export default async function GenomePage(
   const { user, subject } = context;
   // The subject bar counts every file in the record, whatever its status.
   const fileCount = await getSubjectFileCount(createAdminClient(), subject.id);
-  const base = `/genome/${subject.routeSegment}`;
+  const subjectParams = { subject: subject.routeSegment };
+  const base = route("genome.subject", subjectParams);
 
   const tiles = [
-    { href: `${base}/reports`, title: "Reports", copy: "Each report says what your file shows and what it cannot tell you." },
-    { href: `${base}/ancestry`, title: "Ancestry", copy: "What your file supports about broad regions and parent lines." },
-    { href: `/copilot/${subject.routeSegment}`, title: "Copilot", copy: "Ask questions about your own reports in plain language." },
+    { href: route("genome.reports", subjectParams), title: "Reports", copy: "Each report says what your file shows and what it cannot tell you." },
+    { href: route("genome.ancestry", subjectParams), title: "Ancestry", copy: "What your file supports about broad regions and parent lines." },
+    { href: route("copilot.scope", { scope: subject.routeSegment }), title: "Copilot", copy: "Ask questions about your own reports in plain language." },
   ];
 
   return (
@@ -68,7 +70,7 @@ export default async function GenomePage(
         ))}
       </section>
       <Button asChild>
-        <Link href={`/files/upload?subject=${encodeURIComponent(subject.routeSegment)}`}>{ADD_A_FILE}</Link>
+        <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
       </Button>
       <p className="max-w-prose text-sm text-ink-muted">{NOT_DIAGNOSTIC}</p>
     </div>

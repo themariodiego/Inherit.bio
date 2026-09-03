@@ -9,6 +9,7 @@
  * counts ("151 statistical estimates", "1 specific-variant report") are not
  * defined here: their one home is countText in src/components/reports/count.tsx.
  */
+import { route } from "@/lib/primary-routes";
 import { NAV_LABELS } from "./navigation";
 import { ADD_A_FILE, LAYER_DEFINITIONS, NOT_DIAGNOSTIC } from "./reports/strings";
 
@@ -56,19 +57,22 @@ export const START_HERE: { heading: string; items: readonly StartHereItem[] } = 
       label: "I have a DNA file",
       description:
         "A 23andMe, AncestryDNA, MyHeritage or FamilyTreeDNA download, or a VCF from a lab.",
-      href: "/files/upload",
+      href: route("files.upload"),
     },
     {
       id: "no-file",
       label: "I don’t have one yet",
       description:
         "Find a sequencing provider. You buy from them directly; Inherit takes no cut.",
-      href: "/providers",
+      href: route("marketing.providers"),
     },
     {
       id: "example",
       label: "Show me what this looks like first",
       description: "Read a complete example report. No account data needed.",
+      // The example route has no id in docs/route-register.json yet, so it
+      // cannot come from src/lib/primary-routes.ts; the literal stays until
+      // the route is registered, and EXAMPLE_ROUTES_AVAILABLE gates it off.
       href: "/example/report",
     },
   ],
@@ -143,21 +147,21 @@ export const ENTRY_BOXES: readonly EntryBoxCopy[] = [
     domain: "my-genome",
     label: "Reports",
     description: "What your own file can show, one report at a time.",
-    href: "/genome/me/reports",
+    href: route("genome.reports", { subject: "me" }),
   },
   {
     id: "my-genome.ancestry",
     domain: "my-genome",
     label: "Ancestry",
     description: "Broad world regions where DNA like yours is common.",
-    href: "/genome/me/ancestry",
+    href: route("genome.ancestry", { subject: "me" }),
   },
   {
     id: "my-genome.copilot",
     domain: "my-genome",
     label: "Copilot",
     description: "Ask questions in plain words, answered from your own data.",
-    href: "/copilot/me",
+    href: route("copilot.scope", { scope: "me" }),
   },
   {
     id: "family.individual-risks",
@@ -185,14 +189,14 @@ export const ENTRY_BOXES: readonly EntryBoxCopy[] = [
     domain: "embryos",
     label: "Upload",
     description: "Add the files an IVF laboratory returned to you.",
-    href: "/embryos/upload",
+    href: route("embryos.upload"),
   },
   {
     id: "embryos.compare",
     domain: "embryos",
     label: "Compare your embryos",
     description: "Look at each file side by side, without ranking.",
-    href: "/embryos/compare",
+    href: route("embryos.compare"),
   },
   {
     id: "embryos.copilot",

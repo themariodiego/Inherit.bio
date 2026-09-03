@@ -6,6 +6,7 @@
  */
 import type { CategoryId } from "@/lib/genome/taxonomy";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
+import { route } from "@/lib/primary-routes";
 
 // ---------------------------------------------------------------------------
 // Not-covered, no-call and disagreement states (§2 §4.5; split per X7.2).
@@ -89,12 +90,13 @@ export function cannotNumberSentence(k: number): string {
   return `${k} of these reports cannot give you a number yet.`;
 }
 
-/** "{k} of these reports cannot give you a number yet. Why?" — the "Why?" links to /science#polygenic. */
+/** "{k} of these reports cannot give you a number yet. Why?" — the "Why?" links to CANNOT_NUMBER_HREF. */
 export function cannotNumberLine(k: number): string {
   return `${cannotNumberSentence(k)} ${CANNOT_NUMBER_WHY}`;
 }
 
-export const CANNOT_NUMBER_HREF = "/science#polygenic";
+/** The science page's polygenic section, built from its route id. */
+export const CANNOT_NUMBER_HREF = route("science.index", { hash: "polygenic" });
 
 export function coverageSentence(x: number, y: number): string {
   return `Your file covered ${x} of the ${y} positions this estimate uses.`;

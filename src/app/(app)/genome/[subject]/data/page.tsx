@@ -7,6 +7,7 @@ import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
 import type { CoverageSpec } from "@/lib/figures/spec";
 import { getSubjectFileCount, getSubjectProcessedFiles } from "@/lib/genome/load";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +23,8 @@ export default async function GenomeDataPage(
   if (!user) notFound();
   const subject = await resolveSubjectForAccount(user.id, segment);
   if (!subject) notFound();
-  const base = `/genome/${subject.routeSegment}`;
+  const subjectParams = { subject: subject.routeSegment };
+  const base = route("genome.subject", subjectParams);
 
   const admin = createAdminClient();
   // The coverage facts read the processed files; the subject bar counts
@@ -76,10 +78,10 @@ export default async function GenomeDataPage(
       </header>
       <div className="grid gap-4 sm:grid-cols-2">
         <Button asChild variant="outline" className="h-auto min-h-20">
-          <Link href={`${base}/data/browser`}>Browse observed variants</Link>
+          <Link href={route("genome.browser", subjectParams)}>Browse observed variants</Link>
         </Button>
         <Button asChild variant="outline" className="h-auto min-h-20">
-          <Link href="/files">Manage source files</Link>
+          <Link href={route("files.index")}>Manage source files</Link>
         </Button>
       </div>
 

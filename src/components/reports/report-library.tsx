@@ -18,6 +18,7 @@ import {
   SEARCH_REPORTS_LABEL,
   showAll,
 } from "@/copy/reports/strings";
+import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 
 export type CoverageStatus = keyof typeof COVERAGE_PILLS;
@@ -68,12 +69,12 @@ function StatusPill({ status }: { status: CoverageStatus }) {
   );
 }
 
-function CardLink({ card, baseHref }: { card: LibraryCard; baseHref: string }) {
+function CardLink({ card, subject }: { card: LibraryCard; subject: string }) {
   // The link's accessible name is title + evidence; the summary stays
   // adjacent, outside the link.
   return (
     <Link
-      href={`${baseHref}/${card.slug}`}
+      href={route("genome.report", { subject, slug: card.slug })}
       aria-label={`${card.title}, ${card.evidenceLabel}`}
       className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
     >
@@ -83,7 +84,7 @@ function CardLink({ card, baseHref }: { card: LibraryCard; baseHref: string }) {
 }
 
 /** Estimate cards: two columns (title | evidence), summary, coverage pill. */
-function EstimateCard({ card, baseHref }: { card: LibraryCard; baseHref: string }) {
+function EstimateCard({ card, subject }: { card: LibraryCard; subject: string }) {
   return (
     <li
       data-card="estimate"
@@ -91,7 +92,7 @@ function EstimateCard({ card, baseHref }: { card: LibraryCard; baseHref: string 
     >
       <div className="grid grid-cols-[1fr_auto] items-start gap-2">
         <h3 className="text-sm font-medium">
-          <CardLink card={card} baseHref={baseHref} />
+          <CardLink card={card} subject={subject} />
         </h3>
         {/* Evidence is already in the link's accessible name; the visible
             badge is hidden from AT so it announces once. */}
@@ -108,14 +109,14 @@ function EstimateCard({ card, baseHref }: { card: LibraryCard; baseHref: string 
 }
 
 /** Variant-call rows: single column on paper with a line border and a status pill. */
-function VariantCallRow({ card, baseHref }: { card: LibraryCard; baseHref: string }) {
+function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string }) {
   return (
     <li
       data-card="variant-call"
       className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-line bg-paper px-4 py-3 transition-colors focus-within:border-forest hover:border-forest"
     >
       <h3 className="text-sm font-medium">
-        <CardLink card={card} baseHref={baseHref} />
+        <CardLink card={card} subject={subject} />
       </h3>
       <Badge variant="secondary" aria-hidden="true" className="shrink-0 text-sm">
         {card.evidenceLabel}
@@ -130,11 +131,12 @@ function VariantCallRow({ card, baseHref }: { card: LibraryCard; baseHref: strin
 
 export function ReportLibrary({
   groups,
-  baseHref,
+  subject,
   layerClass,
 }: {
   groups: LibraryGroup[];
-  baseHref: string;
+  /** The subject's route segment; every card links to its genome.report route. */
+  subject: string;
   layerClass: LibraryLayerClass;
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
@@ -234,7 +236,7 @@ export function ReportLibrary({
               )}
             >
               {visibleCards.map((c) => (
-                <Card key={c.slug} card={c} baseHref={baseHref} />
+                <Card key={c.slug} card={c} subject={subject} />
               ))}
             </ul>
             {visibleCards.length < g.cards.length ? (

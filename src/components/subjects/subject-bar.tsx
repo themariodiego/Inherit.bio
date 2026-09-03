@@ -14,6 +14,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ADD_A_FILE, KIND_CHIPS, fileCount, type KindChip } from "@/copy/reports/strings";
+import { route } from "@/lib/primary-routes";
 import { subjectColourIndex, subjectInitial } from "@/lib/subject-colour";
 import type { SubjectSummary } from "@/lib/subjects";
 import { cn } from "@/lib/utils";
@@ -117,7 +118,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         </span>
       ) : null}
       <Link
-        href="/files"
+        href={route("files.index")}
         data-slot="subject-files"
         className="shrink-0 text-ink-muted underline-offset-2 hover:underline"
       >
@@ -125,7 +126,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
       </Link>
       {canAddFile ? (
         <Button asChild variant="outline" size="sm" className="ml-auto shrink-0">
-          <Link href={`/files/upload?subject=${encodeURIComponent(subject.routeSegment)}`}>
+          <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>
             {ADD_A_FILE}
           </Link>
         </Button>

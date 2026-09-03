@@ -39,6 +39,7 @@ import {
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
 import { getSubjectGenotypesByRsid, templateRsids } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -92,20 +93,22 @@ function resolveBoxHref(
   switch (box.id) {
     case "family.individual-risks":
       return targets.firstAdultSegment
-        ? `/family/${targets.firstAdultSegment}`
-        : "/family";
+        ? route("family.person", { person: targets.firstAdultSegment })
+        : route("family.index");
     case "family.portrait":
       // No eligible-pair resolution exists yet: the domain landing is the
       // blocking state.
-      return "/family";
+      return route("family.index");
     case "family.copilot":
-      return COPILOT_GROUP_SCOPES_AVAILABLE ? "/copilot/family" : "/family";
+      return COPILOT_GROUP_SCOPES_AVAILABLE
+        ? route("copilot.scope", { scope: "family" })
+        : route("family.index");
     case "embryos.copilot":
       return COPILOT_GROUP_SCOPES_AVAILABLE && targets.cohortId
-        ? `/copilot/${targets.cohortId}`
-        : "/embryos";
+        ? route("copilot.scope", { scope: targets.cohortId })
+        : route("embryos.index");
     default:
-      return "/overview";
+      return route("app.overview");
   }
 }
 
@@ -324,7 +327,9 @@ export default async function OverviewPage() {
                 ) : null}
                 {state === "C" || state === "D" ? (
                   <Button asChild size="lg" className="mt-5 min-h-11">
-                    <Link href="/genome/me/reports">{PRIMARY.openReports}</Link>
+                    <Link href={route("genome.reports", { subject: "me" })}>
+                      {PRIMARY.openReports}
+                    </Link>
                   </Button>
                 ) : null}
               </>
@@ -358,7 +363,7 @@ export default async function OverviewPage() {
                 note={STATE_E.notMeasuredNote}
               />
               <Button asChild size="lg" className="mt-5 min-h-11">
-                <Link href="/embryos/compare">{PRIMARY.compareEmbryos}</Link>
+                <Link href={route("embryos.compare")}>{PRIMARY.compareEmbryos}</Link>
               </Button>
             </>
           ) : hasReports ? (
@@ -389,7 +394,7 @@ export default async function OverviewPage() {
               {starter.map((template) => (
                 <li key={template.slug}>
                   <Link
-                    href={`/genome/me/reports/${template.slug}`}
+                    href={route("genome.report", { subject: "me", slug: template.slug })}
                     className="inline-flex min-h-11 items-center text-base text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
                   >
                     {template.title}

@@ -39,6 +39,7 @@ import {
   type CategoryId,
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
+import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -109,8 +110,8 @@ export default async function ReportsPage(
   );
 
   const hasData = files.length > 0;
-  const hubHref = `/genome/${subject.routeSegment}`;
-  const reportsHref = `${hubHref}/reports`;
+  const subjectParams = { subject: subject.routeSegment };
+  const hubHref = route("genome.subject", subjectParams);
 
   // One group per layer; a layer with zero templates is absent, not empty.
   const byLayer = new Map<FindingLayer, typeof resolved>(
@@ -212,7 +213,7 @@ export default async function ReportsPage(
           {nonEmptyLayers.map((layer) => (
             <Link
               key={layer}
-              href={`${reportsHref}?layer=${layer}`}
+              href={route("genome.reports", subjectParams, { query: { layer } })}
               aria-current={layer === activeLayer ? "page" : undefined}
               className={cn(
                 "-mb-px border-b-2 px-3 py-2 text-sm",
@@ -243,7 +244,7 @@ export default async function ReportsPage(
           </div>
           <ReportLibrary
             groups={groups}
-            baseHref={reportsHref}
+            subject={subject.routeSegment}
             layerClass={LAYER_CLASS[activeLayer]}
           />
         </section>

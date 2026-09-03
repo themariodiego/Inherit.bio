@@ -5,7 +5,11 @@
  * navigationContract.primaryHeadingContract, copySource src/copy/navigation.ts).
  *
  * Exactly five items, in this order. No sixth item without removing one.
+ * Each href is built from its route id (src/lib/primary-routes.ts), never
+ * spelled here.
  */
+import { route } from "@/lib/primary-routes";
+
 export const NAV_LABELS = {
   overview: "Overview",
   "my-genome": "My Genome",
@@ -23,11 +27,15 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { id: "overview", label: NAV_LABELS.overview, href: "/overview" },
-  { id: "my-genome", label: NAV_LABELS["my-genome"], href: "/genome/me" },
-  { id: "family", label: NAV_LABELS.family, href: "/family" },
-  { id: "embryos", label: NAV_LABELS.embryos, href: "/embryos" },
-  { id: "settings", label: NAV_LABELS.settings, href: "/settings" },
+  { id: "overview", label: NAV_LABELS.overview, href: route("app.overview") },
+  {
+    id: "my-genome",
+    label: NAV_LABELS["my-genome"],
+    href: route("genome.subject", { subject: "me" }),
+  },
+  { id: "family", label: NAV_LABELS.family, href: route("family.index") },
+  { id: "embryos", label: NAV_LABELS.embryos, href: route("embryos.index") },
+  { id: "settings", label: NAV_LABELS.settings, href: route("settings.index") },
 ];
 
 /** Accessible name of both the sidebar and the phone bottom bar. */
