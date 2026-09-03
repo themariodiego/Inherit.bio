@@ -270,6 +270,13 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
   await expect(page.locator("#cancer")).toHaveCount(1);
   await expect(page.locator("#medicines")).toHaveCount(0);
+  // X15: the empty Medicines category is stated in one place, never silent,
+  // and never as a section a link could target.
+  const medicinesAbsent = page.locator('[data-slot="category-absent"][data-category="medicines"]');
+  await expect(medicinesAbsent).toHaveCount(1);
+  await expect(medicinesAbsent).toHaveText(
+    "Inherit has no reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.",
+  );
   // Adjacent category sections keep the baseline's 96px gap at 1280.
   await expectBaselineSectionGaps(
     page,

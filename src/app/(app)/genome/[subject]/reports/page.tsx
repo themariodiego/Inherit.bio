@@ -21,6 +21,7 @@ import {
   LAYER_LABELS,
   LIBRARY_EMPTY,
   LIST_NO_FILE,
+  MEDICINES_ABSENT,
   REPORTS_TITLE,
   cannotNumberSentence,
 } from "@/copy/reports/strings";
@@ -247,6 +248,17 @@ export default async function ReportsPage(
             subject={subject.routeSegment}
             layerClass={LAYER_CLASS[activeLayer]}
           />
+          {/* X15: a category with no report is stated, never silent. Not a
+              section and not #medicines, so nothing links to an empty group. */}
+          {groups.some((group) => group.id === "medicines") ? null : (
+            <p
+              data-slot="category-absent"
+              data-category="medicines"
+              className="max-w-prose text-sm text-ink-muted"
+            >
+              {MEDICINES_ABSENT}
+            </p>
+          )}
         </section>
       ) : (
         <p className="text-sm text-ink-muted">{LIBRARY_EMPTY}</p>

@@ -182,3 +182,11 @@ export const LIST_NO_FILE = "Add a file to see which reports it covers.";
 
 /** The reports library has not been seeded. */
 export const LIBRARY_EMPTY = "The report library has not been seeded on this deployment yet.";
+
+/**
+ * The Medicines category has no report (X15: an absent category is stated,
+ * never silent). Three sentences, no promise: how a body handles a medicine
+ * depends on more than one DNA position, and Inherit reads one at a time.
+ */
+export const MEDICINES_ABSENT =
+  "Inherit has no reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.";

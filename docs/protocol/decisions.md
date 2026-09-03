@@ -354,3 +354,27 @@ work is sequenced after the ancestry surface because both change
   the names gate scans `docs/` and provenance must name its sources.
 - Antarctica's land polygons are not shipped: the projection clamps latitude
   at −56° and nothing is drawn below Cape Horn.
+
+## 2026-09-03 — Medicines category (X15): the absence is stated; the terminal status waits on a dossier
+
+- The reports list now states in one place that Inherit has no reports about
+  medicines and why, so the category is no longer silent (X15: "silence
+  about a capability is never a withholding"). The statement is a paragraph,
+  not a section, so no link can target an empty group.
+- A read-only research pass (primary sources only, every URL and access date
+  recorded in the session's research note) verified GRCh38 coordinates for
+  fifteen candidate single-position pharmacogenomic reports against three
+  sources and their guideline citations against PubMed and the guideline
+  body's own publication table. Its findings: the guideline body's curated
+  content is CC0 with attribution requested; the companion knowledge base is
+  CC BY-SA 4.0 with an unresolved research-use term; the allele-definition
+  registry's terms could not be read; only five candidates could render
+  honestly, and each as a bare genotype rather than the response to a
+  medicine the category promises; the specification puts star alleles in the
+  variant-call layer, which has no renderer; and the copilot guard the
+  specification requires for medicine questions does not exist.
+- Decision: do not populate the category with bare-position reports. The
+  terminal status is `withheld` with a dossier classified safety (primary)
+  and scientific (supporting), which requires three materially different
+  designs to be built and shown failing a named gate; that work is open and
+  the capability register keeps the row at `not shipped` until then.
