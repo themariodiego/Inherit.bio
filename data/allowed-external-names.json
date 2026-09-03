@@ -341,6 +341,34 @@
       "aliases": ["snpedia", "snpedia.com"],
       "reason": "Named only in the dataset-license exclusion record that prevents incompatible ingestion.",
       "evidence": ["docs/dataset-licenses.md"]
+    },
+    {
+      "name": "CPIC",
+      "category": "cited-organisation",
+      "aliases": ["cpic", "cpicpgx.org", "api.cpicpgx.org", "files.cpicpgx.org", "clinical pharmacogenetics implementation consortium"],
+      "reason": "Public pharmacogenetics guideline body whose CC0 content and API were read for the Medicines category research.",
+      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+    },
+    {
+      "name": "ClinPGx",
+      "category": "cited-organisation",
+      "aliases": ["clinpgx", "clinpgx.org", "www.clinpgx.org", "api.clinpgx.org", "pharmcat.clinpgx.org", "pharmcat"],
+      "reason": "Public pharmacogenomics knowledge base and reference-caller documentation cited by the Medicines category research.",
+      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+    },
+    {
+      "name": "PharmGKB",
+      "category": "cited-organisation",
+      "aliases": ["pharmgkb", "pharmgkb.org", "www.pharmgkb.org", "api.pharmgkb.org"],
+      "reason": "Public pharmacogenomics knowledge base whose licence terms were read for the Medicines category research.",
+      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+    },
+    {
+      "name": "PharmVar",
+      "category": "cited-organisation",
+      "aliases": ["pharmvar", "pharmvar.org", "www.pharmvar.org"],
+      "reason": "Public pharmacogene allele registry whose terms the Medicines category research could not read; recorded as unverified.",
+      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
     }
   ]
 }
