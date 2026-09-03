@@ -22,6 +22,9 @@ const COMPONENT_ROLES = new Map([
   ["Button", "button"],
   ["Label", "label"],
   ["TableHead", "th"],
+  // `@react-email/components` paragraph; only the mail templates under
+  // `src/emails/` render it, so its children are mail body copy.
+  ["Text", "block"],
 ]);
 const FORBIDDEN_SHORT_TERMS = new Set([
   "allele",
@@ -29,6 +32,49 @@ const FORBIDDEN_SHORT_TERMS = new Set([
   "coverage fraction",
   "liftover status",
   "percentile",
+]);
+const SHORT_ROLES = new Set(["heading", "button", "th", "label", "status"]);
+const PLACEHOLDER = "fact";
+
+/**
+ * JSX props whose string value is user-visible copy on the rendered component
+ * (beyond the four attribute names that have always been scanned). The role
+ * comes from the prop name through `inferCopyRole`; `title` keeps its original
+ * label role through the older attribute loop and is not repeated here.
+ */
+const COPY_PROP_NAMES = new Set([
+  "heading",
+  "label",
+  "description",
+  "summary",
+  "note",
+  "text",
+  "children",
+  // chart axis labels
+  "axisLabel",
+  "xLabel",
+  "yLabel",
+  "xAxisLabel",
+  "yAxisLabel",
+]);
+
+/**
+ * Role inference for copy that has no rendered element: the key or export
+ * name it lives under decides. Rules are tested nearest key first.
+ */
+const COPY_ROLE_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/heading|title|^h1$/, "heading"],
+  [/label|chip/, "label"],
+  [/button|action|cta/, "button"],
+  [/status|note|error|alert/, "status"],
+];
+
+const COPY_BINARY_OPERATORS = new Set<ts.SyntaxKind>([
+  ts.SyntaxKind.PlusToken,
+  ts.SyntaxKind.QuestionQuestionToken,
+  ts.SyntaxKind.BarBarToken,
+  ts.SyntaxKind.AmpersandAmpersandToken,
+  ts.SyntaxKind.CommaToken,
 ]);
 
 interface VocabularyFile {
@@ -51,6 +97,8 @@ export interface CopyBlock {
   sentenceCap: boolean;
 }
 
+type CopyEmitter = (node: ts.Node, text: string, hints: readonly string[]) => void;
+
 function sourceLine(source: ts.SourceFile, node: ts.Node): number {
   return source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
 }
@@ -59,19 +107,28 @@ function tagName(node: ts.JsxOpeningLikeElement): string {
   return node.tagName.getText();
 }
 
+/** A template literal with `${…}` slots, each slot replaced by the placeholder word. */
+function templatePlaceholderText(node: ts.TemplateExpression): string {
+  return (
+    node.head.text +
+    node.templateSpans.map((span) => `${PLACEHOLDER}${span.literal.text}`).join("")
+  );
+}
+
+function literalText(node: ts.Node): string | undefined {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (ts.isTemplateExpression(node)) return templatePlaceholderText(node);
+  return undefined;
+}
+
 function attributeValue(node: ts.JsxOpeningLikeElement, name: string): string | undefined {
   const attribute = node.attributes.properties.find(
     (item): item is ts.JsxAttribute => ts.isJsxAttribute(item) && item.name.getText() === name,
   );
   if (!attribute?.initializer) return undefined;
   if (ts.isStringLiteral(attribute.initializer)) return attribute.initializer.text;
-  if (
-    ts.isJsxExpression(attribute.initializer) &&
-    attribute.initializer.expression &&
-    (ts.isStringLiteral(attribute.initializer.expression) ||
-      ts.isNoSubstitutionTemplateLiteral(attribute.initializer.expression))
-  ) {
-    return attribute.initializer.expression.text;
+  if (ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression) {
+    return literalText(attribute.initializer.expression);
   }
   return undefined;
 }
@@ -90,6 +147,7 @@ function copyRole(node: ts.JsxOpeningLikeElement): string {
 function staticText(node: ts.Node, skipNestedCopyContainers = false): string {
   if (ts.isJsxText(node)) return node.text;
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (ts.isTemplateExpression(node)) return templatePlaceholderText(node);
   if (ts.isJsxExpression(node)) {
     return node.expression ? staticText(node.expression, skipNestedCopyContainers) : "";
   }
@@ -134,9 +192,213 @@ function hasSentenceCap(relativePath: string, role: string): boolean {
     relativePath.includes("/auth/") ||
     relativePath.includes("/upload") ||
     relativePath.includes("reports/[slug]") && role === "heading" ||
+    relativePath.includes("/copy/reports/") && role === "heading" ||
     role === "status" ||
     role === "alert"
   );
+}
+
+function nameSegments(name: string): string[] {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((segment) => segment.toLowerCase());
+}
+
+/** The role of copy that is not rendered by a known element, from its key or export name. */
+export function inferCopyRole(hints: readonly string[]): string {
+  for (const hint of hints) {
+    const segments = nameSegments(hint);
+    for (const [pattern, role] of COPY_ROLE_RULES) {
+      if (segments.some((segment) => pattern.test(segment))) return role;
+    }
+  }
+  return "block";
+}
+
+function isClassList(value: string): boolean {
+  const tokens = value.split(/\s+/);
+  if (tokens.length < 2) return false;
+  if (!tokens.every((token) => /^[!a-z0-9:/[\]%#().-]+$/.test(token))) return false;
+  const utilityTokens = tokens.filter((token) => /[-:[]/.test(token)).length;
+  return utilityTokens > tokens.length / 2;
+}
+
+/**
+ * Strings that are tokens rather than copy: identifiers, keys, URLs, paths,
+ * anchors, class lists, rsIDs, hashes, lone ALL-CAPS symbols, and anything
+ * under two words unless it plays a short role (headings, labels, buttons,
+ * table headers and statuses are read even when they are one word).
+ */
+export function isOpaqueCopy(text: string, role: string): boolean {
+  const value = text.trim();
+  if (!value) return true;
+  if (/^(?:https?:\/\/|mailto:|www\.)/i.test(value)) return true;
+  if (/^(?:\.{0,2}\/|#)/.test(value)) return true;
+  if (/^rs\d+$/i.test(value)) return true;
+  if (/^[a-f0-9]{32,}$/i.test(value)) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) return true;
+  if (/^[A-Z][A-Z0-9_-]*$/.test(value)) return true;
+  const bare = value.replace(/[.!?…]+$/, "");
+  if (
+    !/\s/.test(bare) &&
+    (/[_.:@/\\]/.test(bare) || /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(bare) || /^[a-z][a-z0-9]*[A-Z]/.test(bare))
+  ) {
+    return true;
+  }
+  if (isClassList(value)) return true;
+  const words = readabilityWords(value);
+  if (words.length === 0 || words.every((word) => word.toLowerCase() === PLACEHOLDER)) return true;
+  return words.length < 2 && !SHORT_ROLES.has(role);
+}
+
+function propertyName(name: ts.PropertyName, source: ts.SourceFile): string {
+  if (ts.isIdentifier(name) || ts.isPrivateIdentifier(name)) return name.text;
+  if (ts.isStringLiteral(name) || ts.isNumericLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+    return name.text;
+  }
+  return name.getText(source);
+}
+
+/**
+ * Walks an expression or statement and hands every string literal,
+ * no-substitution template literal and placeholder-filled template
+ * expression to `emit`, with the chain of keys and names it sits under
+ * (nearest first). Object keys, comparisons, element-access keys and type
+ * positions are never treated as copy.
+ */
+function collectCopyLiterals(
+  source: ts.SourceFile,
+  node: ts.Node | undefined,
+  hints: readonly string[],
+  emit: CopyEmitter,
+): void {
+  if (!node) return;
+  const recurse = (child: ts.Node | undefined, childHints: readonly string[] = hints) =>
+    collectCopyLiterals(source, child, childHints, emit);
+  const text = literalText(node);
+  if (text !== undefined) {
+    emit(node, text, hints);
+    return;
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    for (const property of node.properties) {
+      if (ts.isPropertyAssignment(property)) {
+        recurse(property.initializer, [propertyName(property.name, source), ...hints]);
+      } else if (ts.isMethodDeclaration(property)) {
+        recurse(property.body, [propertyName(property.name, source), ...hints]);
+      } else if (ts.isSpreadAssignment(property)) {
+        recurse(property.expression);
+      }
+    }
+    return;
+  }
+  if (ts.isArrayLiteralExpression(node)) {
+    node.elements.forEach((element) => recurse(element));
+    return;
+  }
+  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    recurse(node.body);
+    return;
+  }
+  if (ts.isFunctionDeclaration(node)) {
+    recurse(node.body, [node.name?.text ?? "", ...hints]);
+    return;
+  }
+  if (ts.isConditionalExpression(node)) {
+    recurse(node.whenTrue);
+    recurse(node.whenFalse);
+    return;
+  }
+  if (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isTypeAssertionExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isSpreadElement(node) ||
+    ts.isAwaitExpression(node)
+  ) {
+    recurse(node.expression);
+    return;
+  }
+  if (ts.isBinaryExpression(node)) {
+    if (COPY_BINARY_OPERATORS.has(node.operatorToken.kind)) {
+      recurse(node.left);
+      recurse(node.right);
+    }
+    return;
+  }
+  if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+    node.arguments?.forEach((argument) => recurse(argument));
+    return;
+  }
+  if (ts.isBlock(node)) {
+    node.statements.forEach((statement) => recurse(statement));
+    return;
+  }
+  if (ts.isReturnStatement(node) || ts.isExpressionStatement(node)) {
+    recurse(node.expression);
+    return;
+  }
+  if (ts.isVariableStatement(node)) {
+    for (const declaration of node.declarationList.declarations) {
+      recurse(declaration.initializer, [declaration.name.getText(source), ...hints]);
+    }
+    return;
+  }
+  if (ts.isIfStatement(node)) {
+    recurse(node.thenStatement);
+    recurse(node.elseStatement);
+    return;
+  }
+  if (ts.isSwitchStatement(node)) {
+    for (const clause of node.caseBlock.clauses) clause.statements.forEach((statement) => recurse(statement));
+    return;
+  }
+  if (
+    ts.isForOfStatement(node) ||
+    ts.isForInStatement(node) ||
+    ts.isForStatement(node) ||
+    ts.isWhileStatement(node) ||
+    ts.isDoStatement(node)
+  ) {
+    recurse(node.statement);
+    return;
+  }
+  if (ts.isTryStatement(node)) {
+    recurse(node.tryBlock);
+    recurse(node.catchClause?.block);
+    recurse(node.finallyBlock);
+  }
+}
+
+/** Template expressions reachable through parentheses, branches and `+`/`??`/`||`/`&&`. */
+function reachableTemplates(node: ts.Node): ts.TemplateExpression[] {
+  if (ts.isTemplateExpression(node)) return [node];
+  if (ts.isParenthesizedExpression(node)) return reachableTemplates(node.expression);
+  if (ts.isConditionalExpression(node)) {
+    return [...reachableTemplates(node.whenTrue), ...reachableTemplates(node.whenFalse)];
+  }
+  if (ts.isBinaryExpression(node) && COPY_BINARY_OPERATORS.has(node.operatorToken.kind)) {
+    return [...reachableTemplates(node.left), ...reachableTemplates(node.right)];
+  }
+  return [];
+}
+
+/** True when a JSX child sits inside an element that already yields its own block. */
+function insideCopyContainer(node: ts.Node): boolean {
+  let current: ts.Node | undefined = node.parent;
+  while (current) {
+    if (ts.isJsxElement(current) && copyRole(current.openingElement)) return true;
+    if (ts.isJsxElement(current) || ts.isJsxFragment(current) || ts.isJsxExpression(current)) {
+      current = current.parent;
+      continue;
+    }
+    return false;
+  }
+  return false;
 }
 
 export function extractTsxBlocksFromSource(relativePath: string, sourceText: string): CopyBlock[] {
@@ -149,6 +411,19 @@ export function extractTsxBlocksFromSource(relativePath: string, sourceText: str
     ts.ScriptKind.TSX,
   );
   const legal = isLegalPath(relativePath);
+  const pushCopy = (node: ts.Node, text: string, role: string) => {
+    const clean = cleanText(text);
+    if (!clean || isOpaqueCopy(clean, role)) return;
+    blocks.push({
+      path: relativePath,
+      line: sourceLine(source, node),
+      text: clean,
+      role,
+      legal,
+      legalSummary: false,
+      sentenceCap: hasSentenceCap(relativePath, role),
+    });
+  };
   const visit = (node: ts.Node) => {
     if (ts.isJsxElement(node)) {
       const opening = node.openingElement;
@@ -188,6 +463,43 @@ export function extractTsxBlocksFromSource(relativePath: string, sourceText: str
           });
         }
       }
+      // Copy passed through component props: a literal (plain, template, or
+      // template with placeholder slots) is scored under the prop's role; an
+      // object or array literal is walked for values under copy-named keys.
+      for (const property of node.attributes.properties) {
+        if (!ts.isJsxAttribute(property) || !property.initializer) continue;
+        const name = property.name.getText(source);
+        if (!COPY_PROP_NAMES.has(name)) continue;
+        const direct = attributeValue(node, name);
+        if (direct !== undefined) {
+          pushCopy(property, direct, inferCopyRole([name]));
+          continue;
+        }
+        const expression = ts.isJsxExpression(property.initializer)
+          ? property.initializer.expression
+          : undefined;
+        if (expression && (ts.isObjectLiteralExpression(expression) || ts.isArrayLiteralExpression(expression))) {
+          collectCopyLiterals(source, expression, [name], (literal, text, hints) => {
+            if (COPY_PROP_NAMES.has(hints[0]) || hints[0] === "title") {
+              pushCopy(literal, text, inferCopyRole(hints));
+            }
+          });
+        }
+      }
+    }
+    // Runtime-assembled sentences in JSX children outside any copy container,
+    // for example <span>{`${count} files ready`}</span>: scored with each slot
+    // replaced by the placeholder word. Inside a container the parent block
+    // already carries the same placeholder text.
+    if (
+      ts.isJsxExpression(node) &&
+      node.expression &&
+      !ts.isJsxAttribute(node.parent) &&
+      !insideCopyContainer(node)
+    ) {
+      for (const template of reachableTemplates(node.expression)) {
+        pushCopy(template, templatePlaceholderText(template), "block");
+      }
     }
     ts.forEachChild(node, visit);
   };
@@ -213,6 +525,83 @@ function extractTsxBlocks(repositoryRoot: string): CopyBlock[] {
     }
   };
   visitDirectory(sourceRoot);
+  return blocks;
+}
+
+/**
+ * Copy-registry extraction for `src/copy/** /*.ts` (and any `.ts` module under
+ * `src/emails/`): every top-level constant, object, array, `as const` tuple
+ * and function body is walked for string literals, no-substitution template
+ * literals and template expressions (each `${…}` slot becomes the placeholder
+ * word). The role comes from the nearest key or the export name; opaque
+ * tokens are dropped; each block points at the literal's own line.
+ */
+export function extractCopyRegistryBlocksFromSource(relativePath: string, sourceText: string): CopyBlock[] {
+  const blocks: CopyBlock[] = [];
+  const source = ts.createSourceFile(
+    relativePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const legal = isLegalPath(relativePath);
+  const emit: CopyEmitter = (node, text, hints) => {
+    const clean = cleanText(text);
+    const role = inferCopyRole(hints);
+    if (!clean || isOpaqueCopy(clean, role)) return;
+    blocks.push({
+      path: relativePath,
+      line: sourceLine(source, node),
+      text: clean,
+      role,
+      legal,
+      legalSummary: false,
+      sentenceCap: hasSentenceCap(relativePath, role),
+    });
+  };
+  for (const statement of source.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        collectCopyLiterals(source, declaration.initializer, [declaration.name.getText(source)], emit);
+      }
+    } else if (ts.isFunctionDeclaration(statement)) {
+      collectCopyLiterals(source, statement, [], emit);
+    } else if (ts.isExportAssignment(statement)) {
+      collectCopyLiterals(source, statement.expression, ["default"], emit);
+    }
+  }
+  return blocks;
+}
+
+const COPY_REGISTRY_ROOTS = ["src/copy", "src/emails"];
+
+export function extractCopyRegistryBlocks(repositoryRoot: string): CopyBlock[] {
+  const blocks: CopyBlock[] = [];
+  const visitDirectory = (directory: string) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visitDirectory(absolute);
+        continue;
+      }
+      if (
+        !entry.name.endsWith(".ts") ||
+        entry.name.endsWith(".test.ts") ||
+        entry.name.endsWith(".d.ts")
+      ) {
+        continue;
+      }
+      const relativePath = path.relative(repositoryRoot, absolute);
+      blocks.push(
+        ...extractCopyRegistryBlocksFromSource(relativePath, fs.readFileSync(absolute, "utf8")),
+      );
+    }
+  };
+  for (const root of COPY_REGISTRY_ROOTS) {
+    const directory = path.join(repositoryRoot, root);
+    if (fs.existsSync(directory)) visitDirectory(directory);
+  }
   return blocks;
 }
 
@@ -335,13 +724,44 @@ function replaceRegisteredTerms(text: string, jargon: JargonFile): string {
   return result;
 }
 
+/**
+ * Contractions read as their full words in the plain-vocabulary check, so a
+ * mandated label such as "I don’t have one yet" is checked as "do not" and
+ * the register never needs a non-word like "dont". Rules run in order; the
+ * general `n’t` rule follows the three irregular negations.
+ */
+const CONTRACTION_EXPANSIONS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^can't$/, "cannot"],
+  [/^won't$/, "will not"],
+  [/^shan't$/, "shall not"],
+  [/^([a-z]+)n't$/, "$1 not"],
+  [/^i'm$/, "i am"],
+  [/^let's$/, "let us"],
+  [/^([a-z]+)'re$/, "$1 are"],
+  [/^([a-z]+)'ve$/, "$1 have"],
+  [/^([a-z]+)'ll$/, "$1 will"],
+  [/^([a-z]+)'d$/, "$1 would"],
+];
+
+/**
+ * The plain words a short string is checked against: contractions expand
+ * (`don’t` → `do not`, `you’re` → `you are`); any other apostrophe, which is
+ * a possessive, is dropped (`adult’s` → `adults`).
+ */
 export function vocabularyWords(value: string): string[] {
-  return readabilityWords(value).map((word) => word.toLowerCase().replace(/[’']/g, ""));
+  return readabilityWords(value).flatMap((token) => {
+    const word = token.toLowerCase().replace(/’/g, "'");
+    for (const [pattern, expansion] of CONTRACTION_EXPANSIONS) {
+      if (pattern.test(word)) return word.replace(pattern, expansion).split(" ");
+    }
+    return [word.replace(/'/g, "")];
+  });
 }
 
 export function collectReadabilityBlocks(repositoryRoot: string): CopyBlock[] {
   return [
     ...extractTsxBlocks(repositoryRoot),
+    ...extractCopyRegistryBlocks(repositoryRoot),
     ...extractTemplateBlocks(repositoryRoot),
     ...extractProviderBlocks(repositoryRoot),
     ...extractConsentArtifactBlocks(repositoryRoot),
@@ -397,6 +817,9 @@ export function runReadabilityGate(repositoryRoot: string) {
   let longCount = 0;
   let shortCount = 0;
   let sentenceCount = 0;
+  const registryCount = blocks.filter((block) =>
+    COPY_REGISTRY_ROOTS.some((root) => block.path.startsWith(`${root}/`) && block.path.endsWith(".ts")),
+  ).length;
   for (const block of blocks) {
     const words = wordCount(block.text);
     if (words >= 15) {
@@ -411,7 +834,7 @@ export function runReadabilityGate(repositoryRoot: string) {
       if (block.legalSummary && words > 150) {
         failures.push(`${block.path}:${block.line}: legal summary has ${words} words; maximum is 150`);
       }
-    } else if (["heading", "button", "th", "label", "status"].includes(block.role)) {
+    } else if (SHORT_ROLES.has(block.role)) {
       shortCount++;
       const lower = block.text.toLowerCase();
       for (const term of FORBIDDEN_SHORT_TERMS) {
@@ -420,7 +843,7 @@ export function runReadabilityGate(repositoryRoot: string) {
         }
       }
       for (const word of vocabularyWords(block.text)) {
-        if (!allowed.has(word) && word !== "fact") {
+        if (!allowed.has(word) && word !== PLACEHOLDER) {
           failures.push(`${block.path}:${block.line}: short ${block.role} uses unregistered word '${word}' (${block.text})`);
         }
       }
@@ -441,6 +864,7 @@ export function runReadabilityGate(repositoryRoot: string) {
     longCount,
     shortCount,
     sentenceCount,
+    registryCount,
   };
 }
 
@@ -458,7 +882,8 @@ async function main() {
   }
   console.log(
     `readability gate passed: ${result.blockCount} blocks, ${result.longCount} long, ` +
-      `${result.shortCount} short-role, ${result.sentenceCount} sentence-capped`,
+      `${result.shortCount} short-role, ${result.sentenceCount} sentence-capped, ` +
+      `${result.registryCount} copy-registry`,
   );
 }
 

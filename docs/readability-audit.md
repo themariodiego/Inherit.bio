@@ -358,3 +358,105 @@ With the corpus clean, the gate is now a required pull-request CI step
 provides. G1.10 remains NO in the acceptance matrix only because the extractor
 does not yet cover runtime-generated copy; that extension is the next
 readability task.
+
+## 2026-09-03 — thirtieth pass: copy-registry and runtime extraction
+
+This pass changed the extractor, not the copy. `scripts/readability-gate.ts`
+now covers the two surfaces the previous section named as the reason G1.10
+stayed NO. No scorer, fixture, threshold, vocabulary, or jargon entry changed.
+
+Copy registry (`extractCopyRegistryBlocks`): every `src/copy/**/*.ts` module
+(and any `.ts` module under `src/emails/`, of which there are none yet) is
+parsed and each top-level constant, object, array, `as const` tuple, and
+function body is walked for string literals, no-substitution template
+literals, and template expressions; each `${…}` slot becomes the placeholder
+word `fact`. Object keys, comparison operands, element-access keys, and type
+positions are never copy. The role comes from the nearest key or export name:
+`heading`, `title`, `h1` → heading; `label`, `chip` → label; `button`,
+`action`, `cta` → button; `status`, `note`, `error`, `alert` → status;
+anything else → block. Legal detection stays path-based, so nothing in
+`src/copy` is legal. Headings in `src/copy/reports/**` carry the 25-word
+sentence cap, mirroring `reports/[slug]`. Opaque tokens are dropped: URLs,
+paths and anchors, identifiers and kebab or dotted keys, class lists, rsIDs,
+hashes, lone ALL-CAPS symbols, strings made only of placeholders, and strings
+under two words unless they play a short role. Every block points at the
+literal's own line.
+
+Runtime copy in JSX (`extractTsxBlocksFromSource`): template literals with
+slots are scored with the placeholder inside copy containers, inside the four
+scanned attributes, and as standalone children of elements that have no role
+(for example `<span>{`${count} files ready`}</span>`); string, template, and
+placeholder-filled values of the `heading`, `label`, `description`,
+`summary`, `note`, `text`, `children`, `axisLabel`, `xLabel`, `yLabel`,
+`xAxisLabel`, and `yAxisLabel` props are scored under the prop's role, and
+object or array props are walked for values under those keys. The
+`@react-email/components` `Text` paragraph is a block, so mail bodies and the
+`heading` prop of the shared mail layout are now scored. `role="img"`
+alternatives were already covered through `aria-label`.
+
+Regression coverage: eight new tests in `scripts/readability-gate.test.ts`
+build a throwaway repository under the system temp directory with the real
+scorer pins, vocabulary, and jargon register and prove that a `heading` key
+with an unregistered word fails as a short heading, that a dense block in a
+`.ts` copy file fails above grade 9 at the literal's line, that template
+literals in the registry, in JSX children, and in scanned attributes are
+scored with the placeholder, that a URL-only string is ignored, that a
+`description` prop is scored as a block, that `as const` tuples and key-based
+roles resolve as documented, and that the ten-case scorer self-test is
+untouched. The existing tests are unchanged and green: `pnpm test` (288
+tests), `pnpm typecheck`, and `pnpm lint` pass.
+
+Corpus: the extended extractor reports 1,621 blocks on the same tree where the
+previous rules reported 1,450: 956 long, 434 short-role, 266 sentence-capped,
+152 from the copy registry. The 171 additional blocks are the 152 registry
+blocks (`src/copy/overview.ts` 66, `src/copy/reports/strings.ts` 59,
+`src/copy/figures/reference-groups.ts` 8, `src/copy/navigation.ts` 7,
+`src/copy/reports/headings.ts` 7, `src/copy/reports/evidence.ts` 5; by role
+9 headings, 27 labels, 10 statuses, 106 blocks, no buttons), 16 mail blocks
+that were previously invisible, and 3 runtime template blocks in pages and
+components.
+
+Findings: the extended extractor first surfaced 32 findings, none in files
+this pass may edit: 20 in `src/copy/overview.ts` (five `*Note` statuses and
+two Start-here labels using words missing from the register), 8 in
+`src/copy/reports/strings.ts` (the `Technical note` status, the `Uploaded
+with their permission` chip, the `Your two letters at this spot` label, and
+the `variant_call` layer definition at grade 9.1), 2 in
+`src/emails/account-deletion.tsx` (the `cancelled` heading and a body at
+grade 10.5), and one heading each in `src/emails/adult-subject-invitation.tsx`
+(`invited`) and `src/emails/report-ready.tsx` (`ready`). Two more on
+`src/app/(marketing)/science/page.tsx:38` appeared under the previous rules
+as well and came from concurrent page work.
+
+The copy owners then remediated them in the same day without rewording any
+brief-mandated string: 30 plain words (`like`, `places`, `yours`,
+`laboratory`, `sent`, `enough`, `read`, `reliably`, `kept`, `reason`, `shown`,
+`effects`, `many`, `small`, `directly`, `looks`, `me`, `note`, `technical`,
+`permission`, `uploaded`, `letters`, `spot`, `two`, `cancelled`, `invited`,
+`ready`, `may`, `number`, `will`) were registered in
+`data/plain-vocabulary.json`; `classification` (aliases `classifications`,
+`clinical classification`) was registered in `data/jargon.json`, which grades
+the exact brief string `A result about one or a few exact spots in your DNA,
+read against an outside clinical classification.` at 6.3; and the
+account-deletion cancellation sentence was rewritten to grade 5.7.
+
+One gate-side rule changed with them: the short-string vocabulary check now
+reads contractions as their full words (`don’t` → `do not`, `can’t` →
+`cannot`, `won’t` → `will not`, `you’re` → `you are`, `I’m`, `let’s`, `’ll`,
+`’ve`, `’d`) and drops only possessive apostrophes (`adult’s` → `adults`), so
+the mandated label `I don’t have one yet` passes as `i do not have one yet`
+and the register never needs a non-word such as `dont`. The stripped tokens
+`wont` and `doesnt` were removed from the vocabulary for the same reason. A
+unit test pins the expansions and a fixture-repository test proves the label
+passes.
+
+Clean state: `pnpm gate:readability` exits 0 and reports 1621 blocks, 956
+long, 434 short-role, 266 sentence-capped, 152 copy-registry, with zero
+findings on the whole tree, including the copy registry, mail templates,
+template literals, copy props, and axis-label props. `pnpm test` (290 tests),
+`pnpm typecheck`, and `pnpm lint` pass. Two consequences of the naming rule
+are worth knowing for future copy: a key ending in `Note` is a status and is
+vocabulary-checked and sentence-capped, and the `PRIMARY` button labels and
+`COVERAGE_PILLS` fall to the unchecked block role because neither key nor
+export name says `button`, `label`, or `chip`; renaming opts them in. G1.10
+is YES in the acceptance matrix as of this pass.
