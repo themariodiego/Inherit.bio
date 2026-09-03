@@ -551,3 +551,38 @@ design records the superseded line:
 - Build order: platform prerequisites, then the surfaces in their honest
   states, then the ingest flow, then the findings, which wait on the science
   dimension and the mandated reviews.
+
+## 2026-09-03 — Family surfaces (W9), part F1: decisions taken while building
+
+- One resolver serves both domains for a subject-derived route. A family
+  segment whose grants are all gone answers 404, not a gate: a reader who
+  passes a gate to find nothing has learnt that the record exists, so pause
+  and stop deny on the very next request in the same way an unknown record
+  does.
+- The jurisdiction, paused and nothing-shared states render before the
+  Tier-2 gate on a person's page. A gate in front of nothing says less than
+  the sentence it would hide, and neither branch fetches anything derived.
+- After stop, the person's page keeps its empty state rather than answering
+  404, because the mandated tombstone lives under that person's permissions
+  page and a 404 would orphan it; the genome routes do answer 404.
+- A person's page renders its own compact per-layer list rather than reusing
+  the full report library, whose search box, filter strip and per-category
+  controls would break the first-viewport interactive budget.
+- The ancestry page was extended with the same family resolution and grant
+  check, because the person page links to it and a link that 404s is a dead
+  link.
+- The invite note reaches the invitation mail through the existing draft
+  route and the queued payload; the template renders it as words, never as a
+  link. No other transport exists without a migration, and the migrations
+  for this work are final.
+- The stop operation's nonce is a short-lived keyed envelope bound to the
+  session's account and counterpart rather than a stored row, because the
+  existing nonce table constrains its operation column to the two
+  account-deletion values.
+- A display label is never the self placeholder: the counterpart's own label
+  is used, then the handle's, then a neutral fallback, because no screen
+  collects a display name and printing "You" as another person's name is
+  wrong.
+- The subject chip now reads another account's self record as a shared
+  adult: the invitee's view of the inviter is that person's own self
+  subject, which the previous rule chipped as the viewer.
