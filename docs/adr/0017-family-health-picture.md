@@ -88,17 +88,25 @@ Three repository facts bound the design:
    route for sex exists, the Portrait libraries' X-linked cross replaces
    this reason (D-031, open).
 7. **Runs of homozygosity are measured once, at ingest, from the file's own
-   calls and stored per file.** A run is a maximal stretch of two or more
-   consecutive same-reading autosomal calls; the denominator is the
-   autosomal span the file covers, so no genome length is assumed; the only
-   constants are the brief's 100 Mb and 0.0156. The processing route writes
+   calls and stored per file.** A run is defined as McQuillan et al. 2008
+   define it (doi:10.1016/j.ajhg.2008.08.007): at least 25 contiguous
+   same-reading autosomal calls spanning at least 1.5 Mb, with at most one
+   heterozygous call inside; the denominator is the autosomal span the
+   file covers, Inherit's own choice, which can only raise F_ROH for a
+   sparse file; the thresholds are the brief's 100 Mb and 0.0156 (D-040).
+   A file that reports reference-homozygous calls but holds no qualifying
+   run is measured at zero, below both thresholds; a file with no
+   reference-homozygous call at all (a differences-only VCF, a gVCF whose
+   blocks are dropped) is `not_measurable` with reason
+   `no-reference-calls`; `no-runs-reported` remains only for a file that
+   covers no autosomal stretch. The measure runs before liftover, on the
+   file's own build, since only totals and spans are stored. The processing route writes
    the measure to `genome_files` (D-030), and the panel reads it: every
-   annotated file of a person must be measured and below threshold. A run
-   must span more than zero bases; a file that reports no such stretch,
-   or no autosomal call, is `not_measurable`, which yields the reason,
-   never a number; a file processed before the measure existed (null
-   columns) counts as not below threshold; a re-run nulls the columns
-   before it starts. Nothing is ever read from two files together.
+   annotated file of a person must be measured and below threshold; a
+   file processed before the measure existed (null columns) counts as not
+   below threshold; a re-run nulls the columns before it starts. Nothing
+   is ever read from two files together. The citation renders beside the
+   carrier panel as its provenance.
 8. **The heritability grant has its own permission row.** No screen granted
    `family.heritability` before this decision, so the two-column state was
    unreachable outside the test suite. The permissions page gains a sixth

@@ -441,6 +441,8 @@ test("both adults add the synthetic file, and its runs measure is stored with it
     expect(Math.abs(Number(columns.roh_fraction) - measure.fRoh)).toBeLessThan(1e-6);
     expect(columns.roh_measured_at).not.toBeNull();
     expect(measure.aboveThreshold).toBe(false);
+    expect(measure.runCount).toBeGreaterThanOrEqual(1);
+    expect(Number(columns.roh_total_bases)).toBeGreaterThan(0);
 
     await page.request.post("/auth/sign-out");
   }

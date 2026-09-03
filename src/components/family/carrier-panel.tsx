@@ -9,11 +9,18 @@
  * (D-034). The panel never says how many matches there are before it lists
  * them, never orders them by anything but gene, and never turns two
  * people's shared letters into a statement about how they are related.
+ *
+ * Where at least one block renders, the panel ends with the provenance of
+ * the runs check every block rests on: the cited definition of a run, with
+ * its DOI as the link (D-040).
  */
 import {
   CARRIER_MATCHES_HEADING,
   CARRIER_MATCHES_ID,
   NO_CLASSIFIED_POSITIONS,
+  RUNS_PROVENANCE,
+  RUNS_SOURCE_DOI,
+  RUNS_SOURCE_URL,
   noCarrierMatches,
 } from "@/copy/family/health-picture";
 import type { CarrierMatch } from "@/lib/family/carrier-pair";
@@ -45,6 +52,7 @@ export function CarrierPanel({
    */
   unavailableCopy?: string;
 }) {
+  const anyBlock = !unavailableCopy && groups.some((group) => group.matches.length > 0);
   return (
     <section
       id={CARRIER_MATCHES_ID}
@@ -84,6 +92,19 @@ export function CarrierPanel({
           )}
         </div>
       ))}
+      {anyBlock ? (
+        <p data-slot="runs-provenance" className="max-w-prose text-sm leading-relaxed text-ink-muted">
+          {RUNS_PROVENANCE}{" "}
+          <a
+            href={RUNS_SOURCE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+          >
+            {RUNS_SOURCE_DOI}
+          </a>
+        </p>
+      ) : null}
     </section>
   );
 }

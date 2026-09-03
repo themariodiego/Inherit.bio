@@ -388,6 +388,34 @@ describe("carrier panel", () => {
     expect(html).not.toContain("checked the");
     expect(html).not.toContain(copy.noCarrierMatches(0));
     expect(html).not.toContain("data-claim-block");
+    expect(html).not.toContain('data-slot="runs-provenance"');
+  });
+
+  it("names the cited definition of a run once, with its DOI as the link, only when a block renders", () => {
+    const withBlock = renderToStaticMarkup(
+      h(CarrierPanel, {
+        groups: [
+          { key: "one", people: PEOPLE, matches: [match()], classifiedPositions: 40, positionsBothCover: 7 },
+        ],
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(withBlock.match(/data-slot="runs-provenance"/g)).toHaveLength(1);
+    expect(withBlock).toContain(copy.RUNS_PROVENANCE);
+    expect(withBlock).toContain(`href="${copy.RUNS_SOURCE_URL}"`);
+    expect(withBlock).toContain(`>${copy.RUNS_SOURCE_DOI}</a>`);
+    expect(withBlock).toMatch(/<a [^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
+
+    const without = renderToStaticMarkup(
+      h(CarrierPanel, {
+        groups: [
+          { key: "one", people: PEOPLE, matches: [], classifiedPositions: 40, positionsBothCover: 7 },
+        ],
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(without).not.toContain('data-slot="runs-provenance"');
+    expect(without).not.toContain(copy.RUNS_SOURCE_DOI);
   });
 
   it("lists one block per match and no count above them", () => {
