@@ -82,7 +82,7 @@ function shortRoleStrings(): [string, string][] {
     ["SHARING_ERROR_STATUS", permissions.SHARING_ERROR_STATUS],
     ["TOMBSTONE_ITEMS_HEADING", permissions.TOMBSTONE_ITEMS_HEADING],
     ["tombstoneStatus", permissions.tombstoneStatus("fact", 3)],
-    ["rowControlLabel", permissions.rowControlLabel("Portrait", "fact")],
+    ["rowControlLabel", permissions.rowControlLabel(permissions.TURN_ON_BUTTON, "Portrait", "fact")],
     ...permissions.PERMISSION_ROWS.map(({ id, label }): [string, string] => [
       `PERMISSION_ROWS.${id}`,
       label,
