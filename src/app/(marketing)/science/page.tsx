@@ -5,11 +5,12 @@ import { EVIDENCE_LEVELS } from "@/lib/genome/taxonomy";
 
 export const metadata: Metadata = { title: "Science" };
 
-// The two anchors below are link targets from every report page: the
+// Two anchors below are link targets from every report page: the
 // evidence chip resolves to /science#evidence and the reports list's
 // "{k} of these reports cannot give you a number yet. Why?" resolves to
 // /science#polygenic (brief §4 §2.7, §4 §8.4). Labels and definitions come
-// from their one home in src/copy/reports/evidence.ts.
+// from their one home in src/copy/reports/evidence.ts. The third anchor,
+// #not-offered, publishes the declared gaps (brief X15).
 
 export default function SciencePage() {
   return (
@@ -32,6 +33,16 @@ export default function SciencePage() {
             </div>
           ))}
         </dl>
+      </section>
+
+      {/* X15 declared gaps: the two category services Inherit does not offer
+          are stated here, once, with the reason. The third (Denisovan
+          ancestry) is stated on the ancestry surface beside the Neanderthal
+          card. docs/capability-register.md is the authority. */}
+      <section id="not-offered" aria-labelledby="not-offered-heading" className="mt-16 scroll-mt-24">
+        <h2 id="not-offered-heading" className="display text-2xl">What Inherit does not do</h2>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-muted">Inherit does not match you with relatives. It does not work out how much DNA two people share. Your file is compared with public reference data, not with another person’s file.</p>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-muted">Inherit does not offer prenatal or newborn screening. Those are clinical tests with their own rules, and a clinic is the right place for them.</p>
       </section>
 
       <section id="polygenic" aria-labelledby="polygenic-heading" className="mt-16 scroll-mt-24">

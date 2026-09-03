@@ -32,9 +32,10 @@ export default function AppealsPolicyPage() {
                 that other people could see about that relative.
               </p>
               <p>
-                After a relative objects, Inherit turns off relative matching,
-                pages that others can see about that relative, and
-                shared-segment output. This happens for the person’s
+                After a relative objects, Inherit turns off every page and
+                result that others can see about that relative. Inherit does
+                not match relatives and does not compute shared DNA, so there
+                is no such output to switch off. This happens for the person’s
                 identifiers across every account within 60 seconds. We record
                 <code>contradiction.raised</code>. We send written confirmation
                 that names exactly what we switched off.

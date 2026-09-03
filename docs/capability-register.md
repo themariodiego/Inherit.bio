@@ -50,10 +50,10 @@ not shipped 10. Withheld capabilities: 0.
 ## Declared gaps
 
 Three category services are declared gaps with a published reason, never
-silent omissions. A gap is declared only where the product says so.
+silent omissions. A gap is declared only where the product says so; two are stated on `/science#not-offered` and the third belongs to the ancestry surface.
 
 | Gap | Declared where | Evidence | Open work |
 | --- | --- | --- | --- |
-| Relative matching, relatedness or any shared-DNA quantity | Nowhere yet. Inherit computes and displays none of it (`grep` for shared DNA, centimorgan, kinship, IBD and relative matching across `src/` finds no computation and no display). The appeals page's sentence "After a relative objects, Inherit turns off relative matching … and shared-segment output" implies a capability that does not exist (D-016). | `src/app/(marketing)/legal/appeals/page.tsx` | Publish the one statement that Inherit does not match relatives or compute shared DNA; correct the appeals sentence. |
-| Prenatal and newborn screening | Nowhere yet. No code, copy or document mentions it. | — | Publish the one statement that Inherit does not offer prenatal or newborn screening. |
+| Relative matching, relatedness or any shared-DNA quantity | `/science#not-offered`: "Inherit does not match you with relatives. It does not work out how much DNA two people share. Your file is compared with public reference data, not with another person’s file." Inherit computes and displays none of it (a search for shared DNA, centimorgan, kinship, IBD and relative matching across `src/` finds no computation and no display); the appeals page states the same (D-016 fixed). | `src/app/(marketing)/science/page.tsx`, `src/app/(marketing)/legal/appeals/page.tsx`, `e2e/legal.spec.ts` | The Family workstream's consented side-by-side comparison must not contradict the sentence; revise it when that ships. |
+| Prenatal and newborn screening | `/science#not-offered`: "Inherit does not offer prenatal or newborn screening. Those are clinical tests with their own rules, and a clinic is the right place for them." | `src/app/(marketing)/science/page.tsx`, `e2e/legal.spec.ts` | — |
 | Denisovan ancestry | Nowhere yet. The mandated sentence "Inherit does not estimate Denisovan ancestry yet, so this number is about Neanderthals only." has no host surface until the Neanderthal card exists. | — | W7 (in progress) ships the sentence on the ancestry surface. |

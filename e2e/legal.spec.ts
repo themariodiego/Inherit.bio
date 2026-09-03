@@ -63,8 +63,8 @@ const REQUIRED = [
       /do not need an Inherit account to object or appeal/i,
       /genome uploaded to Inherit is yours and you did not consent/i,
       /genetic relative may also object/i,
-      /turns off relative matching/i,
-      /shared-segment output/i,
+      /turns off every page and result that others can see about that relative/i,
+      /does not match relatives and does not compute shared DNA/i,
       /across every account within 60 seconds/i,
       /confirmation that names exactly what we switched off/i,
       /named human reviews every identity or legal decision/i,
@@ -144,6 +144,16 @@ const REQUIRED = [
   },
   { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
+  {
+    // X15 declared gaps, published once with their reason.
+    route: "/science",
+    must: [
+      /What Inherit does not do/,
+      /does not match you with relatives/i,
+      /does not work out how much DNA two people share/i,
+      /does not offer prenatal or newborn screening/i,
+    ],
+  },
 ];
 
 const PLACEHOLDERS = /\bTODO\b|\bTBD\b|\bFIXME\b|lorem ipsum|\bN\/A\b|\[[^\]]*specify[^\]]*\]|\bPLACEHOLDER\b/i;
