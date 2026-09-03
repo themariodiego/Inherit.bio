@@ -78,6 +78,9 @@ export const DATA_ATTRIBUTES = {
 /** Rendered once per claim block that contains at least one modelled figure; never per figure. */
 export const MODELLED_MARKER = "This is a model, not an observed outcome.";
 
+/** The unit of an ancestry share whose range is unavailable (G4.4): the explicit statement, never a blank. */
+export const ANCESTRY_RANGE_UNAVAILABLE = "no range yet";
+
 export const NATURAL_FREQUENCY_DENOMINATORS = [100, 1_000, 10_000, 100_000, 1_000_000] as const;
 export type NaturalFrequencyDenominator = (typeof NATURAL_FREQUENCY_DENOMINATORS)[number];
 

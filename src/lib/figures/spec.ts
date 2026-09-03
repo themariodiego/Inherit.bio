@@ -58,11 +58,18 @@ export type GenotypeSpec = FigureCommon & {
 
 export type CarrierStatusSpec = FigureCommon & { kind: "carrier-status"; status: string };
 
+/**
+ * The range of an ancestry share: the interval, or the explicit statement
+ * that none is available yet (G4.4's own disjunction). It renders as the
+ * figure's unit either way.
+ */
+export type AncestryShareRange = { low: number; high: number } | { unavailable: true };
+
 /** An ancestry share without a range is a type error. */
 export type AncestryShareSpec = FigureCommon & {
   kind: "ancestry-share";
   share: number;
-  range: { low: number; high: number };
+  range: AncestryShareRange;
 };
 
 export type DifferencePpSpec = FigureCommon & {

@@ -23,7 +23,7 @@
     {
       "name": "GitHub",
       "category": "dependency-platform",
-      "aliases": ["github", "github.com"],
+      "aliases": ["github", "github.com", "githubusercontent.com"],
       "reason": "Source hosting and pull-request CI platform used by this repository.",
       "evidence": [".github/workflows/ci.yml"]
     },
@@ -214,6 +214,13 @@
       "category": "public-reference-dataset",
       "aliases": ["1000 genomes", "internationalgenome.org"],
       "reason": "Public population-frequency reference consumed by ancestry computation.",
+      "evidence": ["docs/dataset-licenses.md"]
+    },
+    {
+      "name": "Natural Earth",
+      "category": "public-reference-dataset",
+      "aliases": ["natural earth", "naturalearthdata.com", "naturalearth.s3.amazonaws.com"],
+      "reason": "Public-domain 1:110m physical map data the ancestry map's region geometry is built from.",
       "evidence": ["docs/dataset-licenses.md"]
     },
     {

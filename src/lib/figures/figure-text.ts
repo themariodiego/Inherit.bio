@@ -2,7 +2,7 @@
  * The words each figure kind renders. Kept out of the component so the
  * wording is unit-testable without React and so <Figure> is only markup.
  */
-import { NATURAL_FREQUENCY_FLOOR } from "./contract";
+import { ANCESTRY_RANGE_UNAVAILABLE, NATURAL_FREQUENCY_FLOOR } from "./contract";
 import {
   PERCENTAGE_POINTS_GLOSS,
   chooseDenominator,
@@ -11,7 +11,7 @@ import {
   groupNumber,
   intervalSentence,
   naturalFrequency,
-  percentNumeral,
+  percentOneDecimal,
   percentileSentence,
   renderNaturalFrequencyPair,
 } from "./natural-frequency";
@@ -68,9 +68,14 @@ export function figureText(spec: StandaloneFigureSpec, denominator?: number | nu
     case "carrier-status":
       return { value: spec.status, unit: null };
     case "ancestry-share":
+      // One decimal always (§4.6 display rounding), and the range or the
+      // explicit statement that there is none yet (G4.4).
       return {
-        value: `${percentNumeral(spec.share)}%`,
-        unit: `(${percentNumeral(spec.range.low)}–${percentNumeral(spec.range.high)}%)`,
+        value: `${percentOneDecimal(spec.share)}%`,
+        unit:
+          "unavailable" in spec.range
+            ? ANCESTRY_RANGE_UNAVAILABLE
+            : `(${percentOneDecimal(spec.range.low)}–${percentOneDecimal(spec.range.high)}%)`,
       };
     case "difference-pp":
       return {

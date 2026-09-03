@@ -9,6 +9,11 @@
  *     {optional prose after the figures}
  *   </ClaimBlock>
  *
+ * `renderFigures` lets a page lay the rendered <Figure> nodes out itself
+ * (one node per spec, in order — a table of region rows, say) while the
+ * block still owns the denominator, the attribution and the marker. Without
+ * it the figures render in one flex row.
+ *
  * The block computes from the specs (src/lib/figures/claim-block.ts):
  *   - the single natural-frequency denominator shared by every figure;
  *   - whether any figure is modelled, in which case MODELLED_MARKER renders
@@ -35,6 +40,8 @@ export interface ClaimBlockProps {
    * (docs/density-baseline.json measurementSelectors). At most one per page.
    */
   densityPrimaryClaim?: boolean;
+  /** Receives one <Figure> node per spec, in spec order; returns the layout to render in their place. */
+  renderFigures?: (figures: ReactNode[]) => ReactNode;
   children?: ReactNode;
   className?: string;
 }
@@ -44,10 +51,14 @@ export function ClaimBlock({
   figures,
   "aria-label": ariaLabel,
   densityPrimaryClaim,
+  renderFigures,
   children,
   className,
 }: ClaimBlockProps) {
   const summary = claimBlock(figures);
+  const nodes = figures.map((spec, index) => (
+    <Figure key={index} spec={spec} denominator={summary.denominator} />
+  ));
 
   return (
     <section
@@ -58,11 +69,11 @@ export function ClaimBlock({
       aria-label={ariaLabel}
       className={cn("rounded-2xl border border-line bg-card p-4 text-ink", className)}
     >
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
-        {figures.map((spec, index) => (
-          <Figure key={index} spec={spec} denominator={summary.denominator} />
-        ))}
-      </div>
+      {renderFigures ? (
+        renderFigures(nodes)
+      ) : (
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">{nodes}</div>
+      )}
       {children}
       {summary.hasModelled ? (
         <p data-modelled-marker="true" className="mt-3 text-sm text-ink-muted">

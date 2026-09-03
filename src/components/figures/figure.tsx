@@ -36,7 +36,8 @@ export function Figure({ spec, denominator, subject, className }: FigureProps) {
     );
   }
   const text = figureText(spec, denominator);
-  const large = LARGE_KINDS.has(spec.kind);
+  // A point without an interval does not render at figure size (§3 §5.3).
+  const large = LARGE_KINDS.has(spec.kind) && !(spec.kind === "ancestry-share" && "unavailable" in spec.range);
   const leg = spec.kind === "absolute" ? spec.comparisonLeg : undefined;
 
   return (

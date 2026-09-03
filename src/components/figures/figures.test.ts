@@ -1,6 +1,6 @@
 // Vitest runs in the node environment (vitest.config.ts); components are
 // rendered with renderToStaticMarkup and the HTML is inspected as text.
-import { createElement as h } from "react";
+import { createElement as h, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -76,6 +76,35 @@ describe("ClaimBlock", () => {
     }
   });
 
+  it("hands renderFigures one node per spec in order and still renders the marker once", () => {
+    const received: ReactNode[][] = [];
+    const html = renderToStaticMarkup(
+      h(ClaimBlock, {
+        subject: { subjectId: "s1" },
+        figures: everyKind,
+        renderFigures: (nodes) => {
+          received.push(nodes);
+          return h(
+            "table",
+            null,
+            h("tbody", null, nodes.map((node, index) => h("tr", { key: index }, h("td", null, node)))),
+          );
+        },
+      }),
+    );
+    expect(received).toHaveLength(1);
+    expect(received[0]).toHaveLength(everyKind.length);
+    expect(html).toContain("<table>");
+    // The block's default row (`gap-x-6`) is replaced by the caller's layout.
+    expect(html).not.toContain("gap-x-6");
+    expect(figureNodes(html).map((node) => node.attrs["data-figure-kind"])).toEqual(everyKind.map((spec) => spec.kind));
+    expect(html.match(/<tr>/g)).toHaveLength(everyKind.length);
+    expect(html.split(MODELLED_MARKER).length - 1).toBe(1);
+    expect(html.endsWith(`${MODELLED_MARKER}</p></section>`)).toBe(true);
+    const [container] = openingTags(html);
+    expect(container.attrs["data-subject-id"]).toBe("s1");
+  });
+
   it("carries exactly one subject attribute on the container and none on the figures", () => {
     for (const subject of [{ subjectId: "s1" }, { subjectPair: ["a", "b"] as [string, string] }]) {
       const html = renderToStaticMarkup(h(ClaimBlock, { subject, figures: everyKind }));
@@ -117,8 +146,26 @@ describe("Figure", () => {
 
   it("renders an ancestry share with its mandatory range", () => {
     const html = renderToStaticMarkup(h(Figure, { spec: everyKind[6] }));
-    expect(html).toContain(">43%<");
-    expect(html).toContain(">(38–48%)<");
+    expect(html).toContain(">43.0%<");
+    expect(html).toContain(">(38.0–48.0%)<");
+    expect(figureNodes(html)[0].attrs.class).toContain("text-2xl");
+  });
+
+  it("renders `no range yet` as the unit and at body size when the range is unavailable", () => {
+    const spec: StandaloneFigureSpec = {
+      ...estimate,
+      kind: "ancestry-share",
+      class: "ancestry",
+      share: 0.432,
+      range: { unavailable: true },
+    };
+    const html = renderToStaticMarkup(h(Figure, { spec }));
+    expect(html).toContain('data-slot="figure-value">43.2%</span>');
+    expect(html).toMatch(/data-slot="figure-unit"[^>]*>no range yet<\/span>/);
+    const [root] = figureNodes(html);
+    expect(root.attrs.class).toContain("text-sm");
+    expect(root.attrs.class).not.toContain("text-2xl");
+    expect(root.attrs.class).not.toContain("font-semibold");
   });
 
   it("throws for kind relative", () => {

@@ -96,6 +96,11 @@ export function formatPercent(value: number): string {
   return `${percentNumeral(value)}%`;
 }
 
+/** The percent numeral to one decimal always (ancestry shares, brief §4.6): 0.432 → "43.2". */
+export function percentOneDecimal(value: number): string {
+  return oneDecimal.format(value * 100);
+}
+
 /** Percentiles are integers clamped 1–99 and always a sentence; a bare "80th percentile" is banned. */
 export function percentileSentence(percentile: number): string {
   const clamped = Math.min(99, Math.max(1, Math.round(percentile)));

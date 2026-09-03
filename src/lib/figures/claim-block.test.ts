@@ -55,7 +55,9 @@ describe("figureText", () => {
       [{ ...base, kind: "interval", point: 0.12, low: 0.08, high: 0.17 }, "It could reasonably be 8.0% to 17%.", null],
       [{ ...base, kind: "genotype", genotype: "A/C", label: "x" }, "A/C", null],
       [{ ...base, kind: "carrier-status", status: "carrier" }, "carrier", null],
-      [{ ...base, kind: "ancestry-share", share: 0.432, range: { low: 0.38, high: 0.48 } }, "43%", "(38–48%)"],
+      [{ ...base, kind: "ancestry-share", share: 0.432, range: { low: 0.38, high: 0.48 } }, "43.2%", "(38.0–48.0%)"],
+      [{ ...base, kind: "ancestry-share", share: 0.05, range: { unavailable: true } }, "5.0%", "no range yet"],
+      [{ ...base, kind: "ancestry-share", share: 0, range: { unavailable: true } }, "0.0%", "no range yet"],
       [{ ...base, kind: "difference-pp", after: 0.12, before: 0.09 }, "3.0 percentage points higher", "(percentage points, not percent)"],
     ];
     for (const [spec, value, unit] of cases) {
