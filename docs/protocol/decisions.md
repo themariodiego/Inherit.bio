@@ -653,3 +653,18 @@ Decisions:
   stays a fact about one file and is never compared between files.
 - With no classified reference position the panel says so in words, never
   "checked the 0 positions".
+
+## 2026-09-03 — Health picture: what `family.heritability` alone may show
+
+Context: the register's `multiSubjectLayer` rule makes `family.heritability`
+the authority for the joint comparison and never for an individual result
+layer (D-038). The rework moved each cell's genotype figure and its "Open"
+link behind the layer's own grant from that person.
+
+Decision: the column itself, the carrier panel, the "No baseline" footer
+and the coverage figure ("read N of the M positions" of a layer) stay on
+`family.heritability` with the three capabilities. Coverage is a count of
+positions a file reports, a fact about the file's reach and not a result
+about the person, and the joint comparison cannot be described without
+it. Anything that reads a letter from another adult's file needs that
+layer's grant.
