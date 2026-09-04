@@ -4,9 +4,11 @@
 // returned. Listens on 127.0.0.1; the spec reaches it via the mock-llm.test
 // hosts alias so the app classifies it as a CLOUD provider (consent gate).
 //
-// Two hooks for the guard spec (e2e/copilot-refusal.spec.ts, brief line
-// 2262): `mockLlmCalls()` counts every completion request the mock has
-// served, so a spec can prove a gated prompt reached no provider; and a user
+// Three hooks for the guard spec (e2e/copilot-refusal.spec.ts, brief line
+// 2262): `mockLlmCalls()` counts every request the mock has received on any
+// path, so a spec can prove a gated prompt reached no provider by any route;
+// `mockLlmLastMessages()` is the message list of the newest completion
+// request, so a spec can prove what history the provider saw; and a user
 // turn containing "how common" makes the final answer an adversarial one
 // carrying a percentage no tool returned, so the spec can prove the output
 // guard replaces it.
@@ -19,10 +21,16 @@ interface ChatMessage {
 }
 
 let calls = 0;
+let lastMessages: ChatMessage[] = [];
 
-/** Completion requests served since this process started. */
+/** Requests received on any path since this process started. */
 export function mockLlmCalls(): number {
   return calls;
+}
+
+/** The messages of the newest completion request, as the provider saw them. */
+export function mockLlmLastMessages(): ChatMessage[] {
+  return lastMessages;
 }
 
 /** The pattern that makes the mock's final answer carry a number no tool returned. */
@@ -52,6 +60,7 @@ function chunk(delta: Record<string, unknown>, finish: string | null = null) {
 
 export function startMockLlm(port: number): Promise<() => Promise<void>> {
   const server = http.createServer((req, res) => {
+    calls += 1;
     if (!req.url?.endsWith("/chat/completions")) {
       res.writeHead(404).end();
       return;
@@ -59,8 +68,8 @@ export function startMockLlm(port: number): Promise<() => Promise<void>> {
     let body = "";
     req.on("data", (d) => (body += d));
     req.on("end", () => {
-      calls += 1;
       const parsed = JSON.parse(body) as { messages: ChatMessage[] };
+      lastMessages = parsed.messages;
       const hasToolResult = parsed.messages.some((m) => m.role === "tool");
       const lastUser = [...parsed.messages].reverse().find((m) => m.role === "user");
       const adversarial = ADVERSARIAL_PROMPT.test(messageText(lastUser));

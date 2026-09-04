@@ -9960,13 +9960,18 @@
     },
     "copilot-refusal-v1": {
       "status": 200,
-      "contentType": "application/json",
-      "body": {
-        "message": "class-specific-copy-from-src/copy/copilot/refusals.ts",
-        "refusal": {
+      "contentType": "text/event-stream",
+      "transport": "the-ui-message-stream-the-client-already-reads-carrying-the-class-specific-copy-from-src/copy/copilot/refusals.ts-as-the-whole-assistant-turn-in-one-text-part-and-nothing-else",
+      "headers": {
+        "x-copilot-refusal": {
           "enumFrom": "policyContracts.copilot-intent-gate-v1.refusalIds"
         }
       },
+      "body": {
+        "parts": "exactly-one-text-part-whose-text-is-the-registered-refusal-for-the-header's-id; no-tool-part-no-reasoning-part-no-source-part",
+        "userInputEcho": "never"
+      },
+      "servedBy": "src/app/api/chat/route.ts#refusalResponse",
       "unknownFieldsRecursively": "forbidden",
       "highestRiskIntent": {
         "retrievalRows": 0,

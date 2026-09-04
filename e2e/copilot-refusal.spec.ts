@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
-import { ADVERSARIAL_NUMBER, mockLlmCalls, startMockLlm } from "./mock-llm";
+import { ADVERSARIAL_NUMBER, mockLlmCalls, mockLlmLastMessages, startMockLlm } from "./mock-llm";
 import {
   crossSubjectRefusal,
   REFUSAL_DIAGNOSIS,
@@ -14,21 +14,28 @@ import {
 
 /**
  * The Copilot guard (brief line 2262; §5.7 line 366, §6.4 line 402; line
- * 1040's prompt list). What it pins: a supplement, dosage, diet, "which
- * embryo should we pick", cross-subject, diagnosis and prognosis prompt each
- * get the exact refusal string as the whole assistant turn, and the provider
- * receives nothing — the mock's request count does not move and no consent
- * dialog is raised, because the gate runs before the consent step; an
- * allowed prompt still reaches the provider through the tool loop; and an
- * answer carrying a number no tool returned is replaced whole with the
- * fixed refusal, tool parts included.
+ * 1040's prompt list). What it pins: one prompt per treatment rule
+ * (should-i-take, dose, diet, recommend-intake), "what should I eat",
+ * "which embryo should we pick", cross-subject, diagnosis and prognosis
+ * prompts each get the exact refusal string as the whole assistant turn,
+ * and the provider receives nothing — the mock's request count does not
+ * move and no consent dialog is raised, because the gate runs before the
+ * consent step; an allowed prompt still reaches the provider through the
+ * tool loop; a later allowed prompt reaches it without the refused turns
+ * in its history; and an answer carrying a number no tool returned is
+ * replaced whole with the fixed refusal, tool parts included.
+ *
+ * What it cannot pin: a cohort-scoped prompt. No cohort chat route exists
+ * yet, so the cohort-only rules (comparatives, "which of them") are proved
+ * by `src/lib/copilot/guard.test.ts` alone until one does.
  *
  * The "cloud" provider is the same in-process mock e2e/copilot.spec.ts uses,
  * reached through a host name isLocalBaseUrl treats as non-local, so the
  * real consent path runs with zero real third-party traffic. Every
  * assertion here is derivable from the code: the refusal strings are
  * imported from the registry, the refusal id comes back in the
- * `x-copilot-refusal` header, and the mock's counter is read in-process.
+ * `x-copilot-refusal` header, and the mock's counter, which counts every
+ * request it receives on any path, is read in-process.
  */
 
 const USER = { email: "copilot-refusal@e2e.local", password: "e2e-copilot-refusal-pw" };
@@ -36,16 +43,27 @@ const MOCK_PORT = 8123;
 const MOCK_HOST = "localhost.localdomain";
 const MOCK_BASE = `http://${MOCK_HOST}:${MOCK_PORT}/v1`;
 
-/** Brief line 1040's five prompts plus the two remaining gated intents. */
+/**
+ * Brief line 1040's prompts plus the remaining gated intents. The four
+ * treatment prompts each reach a different rule (`treatment.should-i-take`,
+ * `treatment.dose` on an unspaced unit, `treatment.diet`,
+ * `treatment.recommend-intake`), as `guard.test.ts` pins by rule id; the
+ * header carries the class, so that is what this spec asserts.
+ */
 const GATED_PROMPTS: ReadonlyArray<{ prompt: string; id: string; refusal: (subject: string) => string }> = [
   { prompt: "Should I take a vitamin D supplement?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
-  { prompt: "What dosage of folic acid should I take?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
+  { prompt: "Would 500mg of magnesium be enough?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
+  { prompt: "Should I go keto?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
+  { prompt: "Can you recommend a medication for this?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
   { prompt: "What should I eat to lower my cholesterol risk?", id: "treatment", refusal: () => REFUSAL_TREATMENT },
   { prompt: "Which embryo should we pick?", id: "selection-advice", refusal: () => REFUSAL_SELECTION_ADVICE },
   { prompt: "What does my sister’s file say about caffeine?", id: "cross-subject", refusal: crossSubjectRefusal },
   { prompt: "Do I have haemochromatosis?", id: "diagnosis", refusal: () => REFUSAL_DIAGNOSIS },
   { prompt: "Will I get Alzheimer’s?", id: "prognosis", refusal: () => REFUSAL_PROGNOSIS },
 ];
+
+/** One gated prompt per theme for the axe audit, so the audited page shows a refusal turn. */
+const AXE_PROMPTS = ["Do I have haemochromatosis?", "Will I get Alzheimer’s?"] as const;
 
 let stopMock: (() => Promise<void>) | null = null;
 let userId = "";
@@ -89,13 +107,18 @@ async function ask(page: Page, prompt: string) {
 /**
  * Axe in both themes, each on a fresh load in that theme, as e2e/family.spec.ts
  * does: the theme provider flips the class on the live page, so an audit taken
- * on a page loaded in the other theme samples mid-transition colours.
+ * on a page loaded in the other theme samples mid-transition colours. A reload
+ * empties the thread, so each theme sends one gated prompt first and audits a
+ * page that shows a refusal turn.
  */
 async function expectAxeClean(page: Page) {
-  for (const theme of ["light", "dark"] as const) {
+  for (const [index, theme] of (["light", "dark"] as const).entries()) {
     await page.emulateMedia({ colorScheme: theme });
     await page.reload();
     await page.waitForLoadState("networkidle");
+    const response = await ask(page, AXE_PROMPTS[index]);
+    expect(response.headers()["x-copilot-refusal"]).toBeDefined();
+    await expect(page.getByText(index === 0 ? REFUSAL_DIAGNOSIS : REFUSAL_PROGNOSIS, { exact: true })).toBeVisible();
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(
       results.violations
@@ -171,7 +194,27 @@ test("each gated prompt gets its exact refusal as the whole turn and the provide
     await expect(page.getByRole("button", { name: "Review what would be shared" })).toHaveCount(0);
     await expect(page.getByText("get_genotype")).toHaveCount(1);
   }
-  await expect(page.getByText(REFUSAL_TREATMENT, { exact: true })).toHaveCount(3);
+  await expect(page.getByText(REFUSAL_TREATMENT, { exact: true })).toHaveCount(5);
+
+  // A later allowed prompt reaches the provider with the refused turns
+  // dropped from its history: the provider sees the two allowed user turns
+  // and none of the gated ones.
+  const beforeResend = mockLlmCalls();
+  const resend = await ask(page, "What is my caffeine genotype?");
+  expect(resend.status()).toBe(200);
+  expect(resend.headers()["x-copilot-refusal"]).toBeUndefined();
+  await expect(page.getByText("get_genotype")).toHaveCount(2, { timeout: 30_000 });
+  expect(mockLlmCalls()).toBeGreaterThan(beforeResend);
+  const userTurns = mockLlmLastMessages()
+    .filter((message) => message.role === "user")
+    .map((message) => (typeof message.content === "string" ? message.content : JSON.stringify(message.content)));
+  // The consent-blocked first ask may or may not remain in the client's
+  // thread; the allowed asks after it do, so at least two reach the provider.
+  expect(userTurns.filter((text) => text.includes("caffeine genotype")).length).toBeGreaterThanOrEqual(2);
+  for (const { prompt } of GATED_PROMPTS) {
+    expect(userTurns.some((text) => text.includes(prompt))).toBe(false);
+  }
+  expect(userTurns.some((text) => text.includes("I can’t"))).toBe(false);
 
   await expectAxeClean(page);
 });

@@ -714,3 +714,28 @@ Decisions:
 - Two consequences of the brief's regex are recorded rather than worked
   around: `1,000` splits into two allowed integers, and an ISO date yields
   negative tokens; both are pinned by tests.
+
+## 2026-09-04 — Copilot guard: corrections after the adversarial review
+
+Context: the four-lens review of branch `copilot-guard` (D-042 to D-051)
+plus two findings that changed no rule.
+
+Decisions:
+- The checked string is everything the model authored, never only its
+  visible text. Outputs of Inherit's own tools are the permitted set, not
+  a claim, and are not folded in; an output a provider executed itself is
+  the model's and is. Reasoning is never forwarded to the client.
+- A bare-verb treatment question stays gated when its object is unnamed
+  ("Should I stop?"); the over-block is the fail-closed posture the review
+  accepted. The one exemption is a product object ("Can I add a second
+  genome?", "Should I switch to a local model?"), read as the verb's own
+  object within three words.
+- A spaced "5 %" is a bare integer to the brief's regex and passes the
+  small-integer range; the behaviour is pinned, not worked around.
+- A citation is a whole-token match against a permitted label; an answer
+  may also name a report or score by the `title` or `name` the tools
+  returned, and the product by its own name, and nothing else.
+- Every earlier user turn is classified again on every request. The
+  client keeps its thread; the model never sees a refused turn.
+- A cohort-scoped prompt cannot be sent until a cohort chat route exists;
+  the spec says so, and the cohort-only rules rest on the unit table.
