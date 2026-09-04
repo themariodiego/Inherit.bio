@@ -70,7 +70,11 @@ export function startMockLlm(port: number): Promise<() => Promise<void>> {
     req.on("end", () => {
       const parsed = JSON.parse(body) as { messages: ChatMessage[] };
       lastMessages = parsed.messages;
-      const hasToolResult = parsed.messages.some((m) => m.role === "tool");
+      // The turn's own step decides the branch: a tool result at the end of
+      // the messages is this turn's, one earlier in the history is a past
+      // turn's (the guard permits only numbers this turn's tools returned).
+      const last = parsed.messages[parsed.messages.length - 1];
+      const hasToolResult = last?.role === "tool";
       const lastUser = [...parsed.messages].reverse().find((m) => m.role === "user");
       const adversarial = ADVERSARIAL_PROMPT.test(messageText(lastUser));
 
@@ -99,7 +103,7 @@ export function startMockLlm(port: number): Promise<() => Promise<void>> {
         );
         sse(res, chunk({}, "tool_calls"));
       } else {
-        const toolMsg = parsed.messages.find((m) => m.role === "tool");
+        const toolMsg = last;
         const toolText =
           typeof toolMsg?.content === "string"
             ? toolMsg.content
