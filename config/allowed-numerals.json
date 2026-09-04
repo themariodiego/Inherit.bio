@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "note": "Brief line 2262: a numeral in a Copilot response must equal a value in that turn's tool JSON (after rounding to the token's decimal places) or appear here. Every range admits only a plain integer token that is not adjacent to a percent sign; a percent token must always come from the tool JSON.",
+  "ranges": [
+    { "id": "calendar-year", "min": 1900, "max": 2100 },
+    { "id": "chromosome-number", "min": 1, "max": 22 },
+    { "id": "embryo-count", "min": 1, "maxFrom": "cohortSize" },
+    { "id": "small-integer", "min": 0, "max": 10 }
+  ]
+}
