@@ -26,7 +26,12 @@ describe("parseVcf: fixture", () => {
       { rsid: null, chrom: 1, pos: 300, ref: "G", alt: "A", genotype: "A/A" },
       // haploid GT 1 on Y
       { rsid: 6, chrom: 24, pos: 600, ref: "C", alt: "T", genotype: "T" },
-      // rs5 (0/0) and rs7 (haploid 0) are reference rows: dropped, not counted
+      // rs5 (0/0) and rs7 (haploid 0) are reference rows: not variants, not counted
+    ]);
+    // ...but kept as reference calls, with the reference allele each carries (D-040).
+    expect(result.referenceCalls).toEqual([
+      { chrom: 1, pos: 500, genotype: "A/A", ref: "A" },
+      { chrom: 25, pos: 700, genotype: "A", ref: "A" },
     ]);
   });
 
@@ -104,7 +109,7 @@ describe("parseVcf: rows", () => {
     expect(r.skipped).toBe(2);
   });
 
-  it("drops <NON_REF>-only and hom-ref rows without counting them", async () => {
+  it("keeps hom-ref rows as reference calls, never as variants, and drops <NON_REF>-only rows without counting", async () => {
     const r = await parseVcf(
       fromString(
         HEADER +
@@ -113,6 +118,9 @@ describe("parseVcf: rows", () => {
     );
     expect(r.records).toHaveLength(0);
     expect(r.skipped).toBe(0);
+    // The 0/0 row against a real ALT is a reference call (D-040); the
+    // <NON_REF>-only row describes a block, not a call.
+    expect(r.referenceCalls).toEqual([{ chrom: 1, pos: 20, genotype: "A/A", ref: "A" }]);
   });
 
   it("skips GT indexes past the ALT list as malformed", async () => {

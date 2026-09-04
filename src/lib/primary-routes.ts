@@ -32,6 +32,7 @@ const ROUTE_PATTERNS = {
   "family.invite": "/family/invite",
   "family.person": "/family/[person]",
   "family.permissions": "/family/[person]/permissions",
+  "family.health-picture": "/family/health-picture",
   "family.portrait": "/family/portrait/[pairId]",
   "embryos.index": "/embryos",
   "embryos.upload": "/embryos/upload",

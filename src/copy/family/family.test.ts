@@ -213,13 +213,14 @@ describe("family copy", () => {
     expect(KIND_CHIPS.adult_shared).toBe("Shared with you");
   });
 
-  it("names the five permission rows, one purpose each, all default off", () => {
+  it("names the six permission rows, one purpose each, all default off", () => {
     expect(permissions.PERMISSION_ROWS.map((row) => row.id)).toEqual([
       "reports.monogenic",
       "reports.polygenic",
       "ancestry",
       "raw.export",
       "family.portrait",
+      "family.heritability",
     ]);
     expect(permissions.PERMISSION_ROWS.map((row) => row.label)).toEqual([
       "Specific variants",
@@ -227,6 +228,7 @@ describe("family copy", () => {
       "Ancestry",
       "Raw genetic data",
       "Portrait",
+      "Health picture",
     ]);
     for (const row of permissions.PERMISSION_ROWS) {
       expect(readabilitySentences(row.consequence)).toHaveLength(1);

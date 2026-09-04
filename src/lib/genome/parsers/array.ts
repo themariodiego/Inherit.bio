@@ -112,5 +112,9 @@ export async function parseArray(
     });
   }
 
-  return { build, records, skipped };
+  // Every probed position is a record, differing from the reference or not;
+  // the vendors' files carry no reference allele, so nothing can be told
+  // apart as a reference call here (src/lib/family/roh.ts reads a
+  // same-reading array call as a reported non-difference position).
+  return { build, records, referenceCalls: [], skipped };
 }

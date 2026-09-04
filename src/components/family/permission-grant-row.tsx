@@ -73,7 +73,7 @@ export function PermissionGrantRow({
           <span aria-hidden="true" data-slot="permission-glyph">
             {GLYPHS[state]}
           </span>
-          <span>{label}</span>
+          <span data-slot="permission-label">{label}</span>
           <span data-slot="permission-state" className="text-sm font-normal text-ink-muted">
             {PERMISSION_STATES[state]}
           </span>

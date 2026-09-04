@@ -24,9 +24,31 @@ export interface VariantRecord {
   genotype: string;
 }
 
+/**
+ * A row the file called homozygous for the reference (a VCF `0/0` row). It
+ * is not a variant and never becomes a variant row; it is evidence of what
+ * the file recorded between its differences, which the runs-of-homozygosity
+ * measure needs (src/lib/family/roh.ts, D-040).
+ */
+export interface ReferenceCall {
+  chrom: number;
+  pos: number;
+  /** Diploid "A/A" (the reference letter on both copies) or haploid "A". */
+  genotype: string;
+  ref: string;
+}
+
 export interface ParseResult {
   build: Build;
   records: VariantRecord[];
+  /**
+   * Rows called homozygous for the reference, kept apart from the variants.
+   * The VCF parser fills it from `0/0` rows; the array parsers leave it
+   * empty, because an array file lists every probed position in `records`
+   * whether or not it differs from the reference and carries no reference
+   * allele to say which.
+   */
+  referenceCalls: ReferenceCall[];
   /** Lines skipped as unparseable or no-calls, for honest reporting. */
   skipped: number;
 }

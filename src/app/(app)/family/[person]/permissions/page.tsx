@@ -213,8 +213,11 @@ export default async function FamilyPermissionsPage(
   const yourColumn: ColumnRow[] = PERMISSION_ROWS.map((row) => {
     const purpose = row.id as Purpose;
     const action = actionFor(purpose);
+    // The routine refuses both pair purposes while the marker is unset.
     const locked =
-      purpose === "family.portrait" && portraitLocked && action?.kind !== "revoke";
+      (purpose === "family.portrait" || purpose === "family.heritability") &&
+      portraitLocked &&
+      action?.kind !== "revoke";
     return {
       id: row.id,
       state: outbound.get(purpose)?.state ?? "off",

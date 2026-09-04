@@ -611,3 +611,81 @@ design records the superseded line:
   the product: the invitation spec's `form` locator is now scoped to the
   invite form, and the hub's axe helper reloads in each theme before
   auditing, as every other spec does (D-024, D-025).
+
+## 2026-09-03 — Portrait copy: brief examples are not mandates; X10.1 names are
+
+Context: the readability gate (G1.10, grade ≤ 9) failed on four Portrait
+strings. Two are refusal reasons the brief introduces with "Example:"
+(`brief:358`, height; and the polygenic refusal prose at `brief:1365`); one is
+the Disclosure label the brief quotes verbatim (`brief:801`, "See these numbers
+as a table"); one is the X10.1 trait name "Rh type".
+
+Decision:
+- A string the brief marks as an example illustrates the rule (one sentence,
+  the true reason) and is not shipped verbatim; both were rewritten at or
+  below grade 9 with the same meaning and no added claim.
+- A string the brief quotes as the label of a control ships verbatim; its
+  plain words (`these`, `numbers`, `table`) are registered in
+  `data/plain-vocabulary.json`.
+- "Rh type" is the name X10.1 gives the trait; `rh` is registered as a term of
+  art with no plain substitute. No gate exemption was added: the gate stays
+  the single ceiling for every string.
+
+## 2026-09-03 — Carrier pairs: the closed reason table has eight rows, and runs are measured at ingest
+
+Context: the adversarial review of the F2 commit (`c6dd140`) held eight
+findings against brief line 346 and line 1349 (D-030 to D-037).
+
+Decisions:
+- The trigger is gene-level, as the brief says (line 346, "in the same
+  gene"): each person's own heterozygous pathogenic or likely pathogenic
+  variant in the same gene, same position or not; the block names each
+  person's variant and classification. The design's same-position rule
+  was narrower than the brief and the brief wins (X0). One verifier read
+  the design as binding; the brief's text is quoted above.
+- The closed reason table is the design's six phrases plus two: `sex-unknown`
+  (an X-linked pattern, until a sourced writer for chromosomal sex exists;
+  D-031 stays open) and `two-copies` (a file that shows two changed copies).
+  A failed trigger never drops a pair from the panel.
+- Runs of homozygosity are measured once, at ingest, from the parsed calls
+  the processing route already holds, and stored per file on
+  `genome_files`; no request-time read budget exists any more. The measure
+  stays a fact about one file and is never compared between files.
+- With no classified reference position the panel says so in words, never
+  "checked the 0 positions".
+
+## 2026-09-03 — Health picture: what `family.heritability` alone may show
+
+Context: the register's `multiSubjectLayer` rule makes `family.heritability`
+the authority for the joint comparison and never for an individual result
+layer (D-038). The rework moved each cell's genotype figure and its "Open"
+link behind the layer's own grant from that person.
+
+Decision: the column itself, the carrier panel, the "No baseline" footer
+and the coverage figure ("read N of the M positions" of a layer) stay on
+`family.heritability` with the three capabilities. Coverage is a count of
+positions a file reports, a fact about the file's reach and not a result
+about the person, and the joint comparison cannot be described without
+it. Anything that reads a letter from another adult's file needs that
+layer's grant.
+
+## 2026-09-03 — Runs of homozygosity follow a cited definition
+
+Context: D-040. The brief (line 1349) mandates F_ROH from total runs of
+homozygosity with the thresholds 100 Mb and 0.0156, but gives no
+definition of a run; the first measure counted any two adjacent
+same-reading calls and refused every real array file.
+
+Decision: a run is defined as McQuillan et al. 2008 define it (American
+Journal of Human Genetics 83(3):359–372, doi:10.1016/j.ajhg.2008.08.007;
+read at PubMed Central on 2026-09-03): a stretch of at least 25
+contiguous same-reading autosomal calls spanning at least 1.5 Mb, with at
+most one heterozygous call inside it. F_ROH is the sum of run lengths
+over the autosomal span the file covers; the paper divides by the
+autosomal length its panel covers (2,673,768 kb), and Inherit's
+file-covered span is the same idea applied to the file at hand, which
+for a sparse file only raises F_ROH and so refuses more, never less. A
+file that reports no reference-homozygous call (a differences-only VCF)
+cannot show a run and is `not_measurable`. The citation renders beside
+the carrier block as its provenance, and the constants have one home in
+`src/lib/family/roh.ts`.

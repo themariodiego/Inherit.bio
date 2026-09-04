@@ -39,6 +39,7 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "family.invite",
   "family.person",
   "family.permissions",
+  "family.health-picture",
   "family.portrait",
   "embryos.index",
   "embryos.upload",

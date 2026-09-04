@@ -48,7 +48,8 @@ export type PermissionRowId =
   | "reports.polygenic"
   | "ancestry"
   | "raw.export"
-  | "family.portrait";
+  | "family.portrait"
+  | "family.heritability";
 
 export interface PermissionRowCopy {
   id: PermissionRowId;
@@ -83,6 +84,11 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
     id: "family.portrait",
     label: "Portrait",
     consequence: "The two of you can open Portrait, once you have both turned this on.",
+  },
+  {
+    id: "family.heritability",
+    label: "Health picture",
+    consequence: "The two of you can see your results side by side, once you have both turned this on.",
   },
 ];
 
@@ -162,4 +168,4 @@ export const SHARING_ERROR_STATUS = "That did not save. Nothing was changed.";
  * `independentLoginMarker`; `grant_directional_purpose_v1`).
  */
 export const INDEPENDENT_LOGIN_REQUIRED =
-  "Portrait needs a sign-in of your own first. Sign out, sign in again, and this row can be turned on.";
+  "This row needs a sign-in of your own first. Sign out, sign in again, and it can be turned on.";
