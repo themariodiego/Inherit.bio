@@ -728,3 +728,21 @@ Decision, and what the approval does and does not change:
   that Inherit has no automatic detection of a superseded guideline yet.
 - Nothing else is removed or weakened: the only subtraction is the absence
   paragraph the category replaces.
+
+## 2026-09-04 — Medicines: where the category may and may not appear
+
+Context: with eleven `variant_call` templates the reports list, which
+groups by layer in the taxonomy's order (`variant_call` then `estimate`),
+opens on the Specific variants group, which today is Medicines alone; and
+the Overview's starter list admits covered `variant_call` templates.
+
+Decisions:
+- The layer order stays the taxonomy's: a call on specific variants is the
+  higher-evidence layer of brief §1.1 and lists first. The library is a
+  library; prominence there is not a nudge.
+- The Overview's "reports to read first" list excludes the `medicines`
+  category (alongside cancer and brain, memory and mood): a
+  medication-related genotype is never offered as a first read, because the
+  Overview's net impression must not steer anyone towards it.
+- The Overview's split string now shows both halves ("N specific-variant
+  reports · M statistical estimates"), never summed, per X5.2.
