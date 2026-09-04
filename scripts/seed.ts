@@ -12,6 +12,7 @@ import type {
   FindingLayer,
 } from "../src/lib/genome/taxonomy";
 import type { Database } from "../src/lib/supabase/types";
+import { seedLayerAndKind } from "./seed-layer";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -111,10 +112,7 @@ async function seedTemplates() {
       summary: t.summary,
       status: "published" as const,
       evidence: t.evidence,
-      layer: t.layer ?? ("estimate" as const),
-      estimate_kind:
-        t.estimate_kind ??
-        (t.pgs_id ? ("polygenic_score" as const) : ("single_locus" as const)),
+      ...seedLayerAndKind(t),
       variants: t.variants as never,
       pgs_id: t.pgs_id,
       citations: t.citations as never,

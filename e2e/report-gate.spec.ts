@@ -130,8 +130,8 @@ test("'Not now' returns to the library at the report's category section", async 
   await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
   // "Not now" lands on the user-facing category section (nine-category
   // taxonomy id), not the storage category slug, inside the report's own
-  // layer group: the list opens on the Specific variants group when both
-  // layers are populated (ADR 0021), so the link names the estimate layer.
+  // layer group: the link names the report's own layer so the section is
+  // in the open group whatever the list's default.
   await page.getByRole("link", { name: "Not now" }).click();
   await page.waitForURL(/\/genome\/me\/reports\?layer=estimate#cancer$/);
   await expect(page.locator("#cancer")).toBeVisible();

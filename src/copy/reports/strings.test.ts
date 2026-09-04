@@ -103,7 +103,7 @@ describe("report strings", () => {
 
   it("selects the Medicines \"What you can do\" string for that category alone (ADR 0021)", () => {
     expect(strings.WHAT_YOU_CAN_DO_MEDICINES).toBe(
-      "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.",
+      "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.",
     );
     expect(strings.whatYouCanDo("medicines")).toBe(strings.WHAT_YOU_CAN_DO_MEDICINES);
     for (const id of Object.keys(strings.CATEGORY_DESCRIPTIONS) as CategoryId[]) {

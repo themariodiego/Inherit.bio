@@ -14,6 +14,7 @@ import {
   nakedRelativeFindings,
   titleFindings,
 } from "../src/lib/genome/template-prose";
+import { readabilitySentences, wordCount } from "./readability";
 
 const CATEGORIES = new Set([
   "heart-cardiovascular",
@@ -76,15 +77,44 @@ export function bannedLanguage(text: string): string[] {
  */
 export const MEDICINES_BANNED_PATTERNS: readonly [RegExp, string][] = [
   [/\bmetaboli[sz]er(s)?\b/i, "phenotype word (ADR 0021)"],
+  [/\b(?:poor|intermediate|normal|rapid|ultrarapid|extensive)\b/i, "phenotype word (ADR 0021)"],
+  [/\b(?:no|decreased|reduced|normal|increased)\s+function\b/i, "function label (ADR 0021)"],
   [/\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i, "response language (ADR 0021)"],
-  [/\b(?:poor|intermediate|rapid|ultrarapid|extensive|normal)\s+(?:function|activity)\b/i, "phenotype word (ADR 0021)"],
-  [/\b(?:higher|lower|reduced|increased|standard|starting|adjusted)\s+dose\b/i, "dose direction (ADR 0021)"],
+  [/\b(?:higher|lower|reduced|increased|standard|starting|adjusted)\s+(?:dose|amount)\b/i, "dose direction (ADR 0021)"],
+  [/\b(?:lower|raise|reduce|increase|adjust)\s+(?:the|your|a|this)?\s*(?:dose|amount)\b/i, "dose direction (ADR 0021)"],
+  [/\bdosing\b/i, "dose language (ADR 0021)"],
   [/\b(?:take|start|stop|avoid|switch|choose|prescribe)\s+(?:this|that|the|a|an|your)?\s*(?:medicine|medicines|drug|drugs|dose)\b/i, "drug choice (ADR 0021)"],
+  [/\bavoid\b|\bstop taking\b|\bstart taking\b|\bswitch(?:ing|ed)?\b|\binstead of\b|\balternatives?\b/i, "drug choice (ADR 0021)"],
+  [/\bshould\b[^.]*\b(?:take|use)\b/i, "should-take language (ADR 0021)"],
 ];
 
 /** The label of every Medicines-only row the text matches, in pattern order. */
 export function medicinesBannedLanguage(text: string): string[] {
   return MEDICINES_BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
+ * The prose fields of a template, the ones a reader sees as Inherit's own
+ * words: the title, the summary and every interpretation. A citation label
+ * is the cited work's own title (a CPIC guideline is called a "dosing"
+ * guideline by its authors) and is exempt from the Medicines rows for that
+ * reason and no other; every other field is checked.
+ */
+export function templateProseFields(t: {
+  title?: unknown;
+  summary?: unknown;
+  variants?: { interpretations?: Record<string, unknown> }[];
+}): string[] {
+  const fields: unknown[] = [t.title, t.summary];
+  for (const v of t.variants ?? []) fields.push(...Object.values(v.interpretations ?? {}));
+  return fields.filter((field): field is string => typeof field === "string");
+}
+
+/** Medicines sentences a reader sees are capped at 25 words, on the readability gate's own splitter. */
+export const MEDICINES_SENTENCE_CAP = 25;
+
+export function overlongSentences(text: string): string[] {
+  return readabilitySentences(text).filter((sentence) => wordCount(sentence) > MEDICINES_SENTENCE_CAP);
 }
 
 /**
@@ -102,13 +132,19 @@ export function sourceFindings(source: unknown): string[] {
       findings.push(`source.${key} must be an object`);
       continue;
     }
-    const { name, url, accessedOn, licence } = entry as Record<string, unknown>;
+    const { name, url, accessedOn, licence, version, versionNote } = entry as Record<string, unknown>;
     if (typeof name !== "string" || name.trim() === "") findings.push(`source.${key}: missing name`);
     if (typeof url !== "string" || !/^https:\/\/\S+$/.test(url)) findings.push(`source.${key}: url must be https`);
     if (typeof accessedOn !== "string" || !ISO_DATE.test(accessedOn))
       findings.push(`source.${key}: accessedOn must be an ISO date (YYYY-MM-DD)`);
     if (licence !== undefined && (typeof licence !== "string" || licence.trim() === ""))
       findings.push(`source.${key}: licence must be a non-empty string when present`);
+    // A source's version is recorded when its endpoint exposes one and is
+    // null with a note when it does not; it is never invented.
+    if (version !== undefined && version !== null && (typeof version !== "string" || version.trim() === ""))
+      findings.push(`source.${key}: version must be a non-empty string or null`);
+    if (version === null && (typeof versionNote !== "string" || versionNote.trim() === ""))
+      findings.push(`source.${key}: a null version needs a versionNote saying why`);
   }
   return findings;
 }
@@ -223,8 +259,15 @@ function main() {
         if (t.estimate_kind != null)
           errors.push(`${id}: Medicines templates carry estimate_kind null (ADR 0021)`);
         if (t.source == null) errors.push(`${id}: Medicines templates need a source object (ADR 0021)`);
-        for (const why of medicinesBannedLanguage(JSON.stringify(t))) {
-          errors.push(`${id}: banned language (${why})`);
+        // Every prose field, never the serialised template: a citation label
+        // is the cited work's own title and is the one exempt field.
+        for (const field of templateProseFields(t)) {
+          for (const why of medicinesBannedLanguage(field)) {
+            errors.push(`${id}: banned language (${why}): ${field.slice(0, 60)}`);
+          }
+          for (const sentence of overlongSentences(field)) {
+            errors.push(`${id}: Medicines sentence has ${wordCount(sentence)} words; maximum is ${MEDICINES_SENTENCE_CAP}: ${sentence.slice(0, 60)}`);
+          }
         }
       }
 

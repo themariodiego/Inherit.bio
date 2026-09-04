@@ -5,6 +5,8 @@ import {
   bannedLanguage,
   medicinesBannedLanguage,
   MEDICINES_CATEGORY,
+  overlongSentences,
+  templateProseFields,
 } from "../../../scripts/validate-templates";
 import {
   CATEGORY_DESCRIPTIONS,
@@ -95,7 +97,7 @@ const SHIPPED: Record<
 
 /** The one sentence the DPYD report must lead with (the note’s fact; brief-critical false-reassurance case). */
 const DPYD_SENTENCE =
-  "C on both copies here does not rule out a DPYD deficiency, because other positions cause it.";
+  "This is one of the positions guidelines list for DPYD. C on both copies here says nothing about the other positions, which this report does not read.";
 
 /** Words no Medicines report body may carry: §6.4’s rows plus the phenotype and response words of ADR 0021. */
 const FORBIDDEN_IN_BODY = /\bdosage\b|\bsupplement\b|we recommend you take|metaboli[sz]er|\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i;
@@ -197,20 +199,23 @@ describe("the Medicines category ships (ADR 0021)", () => {
         /\b(?:poor|intermediate|rapid|ultrarapid|extensive|normal)\s+(?:metaboli|function|activity)/i,
       );
       expect(bannedLanguage(text), template.slug).toEqual([]);
-      expect(medicinesBannedLanguage(text), template.slug).toEqual([]);
+      // The Medicines rows read every prose field; a citation label is the
+      // cited work's own title ("…-guided warfarin dosing") and is exempt.
+      for (const field of templateProseFields(template)) {
+        expect(medicinesBannedLanguage(field), `${template.slug}: ${field}`).toEqual([]);
+        expect(overlongSentences(field), `${template.slug}: ${field}`).toEqual([]);
+      }
       expect(text, `${template.slug}: no excluded gene or position`).not.toMatch(EXCLUDED);
     }
   });
 
-  it("leads the DPYD report with the sentence that a reference result does not rule out a deficiency", () => {
+  it("leads the DPYD report with the two sentences that name no phenotype and no count Inherit did not read", () => {
     const dpyd = medicines.find((template) => template.slug === "dpyd-rs3918290-one-position")!;
     expect(dpyd.summary.startsWith(DPYD_SENTENCE)).toBe(true);
     // The reference-homozygous reading repeats it, so the sentence sits
     // beside the letters and not only above them.
     expect(dpyd.variants[0].interpretations.CC).toContain(DPYD_SENTENCE);
-    expect(medicines.filter((template) => JSON.stringify(template).includes("deficiency")).map((t) => t.slug)).toEqual([
-      "dpyd-rs3918290-one-position",
-    ]);
+    expect(medicines.filter((template) => JSON.stringify(template).includes("deficiency")).map((t) => t.slug)).toEqual([]);
   });
 
   it("names the forms that carry the -806T letter on the CYP2C19 *17 position and never calls the reader *17", () => {
@@ -225,7 +230,7 @@ describe("the report renderer’s fixed strings for Medicines (ADR 0021)", () =>
   it("renders the Medicines “What you can do” string for that category only", () => {
     expect(whatYouCanDo("medicines")).toBe(WHAT_YOU_CAN_DO_MEDICINES);
     expect(WHAT_YOU_CAN_DO_MEDICINES).toBe(
-      "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.",
+      "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.",
     );
     for (const category of CATEGORY_TAXONOMY.map((entry) => entry.id).filter((id) => id !== "medicines")) {
       expect(whatYouCanDo(category), category).toBe(NOTHING_TO_DO);

@@ -746,3 +746,42 @@ Decisions:
   Overview's net impression must not steer anyone towards it.
 - The Overview's split string now shows both halves ("N specific-variant
   reports · M statistical estimates"), never summed, per X5.2.
+
+## 2026-09-04 — Medicines: corrections after the adversarial review
+
+Context: the four-lens review of branch `medicines` (sixteen findings, one
+already fixed, one a merge-order matter for the orchestrator).
+
+Decisions:
+- The reports list opens on the general library (the estimate group) when
+  it has any report; the Specific variants group is a tab. This amends the
+  entry above: the layer order of the tabs stays the taxonomy's, and the
+  default view is the library a reader came for.
+- A seed template in the `variant_call` layer is stored with a null estimate
+  kind whatever the file says (`scripts/seed-layer.ts`); a reading of
+  letters is not an estimate of anything.
+- No title or summary claims a form from one position: the CYP2C19
+  rs12248560 report is titled as a bare position, and forms are named only
+  as the forms that carry a letter.
+- ADR 0021 states that six of the eleven shipped positions are ones the
+  research note marked exclude, and why each ships as a bare position under
+  the operator's decision: every reason the note gave concerned a phenotype
+  claim, which no report makes.
+- "What you can do" for Medicines reads "Inherit does not say what any
+  doctor should do with this result. You can show it to any doctor you
+  choose." — two sentences, no implied relevance.
+- The Medicines rows of `scripts/validate-templates.ts` are mechanical and
+  read every prose field; a citation label is exempt only because it is the
+  cited work's own title. Every Medicines sentence is at most 25 words, on
+  the readability gate's splitter.
+- The DPYD report leads with "This is one of the positions guidelines list
+  for DPYD. C on both copies here says nothing about the other positions,
+  which this report does not read." — no phenotype, no count Inherit did not
+  read.
+- CPIC is defined at its first mention in every summary. The CPIC endpoints
+  read on 2026-09-03 exposed no version number; each source records
+  `version: null` with a note, and none is invented.
+- A `variant_call` report's evidence chip reads "This position is named by a
+  published prescribing guideline. Inherit reads the letters only." rather
+  than a sentence about replication and sibling checks.
+

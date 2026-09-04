@@ -5,6 +5,9 @@ import {
   MEDICINES_CATEGORY,
   bannedLanguage,
   medicinesBannedLanguage,
+  MEDICINES_SENTENCE_CAP,
+  overlongSentences,
+  templateProseFields,
   sourceFindings,
 } from "./validate-templates";
 
@@ -66,22 +69,70 @@ describe("medicinesBannedLanguage (ADR 0021)", () => {
     expect(MEDICINES_CATEGORY).toBe("pharmacogenomics");
     expect(medicinesBannedLanguage("This is one position, not a poor metabolizer status.")).toEqual([
       "phenotype word (ADR 0021)",
+      "phenotype word (ADR 0021)",
     ]);
-    expect(medicinesBannedLanguage("an intermediate metaboliser")).toEqual(["phenotype word (ADR 0021)"]);
+    expect(medicinesBannedLanguage("an intermediate metaboliser")).toEqual([
+      "phenotype word (ADR 0021)",
+      "phenotype word (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("a normal form")).toEqual(["phenotype word (ADR 0021)"]);
     expect(medicinesBannedLanguage("It does not tell you how you respond to warfarin.")).toEqual([
       "response language (ADR 0021)",
     ]);
     expect(medicinesBannedLanguage("people with this letter may respond differently")).toEqual([
       "response language (ADR 0021)",
     ]);
-    expect(medicinesBannedLanguage("CPIC lists this as decreased function")).toEqual([]);
-    expect(medicinesBannedLanguage("this form has normal function")).toEqual(["phenotype word (ADR 0021)"]);
-    expect(medicinesBannedLanguage("a lower dose may be considered")).toEqual(["dose direction (ADR 0021)"]);
-    expect(medicinesBannedLanguage("you could avoid this medicine")).toEqual(["drug choice (ADR 0021)"]);
-    expect(medicinesBannedLanguage("a poor metabolizer who should take a lower dose")).toEqual([
+    expect(medicinesBannedLanguage("CPIC lists this as decreased function")).toEqual(["function label (ADR 0021)"]);
+    expect(medicinesBannedLanguage("this form has no function")).toEqual(["function label (ADR 0021)"]);
+    expect(medicinesBannedLanguage("this form has normal function")).toEqual([
       "phenotype word (ADR 0021)",
+      "function label (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("a lower dose may be considered")).toEqual([
+      "dose direction (ADR 0021)",
       "dose direction (ADR 0021)",
     ]);
+    expect(medicinesBannedLanguage("to reduce the amount")).toEqual(["dose direction (ADR 0021)"]);
+    expect(medicinesBannedLanguage("guided dosing")).toEqual(["dose language (ADR 0021)"]);
+    expect(medicinesBannedLanguage("you could avoid this medicine")).toEqual([
+      "drug choice (ADR 0021)",
+      "drug choice (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("stop taking it")).toEqual(["drug choice (ADR 0021)"]);
+    expect(medicinesBannedLanguage("an alternative instead of this")).toEqual(["drug choice (ADR 0021)"]);
+    expect(medicinesBannedLanguage("switching is an option")).toEqual(["drug choice (ADR 0021)"]);
+    expect(medicinesBannedLanguage("you should probably use less")).toEqual(["should-take language (ADR 0021)"]);
+    expect(medicinesBannedLanguage("a poor metabolizer who should take a lower dose")).toEqual([
+      "phenotype word (ADR 0021)",
+      "phenotype word (ADR 0021)",
+      "dose direction (ADR 0021)",
+      "dose direction (ADR 0021)",
+      "should-take language (ADR 0021)",
+    ]);
+  });
+
+  it("checks every prose field and exempts only a citation label, which is the cited work's own title", () => {
+    const template = {
+      title: "Warfarin, one position · VKORC1",
+      summary: "It is not a dose.",
+      variants: [{ interpretations: { CC: "Your file shows C on both copies.", CT: "Your file shows C and T." } }],
+      citations: [{ label: "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update" }],
+    };
+    expect(templateProseFields(template)).toEqual([
+      "Warfarin, one position · VKORC1",
+      "It is not a dose.",
+      "Your file shows C on both copies.",
+      "Your file shows C and T.",
+    ]);
+    expect(templateProseFields(template).flatMap(medicinesBannedLanguage)).toEqual([]);
+    expect(medicinesBannedLanguage(template.citations[0].label)).toEqual(["dose language (ADR 0021)"]);
+  });
+
+  it("caps a Medicines sentence at 25 words on the readability gate's splitter", () => {
+    expect(MEDICINES_SENTENCE_CAP).toBe(25);
+    expect(overlongSentences("One short sentence. Another one, with rs762551 in it.")).toEqual([]);
+    const long = Array.from({ length: 26 }, (_, i) => `word${i}`).join(" ") + ".";
+    expect(overlongSentences(`Short one. ${long}`)).toEqual([long]);
   });
 
   it("finds nothing in the register a Medicines report uses", () => {
@@ -96,10 +147,15 @@ describe("medicinesBannedLanguage (ADR 0021)", () => {
   it("carries exactly one label per row, in the order the rows are declared", () => {
     expect(MEDICINES_BANNED_PATTERNS.map(([, why]) => why)).toEqual([
       "phenotype word (ADR 0021)",
-      "response language (ADR 0021)",
       "phenotype word (ADR 0021)",
+      "function label (ADR 0021)",
+      "response language (ADR 0021)",
       "dose direction (ADR 0021)",
+      "dose direction (ADR 0021)",
+      "dose language (ADR 0021)",
       "drug choice (ADR 0021)",
+      "drug choice (ADR 0021)",
+      "should-take language (ADR 0021)",
     ]);
   });
 });

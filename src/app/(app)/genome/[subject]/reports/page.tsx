@@ -143,8 +143,12 @@ export default async function ReportsPage(
   );
   const requestedLayer =
     typeof searchParams.layer === "string" ? searchParams.layer : undefined;
+  // The list opens on the general library (the estimate group) when it has
+  // any report; the layer order of the tabs stays the taxonomy's.
   const activeLayer: FindingLayer | undefined =
-    nonEmptyLayers.find((layer) => layer === requestedLayer) ?? nonEmptyLayers[0];
+    nonEmptyLayers.find((layer) => layer === requestedLayer) ??
+    nonEmptyLayers.find((layer) => layer === "estimate") ??
+    nonEmptyLayers[0];
 
   // The "cannot give you a number" line counts only a layer this reader may
   // actually open.

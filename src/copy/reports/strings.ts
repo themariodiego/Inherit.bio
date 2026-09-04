@@ -43,7 +43,7 @@ export const NOTHING_TO_DO =
  * gives none. Selected by `whatYouCanDo` for the `medicines` category only.
  */
 export const WHAT_YOU_CAN_DO_MEDICINES =
-  "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.";
+  "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 
 /**
  * The statement under "What you can do" for a report’s user-facing category:

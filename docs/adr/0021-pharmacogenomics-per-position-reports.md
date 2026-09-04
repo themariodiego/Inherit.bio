@@ -41,7 +41,7 @@ pharmacogenomic star alleles in that layer — and reads exactly one position.
 | --- | --- | --- | --- | --- |
 | `vkorc1-rs9923231-one-position` | chr16:31096368 | C > T | VKORC1 reference (C) / variant (T), the only position CPIC uses for the gene | 28198005 |
 | `cyp2c19-rs4244285-one-position` | chr10:94781859 | G > A | *2 (A); *38 (G) | 35034351 |
-| `cyp2c19-rs12248560-one-position` | chr10:94761900 | C > T | T in *17, *44, *45 (and ambiguous in *4); *17 needs rs3758581 too | 35034351 |
+| `cyp2c19-rs12248560-one-position` | chr10:94761900 | C > T | T in *17, *44, *45 (and ambiguous in *4); *17 needs rs3758581 too; titled as a bare position | 35034351 |
 | `cyp2c9-rs1799853-one-position` | chr10:94942290 | C > T | *2 (T), also *35, *61, *92 | 28198005, 32189324 |
 | `cyp2c9-rs1057910-one-position` | chr10:94981296 | A > C | *3 (C), also *18, *68 | 28198005, 32189324 |
 | `slco1b1-rs4149056-one-position` | chr12:21178615 | T > C | *5 (C), also *15, *40, *47 | 35152405 |
@@ -59,12 +59,19 @@ not show the pair of gene copies, and that it says nothing about how a
 medicine works in the reader, about a dose or about a choice of medicine.
 No frequency, no effect size, no phenotype word, no “may respond”, no dose
 direction, no drug choice. The DPYD report leads, in its summary and again in
-its reference-homozygous reading, with the note’s fact for the highest-harm
-case: “C on both copies here does not rule out a DPYD deficiency, because
-other positions cause it.” The CYP2C19 *17 position names the forms that
-carry its T (*17, *44, *45) and states that it is not a *17 call. No report
-carries a CPIC function label (“no function”, “decreased function”): the
-decision names letters, forms and limits, and fewer claims beats more caveats.
+its reference-homozygous reading, with two sentences that name no phenotype
+and no count Inherit did not read: “This is one of the positions guidelines
+list for DPYD. C on both copies here says nothing about the other positions,
+which this report does not read.” The CYP2C19 rs12248560 report is titled as
+a bare position (“Clopidogrel, one CYP2C19 position”), names the forms that
+carry its T (*17, *44, *45) and states that it is not a *17 call; no title
+or summary claims a form from one position. Every summary defines CPIC at its
+first mention (“a group of clinicians and scientists who write guidelines
+about genes and medicines”), and every sentence a reader sees is at most 25
+words, which `scripts/validate-templates.ts` enforces for the category on
+the readability gate’s own splitter. No report carries a CPIC function label
+(“no function”, “decreased function”): the decision names letters, forms and
+limits, and fewer claims beats more caveats.
 
 **Evidence level.** `emerging`. ADR 0011’s rubric defines `clinical` as
 ACMG/AMP P/LP with a ClinVar review status, which a CPIC allele definition is
@@ -79,8 +86,13 @@ position a prescribing guideline names, and filling the heading with advice is
 what §6.4 forbids. For the `medicines` category alone the renderer selects one
 new constant, `WHAT_YOU_CAN_DO_MEDICINES` in `src/copy/reports/strings.ts`:
 
-> “A doctor who prescribes for you may want to know this result. Inherit does
-> not say what any doctor should do with it.”
+> “Inherit does not say what any doctor should do with this result. You can
+> show it to any doctor you choose.”
+
+Two sentences, neither implying that the result is relevant to any
+prescription; the earlier wording (“A doctor who prescribes for you may want
+to know this result”) implied a relevance no report establishes and was
+replaced after review.
 
 `whatYouCanDo(categoryId)` returns it for `medicines` and brief line 630’s
 string for every other category; pinned by `src/copy/reports/strings.test.ts`,
@@ -95,9 +107,13 @@ on the reports list go; the Medicines section renders like any other
 category. This is the only subtraction.
 
 **Gate rows.** `scripts/validate-templates.ts` gains `MEDICINES_BANNED_PATTERNS`
-for the `pharmacogenomics` slug — metabolizer phenotype words, response
-language, dose direction, drug choice — beside the §6.4 rows that stay in
-force for every template; it requires `layer: "variant_call"`,
+for the `pharmacogenomics` slug — metabolizer and phenotype words (poor,
+intermediate, normal, rapid, ultrarapid), function labels, response
+language, dose direction and “dosing”, drug choice (avoid, stop or start
+taking, switch, instead of, alternative) and “should … take/use” — applied
+to every prose field a reader sees (title, summary, interpretations) and
+not to a citation label, which is the cited work’s own title; beside the
+§6.4 rows that stay in force for every template; it requires `layer: "variant_call"`,
 `estimate_kind: null`, an `accessedOn` date on every citation and a `source`
 object on every Medicines template. `data/templates/SCHEMA.md` documents the
 two new optional fields (`citations[].accessedOn`, `source`); `source` is
@@ -107,7 +123,10 @@ validated in the seed file and not stored by `scripts/seed.ts`.
 requested; CPIC® is a registered service mark of HHS and its logo and acronym
 stay out of marketing), dbSNP (NCBI, no restrictions, attribution requested)
 and PubMed only. Each template’s `source` names CPIC and dbSNP with
-`accessedOn: "2026-09-03"`, and each citation carries the same date.
+`accessedOn: "2026-09-03"`, and each citation carries the same date. CPIC’s
+licence asks that users record the version number of the content used; the
+API endpoints read on 2026-09-03 exposed none, so each CPIC source carries
+`version: null` with a `versionNote` saying so, and no version is invented.
 `docs/dataset-licenses.md` gains the CPIC row and records that ClinPGx/PharmGKB
 (CC BY-SA 4.0 with a research-use term, a live legal question) and PharmVar
 (terms UNVERIFIED) are not used. The words `warfarin`, `clopidogrel`,
@@ -145,16 +164,35 @@ one without a superseding ADR:
   CPIC’s distinct “Variable” phenotype for heterozygotes; PharmCAT cannot call
   two G6PD alleles at all.
 
-Two candidates the note recommended against ship, because the operator’s
-exclusion list does not name them and the note verifies all four facts the
-decision requires (coordinate, alleles, forms, PMID): **CYP2C19 \*17
-(rs12248560)**, shipped as a bare position that names the forms carrying its T
-and never as a *17 call, which is the only form the note says is supportable;
-and **CYP3A5 \*3 (rs776746)**, which the note objected to on consumer benefit
-(tacrolimus is taken under therapeutic drug monitoring, and a reader might
-second-guess a monitored dose). The report answers that objection by saying
-nothing about a dose and by carrying the Medicines “What you can do” string;
-the GRCh37→GRCh38 reference-base flip the note warns of is pinned (ref T).
+Six of the eleven shipped positions are ones the research note’s §5 table
+marked **exclude**. They ship because the operator’s decision of 2026-09-03
+lifted the withholding for every position whose four facts the note verifies
+(coordinate, alleles, forms, PMID), and because every reason the note gave
+concerned a phenotype claim — a diplotype, a phase, a function, a dose —
+which no report makes. Each is a bare position that names its letters, the
+forms that carry them and its limit:
+
+- **CYP2C19 rs12248560** — the note: a “*17” claim from this SNP alone is
+  not supportable (T is in *17, *44, *45 and ambiguously *4), and it could
+  be populated only as a bare-position report with no star-allele name. It
+  ships exactly so, titled “Clopidogrel, one CYP2C19 position”.
+- **TPMT rs1800462 and rs1800460** — the note: unphased data cannot separate
+  *1/*3A from *3B/*3C, and rs1142345 is multi-allelic. Neither report names
+  a pair of forms; rs1142345 stays excluded (below).
+- **NUDT15 rs116855232** — the note: *3 needs a second, co-defining variant,
+  and *1/*2 against *3/*6 is ambiguous unphased. The report says T is part
+  of *3, that *3 needs a second change not read here, and that it is not a
+  *3 call.
+- **DPYD rs3918290** — the note: an activity-score gene of 83 positions,
+  a reference implementation that refuses a diplotype from unphased data,
+  and the highest false-reassurance harm of any candidate. The report leads
+  with the two sentences above, states no deficiency and no activity, and
+  reads one position of the 83.
+- **CYP3A5 rs776746** — the note: no consumer benefit, since tacrolimus is
+  taken under therapeutic drug monitoring, and a reader might second-guess
+  a monitored dose. The report says nothing about a dose and carries the
+  Medicines “What you can do” string; the GRCh37→GRCh38 reference-base flip
+  the note warns of is pinned (ref T).
 
 ## The science limit (dossier condition B, unchanged)
 

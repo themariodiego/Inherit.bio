@@ -61,12 +61,12 @@ const NOTHING_TO_DO =
   "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.";
 /** The Medicines "What you can do" string (ADR 0021), rendered for that category only. */
 const WHAT_YOU_CAN_DO_MEDICINES =
-  "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.";
+  "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 const MEDICINES_DESCRIPTION =
   "The letters your file shows at single DNA positions that prescribing guidelines name.";
 /** The sentence the DPYD report leads with (the research note's fact). */
 const DPYD_SENTENCE =
-  "C on both copies here does not rule out a DPYD deficiency, because other positions cause it.";
+  "This is one of the positions guidelines list for DPYD. C on both copies here says nothing about the other positions, which this report does not read.";
 /** §6.4's rows and ADR 0021's phenotype and response words: none may appear on a Medicines surface. */
 const FORBIDDEN_IN_MEDICINES =
   /\bdosage\b|\bsupplement\b|we recommend you take|metaboli[sz]er|\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i;
@@ -399,19 +399,29 @@ test("the reports list's estimate group renders its one layer definition, layer-
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(ESTIMATE_CATEGORY_HEADINGS);
 });
 
-test("the reports list opens on the Specific variants group, where Medicines renders like any other category and no absence is stated", async ({
+test("the reports list opens on the general library and its Specific variants tab shows Medicines like any other category, with no absence stated", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/genome/me/reports");
 
-  // The first populated layer is the open group: its definition once, the
+  // With no layer named the list opens on the general library (the estimate
+  // group): its definition once, the other layer's not at all, its tab
+  // marked current, and the tabs still in the taxonomy's layer order.
+  await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(0);
+  const tabs = page.getByRole("navigation", { name: "Report groups" }).getByRole("link");
+  await expect(tabs).toHaveText(["Specific variants", "Statistical estimates"]);
+  await expect(tabs.nth(1)).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#medicines")).toHaveCount(0);
+
+  // The Specific variants tab opens its group: its definition once, the
   // other layer's not at all, and its tab marked current.
+  await tabs.nth(0).click();
+  await page.waitForURL(/\/genome\/me\/reports\?layer=variant_call$/);
   await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
   await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(0);
   await expect(page.locator('[data-library-layer="variant-call"]')).toHaveCount(1);
-  const tabs = page.getByRole("navigation", { name: "Report groups" }).getByRole("link");
-  await expect(tabs).toHaveText(["Specific variants", "Statistical estimates"]);
   await expect(tabs.nth(0)).toHaveAttribute("aria-current", "page");
 
   // Medicines is the one category with a specific-variant report on the
