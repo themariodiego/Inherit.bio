@@ -689,3 +689,41 @@ file that reports no reference-homozygous call (a differences-only VCF)
 cannot show a run and is `not_measurable`. The citation renders beside
 the carrier block as its provenance, and the constants have one home in
 `src/lib/family/roh.ts`.
+
+## 2026-09-04 — Portrait page (F3b): the decisions the build took
+
+Context: `/family/portrait/[pairId]` built on the F3 libraries and F2's
+carrier pairs; ADR 0015 moved to Accepted with thirteen decisions. The
+ones that depart from the design or the mockup, with their reasons:
+- A missing processed file is not a blocking-screen step: whether another
+  adult has a file is a derived fact the gate withholds on every Family
+  surface, so it is read after the gate and rendered as the outputs'
+  "no file yet" sentence.
+- A paused pair renders the pause sentence, not a step nobody left undone.
+- Output cards and "How sure we are" are labelled sections, not headings,
+  so the page stays at three headings under the six-heading cap however
+  many cards render.
+- The viewer's own missing steps read in the second person.
+- One refusals link after the list (to `/science` until `/science/limits`
+  exists), within the interactive budget.
+- One-sided readings (one parent shows a copy, the other's covered
+  positions show none) render the brief's exact sentence and no
+  distribution: the only cross would show zero affected, contradicting
+  "not zero risk"; they are restricted to registry-recessive genes; two
+  copies on one side renders nothing because the brief gives no sentence.
+- Deletion is the viewer revoking their own `family.portrait` grant
+  through the existing consents route and `revoke_directional_purpose_v1`,
+  which removes the pair's `portrait_results` and returns the pair to
+  pending; no new routine.
+- Open decisions of the design: 6 (the §2 sentence form), 6b (a sub-1%
+  category in its own 1,000 block, unreachable for exact fractions),
+  7 (the chromosomal-sex expectation exists in copy and is not rendered
+  until a citation id exists), 10 (the refusals heading), 11 (one pair
+  bar with both chips). D-031 stays open: an X-linked pair renders the
+  refusal; the cross exists in `mendel.ts` unrendered.
+- Interface extensions on F2's side: `CarrierPairSummary.genotypes`
+  (additive) and `files: number | null` on the health-picture column.
+- Requests: a `--line-strong` token (the page uses `border-ink`);
+  `/science/limits`; a schema note that today every `family.portrait`
+  pair has two accounts, so the "opened their own account" step is
+  reachable only by a future Path B record.
