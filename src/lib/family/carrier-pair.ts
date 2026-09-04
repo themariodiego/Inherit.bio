@@ -390,7 +390,15 @@ export interface CarrierPairSummary {
   classifiedPositions: number;
   /** Classified positions both files cover: the count the empty sentence prints. */
   positionsBothCover: number;
+  /**
+   * What each file reported at the classified positions, exactly as the rule
+   * read them (empty when nothing was read). Portrait reads them again for
+   * the one-sided sentences of brief line 2238, so the same read serves both.
+   */
+  genotypes: { a: ReadonlyMap<number, string>; b: ReadonlyMap<number, string> };
 }
+
+const NO_GENOTYPES: CarrierPairSummary["genotypes"] = { a: new Map(), b: new Map() };
 
 /** Every classified reference position, paged to the read budget. */
 export async function readClassifiedVariants(supabase: Db): Promise<CarrierRefVariant[]> {
@@ -451,14 +459,17 @@ export async function resolveCarrierPair(
   conditions: readonly CarrierCondition[],
 ): Promise<CarrierPairSummary> {
   const classifiedPositions = refVariants.length;
-  if (classifiedPositions === 0) return { matches: [], classifiedPositions, positionsBothCover: 0 };
+  if (classifiedPositions === 0) {
+    return { matches: [], classifiedPositions, positionsBothCover: 0, genotypes: NO_GENOTYPES };
+  }
   const rsids = refVariants.map((variant) => variant.rsid);
   const [readA, readB] = await Promise.all([
     getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids),
     getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids),
   ]);
+  const genotypes = { a: readA.genotypes, b: readB.genotypes };
   const positionsBothCover = countPositionsBothCover(readA.genotypes, readB.genotypes);
-  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover };
+  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover, genotypes };
 
   const [runsA, runsB] = await Promise.all([
     readSubjectRuns(supabase, a.dataSubjectId),
@@ -474,5 +485,6 @@ export async function resolveCarrierPair(
     }),
     classifiedPositions,
     positionsBothCover,
+    genotypes,
   };
 }

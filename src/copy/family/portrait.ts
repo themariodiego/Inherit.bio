@@ -15,7 +15,7 @@
  * a ranking or an image (lines 1016, 1343, 2238).
  */
 import { REPORT_HEADINGS } from "@/copy/reports/headings";
-import { COUNSELLOR_NO_ROUTE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
+import { COUNSELLOR_NO_ROUTE, DATA_AND_METHODS, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { EXACT_MARKER } from "@/lib/figures/contract";
 import type {
   AutosomalOutcome,
@@ -25,7 +25,15 @@ import type {
   MendelPattern,
 } from "@/lib/family/mendel";
 import type { TraitKey } from "@/lib/family/traits";
-import { GATE_ERROR_STATUS } from "./person";
+import {
+  NO_CLASSIFIED_POSITIONS,
+  carrierNoProbabilitySentence,
+  noCarrierMatches,
+  personVariantLine,
+} from "./health-picture";
+import { UNNAMED_PERSON_LABEL } from "./index";
+import { SHARING_ERROR_STATUS } from "./permissions";
+import { GATE_ERROR_STATUS, PAUSED_BODY, noFileYet } from "./person";
 
 /** The h1 and the document title: the same word as the Overview box and the hub tile. */
 export const PORTRAIT_H1 = "Portrait";
@@ -33,6 +41,9 @@ export const PORTRAIT_H1 = "Portrait";
 // ---------------------------------------------------------------------------
 // The persistent banner (line 364) and the header sentence (line 1016).
 // ---------------------------------------------------------------------------
+
+/** The accessible name of the banner region; the two sentences are its content. */
+export const BANNER_LABEL = "What Portrait is and is not";
 
 /** Character-for-character (line 364). On every Portrait screen, the blocking screen included. */
 export const BANNER_FIRST =
@@ -78,6 +89,11 @@ export function missingStep(name: string, step: string): string {
   return `${name} has not: ${step}`;
 }
 
+/** The viewer's own missing steps, in the second person: "You has not" is not a sentence. */
+export function viewerMissingStep(step: string): string {
+  return `You have not: ${step}`;
+}
+
 /** The four steps a person can have left undone, as the line above names them. */
 export const PORTRAIT_STEPS = {
   account: "opened their own Inherit account",
@@ -87,11 +103,34 @@ export const PORTRAIT_STEPS = {
 } as const;
 export type PortraitStep = keyof typeof PORTRAIT_STEPS;
 
+/**
+ * The same steps for the viewer. The account step has no second-person
+ * form: a viewer reading this page holds an account by definition.
+ */
+export const VIEWER_PORTRAIT_STEPS: Record<Exclude<PortraitStep, "account">, string> = {
+  grant: "turned on Portrait from your own account",
+  acknowledged: "read what Portrait will and will not show",
+  independentLogin: "signed in to Inherit on your own",
+};
+
+/** The viewer, as the heading names them among the people with a step left. */
+export const VIEWER_NAME_IN_HEADING = "you";
+
+/** "you", "Bo", "you and Bo": the names the heading is waiting for, in one phrase. */
+export function namesPhrase(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
 /** `family.portrait.consent-required.action` → `settings.consents`. */
 export const OPEN_CONSENTS_BUTTON = "Open your consents";
 
 /** The acknowledgement checkbox (design §2.5), stamped on the viewer's own subject only. */
 export const ACKNOWLEDGE_CHECKBOX_LABEL = "I have read what Portrait will and will not show.";
+
+/** Above the checkbox: what ticking it records, and for whom. */
+export const ACKNOWLEDGE_LEAD =
+  "Read the notice above, then tick the box. This is recorded for your own account only; the other person reads and ticks for themselves.";
 
 /** Verb plus object (brief line 928): "Continue" is banned standalone. */
 export const ACKNOWLEDGE_BUTTON = "Open Portrait";
@@ -99,11 +138,42 @@ export const ACKNOWLEDGE_BUTTON = "Open Portrait";
 /** The acknowledgement did not save; the same words as the Tier-2 gate's own failure. */
 export const ACKNOWLEDGE_ERROR_STATUS = GATE_ERROR_STATUS;
 
+/** Sharing between the two accounts is paused: the same sentence the person page uses. */
+export { PAUSED_BODY };
+
+/** The name a person is shown under when no record names them, from its one home. */
+export { UNNAMED_PERSON_LABEL };
+
+/** The accessible name of the bar that carries both people's chips. */
+export const PAIR_BAR_LABEL = "The two people this Portrait is about";
+
 // ---------------------------------------------------------------------------
 // Outputs: headings, the per-output sentences and the derivation.
 // ---------------------------------------------------------------------------
 
 export const OUTPUTS_HEADING = "What a child could inherit";
+
+/** Under the outputs heading, once: what a card is and what none of them is. */
+export const OUTPUTS_LEDE =
+  "One card per change both files show, worked out as chances across many possible children. No card is about one child.";
+
+/** The card title for one gene both files show a change in. */
+export function outputHeading(gene: string): string {
+  return `A change in ${gene}`;
+}
+
+/** The outputs section's empty states, from their one home on the side-by-side page. */
+export { NO_CLASSIFIED_POSITIONS, noCarrierMatches };
+
+/** Both files hold a file, both are classified against, and the two cover none of the same positions. */
+export const NO_POSITIONS_BOTH_COVER =
+  "The two files cover none of the same classified positions, so there is nothing to work out.";
+
+/** A person in the pair has no processed file: the person page's own sentence. */
+export { noFileYet };
+
+/** The same refusal sentence the side-by-side page renders for a match with no chance (D-031). */
+export { carrierNoProbabilitySentence, personVariantLine };
 
 /** Character-for-character (line 1345); once per output. */
 export const SEGREGATION_SENTENCE =
@@ -174,6 +244,17 @@ export function knownChangesCovered(covered: number, known: number): string {
   return `Both files cover ${covered} of the ${known} changes known to cause this condition.`;
 }
 
+/** The other file's reading in a one-sided block (design §3), a figure value: words, never a zero. */
+export const NO_COPY_FOUND_READING = "no copy found at the positions covered";
+
+/** The other file's reading when it reports none of the gene's known positions (line 1349). */
+export const POSITIONS_NOT_COVERED_READING = "none of the known positions covered";
+
+/** What would change a one-sided answer: a file that reaches more of the known changes. */
+export function oneSidedWhatWouldChange(name: string): string {
+  return `A file for ${name} that covers more of the changes known to cause this condition.`;
+}
+
 /** Character-for-character (line 1349): the runs-of-homozygosity refusal. */
 export const RUNS_REFUSAL =
   "These two files look more genetically similar than usual. That changes the maths in ways we cannot show you honestly here. Please talk to a genetic counsellor.";
@@ -217,6 +298,19 @@ export const TRAIT_HEADINGS: Record<TraitKey, string> = {
   earwax: "Earwax type",
 };
 
+/** The trait as the unregistered sentence names it, in lower case where the word allows. */
+export const TRAIT_NAMES: Record<TraitKey, string> = {
+  abo: "blood type",
+  rh: "Rh type",
+  red_hair: "red hair",
+  lactase_persistence: "lactose tolerance",
+  earwax: "earwax type",
+};
+
+/** Above the five trait cards, once. */
+export const TRAITS_LEDE =
+  "The five traits Portrait may show, and no others. Each card says what Inherit can show for it today.";
+
 /** Design §2.5: "yet" is permitted because registering a cited table is within the operator's control (line 2680). */
 export function unregisteredCard(trait: string): string {
   return `Inherit has not registered a sourced table for ${trait} yet, so this card shows nothing.`;
@@ -235,6 +329,21 @@ export const DOTS_CAPTION =
 
 /** The accessible name of the stacked bar beneath the dots. */
 export const BAR_LABEL = "100 children as one line";
+
+/** The accessible name of the legend that names every treatment in words. */
+export const DOTS_LEGEND_LABEL = "What each dot means";
+
+/** The legend's word for each outcome: the fill and the border differ, and so does the text. */
+export const OUTCOME_LEGEND: Record<MendelOutcome, string> = {
+  affected: "Two copies of the change",
+  carrier: "One copy of the change",
+  neither: "No copy of the change",
+  boy_affected: "Boys with the condition",
+  boy_neither: "Boys without it",
+  girl_affected: "Girls with the condition",
+  girl_carrier: "Girls who carry it",
+  girl_neither: "Girls without it",
+};
 
 /** Character-for-character (line 801): the Disclosure that opens the table fallback. */
 export const SEE_AS_TABLE_BUTTON = "See these numbers as a table";
@@ -288,6 +397,51 @@ export const BOTH_FILES_COVERED = "Both files cover the positions this uses.";
 /** What would change the answer for a carrier-pair block. */
 export const CARRIER_WHAT_WOULD_CHANGE =
   "A different classification of this change by outside reviewers, or a file that covers positions these two do not.";
+
+/** The block of a match with no chance (D-031): no arithmetic was applied, so no assumption was made. */
+export const REFUSAL_ASSUMPTION = "No arithmetic was done here, so nothing rests on an assumption.";
+
+/** What would change the answer for a match with no chance. */
+export const REFUSAL_WHAT_WOULD_CHANGE =
+  "A change in what outside reviewers say about this change, or in what Inherit records about this gene.";
+
+/** The pattern field of a match whose gene has no recorded pattern. */
+export const NO_PATTERN_DESCRIPTION =
+  "Inherit has no recorded pattern for this gene, so no arithmetic applies.";
+
+/** The pattern field of a match refused on the runs check (line 1349). */
+export const RUNS_ASSUMPTION =
+  "The arithmetic needs both files below Inherit’s limit for long runs of matching letters. One file is above it or could not be measured.";
+
+export const RUNS_WHAT_WOULD_CHANGE =
+  "A file for each person that Inherit can measure and that sits below that limit.";
+
+// ---------------------------------------------------------------------------
+// Deletion (line 364: "either of you can delete it"). The mechanism is the
+// viewer's own Portrait grant: revoking it deletes every Portrait result of
+// the pair and closes the page for both people (revoke_directional_purpose_v1).
+// ---------------------------------------------------------------------------
+
+export const DELETE_LEAD =
+  "Deleting turns Portrait off from your side. It closes this page for both of you and deletes every result built from these two files.";
+
+/** Verb plus object (line 928). */
+export const DELETE_BUTTON = "Delete Portrait";
+
+export const DELETE_DIALOG_HEADING = "Delete this Portrait?";
+
+/** Tier 2 of line 936: the dialog names what is deleted and what it takes to undo. */
+export const DELETE_DIALOG_BODY =
+  "Every Portrait result built from these two files is deleted within 60 seconds, and this page closes for both of you. It opens again only when you both turn Portrait on again.";
+
+export const DELETE_CONFIRM_BUTTON = "Delete this Portrait";
+export const DELETE_CANCEL_BUTTON = "Keep Portrait";
+
+/** The request failed; nothing changed: the same words the sharing controls use. */
+export const DELETE_ERROR_STATUS = SHARING_ERROR_STATUS;
+
+/** The footer link, from its one home. */
+export { DATA_AND_METHODS };
 
 // ---------------------------------------------------------------------------
 // The refusals screen `#not-shown` (lines 358, 1357-1368).
