@@ -19,3 +19,5 @@ One workstream per path prefix. Other streams request changes through
 | `scripts/`, `.github/workflows/` | Platform | gates and CI |
 | `docs/` | Orchestrator | ledgers are append-only |
 | `src/lib/family/`, `src/copy/family/`, `src/app/(family-hub)/`, `src/app/api/family/`, `data/family-trait-allowlist.json` | Family | W9 graph, access, gate, grants, carrier pairs, Portrait libraries |
+| `src/copy/upload/`, `src/lib/genome/parsers/sniff.ts`, `src/lib/genome/parsers/sniff-browser.ts`, `src/lib/genome/parsers/pgt-table.ts`, `src/lib/genome/ingest-errors.ts`, `src/lib/genome/ingest-limits.ts`, `data/ref/lab-tables/` | Platform | genetic ingest shared by every flow: the A.6 refusals, `sniffV2`, the laboratory-table header rule, the payload-limit mirror (design w10 §10, E0) |
+| `src/copy/embryos/` | Embryo Analysis | the Embryo copy registry, including the upload flow |

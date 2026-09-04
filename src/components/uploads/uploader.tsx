@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { Button } from "@/components/ui/button";
-import { sniffFile } from "@/lib/genome/parsers/sniff-browser";
+import Link from "next/link";
+import { REQUEST_DATA_BUTTON } from "@/copy/embryos/index";
+import { UPLOAD_H1 } from "@/copy/embryos/upload";
+import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
+import { sniffFileV2 } from "@/lib/genome/parsers/sniff-browser";
+import { route } from "@/lib/primary-routes";
 import type { FileKind } from "@/lib/genome/types";
 import { LIMITS, formatBytes } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";
@@ -34,7 +39,7 @@ type Phase =
   | { step: "registering" }
   | { step: "processing" }
   | { step: "done"; tier: 1 | 2 }
-  | { step: "error"; message: string };
+  | { step: "error"; message: string; action?: { label: string; href: string } };
 
 async function sha256Of(
   file: File,
@@ -69,24 +74,39 @@ export function Uploader() {
         return;
       }
 
-      // 1. Sniff format from the file head (client-side, before any upload).
+      // 1. Sniff format from the file head (client-side, before any upload):
+      // the browser preflight of every genetic-file flow. A PDF is refused
+      // here with the A.6 sentence and the letter, before any byte is sent;
+      // a laboratory table or a VCF with several samples is a cohort-shaped
+      // source a subject target may not take (the server repeats this at
+      // finalization); a file nobody recognises gets the A.6 sentence bound
+      // to "sniffV2 null". Every sentence comes from its one home.
       const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
-      const sniffed = await sniffFile(head);
-      if (!sniffed.kind) {
+      const sniffed = await sniffFileV2(head);
+      if (sniffed.kind === "pdf") {
         setPhase({
           step: "error",
-          message:
-            "Unrecognized format. Supported: 23andMe, AncestryDNA, MyHeritage, or FamilyTreeDNA raw files, VCF/VCF.GZ/gVCF, BAM, CRAM.",
+          message: INGEST_REFUSALS.pdf_not_data,
+          action: { label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") },
         });
         return;
       }
-      const kind = sniffed.kind;
-      const cap = capFor(kind);
-      if (file.size > cap) {
+      if (sniffed.kind === "pgt_table" || sniffed.kind === "vcf_multisample") {
         setPhase({
           step: "error",
-          message: `This ${kind.replace("array_", "")} file is ${formatBytes(file.size)}; the current limit for its type is ${formatBytes(cap)}. See the self-hosting guide to raise limits on your own deployment.`,
+          message: SUBJECT_TARGET_REFUSALS.subject_source_not_single_sample,
+          action: { label: UPLOAD_H1, href: route("embryos.upload") },
         });
+        return;
+      }
+      if (sniffed.kind === null) {
+        setPhase({ step: "error", message: INGEST_REFUSALS.unrecognised_format });
+        return;
+      }
+      const kind: FileKind = sniffed.kind;
+      const cap = capFor(kind);
+      if (file.size > cap) {
+        setPhase({ step: "error", message: INGEST_REFUSALS.too_large(Math.round(cap / (1024 * 1024))) });
         return;
       }
 
@@ -233,6 +253,14 @@ export function Uploader() {
         ) : phase.step === "error" ? (
           <p role="alert" className="text-danger">
             {phase.message}
+            {phase.action ? (
+              <>
+                {" "}
+                <Link href={phase.action.href} className="underline underline-offset-2">
+                  {phase.action.label}
+                </Link>
+              </>
+            ) : null}
           </p>
         ) : null}
       </div>

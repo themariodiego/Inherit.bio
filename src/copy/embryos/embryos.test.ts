@@ -16,6 +16,8 @@ import * as index from "./index";
 import * as qc from "./qc";
 import * as requestData from "./request-data";
 import * as tradeoffs from "./tradeoffs";
+import * as upload from "./upload";
+import { INGEST_REFUSALS } from "../upload/errors";
 
 /**
  * The Embryo copy registry (design §4). Mandated strings ship
@@ -26,7 +28,7 @@ import * as tradeoffs from "./tradeoffs";
  * id the register names resolves here.
  */
 
-const MODULES = { index, requestData, gate, qc, compare, detail, tradeoffs };
+const MODULES = { index, requestData, gate, qc, compare, detail, tradeoffs, upload };
 
 /** Every exported string, including those the exported functions produce. */
 function corpus(): [string, string][] {
@@ -65,6 +67,7 @@ function shortRoleStrings(): [string, string][] {
       SHORT_SUFFIXES.test(exportName) ||
       exportName === "EMBRYO_STATUS" ||
       exportName === "HUB_TILES" && name.endsWith(".label") ||
+      ["TESTED_OPTIONS", "SENT_OPTIONS", "SITUATION_OPTIONS", "BASIS_OPTIONS"].includes(exportName) && name.endsWith(".label") ||
       exportName === "CELL_WORDS" ||
       exportName === "CARRIER_WORDS" ||
       exportName === "QC_REASON_WORDS";
@@ -93,6 +96,8 @@ const JARGON = (
 const TERM_EXEMPTIONS = new Map<string, string>([
   ["compare.CELL_WORDS.noPopulationFigure", "design §2.4 cell word"],
   ["qc.NOT_STATED_BY_SOURCE", "brief line 1398, verbatim"],
+  ["upload.TESTED_QUESTION_HEADING", "brief line 375, verbatim"],
+  ["upload.SITUATION_OPTIONS[1].label", "brief line 985, verbatim"],
 ]);
 
 function withTermsReplaced(text: string): string {
@@ -194,6 +199,54 @@ describe("embryo copy", () => {
     });
   });
 
+  it("ships the brief's upload strings character-for-character", () => {
+    expect(upload.TESTED_QUESTION_HEADING).toBe("Did your clinic do genetic testing on your embryos?");
+    expect(upload.TESTED_OPTIONS.map((option) => option.label)).toEqual(["Yes", "No", "I’m not sure"]);
+    expect(upload.NO_TESTING_END).toBe(
+      "Inherit needs data from a genetic test the laboratory already ran. Without it there is nothing to read.",
+    );
+    expect(upload.WHO_QUESTION_HEADING).toBe("Who did the testing?");
+    expect(upload.WHO_NOT_KEPT_NOTE).toBe("Inherit does not keep this name.");
+    expect(upload.SENT_QUESTION_HEADING).toBe("What did they send you?");
+    expect(upload.SENT_OPTIONS.map((option) => option.label)).toEqual([
+      "A spreadsheet or text file per embryo",
+      "One file with a column per embryo",
+      "A PDF report only",
+      "A zip folder",
+    ]);
+    expect(upload.SENT_UNKNOWN_LINK).toBe("I don’t know — let me upload it and you tell me");
+    expect(upload.PDF_REFUSAL).toBe(INGEST_REFUSALS.pdf_not_data);
+    expect(upload.SITUATION_OPTIONS.map((option) => option.label)).toEqual([
+      "My embryos",
+      "Embryos, with both genetic parents’ permission",
+    ]);
+    expect(upload.SITUATION_OPTIONS.map((option) => option.attestation)).toEqual([
+      "These are my own embryos and I am a genetic parent.",
+      "Both genetic parents have given me permission to upload these embryos to Inherit. I can show that permission if asked.",
+    ]);
+    expect(upload.BASIS_OPTIONS.map((option) => option.id)).toEqual([
+      "two-evidenced-parents",
+      "donor-gamete-anonymous",
+      "parent-deceased",
+      "sole-legal-disposition-authority",
+    ]);
+    expect(upload.BASIS_OPTIONS[1].sentence).toBe(
+      "A gamete donor cannot consent here and has not. Inherit will not attempt to identify a donor, and will not report on relatives found in your data.",
+    );
+    expect(upload.BASIS_OPTIONS[3].sentence).toBe(
+      "Inherit is not able to judge a family dispute. If the other genetic parent tells us they object, we stop and delete.",
+    );
+    expect(upload.INGEST_UNAVAILABLE_SENTENCE).toBe("Inherit cannot take embryo files on this site yet.");
+    expect(upload.UPLOAD_H1).toBe("Add embryo files");
+    expect(upload.stepStatus(1)).toBe("Step 1 of 5");
+    expect(upload.STEP_TOTAL).toBe(5);
+    expect(upload.EMBRYO_INGEST_AVAILABLE).toBe(false);
+    // The option ids are the register's request-body enums.
+    expect(upload.SITUATION_OPTIONS.map((option) => option.id)).toEqual(["own-embryos", "with-genetic-parents-permission"]);
+    for (const option of upload.SITUATION_OPTIONS) expect(REGISTER).toContain(`"const": "${option.id}"`);
+    for (const option of upload.BASIS_OPTIONS) expect(REGISTER).toContain(`"${option.id}"`);
+  });
+
   it("reads shared strings from their one home instead of respelling them", () => {
     expect(index.EMBRYOS_H1).toBe(NAV_LABELS.embryos);
     expect(index.EMBRYO_KIND_CHIP).toBe(KIND_CHIPS.embryo);
@@ -211,6 +264,8 @@ describe("embryo copy", () => {
       ENTRY_BOXES.find((box) => box.id === "embryos.compare")!.label,
     );
     expect(requestData.REQUEST_DATA_H1).toBe(index.REQUEST_DATA_BUTTON);
+    expect(upload.REQUEST_DATA_BUTTON).toBe(index.REQUEST_DATA_BUTTON);
+    expect(upload.BACK_TO_EMBRYOS_LINK).toBe(requestData.BACK_TO_EMBRYOS_LINK);
   });
 
   it("resolves every copy id the register names to one string", () => {

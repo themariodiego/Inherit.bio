@@ -7,11 +7,11 @@
  * The register's copy ids `embryo.qc.*` resolve to the constants below
  * (src/copy/embryos/ids.ts). The per-reason sentences are the A.6 messages
  * of brief lines 2207-2209, split around the one measured number so that the
- * number renders as a figure; their canonical home is
- * `src/copy/upload/errors.ts` (docs/canonical-artifacts.md), which the
- * ingest work creates — until then they live here and move there whole.
+ * number renders as a figure; their one home is `src/copy/upload/errors.ts`
+ * (docs/canonical-artifacts.md), whose halves this file spreads.
  */
 import type { QcDto } from "@/lib/embryos/policy";
+import { EMBRYO_REASON_PARTS } from "@/copy/upload/errors";
 import type { QcReasonId } from "@/lib/embryos/qc-policy";
 
 export const QC_PASSED = "Quality check passed";
@@ -88,21 +88,11 @@ export interface ReasonSentence {
 }
 
 export const QC_REASON_SENTENCES: Record<QcReasonId, ReasonSentence> = {
-  embryo_call_rate: {
-    before: "we could read only",
-    after: "of the markers we need. We have not produced results, because results this sparse would mislead you.",
-    figure: "call_rate",
-  },
-  embryo_parent_discordant: {
-    before: "",
-    after: "this embryo’s genotypes do not match the genetic parents closely enough for us to be sure the files belong together. We have not produced results.",
-    figure: null,
-  },
-  contamination: {
-    before: "",
-    after: "this sample shows signs of mixed DNA, which makes per-embryo results unreliable. We have not produced results.",
-    figure: null,
-  },
+  // The three A.6 reasons read their halves from the refusals' one home
+  // (src/copy/upload/errors.ts); only the call rate names a figure.
+  embryo_call_rate: { ...EMBRYO_REASON_PARTS.embryo_call_rate, figure: "call_rate" },
+  embryo_parent_discordant: { ...EMBRYO_REASON_PARTS.embryo_parent_discordant, figure: null },
+  contamination: { ...EMBRYO_REASON_PARTS.contamination, figure: null },
   dropout_too_high: {
     before: "",
     after: "the test may have missed too many letters for a result to be trusted. We have not produced results.",

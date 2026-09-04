@@ -79,7 +79,9 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Claim text, quantity, population, portability and evidence bindings | `data/claims.json` | result renderers, claim and science gates |
 | Report templates | `data/templates/*.json` under `data/templates/SCHEMA.md` | seed and template gate |
 | Reference-build inference algorithm, minimum comparison count, agreement threshold and challenge outcome | `docs/route-register.json#policyContracts.genome-build-inference-v1` | `src/lib/genome/build-inference.ts`, `data/ref/build-discriminating-sites.json`, file and embryo ingest routes, self-hosted worker and ingest tests |
-| Genetic-ingest rejection IDs and user-facing messages | `src/copy/upload/errors.ts` | file processor, embryo ingest, per-embryo QC reasons, API/RSC states and ingest-error tests; every A.6 code is defined once here |
+| Genetic-ingest rejection IDs and user-facing messages, and the subject target's cohort-shaped-source refusal (`upload.subject.single-sample-required`) | `src/copy/upload/errors.ts` | today: the uploader's browser preflight, the per-embryo QC reasons (`src/copy/embryos/qc.ts` spreads the halves), `src/lib/genome/ingest-errors.ts` (the brief's path, a re-export) and `src/copy/upload/errors.test.ts`; when E0 wires them: the file processor's server-side re-sniff, the embryo ingest routes and their API/RSC states. Every A.6 code is defined once here |
+| Laboratory-table header synonyms and the forbidden sex, gender and karyotype headers | `data/ref/lab-tables/column-synonyms.json` (exact equality after lower-casing and stripping non-alphanumerics; substring and fuzzy matching forbidden) | `src/lib/genome/parsers/pgt-table.ts` (the header rule and the mapping plan), `sniffV2`, the browser preflight, the future `api.embryo-ingest-mapping` route and `pgt-table.test.ts` |
+| Embryo-ingest payload and session limits | `docs/route-register.json#payloadBoundaryContract` | `src/lib/genome/ingest-limits.ts` is the tested runtime mirror (`ingest-limits.test.ts` asserts equality); the `too_large` sentence's `{n}` reads it for an embryo ingest and `src/lib/limits.ts` for a subject file |
 | Provider directory | `data/providers/providers.json` | registered route `marketing.providers`; this is the only competitor-name carve-out |
 | Counsellor directory | `data/counsellors/directory.json` | counselling surfaces and mail |
 | Short-string vocabulary | `data/plain-vocabulary.json` | copy registry and language gate |
@@ -164,6 +166,7 @@ No authenticated client may insert, update or delete a derived genetic result, c
 | Embryo QC metric definitions, X10.4 thresholds, null handling and interval-widening behavior | `src/lib/embryos/qc-policy.ts` | `embryo_qc` constraints, worker computations, detail/comparison RSC DTOs, exports, science disclosure and exact-threshold tests; no consumer may restate the numbers |
 | Embryo non-ranking presentation rules | `src/lib/embryos/policy.ts`; database constraints and renderers are enforcement mirrors |
 | Copilot refusal strings | `src/copy/copilot/refusals.ts` |
+| Embryo upload flow copy: the three questions and their options, the class attestations, the basis screens and their sentences, the step and still-to-come lines, the honest terminal | `src/copy/embryos/upload.ts`; `src/components/embryo/upload/*` and `src/app/(app)/embryos/upload/page.tsx` are the renderers; `src/lib/embryos/upload-flow.ts` is the flow's one reducer |
 
 ## Design, density and accessibility
 

@@ -940,3 +940,136 @@ Decisions:
   reader are one function pair.
 - The waiting sentence names whose grant is missing: the viewer's, the
   other parent's, or both parents' for an uploader who is not a parent.
+
+## 2026-09-04 — Embryo E2, slice 1: the upload flow before E0
+
+Context: design `docs/design/w10-embryo-surfaces.md` §10 makes E2 depend on
+E0 (the eight RPCs, the nine `api.embryo-*` routes, the browser sanitiser,
+the worker), none of which exists. The design's own rule for that state is
+that `/embryos/upload` renders steps 1–2 and, at the file step,
+`EMBRYO_INGEST_AVAILABLE = false` with "Inherit cannot take embryo files on
+this site yet." and the request-data link — never a dead control.
+
+Decisions:
+- Steps 1 and 2 ship; the flow ends on the honest terminal, and the same
+  sentence stands above step 1 so nobody answers questions for a control
+  that does not exist on this deployment.
+- One question per screen, every screen labelled "Step N of 5" with what
+  is still to come (brief line 1083). Three questions on one screen would
+  carry ten interactive elements against X6.1's seven; the design's step is
+  a stage, not a screen.
+- The second parent's contact email (brief line 383), the Tier-2 signature
+  block (brief line 1752) and the identified-donor option (brief line 1732)
+  are not asked for until `api.embryo-cohort-drafts` exists. Collecting a
+  contact or a typed legal name that nothing records is a false
+  affordance; they return with the draft route. The class attestation
+  checkboxes route the flow and the screen says nothing is kept until both
+  parents sign.
+- "I don’t know — let me upload it and you tell me" is an answer and a
+  step in one: it moves to step 2, since the file step it once led to is
+  the terminal today.
+- The A.6 refusals live once in `src/copy/upload/errors.ts`, re-exported at
+  the brief's path `src/lib/genome/ingest-errors.ts`; the quality footers
+  spread their halves from there and the self uploader's preflight reads
+  the PDF, unrecognised-format and too-large sentences from there (D-067).
+  The export is named `INGEST_REFUSALS`, not `*_ERRORS`, so the readability
+  gate grades the sentences as the body copy they render as rather than
+  as one-line statuses.
+- `sniffV2` is the detector; `sniff`, `sniffHead` and `sniffFile` are thin
+  wrappers with the old answers (a multi-sample VCF reads `vcf`, a table
+  or a PDF reads null), so no existing caller changes behaviour.
+- The synonym table also names the forbidden sex, gender and karyotype
+  headers, so the browser can drop such a column before any byte leaves it
+  and the server can refuse it before any write (X10.2); a forbidden
+  column never resolves and is never a mapping candidate.
+- The mapping plan prefers an embryo column to a sample column when both
+  resolve, treats a duplicated field as a choice among its columns and a
+  missing field as a choice among the unresolved permitted columns, and
+  answers null beyond four decisions or with no column left — the reader
+  goes to the letter, not to a spreadsheet chore.
+- The embryo-ingest limits are mirrored in `src/lib/genome/ingest-limits.ts`
+  with a drift test against the register, the `primary-routes` precedent;
+  the `too_large` sentence's `{n}` reads that mirror for an embryo ingest
+  and `LIMITS` for a subject file.
+- ADR 0019 is written Accepted over the E1 surfaces as built; ADR 0020 is
+  Proposed and moves to Accepted when E0 and E2's steps 3–5 land.
+- The capability register's Embryo ingest row is rewritten to what the
+  page shows; its former claim about the landing's closing sentence was
+  stale since E1 (D-068).
+
+## 2026-09-04 — Embryo E2, slice 1: the X6.1 budget on the repository's basis
+
+Context: CI run 33924630411 on PR #48 counted nine interactive elements on
+the "What did they send you?" screen at 1280×800. The suite's basis
+(`e2e/helpers.ts#firstViewportInteractives`, X6.1) excludes the
+navigation landmarks, the skip link and the Copilot entry, and the
+signed-in shell deliberately leaves two persistent controls inside the
+count: the global search button on every viewport and, on desktop, the
+attribution link beneath the side rail (`src/components/site/app-shell.tsx`).
+A flow screen therefore has five interactive elements of its own, not
+seven; the request-data page and the Family flows fit because they carry
+two or three.
+
+Decisions:
+- The flow is cut so that no screen carries more than five controls of
+  its own, and the shell is left alone: moving the attribution into a
+  navigation landmark or hiding search on flow surfaces would loosen the
+  basis for every page to fit one screen.
+- The first two questions share a screen: the free-text question appears
+  once the first is answered "Yes" or "I’m not sure", and "No" ends the
+  screen without it (three answers, the input and Continue: five).
+- Screens of equal choices are actions: the four illustrated options and
+  the secondary link (five) each answer and move on, and so do the four
+  bases (four, with Back). Such a screen carries no primary, which brief
+  line 928's "at most one" permits; radios that navigate on change were
+  rejected as an accessibility fault, so the options are buttons.
+- "A PDF report only" lands on its own refusal screen with the letter,
+  Back and the way back to Embryos; each basis leads to its named screen
+  (brief lines 1729-1735) with its sentence, Back and Continue.
+- The reducer records the shell's two controls as `SHELL_INTERACTIVES`
+  beside the cap, so the unit test and the browser suite assert the same
+  arithmetic.
+
+## 2026-09-04 — Embryo E2, slice 1: corrections after the adversarial review
+
+Context: a four-lens review of the branch (fourteen agents, each finding
+refuted independently) confirmed ten findings; the two rated high are the
+X6.1 breach CI had already caught (D-070). The rest are D-071 to D-076.
+
+Decisions:
+- The flow's own sentences claim only what is true on every path. "Nothing
+  is kept yet. A record is made in a step still to come." replaces a
+  sentence that said both parents sign first, which the design's draft step
+  and the single-parent bases contradict; the closing sentence says the
+  later steps ask "who must sign or what must be shown" instead of naming
+  the other parent's email and signature, which three bases never ask for.
+- The basis labels and sentences are in the third person, because the same
+  screens follow both situations: a genetic parent, and someone uploading
+  with both parents' permission. "One person alone has the legal right to
+  decide for these embryos"; "Both parents will sign in their own
+  accounts."
+- The subject uploader's preflight refuses a recognised laboratory table
+  or a VCF with several samples with the register's own refusal
+  (`subject_source_not_single_sample`, copy id
+  `upload.subject.single-sample-required`) and a link to the Embryo flow,
+  and reserves `unrecognised_format` for the "sniffV2 null" trigger the
+  brief binds; a PDF refusal carries the letter link the sentence
+  promises.
+- `sniffV2` trusts a `#CHROM` line only when the decode window terminated
+  it; a header cut by the window or by a truncated gzip member answers a
+  null sample count. Trailing whitespace on the header line adds no
+  sample. The table header is tokenised per RFC 4180, so a comma inside a
+  quoted cell no longer shifts every later column.
+- An ending that appears in place ("No") moves focus to its sentence; the
+  PDF screen carries the option's own label as its heading with the
+  refusal as a paragraph; the terminal's sentence is a paragraph that takes
+  focus, not a heading, so a block-role sentence is never a heading in the
+  DOM; no ending or sentence is a live region — focus is what gets it read.
+- The ADR, the copy header and the canonical row name the consumers of
+  the refusals that exist today and mark the file processor's re-sniff and
+  the ingest routes as E0's; a claim about a consumer that does not exist
+  is a defect (D-076).
+- The terminal still carries no "Step N of 5": it stands in for steps 3–5
+  rather than being one of them, and naming a step number there would
+  claim a stage the reader has not reached.
+

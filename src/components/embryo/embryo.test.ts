@@ -21,6 +21,8 @@ import {
   QC_FAILED_CHIP,
 } from "@/copy/embryos/qc";
 import { NO_RANKING_STATEMENT, TRADEOFFS_EXISTS, TRADEOFFS_NONE_MEASURABLE } from "@/copy/embryos/tradeoffs";
+import { BASIS_OPTIONS, PDF_REFUSAL } from "@/copy/embryos/upload";
+import type { FlowState } from "@/lib/embryos/upload-flow";
 import { MODELLED_MARKER } from "@/lib/figures/contract";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
 import type { ComparisonEmbryo, EmbryoFinding } from "@/lib/embryos/policy";
@@ -43,6 +45,8 @@ const { ContextStrip } = await import("./compare/context-strip");
 const { QcTable } = await import("./compare/qc-table");
 const { QcBlock } = await import("./detail/qc-block");
 const { FindingsSection } = await import("./detail/findings-section");
+const { UploadFlow } = await import("./upload/upload-flow");
+const { INITIAL_FLOW, MAXIMUM_INTERACTIVES_PER_SCREEN, SCREEN_BUDGET, SHELL_INTERACTIVES } = await import("@/lib/embryos/upload-flow");
 
 /**
  * The embryo renderers over synthetic fixtures (design §6.1): the compare
@@ -417,5 +421,81 @@ describe("states and the gate", () => {
     expect(html).not.toContain("data-figure-kind");
     expect(html).not.toContain("data-claim-block");
     expect(html).not.toContain(STANDING_STATEMENT);
+  });
+});
+
+describe("<UploadFlow>", () => {
+  const html = renderToStaticMarkup(h(UploadFlow));
+  const interactivesOf = (markup: string) => markup.match(/<(a href|button|input|select|textarea)/g)?.length ?? 0;
+  const primariesOf = (markup: string) => markup.match(/data-variant="default"/g)?.length ?? 0;
+
+  it("opens on step 1 with the first question, its three answers, the step line and what is still to come", () => {
+    expect(html).toContain('data-screen="tested"');
+    expect(html).toContain('data-step="1"');
+    expect(html).toContain(">Step 1 of 5<");
+    expect(html).toContain("Still to come: whose embryos these are, who signs, what you agree to, and the file.");
+    expect(html).toContain("Did your clinic do genetic testing on your embryos?");
+    expect(html.match(/type="radio"/g)?.length).toBe(3);
+    for (const label of ["Yes", "No", "I’m not sure"]) expect(html).toContain(`>${label}<`);
+    // The second question waits for the first answer.
+    expect(html).not.toContain("Who did the testing?");
+    expect(html).not.toContain('type="text"');
+  });
+
+  it("offers one primary, disabled until a question is answered, and no way back on the first screen", () => {
+    expect(primariesOf(html)).toBe(1);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Continue<\/button>/);
+    expect(html).not.toContain(">Back<");
+  });
+
+  it("renders no figure, no form, no result and nothing about a sex or a rank", () => {
+    expect(html).not.toContain("data-figure-kind");
+    expect(html).not.toContain("<form");
+    expect(html).not.toMatch(/\b(sex|male|female|XX|XY|karyotype|rank|ranked|best embryo)\b/i);
+    expect(html).not.toContain("data-slot=\"flow-end\"");
+    expect(html).not.toContain("data-slot=\"ingest-unavailable\"");
+  });
+
+  it("keeps every screen within its own X6.1 budget and primary count", () => {
+    const states: Array<[string, FlowState]> = [
+      ["tested (unanswered)", INITIAL_FLOW],
+      ["tested (yes: the second question shows)", { ...INITIAL_FLOW, tested: "yes" }],
+      ["tested (no: the ending)", { ...INITIAL_FLOW, tested: "no" }],
+      ["sent", { ...INITIAL_FLOW, tested: "yes", screen: "sent" }],
+      ["pdf-end", { ...INITIAL_FLOW, tested: "yes", sent: "pdf-only", screen: "pdf-end" }],
+      ["situation (unchosen)", { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", screen: "situation" }],
+      ["situation (chosen, attested)", { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", screen: "situation", situation: "own-embryos", attested: true }],
+      ["basis", { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", situation: "own-embryos", attested: true, screen: "basis" }],
+      ["basis-named", { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", situation: "own-embryos", attested: true, basis: "donor-gamete-anonymous", screen: "basis-named" }],
+      ["unavailable", { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", situation: "own-embryos", attested: true, basis: "parent-deceased", screen: "unavailable" }],
+    ];
+    for (const [name, state] of states) {
+      const markup = renderToStaticMarkup(h(UploadFlow, { initial: state }));
+      const budget = SCREEN_BUDGET[state.screen];
+      expect(interactivesOf(markup), name).toBeLessThanOrEqual(budget.interactives);
+      expect(interactivesOf(markup) + SHELL_INTERACTIVES, name).toBeLessThanOrEqual(MAXIMUM_INTERACTIVES_PER_SCREEN);
+      expect(primariesOf(markup), name).toBe(budget.primaries);
+      expect(markup).toContain(`data-screen="${state.screen}"`);
+    }
+    // The fullest states use exactly their budget.
+    expect(interactivesOf(renderToStaticMarkup(h(UploadFlow, { initial: states[1][1] })))).toBe(5);
+    expect(interactivesOf(renderToStaticMarkup(h(UploadFlow, { initial: states[3][1] })))).toBe(5);
+    expect(interactivesOf(renderToStaticMarkup(h(UploadFlow, { initial: states[7][1] })))).toBe(5);
+  });
+
+  it("renders the endings and the named basis screen with their mandated sentences", () => {
+    const no = renderToStaticMarkup(h(UploadFlow, { initial: { ...INITIAL_FLOW, tested: "no" } }));
+    expect(no).toContain('data-end="no-testing"');
+    expect(no).toContain("Inherit needs data from a genetic test the laboratory already ran. Without it there is nothing to read.");
+    expect(no).not.toContain(">Continue<");
+    const pdf = renderToStaticMarkup(h(UploadFlow, { initial: { ...INITIAL_FLOW, tested: "yes", sent: "pdf-only", screen: "pdf-end" } }));
+    expect(pdf).toContain('data-end="pdf"');
+    expect(pdf).toContain(PDF_REFUSAL);
+    expect(pdf).toContain('href="/embryos/request-data"');
+    const donor = renderToStaticMarkup(
+      h(UploadFlow, { initial: { ...INITIAL_FLOW, tested: "yes", sent: "zip-folder", situation: "own-embryos", attested: true, basis: "donor-gamete-anonymous", screen: "basis-named" } }),
+    );
+    expect(donor).toContain(BASIS_OPTIONS[1].sentence);
+    expect(donor).toContain(`>${BASIS_OPTIONS[1].label}<`);
   });
 });

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "note": "Header synonyms for laboratory genotype tables (brief A.6 header rule; route-register genetic-file-ingest-v1.pgtTable). Each header cell is lower-cased and stripped of every non-alphanumeric character, then matched by exact equality against one list here; substring and fuzzy matching are forbidden. A file is a pgt_table when at least three of the six fields resolve. The forbidden list names header cells a browser drops before any byte leaves it and a server refuses before any write: a sex, gender or karyotype column never enters Inherit (X10.2).",
+  "fields": {
+    "sample": ["sample", "sampleid", "samplename", "specimen", "specimenid"],
+    "embryo": ["embryo", "embryoid", "embryono", "embryonumber"],
+    "rsid": ["rsid", "rs", "snp", "snpid", "marker", "markerid"],
+    "genotype": ["genotype", "call", "result", "gt"],
+    "chrom": ["chrom", "chromosome", "chr"],
+    "pos": ["pos", "position"]
+  },
+  "forbidden": ["sex", "gender", "karyotype", "embryosex", "sexchromosomes", "chromosomalsex"]
+}
