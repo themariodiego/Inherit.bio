@@ -2,13 +2,25 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import {
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   stepCountIs,
   streamText,
   tool,
+  toUIMessageStream,
   type UIMessage,
+  type UIMessageChunk,
 } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import allowedNumerals from "../../../../config/allowed-numerals.json";
+import { refusalFor, type RefusalId } from "@/copy/copilot/refusals";
+import {
+  checkResponse,
+  classifyIntent,
+  type AllowedNumerals,
+  type GuardScope,
+} from "@/lib/copilot/guard";
 import { decryptSecret } from "@/lib/crypto";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
@@ -33,7 +45,65 @@ Hard rules:
 - Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. "your Caffeine metabolism report (rs762551, genotype A/A)"). If a report exists on the topic, call get_report and cite it by title.
 - Be candid about uncertainty and coverage: if the user's file does not cover a variant, say so plainly; array data covers a fixed set of positions. Never invent genotypes — only report what tools return.
 - Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions.
-- Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder.`;
+- Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder.
+- Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex.
+- State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned.`;
+
+/** The text of the newest user turn, or null when the request carries none. */
+function latestUserText(messages: UIMessage[]): string | null {
+  const last = [...messages].reverse().find((message) => message.role === "user");
+  if (!last) return null;
+  const text = last.parts
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n")
+    .trim();
+  return text.length > 0 ? text : null;
+}
+
+/**
+ * The refusal as the whole assistant turn on the same stream transport the
+ * client reads, with the refusal id in a header for machine readers. No
+ * model is involved and nothing about the user is carried.
+ */
+function refusalResponse(id: RefusalId, text: string): Response {
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      writer.write({ type: "start" });
+      writer.write({ type: "text-start", id: "refusal" });
+      writer.write({ type: "text-delta", id: "refusal", delta: text });
+      writer.write({ type: "text-end", id: "refusal" });
+      writer.write({ type: "finish" });
+    },
+  });
+  return createUIMessageStreamResponse({
+    stream,
+    headers: { "x-copilot-refusal": id },
+  });
+}
+
+/** Drain a UI message stream, keeping its chunks, its text and every tool output. */
+async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>) {
+  const chunks: UIMessageChunk[] = [];
+  const toolJson: unknown[] = [];
+  let text = "";
+  const reader = stream.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    if (value.type === "text-delta") text += value.delta;
+    else if (value.type === "tool-output-available") toolJson.push(value.output);
+  }
+  return { chunks, text, toolJson };
+}
+
+function replayChunks(chunks: UIMessageChunk[]): ReadableStream<UIMessageChunk> {
+  return createUIMessageStream({
+    execute: ({ writer }) => {
+      for (const chunk of chunks) writer.write(chunk);
+    },
+  });
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -50,6 +120,27 @@ export async function POST(request: Request) {
   if (!subject) {
     return NextResponse.json({ error: "scope_not_found" }, { status: 404 });
   }
+
+  // Intent gate (brief line 2262; §5.7 line 366, §6.4 line 402): the newest
+  // user turn is classified after scope authorization and before any
+  // provider, consent, retrieval or model step. A gated intent is answered
+  // with the fixed refusal for its class; the message is neither stored nor
+  // logged, only the class is. Family and cohort scopes pass their kind here
+  // once the route resolves them; today it serves self and subject scopes.
+  const latest = latestUserText(body.messages);
+  if (latest === null) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const guardScope: GuardScope = {
+    kind: subject.subjectClass === "self" ? "self" : "subject",
+    displayLabel: subject.displayLabel,
+  };
+  const verdict = classifyIntent(latest, guardScope);
+  if (verdict.intent !== "allowed") {
+    console.info(`[copilot] refused ${verdict.intent}`);
+    return refusalResponse(verdict.intent, refusalFor(verdict.intent, subject.displayLabel));
+  }
+
   const admin = createAdminClient();
 
   const { data: settings } = await supabase
@@ -325,5 +416,18 @@ export async function POST(request: Request) {
     stopWhen: stepCountIs(8),
   });
 
-  return result.toUIMessageStreamResponse();
+  // Output guard (brief line 2262): the whole answer is buffered and checked
+  // before its first byte is sent. A number absent from this turn's tool
+  // JSON, or a citation outside the report and score citations the tools
+  // returned, replaces the answer with the fixed refusal for that check;
+  // nothing partial is ever serialized.
+  const { chunks, text, toolJson } = await bufferUIMessageStream(
+    toUIMessageStream({ stream: result.stream }),
+  );
+  const output = checkResponse(text, toolJson, allowedNumerals as AllowedNumerals);
+  if (!output.ok) {
+    console.info(`[copilot] replaced ${output.violation}`);
+    return refusalResponse(output.violation, refusalFor(output.violation, subject.displayLabel));
+  }
+  return createUIMessageStreamResponse({ stream: replayChunks(chunks) });
 }
