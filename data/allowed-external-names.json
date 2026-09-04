@@ -369,6 +369,13 @@
       "aliases": ["pharmvar", "pharmvar.org", "www.pharmvar.org"],
       "reason": "Public pharmacogene allele registry whose terms the Medicines category research could not read; recorded as unverified.",
       "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+    },
+    {
+      "name": "Contributor Covenant",
+      "category": "cited-organisation",
+      "aliases": ["contributor covenant", "contributor-covenant.org", "www.contributor-covenant.org"],
+      "reason": "Organisation cited by the committed Code of Conduct text; version 2.1 requires attribution with a link.",
+      "evidence": ["CODE_OF_CONDUCT.md"]
     }
   ]
 }
