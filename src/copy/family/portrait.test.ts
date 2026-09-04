@@ -214,7 +214,7 @@ describe("portrait copy", () => {
     );
   });
 
-  it("carries eleven refusals, each with an id, a line and one sentence, and no figure", () => {
+  it("carries fifteen refusals (line 356's list included), each with an id, a line, at most two sentences, and no figure", () => {
     expect(copy.REFUSALS.length).toBeGreaterThanOrEqual(8);
     expect(new Set(copy.REFUSALS.map((refusal) => refusal.refusalId)).size).toBe(copy.REFUSALS.length);
     for (const refusal of copy.REFUSALS) {
@@ -222,7 +222,19 @@ describe("portrait copy", () => {
       expect(readabilitySentences(refusal.reason).length).toBeLessThanOrEqual(2);
       expect(refusal.reason).not.toMatch(/\d/);
     }
-    for (const id of ["cognitive-ability", "body-measures", "polygenic-disease-risk", "sex", "ranking", "image"]) {
+    expect(copy.REFUSALS).toHaveLength(15);
+    for (const id of [
+      "cognitive-ability",
+      "body-measures",
+      "talent",
+      "athleticism",
+      "attractiveness",
+      "skin-tone",
+      "polygenic-disease-risk",
+      "sex",
+      "ranking",
+      "image",
+    ]) {
       expect(copy.REFUSALS.map((refusal) => refusal.refusalId)).toContain(id);
     }
   });
@@ -266,8 +278,11 @@ describe("portrait copy", () => {
   });
 
   it("keeps every sentence under 26 words and every long block at grade 9 or below, the mandated strings aside", () => {
-    // Two mandated reasons and one mandated notice grade above 9 as written
-    // by the brief; they ship verbatim (X0), so the grade is checked on
+    // The brief marks its two refusal reasons "Example:" (line 358): the
+    // intelligence one is used as written and grades above 9; the height
+    // one is rewritten to grade ≤ 9 (decisions.md, "Portrait readability")
+    // and is checked like any other string. The mandated notices below
+    // ship character-for-character (X0), so the grade is checked on
     // everything else.
     const mandated = new Set([
       copy.REFUSALS.find((refusal) => refusal.refusalId === "cognitive-ability")!.reason,
@@ -311,5 +326,38 @@ describe("portrait copy", () => {
         expect(pattern(term).test(text), `${name}: ${term} (${text})`).toBe(false);
       }
     }
+  });
+
+  it("never puts the first-person placeholder into a sentence slot: the viewer's sentences are in the second person", () => {
+    const viewer = { name: "You", isViewer: true };
+    const other = { name: "Bo", isViewer: false };
+    expect(copy.noSecondCopyFor(viewer)).toBe(copy.noSecondCopy("you"));
+    expect(copy.noSecondCopyFor(other)).toBe(copy.noSecondCopy("Bo"));
+    expect(copy.cannotCalculateFor(viewer, "rs12")).toBe("We cannot do this calculation. Your file does not cover rs12.");
+    expect(copy.cannotCalculateFor(other, "rs12")).toBe(copy.cannotCalculate("Bo", "rs12"));
+    expect(copy.noFileYetFor(viewer)).toBe("You haven’t added a file yet. There is nothing to show.");
+    expect(copy.noFileYetFor(other)).toBe("Bo hasn’t added a file yet. There is nothing to show.");
+    expect(copy.oneSidedWhatWouldChangeFor(viewer)).toBe(copy.oneSidedWhatWouldChange("you"));
+    expect(copy.personVariantLineFor(viewer, 12, "G", "Pathogenic")).toBe("You: rs12 in G, which outside reviewers class as Pathogenic.");
+    for (const text of [
+      copy.noSecondCopyFor(viewer),
+      copy.cannotCalculateFor(viewer, "rs12"),
+      copy.noFileYetFor(viewer),
+      copy.oneSidedWhatWouldChangeFor(viewer),
+    ]) {
+      expect(text).not.toMatch(/You’s|You hasn’t|You has\b|in You\b|for You\b/);
+    }
+  });
+
+  it("tells the runs refusal from the could-not-check sentence, and the delete dialog tells the truth about the grants", () => {
+    expect(copy.RUNS_ASSUMPTION.endsWith("One file is above it.")).toBe(true);
+    expect(copy.RUNS_UNCHECKED_ASSUMPTION.endsWith("One file could not be measured.")).toBe(true);
+    expect(copy.HOW_SURE_LABELS.checked).toBe("What we checked");
+    expect(copy.RUNS_CHECKED_STATEMENT).toBe(
+      "Both files were measured for long runs of matching letters, and each sits below Inherit’s limit.",
+    );
+    expect(copy.DELETE_DIALOG_BODY).toContain("Your own Portrait permission is turned off; the other person’s stays on.");
+    expect(copy.DELETE_DIALOG_BODY).toContain("It opens again only when you turn Portrait on again.");
+    expect(copy.DELETE_DIALOG_BODY).not.toContain("you both");
   });
 });

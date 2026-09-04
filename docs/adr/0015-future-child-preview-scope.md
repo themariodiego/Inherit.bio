@@ -154,8 +154,11 @@ This ADR records the scope of Portrait as shipped: the pure libraries
    `refusalId` and a one-sentence reason, server-rendered under "What
    Portrait will not tell you, and why" (open decision 10: the §4 heading
    is its prefix), with one link to the science page until `/science/limits`
-   exists; the reasons for intelligence and height are the brief's (line
-   358) and the polygenic-risk reason is line 1365. The dots are DOM spans;
+   exists; the brief marks its two reasons "Example:" (line 358): the
+   intelligence one is used as written, the height one is rewritten to
+   grade ≤ 9 (decisions.md, "Portrait readability"), and the polygenic-risk
+   reason is line 1365. Line 356's talent, athleticism, attractiveness and
+   skin tone each have a card. The dots are DOM spans;
    no `img`, `canvas` or `svg[role=img]` exists anywhere on the page
    (G5.9(a)).
 

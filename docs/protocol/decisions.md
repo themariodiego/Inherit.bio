@@ -727,3 +727,42 @@ ones that depart from the design or the mockup, with their reasons:
   `/science/limits`; a schema note that today every `family.portrait`
   pair has two accounts, so the "opened their own account" step is
   reachable only by a future Path B record.
+
+## 2026-09-04 — Portrait: corrections after the adversarial review
+
+Context: the four-lens review of branch `family-f3b` (D-052 to D-058) and
+three findings that changed no rule.
+
+Decisions:
+- The closed reason table has ten reasons. `runs-above-threshold` (a
+  measured file above a threshold) is the only reason Portrait renders the
+  brief's line-1349 refusal for; `runs-unchecked` renders the side-by-side
+  page's sentence with its own phrase, "one file has more long identical
+  stretches than Inherit's limit allows" for the former and "Inherit could
+  not check…" for the latter, because "could not check" is false of a file
+  Inherit measured. `not-covered` names a position one file does not
+  report; nothing is imputed.
+- The exact 25-in-100 arithmetic needs each file to report the position
+  the other person's reading names; otherwise the card renders the
+  cannot-calculate sentence naming that person and position, and never
+  "Both files cover the positions this uses".
+- A gene with a one-sided reading renders that reading alone on Portrait;
+  the carrier rule's refusal for the same gene (the other side's change
+  harmless or of unknown meaning) stays on the side-by-side page, where
+  its sentence is about the two changes and not about a child.
+- No sentence slot takes the first-person placeholder. The viewer's
+  sentences have second-person forms ("Your file does not cover rs…", "You
+  haven't added a file yet", "we found no second copy in you"); the other
+  person is named by the graph's label.
+- On an exact block the runs measure is listed under "What we checked",
+  since it was measured; "What we do not check" keeps the true assumptions.
+- Deleting Portrait revokes the viewer's own grant; the dialog says so and
+  that the page opens again when the viewer turns Portrait on again.
+- The acknowledgement form renders only when the acknowledgement is the
+  viewer's one remaining step.
+- Line 356's talent, athleticism, attractiveness and skin tone each have a
+  refusal card. The brief's two reasons are examples, not mandates: the
+  intelligence one is used as written, the height one keeps its grade-9
+  rewrite (the "Portrait readability" entry above); a reason may run to two
+  sentences, as the brief's own example does.
+

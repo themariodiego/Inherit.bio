@@ -74,8 +74,13 @@ Three repository facts bound the design:
    pathogenic change means every child gets one, so 1 in 4 would be
    false. Any other case, a file that shows two changed copies included:
    the exact "cannot turn that into a chance" sentence with one reason
-   from the closed table of eight, the two-copies reason judged after the
-   pattern checks and before the runs check. A gene where both files are
+   from the closed table of ten, the two-copies reason judged after the
+   pattern checks, then `not-covered` (each file must report the other
+   person's position; nothing is imputed, brief line 1349), then the runs
+   check, whose two failing answers are told apart: `runs-above-threshold`
+   for a file Inherit measured and found above a threshold (the only case
+   Portrait renders the brief's line-1349 refusal for) and `runs-unchecked`
+   for a person whose runs were never established (D-052). A gene where both files are
    no-calls renders no block; a failed trigger never drops a pair from
    the panel. The brief's wording ("in the same gene") won over the
    design's narrower same-position rule.
