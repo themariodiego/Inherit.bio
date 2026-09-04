@@ -1362,7 +1362,7 @@
       "enforcement": "after-server-scope-authorization-and-before-retrieval-embedding-or-model-call",
       "highestRiskIntents": {
         "choose-transfer-select-keep-or-discard-an-embryo": "selection-advice",
-        "rank-or-order-embryos": "ranking",
+        "rank-or-order-embryos": "selection-advice",
         "request-any-prohibited-portrait-output": "prohibited-portrait",
         "request-embryo-sex-disclosure-or-proxy": "sex-disclosure"
       },
@@ -1370,12 +1370,14 @@
       "refusalSource": "src/copy/copilot/refusals.ts",
       "refusalIds": [
         "selection-advice",
-        "ranking",
         "sex-disclosure",
-        "diagnosis-or-treatment",
+        "prohibited-portrait",
+        "treatment",
+        "diagnosis",
+        "prognosis",
         "cross-subject",
         "unsupported-number",
-        "prohibited-portrait"
+        "unsupported-citation"
       ],
       "modelCallsOnRefusal": 0,
       "retrievalRowsOnRefusal": 0,
@@ -9958,13 +9960,18 @@
     },
     "copilot-refusal-v1": {
       "status": 200,
-      "contentType": "application/json",
-      "body": {
-        "message": "class-specific-copy-from-src/copy/copilot/refusals.ts",
-        "refusal": {
+      "contentType": "text/event-stream",
+      "transport": "the-ui-message-stream-the-client-already-reads-carrying-the-class-specific-copy-from-src/copy/copilot/refusals.ts-as-the-whole-assistant-turn-in-one-text-part-and-nothing-else",
+      "headers": {
+        "x-copilot-refusal": {
           "enumFrom": "policyContracts.copilot-intent-gate-v1.refusalIds"
         }
       },
+      "body": {
+        "parts": "exactly-one-text-part-whose-text-is-the-registered-refusal-for-the-header's-id; no-tool-part-no-reasoning-part-no-source-part",
+        "userInputEcho": "never"
+      },
+      "servedBy": "src/app/api/chat/route.ts#refusalResponse",
       "unknownFieldsRecursively": "forbidden",
       "highestRiskIntent": {
         "retrievalRows": 0,

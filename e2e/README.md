@@ -29,6 +29,7 @@ pointed at the in-test mock Resend API.
 | `providers.spec.ts` | A3 | ≥12 providers, source+date metadata, US→NY exclusion flags |
 | `upload-vcf.spec.ts` | A5, A8 | GIAB VCF upload→parse→annotate; rsID/gene search; igv browser; honest ancestry labels |
 | `copilot.spec.ts` | A9 | local-mode instructions; consent dialog names provider+data classes; tool call + cited answer; revocation |
+| `copilot-refusal.spec.ts` | brief 2262 / 402 / 1040 | the intent gate refuses supplement, dosage, diet, embryo-selection, cross-subject, diagnosis and prognosis prompts with the exact registry string and zero provider calls; an allowed prompt still reaches the provider; a fabricated number in a completion is replaced whole |
 | `tier2-upload.spec.ts` | A10 | BAM resumable TUS upload interrupted+resumed, hashed, re-downloadable |
 | `rls.spec.ts` | A12 | cross-user reads/writes denied on real PostgREST + storage; anon denied; llm_keys hard-denied |
 | `deletion-export.spec.ts` | A13 | export ZIP contents; deletion removes rows + storage (privileged re-query) |
