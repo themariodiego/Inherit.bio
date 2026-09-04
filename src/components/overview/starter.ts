@@ -18,6 +18,9 @@ export const STARTER_EVIDENCE: ReadonlySet<string> = new Set([
 export const STARTER_EXCLUDED_CATEGORIES: ReadonlySet<CategoryId> = new Set<CategoryId>([
   "brain-memory-mood",
   "cancer",
+  // A Medicines report is never a "read first" item: the Overview must not
+  // nudge a reader towards a medication-related genotype (ADR 0021).
+  "medicines",
 ]);
 
 const CATEGORY_RANK = new Map<string, number>(

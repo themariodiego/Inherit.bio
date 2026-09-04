@@ -1,10 +1,11 @@
 // Canonical user-facing taxonomy for the report library (v2 brief §4.2), the
 // five-level evidence rubric (§8) and the finding layer (§1).
 //
-// The nine categories below are the only user-facing grouping. The fifteen
-// legacy `report_templates.category` slugs stay in the database and in
-// ./categories.ts because gating, the Copilot list_reports tool and the
-// research drafter are keyed on them. `categoryFor` is the total mapping from
+// The nine categories below are the only user-facing grouping. The sixteen
+// legacy `report_templates.category` slugs (the fifteen of the first library
+// and `pharmacogenomics`, added by ADR 0021 for the Medicines category) stay
+// in the database and in ./categories.ts because gating, the Copilot
+// list_reports tool and the research drafter are keyed on them. `categoryFor` is the total mapping from
 // a template to its user-facing category: a named per-slug exception list
 // first, then a per-legacy-category default.
 
@@ -40,11 +41,12 @@ export const LEGACY_CATEGORY_SLUGS = [
   "cancer-risk",
   "reproductive-family",
   "longevity",
+  "pharmacogenomics",
 ] as const;
 
 export type LegacyCategorySlug = (typeof LEGACY_CATEGORY_SLUGS)[number];
 
-/** Per-legacy-category default. Total over the fifteen legacy slugs. */
+/** Per-legacy-category default. Total over the sixteen legacy slugs. */
 export const LEGACY_CATEGORY_DEFAULTS: Record<LegacyCategorySlug, CategoryId> = {
   "basic-traits": "everyday-traits",
   "aesthetic-cosmetic": "everyday-traits",
@@ -61,6 +63,8 @@ export const LEGACY_CATEGORY_DEFAULTS: Record<LegacyCategorySlug, CategoryId> = 
   "cancer-risk": "cancer",
   "reproductive-family": "having-children",
   longevity: "ageing-longevity",
+  // ADR 0021: per-position reports from a prescribing guideline body.
+  pharmacogenomics: "medicines",
 };
 
 /** Named per-template exceptions to the legacy-category default. */

@@ -20,6 +20,8 @@ export interface Citation {
   pmid?: string;
   doi?: string;
   label: string;
+  /** ISO date the cited source was read (G4.7); required on Medicines templates (ADR 0021). */
+  accessedOn?: string;
 }
 
 export interface ReportTemplate {

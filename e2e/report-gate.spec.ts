@@ -129,9 +129,11 @@ test("'Not now' returns to the library at the report's category section", async 
   await expect(page.getByTestId("sensitive-gate")).toBeVisible();
   await expect(page.locator(GENOTYPE_NODE)).toHaveCount(0);
   // "Not now" lands on the user-facing category section (nine-category
-  // taxonomy id), not the storage category slug.
+  // taxonomy id), not the storage category slug, inside the report's own
+  // layer group: the link names the report's own layer so the section is
+  // in the open group whatever the list's default.
   await page.getByRole("link", { name: "Not now" }).click();
-  await page.waitForURL(/\/genome\/me\/reports#cancer$/);
+  await page.waitForURL(/\/genome\/me\/reports\?layer=estimate#cancer$/);
   await expect(page.locator("#cancer")).toBeVisible();
 });
 

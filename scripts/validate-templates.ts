@@ -14,6 +14,7 @@ import {
   nakedRelativeFindings,
   titleFindings,
 } from "../src/lib/genome/template-prose";
+import { readabilitySentences, wordCount } from "./readability";
 
 const CATEGORIES = new Set([
   "heart-cardiovascular",
@@ -31,7 +32,15 @@ const CATEGORIES = new Set([
   "aesthetic-cosmetic",
   "basic-traits",
   "lifestyle-wellness",
+  // ADR 0021: the Medicines category’s per-position reports.
+  "pharmacogenomics",
 ]);
+
+/** Legacy slug of the Medicines category (ADR 0021). */
+export const MEDICINES_CATEGORY = "pharmacogenomics";
+
+/** An ISO calendar date, the only form an access date takes in a seed file. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const EVIDENCE = new Set<string>(EVIDENCE_LEVELS);
 const LAYER_SET = new Set<string>(LAYERS);
@@ -56,6 +65,88 @@ export const BANNED_PATTERNS: readonly [RegExp, string][] = [
 /** The label of every banned pattern the text matches, in pattern order. */
 export function bannedLanguage(text: string): string[] {
   return BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
+ * Rows for the Medicines category only (ADR 0021), matched against the whole
+ * serialised template. A Medicines report says which letters the file shows
+ * at a position a prescribing guideline names, which named forms carry that
+ * letter, and what the position cannot tell the reader — never a metabolizer
+ * phenotype, a response, a dose direction or a drug choice, because none of
+ * those follows from one position of an unphased file.
+ */
+export const MEDICINES_BANNED_PATTERNS: readonly [RegExp, string][] = [
+  [/\bmetaboli[sz]er(s)?\b/i, "phenotype word (ADR 0021)"],
+  [/\b(?:poor|intermediate|normal|rapid|ultrarapid|extensive)\b/i, "phenotype word (ADR 0021)"],
+  [/\b(?:no|decreased|reduced|normal|increased)\s+function\b/i, "function label (ADR 0021)"],
+  [/\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i, "response language (ADR 0021)"],
+  [/\b(?:higher|lower|reduced|increased|standard|starting|adjusted)\s+(?:dose|amount)\b/i, "dose direction (ADR 0021)"],
+  [/\b(?:lower|raise|reduce|increase|adjust)\s+(?:the|your|a|this)?\s*(?:dose|amount)\b/i, "dose direction (ADR 0021)"],
+  [/\bdosing\b/i, "dose language (ADR 0021)"],
+  [/\b(?:take|start|stop|avoid|switch|choose|prescribe)\s+(?:this|that|the|a|an|your)?\s*(?:medicine|medicines|drug|drugs|dose)\b/i, "drug choice (ADR 0021)"],
+  [/\bavoid\b|\bstop taking\b|\bstart taking\b|\bswitch(?:ing|ed)?\b|\binstead of\b|\balternatives?\b/i, "drug choice (ADR 0021)"],
+  [/\bshould\b[^.]*\b(?:take|use)\b/i, "should-take language (ADR 0021)"],
+];
+
+/** The label of every Medicines-only row the text matches, in pattern order. */
+export function medicinesBannedLanguage(text: string): string[] {
+  return MEDICINES_BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
+ * The prose fields of a template, the ones a reader sees as Inherit's own
+ * words: the title, the summary and every interpretation. A citation label
+ * is the cited work's own title (a CPIC guideline is called a "dosing"
+ * guideline by its authors) and is exempt from the Medicines rows for that
+ * reason and no other; every other field is checked.
+ */
+export function templateProseFields(t: {
+  title?: unknown;
+  summary?: unknown;
+  variants?: { interpretations?: Record<string, unknown> }[];
+}): string[] {
+  const fields: unknown[] = [t.title, t.summary];
+  for (const v of t.variants ?? []) fields.push(...Object.values(v.interpretations ?? {}));
+  return fields.filter((field): field is string => typeof field === "string");
+}
+
+/** Medicines sentences a reader sees are capped at 25 words, on the readability gate's own splitter. */
+export const MEDICINES_SENTENCE_CAP = 25;
+
+export function overlongSentences(text: string): string[] {
+  return readabilitySentences(text).filter((sentence) => wordCount(sentence) > MEDICINES_SENTENCE_CAP);
+}
+
+/**
+ * Optional seed-file provenance (`source`): one entry per outside source the
+ * template’s facts were read from, each with a name, an https URL and the
+ * ISO date it was read. Not seeded into the database; kept in the file so
+ * the currency of a template can be checked against its sources.
+ */
+export function sourceFindings(source: unknown): string[] {
+  if (source == null) return [];
+  if (typeof source !== "object" || Array.isArray(source)) return ["source must be an object"];
+  const findings: string[] = [];
+  for (const [key, entry] of Object.entries(source as Record<string, unknown>)) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      findings.push(`source.${key} must be an object`);
+      continue;
+    }
+    const { name, url, accessedOn, licence, version, versionNote } = entry as Record<string, unknown>;
+    if (typeof name !== "string" || name.trim() === "") findings.push(`source.${key}: missing name`);
+    if (typeof url !== "string" || !/^https:\/\/\S+$/.test(url)) findings.push(`source.${key}: url must be https`);
+    if (typeof accessedOn !== "string" || !ISO_DATE.test(accessedOn))
+      findings.push(`source.${key}: accessedOn must be an ISO date (YYYY-MM-DD)`);
+    if (licence !== undefined && (typeof licence !== "string" || licence.trim() === ""))
+      findings.push(`source.${key}: licence must be a non-empty string when present`);
+    // A source's version is recorded when its endpoint exposes one and is
+    // null with a note when it does not; it is never invented.
+    if (version !== undefined && version !== null && (typeof version !== "string" || version.trim() === ""))
+      findings.push(`source.${key}: version must be a non-empty string or null`);
+    if (version === null && (typeof versionNote !== "string" || versionNote.trim() === ""))
+      findings.push(`source.${key}: a null version needs a versionNote saying why`);
+  }
+  return findings;
 }
 
 function genotypeKeys(ref: string, alt: string, chrom: number): string[] {
@@ -150,6 +241,34 @@ function main() {
         if (c.pmid && !/^\d{6,9}$/.test(String(c.pmid)))
           errors.push(`${id}: bad pmid ${c.pmid}`);
         if (!c.label) errors.push(`${id}: citation missing label`);
+        // G4.7: an access date, when carried, is an ISO date; Medicines
+        // templates must carry one on every citation (ADR 0021).
+        if (c.accessedOn !== undefined && !(typeof c.accessedOn === "string" && ISO_DATE.test(c.accessedOn)))
+          errors.push(`${id}: citation accessedOn must be an ISO date (YYYY-MM-DD)`);
+        if (t.category === MEDICINES_CATEGORY && c.accessedOn === undefined)
+          errors.push(`${id}: Medicines citations need accessedOn (ADR 0021)`);
+      }
+      for (const finding of sourceFindings(t.source)) errors.push(`${id}: ${finding}`);
+
+      // ADR 0021: a Medicines template is a variant_call over positions, with
+      // its sources and their access dates in the file, and none of the
+      // phenotype, response, dose or drug-choice language its rows forbid.
+      if (t.category === MEDICINES_CATEGORY) {
+        if (layer !== "variant_call")
+          errors.push(`${id}: Medicines templates are variant_call (ADR 0021)`);
+        if (t.estimate_kind != null)
+          errors.push(`${id}: Medicines templates carry estimate_kind null (ADR 0021)`);
+        if (t.source == null) errors.push(`${id}: Medicines templates need a source object (ADR 0021)`);
+        // Every prose field, never the serialised template: a citation label
+        // is the cited work's own title and is the one exempt field.
+        for (const field of templateProseFields(t)) {
+          for (const why of medicinesBannedLanguage(field)) {
+            errors.push(`${id}: banned language (${why}): ${field.slice(0, 60)}`);
+          }
+          for (const sentence of overlongSentences(field)) {
+            errors.push(`${id}: Medicines sentence has ${wordCount(sentence)} words; maximum is ${MEDICINES_SENTENCE_CAP}: ${sentence.slice(0, 60)}`);
+          }
+        }
       }
 
       const isPrs = t.pgs_id != null;
