@@ -689,3 +689,28 @@ file that reports no reference-homozygous call (a differences-only VCF)
 cannot show a run and is `not_measurable`. The citation renders beside
 the carrier block as its provenance, and the constants have one home in
 `src/lib/family/roh.ts`.
+
+## 2026-09-04 — Copilot guard: refusal ids, ordering and transport
+
+Context: brief line 2262 requires `src/lib/copilot/guard.ts`; the dossier
+for Medicines names it as condition A item 1. The route register listed
+seven refusal ids and a JSON refusal body.
+
+Decisions:
+- The refusal ids are the nine the guard emits: `selection-advice`
+  (which folds the register's `ranking`, since brief line 402 gives the
+  two one string), `sex-disclosure`, `prohibited-portrait`, `treatment`,
+  `diagnosis`, `prognosis` (the register's `diagnosis-or-treatment` split
+  in three, one fixed string each), `cross-subject`, `unsupported-number`
+  and `unsupported-citation`. The register's list is updated to match.
+- A message no rule matches is allowed; ambiguity is not modelled, and
+  the rule set is a table in one file with a 68-row test, not a model.
+- The refusal is served on the UI-message-stream transport the client
+  already reads, status 200, with `x-copilot-refusal: <id>`, until a
+  structured completion contract exists; the completion is buffered in
+  full before its first byte, so the "streamed answer" of A9 is now a
+  buffered answer delivered whole. The `feature.blocked` event has no
+  table yet; the route logs the class only.
+- Two consequences of the brief's regex are recorded rather than worked
+  around: `1,000` splits into two allowed integers, and an ISO date yields
+  negative tokens; both are pinned by tests.

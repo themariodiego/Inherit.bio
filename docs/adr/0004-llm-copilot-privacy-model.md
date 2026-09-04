@@ -25,6 +25,23 @@
    mandates citation of the underlying report/variant, no-diagnosis
    language, and honest coverage statements.
 
+5. **Server-side guard.** The prohibitions of brief line 2262 are enforced
+   by `src/lib/copilot/guard.ts`, not by the system prompt alone. A
+   deterministic intent classifier runs in the chat route after scope
+   resolution and before settings, consent, key retrieval, SSRF checks or
+   any provider call; a gated intent (treatment, diagnosis, prognosis,
+   embryo selection or disposition, embryo sex, a claim about one future
+   child, a cross-subject request) returns the fixed refusal for that class
+   from `src/copy/copilot/refusals.ts` with zero provider calls and no log
+   beyond the class. The completion is buffered in full and checked before
+   its first byte is serialized: every numeral token of the brief's regex
+   must round to a value in that turn's tool JSON or sit in
+   `config/allowed-numerals.json`, and every citation must be one the tool
+   JSON carried; a failing completion is replaced by the fixed refusal.
+   Unvalidated token streaming to the client no longer exists.
+   `e2e/copilot-refusal.spec.ts` proves the refusals with zero mock-provider
+   calls and the replacement of a fabricated number.
+
 ## The localhost caveat, stated honestly
 
 Chat inference runs in a server route (key decryption must stay
