@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { sniff } from "./sniff";
+import { narrow, sniff, sniffV2 } from "./sniff";
 
 const fx = (name: string) =>
   readFileSync(new URL(`./fixtures/${name}`, import.meta.url));
@@ -96,5 +96,55 @@ describe("sniff", () => {
       { kind: null, compressed: false }
     );
     expect(sniff(new Uint8Array(0))).toEqual({ kind: null, compressed: false });
+  });
+});
+
+describe("sniffV2", () => {
+  const encode = (text: string) => new TextEncoder().encode(text);
+
+  it("keeps the V1 answer for every existing fixture", () => {
+    for (const name of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ftdna.csv", "sample.vcf", "sample.g.vcf", "sample.vcf.gz", "tiny.bam", "tiny.cram"]) {
+      const bytes = fx(name);
+      expect(narrow(sniffV2(bytes)), name).toEqual(sniff(bytes));
+    }
+  });
+
+  it("counts the sample columns of a VCF and names a multi-sample file", () => {
+    const one = encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\n");
+    expect(sniffV2(one)).toEqual({ kind: "vcf", compressed: false, sampleCount: 1, sampleNames: ["S1"] });
+    const three = encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tE1\tE2\tE3\n1\t100\t.\tA\tG\t.\t.\t.\tGT\t0/1\t0/0\t1/1\n");
+    expect(sniffV2(three)).toEqual({ kind: "vcf_multisample", compressed: false, sampleCount: 3, sampleNames: ["E1", "E2", "E3"] });
+    // The wrapper narrows a multi-sample file to `vcf`, as before.
+    expect(sniff(three)).toEqual({ kind: "vcf", compressed: false });
+    // A gzipped multi-sample file keeps the count.
+    expect(sniffV2(gzipSync(Buffer.from(three)))).toMatchObject({ kind: "vcf_multisample", compressed: true, sampleCount: 3 });
+  });
+
+  it("answers a null count when the #CHROM line is beyond the head, and zero for a sites-only VCF", () => {
+    const noHeader = encode("##fileformat=VCFv4.2\n##contig=<ID=1>\n");
+    expect(sniffV2(noHeader)).toEqual({ kind: "vcf", compressed: false, sampleCount: null, sampleNames: [] });
+    const sitesOnly = encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+    expect(sniffV2(sitesOnly)).toEqual({ kind: "vcf", compressed: false, sampleCount: 0, sampleNames: [] });
+  });
+
+  it("names a PDF by its magic and the wrapper still answers null", () => {
+    const pdf = encode("%PDF-1.7\n%âãÏÓ\n1 0 obj\n");
+    expect(sniffV2(pdf)).toEqual({ kind: "pdf", compressed: false, sampleCount: null, sampleNames: [] });
+    expect(sniff(pdf)).toEqual({ kind: null, compressed: false });
+  });
+
+  it("names a laboratory table under the header rule and the wrapper still answers null", () => {
+    const table = encode("Embryo,SNP,Chromosome,Position,Call\nE1,rs1,1,100,AA\n");
+    expect(sniffV2(table)).toEqual({ kind: "pgt_table", compressed: false, sampleCount: null, sampleNames: [] });
+    expect(sniff(table)).toEqual({ kind: null, compressed: false });
+    // Two fields only: not a table.
+    expect(sniffV2(encode("Sample,Call\nE1,AA\n")).kind).toBeNull();
+    // A leading comment block is skipped like the vendor rows do.
+    expect(sniffV2(encode("# exported by a laboratory\nSpecimen\tMarker\tResult\n")).kind).toBe("pgt_table");
+  });
+
+  it("keeps the vendor detections ahead of the table rule", () => {
+    expect(sniffV2(encode("RSID,CHROMOSOME,POSITION,RESULT\nrs1,1,100,AA\n")).kind).toBe("array_ftdna");
+    expect(sniffV2(encode('"RSID","CHROMOSOME","POSITION","RESULT"\n')).kind).toBe("array_myheritage");
   });
 });

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { Button } from "@/components/ui/button";
-import { sniffFile } from "@/lib/genome/parsers/sniff-browser";
+import { INGEST_REFUSALS } from "@/copy/upload/errors";
+import { sniffFileV2 } from "@/lib/genome/parsers/sniff-browser";
 import type { FileKind } from "@/lib/genome/types";
 import { LIMITS, formatBytes } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";
@@ -69,24 +70,26 @@ export function Uploader() {
         return;
       }
 
-      // 1. Sniff format from the file head (client-side, before any upload).
+      // 1. Sniff format from the file head (client-side, before any upload):
+      // the browser preflight of every genetic-file flow. A PDF is refused
+      // here with the A.6 sentence before any byte is sent; a file nobody
+      // recognises likewise. Both sentences come from their one home.
       const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
-      const sniffed = await sniffFile(head);
-      if (!sniffed.kind) {
-        setPhase({
-          step: "error",
-          message:
-            "Unrecognized format. Supported: 23andMe, AncestryDNA, MyHeritage, or FamilyTreeDNA raw files, VCF/VCF.GZ/gVCF, BAM, CRAM.",
-        });
+      const sniffed = await sniffFileV2(head);
+      if (sniffed.kind === "pdf") {
+        setPhase({ step: "error", message: INGEST_REFUSALS.pdf_not_data });
         return;
       }
-      const kind = sniffed.kind;
+      if (sniffed.kind === null || sniffed.kind === "pgt_table") {
+        setPhase({ step: "error", message: INGEST_REFUSALS.unrecognised_format });
+        return;
+      }
+      // A multi-sample VCF travels as `vcf`; the server's structural
+      // validator, not this preflight, decides what a subject file may be.
+      const kind: FileKind = sniffed.kind === "vcf_multisample" ? "vcf" : sniffed.kind;
       const cap = capFor(kind);
       if (file.size > cap) {
-        setPhase({
-          step: "error",
-          message: `This ${kind.replace("array_", "")} file is ${formatBytes(file.size)}; the current limit for its type is ${formatBytes(cap)}. See the self-hosting guide to raise limits on your own deployment.`,
-        });
+        setPhase({ step: "error", message: INGEST_REFUSALS.too_large(Math.round(cap / (1024 * 1024))) });
         return;
       }
 

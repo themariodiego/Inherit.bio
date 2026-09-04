@@ -43,6 +43,7 @@ const { ContextStrip } = await import("./compare/context-strip");
 const { QcTable } = await import("./compare/qc-table");
 const { QcBlock } = await import("./detail/qc-block");
 const { FindingsSection } = await import("./detail/findings-section");
+const { UploadFlow } = await import("./upload/upload-flow");
 
 /**
  * The embryo renderers over synthetic fixtures (design §6.1): the compare
@@ -417,5 +418,38 @@ describe("states and the gate", () => {
     expect(html).not.toContain("data-figure-kind");
     expect(html).not.toContain("data-claim-block");
     expect(html).not.toContain(STANDING_STATEMENT);
+  });
+});
+
+describe("<UploadFlow>", () => {
+  const html = renderToStaticMarkup(h(UploadFlow));
+
+  it("opens on step 1 with the first question, its three answers, the step line and what is still to come", () => {
+    expect(html).toContain('data-screen="tested"');
+    expect(html).toContain('data-step="1"');
+    expect(html).toContain(">Step 1 of 5<");
+    expect(html).toContain("Still to come: whose embryos these are, who signs, what you agree to, and the file.");
+    expect(html).toContain("Did your clinic do genetic testing on your embryos?");
+    expect(html.match(/type="radio"/g)?.length).toBe(3);
+    for (const label of ["Yes", "No", "I’m not sure"]) expect(html).toContain(`>${label}<`);
+  });
+
+  it("offers one primary, disabled until a question is answered, and no way back on the first screen", () => {
+    expect(html.match(/data-variant="default"/g)?.length).toBe(1);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Continue<\/button>/);
+    expect(html).not.toContain(">Back<");
+  });
+
+  it("renders no figure, no form, no result and nothing about a sex or a rank", () => {
+    expect(html).not.toContain("data-figure-kind");
+    expect(html).not.toContain("<form");
+    expect(html).not.toMatch(/\b(sex|male|female|XX|XY|karyotype|rank|ranked|best embryo)\b/i);
+    expect(html).not.toContain("data-slot=\"flow-end\"");
+    expect(html).not.toContain("data-slot=\"ingest-unavailable\"");
+  });
+
+  it("keeps the first screen within the X6.1 budget: four interactive elements", () => {
+    const interactives = html.match(/<(a href|button|input|select|textarea)/g)?.length ?? 0;
+    expect(interactives).toBe(4);
   });
 });
