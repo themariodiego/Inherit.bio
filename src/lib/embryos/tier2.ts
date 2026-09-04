@@ -25,11 +25,36 @@ export const TIER2_EMBRYO_COOKIE_NAME = "inherit_embryo_gate";
 /** Context separation for the keyed digest (src/lib/crypto.ts); distinct from Family's. */
 const TIER2_EMBRYO_DIGEST_CONTEXT = "embryo-tier2-gate-v1";
 
-export { currentAuthSessionId, tier2CookieAttributes } from "@/lib/family/tier2";
+import { tier2CookieAttributes } from "@/lib/family/tier2";
+
+export { currentAuthSessionId, tier2CookieAttributes };
 
 /** The cookie value for one account in one auth session. */
 export function tier2Digest(accountId: string, authSessionId: string): string {
   return hmacSecret(`${accountId}:${authSessionId}`, TIER2_EMBRYO_DIGEST_CONTEXT);
+}
+
+/**
+ * The one cookie the acknowledgement writes, exactly as `acknowledged()`
+ * reads it: the same name, the same digest, the session attributes. The
+ * writer and the reader share this function, so the two cannot drift.
+ */
+export function embryoGateCookie(accountId: string, authSessionId: string) {
+  return {
+    name: TIER2_EMBRYO_COOKIE_NAME,
+    value: tier2Digest(accountId, authSessionId),
+    ...tier2CookieAttributes(),
+  };
+}
+
+/** `acknowledged()` over a given cookie value and session: the pure half of the read path. */
+export function acknowledgedBy(
+  cookieValue: string | undefined,
+  accountId: string,
+  authSessionId: string | null,
+): boolean {
+  if (!authSessionId) return false;
+  return tier2CookieMatches(cookieValue, accountId, authSessionId);
 }
 
 /** Constant-time-ish equality on two hex digests of equal length. */
@@ -55,7 +80,6 @@ export function tier2CookieMatches(
  */
 export async function acknowledged(user: { id: string }): Promise<boolean> {
   const sessionId = await currentAuthSessionId();
-  if (!sessionId) return false;
   const store = await cookies();
-  return tier2CookieMatches(store.get(TIER2_EMBRYO_COOKIE_NAME)?.value, user.id, sessionId);
+  return acknowledgedBy(store.get(TIER2_EMBRYO_COOKIE_NAME)?.value, user.id, sessionId);
 }

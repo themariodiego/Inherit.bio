@@ -493,7 +493,8 @@ test("/embryos/compare for the uploader: consent-required withholds every result
 test("/embryos/{id} for the uploader: breadcrumbs, the neutral bar, the ordinal h1 and the consent-required state", async ({ page }) => {
   await signIn(page, A.email, A.password);
   await page.goto(`/embryos/${embryo1}`);
-  await expect(page).toHaveTitle("Embryo 1 · Embryos");
+  // The root layout's template applies: `%s · Inherit`.
+  await expect(page).toHaveTitle("Embryo 1 · Embryos · Inherit");
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText("Embryos / Embryo 1");
   const bar = page.locator('[data-subject-bar="true"]');
   await expect(bar.locator('[data-slot="subject-kind"]')).toHaveText("Embryo");

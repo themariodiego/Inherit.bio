@@ -72,6 +72,21 @@ export const EMBRYO_STATUS: Record<EmbryoStatus, string> = {
 /** The role words the analysis line names; nobody is named. */
 export const ROLE_YOU = "you";
 export const ROLE_OTHER_PARENT = "the other genetic parent";
+export const ROLE_BOTH_PARENTS = "both genetic parents";
+
+/** The role word for a missing grant, by whose it is; null when nothing is missing. */
+export function waitingRole(consent: "granted" | "waiting-for-you" | "waiting-for-other" | "waiting-for-both"): string | null {
+  switch (consent) {
+    case "granted":
+      return null;
+    case "waiting-for-you":
+      return ROLE_YOU;
+    case "waiting-for-other":
+      return ROLE_OTHER_PARENT;
+    case "waiting-for-both":
+      return ROLE_BOTH_PARENTS;
+  }
+}
 
 /** The card line while a grant is missing. */
 export function waitingForResultsStatus(role: string): string {

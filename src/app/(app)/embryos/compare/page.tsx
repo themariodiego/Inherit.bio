@@ -17,6 +17,8 @@ import {
   NO_RANGE_YET,
   QUALITY_CHECK_HEADING,
   REGISTRY_EMPTY_SENTENCE,
+  READ_FAILED_HEADING,
+  READ_FAILED_SENTENCE,
   SHAPE_BLOCKED_HEADING,
   SHAPE_BLOCKED_SENTENCE,
   SIDE_BY_SIDE_HEADING,
@@ -28,7 +30,7 @@ import {
   FILES_NOT_ADDED_SENTENCE,
   REQUEST_DATA_BUTTON,
   ROLE_OTHER_PARENT,
-  ROLE_YOU,
+  waitingRole,
   STILL_CHECKING_STATUS,
   waitingForResultsBody,
 } from "@/copy/embryos/index";
@@ -42,7 +44,7 @@ import {
   resolveResultSurfaceState,
 } from "@/lib/embryos/access";
 import { allowedConditions, registryIsEmpty } from "@/lib/embryos/allowed-conditions";
-import { isCanonicalId, selectCohort, type EmbryoCohortView } from "@/lib/embryos/cohorts";
+import { EmbryoReadError, isCanonicalId, rowsOrThrow, selectCohort, type EmbryoCohortView } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type ComparisonResultRow, type RscEmbryoComparison } from "@/lib/embryos/policy";
 import { projectComparison, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { acknowledged } from "@/lib/embryos/tier2";
@@ -87,7 +89,7 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
   const admin = createAdminClient();
   const embryoIds = cohort.embryos.map((embryo) => embryo.id);
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
-  const [{ data: qcRows }, { data: scoreRows }] = await Promise.all([
+  const [qcResult, scoreResult] = await Promise.all([
     admin.from("embryo_qc").select("*").in("embryo_id", embryoIds),
     // A score outside the registry is never read (requestRule).
     registered.size > 0
@@ -96,8 +98,11 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
           .in("embryo_id", embryoIds)
           .in("condition_id", [...registered])
-      : { data: [] as never[] },
+      : { data: [] as never[], error: null },
   ]);
+  // A failed read is the error state, never an empty comparison (R11).
+  const qcRows = rowsOrThrow("embryo_qc", qcResult);
+  const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
   return projectComparison({
     cohortId: cohort.id,
     embryos: cohort.embryos.map((embryo) => ({
@@ -107,8 +112,8 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
       display_label: embryo.displayLabel,
       status: embryo.status,
     })),
-    qcRows: (qcRows ?? []) as unknown as EmbryoQcRow[],
-    scores: (scoreRows ?? []) as unknown as EmbryoScoreRow[],
+    qcRows: qcRows as unknown as EmbryoQcRow[],
+    scores: scoreRows as unknown as EmbryoScoreRow[],
     registeredConditionIds: registered,
   });
 }
@@ -167,7 +172,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
     case "consent-required":
       return frame(
         <BlockingState state="consent-required">
-          {waitingForResultsBody(analysisConsent(cohort) === "waiting-for-you" ? ROLE_YOU : ROLE_OTHER_PARENT)}
+          {waitingForResultsBody(waitingRole(analysisConsent(cohort)) ?? ROLE_OTHER_PARENT)}
         </BlockingState>,
       );
     case "gated":
@@ -186,6 +191,14 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       return frame(
         <EmbryoErrorState heading={SHAPE_BLOCKED_HEADING} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
           {SHAPE_BLOCKED_SENTENCE}
+        </EmbryoErrorState>,
+      );
+    }
+    if (error instanceof EmbryoReadError) {
+      console.error("embryo.read-failed", { route: "embryos.compare", table: error.table });
+      return frame(
+        <EmbryoErrorState heading={READ_FAILED_HEADING} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
+          {READ_FAILED_SENTENCE}
         </EmbryoErrorState>,
       );
     }

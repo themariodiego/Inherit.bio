@@ -1,12 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import {
-  TIER2_EMBRYO_COOKIE_NAME,
-  currentAuthSessionId,
-  tier2CookieAttributes,
-  tier2Digest,
-} from "@/lib/embryos/tier2";
+import { currentAuthSessionId, embryoGateCookie } from "@/lib/embryos/tier2";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -27,10 +22,6 @@ export async function acknowledgeEmbryoGate(): Promise<{ ok: boolean }> {
   const sessionId = await currentAuthSessionId();
   if (!sessionId) return { ok: false };
   const store = await cookies();
-  store.set({
-    name: TIER2_EMBRYO_COOKIE_NAME,
-    value: tier2Digest(user.id, sessionId),
-    ...tier2CookieAttributes(),
-  });
+  store.set(embryoGateCookie(user.id, sessionId));
   return { ok: true };
 }

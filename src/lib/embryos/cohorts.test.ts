@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  EmbryoReadError,
   buildCohortViews,
   isCanonicalId,
+  readCohortGraphRowsWith,
+  rowsOrThrow,
   selectCohort,
   selectEmbryo,
   type CohortGraphRows,
   type CohortRow,
 } from "./cohorts";
+import type { Db } from "@/lib/genome/load";
 
 /**
  * The cohort graph over row fixtures (design §1.3, §6.1): the co-parent is
@@ -175,3 +179,30 @@ describe("cohort graph", () => {
     expect(isCanonicalId("s-" + C1)).toBe(false);
   });
 });
+
+/**
+ * A query answered with an error resolves the read to an EmbryoReadError,
+ * never to an empty graph: the pages render the error state (R11). The
+ * client is a stub that answers every query alike; nothing about PostgREST
+ * semantics is imitated, only the shape of a failed answer.
+ */
+function failingClient(message: string): Db {
+  const result = { data: null, error: { message } };
+  const builder: Record<string, unknown> = {};
+  for (const method of ["select", "eq", "is", "in", "or", "maybeSingle", "order", "limit"]) {
+    builder[method] = () => builder;
+  }
+  builder.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve);
+  return { from: () => builder } as unknown as Db;
+}
+
+describe("a read that fails", () => {
+  it("throws an EmbryoReadError naming the table, never an empty list", async () => {
+    expect(() => rowsOrThrow("embryos", { data: null, error: { message: "permission denied" } })).toThrow(EmbryoReadError);
+    expect(rowsOrThrow("embryos", { data: null, error: null })).toEqual([]);
+    expect(rowsOrThrow("embryos", { data: [{ id: 1 }], error: null })).toEqual([{ id: 1 }]);
+    await expect(readCohortGraphRowsWith(failingClient("connection reset"), A)).rejects.toBeInstanceOf(EmbryoReadError);
+    await expect(readCohortGraphRowsWith(failingClient("connection reset"), A)).rejects.toThrow(/subject_principals: connection reset/);
+  });
+});
+

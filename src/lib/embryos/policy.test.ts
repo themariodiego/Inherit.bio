@@ -97,6 +97,27 @@ describe("closed shapes", () => {
     expect(wrongLabel.embryo_label).toBe("Embryo 1");
   });
 
+  it("rejects a reason outside the closed tables and a reason paired with the wrong state (R1)", () => {
+    const freeQcReason = syntheticQc({ qc_verdict: "fail", qc_reasons: ["embryo_call_rate", "unknown_reason"] });
+    expect(validateEmbryoDto("qc", freeQcReason).ok).toBe(false);
+    expect(validateEmbryoDto("qc", syntheticQc({ qc_verdict: "fail", qc_reasons: ["embryo_call_rate"] })).ok).toBe(true);
+    const freeResultReason = syntheticNullFinding("Embryo 1", "c-a", "some_new_reason");
+    expect(validateEmbryoDto("EmbryoFinding", freeResultReason).ok).toBe(false);
+    // A quality reason names a quality_not_measurable state; a result-level reason a not_covered one.
+    expect(validateEmbryoDto("EmbryoFinding", syntheticNullFinding("Embryo 1", "c-a", "embryo_call_rate", "not_covered")).ok).toBe(false);
+    expect(validateEmbryoDto("EmbryoFinding", syntheticNullFinding("Embryo 1", "c-a", "embryo_call_rate", "quality_not_measurable")).ok).toBe(true);
+    expect(validateEmbryoDto("EmbryoFinding", syntheticNullFinding("Embryo 1", "c-a", "within_family_validation_unavailable", "quality_not_measurable")).ok).toBe(false);
+    expect(validateEmbryoDto("EmbryoFinding", syntheticNullFinding("Embryo 1", "c-a", "within_family_validation_unavailable", "not_covered")).ok).toBe(true);
+  });
+
+  it("rejects a source string that is not a registered bounded label (R2)", () => {
+    expect(validateEmbryoDto("qc", syntheticQc({ source_laboratory: "Acme Fertility Lab" })).ok).toBe(false);
+    expect(validateEmbryoDto("qc", syntheticQc({ source_assay: "SNP array v3" })).ok).toBe(false);
+    expect(validateEmbryoDto("qc", syntheticQc({ amplification_method: "MDA" })).ok).toBe(false);
+    expect(validateEmbryoDto("qc", syntheticQc({ allelic_dropout_method: "sibling concordance" })).ok).toBe(false);
+    expect(validateEmbryoDto("qc", syntheticQc({ source_laboratory: null, source_assay: null })).ok).toBe(true);
+  });
+
   it("enforces column, row and trade-off cardinality", () => {
     const unordered = comparison();
     unordered.embryos = [unordered.embryos[1], unordered.embryos[0], unordered.embryos[2]];

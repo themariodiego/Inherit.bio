@@ -15,6 +15,8 @@
  *      `sample_ordinal` and result rows ascend by registry `condition_id`,
  *      with no sort control and no ordering by any computed quantity.
  */
+import { QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS } from "./qc-policy";
+import { SOURCE_LABEL_FIELDS, isRegisteredSourceLabel } from "./source-labels";
 
 /** Register `forbiddenShapeFields`, verbatim. */
 export const FORBIDDEN_SHAPE_FIELDS = [
@@ -546,13 +548,20 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       const allNull = low === null && high === null && estimate === null;
       const strict = isFiniteNumber(low) && isFiniteNumber(estimate) && isFiniteNumber(high) && low < estimate && estimate < high;
       if (!allNull && !strict) return fail(at("allelic_dropout_interval_low"), "interval must be null as one set or strict low < estimate < high");
-      for (const key of ["allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_panel"]) {
-        if (!isNullOrString(value[key])) return fail(at(key), "must be null or a string");
+      // Source strings are bounded, registered safe labels or null: an
+      // original laboratory label never passes the closed shape (R2).
+      for (const key of SOURCE_LABEL_FIELDS) {
+        if (!isRegisteredSourceLabel(key, value[key])) return fail(at(key), "must be null or a registered source label id");
       }
+      if (!isNullOrString(value.imputation_panel)) return fail(at("imputation_panel"), "must be null or a string");
       if (value.imputation_performed !== false) return fail(at("imputation_performed"), "imputation is never performed for an embryo");
       if (value.imputation_panel !== null) return fail(at("imputation_panel"), "must be null");
       if (!isEnum(value.qc_verdict, QC_VERDICTS)) return fail(at("qc_verdict"), "must be pass, marginal or fail");
       if (!isStringArray(value.qc_reasons)) return fail(at("qc_reasons"), "must be an array of reason ids");
+      // Membership of the closed table, never a free string (R1).
+      if (!value.qc_reasons.every((reason) => isEnum(reason, QC_REASON_IDS))) {
+        return fail(at("qc_reasons"), "must contain only registered qc reason ids");
+      }
       if (typeof value.computed_at !== "string") return fail(at("computed_at"), "must be a timestamp string");
       return { ok: true };
     }
@@ -564,7 +573,9 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
       if (!isEnum(value.coverage_state, COVERAGE_STATES)) return fail(at("coverage_state"), "unknown coverage state");
       if (!isStringArray(value.citation_ids)) return fail(at("citation_ids"), "must be an array of citation ids");
       if (new Set(value.citation_ids).size !== value.citation_ids.length) return fail(at("citation_ids"), "must be deduplicated");
-      if (!isNullOrString(value.not_covered_reason)) return fail(at("not_covered_reason"), "must be null or a reason id");
+      if (!(value.not_covered_reason === null || isEnum(value.not_covered_reason, RESULT_NOT_REPORTABLE_REASON_IDS))) {
+        return fail(at("not_covered_reason"), "must be null or a registered result reason id");
+      }
       const finding = value.finding;
       const reason = value.not_covered_reason;
       const state = value.coverage_state;
@@ -574,6 +585,16 @@ function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: s
         }
         if (reason === null || reason === "insufficient_coverage") {
           return fail(at("not_covered_reason"), "a null finding needs one mapped reason other than insufficient_coverage");
+        }
+        // The register's cross-field rule: a quality reason names a
+        // quality_not_measurable state and a result-level reason a
+        // not_covered one; the pairs never cross (R1).
+        const qualityReason = isEnum(reason, QC_REASON_IDS);
+        if (qualityReason && state !== "quality_not_measurable") {
+          return fail(at("coverage_state"), "a qc reason needs coverage_state quality_not_measurable");
+        }
+        if (!qualityReason && state !== "not_covered") {
+          return fail(at("coverage_state"), "a result-level reason needs coverage_state not_covered");
         }
         return { ok: true };
       }

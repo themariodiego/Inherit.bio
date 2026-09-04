@@ -11,7 +11,7 @@ import { BlockingState, EmbryoErrorState, EmbryoUnavailable } from "@/components
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
-import { REGISTRY_EMPTY_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
+import { READ_FAILED_HEADING, READ_FAILED_SENTENCE, REGISTRY_EMPTY_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
 import {
   DETAIL_SECTION_LABEL,
   FILE_NOT_ADDED_SENTENCE,
@@ -20,7 +20,7 @@ import {
   PROVENANCE_LINE_EMBRYO,
   WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
 } from "@/copy/embryos/detail";
-import { EMBRYOS_H1, ROLE_OTHER_PARENT, ROLE_YOU, STILL_CHECKING_STATUS, waitingForResultsBody } from "@/copy/embryos/index";
+import { EMBRYOS_H1, ROLE_OTHER_PARENT, STILL_CHECKING_STATUS, waitingForResultsBody, waitingRole } from "@/copy/embryos/index";
 import { FULL_QC_TABLE_SUMMARY, qcRunOn } from "@/copy/embryos/qc";
 import { BACK_TO_EMBRYOS_LINK } from "@/copy/embryos/request-data";
 import {
@@ -31,7 +31,7 @@ import {
   resolveResultSurfaceState,
 } from "@/lib/embryos/access";
 import { allowedConditions } from "@/lib/embryos/allowed-conditions";
-import { selectEmbryo } from "@/lib/embryos/cohorts";
+import { EmbryoReadError, rowsOrThrow, selectEmbryo } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { acknowledged } from "@/lib/embryos/tier2";
@@ -71,7 +71,7 @@ async function loadDetail(input: {
 }): Promise<RscEmbryoDetail | null> {
   const admin = createAdminClient();
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
-  const [{ data: qc }, { data: scoreRows }] = await Promise.all([
+  const [qcResult, scoreResult] = await Promise.all([
     admin.from("embryo_qc").select("*").eq("embryo_id", input.embryo.id).maybeSingle(),
     registered.size > 0
       ? admin
@@ -79,8 +79,12 @@ async function loadDetail(input: {
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
           .eq("embryo_id", input.embryo.id)
           .in("condition_id", [...registered])
-      : { data: [] as never[] },
+      : { data: [] as never[], error: null },
   ]);
+  // A failed read is the error state, never "Still checking the files" (R11).
+  if (qcResult.error) throw new EmbryoReadError("embryo_qc", qcResult.error.message);
+  const qc = qcResult.data;
+  const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
   if (!qc) return null;
   return projectDetail({
     embryo: {
@@ -91,7 +95,7 @@ async function loadDetail(input: {
       status: input.embryo.status,
     },
     qc: qc as unknown as EmbryoQcRow,
-    scores: (scoreRows ?? []) as unknown as EmbryoScoreRow[],
+    scores: scoreRows as unknown as EmbryoScoreRow[],
     registeredConditionIds: registered,
   });
 }
@@ -154,7 +158,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
     case "consent-required":
       body = (
         <BlockingState state="consent-required">
-          {waitingForResultsBody(analysisConsent(cohort) === "waiting-for-you" ? ROLE_YOU : ROLE_OTHER_PARENT)}
+          {waitingForResultsBody(waitingRole(analysisConsent(cohort)) ?? ROLE_OTHER_PARENT)}
         </BlockingState>
       );
       break;
@@ -173,6 +177,15 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
           },
         });
       } catch (error) {
+        if (error instanceof EmbryoReadError) {
+          console.error("embryo.read-failed", { route: "embryos.detail", table: error.table });
+          body = (
+            <EmbryoErrorState heading={READ_FAILED_HEADING} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
+              {READ_FAILED_SENTENCE}
+            </EmbryoErrorState>
+          );
+          break;
+        }
         if (!(error instanceof EmbryoShapeError)) throw error;
         console.error("feature.blocked", { route: "embryos.detail", shape: error.shape, path: error.path });
         body = (

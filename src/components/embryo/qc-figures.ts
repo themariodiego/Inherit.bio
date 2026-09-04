@@ -7,7 +7,7 @@
  * `displayedFigure` unchanged.
  */
 import { displayedFigure, type QcDto } from "@/lib/embryos/policy";
-import type { CoverageSpec, IntervalSpec, NaturalFrequencySpec } from "@/lib/figures/spec";
+import type { CoverageSpec, IntervalSpec, MeasureSpec, NaturalFrequencySpec } from "@/lib/figures/spec";
 
 const QC_PROVENANCE = { kind: "computed", module: "embryos/qc" } as const;
 
@@ -29,6 +29,19 @@ export function rateSpec(value: number): NaturalFrequencySpec {
     basis: "observed",
     provenance: QC_PROVENANCE,
     value: displayedFigure(value),
+  };
+}
+
+/** The mean read depth as a quality measure with its unit, one decimal (R7). */
+export function depthSpec(meanDepth: number): MeasureSpec {
+  return {
+    kind: "measure",
+    class: "quality",
+    basis: "observed",
+    provenance: QC_PROVENANCE,
+    value: displayedFigure(meanDepth),
+    unit: "reads per position",
+    decimals: 1,
   };
 }
 

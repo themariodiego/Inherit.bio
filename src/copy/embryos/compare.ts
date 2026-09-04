@@ -99,6 +99,28 @@ export const CARRIER_WORDS = {
 export const WITHIN_FAMILY_NOT_TESTED =
   "No one has measured whether this estimate holds up between brothers and sisters. It is a population estimate used where it has not been tested.";
 
+/**
+ * The register's `measured_inconclusive` status: the score was tested
+ * between brothers and sisters and the test could not tell whether the
+ * estimate holds up. Copy id embryo.within-family.inconclusive; the
+ * citation id names the study.
+ */
+export function withinFamilyInconclusive(citationId: string): string {
+  return `This score was tested between brothers and sisters, and the test could not tell whether the estimate holds up. Source: ${citationId}.`;
+}
+
+/**
+ * The layer definitions for the embryo tables (X13.1, brief line 2512):
+ * under /embryos a second-person reference becomes a reference to the
+ * embryo's file, so these are the report definitions re-said about the file.
+ */
+export const EMBRYO_LAYER_DEFINITIONS = {
+  variant_call:
+    "A result about one or a few exact spots in the embryo’s file, read against an outside clinical classification.",
+  estimate:
+    "A model that adds up small effects from the embryo’s file. It is an estimate, not a reading. Scientists call these polygenic scores.",
+} as const;
+
 /** Character-for-character (brief line 2242). */
 export const NOT_DISTINGUISHABLE =
   "These embryos are not distinguishable for this trait using this data.";
@@ -142,6 +164,12 @@ export const SHAPE_BLOCKED_SENTENCE =
   "Inherit blocked this page because its data did not match the safety shape it must have. Nothing was shown. Try again later.";
 
 export const SHAPE_BLOCKED_HEADING = "This page did not open";
+
+/** A read that failed (design §1.4 `error`): nothing was established, so nothing is shown as empty or pending. */
+export const READ_FAILED_SENTENCE =
+  "Inherit could not read the files for this page. Nothing was shown. Try again later.";
+
+export const READ_FAILED_HEADING = SHAPE_BLOCKED_HEADING;
 
 /** Under "Where this comes from" while no condition is registered. */
 export const REGISTRY_EMPTY_SENTENCE =

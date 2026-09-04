@@ -17,8 +17,7 @@ import {
   RETENTION_DONATED_OR_DISCARDED,
   RETENTION_SENTENCE,
   RETENTION_TRANSFERRED,
-  ROLE_OTHER_PARENT,
-  ROLE_YOU,
+  waitingRole,
   STILL_CHECKING_STATUS,
   cohortLabel,
   waitingForResultsStatus,
@@ -35,14 +34,7 @@ export interface CohortCardProps {
 
 /** The role word the analysis line names; nobody is named. */
 export function analysisRole(cohort: EmbryoCohortView): string | null {
-  switch (analysisConsent(cohort)) {
-    case "granted":
-      return null;
-    case "waiting-for-you":
-      return ROLE_YOU;
-    case "waiting-for-other":
-      return ROLE_OTHER_PARENT;
-  }
+  return waitingRole(analysisConsent(cohort));
 }
 
 export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {

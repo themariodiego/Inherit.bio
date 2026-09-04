@@ -10,6 +10,7 @@ import {
 } from "./access";
 import type { EmbryoCohortView } from "./cohorts";
 import type { CapabilityDecision } from "./access";
+import { waitingRole } from "@/copy/embryos/index";
 
 /**
  * Access is two independent answers (design §1.4): the jurisdiction across
@@ -34,6 +35,7 @@ function cohort(overrides: Partial<EmbryoCohortView> = {}): EmbryoCohortView {
     requiredUploadPrincipalAccountIds: [VIEWER, PARENT],
     requiredUploadPrincipalsWithoutAccount: 0,
     analysisGranted: true,
+    analysisGrantsMissing: 0,
     viewerAnalysisGranted: true,
     embryos: [],
     retentionExpiresAt: "2028-09-01T00:00:00.000Z",
@@ -89,7 +91,13 @@ describe("embryo access", () => {
     expect(analysisConsent(cohort())).toBe("granted");
     expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: false }))).toBe("waiting-for-you");
     expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: true }))).toBe("waiting-for-other");
-    expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: null }))).toBe("waiting-for-other");
+    // A parent who granted waits for the other parent.
+    expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: true, analysisGrantsMissing: 1 }))).toBe("waiting-for-other");
+    // A non-parent uploader waits for both parents until one has granted, then for the one missing (R13).
+    expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: null, analysisGrantsMissing: 2 }))).toBe("waiting-for-both");
+    expect(analysisConsent(cohort({ analysisGranted: false, viewerAnalysisGranted: null, analysisGrantsMissing: 1 }))).toBe("waiting-for-other");
+    expect(waitingRole("waiting-for-both")).toBe("both genetic parents");
+    expect(waitingRole("granted")).toBeNull();
   });
 
   it("renders the states in one order: jurisdiction, empty, processing, consent, gate, complete", () => {

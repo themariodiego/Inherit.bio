@@ -22,6 +22,7 @@ import {
 } from "@/copy/embryos/qc";
 import type { QcDto } from "@/lib/embryos/policy";
 import { mapQcReason } from "@/lib/embryos/qc-policy";
+import { sourceLabelText, type SourceLabelField } from "@/lib/embryos/source-labels";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 
 const RATE_FIELDS = [
@@ -88,12 +89,12 @@ function RateRow({ label, field, value, node }: { label: string; field: string; 
   );
 }
 
-function SourceRow({ label, field, value }: { label: string; field: string; value: string | null }) {
+function SourceRow({ label, field, value }: { label: string; field: SourceLabelField; value: string | null }) {
   return (
     <>
       <dt className="font-medium text-ink">{label}</dt>
       <dd data-slot="qc-source" data-field={field}>
-        {value ?? NOT_STATED_BY_SOURCE}
+        {sourceLabelText(field, value) ?? NOT_STATED_BY_SOURCE}
       </dd>
     </>
   );

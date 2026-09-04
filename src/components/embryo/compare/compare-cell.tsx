@@ -20,12 +20,14 @@ import {
   CARRIER_WORDS,
   CELL_WORDS,
   GENERAL_POPULATION_GROUP,
+  NOT_MEASURED_COMPARISON,
   TIE_GLYPH,
   WITHIN_FAMILY_NOT_TESTED,
   embryoGroup,
+  withinFamilyInconclusive,
 } from "@/copy/embryos/compare";
 import { displayedFigure, type EmbryoFinding } from "@/lib/embryos/policy";
-import { QC_REASON_IDS } from "@/lib/embryos/qc-policy";
+import { QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS, mapQcReason } from "@/lib/embryos/qc-policy";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 
 const CELL_BLOCK_CLASS = "rounded-none border-0 bg-transparent p-0";
@@ -57,9 +59,16 @@ export function cellWord(finding: EmbryoFinding): string | null {
   return null;
 }
 
+/** The registered id a reason maps to; a value outside the closed table becomes the review id, never the raw string. */
+export function registeredReason(reason: string | null): string | null {
+  if (reason === null) return null;
+  if ((RESULT_NOT_REPORTABLE_REASON_IDS as readonly string[]).includes(reason)) return reason;
+  return mapQcReason(reason);
+}
+
 function Word({ word, reason }: { word: string; reason: string | null }) {
   return (
-    <span data-slot="cell-word" data-reason={reason ?? undefined} className="text-sm text-ink">
+    <span data-slot="cell-word" data-reason={registeredReason(reason) ?? undefined} className="text-sm text-ink">
       {word}
     </span>
   );
@@ -108,8 +117,11 @@ export function CompareCell({
   }
   const provenance = { kind: "seed", table: "risk_models", id: body.risk_model.model_id } as const;
   const modelled = { class: "estimate", basis: "modelled", provenance } as const;
+  // The embryo's own figure is captioned as the embryo's ("for Embryo 1"),
+  // never as the population: one cell never attributes two numbers to the
+  // general population, which keeps the comparator alone (R3).
   const figures: StandaloneFigureSpec[] = [
-    { ...modelled, kind: "absolute", value: displayedFigure(body.absolute_risk), group: GENERAL_POPULATION_GROUP },
+    { ...modelled, kind: "absolute", value: displayedFigure(body.absolute_risk), group: embryoGroup(finding.embryo_label) },
     {
       ...modelled,
       kind: "interval",
@@ -127,12 +139,17 @@ export function CompareCell({
     },
   ];
   const withinFamily = body.within_family;
-  const measured =
-    withinFamily.status === "measured" &&
+  const hasInterval =
     withinFamily.point_estimate !== null &&
     withinFamily.interval_low !== null &&
     withinFamily.interval_high !== null;
-  if (measured) {
+  const measured = withinFamily.status === "measured" && hasInterval;
+  // The register's third status: tested between siblings, and the test could
+  // not tell (an interval containing the no-attenuation null). Its own true
+  // sentence with the citation, and the brief-1318 comparison sentence the
+  // register requires beside any score not shown to hold up (R4).
+  const inconclusive = withinFamily.status === "measured_inconclusive" && hasInterval;
+  if (measured || inconclusive) {
     figures.push({
       kind: "interval",
       class: "estimate",
@@ -148,10 +165,24 @@ export function CompareCell({
       {finding.coverage_state === "partial" ? (
         <Word word={CELL_WORDS.partlyRead} reason={null} />
       ) : null}
-      {measured ? null : (
-        <p data-slot="within-family" className="mt-2 text-sm text-ink">
-          {WITHIN_FAMILY_NOT_TESTED}
-        </p>
+      {measured ? null : inconclusive ? (
+        <>
+          <p data-slot="within-family" data-within-family="measured_inconclusive" className="mt-2 text-sm text-ink">
+            {withinFamilyInconclusive(withinFamily.citation_ids[0] ?? "")}
+          </p>
+          <p data-slot="within-family-comparison" className="mt-2 text-sm text-ink">
+            {NOT_MEASURED_COMPARISON}
+          </p>
+        </>
+      ) : (
+        <>
+          <p data-slot="within-family" data-within-family="not_measured" className="mt-2 text-sm text-ink">
+            {WITHIN_FAMILY_NOT_TESTED}
+          </p>
+          <p data-slot="within-family-comparison" className="mt-2 text-sm text-ink">
+            {NOT_MEASURED_COMPARISON}
+          </p>
+        </>
       )}
     </ClaimBlock>
   );

@@ -70,14 +70,19 @@ export async function cohortCapability(
   return decision;
 }
 
-export type AnalysisConsent = "granted" | "waiting-for-you" | "waiting-for-other";
+export type AnalysisConsent = "granted" | "waiting-for-you" | "waiting-for-other" | "waiting-for-both";
 
-/** Whose grant is missing, so the card can say so without naming anyone. */
+/**
+ * Whose grant is missing, so the card can say so without naming anyone: the
+ * viewer's own, the other genetic parent's, or (for an uploader who is not
+ * a parent, with no grant from either) both parents' (R13).
+ */
 export function analysisConsent(
-  cohort: Pick<EmbryoCohortView, "analysisGranted" | "viewerAnalysisGranted">,
+  cohort: Pick<EmbryoCohortView, "analysisGranted" | "viewerAnalysisGranted" | "analysisGrantsMissing">,
 ): AnalysisConsent {
   if (cohort.analysisGranted) return "granted";
   if (cohort.viewerAnalysisGranted === false) return "waiting-for-you";
+  if (cohort.viewerAnalysisGranted === null && cohort.analysisGrantsMissing !== 1) return "waiting-for-both";
   return "waiting-for-other";
 }
 

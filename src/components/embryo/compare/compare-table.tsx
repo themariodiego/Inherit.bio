@@ -16,9 +16,9 @@ import type { ReactNode } from "react";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { EmbryoChip } from "@/components/embryo/embryo-chip";
 import { coverageSpec, rateSpec } from "@/components/embryo/qc-figures";
-import { NO_ROWS_SENTENCE, POSITIONS_READ_TH, ROW_LABEL_TH } from "@/copy/embryos/compare";
+import { EMBRYO_LAYER_DEFINITIONS, NO_ROWS_SENTENCE, POSITIONS_READ_TH, ROW_LABEL_TH } from "@/copy/embryos/compare";
 import { NOT_MEASURABLE_FROM_FILE, QC_FIELD_LABELS, QC_REASON_SENTENCES } from "@/copy/embryos/qc";
-import { LAYER_DEFINITIONS, LAYER_LABELS } from "@/copy/reports/strings";
+import { LAYER_LABELS } from "@/copy/reports/strings";
 import type { ComparisonEmbryo, ComparisonResultRow } from "@/lib/embryos/policy";
 import { mapQcReason, type QcReasonId } from "@/lib/embryos/qc-policy";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
@@ -104,7 +104,7 @@ export function CompareTable({ layer, embryos, rows, subjectIds }: CompareTableP
         className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm"
       >
         <caption className="p-3 text-left text-sm text-ink-muted">
-          {LAYER_LABELS[layer]}. {LAYER_DEFINITIONS[layer]}
+          {LAYER_LABELS[layer]}. {EMBRYO_LAYER_DEFINITIONS[layer]}
         </caption>
         <thead>
           <tr>

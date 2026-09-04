@@ -3,7 +3,8 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
-const { TIER2_EMBRYO_COOKIE_NAME, tier2CookieAttributes, tier2CookieMatches, tier2Digest } = await import("./tier2");
+const { TIER2_EMBRYO_COOKIE_NAME, acknowledgedBy, embryoGateCookie, tier2CookieAttributes, tier2CookieMatches, tier2Digest } =
+  await import("./tier2");
 const family = await import("@/lib/family/tier2");
 
 afterAll(() => {
@@ -48,5 +49,18 @@ describe("tier 2 embryo gate", () => {
     expect(tier2CookieMatches("1", ACCOUNT, SESSION)).toBe(false);
     const tampered = `${digest.slice(0, 63)}${digest.endsWith("0") ? "1" : "0"}`;
     expect(tier2CookieMatches(tampered, ACCOUNT, SESSION)).toBe(false);
+  });
+
+  it("writes the one cookie the reader verifies: same name, same digest, and a different session fails (R10)", () => {
+    const cookie = embryoGateCookie(ACCOUNT, SESSION);
+    expect(cookie.name).toBe(TIER2_EMBRYO_COOKIE_NAME);
+    expect(cookie).toMatchObject({ httpOnly: true, secure: true, sameSite: "lax", path: "/" });
+    expect(cookie).not.toHaveProperty("maxAge");
+    // The read path over the value the write path produced.
+    expect(acknowledgedBy(cookie.value, ACCOUNT, SESSION)).toBe(true);
+    expect(acknowledgedBy(cookie.value, ACCOUNT, "session-two")).toBe(false);
+    expect(acknowledgedBy(cookie.value, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", SESSION)).toBe(false);
+    expect(acknowledgedBy(cookie.value, ACCOUNT, null)).toBe(false);
+    expect(acknowledgedBy(undefined, ACCOUNT, SESSION)).toBe(false);
   });
 });

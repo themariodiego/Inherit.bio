@@ -8,7 +8,7 @@
  * its interval share one row, because one interval figure carries all three.
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
-import { coverageSpec, dropoutSpec, isZeroRate, rateSpec } from "@/components/embryo/qc-figures";
+import { coverageSpec, depthSpec, dropoutSpec, isZeroRate, rateSpec } from "@/components/embryo/qc-figures";
 import { formatDate } from "@/components/embryo/format";
 import {
   DROPOUT_NOT_MEASURED,
@@ -24,6 +24,7 @@ import {
 import { QUALITY_CHECK_HEADING } from "@/copy/embryos/compare";
 import type { ComparisonEmbryo, QcDto } from "@/lib/embryos/policy";
 import { mapQcReason } from "@/lib/embryos/qc-policy";
+import { sourceLabelText } from "@/lib/embryos/source-labels";
 import { groupNumber } from "@/lib/figures/natural-frequency";
 
 const CELL_BLOCK_CLASS = "rounded-none border-0 bg-transparent p-0";
@@ -98,8 +99,7 @@ export function QcValue({
       return <ClaimBlock subject={subject} figures={[coverageSpec(qc)]} className={CELL_BLOCK_CLASS} />;
     case "mean_depth":
       if (qc.mean_depth === null) return <Words>{NOT_MEASURABLE_FROM_FILE}</Words>;
-      // inherit-figure-exempt: the mean number of reads per position is a count of reads, not a result
-      return <Words>{groupNumber(qc.mean_depth)}</Words>;
+      return <ClaimBlock subject={subject} figures={[depthSpec(qc.mean_depth)]} className={CELL_BLOCK_CLASS} />;
     case "allelic_dropout_estimate": {
       const spec = dropoutSpec(qc, embryoId);
       if (!spec) return <Words>{DROPOUT_NOT_MEASURED}</Words>;
@@ -109,7 +109,9 @@ export function QcValue({
     case "amplification_method":
     case "source_laboratory":
     case "source_assay":
-      return <Words>{qc[row] ?? NOT_STATED_BY_SOURCE}</Words>;
+      // A registered label's display text or the not-stated sentence; a
+      // source column is never printed (R2).
+      return <Words>{sourceLabelText(row, qc[row]) ?? NOT_STATED_BY_SOURCE}</Words>;
     case "imputation_performed":
     case "imputation_panel":
       return <Words>{NONE_WORD}</Words>;
@@ -147,7 +149,7 @@ export function QcTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table data-slot="qc-table" data-card="true" className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm">
+      <table data-slot="qc-table" data-card="true" data-compare-surface="true" className="w-full border-separate border-spacing-0 rounded-2xl border border-line bg-card text-sm">
         <thead>
           <tr>
             <th scope="col" className="sticky left-0 z-10 border-b border-line bg-card px-3 py-2 text-left font-medium text-ink">

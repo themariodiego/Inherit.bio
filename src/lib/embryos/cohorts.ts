@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Db } from "@/lib/genome/load";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { EmbryoStatus } from "./policy";
 
@@ -60,6 +61,8 @@ export interface EmbryoCohortView {
   analysisGranted: boolean;
   /** Whether the viewer, as a required upload principal, has granted analysis; null for a non-parent owner. */
   viewerAnalysisGranted: boolean | null;
+  /** How many required upload principals have not granted analysis yet. */
+  analysisGrantsMissing: number;
   embryos: EmbryoView[];
   retentionExpiresAt: string;
 }
@@ -208,6 +211,8 @@ export function buildCohortViews(rows: CohortGraphRows): EmbryoCohortView[] {
         viewerRole === "required_upload_principal"
           ? viewerRequired.every((principal) => grants.has(principal))
           : null,
+      analysisGrantsMissing:
+        required.length === 0 ? 2 : required.filter((principal) => !grants.has(principal)).length,
       embryos,
       retentionExpiresAt: cohort.retention_expires_at,
     });
@@ -247,12 +252,40 @@ export function selectEmbryo(
   return null;
 }
 
+/**
+ * A query the graph needs answered with an error. Every page answers it with
+ * the design's `error` state, never with an empty list, a 404 or "Still
+ * checking the files" (R11): a read that failed has established nothing.
+ */
+export class EmbryoReadError extends Error {
+  constructor(
+    public readonly table: string,
+    reason: string,
+  ) {
+    super(`embryo read failed: ${table}: ${reason}`);
+    this.name = "EmbryoReadError";
+  }
+}
+
+/** The rows of one query, or an EmbryoReadError; a PostgREST error never resolves to an empty list. */
+export function rowsOrThrow<T>(
+  table: string,
+  result: { data: T[] | null; error: { message: string } | null },
+): T[] {
+  if (result.error) throw new EmbryoReadError(table, result.error.message);
+  return result.data ?? [];
+}
+
 /** Reads every row the graph needs for one account. Service role: every embryo table revokes the client roles. */
 export async function readCohortGraphRows(accountId: string): Promise<CohortGraphRows> {
-  const admin = createAdminClient();
+  return readCohortGraphRowsWith(createAdminClient(), accountId);
+}
+
+/** The same read over a given client, so a failing query is provable without a database. */
+export async function readCohortGraphRowsWith(admin: Db, accountId: string): Promise<CohortGraphRows> {
   const now = new Date().toISOString();
 
-  const [{ data: principals }, { data: owned }] = await Promise.all([
+  const [principalsResult, ownedResult] = await Promise.all([
     admin
       .from("subject_principals")
       .select("id")
@@ -264,20 +297,23 @@ export async function readCohortGraphRows(accountId: string): Promise<CohortGrap
       .eq("owner_account_id", accountId)
       .eq("upload_class", "embryo_third_party"),
   ]);
-  const viewerPrincipalIds = (principals ?? []).map((row) => row.id);
+  const principals = rowsOrThrow("subject_principals", principalsResult);
+  const owned = rowsOrThrow("embryo_cohorts", ownedResult);
+  const viewerPrincipalIds = principals.map((row) => row.id);
 
-  const { data: memberships } = viewerPrincipalIds.length
-    ? await admin
-        .from("embryo_participant_sets")
-        .select("cohort_id")
-        .eq("set_kind", "required_upload_principals")
-        .is("revoked_at", null)
-        .in("principal_id", viewerPrincipalIds)
-    : { data: [] as { cohort_id: string }[] };
+  const memberships = viewerPrincipalIds.length
+    ? rowsOrThrow(
+        "embryo_participant_sets",
+        await admin
+          .from("embryo_participant_sets")
+          .select("cohort_id")
+          .eq("set_kind", "required_upload_principals")
+          .is("revoked_at", null)
+          .in("principal_id", viewerPrincipalIds),
+      )
+    : ([] as { cohort_id: string }[]);
 
-  const cohortIds = [
-    ...new Set([...(memberships ?? []).map((row) => row.cohort_id), ...(owned ?? []).map((row) => row.id)]),
-  ];
+  const cohortIds = [...new Set([...memberships.map((row) => row.cohort_id), ...owned.map((row) => row.id)])];
   if (cohortIds.length === 0) {
     return {
       viewerAccountId: accountId,
@@ -290,7 +326,7 @@ export async function readCohortGraphRows(accountId: string): Promise<CohortGrap
     };
   }
 
-  const [{ data: cohorts }, { data: required }, { data: embryos }, { data: grants }] = await Promise.all([
+  const [cohortsResult, requiredResult, embryosResult, grantsResult] = await Promise.all([
     admin
       .from("embryo_cohorts")
       .select("id, owner_account_id, upload_class, status, embryo_count, created_at, retention_expires_at")
@@ -314,33 +350,40 @@ export async function readCohortGraphRows(accountId: string): Promise<CohortGrap
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .in("target_id", cohortIds),
   ]);
+  const cohorts = rowsOrThrow("embryo_cohorts", cohortsResult);
+  const required = rowsOrThrow("embryo_participant_sets", requiredResult);
+  const embryos = rowsOrThrow("embryos", embryosResult);
+  const grants = rowsOrThrow("purpose_grants", grantsResult);
 
-  const principalIds = [...new Set((required ?? []).map((row) => row.principal_id))];
-  const { data: principalRows } = principalIds.length
-    ? await admin.from("subject_principals").select("id, account_id").in("id", principalIds)
-    : { data: [] as { id: string; account_id: string | null }[] };
+  const principalIds = [...new Set(required.map((row) => row.principal_id))];
+  const principalRows = principalIds.length
+    ? rowsOrThrow("subject_principals", await admin.from("subject_principals").select("id, account_id").in("id", principalIds))
+    : ([] as { id: string; account_id: string | null }[]);
 
   // Both grant tables must agree on grant_id and revision (directional-purpose-grant-v1).
-  const grantIds = (grants ?? []).map((row) => row.grant_id);
-  const { data: directions } = grantIds.length
-    ? await admin
-        .from("directional_grants")
-        .select("grant_id, grant_revision")
-        .eq("status", "current")
-        .in("grant_id", grantIds)
-    : { data: [] as { grant_id: string; grant_revision: number }[] };
-  const currentRevision = new Map((directions ?? []).map((row) => [row.grant_id, row.grant_revision]));
-  const analysisGrants: AnalysisGrantRow[] = (grants ?? [])
+  const grantIds = grants.map((row) => row.grant_id);
+  const directions = grantIds.length
+    ? rowsOrThrow(
+        "directional_grants",
+        await admin
+          .from("directional_grants")
+          .select("grant_id, grant_revision")
+          .eq("status", "current")
+          .in("grant_id", grantIds),
+      )
+    : ([] as { grant_id: string; grant_revision: number }[]);
+  const currentRevision = new Map(directions.map((row) => [row.grant_id, row.grant_revision]));
+  const analysisGrants: AnalysisGrantRow[] = grants
     .filter((row) => currentRevision.get(row.grant_id) === row.grant_revision)
     .map((row) => ({ cohort_id: row.target_id, signer_principal_id: row.signer_principal_id }));
 
   return {
     viewerAccountId: accountId,
     viewerPrincipalIds,
-    cohorts: cohorts ?? [],
-    requiredUploadPrincipals: required ?? [],
-    principals: principalRows ?? [],
-    embryos: embryos ?? [],
+    cohorts,
+    requiredUploadPrincipals: required,
+    principals: principalRows,
+    embryos,
     analysisGrants,
   };
 }

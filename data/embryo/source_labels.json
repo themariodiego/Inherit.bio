@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "note": "Bounded safe labels for embryo_qc.source_laboratory, source_assay, amplification_method and allelic_dropout_method (route-register embryo-autosomal-only-v1 sourceProvenance; canonical-artifacts: original laboratory labels are never rendered). Withheld: empty until reviewed organisation and assay names are registered. A value that is not an id here fails the closed shape; the renderers print a registered label's displayText or the not-stated sentence, never a source column.",
+  "labels": []
+}

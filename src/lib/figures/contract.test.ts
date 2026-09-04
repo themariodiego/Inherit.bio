@@ -27,6 +27,7 @@ describe("figure contract vocabulary", () => {
       "ancestry-share",
       "genotype",
       "carrier-status",
+      "measure",
     ]);
     expect(FIGURE_CLASSES).toEqual(["variant-call", "estimate", "ancestry", "quality"]);
     expect(FIGURE_BASES).toEqual(["observed", "modelled", "exact"]);

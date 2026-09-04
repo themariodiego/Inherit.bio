@@ -24,6 +24,7 @@ export const FIGURE_KINDS = [
   "ancestry-share",
   "genotype",
   "carrier-status",
+  "measure",
 ] as const;
 export type FigureKind = (typeof FIGURE_KINDS)[number];
 

@@ -5,9 +5,12 @@ import { FUTURE_PERSON_LINK } from "@/copy/family/index";
 import { GATE_BUTTON, GATE_CHECKBOX_LABEL, GATE_SESSION_NOTE } from "@/copy/embryos/gate";
 import {
   CELL_WORDS,
+  EMBRYO_LAYER_DEFINITIONS,
   NO_ROWS_SENTENCE,
+  NOT_MEASURED_COMPARISON,
   STANDING_STATEMENT,
   WITHIN_FAMILY_NOT_TESTED,
+  withinFamilyInconclusive,
 } from "@/copy/embryos/compare";
 import { NO_RESULTS_SENTENCE } from "@/copy/embryos/detail";
 import { EMBRYO_STATUS, RETENTION_SENTENCE } from "@/copy/embryos/index";
@@ -20,7 +23,7 @@ import {
 import { NO_RANKING_STATEMENT, TRADEOFFS_EXISTS, TRADEOFFS_NONE_MEASURABLE } from "@/copy/embryos/tradeoffs";
 import { MODELLED_MARKER } from "@/lib/figures/contract";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
-import type { ComparisonEmbryo } from "@/lib/embryos/policy";
+import type { ComparisonEmbryo, EmbryoFinding } from "@/lib/embryos/policy";
 import { syntheticAbsoluteFinding, syntheticCarrierFinding, syntheticCoverageFailure, syntheticNullFinding, syntheticQc } from "@/lib/embryos/synthetic";
 
 vi.mock("next/link", () => ({
@@ -34,7 +37,7 @@ const { CohortCard } = await import("./cohort-card");
 const { EmbryoResultGate } = await import("./result-gate");
 const { EmbryoUnavailable, BlockingState, EmbryoEmptyState } = await import("./states");
 const { CompareTable } = await import("./compare/compare-table");
-const { CompareCell } = await import("./compare/compare-cell");
+const { CompareCell, registeredReason } = await import("./compare/compare-cell");
 const { TradeOffPanel } = await import("./compare/trade-off-panel");
 const { ContextStrip } = await import("./compare/context-strip");
 const { QcTable } = await import("./compare/qc-table");
@@ -176,6 +179,68 @@ describe("CompareCell", () => {
   });
 });
 
+describe("CompareCell captions and the three within-family statuses (R3, R4)", () => {
+  const finding = syntheticAbsoluteFinding("Embryo 1", "c-a", 0.02);
+  const body = finding.finding as Extract<EmbryoFinding["finding"], { kind: "absolute_risk" }>;
+  const withStatus = (status: "measured" | "measured_inconclusive" | "not_measured") =>
+    ({
+      ...finding,
+      finding: {
+        ...body,
+        within_family:
+          status === "not_measured"
+            ? body.within_family
+            : {
+                status,
+                point_estimate: 0.5,
+                interval_low: 0.2,
+                interval_high: 1.1,
+                family_count: 40,
+                citation_ids: ["cite-sib-1"],
+                display_copy_id: null,
+                enabled_by_default: true,
+              },
+      },
+    }) as EmbryoFinding;
+
+  it("captions the embryo's own figure as the embryo's and the population figure alone as the population", () => {
+    const html = renderToStaticMarkup(h(CompareCell, { finding, subjectId: S(1) }));
+    const absolute = html.slice(html.indexOf('data-figure-kind="absolute"'), html.indexOf('data-figure-kind="interval"'));
+    expect(absolute).toContain("for Embryo 1");
+    expect(absolute).not.toContain("people in the general population");
+    expect(html.match(/people in the general population/g)).toHaveLength(1);
+    expect(html).not.toMatch(/<td[^>]*font-display/);
+  });
+
+  it("renders the untested sentence for not_measured, its own sentence for measured_inconclusive, and neither when measured", () => {
+    const untested = renderToStaticMarkup(h(CompareCell, { finding: withStatus("not_measured"), subjectId: S(1) }));
+    expect(untested).toContain(WITHIN_FAMILY_NOT_TESTED);
+    expect(untested).toContain(NOT_MEASURED_COMPARISON);
+    expect(untested).toContain('data-within-family="not_measured"');
+    const inconclusive = renderToStaticMarkup(h(CompareCell, { finding: withStatus("measured_inconclusive"), subjectId: S(1) }));
+    expect(inconclusive).not.toContain(WITHIN_FAMILY_NOT_TESTED);
+    expect(inconclusive).toContain(withinFamilyInconclusive("cite-sib-1"));
+    expect(inconclusive).toContain(NOT_MEASURED_COMPARISON);
+    expect(inconclusive).toContain('data-within-family="measured_inconclusive"');
+    expect(inconclusive.match(/data-figure-kind="interval"/g)).toHaveLength(2);
+    const measured = renderToStaticMarkup(h(CompareCell, { finding: withStatus("measured"), subjectId: S(1) }));
+    expect(measured).not.toContain(WITHIN_FAMILY_NOT_TESTED);
+    expect(measured).not.toContain(NOT_MEASURED_COMPARISON);
+    expect(measured).not.toContain('data-slot="within-family"');
+    expect(measured.match(/data-figure-kind="interval"/g)).toHaveLength(2);
+  });
+
+  it("emits data-reason only as a registered id, never the raw value (R1)", () => {
+    expect(registeredReason("unknown_reason")).toBe("qc_review_required");
+    expect(registeredReason("embryo_call_rate")).toBe("embryo_call_rate");
+    expect(registeredReason("sex_combined_model_unavailable")).toBe("sex_combined_model_unavailable");
+    expect(registeredReason(null)).toBeNull();
+    const html = renderToStaticMarkup(h(CompareCell, { finding: syntheticNullFinding("Embryo 1", "c-a", "unknown_reason"), subjectId: S(1) }));
+    expect(html).toContain('data-reason="qc_review_required"');
+    expect(html).not.toContain("unknown_reason");
+  });
+});
+
 describe("TradeOffPanel", () => {
   it("renders the G4.5 string, the none-measurable statement and no count, outside any details", () => {
     const html = renderToStaticMarkup(
@@ -228,6 +293,27 @@ describe("QcTable and QcBlock", () => {
     expect(html).not.toMatch(NO_COLOUR);
   });
 
+  it("is a compare surface holding many subjects, captions the layer about the embryo's file, prints a raw source label never, and reads the mean depth as a figure (R5, R6, R2, R7)", () => {
+    const rows = embryos();
+    rows[0] = { ...rows[0], qc: syntheticQc({ call_rate: 0.97, sites_called: 970, mean_depth: 31.26, source_laboratory: "Acme Fertility Lab" }) };
+    const html = renderToStaticMarkup(h(QcTable, { embryos: rows, subjectIds }));
+    expect(html).toMatch(/<table[^>]*data-card="true"[^>]*data-compare-surface="true"/);
+    expect(html).not.toContain("Acme Fertility Lab");
+    expect(html).toContain(NOT_STATED_BY_SOURCE);
+    const depth = html.slice(html.indexOf('data-qc-row="mean_depth"'), html.indexOf('data-qc-row="parent_a_concordance"'));
+    expect(depth).toContain('data-figure-kind="measure"');
+    expect(depth).toContain('data-figure-class="quality"');
+    expect(depth).toContain("31.3");
+    expect(depth).toContain("reads per position");
+    expect(depth).toContain(`data-subject-id="${S(1)}"`);
+    const block = renderToStaticMarkup(h(QcBlock, { qc: rows[0].qc, embryoId: E(1), subjectId: S(1) }));
+    expect(block).not.toContain("Acme Fertility Lab");
+    const table = renderToStaticMarkup(h(CompareTable, { layer: "estimate", embryos: embryos(), rows: [], subjectIds }));
+    expect(table).toContain(EMBRYO_LAYER_DEFINITIONS.estimate);
+    // The reader is addressed ("What you see"); the embryo's file is never "your DNA" (X13.1).
+    expect(table).not.toMatch(/your DNA|your file|spots in your|effects from your/i);
+  });
+
   it("renders one attributed block on the detail page with the coverage figure and the dropout sentence", () => {
     const html = renderToStaticMarkup(h(QcBlock, { qc: syntheticQc({ contamination_estimate: 0.01 }), embryoId: E(1), subjectId: S(1) }));
     expect(html.match(/data-claim-block="true"/g)).toHaveLength(1);
@@ -269,6 +355,7 @@ describe("CohortCard", () => {
     requiredUploadPrincipalAccountIds: [],
     requiredUploadPrincipalsWithoutAccount: 0,
     analysisGranted: false,
+    analysisGrantsMissing: 1,
     viewerAnalysisGranted: false,
     embryos: [
       { id: E(1), subjectId: S(1), sampleOrdinal: 0, displayLabel: "Embryo 1", status: "qc_marginal" },
