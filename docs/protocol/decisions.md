@@ -909,3 +909,34 @@ Decisions:
   rewrite (the "Portrait readability" entry above); a reason may run to two
   sentences, as the brief's own example does.
 
+## 2026-09-04 — Embryo E1: corrections after the adversarial review
+
+Context: the four-lens review of branch `embryo-e1` confirmed thirteen
+findings (D-059 to D-066).
+
+Decisions:
+- A reason id is a member of the register's closed tables or the shape
+  fails; the renderers never emit a raw value. A quality reason names a
+  `quality_not_measurable` state and a result-level reason a `not_covered`
+  one.
+- Source strings are bounded labels from `data/embryo/source_labels.json`,
+  a closed registry that is withheld and empty until reviewed organisation
+  and assay names are registered; an original laboratory label never
+  passes the shape and is never rendered.
+- One cell never attributes two numbers to the general population: the
+  embryo's own figure is captioned as the embryo's.
+- `measured_inconclusive` has its own true sentence with its citation; the
+  brief-1318 comparison sentence stands beside any score not shown to hold
+  up between siblings.
+- The figure contract gains one kind, `measure` (a value with a unit and a
+  decimal count), for quantities that are neither probabilities nor
+  counts: a mean read depth is the first.
+- A read that fails is the design's `error` state, never an empty list, a
+  404 or "Still checking the files".
+- The flag-off jurisdiction refusal is proven in a browser by a second
+  Playwright project against a second server from the same build; the
+  main suite keeps the TEST-LOCAL flag.
+- Sign-out ends both Tier-2 acknowledgements; the embryo gate's writer and
+  reader are one function pair.
+- The waiting sentence names whose grant is missing: the viewer's, the
+  other parent's, or both parents' for an uploader who is not a parent.

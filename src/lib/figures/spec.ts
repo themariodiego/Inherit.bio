@@ -80,6 +80,16 @@ export type DifferencePpSpec = FigureCommon & {
 
 export type RelativeSpec = FigureCommon & { kind: "relative"; text: string; value: number };
 
+/** A measured quantity with a unit (a mean read depth): never a probability, never ranked. */
+export type MeasureSpec = FigureCommon & {
+  kind: "measure";
+  value: number;
+  /** The unit, printed after the value ("reads per position"). */
+  unit: string;
+  /** Decimal places the value is shown to. */
+  decimals: number;
+};
+
 export type StandaloneFigureSpec =
   | AbsoluteSpec
   | NaturalFrequencySpec
@@ -89,7 +99,8 @@ export type StandaloneFigureSpec =
   | GenotypeSpec
   | CarrierStatusSpec
   | AncestryShareSpec
-  | DifferencePpSpec;
+  | DifferencePpSpec
+  | MeasureSpec;
 
 export type FigureSpec = StandaloneFigureSpec | RelativeSpec;
 
