@@ -940,3 +940,60 @@ Decisions:
   reader are one function pair.
 - The waiting sentence names whose grant is missing: the viewer's, the
   other parent's, or both parents' for an uploader who is not a parent.
+
+## 2026-09-04 — Embryo E2, slice 1: the upload flow before E0
+
+Context: design `docs/design/w10-embryo-surfaces.md` §10 makes E2 depend on
+E0 (the eight RPCs, the nine `api.embryo-*` routes, the browser sanitiser,
+the worker), none of which exists. The design's own rule for that state is
+that `/embryos/upload` renders steps 1–2 and, at the file step,
+`EMBRYO_INGEST_AVAILABLE = false` with "Inherit cannot take embryo files on
+this site yet." and the request-data link — never a dead control.
+
+Decisions:
+- Steps 1 and 2 ship; the flow ends on the honest terminal, and the same
+  sentence stands above step 1 so nobody answers questions for a control
+  that does not exist on this deployment.
+- One question per screen, every screen labelled "Step N of 5" with what
+  is still to come (brief line 1083). Three questions on one screen would
+  carry ten interactive elements against X6.1's seven; the design's step is
+  a stage, not a screen.
+- The second parent's contact email (brief line 383), the Tier-2 signature
+  block (brief line 1752) and the identified-donor option (brief line 1732)
+  are not asked for until `api.embryo-cohort-drafts` exists. Collecting a
+  contact or a typed legal name that nothing records is a false
+  affordance; they return with the draft route. The class attestation
+  checkboxes route the flow and the screen says nothing is kept until both
+  parents sign.
+- "I don’t know — let me upload it and you tell me" is an answer and a
+  step in one: it moves to step 2, since the file step it once led to is
+  the terminal today.
+- The A.6 refusals live once in `src/copy/upload/errors.ts`, re-exported at
+  the brief's path `src/lib/genome/ingest-errors.ts`; the quality footers
+  spread their halves from there and the self uploader's preflight reads
+  the PDF, unrecognised-format and too-large sentences from there (D-067).
+  The export is named `INGEST_REFUSALS`, not `*_ERRORS`, so the readability
+  gate grades the sentences as the body copy they render as rather than
+  as one-line statuses.
+- `sniffV2` is the detector; `sniff`, `sniffHead` and `sniffFile` are thin
+  wrappers with the old answers (a multi-sample VCF reads `vcf`, a table
+  or a PDF reads null), so no existing caller changes behaviour.
+- The synonym table also names the forbidden sex, gender and karyotype
+  headers, so the browser can drop such a column before any byte leaves it
+  and the server can refuse it before any write (X10.2); a forbidden
+  column never resolves and is never a mapping candidate.
+- The mapping plan prefers an embryo column to a sample column when both
+  resolve, treats a duplicated field as a choice among its columns and a
+  missing field as a choice among the unresolved permitted columns, and
+  answers null beyond four decisions or with no column left — the reader
+  goes to the letter, not to a spreadsheet chore.
+- The embryo-ingest limits are mirrored in `src/lib/genome/ingest-limits.ts`
+  with a drift test against the register, the `primary-routes` precedent;
+  the `too_large` sentence's `{n}` reads that mirror for an embryo ingest
+  and `LIMITS` for a subject file.
+- ADR 0019 is written Accepted over the E1 surfaces as built; ADR 0020 is
+  Proposed and moves to Accepted when E0 and E2's steps 3–5 land.
+- The capability register's Embryo ingest row is rewritten to what the
+  page shows; its former claim about the landing's closing sentence was
+  stale since E1 (D-068).
+

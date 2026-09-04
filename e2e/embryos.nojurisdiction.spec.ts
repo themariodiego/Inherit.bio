@@ -67,17 +67,20 @@ test("/embryos renders the register's copy, blocks every tile and fetches no pri
   await expectNothingPrivate(page);
 });
 
-test("/embryos/request-data, /embryos/compare and /embryos/{id} render the unset decision's copy and nothing private", async ({
+test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/{id} render the unset decision's copy and nothing private", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  for (const path of ["/embryos/request-data", "/embryos/compare", `/embryos/${UNKNOWN_UUID}`]) {
+  for (const path of ["/embryos/upload", "/embryos/request-data", "/embryos/compare", `/embryos/${UNKNOWN_UUID}`]) {
     const response = await page.goto(path);
     expect(response?.status(), path).toBe(200);
     const unavailable = page.locator('[data-slot="jurisdiction-unavailable"]');
     await expect(unavailable, path).toHaveCount(1);
     await expect(unavailable, path).toContainText(UNREVIEWED_COPY);
     await expect(unavailable, path).toHaveAttribute("data-jurisdiction-source", "unset");
+    // The upload flow renders no question and no control under a refused jurisdiction.
+    await expect(page.locator('[data-slot="upload-flow"]'), path).toHaveCount(0);
+    await expect(page.locator("main input, main fieldset, main form"), path).toHaveCount(0);
     await expectNothingPrivate(page);
   }
 });
