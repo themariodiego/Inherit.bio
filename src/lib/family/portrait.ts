@@ -445,8 +445,26 @@ function conditionFor(gene: string, conditions: readonly CarrierCondition[]): Ca
  * where either file shows two copies or a reading it cannot count. Ordered
  * by gene, then by nothing else.
  */
+/**
+ * The genes the carrier rule answered for both people: a match where each
+ * file's reading is pathogenic or likely pathogenic. A match refused because
+ * the other side's change is harmless or of unknown meaning has not answered
+ * the pathogenic carrier's question, so the one-sided reading still renders.
+ */
+export function answeredGenes(matches: readonly CarrierMatch[]): Set<string> {
+  return new Set(
+    matches
+      .filter(
+        (match) =>
+          isPathogenicClassification(match.a.variant.classification) &&
+          isPathogenicClassification(match.b.variant.classification),
+      )
+      .map((match) => normalise(match.gene)),
+  );
+}
+
 export function evaluateOneSided(input: OneSidedInput): OneSidedReading[] {
-  const answered = new Set(input.matches.map((match) => normalise(match.gene)));
+  const answered = answeredGenes(input.matches);
   const readings: OneSidedReading[] = [];
   const groups = [...pathogenicByGene(input.refVariants).values()].sort((left, right) =>
     left.gene.localeCompare(right.gene, "en"),

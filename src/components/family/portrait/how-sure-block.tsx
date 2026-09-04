@@ -14,11 +14,13 @@ export interface HowSureBlockProps {
   pattern: string;
   /** One sentence per assumption, in the order the arithmetic names them. */
   assumptions: readonly string[];
+  /** What was measured rather than assumed (the runs check on an exact block); absent when nothing was. */
+  checked?: readonly string[];
   coverage: string;
   change: string;
 }
 
-export function HowSureBlock({ pattern, assumptions, coverage, change }: HowSureBlockProps) {
+export function HowSureBlock({ pattern, assumptions, checked = [], coverage, change }: HowSureBlockProps) {
   return (
     <section
       data-slot="how-sure"
@@ -39,6 +41,16 @@ export function HowSureBlock({ pattern, assumptions, coverage, change }: HowSure
             </dd>
           ))}
         </div>
+        {checked.length > 0 ? (
+          <div>
+            <dt className="text-ink-muted">{HOW_SURE_LABELS.checked}</dt>
+            {checked.map((statement) => (
+              <dd key={statement} data-slot="how-sure-checked">
+                {statement}
+              </dd>
+            ))}
+          </div>
+        ) : null}
         <div>
           <dt className="text-ink-muted">{HOW_SURE_LABELS.coverage}</dt>
           <dd data-slot="how-sure-coverage">{coverage}</dd>

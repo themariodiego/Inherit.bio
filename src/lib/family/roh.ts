@@ -380,6 +380,20 @@ export function subjectRunsBelowThreshold(files: readonly StoredRohMeasure[]): b
   return files.length > 0 && files.every(belowRohThreshold);
 }
 
+export type SubjectRunsState = "below" | "above" | "unchecked";
+
+/**
+ * The same rule with its two failing answers told apart: `above` when a
+ * measured file of this person sits above a threshold (the brief's line-1349
+ * refusal is then true of a file Inherit measured), `unchecked` when no
+ * measured file is above but some file was not measured, could not be, or
+ * there is no file at all (nothing was established), `below` otherwise.
+ */
+export function subjectRunsState(files: readonly StoredRohMeasure[]): SubjectRunsState {
+  if (files.some((file) => file.status === "measured" && !belowRohThreshold(file))) return "above";
+  return subjectRunsBelowThreshold(files) ? "below" : "unchecked";
+}
+
 /** The stored measure of every annotated file of one subject, as the panel reads it. */
 export async function readSubjectRuns(
   supabase: Db,

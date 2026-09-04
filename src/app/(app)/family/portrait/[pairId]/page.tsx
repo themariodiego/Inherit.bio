@@ -26,7 +26,7 @@ import {
   TRAITS_LEDE,
   UNNAMED_PERSON_LABEL,
   noCarrierMatches,
-  noFileYet,
+  noFileYetFor,
 } from "@/copy/family/portrait";
 import { NAV_LABELS } from "@/copy/navigation";
 import { familyCapability, permits } from "@/lib/family/access";
@@ -174,9 +174,11 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
       getSubjectProcessedFiles(admin, rows.a.id),
       getSubjectProcessedFiles(admin, rows.b.id),
     ]);
+    // The viewer's own empty state is in the second person; the other
+    // person's names them. No sentence takes the first-person placeholder.
     noFile = [
-      ...(filesA.length === 0 ? [labelOf(rows.a)] : []),
-      ...(filesB.length === 0 ? [labelOf(rows.b)] : []),
+      ...(filesA.length === 0 ? [noFileYetFor({ name: labelOf(rows.a), isViewer: rows.a.id === mine.id })] : []),
+      ...(filesB.length === 0 ? [noFileYetFor({ name: labelOf(rows.b), isViewer: rows.b.id === mine.id })] : []),
     ];
     if (noFile.length === 0 && carrierAllowed) {
       const refVariants = await readClassifiedVariants(admin);
@@ -188,16 +190,16 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
         refVariants,
         conditions,
       );
-      const oneSided =
-        summary.positionsBothCover > 0
-          ? evaluateOneSided({
-              a: { dataSubjectId: rows.a.id, displayLabel: labelOf(rows.a), genotypes: summary.genotypes.a },
-              b: { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b), genotypes: summary.genotypes.b },
-              refVariants,
-              conditions,
-              matches: summary.matches,
-            })
-          : [];
+      // The one-sided readings are decided whether or not any classified
+      // position is shared: a carrier whose partner's file covers none of
+      // the gene's positions is exactly the line-2238 case.
+      const oneSided = evaluateOneSided({
+        a: { dataSubjectId: rows.a.id, displayLabel: labelOf(rows.a), genotypes: summary.genotypes.a },
+        b: { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b), genotypes: summary.genotypes.b },
+        refVariants,
+        conditions,
+        matches: summary.matches,
+      });
       output = {
         summary,
         conditions,
@@ -218,7 +220,15 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
     { subjectId: rows.b.id, displayLabel: labelOf(rows.b), isViewer: rows.b.id === mine.id },
   ];
   const grantId = ownPortraitGrantId(rows);
-  const outputCount = output ? output.summary.matches.length + output.oneSided.length : 0;
+  // A gene with a one-sided reading renders that reading alone: the carrier
+  // rule's refusal for the same gene (the other side's change being harmless
+  // or of unknown meaning) would say "both of you have a change" about a
+  // change that answers nothing for the pathogenic carrier.
+  const oneSidedGenes = new Set((output?.oneSided ?? []).map((reading) => reading.gene.toLowerCase()));
+  const matches = (output?.summary.matches ?? []).filter(
+    (match) => !oneSidedGenes.has(match.gene.toLowerCase()),
+  );
+  const outputCount = output ? matches.length + output.oneSided.length : 0;
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
@@ -275,9 +285,9 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
 
             {noFile.length > 0 ? (
               <div role="status" data-state="empty" className="max-w-prose space-y-2">
-                {noFile.map((name) => (
-                  <p key={name} className="text-base leading-relaxed text-ink">
-                    {noFileYet(name)}
+                {noFile.map((sentence) => (
+                  <p key={sentence} className="text-base leading-relaxed text-ink">
+                    {sentence}
                   </p>
                 ))}
               </div>
@@ -296,7 +306,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
               </p>
             ) : output ? (
               <ul data-slot="portrait-outputs" className="space-y-6">
-                {output.summary.matches.map((match) => (
+                {matches.map((match) => (
                   <li key={match.gene}>
                     <CarrierPairCard
                       id={`portrait-${match.gene.toLowerCase()}`}

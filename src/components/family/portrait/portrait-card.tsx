@@ -40,20 +40,24 @@ import {
   OUTCOME_PHRASES,
   PATTERN_DESCRIPTIONS,
   POSITIONS_NOT_COVERED_READING,
+  POSITION_NOT_COVERED_WHAT_WOULD_CHANGE,
   REFUSAL_ASSUMPTION,
   REFUSAL_WHAT_WOULD_CHANGE,
   RUNS_ASSUMPTION,
+  RUNS_CHECKED_STATEMENT,
   RUNS_REFUSAL,
+  RUNS_UNCHECKED_ASSUMPTION,
   RUNS_WHAT_WOULD_CHANGE,
   SEGREGATION_SENTENCE,
-  cannotCalculate,
+  cannotCalculateFor,
   carrierNoProbabilitySentence,
   derivationLine,
   knownChangesCovered,
-  noSecondCopy,
-  oneSidedWhatWouldChange,
+  noSecondCopyFor,
+  oneSidedWhatWouldChangeFor,
   outputHeading,
-  personVariantLine,
+  personVariantLineFor,
+  type PersonRef,
 } from "@/copy/family/portrait";
 import type { CarrierMatch, CarrierReason } from "@/lib/family/carrier-pair";
 import { distribute } from "@/lib/family/distribution";
@@ -101,6 +105,23 @@ export interface PortraitCardPeople {
   /** The two people in the pair's own order, chipped as the side-by-side page chips them. */
   people: readonly [HealthPictureColumn, HealthPictureColumn];
   viewerAccountId: string;
+}
+
+/**
+ * The person a sentence names: the viewer in the second person, the other by
+ * the name the page gave their column. The first-person placeholder never
+ * reaches a sentence slot.
+ */
+function personRef(
+  people: readonly HealthPictureColumn[],
+  viewerAccountId: string,
+  dataSubjectId: string,
+): PersonRef {
+  const person = people.find((column) => column.dataSubjectId === dataSubjectId);
+  return {
+    name: person?.displayLabel ?? "",
+    isViewer: person?.subject.subjectAccountId === viewerAccountId,
+  };
 }
 
 function Chips({
@@ -174,12 +195,13 @@ export function CarrierPairCard({
   viewerAccountId,
 }: CarrierPairCardProps) {
   const statuses = [statusSpec(match.a.variant.copies), statusSpec(match.b.variant.copies)];
+  const refOf = (dataSubjectId: string) => personRef(people, viewerAccountId, dataSubjectId);
   const variantLines = (
     <ul data-slot="carrier-variants" className="space-y-1 text-sm leading-relaxed text-ink-muted">
-      {[match.a, match.b].map((person, index) => (
+      {[match.a, match.b].map((person) => (
         <li key={person.dataSubjectId} data-slot="carrier-variant">
-          {personVariantLine(
-            people[index].displayLabel,
+          {personVariantLineFor(
+            refOf(person.dataSubjectId),
             person.variant.rsid,
             match.gene,
             person.variant.classification,
@@ -224,9 +246,14 @@ export function CarrierPairCard({
         <p data-slot="known-covered" data-finding="true" className="text-sm leading-relaxed text-ink">
           {knownChangesCovered(coverage.covered, coverage.known)}
         </p>
+        {/* The runs measure was taken, not assumed: it sits under "What we
+            checked"; the true assumptions stay under "What we do not check". */}
         <HowSureBlock
           pattern={PATTERN_DESCRIPTIONS[cross.pattern]}
-          assumptions={cross.assumptions.map((assumption) => ASSUMPTION_STATEMENTS[assumption])}
+          assumptions={cross.assumptions
+            .filter((assumption) => assumption !== "runs_below_threshold")
+            .map((assumption) => ASSUMPTION_STATEMENTS[assumption])}
+          checked={[RUNS_CHECKED_STATEMENT]}
           coverage={BOTH_FILES_COVERED}
           change={CARRIER_WHAT_WOULD_CHANGE}
         />
@@ -235,7 +262,27 @@ export function CarrierPairCard({
     );
   }
 
-  const runs = match.reason === "runs-unchecked";
+  // The brief's runs refusal (line 1349) only for a file Inherit measured
+  // and found above a threshold; a person whose runs were never
+  // established gets the side-by-side page's sentence with its own reason.
+  const runsAbove = match.reason === "runs-above-threshold";
+  const runsUnchecked = match.reason === "runs-unchecked";
+  // A position one file does not report is named, never imputed (line 1349).
+  const uncovered = match.reason === "not-covered" && match.uncovered ? match.uncovered : null;
+  const uncoveredSentence = uncovered
+    ? cannotCalculateFor(refOf(uncovered.dataSubjectId), `rs${uncovered.rsid}`)
+    : null;
+  const sentence = runsAbove
+    ? RUNS_REFUSAL
+    : (uncoveredSentence ?? carrierNoProbabilitySentence(match.gene, match.reason));
+  // "Both files cover the positions this uses" only when they do.
+  const coverageLine = match.positionsBothCovered
+    ? BOTH_FILES_COVERED
+    : (uncoveredSentence ??
+      cannotCalculateFor(
+        refOf(match.a.variant.rsid !== match.b.variant.rsid ? match.b.dataSubjectId : match.a.dataSubjectId),
+        `rs${match.a.variant.rsid}`,
+      ));
   return (
     <ClaimBlock
       subject={{ subjectPair: [match.a.dataSubjectId, match.b.dataSubjectId] }}
@@ -254,16 +301,22 @@ export function CarrierPairCard({
           <Chips people={people} viewerAccountId={viewerAccountId} nodes={nodes} />
           {variantLines}
           <p data-slot="carrier-sentence" data-finding="true" className="text-base leading-relaxed text-ink">
-            {runs ? RUNS_REFUSAL : carrierNoProbabilitySentence(match.gene, match.reason)}
+            {sentence}
           </p>
         </article>
       )}
     >
       <HowSureBlock
         pattern={refusedPattern(match.reason, conditionMode)}
-        assumptions={[runs ? RUNS_ASSUMPTION : REFUSAL_ASSUMPTION]}
-        coverage={BOTH_FILES_COVERED}
-        change={runs ? RUNS_WHAT_WOULD_CHANGE : REFUSAL_WHAT_WOULD_CHANGE}
+        assumptions={[runsAbove ? RUNS_ASSUMPTION : runsUnchecked ? RUNS_UNCHECKED_ASSUMPTION : REFUSAL_ASSUMPTION]}
+        coverage={coverageLine}
+        change={
+          runsAbove || runsUnchecked
+            ? RUNS_WHAT_WOULD_CHANGE
+            : uncovered
+              ? POSITION_NOT_COVERED_WHAT_WOULD_CHANGE
+              : REFUSAL_WHAT_WOULD_CHANGE
+        }
       />
       <Closing />
     </ClaimBlock>
@@ -284,14 +337,12 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
       ? statusSpec(reading.carrier.variant.copies)
       : statusSpec(otherStatus),
   );
-  const carrierPerson = people.find((person) => person.dataSubjectId === reading.carrier.dataSubjectId);
-  const otherPerson = people.find((person) => person.dataSubjectId === reading.other.dataSubjectId);
-  const carrierName = carrierPerson?.displayLabel ?? reading.carrier.displayLabel;
-  const otherName = otherPerson?.displayLabel ?? reading.other.displayLabel;
+  const carrier = personRef(people, viewerAccountId, reading.carrier.dataSubjectId);
+  const other = personRef(people, viewerAccountId, reading.other.dataSubjectId);
   const sentence =
     reading.kind === "no-second-copy"
-      ? noSecondCopy(otherName)
-      : cannotCalculate(otherName, `rs${reading.uncoveredRsid}`);
+      ? noSecondCopyFor(other)
+      : cannotCalculateFor(other, `rs${reading.uncoveredRsid}`);
 
   return (
     <ClaimBlock
@@ -311,8 +362,8 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
           <Chips people={people} viewerAccountId={viewerAccountId} nodes={nodes} />
           <ul data-slot="carrier-variants" className="space-y-1 text-sm leading-relaxed text-ink-muted">
             <li data-slot="carrier-variant">
-              {personVariantLine(
-                carrierName,
+              {personVariantLineFor(
+                carrier,
                 reading.carrier.variant.rsid,
                 reading.gene,
                 reading.carrier.variant.classification,
@@ -339,7 +390,7 @@ export function OneSidedCard({ reading, people, viewerAccountId }: OneSidedCardP
             ? knownChangesCovered(reading.coverage.covered, reading.coverage.known)
             : sentence
         }
-        change={oneSidedWhatWouldChange(otherName)}
+        change={oneSidedWhatWouldChangeFor(other)}
       />
       <Closing />
     </ClaimBlock>

@@ -175,6 +175,9 @@ export const CARRIER_REASON_PHRASES: Record<CarrierReason, string> = {
   "sex-unknown":
     "this pattern depends on which parent carries the change on the X, and Inherit does not record that",
   "two-copies": "one file shows two changed copies, not one",
+  "not-covered": "one file does not cover the position the other person’s change is at",
+  "runs-above-threshold":
+    "one file has more long identical stretches than Inherit’s limit allows",
   "runs-unchecked":
     "Inherit could not check how much of one file is made of long identical stretches",
 };

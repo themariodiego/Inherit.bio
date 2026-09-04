@@ -274,7 +274,10 @@ describe("the carrier-pair card with the one fraction", () => {
     expect(howSure).toContain(copy.HOW_SURE_HEADING);
     expect(howSure).toContain(copy.PATTERN_DESCRIPTIONS.autosomal_recessive);
     expect(howSure).toContain(copy.ASSUMPTION_STATEMENTS.independent_assortment);
-    expect(howSure).toContain(copy.ASSUMPTION_STATEMENTS.runs_below_threshold);
+    // The runs measure was taken, so it is listed as checked, not assumed.
+    expect(howSure).not.toContain(copy.ASSUMPTION_STATEMENTS.runs_below_threshold);
+    expect(howSure).toContain(copy.HOW_SURE_LABELS.checked);
+    expect(howSure).toContain(copy.RUNS_CHECKED_STATEMENT);
     expect(howSure).toContain(copy.BOTH_FILES_COVERED);
     expect(howSure).toContain(copy.CARRIER_WHAT_WOULD_CHANGE);
     expect(howSure).not.toContain(copy.ASSUMPTION_STATEMENTS.equal_x_y_transmission);
@@ -310,11 +313,51 @@ describe("the carrier-pair card the rule refused", () => {
     expect(xLinked).not.toContain("Out of 100 possible pregnancies");
   });
 
-  it("renders the brief's runs refusal verbatim for the runs reason", () => {
-    const html = renderCard(match({ kind: "no-probability", reason: "runs-unchecked" }));
+  it("renders the brief's runs refusal verbatim only for a measured file above the threshold", () => {
+    const html = renderCard(match({ kind: "no-probability", reason: "runs-above-threshold", uncovered: null }));
     expect(html).toContain(copy.RUNS_REFUSAL);
     expect(html).toContain(copy.RUNS_ASSUMPTION);
+    expect(html).toContain(copy.RUNS_WHAT_WOULD_CHANGE);
     expect(html).not.toContain("25 in 100");
+  });
+
+  it("renders the could-not-check sentence, never the runs refusal, for a person whose runs were not established", () => {
+    const html = renderCard(match({ kind: "no-probability", reason: "runs-unchecked", uncovered: null }));
+    expect(html).not.toContain(copy.RUNS_REFUSAL);
+    expect(html).toContain(copy.carrierNoProbabilitySentence("E2EGENE1", "runs-unchecked"));
+    expect(html).toContain(copy.RUNS_UNCHECKED_ASSUMPTION);
+    expect(html).toContain(copy.RUNS_WHAT_WOULD_CHANGE);
+  });
+
+  it("names the position one file does not cover, never imputes, and never claims both files cover it", () => {
+    const html = renderCard(
+      match({
+        kind: "no-probability",
+        reason: "not-covered",
+        positionsBothCovered: false,
+        uncovered: { dataSubjectId: SELF_B, rsid: 999999002 },
+      }),
+    );
+    expect(html).toContain(copy.cannotCalculate("Bo", "rs999999002"));
+    expect(html).not.toContain(copy.BOTH_FILES_COVERED);
+    expect(html).toContain(copy.POSITION_NOT_COVERED_WHAT_WOULD_CHANGE);
+    expect(html).not.toContain("25 in 100");
+    // The viewer's own gap is in the second person.
+    const mine = renderCard(
+      match({
+        kind: "no-probability",
+        reason: "not-covered",
+        positionsBothCovered: false,
+        uncovered: { dataSubjectId: SELF_A, rsid: 999999002 },
+      }),
+    );
+    expect(mine).toContain("We cannot do this calculation. Your file does not cover rs999999002.");
+    expect(mine).not.toContain("You’s");
+  });
+
+  it("never claims both files cover the positions of a refused match when they do not", () => {
+    const html = renderCard(match({ kind: "no-probability", reason: "dominant", positionsBothCovered: false, uncovered: null }));
+    expect(html).not.toContain(copy.BOTH_FILES_COVERED);
   });
 });
 
@@ -362,6 +405,29 @@ describe("the one-sided card", () => {
     expect(html).toContain(copy.cannotCalculate("Bo", "rs1001"));
     expect(html).toContain(copy.POSITIONS_NOT_COVERED_READING);
     expect(html).not.toContain('data-slot="known-covered"');
+  });
+
+  it("speaks to the viewer in the second person when their file is the other one: never \"You hasn’t\", never \"You’s\"", () => {
+    const viewerIsOther: OneSidedReading = {
+      ...base,
+      carrier: { dataSubjectId: SELF_B, displayLabel: "Bo", variant: base.carrier.variant },
+      other: { dataSubjectId: SELF_A, displayLabel: "You" },
+    };
+    const noSecond = renderToStaticMarkup(h(OneSidedCard, { reading: viewerIsOther, people: PEOPLE, viewerAccountId: VIEWER }));
+    expect(noSecond).toContain(copy.noSecondCopy("you"));
+    expect(noSecond).toContain(copy.oneSidedWhatWouldChange("you"));
+    expect(noSecond).toContain("Bo: rs1001 in GENEA");
+    const notCovered = renderToStaticMarkup(
+      h(OneSidedCard, {
+        reading: { ...viewerIsOther, kind: "not-covered", uncoveredRsid: 1001, coverage: { known: 2, covered: 0 } },
+        people: PEOPLE,
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(notCovered).toContain("We cannot do this calculation. Your file does not cover rs1001.");
+    for (const html of [noSecond, notCovered]) {
+      expect(html).not.toMatch(/You’s|You hasn’t|You has\b|in You\b|for You\b/);
+    }
   });
 });
 

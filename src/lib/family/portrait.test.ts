@@ -3,6 +3,7 @@ import { PORTRAIT_STEPS, cannotCalculate, noSecondCopy } from "@/copy/family/por
 import type { CarrierCondition, CarrierMatch, CarrierRefVariant } from "./carrier-pair";
 import {
   PORTRAIT_STEP_ORDER,
+  answeredGenes,
   evaluateOneSided,
   evaluatePortraitPreconditions,
   geneCoverage,
@@ -241,6 +242,46 @@ describe("the one-sided readings", () => {
     });
   });
 
+  it("still reads a pathogenic carrier when the other side's change is harmless or of unknown meaning", () => {
+    // The carrier rule matched the gene on A's pathogenic change and B's
+    // benign one (reason: harmless). That match answers nothing for A, so
+    // the no-second-copy reading renders for B's covered positions.
+    const refused = {
+      kind: "no-probability",
+      reason: "harmless",
+      uncovered: null,
+      gene: "GENEA",
+      conditionId: "a",
+      conditionName: "A",
+      positionsBothCovered: true,
+      a: { dataSubjectId: SELF_A, displayLabel: "You", variant: { rsid: 1001, classification: "Pathogenic", genotype: "A/G", copies: "one copy" } },
+      b: { dataSubjectId: SELF_B, displayLabel: "Bo", variant: { rsid: 1002, classification: "Benign", genotype: "C/T", copies: "one copy" } },
+    } as const satisfies CarrierMatch;
+    const readings = evaluateOneSided({
+      a: { dataSubjectId: SELF_A, displayLabel: "You", genotypes: new Map([[1001, "A/G"], [1002, "C/C"]]) },
+      b: { dataSubjectId: SELF_B, displayLabel: "Bo", genotypes: new Map([[1001, "A/A"], [1002, "C/T"]]) },
+      refVariants: [
+        { rsid: 1001, geneSymbol: "GENEA", alt: "G", clinvarSignificance: "Pathogenic" },
+        { rsid: 1002, geneSymbol: "GENEA", alt: "T", clinvarSignificance: "Benign" },
+      ],
+      conditions: [{ conditionId: "a", conditionName: "A", geneSymbols: ["GENEA"], inheritanceMode: "autosomal_recessive" }],
+      matches: [refused],
+    });
+    expect(readings).toHaveLength(1);
+    expect(readings[0]).toMatchObject({ kind: "no-second-copy", gene: "GENEA", carrier: { dataSubjectId: SELF_A } });
+    expect(answeredGenes([refused])).toEqual(new Set());
+    const uncertain = { ...refused, reason: "unknown-meaning", b: { ...refused.b, variant: { ...refused.b.variant, classification: "Uncertain significance" } } } as const satisfies CarrierMatch;
+    expect(answeredGenes([uncertain])).toEqual(new Set());
+  });
+
+  it("reads a carrier whose partner's file covers none of the gene's positions, with no classified position shared", () => {
+    // Nothing is shared at all: the carrier rule found no pair, and the
+    // page still asks the one-sided question (line 2238).
+    const readings = oneSided([[1001, "A/G"]], [[2001, "C/C"]]);
+    expect(readings).toHaveLength(1);
+    expect(readings[0]).toMatchObject({ kind: "not-covered", uncoveredRsid: 1001, coverage: { known: 2, covered: 0 } });
+  });
+
   it("never answers a gene the carrier rule answered, nor one both or neither file shows a change in", () => {
     const match = {
       kind: "probability",
@@ -248,6 +289,7 @@ describe("the one-sided readings", () => {
       gene: "GENEA",
       conditionId: "a",
       conditionName: "A",
+      positionsBothCovered: true,
       a: { dataSubjectId: SELF_A, displayLabel: "You", variant: { rsid: 1001, classification: "Pathogenic", genotype: "A/G", copies: "one copy" } },
       b: { dataSubjectId: SELF_B, displayLabel: "Bo", variant: { rsid: 1001, classification: "Pathogenic", genotype: "A/G", copies: "one copy" } },
     } as const satisfies CarrierMatch;

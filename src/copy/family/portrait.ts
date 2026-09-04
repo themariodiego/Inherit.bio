@@ -31,7 +31,7 @@ import {
   noCarrierMatches,
   personVariantLine,
 } from "./health-picture";
-import { UNNAMED_PERSON_LABEL } from "./index";
+import { SELF_PLACEHOLDER_LABEL, UNNAMED_PERSON_LABEL } from "./index";
 import { SHARING_ERROR_STATUS } from "./permissions";
 import { GATE_ERROR_STATUS, PAUSED_BODY, noFileYet } from "./person";
 
@@ -234,9 +234,25 @@ export function xLinkedSentence(boysWithCondition: number, girlsWhoCarry: number
   return `Out of 100 possible pregnancies, about ${boysWithCondition} would be boys with the condition and about ${girlsWhoCarry} girls who carry it.`;
 }
 
+/**
+ * A person a sentence names: the other person by the name the graph gives
+ * them, the viewer in the second person. No sentence slot ever receives the
+ * first-person placeholder ("You hasn’t", "You’s" cannot render): every
+ * sentence about the viewer has its own second-person form.
+ */
+export interface PersonRef {
+  name: string;
+  isViewer: boolean;
+}
+
 /** Character-for-character (line 2238): one parent shows one copy, the other's covered positions show none. */
 export function noSecondCopy(parent: string): string {
   return `Based on the variants your files cover, we found no second copy in ${parent}. This is not zero risk: your files do not cover every variant known to cause this condition.`;
+}
+
+/** The same sentence with the slot filled by the person, "you" for the viewer. */
+export function noSecondCopyFor(person: PersonRef): string {
+  return noSecondCopy(person.isViewer ? "you" : person.name);
 }
 
 /** The covered count against the registry's known count (line 2238), on every carrier-pair result. */
@@ -258,13 +274,46 @@ export function oneSidedWhatWouldChange(name: string): string {
   return `A file for ${name} that covers more of the changes known to cause this condition.`;
 }
 
-/** Character-for-character (line 1349): the runs-of-homozygosity refusal. */
+export function oneSidedWhatWouldChangeFor(person: PersonRef): string {
+  return oneSidedWhatWouldChange(person.isViewer ? "you" : person.name);
+}
+
+/** The variant line of a person, "You:" for the viewer as a label, never as a sentence subject. */
+export function personVariantLineFor(
+  person: PersonRef,
+  rsid: number,
+  gene: string,
+  classification: string,
+): string {
+  return personVariantLine(person.isViewer ? SELF_PLACEHOLDER_LABEL : person.name, rsid, gene, classification);
+}
+
+/** The viewer's own empty state, in the second person; the other person's is `noFileYet`. */
+export const VIEWER_NO_FILE_YET = "You haven’t added a file yet. There is nothing to show.";
+
+export function noFileYetFor(person: PersonRef): string {
+  return person.isViewer ? VIEWER_NO_FILE_YET : noFileYet(person.name);
+}
+
+/**
+ * Character-for-character (line 1349): the runs-of-homozygosity refusal.
+ * Rendered only for a file Inherit measured and found above a threshold
+ * (`runs-above-threshold`); a person whose runs were never established gets
+ * the side-by-side page's "could not check" sentence instead.
+ */
 export const RUNS_REFUSAL =
   "These two files look more genetically similar than usual. That changes the maths in ways we cannot show you honestly here. Please talk to a genetic counsellor.";
 
 /** Character-for-character (line 1349): a position one file does not cover. Never imputed. */
 export function cannotCalculate(label: string, rsid: string): string {
   return `We cannot do this calculation. ${label}’s file does not cover ${rsid}.`;
+}
+
+/** The same sentence for the viewer's own file, in the second person. */
+export function cannotCalculateFor(person: PersonRef, rsid: string): string {
+  return person.isViewer
+    ? `We cannot do this calculation. Your file does not cover ${rsid}.`
+    : cannotCalculate(person.name, rsid);
 }
 
 /** Character-for-character (line 354): the Rh card's clinical relevance. */
@@ -368,9 +417,14 @@ export const HOW_SURE_HEADING = REPORT_HEADINGS[3];
 export const HOW_SURE_LABELS = {
   pattern: "The pattern",
   assumption: "What we do not check",
+  checked: "What we checked",
   coverage: "What both files covered",
   change: "What would change this",
 } as const;
+
+/** Under "What we checked" on an exact block: the runs measure was taken and passed, so it is not an assumption. */
+export const RUNS_CHECKED_STATEMENT =
+  "Both files were measured for long runs of matching letters, and each sits below Inherit’s limit.";
 
 /** The inheritance pattern each cross follows, in words. */
 export const PATTERN_DESCRIPTIONS: Record<MendelPattern, string> = {
@@ -412,12 +466,20 @@ export const REFUSAL_WHAT_WOULD_CHANGE =
 export const NO_PATTERN_DESCRIPTION =
   "Inherit has no recorded pattern for this gene, so no arithmetic applies.";
 
-/** The pattern field of a match refused on the runs check (line 1349). */
+/** The assumption field of a match refused because a measured file is above the runs threshold (line 1349). */
 export const RUNS_ASSUMPTION =
-  "The arithmetic needs both files below Inherit’s limit for long runs of matching letters. One file is above it or could not be measured.";
+  "The arithmetic needs both files below Inherit’s limit for long runs of matching letters. One file is above it.";
+
+/** The assumption field of a match refused because a person's runs were never established. */
+export const RUNS_UNCHECKED_ASSUMPTION =
+  "The arithmetic needs both files below Inherit’s limit for long runs of matching letters. One file could not be measured.";
 
 export const RUNS_WHAT_WOULD_CHANGE =
   "A file for each person that Inherit can measure and that sits below that limit.";
+
+/** The coverage field of a match refused because one file does not report the other's position. */
+export const POSITION_NOT_COVERED_WHAT_WOULD_CHANGE =
+  "A file for that person that covers the position.";
 
 // ---------------------------------------------------------------------------
 // Deletion (line 364: "either of you can delete it"). The mechanism is the
@@ -435,7 +497,7 @@ export const DELETE_DIALOG_HEADING = "Delete this Portrait?";
 
 /** Tier 2 of line 936: the dialog names what is deleted and what it takes to undo. */
 export const DELETE_DIALOG_BODY =
-  "Every Portrait result built from these two files is deleted within 60 seconds, and this page closes for both of you. It opens again only when you both turn Portrait on again.";
+  "Every Portrait result built from these two files is deleted within 60 seconds, and this page closes for both of you. Your own Portrait permission is turned off; the other person’s stays on. It opens again only when you turn Portrait on again.";
 
 export const DELETE_CONFIRM_BUTTON = "Delete this Portrait";
 export const DELETE_CANCEL_BUTTON = "Keep Portrait";
@@ -462,7 +524,12 @@ export interface Refusal {
   refusalId: string;
   /** The item, one line (line 1357), in the brief's own words. */
   line: string;
-  /** One sentence. Two are the brief's, verbatim (line 358); one is line 1365. */
+  /**
+   * At most two sentences. The brief marks its two reasons "Example:"
+   * (line 358): the intelligence one is used as written, the height one is
+   * rewritten to grade ≤ 9 (decisions.md, "Portrait readability"); the sex
+   * reason is line 1365.
+   */
   reason: string;
 }
 
@@ -484,6 +551,28 @@ export const REFUSALS: readonly Refusal[] = [
     line: "Personality, temperament, behaviour and mental health.",
     reason:
       "The evidence is as weak as for intelligence. It would also label a person who cannot agree to it.",
+  },
+  {
+    refusalId: "talent",
+    line: "Talent, in music, art, maths or anything else.",
+    reason: "Talent is not one thing a file can read, and no model links DNA to it in a way that holds up.",
+  },
+  {
+    refusalId: "athleticism",
+    line: "Athletic ability, speed, strength or endurance.",
+    reason:
+      "Sport ability comes from training, health and many positions at once. No reading of two files can say how a child would do.",
+  },
+  {
+    refusalId: "attractiveness",
+    line: "Attractiveness or good looks.",
+    reason: "There is no measure of this to compute, and the attempt would judge a person who cannot answer.",
+  },
+  {
+    refusalId: "skin-tone",
+    line: "Skin tone.",
+    reason:
+      "Skin tone comes from many positions at once, and Inherit will not put a label on a child who does not exist yet.",
   },
   {
     refusalId: "orientation-identity",

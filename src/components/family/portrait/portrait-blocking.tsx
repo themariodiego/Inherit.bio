@@ -7,8 +7,9 @@
  * beside a partial result: the heading names who still has a step, the body
  * is the register's copy, the list is server-derived — one line per missing
  * step, in the pair's own order — and the action routes to the consents
- * page. The acknowledgement card renders only while the viewer's own step
- * is the acknowledgement; the other person's steps are theirs alone.
+ * page. The acknowledgement card renders only when the acknowledgement is
+ * the viewer's one remaining step (a grant or a sign-in comes first, on its
+ * own page); the other person's steps are theirs alone.
  *
  * Nothing here reads a file, a genotype or a result.
  */
@@ -56,9 +57,8 @@ export function PortraitBlocking({ people, missing, consentsHref }: PortraitBloc
     waitingOn.map((person) => (person.isViewer ? VIEWER_NAME_IN_HEADING : person.displayLabel)),
   );
   const viewer = people.find((person) => person.isViewer);
-  const viewerMustAcknowledge =
-    viewer !== undefined &&
-    missing.some((entry) => entry.subjectId === viewer.subjectId && entry.step === "acknowledged");
+  const viewerSteps = viewer ? missing.filter((entry) => entry.subjectId === viewer.subjectId) : [];
+  const viewerMustAcknowledge = viewerSteps.length === 1 && viewerSteps[0].step === "acknowledged";
 
   return (
     <section
