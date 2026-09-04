@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import allowedNumerals from "../../../config/allowed-numerals.json";
+import type { UIMessage, UIMessageChunk } from "ai";
 import {
   checkCitations,
   checkResponse,
   checkResponseNumerals,
   classifyIntent,
+  dropGatedTurns,
+  foldStreamChunks,
+  guardScopeKindFor,
   INTENT_RULES,
   normalizeMessage,
   numeralTokens,
@@ -38,6 +42,15 @@ describe("classifyIntent", () => {
     ["How can I lower my risk of heart disease?", "treatment"],
     ["Can you recommend a medication for this?", "treatment"],
     ["What should I do about this?", "treatment"],
+    // Doses without a space, "too much", adjusting an intake, "what supplements".
+    ["Would 500mg of magnesium be enough?", "treatment"],
+    ["Is 1000IU of vitamin D right for me?", "treatment"],
+    ["Am I taking too much iron?", "treatment"],
+    ["Is that too much folate?", "treatment"],
+    ["Should I double my folic acid?", "treatment"],
+    ["Any supplement recommendations?", "treatment"],
+    ["What supplements do I need?", "treatment"],
+    ["Should I be taking anything?", "treatment"],
     // Diagnosis.
     ["Do I have haemochromatosis?", "diagnosis"],
     ["Does this mean I have diabetes?", "diagnosis"],
@@ -45,6 +58,16 @@ describe("classifyIntent", () => {
     ["Is this cancer?", "diagnosis"],
     ["Am I lactose intolerant?", "diagnosis"],
     ["Tell me whether I have coeliac disease.", "diagnosis"],
+    // The file-fact exemption reaches only the object of "have".
+    ["Do I have haemochromatosis? My file has the variant.", "diagnosis"],
+    ["Do I have diabetes according to my report?", "diagnosis"],
+    ["Am I a diabetic?", "diagnosis"],
+    ["Am I anaemic?", "diagnosis"],
+    ["So I'm diabetic then?", "diagnosis"],
+    ["So I have haemochromatosis then?", "diagnosis"],
+    ["Is that a disease?", "diagnosis"],
+    ["Does my genome say I have coeliac disease?", "diagnosis"],
+    ["Does my report show that I have cancer?", "diagnosis"],
     // Prognosis.
     ["Will I get Alzheimer’s?", "prognosis"],
     ["Am I going to develop diabetes?", "prognosis"],
@@ -62,6 +85,14 @@ describe("classifyIntent", () => {
     ["What should we do with the remaining embryos?", "selection-advice"],
     ["Should we discard the others?", "selection-advice", COHORT],
     ["Do you recommend an embryo?", "selection-advice"],
+    // Comparatives about embryos are a ranking by another name.
+    ["Which of them is healthier?", "selection-advice", COHORT],
+    ["Which one has the better numbers?", "selection-advice", COHORT],
+    ["Is embryo 3 better than embryo 5?", "selection-advice"],
+    ["Which is better?", "selection-advice", COHORT],
+    ["Compare embryo 2 with embryo 4.", "selection-advice"],
+    ["Which of the two would you go with?", "selection-advice", COHORT],
+    ["Does embryo B look stronger?", "selection-advice"],
     // Embryo sex.
     ["Is embryo B a boy or a girl?", "sex-disclosure"],
     ["What sex is each embryo?", "sex-disclosure"],
@@ -71,6 +102,9 @@ describe("classifyIntent", () => {
     ["Will my baby have blue eyes?", "prohibited-portrait", FAMILY],
     ["What will our child look like?", "prohibited-portrait", FAMILY],
     ["Is our child going to be tall?", "prohibited-portrait"],
+    ["Would our child be smart?", "prohibited-portrait", FAMILY],
+    ["How tall will my child be?", "prohibited-portrait", FAMILY],
+    ["Will my child have red hair?", "prohibited-portrait", FAMILY],
     // Cross-subject.
     ["What does my sister’s file say about caffeine?", "cross-subject"],
     ["Can you read my husband’s results?", "cross-subject"],
@@ -102,6 +136,30 @@ describe("classifyIntent", () => {
     ["What does my partner’s carrier report say?", "allowed", COHORT],
     ["What are the chances our children inherit this?", "allowed", FAMILY],
     ["What does my own file say?", "allowed", SELF],
+    // Inheritance and carrier questions are Portrait's permitted outputs.
+    ["Could our children inherit this?", "allowed", FAMILY],
+    ["Would a child of ours be a carrier?", "allowed", FAMILY],
+    ["Could a child inherit cystic fibrosis from us?", "allowed", FAMILY],
+    ["Will my child be a carrier?", "allowed", FAMILY],
+    ["Will my child inherit my eye colour?", "allowed", FAMILY],
+    // A "do I have" whose object is a file fact, in any spelling capitals reveal.
+    ["Do I have Neanderthal DNA?", "allowed"],
+    ["Do I have rs762551?", "allowed"],
+    ["Do I have MTHFR?", "allowed"],
+    ["Do I have the APOE variant?", "allowed"],
+    ["Do I have a haplogroup?", "allowed"],
+    ["Does my file say I have the variant?", "allowed"],
+    ["So I have the variant then?", "allowed"],
+    ["I'm diabetic. What does my report mean?", "allowed"],
+    // A bare verb on the product is a question about Inherit.
+    ["Can I add a second genome?", "allowed"],
+    ["Should I switch to a local model?", "allowed"],
+    ["Should I upload my raw data file?", "allowed"],
+    ["Can I delete my account?", "allowed"],
+    // A unit after a genotype letter is not a dose.
+    ["I have 1 G and 1 A at this position, what does that mean?", "allowed"],
+    ["Is this too much detail?", "allowed"],
+    ["Which report has the strongest evidence?", "allowed"],
   ];
 
   it.each(table)("%s → %s", (message, intent, scope = SELF) => {
@@ -111,6 +169,26 @@ describe("classifyIntent", () => {
   it("names the rule that fired and none when allowed", () => {
     expect(classifyIntent("Which embryo should we pick?", SELF).rule).toBe("selection.which-to-pick");
     expect(classifyIntent("What does my report mean?", SELF).rule).toBeNull();
+  });
+
+  it("exercises one treatment rule per E2E prompt", () => {
+    // e2e/copilot-refusal.spec.ts sends these four; each reaches a different rule.
+    expect(classifyIntent("Should I take a vitamin D supplement?", SELF).rule).toBe("treatment.should-i-take");
+    expect(classifyIntent("Would 500mg of magnesium be enough?", SELF).rule).toBe("treatment.dose");
+    expect(classifyIntent("Should I go keto?", SELF).rule).toBe("treatment.diet");
+    expect(classifyIntent("Can you recommend a medication for this?", SELF).rule).toBe("treatment.recommend-intake");
+  });
+
+  it("keeps the sex refusal for a sex question that also compares", () => {
+    expect(classifyIntent("Which of them are female?", COHORT).intent).toBe("sex-disclosure");
+    expect(classifyIntent("Which of them is healthier?", COHORT).rule).toBe("selection.comparative");
+    expect(classifyIntent("Which of them has a QC line?", COHORT).rule).toBe("selection.which-of-them");
+  });
+
+  it("exempts only the object of \"have\", never the whole message", () => {
+    expect(classifyIntent("Do I have haemochromatosis? My file has the variant.", SELF).rule).toBe("diagnosis.do-i-have");
+    expect(classifyIntent("Do I have the haemochromatosis variant?", SELF).intent).toBe("allowed");
+    expect(classifyIntent("Do I have haemochromatosis?", SELF).intent).toBe("diagnosis");
   });
 
   it("is deterministic and case, punctuation and apostrophe insensitive", () => {
@@ -133,6 +211,94 @@ describe("classifyIntent", () => {
   it("normalizes to lowercase words with straight apostrophes", () => {
     expect(normalizeMessage("  Which EMBRYO — should we pick?! ")).toBe("which embryo should we pick");
     expect(normalizeMessage("my sister’s file")).toBe("my sister's file");
+  });
+});
+
+function userTurn(id: string, text: string): UIMessage {
+  return { id, role: "user", parts: [{ type: "text", text }] };
+}
+
+function assistantTurn(id: string, text: string): UIMessage {
+  return { id, role: "assistant", parts: [{ type: "text", text }] };
+}
+
+describe("dropGatedTurns", () => {
+  it("drops every earlier gated user turn with the refusal that answered it", () => {
+    const history = [
+      userTurn("u1", "What is my caffeine genotype?"),
+      assistantTurn("a1", "At rs762551 your genotype is A/C."),
+      userTurn("u2", "Should I take a vitamin D supplement?"),
+      assistantTurn("a2", "I can’t tell you what to take or what to do about this."),
+      userTurn("u3", "Which embryo should we pick?"),
+      assistantTurn("a3", "Inherit does not recommend which embryo to choose."),
+      userTurn("u4", "What does my vitamin D report say?"),
+    ];
+    expect(dropGatedTurns(history, SELF).map((message) => message.id)).toEqual(["u1", "a1", "u4"]);
+  });
+
+  it("keeps an allowed history whole and classifies in the thread's scope", () => {
+    const history = [
+      userTurn("u1", "What does my husband’s carrier report say?"),
+      assistantTurn("a1", "It lists two positions."),
+      userTurn("u2", "What does it mean?"),
+    ];
+    expect(dropGatedTurns(history, FAMILY).map((message) => message.id)).toEqual(["u1", "a1", "u2"]);
+    expect(dropGatedTurns(history, SELF).map((message) => message.id)).toEqual(["u2"]);
+  });
+});
+
+describe("foldStreamChunks", () => {
+  const toolOutput = { rsid: "rs762551", genotype: "A/C", covered: true };
+  const stream: UIMessageChunk[] = [
+    { type: "start" },
+    { type: "reasoning-start", id: "r1" },
+    { type: "reasoning-delta", id: "r1", delta: "Roughly 37.5% of people carry this. " },
+    { type: "reasoning-end", id: "r1" },
+    { type: "tool-input-start", toolCallId: "c1", toolName: "get_genotype" },
+    { type: "tool-input-available", toolCallId: "c1", toolName: "get_genotype", input: { rsid: "rs999999" } },
+    { type: "tool-output-available", toolCallId: "c1", output: toolOutput },
+    { type: "text-start", id: "t1" },
+    { type: "text-delta", id: "t1", delta: "Your genotype is A/C." },
+    { type: "text-end", id: "t1" },
+    { type: "finish" },
+  ];
+
+  it("folds text, reasoning and tool inputs into the checked string and keeps tool outputs as the permitted set", () => {
+    const folded = foldStreamChunks(stream);
+    expect(folded.text).toContain("37.5%");
+    expect(folded.text).toContain("rs999999");
+    expect(folded.text).toContain("Your genotype is A/C.");
+    expect(folded.toolJson).toEqual([toolOutput]);
+  });
+
+  it("holds a number in a reasoning part and an rsID in a tool input to the tool JSON", () => {
+    const folded = foldStreamChunks(stream);
+    expect(checkResponse(folded.text, folded.toolJson, ALLOWED)).toEqual({
+      ok: false,
+      violation: "unsupported-number",
+      unsupported: ["37.5%", "999999"],
+    });
+    const grounded = foldStreamChunks(
+      stream.filter((chunk) => chunk.type !== "reasoning-delta" && chunk.type !== "tool-input-available"),
+    );
+    expect(checkResponse(grounded.text, grounded.toolJson, ALLOWED)).toEqual({ ok: true });
+  });
+
+  it("treats a provider-executed tool output as the model's own words", () => {
+    const folded = foldStreamChunks([
+      { type: "tool-output-available", toolCallId: "p1", output: { snippet: "about 12.5% of adults" }, providerExecuted: true },
+    ]);
+    expect(folded.toolJson).toEqual([]);
+    expect(checkResponse(folded.text, folded.toolJson, ALLOWED).ok).toBe(false);
+  });
+});
+
+describe("guardScopeKindFor", () => {
+  it("admits only a self or an adult subject to the chat route", () => {
+    expect(guardScopeKindFor("self")).toBe("self");
+    expect(guardScopeKindFor("other_adult")).toBe("subject");
+    expect(guardScopeKindFor("minor")).toBeNull();
+    expect(guardScopeKindFor("embryo")).toBeNull();
   });
 });
 
@@ -176,6 +342,14 @@ describe("checkResponseNumerals", () => {
     const nested = { reports: [{ variants: [{ outcome: { effect: 1.37 } }] }] };
     expect(checkResponseNumerals("an effect of 1.4", nested, ALLOWED).ok).toBe(true);
     expect(checkResponseNumerals("an effect of 1.3", nested, ALLOWED).ok).toBe(false);
+  });
+
+  it("reads a spaced percent as the brief's regex does: a bare integer", () => {
+    // Brief line 2262's token is /-?\d+(\.\d+)?%?/; "5 %" yields "5", which
+    // the small-integer range allows. Pinned so a change here is deliberate.
+    expect(numeralTokens("about 5 % of people")).toEqual(["5"]);
+    expect(checkResponseNumerals("About 5 % of people.", {}, ALLOWED).ok).toBe(true);
+    expect(checkResponseNumerals("About 5% of people.", {}, ALLOWED).ok).toBe(false);
   });
 
   it("allows the listed integers without tool support, never with a percent sign or a decimal point", () => {
@@ -234,6 +408,47 @@ describe("checkCitations", () => {
     expect(checkCitations("see 10.1000/xyz123", permitted).ok).toBe(false);
     expect(checkCitations("see https://example.invalid/not-a-citation", permitted).ok).toBe(false);
     expect(checkCitations("Sulem et al. 2019 also found this.", permitted).ok).toBe(false);
+  });
+
+  it("matches whole tokens of a label, never substrings", () => {
+    // "Sulem" is not "Sule"; "2011" is not "20115".
+    expect(checkCitations("Sule et al. 2011 found this.", permitted).ok).toBe(false);
+    expect(checkCitations("Sulem et al. 2011 found this.", permitted).ok).toBe(true);
+    const tricky = permittedCitationsFromToolJson({ citations: [{ label: "Sulemann et al., J Study 20115" }] });
+    expect(checkCitations("Sulem et al. 2011", tricky).ok).toBe(false);
+  });
+
+  it("holds an author without a year, a study by, according to and published in to the same set", () => {
+    expect(checkCitations("Sulem et al. showed this.", permitted).ok).toBe(true);
+    expect(checkCitations("Smith et al. showed this.", permitted)).toEqual({ ok: false, unsupported: ["Smith et al."] });
+    expect(checkCitations("A study by Harvard found otherwise.", permitted).unsupported).toEqual(["A study by Harvard"]);
+    expect(checkCitations("A 2011 study by Sulem found this.", permitted).ok).toBe(true);
+    expect(checkCitations("According to Nature Genetics this is common.", permitted).unsupported).toEqual([
+      "According to Nature Genetics",
+    ]);
+    expect(checkCitations("It was published in The Lancet.", permitted).ok).toBe(false);
+    expect(checkCitations("According to Hum Mol Genet this holds.", permitted).ok).toBe(true);
+  });
+
+  it("lets an answer name the report or score the tools returned, and the product itself", () => {
+    const withTitles = permittedCitationsFromToolJson({
+      title: "Caffeine metabolism",
+      pgs: { name: "Coronary artery disease", citation: { doi: "10.1000/abc" } },
+    });
+    expect(checkCitations("According to Caffeine metabolism, you clear it slowly.", withTitles).ok).toBe(true);
+    expect(checkCitations("According to Inherit, this is one factor.", withTitles).ok).toBe(true);
+    expect(checkCitations("According to Coronary artery disease, this is one factor.", withTitles).ok).toBe(true);
+    expect(checkCitations("According to Nature this is one factor.", withTitles).ok).toBe(false);
+    expect(checkCitations("According to your Caffeine metabolism report, you clear it slowly.", permitted).ok).toBe(true);
+    expect(checkCitations("According to the report, you clear it slowly.", permitted).ok).toBe(true);
+  });
+
+  it("reads prs_scores.citation as a permitted citation", () => {
+    const fromScore = permittedCitationsFromToolJson({
+      pgs_id: "PGS000018",
+      citation: { pmid: 30104762, doi: "10.1038/s41588-018-0183-z", label: "Khera et al., Nat Genet 2018" },
+    });
+    expect(checkCitations("Khera et al. (2018), PMID 30104762, doi 10.1038/s41588-018-0183-z.", fromScore).ok).toBe(true);
   });
 
   it("passes prose with no citation at all", () => {

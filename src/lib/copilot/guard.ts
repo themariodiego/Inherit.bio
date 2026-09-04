@@ -14,12 +14,22 @@
  *    `/-?\d+(\.\d+)?%?/` token in the model's text must, after rounding to
  *    the token's own number of decimal places, equal a value present in that
  *    turn's tool JSON, or fall in a range of `config/allowed-numerals.json`.
- * 3. `checkCitations` holds every PMID, DOI, URL and "Author et al. YEAR"
- *    mention to the citations the tools returned that turn
- *    (`report_templates.citations`, `prs_scores.citation`).
+ * 3. `checkCitations` holds every PMID, DOI, URL, "Author et al.", "a study
+ *    by X", "according to X" and "published in X" mention to the citations
+ *    the tools returned that turn (`report_templates.citations`,
+ *    `prs_scores.citation`) and to the report and score names they carried,
+ *    matching whole tokens only.
+ *
+ * Two helpers keep the route honest about what it checks: `foldStreamChunks`
+ * turns the buffered model stream into the one string the checks read (text,
+ * reasoning, tool inputs, sources, provider-run tool outputs: everything the
+ * model authored), and `dropGatedTurns` classifies every earlier user turn a
+ * client resends so a refused message never reaches the model on a later
+ * request.
  *
  * A failing response is replaced whole; nothing is redacted in place.
  */
+import type { UIMessage, UIMessageChunk } from "ai";
 
 /** The scope kinds the register's `copilotScope` names. */
 export type CopilotScopeKind = "self" | "subject" | "family" | "cohort" | "report";
@@ -55,6 +65,11 @@ export interface IntentRule {
   pattern: RegExp;
   /** A message that also matches this is not gated by this rule. */
   unless?: RegExp;
+  /**
+   * As `unless`, tested against the case-preserving normalization, for
+   * shapes only capitals reveal (a gene symbol such as MTHFR or CYP1A2).
+   */
+  unlessRaw?: RegExp;
   /** Apply only when the message names an embryo, or the scope is a cohort. */
   embryoContext?: boolean;
   /** Apply only in these scope kinds. */
@@ -78,12 +93,43 @@ const PAIR_RELATIVES = "wife|husband|partner|spouse|boyfriend|girlfriend|fiancee
 const DATA_WORDS =
   "file|files|dna|genome|genotype|genotypes|result|results|report|reports|variant|variants|risk|risks|data|ancestry|score|scores|gene|genes|marker|markers|chance|chances|carrier status|raw data|test|tests";
 
-/** A "do I have …" that names a file fact is a lookup, not a diagnosis. */
+/** A "do I have …" whose object is a file fact is a lookup, not a diagnosis. */
 const FILE_FACT_WORDS =
-  "variant|variants|gene|genes|allele|alleles|marker|markers|genotype|genotypes|mutation|mutations|copy|copies|snp|snps|file|files|report|reports|result|results|data|version|versions|coverage|carrier|score|scores|reads?";
+  "variant|variants|gene|genes|allele|alleles|marker|markers|genotype|genotypes|mutation|mutations|copy|copies|snp|snps|file|files|report|reports|result|results|data|version|versions|coverage|carrier|score|scores|reads?|dna|genome|genomes|ancestry|haplogroup|haplogroups|neanderthal|array|arrays|position|positions|rs\\d+";
+
+/**
+ * The object of "have" or "got": an optional determiner, up to two qualifying
+ * words, then a file-fact word ("the lactase persistence variant",
+ * "Neanderthal DNA", "rs762551"). The exemption reaches no further.
+ */
+const DETERMINERS = "a|an|the|any|some|this|that|these|those|my|our|his|her|their|its";
+/** A qualifying word inside the object: never a pronoun or determiner, so the object cannot run into the next clause. */
+const QUALIFIER = `(?!(?:${DETERMINERS}|i|we|you|he|she|it|they|me|us|him|them)\\b)\\w+ `;
+const FILE_FACT_OBJECT = `(?:(?:${DETERMINERS}) )?(?:${QUALIFIER}){0,2}(?:${FILE_FACT_WORDS})\\b`;
+
+/** The same object, on the case-preserving text: a gene symbol such as MTHFR, APOE or CYP1A2. */
+const GENE_SYMBOL_OBJECT = `(?:(?:${DETERMINERS}) )?(?:${QUALIFIER}){0,2}[A-Z][A-Z0-9]{1,7}\\b`;
+
+/** What the product itself is called; a bare verb on one of these is not a treatment question. */
+const PRODUCT_WORDS =
+  "file|files|data|raw data|genome|genomes|model|models|account|accounts|key|keys|upload|uploads|provider|providers|copilot|thread|threads|report|reports|export|exports|backup|backups|vcf|browser|settings|plan";
 
 const CONDITION_WORDS =
   "cancer|tumou?r|diabetes|alzheimer'?s|parkinson'?s|huntington'?s|dementia|arthritis|asthma|coeliac|celiac|ha?emochromatosis|thalassa?emia|ana?emia|autism|adhd|depression|schizophrenia|bipolar|infection|disease|disorder|syndrome|condition|illness";
+
+/** A state a person asks to be told they are in. */
+const SELF_STATE_WORDS =
+  "sick|ill|unwell|diabetic|ana?emic|coeliac|celiac|lactose intolerant|autistic|depressed|infertile|allergic to|immunocompromised";
+
+/** A comparative about embryos, which is a ranking by another name. */
+const COMPARATIVES =
+  "better|best|healthier|healthiest|stronger|strongest|worse|worst|weaker|weakest|fitter|fittest|superior|inferior|more promising|less risky|least risky|riskier|riskiest|more viable|most viable";
+
+/** A prediction verb about one child, which Portrait never makes. */
+const CHILD_TRAIT_VERBS = "be|have|get|look|grow|become|turn out|end up";
+
+/** Dose units, with or without a space after the number. */
+const DOSE_UNITS = "mg|mcg|µg|μg|ug|iu|ml|units?|milligrams?|micrograms?|grams?";
 
 const EMBRYO_VERBS =
   "pick|choose|select|transfer|implant|keep|discard|use|freeze|donate|destroy|go with|prefer|recommend";
@@ -168,20 +214,48 @@ export const INTENT_RULES: readonly IntentRule[] = [
     embryoContext: true,
     pattern: re(`\\b(${SEX_WORDS})\\b`),
   },
-  // A prediction about one actual child (brief line 366).
+  // A comparative about embryos is a ranking by another name; a sex question
+  // that also compares keeps the sex refusal, which is why that rule sits first.
+  {
+    id: "selection.comparative",
+    intent: "selection-advice",
+    embryoContext: true,
+    pattern: re(`\\b(${COMPARATIVES})\\b`),
+  },
+  {
+    id: "selection.which-of-them",
+    intent: "selection-advice",
+    embryoContext: true,
+    pattern: re("\\bwhich (one|ones|of the two|of them|of these|of those)\\b"),
+  },
+  {
+    id: "selection.compare-embryos",
+    intent: "selection-advice",
+    pattern: re(
+      "\\bcompare (the |these |those |our |my )?embryos\\b|\\bcompare embryo \\w+ (to|with|and|against)\\b|\\bis embryo \\w+ (better|worse|healthier|stronger|weaker) than\\b",
+    ),
+  },
+  // A trait prediction about one actual child (brief line 366). Inheritance
+  // and carrier questions are Portrait's permitted outputs and stay allowed.
   {
     id: "portrait.singular-child",
     intent: "prohibited-portrait",
     pattern: re(
-      `\\b(will|would|might|could|is going to|are going to|going to) (my|our|the|a) (${CHILD_WORDS})\\b|\\b(is|are) (my|our|the|a) (${CHILD_WORDS}) going to\\b|\\b(my|our) (${CHILD_WORDS}) (will|would|is going to)\\b|\\bwhat will (my|our) (${CHILD_WORDS})\\b`,
+      `\\b(will|would|might|could|is going to|are going to|going to) (my|our|the|a) (${CHILD_WORDS}) (${CHILD_TRAIT_VERBS})\\b|\\b(is|are) (my|our|the|a) (${CHILD_WORDS}) going to (${CHILD_TRAIT_VERBS})\\b|\\b(my|our) (${CHILD_WORDS}) (will|would|is going to|are going to) (${CHILD_TRAIT_VERBS})\\b|\\bwhat will (my|our) (${CHILD_WORDS}) (look|be)\\b|\\bhow (tall|short|smart|clever|bright|big|strong|fast|pretty|beautiful|athletic|healthy) (will|would|might|could|is|are) (my|our|the|a) (${CHILD_WORDS})\\b`,
     ),
+    unless: re("\\b(be|is|are|being) (a |an )?carriers?\\b|\\binherit(s|ed|ing)?\\b|\\bcarry\\b|\\bpass(es|ed|ing)? (it|this|that|them) (on|down)\\b"),
   },
   // Treatment, dose, supplement and diet advice.
   {
     id: "treatment.should-i-take",
     intent: "treatment",
     pattern: re(
-      "\\b(should|shall|can|could|do|would|ought|must) (i|we) (take|start|stop|try|use|add|increase|reduce|cut|quit|switch|avoid|eat|drink|supplement|go on|come off|adjust|change|double|skip|exercise)\\b",
+      "\\b(should|shall|can|could|do|would|ought|must) (i|we) (take|start|stop|try|use|add|increase|reduce|cut|quit|switch|avoid|eat|drink|supplement|go on|come off|adjust|change|double|skip|exercise|be taking|be eating|be drinking|be avoiding|be using)\\b",
+    ),
+    // A bare verb whose object is the product ("add a second genome",
+    // "switch to a local model") is a question about Inherit, not a body.
+    unless: re(
+      `\\b(should|shall|can|could|do|would|ought|must) (i|we) (take|start|stop|try|use|add|switch|change|remove|delete|upload|keep|download|adjust) (\\w+ ){0,3}(${PRODUCT_WORDS})\\b`,
     ),
   },
   {
@@ -208,7 +282,30 @@ export const INTENT_RULES: readonly IntentRule[] = [
   {
     id: "treatment.dose",
     intent: "treatment",
-    pattern: re("\\b(dose|doses|dosage|dosages|dosing|mg|milligrams?|micrograms?|mcg|iu|international units)\\b"),
+    pattern: re(
+      `\\b(dose|doses|dosage|dosages|dosing|mg|milligrams?|micrograms?|mcg|iu|international units)\\b|\\d+\\s*(${DOSE_UNITS})\\b`,
+    ),
+  },
+  {
+    id: "treatment.too-much",
+    intent: "treatment",
+    pattern: re(
+      `\\b(am i|are we) (\\w+ )?too (much|little|many|few)\\b|^(?=.*\\b(${INTAKE_WORDS})\\b).*\\bis (this|that|it) too (much|little)\\b|\\btoo (much|little) (${INTAKE_WORDS})\\b|\\b(taking|eating|drinking|having) too (much|little|many|few)\\b`,
+    ),
+  },
+  {
+    id: "treatment.adjust-intake",
+    intent: "treatment",
+    pattern: re(
+      `\\b(double|halve|half|triple|increase|decrease|lower|raise|up|reduce|cut) (my|our|the) (\\w+ )?(${INTAKE_WORDS}|intake)\\b`,
+    ),
+  },
+  {
+    id: "treatment.which-supplement",
+    intent: "treatment",
+    pattern: re(
+      "\\bany (supplements?|vitamins?|medications?|medicines?|diets?) (recommendations?|suggestions?|i should|we should|you'd recommend|you would recommend|you recommend|you suggest|that would help|that helps?)\\b|\\bwhat (supplements?|vitamins?|medications?|medicines?|foods?|diets?) (should|can|could|would|do|might)\\b|\\bwhat supplements?\\b|\\bshould (i|we) be (taking|eating|drinking|avoiding|using)\\b",
+    ),
   },
   {
     id: "treatment.recommend-intake",
@@ -229,24 +326,44 @@ export const INTENT_RULES: readonly IntentRule[] = [
     intent: "treatment",
     pattern: re(`\\b(${DIET_WORDS})\\b.*\\b(should|best|help|follow|go|try|good|right|suit)\\b|\\b(should|best|help|follow|go|try|good|right|suit)\\b.*\\b(${DIET_WORDS})\\b`),
   },
-  // Diagnosis.
+  // Diagnosis. The file-fact exemption reaches only the object of "have":
+  // "Do I have the lactase persistence variant?" is a lookup, "Do I have
+  // haemochromatosis?" is not, whatever else the message says.
   {
     id: "diagnosis.do-i-have",
     intent: "diagnosis",
     pattern: re(`\\b(do|does|did) (${PERSONS}) (have|got|suffer from)\\b|\\bhave (${PERSONS}) got\\b`),
-    unless: re(`\\b(${FILE_FACT_WORDS})\\b`),
+    unless: re(`\\b(do|does|did) (${PERSONS}) (have|got) ${FILE_FACT_OBJECT}|\\bhave (${PERSONS}) got ${FILE_FACT_OBJECT}`),
+    unlessRaw: new RegExp(`\\b(do|does|did|Do|Does|Did) (${PERSONS}|I) (have|got) ${GENE_SYMBOL_OBJECT}`, "u"),
   },
   {
     id: "diagnosis.does-this-mean",
     intent: "diagnosis",
     pattern: re(`\\b(does|would|could) (this|that|it) mean (${PERSONS}) (have|has|got|am|is|are)\\b|\\b(if|whether) (${PERSONS}) (have|has|got|am|is|are)\\b`),
-    unless: re(`\\b(${FILE_FACT_WORDS})\\b`),
+    unless: re(`\\b(mean|if|whether) (${PERSONS}) (have|has|got|am|is|are) ${FILE_FACT_OBJECT}`),
+    unlessRaw: new RegExp(`\\b(mean|if|whether) (${PERSONS}|I) (have|has|got|am|is|are) ${GENE_SYMBOL_OBJECT}`, "u"),
+  },
+  {
+    id: "diagnosis.file-says-i-have",
+    intent: "diagnosis",
+    pattern: re(
+      `\\b(does|do|can|could|would) (my|the|this) (genome|file|files|report|reports|data|dna|results?|test|tests) (say|show|mean|prove|confirm|indicate|suggest|tell you) (that )?(${PERSONS}) (have|has|got|am|is|are)\\b`,
+    ),
+    unless: re(`\\b(say|show|mean|prove|confirm|indicate|suggest|tell you) (that )?(${PERSONS}) (have|has|got|am|is|are) ${FILE_FACT_OBJECT}`),
+    unlessRaw: new RegExp(`\\b(say|show|mean|prove|confirm|indicate|suggest|tell you) (that )?(${PERSONS}|I) (have|has|got|am|is|are) ${GENE_SYMBOL_OBJECT}`, "u"),
+  },
+  {
+    id: "diagnosis.so-i-have",
+    intent: "diagnosis",
+    pattern: re(`\\bso (${PERSONS}) (have|has|got|am|is|are)\\b`),
+    unless: re(`\\bso (${PERSONS}) (have|has|got|am|is|are) ${FILE_FACT_OBJECT}`),
+    unlessRaw: new RegExp(`\\b(so|So) (${PERSONS}|I) (have|has|got|am|is|are) ${GENE_SYMBOL_OBJECT}`, "u"),
   },
   {
     id: "diagnosis.am-i",
     intent: "diagnosis",
     pattern: re(
-      "\\bam i (sick|ill|unwell|diabetic|ana?emic|coeliac|celiac|lactose intolerant|autistic|depressed|infertile|allergic to)\\b",
+      `\\bam i (a |an )?(${SELF_STATE_WORDS}|${CONDITION_WORDS})\\b|\\b(so )?(i'm|i am) (a |an )?(${SELF_STATE_WORDS}) then\\b|\\bso (i'm|i am) (a |an )?(${SELF_STATE_WORDS}|${CONDITION_WORDS})\\b|\\b(does|would|could) (this|that|it) mean (i'm|i am) (a |an )?(${SELF_STATE_WORDS}|${CONDITION_WORDS})\\b`,
     ),
   },
   {
@@ -257,7 +374,7 @@ export const INTENT_RULES: readonly IntentRule[] = [
   {
     id: "diagnosis.is-it",
     intent: "diagnosis",
-    pattern: re(`\\bis (it|this) (a |an )?(${CONDITION_WORDS})\\b`),
+    pattern: re(`\\bis (it|this|that) (a |an )?(${CONDITION_WORDS})\\b`),
   },
   // Prognosis.
   {
@@ -290,13 +407,13 @@ export const INTENT_RULES: readonly IntentRule[] = [
   {
     id: "cross-subject.relative-data",
     intent: "cross-subject",
-    pattern: re(`\\b(my|our) (${RELATIVES})('s|s'|s)? (${DATA_WORDS})\\b`),
+    pattern: re(`\\b(my|our) (${RELATIVES})('s|s'|s)? (\\w+ )?(${DATA_WORDS})\\b`),
     notScopes: ["family", "cohort"],
   },
   {
     id: "cross-subject.relative-data.family",
     intent: "cross-subject",
-    pattern: re(`\\b(my|our) (?!(?:${PAIR_RELATIVES})\\b)(${RELATIVES})('s|s'|s)? (${DATA_WORDS})\\b`),
+    pattern: re(`\\b(my|our) (?!(?:${PAIR_RELATIVES})\\b)(${RELATIVES})('s|s'|s)? (\\w+ )?(${DATA_WORDS})\\b`),
     scopes: ["family", "cohort"],
   },
   {
@@ -331,9 +448,13 @@ const EMBRYO_MENTION = /\bembryos?\b/u;
  * punctuation mark turned into a space, and whitespace collapsed.
  */
 export function normalizeMessage(message: string): string {
+  return normalizeKeepingCase(message).toLowerCase();
+}
+
+/** `normalizeMessage` without the lowercasing, for the shapes only capitals reveal. */
+function normalizeKeepingCase(message: string): string {
   return message
     .normalize("NFKC")
-    .toLowerCase()
     .replace(/[’‘`]/gu, "'")
     .replace(/[^\p{L}\p{N}'\s-]/gu, " ")
     .replace(/-/gu, " ")
@@ -342,7 +463,8 @@ export function normalizeMessage(message: string): string {
 }
 
 export function classifyIntent(message: string, scope: GuardScope): IntentVerdict {
-  const text = normalizeMessage(message);
+  const raw = normalizeKeepingCase(message);
+  const text = raw.toLowerCase();
   const embryoContext = scope.kind === "cohort" || EMBRYO_MENTION.test(text);
   for (const rule of INTENT_RULES) {
     if (rule.embryoContext && !embryoContext) continue;
@@ -350,9 +472,110 @@ export function classifyIntent(message: string, scope: GuardScope): IntentVerdic
     if (rule.notScopes && rule.notScopes.includes(scope.kind)) continue;
     if (!rule.pattern.test(text)) continue;
     if (rule.unless && rule.unless.test(text)) continue;
+    if (rule.unlessRaw && rule.unlessRaw.test(raw)) continue;
     return { intent: rule.intent, rule: rule.id };
   }
   return { intent: "allowed", rule: null };
+}
+
+// ---------------------------------------------------------------------------
+// Who may reach the chat route, and what the client may resend.
+// ---------------------------------------------------------------------------
+
+export type ChatSubjectClass = "self" | "other_adult" | "minor" | "embryo";
+
+/**
+ * The guard scope for a resolved subject, or null when no chat scope exists
+ * for that class yet: a minor or an embryo answers 404 from the route until
+ * its own scope ships, so no rule table is ever asked about them by accident.
+ */
+export function guardScopeKindFor(subjectClass: ChatSubjectClass): "self" | "subject" | null {
+  if (subjectClass === "self") return "self";
+  if (subjectClass === "other_adult") return "subject";
+  return null;
+}
+
+/** The text of one user turn, as the classifier reads it. */
+export function userTurnText(message: UIMessage): string {
+  return message.parts
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n")
+    .trim();
+}
+
+/**
+ * The history the model may see: every user turn is classified again, and a
+ * gated one is dropped together with the assistant turn that answered it
+ * (the refusal the client rendered), so a refused message never reaches the
+ * model through a later request's resend of the thread.
+ */
+export function dropGatedTurns(messages: readonly UIMessage[], scope: GuardScope): UIMessage[] {
+  const kept: UIMessage[] = [];
+  let dropNextAssistant = false;
+  for (const message of messages) {
+    if (message.role === "user") {
+      const gated = classifyIntent(userTurnText(message), scope).intent !== "allowed";
+      dropNextAssistant = gated;
+      if (gated) continue;
+    } else if (message.role === "assistant" && dropNextAssistant) {
+      dropNextAssistant = false;
+      continue;
+    }
+    kept.push(message);
+  }
+  return kept;
+}
+
+// ---------------------------------------------------------------------------
+// The buffered stream, folded into the one string the output checks read.
+// ---------------------------------------------------------------------------
+
+export interface FoldedStream {
+  /** Everything the model authored: text, reasoning, tool inputs, sources, provider-run tool outputs. */
+  text: string;
+  /** Every output an Inherit tool returned this turn: the permitted numbers and citations. */
+  toolJson: unknown[];
+}
+
+/**
+ * Nothing the model wrote reaches the client unchecked: a fabricated number
+ * inside a reasoning part or a model-authored rsID inside a tool input is
+ * held to the same tool JSON as the visible text. Outputs of Inherit's own
+ * tools are the permitted set, not a claim, and are not folded in; an output
+ * the provider executed itself is the model's and is.
+ */
+export function foldStreamChunks(chunks: readonly UIMessageChunk[]): FoldedStream {
+  const parts: string[] = [];
+  const toolJson: unknown[] = [];
+  for (const chunk of chunks) {
+    switch (chunk.type) {
+      case "text-delta":
+      case "reasoning-delta":
+        parts.push(chunk.delta);
+        break;
+      case "tool-input-available":
+      case "tool-input-error":
+        parts.push(JSON.stringify(chunk.input) ?? "");
+        break;
+      case "source-url":
+        parts.push([chunk.title, chunk.url].filter(Boolean).join(" "));
+        break;
+      case "source-document":
+        parts.push([chunk.title, chunk.filename].filter(Boolean).join(" "));
+        break;
+      case "file":
+      case "reasoning-file":
+        parts.push(chunk.url);
+        break;
+      case "tool-output-available":
+        if (chunk.providerExecuted) parts.push(JSON.stringify(chunk.output) ?? "");
+        else toolJson.push(chunk.output);
+        break;
+      default:
+        break;
+    }
+  }
+  return { text: parts.join("\n"), toolJson };
 }
 
 // ---------------------------------------------------------------------------
@@ -476,16 +699,51 @@ export interface CitationVerdict {
 const PMID_IN_TEXT = /\bpmid:?\s*(\d{4,9})\b/giu;
 const DOI_IN_TEXT = /\b10\.\d{4,9}\/[^\s"'<>)\]]+/giu;
 const URL_IN_TEXT = /\bhttps?:\/\/[^\s"'<>)\]]+/giu;
-const AUTHOR_YEAR_IN_TEXT = /\b(\p{Lu}[\p{L}'’-]+) et al\.?,? \(?(\d{4})\)?/gu;
+/** "Sulem et al. (2011)", "Sulem et al., 2011" or a bare "Sulem et al." */
+const AUTHOR_ET_AL_IN_TEXT = /\b(\p{Lu}[\p{L}'’-]+) et al\b\.?,?(?: \(?(\d{4})\)?)?/gu;
+/** "a study by Smith", "the 2019 trial from Harvard". */
+const STUDY_BY_IN_TEXT =
+  /\b(?:[Aa]|[Aa]n|[Oo]ne|[Tt]he|[Aa]nother|[Tt]his|[Tt]hat|[Rr]ecent) (?:\d{4} )?(?:\w+ )?(?:study|studies|paper|papers|trial|trials|review|reviews|meta-analysis|analysis|report|survey|cohort) (?:by|from) ((?:\p{Lu}[\p{L}'’-]*(?: |$)){1,5})/gu;
+/** "According to Nature Genetics", "published in The Lancet". The capitalised run is the name; "your report" starts none. */
+const NAMED_SOURCE_IN_TEXT =
+  /\b(?:[Aa]ccording to|[Pp]ublished in|[Rr]eported in|[Aa]s reported by|[Aa]s shown in|[Aa]s found by|[Aa]s described in) ((?:\p{Lu}[\p{L}'’-]*(?: |$)){1,6})/gu;
+/** Product names that follow "according to" without citing anything. */
+const PRODUCT_NAMES = new Set(["inherit", "portrait", "copilot", "overview", "family", "embryos", "medicines", "ancestry"]);
 
 function trimCitationToken(value: string): string {
   return value.replace(/[.,;:]+$/u, "");
 }
 
+/** The whole tokens of a label, lowercased: `Sulem et al., Hum Mol Genet 2011` → sulem, et, al, hum, mol, genet, 2011. */
+function labelTokens(label: string): Set<string> {
+  return new Set(label.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean));
+}
+
+/** True when every word appears as a whole token of one permitted label. */
+function labelsCarry(labels: readonly string[], words: readonly string[]): boolean {
+  const needed = words.map((word) => word.toLowerCase()).filter(Boolean);
+  if (needed.length === 0) return true;
+  return labels.some((label) => {
+    const tokens = labelTokens(label);
+    return needed.every((word) => tokens.has(word));
+  });
+}
+
+/** The capitalised words of a "study by" or "according to" run, without trailing product names. */
+function sourceWords(run: string): string[] {
+  return run
+    .trim()
+    .split(/\s+/u)
+    .map((word) => word.replace(/[’']s$/u, "").replace(/[^\p{L}\p{N}'’-]/gu, ""))
+    .filter((word) => word.length > 0 && !PRODUCT_NAMES.has(word.toLowerCase()));
+}
+
 /**
  * The citations the tools returned this turn: every object carrying `pmid`,
  * `doi`, `url` or `label` under a `citation` or `citations` key
- * (`report_templates.citations`, `prs_scores.citation`).
+ * (`report_templates.citations`, `prs_scores.citation`), plus every `title`
+ * and `name` the tools carried, so an answer may name the report or score it
+ * read from ("your Caffeine metabolism report") and nothing else.
  */
 export function permittedCitationsFromToolJson(toolJson: unknown): PermittedCitations {
   const permitted: PermittedCitations = { pmids: new Set(), dois: new Set(), urls: new Set(), labels: [] };
@@ -519,6 +777,7 @@ export function permittedCitationsFromToolJson(toolJson: unknown): PermittedCita
     } else if (value && typeof value === "object") {
       for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
         if (key === "citation" || key === "citations") collect(child);
+        else if ((key === "title" || key === "name") && typeof child === "string") permitted.labels.push(child);
         else visit(child);
       }
     }
@@ -538,14 +797,16 @@ export function checkCitations(text: string, permitted: PermittedCitations): Cit
   for (const url of text.match(URL_IN_TEXT) ?? []) {
     if (!permitted.urls.has(trimCitationToken(url).toLowerCase())) unsupported.push(url);
   }
-  for (const match of text.matchAll(AUTHOR_YEAR_IN_TEXT)) {
-    const surname = match[1].toLowerCase();
-    const year = match[2];
-    const known = permitted.labels.some((label) => {
-      const lower = label.toLowerCase();
-      return lower.includes(surname) && lower.includes(year);
-    });
-    if (!known) unsupported.push(match[0]);
+  for (const match of text.matchAll(AUTHOR_ET_AL_IN_TEXT)) {
+    const words = match[2] ? [match[1], match[2]] : [match[1]];
+    if (!labelsCarry(permitted.labels, words)) unsupported.push(match[0].trim());
+  }
+  for (const pattern of [STUDY_BY_IN_TEXT, NAMED_SOURCE_IN_TEXT]) {
+    for (const match of text.matchAll(pattern)) {
+      const words = sourceWords(match[1]);
+      if (words.length === 0) continue;
+      if (!labelsCarry(permitted.labels, words)) unsupported.push(match[0].trim());
+    }
   }
   return { ok: unsupported.length === 0, unsupported };
 }

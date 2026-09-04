@@ -18,6 +18,10 @@ import { refusalFor, type RefusalId } from "@/copy/copilot/refusals";
 import {
   checkResponse,
   classifyIntent,
+  dropGatedTurns,
+  foldStreamChunks,
+  guardScopeKindFor,
+  userTurnText,
   type AllowedNumerals,
   type GuardScope,
 } from "@/lib/copilot/guard";
@@ -53,10 +57,7 @@ Hard rules:
 function latestUserText(messages: UIMessage[]): string | null {
   const last = [...messages].reverse().find((message) => message.role === "user");
   if (!last) return null;
-  const text = last.parts
-    .flatMap((part) => (part.type === "text" ? [part.text] : []))
-    .join("\n")
-    .trim();
+  const text = userTurnText(last);
   return text.length > 0 ? text : null;
 }
 
@@ -81,20 +82,16 @@ function refusalResponse(id: RefusalId, text: string): Response {
   });
 }
 
-/** Drain a UI message stream, keeping its chunks, its text and every tool output. */
-async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>) {
+/** Drain a UI message stream to its chunks; nothing is forwarded while it runs. */
+async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>): Promise<UIMessageChunk[]> {
   const chunks: UIMessageChunk[] = [];
-  const toolJson: unknown[] = [];
-  let text = "";
   const reader = stream.getReader();
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
-    if (value.type === "text-delta") text += value.delta;
-    else if (value.type === "tool-output-available") toolJson.push(value.output);
   }
-  return { chunks, text, toolJson };
+  return chunks;
 }
 
 function replayChunks(chunks: UIMessageChunk[]): ReadableStream<UIMessageChunk> {
@@ -117,7 +114,11 @@ export async function POST(request: Request) {
   };
   const scopeSegment = new URL(request.url).searchParams.get("scope") ?? "me";
   const subject = await resolveSubjectForAccount(user.id, scopeSegment);
-  if (!subject) {
+  // Only a self or an adult subject has a chat scope today; a minor or an
+  // embryo answers the same opaque 404 as an unknown segment until its own
+  // scope exists.
+  const scopeKind = subject ? guardScopeKindFor(subject.subjectClass) : null;
+  if (!subject || !scopeKind) {
     return NextResponse.json({ error: "scope_not_found" }, { status: 404 });
   }
 
@@ -131,10 +132,7 @@ export async function POST(request: Request) {
   if (latest === null) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
-  const guardScope: GuardScope = {
-    kind: subject.subjectClass === "self" ? "self" : "subject",
-    displayLabel: subject.displayLabel,
-  };
+  const guardScope: GuardScope = { kind: scopeKind, displayLabel: subject.displayLabel };
   const verdict = classifyIntent(latest, guardScope);
   if (verdict.intent !== "allowed") {
     console.info(`[copilot] refused ${verdict.intent}`);
@@ -391,7 +389,7 @@ export async function POST(request: Request) {
       execute: async ({ score_id }) => {
         const { data: meta } = await admin
           .from("prs_scores")
-          .select("pgs_id, name, trait, n_variants, ancestry_note")
+          .select("pgs_id, name, trait, n_variants, ancestry_note, citation")
           .eq("pgs_id", score_id)
           .maybeSingle();
         if (!meta) return { error: "unknown score id" };
@@ -408,22 +406,28 @@ export async function POST(request: Request) {
     }),
   };
 
+  // The history the model sees: every earlier user turn is classified again
+  // and a gated one is dropped with the refusal that answered it, so a
+  // refused message never reaches the model through the client's resend.
   const result = streamText({
     model,
     system: `${SYSTEM_PROMPT}\n\n${fileNote}`,
-    messages: await convertToModelMessages(body.messages),
+    messages: await convertToModelMessages(dropGatedTurns(body.messages, guardScope)),
     tools,
     stopWhen: stepCountIs(8),
   });
 
   // Output guard (brief line 2262): the whole answer is buffered and checked
-  // before its first byte is sent. A number absent from this turn's tool
-  // JSON, or a citation outside the report and score citations the tools
-  // returned, replaces the answer with the fixed refusal for that check;
-  // nothing partial is ever serialized.
-  const { chunks, text, toolJson } = await bufferUIMessageStream(
-    toUIMessageStream({ stream: result.stream }),
+  // before its first byte is sent. Everything the model authored (its text,
+  // any reasoning, every tool input) is one string for the checks; reasoning
+  // is never sent on. A number absent from this turn's tool JSON, or a
+  // citation outside the report and score citations the tools returned,
+  // replaces the answer with the fixed refusal for that check; nothing
+  // partial is ever serialized.
+  const chunks = await bufferUIMessageStream(
+    toUIMessageStream({ stream: result.stream, sendReasoning: false }),
   );
+  const { text, toolJson } = foldStreamChunks(chunks);
   const output = checkResponse(text, toolJson, allowedNumerals as AllowedNumerals);
   if (!output.ok) {
     console.info(`[copilot] replaced ${output.violation}`);
