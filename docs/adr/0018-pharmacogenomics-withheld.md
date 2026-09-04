@@ -1,6 +1,6 @@
 # ADR 0018: Pharmacogenomics is withheld; the Medicines category ships as a stated absence
 
-- Status: Accepted
+- Status: Superseded by [0021](./0021-pharmacogenomics-per-position-reports.md) (2026-09-03)
 - Date: 2026-09-03
 
 ## Context

@@ -40,6 +40,8 @@ const BOX_LABELS = [
 
 const STATE_A_LEDE =
   "Inherit is free to use and sells nothing. Sequencing, if you need it, is bought from a provider directly.";
+const VARIANT_CALL_DEFINITION =
+  "A result about one or a few exact spots in your DNA, read against an outside clinical classification.";
 const ESTIMATE_DEFINITION =
   "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.";
 const NOT_DIAGNOSTIC =
@@ -254,14 +256,22 @@ test("State C: after one processed file — split count with note, ancestry line
   await expect(page.getByText("Just you so far.", { exact: true })).toBeVisible();
   await expect(page.getByText("No embryo files added.", { exact: true })).toBeVisible();
 
-  // The split string: one count line on the seed (no specific-variant half),
-  // with its 1–12-word note and the definition sentence adjacent.
-  const countLine = page.locator("[data-metric-value]").first();
-  await expect(countLine).toHaveText(`${seededTemplateCount()} statistical estimates`);
+  // The split string: one count line per populated layer on the seed — the
+  // estimate half and, since ADR 0021, the specific-variant half — each with
+  // its 1–12-word note and its definition sentence adjacent, never summed.
+  const metricValues = page.locator("[data-metric-value]");
+  const countLine = metricValues.first();
+  await expect(countLine).toHaveText(`${seededTemplateCount("estimate")} statistical estimates`);
   await expect(countLine).toHaveText(/^\d+ statistical estimates$/);
-  await expect(page.getByText(/specific-variant reports?$/)).toHaveCount(0);
+  const variantCallLine = metricValues.nth(1);
+  await expect(variantCallLine).toHaveText(
+    `${seededTemplateCount("variant_call")} specific-variant reports`,
+  );
+  await expect(page.getByText(/specific-variant reports?$/)).toHaveCount(1);
   await expect(page.getByText("Statistical estimates from many small effects.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Results read from one spot in your DNA.", { exact: true })).toBeVisible();
   await expect(page.getByText(ESTIMATE_DEFINITION, { exact: true })).toBeVisible();
+  await expect(page.getByText(VARIANT_CALL_DEFINITION, { exact: true })).toBeVisible();
   // The tiny VCF covers 0 of the 168 ancestry markers.
   await expect(page.getByText(ANCESTRY_TOO_FEW, { exact: true })).toBeVisible();
 

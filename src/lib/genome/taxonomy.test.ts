@@ -24,6 +24,7 @@ interface SeedTemplate {
   slug: string;
   category: string;
   evidence: string;
+  layer?: string;
   pgs_id: string | null;
   variants: { interpretations: Record<string, string> }[];
 }
@@ -82,8 +83,10 @@ describe("category taxonomy", () => {
     }
   });
 
-  it("loads exactly 151 seed templates", () => {
-    expect(templates).toHaveLength(151);
+  it("loads exactly 162 seed templates: 151 estimates and the 11 Medicines variant calls", () => {
+    expect(templates).toHaveLength(162);
+    expect(templates.filter((t) => (t.layer ?? "estimate") === "estimate")).toHaveLength(151);
+    expect(templates.filter((t) => t.layer === "variant_call")).toHaveLength(11);
   });
 
   it("resolves every template slug (total function) and categorises all of them", () => {
@@ -96,9 +99,19 @@ describe("category taxonomy", () => {
     expect(categorised).toBe(templates.length);
   });
 
-  it("has zero templates under Medicines, so it is absent rather than empty", () => {
+  it("has eleven templates under Medicines, every one a variant call from the pharmacogenomics slug (ADR 0021)", () => {
     const medicines = templates.filter((t) => categoryFor(t) === "medicines");
-    expect(medicines).toHaveLength(0);
+    expect(medicines).toHaveLength(11);
+    for (const template of medicines) {
+      expect(template.category, template.slug).toBe("pharmacogenomics");
+      expect(template.layer, template.slug).toBe("variant_call");
+    }
+    expect(LEGACY_CATEGORY_DEFAULTS.pharmacogenomics).toBe("medicines");
+    // Nothing else reaches the category: no exception and no other default.
+    expect(Object.values(TEMPLATE_CATEGORY_EXCEPTIONS)).not.toContain("medicines");
+    expect(
+      Object.entries(LEGACY_CATEGORY_DEFAULTS).filter(([, id]) => id === "medicines").map(([slug]) => slug),
+    ).toEqual(["pharmacogenomics"]);
   });
 
   it("applies the six named exceptions", () => {
@@ -165,7 +178,8 @@ describe("evidence rubric", () => {
     }
     const emerging = templates.filter((t) => t.evidence === "emerging").length;
     const preliminary = templates.filter((t) => t.evidence === "preliminary").length;
-    expect(emerging).toBe(119);
+    // 119 remapped estimates plus the 11 Medicines variant calls (ADR 0021).
+    expect(emerging).toBe(130);
     expect(preliminary).toBe(32);
   });
 });

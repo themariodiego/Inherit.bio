@@ -336,7 +336,11 @@ export default async function ReportDetailPage(
   );
   // "Not now" returns to the library at this report's category section; a
   // template with an unmapped legacy category returns to that category's id.
+  // The link names the report's layer: the list renders one group at a time
+  // and, with both layers populated, opens on the first, so the hash resolves
+  // only on the group that holds this category.
   const returnHref = route("genome.reports", subjectParams, {
+    query: { layer },
     hash: categoryId ?? template.category,
   });
 

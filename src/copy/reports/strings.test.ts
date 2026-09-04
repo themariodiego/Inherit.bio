@@ -8,6 +8,7 @@ import {
   headingText,
 } from "./headings";
 import * as strings from "./strings";
+import type { CategoryId } from "@/lib/genome/taxonomy";
 
 /** Every exported string, including those produced by the exported functions. */
 function corpus(): string[] {
@@ -98,6 +99,32 @@ describe("report strings", () => {
       expect(description, id).not.toMatch(/\b(genotype|variant|allele|polygenic)s?\b/i);
     }
     expect(Object.keys(strings.CATEGORY_DESCRIPTIONS)).toHaveLength(9);
+  });
+
+  it("selects the Medicines \"What you can do\" string for that category alone (ADR 0021)", () => {
+    expect(strings.WHAT_YOU_CAN_DO_MEDICINES).toBe(
+      "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.",
+    );
+    expect(strings.whatYouCanDo("medicines")).toBe(strings.WHAT_YOU_CAN_DO_MEDICINES);
+    for (const id of Object.keys(strings.CATEGORY_DESCRIPTIONS) as CategoryId[]) {
+      if (id === "medicines") continue;
+      expect(strings.whatYouCanDo(id), id).toBe(strings.NOTHING_TO_DO);
+    }
+    expect(strings.whatYouCanDo(null)).toBe(strings.NOTHING_TO_DO);
+    // Brief line 630’s string is unchanged for every other category.
+    expect(strings.NOTHING_TO_DO).toBe(
+      "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.",
+    );
+    // §6.4: the Medicines string is information, not treatment advice.
+    expect(strings.WHAT_YOU_CAN_DO_MEDICINES).not.toMatch(/\bdosage\b|\bsupplement\b|we recommend you take/i);
+  });
+
+  it("describes Medicines as what the reports are, and no longer states an absence", () => {
+    expect(strings.CATEGORY_DESCRIPTIONS.medicines).toBe(
+      "The letters your file shows at single DNA positions that prescribing guidelines name.",
+    );
+    expect(strings.CATEGORY_DESCRIPTIONS.medicines).not.toMatch(/respond|metaboli/i);
+    expect("MEDICINES_ABSENT" in strings).toBe(false);
   });
 
   it("keeps every evidence definition within 20 words", () => {

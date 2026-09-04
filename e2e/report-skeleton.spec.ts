@@ -1,22 +1,38 @@
 import { expect, test, type Page } from "@playwright/test";
+import fs from "node:fs";
 import path from "node:path";
 import { createConfirmedUser, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
+import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fixture";
 
 // Report skeleton and figure contract (brief X4, X5, X13) on the My Genome
 // surfaces, against the tiny GRCh38 VCF fixture (rs762551 het → A/C; APOE
-// positions absent → not covered).
+// positions absent → not covered) and, for the Medicines category (ADR
+// 0021), against a second account whose only file carries one changed copy
+// at every Medicines position (e2e/fixtures/medicines-grch38.vcf).
 //
 // Pins: the six fixed h2s in order; one attributed claim block carrying one
 // observed genotype figure; the exact partial-state sentence and no
 // percentile anywhere; the exact not-diagnostic line; breadcrumb, subject
 // bar and chip row; footer links; the not-covered strings at full ink; the
-// list page's single layer definition, layer-labelled count, nine-category
-// order (Medicines absent), and the hub's three tiles and single primary.
+// list page's one layer definition per group, layer-labelled counts, the
+// layer tabs, the nine categories across the two groups with Medicines
+// rendered like any other and no absence paragraph; a covered Medicines
+// report's variant-call genotype figure, its Medicines "What you can do"
+// string, the DPYD lead sentence and the absence of every forbidden word;
+// and the hub's three tiles and single primary.
 
 const USER = { email: "skeleton-user@e2e.local", password: "e2e-skeleton-pw" };
+/** A second account whose only file covers every Medicines position. */
+const MEDICINES_USER = {
+  email: "skeleton-medicines@e2e.local",
+  password: "e2e-skeleton-medicines-pw",
+};
 
 const CAFFEINE = "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551";
 const APOE_REVEALED = "/genome/me/reports/apoe-e4-alzheimers-risk?reveal=1";
+const VKORC1_SLUG = "vkorc1-rs9923231-one-position";
+const DPYD_SLUG = "dpyd-rs3918290-one-position";
+const MEDICINES_FIXTURE = path.join(process.cwd(), "e2e/fixtures", FIXTURE_NAME);
 
 const HEADINGS = [
   "What this is",
@@ -36,25 +52,81 @@ const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
 const LIMIT_OF_FILE = "This is a limit of your file, not a result about you.";
 const ESTIMATE_DEFINITION =
   "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.";
+const VARIANT_CALL_DEFINITION =
+  "A result about one or a few exact spots in your DNA, read against an outside clinical classification.";
 const DOESNT_MEAN_GENERIC = "It does not say what will happen to you.";
 const DOESNT_MEAN_NOT_COVERED = "A missing result is not a negative result.";
+/** Brief line 630's fixed string, rendered on every category but Medicines. */
+const NOTHING_TO_DO =
+  "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.";
+/** The Medicines "What you can do" string (ADR 0021), rendered for that category only. */
+const WHAT_YOU_CAN_DO_MEDICINES =
+  "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.";
+const MEDICINES_DESCRIPTION =
+  "The letters your file shows at single DNA positions that prescribing guidelines name.";
+/** The sentence the DPYD report leads with (the research note's fact). */
+const DPYD_SENTENCE =
+  "C on both copies here does not rule out a DPYD deficiency, because other positions cause it.";
+/** §6.4's rows and ADR 0021's phenotype and response words: none may appear on a Medicines surface. */
+const FORBIDDEN_IN_MEDICINES =
+  /\bdosage\b|\bsupplement\b|we recommend you take|metaboli[sz]er|\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i;
 const SKELETON_H2 = '[data-slot="report-skeleton"] h2';
 
-const CATEGORY_HEADINGS_ON_SEED = [
+const NINE_CATEGORIES = [
   "Everyday traits",
   "Food, drink and metabolism",
   "Heart and circulation",
   "Immune system and allergies",
+  "Medicines",
   "Brain, memory and mood",
   "Cancer",
   "Having children",
   "Ageing and longevity",
 ];
+/** The estimate group on the seed: every category but Medicines, which has no estimate. */
+const ESTIMATE_CATEGORY_HEADINGS = NINE_CATEGORIES.filter((label) => label !== "Medicines");
+
+interface MedicinesTemplate {
+  slug: string;
+  title: string;
+  summary: string;
+  variants: {
+    rsid: number;
+    gene: string;
+    chrom: number;
+    pos38: number;
+    ref: string;
+    alt: string;
+    interpretations: Record<string, string>;
+  }[];
+  citations: { pmid: string; label: string }[];
+}
+
+/** The shipped Medicines templates, read from the seed so no assertion hard-codes them. */
+const MEDICINES = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "data/templates/medicines.json"), "utf8"),
+) as MedicinesTemplate[];
+
+/** The report name is the title up to its gene suffix (the page's reportNameOf). */
+function reportName(title: string): string {
+  const index = title.indexOf(" · ");
+  return index === -1 ? title : title.slice(0, index);
+}
+
+/** One changed copy renders as the sorted pair of letters (reports.ts genotypeKey → genotypeLetters). */
+function hetLetters(variant: { ref: string; alt: string }): string {
+  return [variant.ref, variant.alt].sort().join("/");
+}
+
+function hetKey(variant: { ref: string; alt: string }): string {
+  return [variant.ref, variant.alt].sort().join("");
+}
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
+  await createConfirmedUser(MEDICINES_USER.email, MEDICINES_USER.password);
 });
 
 
@@ -142,6 +214,12 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   await expect(
     page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
   ).toHaveText([DOESNT_MEAN_GENERIC]);
+
+  // "What you can do": brief line 630's fixed string on every category but
+  // Medicines (ADR 0021).
+  await expect(page.locator('section[aria-labelledby="what-you-can-do"] p')).toHaveText(
+    NOTHING_TO_DO,
+  );
 
   // "Where this comes from": the Sources h3 above the citations, then the
   // variant provenance row whose rsID links to dbSNP.
@@ -241,21 +319,24 @@ test("a not-covered report keeps the not-covered strings at full ink and every s
   await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
 });
 
-test("the reports list renders one layer definition, a layer-labelled count and the nine-category order", async ({
+test("the reports list's estimate group renders its one layer definition, layer-labelled counts for both layers, the layer tabs and the eight estimate categories", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await page.goto("/genome/me/reports");
+  await page.goto("/genome/me/reports?layer=estimate");
 
   await expect(page.locator("main h1")).toHaveText("Reports");
 
-  // The definition sentence renders once, at the top of the group.
+  // The active group's definition sentence renders once, at the top of the
+  // group; the other layer's definition does not render here.
   await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(0);
 
   // The counts are layer-labelled and never merged (fixture auto-e2e-* slugs
-  // are excluded from the library by isFixtureSlug): the covered count, then
-  // the layer total, both carrying the layer noun.
-  const seeded = seededTemplateCount();
+  // are excluded from the library by isFixtureSlug): for each populated
+  // layer, the covered count then the layer total, both carrying the layer's
+  // own noun, whichever group is open.
+  const seeded = seededTemplateCount("estimate");
   const count = page.locator(
     `[data-slot="count"][data-figure-class="estimate"][data-metric-value="${seeded}"]`,
   );
@@ -263,30 +344,37 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   const counts = page.locator('[data-slot="count"][data-figure-class="estimate"]');
   await expect(counts).toHaveCount(2);
   await expect(counts.first()).toHaveText(/^\d+ statistical estimates? covered by your file$/);
+  const variantCounts = page.locator('[data-slot="count"][data-figure-class="variant-call"]');
+  await expect(variantCounts).toHaveCount(2);
+  await expect(variantCounts.first()).toHaveText(
+    /^\d+ specific-variant reports? covered by your file$/,
+  );
+  await expect(variantCounts.nth(1)).toHaveText(
+    `${seededTemplateCount("variant_call")} specific-variant reports`,
+  );
   await expect(page.locator('[data-slot="count"]:not([data-figure-class])')).toHaveCount(0);
   await expect(page.getByText("Your file does not cover this variant.")).toHaveCount(0);
 
-  // Category sections in taxonomy order; Medicines absent while empty.
-  await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
+  // Two populated layers render the tabs, in layer order, with the open
+  // group marked current and each linking its own query.
+  const tabs = page.getByRole("navigation", { name: "Report groups" }).getByRole("link");
+  await expect(tabs).toHaveText(["Specific variants", "Statistical estimates"]);
+  await expect(tabs.nth(1)).toHaveAttribute("aria-current", "page");
+  await expect(tabs.nth(0)).toHaveAttribute("href", "/genome/me/reports?layer=variant_call");
+  await expect(tabs.nth(1)).toHaveAttribute("href", "/genome/me/reports?layer=estimate");
+
+  // Category sections in taxonomy order. Medicines has no estimate, so it is
+  // absent from this group and present in the Specific variants group;
+  // nothing states an absence any more (ADR 0021).
+  await expect(page.locator('h2[id$="-heading"]')).toHaveText(ESTIMATE_CATEGORY_HEADINGS);
   await expect(page.locator("#cancer")).toHaveCount(1);
   await expect(page.locator("#medicines")).toHaveCount(0);
-  // X15: the withheld Medicines category is stated in one place, never
-  // silent, and never as a section a link could target. The sentence is the
-  // dossier's UI state (docs/withheld/pharmacogenomics.md, element 7): it
-  // says "not offered", and carries none of "coming soon", "soon", "yet" or
-  // "currently", because the testable condition is outside the operator's
-  // control.
-  const medicinesAbsent = page.locator('[data-slot="category-absent"][data-category="medicines"]');
-  await expect(medicinesAbsent).toHaveCount(1);
-  await expect(medicinesAbsent).toHaveText(
-    "Inherit does not offer reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.",
-  );
-  await expect(medicinesAbsent).not.toContainText(/coming soon|\bsoon\b|\byet\b|\bcurrently\b/i);
+  await expect(page.locator('[data-slot="category-absent"]')).toHaveCount(0);
   // Adjacent category sections keep the baseline's 96px gap at 1280.
   await expectBaselineSectionGaps(
     page,
     '[data-library-layer="estimate"] [data-density-top-level-section]',
-    CATEGORY_HEADINGS_ON_SEED.length,
+    ESTIMATE_CATEGORY_HEADINGS.length,
   );
 
   // No percentile, no "Polygenic scores" section, no percent sign in any h2.
@@ -308,7 +396,183 @@ test("the reports list renders one layer definition, a layer-labelled count and 
   await expect(library.locator('a[href^="/genome/me/reports/"]')).toHaveCount(1);
   await expect(page.locator('h2[id$="-heading"]')).toHaveText(["Food, drink and metabolism"]);
   await search.fill("");
-  await expect(page.locator('h2[id$="-heading"]')).toHaveText(CATEGORY_HEADINGS_ON_SEED);
+  await expect(page.locator('h2[id$="-heading"]')).toHaveText(ESTIMATE_CATEGORY_HEADINGS);
+});
+
+test("the reports list opens on the Specific variants group, where Medicines renders like any other category and no absence is stated", async ({
+  page,
+}) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/genome/me/reports");
+
+  // The first populated layer is the open group: its definition once, the
+  // other layer's not at all, and its tab marked current.
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(0);
+  await expect(page.locator('[data-library-layer="variant-call"]')).toHaveCount(1);
+  const tabs = page.getByRole("navigation", { name: "Report groups" }).getByRole("link");
+  await expect(tabs).toHaveText(["Specific variants", "Statistical estimates"]);
+  await expect(tabs.nth(0)).toHaveAttribute("aria-current", "page");
+
+  // Medicines is the one category with a specific-variant report on the
+  // seed: a section with the nine-category id and heading, its description
+  // sentence, and no absence paragraph anywhere (ADR 0021).
+  await expect(page.locator('h2[id$="-heading"]')).toHaveText(["Medicines"]);
+  await expect(page.locator("#medicines")).toHaveCount(1);
+  await expect(page.locator("#medicines-heading")).toHaveText("Medicines");
+  await expect(page.locator("#medicines p").first()).toHaveText(MEDICINES_DESCRIPTION);
+  await expect(page.locator('[data-slot="category-absent"]')).toHaveCount(0);
+  await expect(page.getByText("Inherit does not offer reports about medicines.")).toHaveCount(0);
+
+  // Across the two groups the nine categories render, in taxonomy order.
+  expect([
+    ...ESTIMATE_CATEGORY_HEADINGS.slice(0, 4),
+    "Medicines",
+    ...ESTIMATE_CATEGORY_HEADINGS.slice(4),
+  ]).toEqual(NINE_CATEGORIES);
+
+  // One row per shipped Medicines template, each linking its report by its
+  // full title; the tiny VCF covers none of the eleven positions.
+  const rows = page.locator('#medicines [data-card="variant-call"]');
+  await expect(rows).toHaveCount(seededTemplateCount("variant_call"));
+  expect(MEDICINES).toHaveLength(seededTemplateCount("variant_call"));
+  for (const template of MEDICINES) {
+    await expect(
+      page.locator(`#medicines a[href="/genome/me/reports/${template.slug}"]`),
+    ).toHaveText(template.title);
+  }
+  await expect(rows.locator('[data-coverage-status="not-covered"]')).toHaveCount(MEDICINES.length);
+
+  // Nothing in the group is a phenotype, a response, a dose direction, a
+  // §6.4 word, a frequency or an effect size.
+  const groupText = await page.locator("#medicines").innerText();
+  expect(groupText).not.toMatch(FORBIDDEN_IN_MEDICINES);
+  expect(groupText).not.toMatch(/%/);
+});
+
+test("a covered Medicines report renders the variant-call genotype figure, the Medicines “What you can do” string and no estimate strings", async ({
+  page,
+}) => {
+  // The committed fixture is byte-identical to what the generator builds
+  // from the seed, and the real parser reads GRCh38 and one changed copy at
+  // every Medicines position from it.
+  const lines = buildMedicinesVcf();
+  expect(fs.readFileSync(MEDICINES_FIXTURE, "utf8")).toBe(`${lines.join("\n")}\n`);
+  const check = await verify(lines);
+  expect(check.reasons).toEqual([]);
+  expect(check.ok).toBe(true);
+
+  await signIn(page, MEDICINES_USER.email, MEDICINES_USER.password);
+  await ingestFileAs(page, MEDICINES_USER.email, MEDICINES_USER.password, MEDICINES_FIXTURE, "vcf");
+
+  const vkorc1 = MEDICINES.find((template) => template.slug === VKORC1_SLUG)!;
+  const [variant] = vkorc1.variants;
+  await page.goto(`/genome/me/reports/${VKORC1_SLUG}`);
+
+  await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+  await expect(page.locator(SKELETON_H2)).toHaveCount(6);
+  await expect(page.locator("main h1")).toHaveText(reportName(vkorc1.title));
+  await expect(page.locator("main article header p").first()).toHaveText("Medicines");
+  await expect(page.locator('[data-chip="layer"]')).toHaveText("Specific variants");
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
+  await expect(page.locator('[data-chip="evidence"]')).toHaveText("Emerging");
+
+  // Exactly one claim block, attributed to the subject and named by its
+  // locus, carrying one observed genotype figure of class variant-call that
+  // reads the fixture's one changed copy as the sorted pair of letters.
+  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  await expect(
+    page.locator(
+      `[data-claim-block][aria-label="${variant.gene} rs${variant.rsid}"][data-density-primary-claim="true"]`,
+    ),
+  ).toHaveCount(1);
+  const genotype = page.locator(
+    '[data-figure-kind="genotype"][data-figure-class="variant-call"][data-figure-basis="observed"][data-provenance^="computed:"]',
+  );
+  await expect(genotype).toHaveCount(1);
+  await expect(genotype.locator('[data-slot="figure-value"]')).toHaveText(hetLetters(variant));
+  await expect(page.locator('[data-figure-class="estimate"]')).toHaveCount(0);
+  // The reading beside the letters is the seed's own sentence for that genotype.
+  await expect(page.locator('section[aria-labelledby="your-result"]')).toContainText(
+    variant.interpretations[hetKey(variant)],
+  );
+
+  // No estimate strings on a variant call: no partial-state sentence, no
+  // coverage sentence, no percentile; the citation count reads as usual.
+  await expect(page.getByText(NO_RANGE_YET)).toHaveCount(0);
+  const howSure = page.locator('section[aria-labelledby="how-sure-we-are"]');
+  await expect(howSure).not.toContainText("positions this estimate uses");
+  await expect(howSure).toContainText("1 supporting study");
+  await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
+
+  // "What this is" is the summary; "What you can do" is the Medicines string
+  // and never brief line 630's; the generic bullet and the not-diagnostic
+  // line are unchanged.
+  await expect(page.locator('section[aria-labelledby="what-this-is"] p')).toHaveText(vkorc1.summary);
+  await expect(page.locator('section[aria-labelledby="what-you-can-do"] p')).toHaveText(
+    WHAT_YOU_CAN_DO_MEDICINES,
+  );
+  await expect(page.getByText(NOTHING_TO_DO)).toHaveCount(0);
+  await expect(
+    page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
+  ).toHaveText([DOESNT_MEAN_GENERIC]);
+  await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
+
+  // Sources: the verified guideline by its PMID, the dbSNP record and the
+  // GRCh38 locus with the reference and CPIC alternate letters.
+  const whereFrom = page.locator('section[aria-labelledby="where-this-comes-from"]');
+  const [citation] = vkorc1.citations;
+  await expect(
+    whereFrom.getByRole("link", { name: `${citation.label} (PMID ${citation.pmid})` }),
+  ).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
+  await expect(whereFrom.getByRole("link", { name: `rs${variant.rsid}` })).toHaveAttribute(
+    "href",
+    `https://www.ncbi.nlm.nih.gov/snp/rs${variant.rsid}`,
+  );
+  await expect(whereFrom).toContainText(
+    `${variant.gene} · rs${variant.rsid} · chr${variant.chrom}:${variant.pos38} ${variant.ref}→${variant.alt}`,
+  );
+
+  // Nothing on the page is a phenotype, a response, a dose direction, a
+  // §6.4 word, a frequency or an effect size.
+  const article = await page.locator("main article").innerText();
+  expect(article).not.toMatch(FORBIDDEN_IN_MEDICINES);
+  expect(article).not.toMatch(/%/);
+});
+
+test("every Medicines report carries the Medicines “What you can do” string and no forbidden word, and DPYD leads with its sentence", async ({
+  page,
+}) => {
+  await signIn(page, MEDICINES_USER.email, MEDICINES_USER.password);
+
+  for (const template of MEDICINES) {
+    const [variant] = template.variants;
+    await page.goto(`/genome/me/reports/${template.slug}`);
+    await expect(page.locator("main h1")).toHaveText(reportName(template.title));
+    await expect(page.locator("main article header p").first()).toHaveText("Medicines");
+    await expect(page.locator('section[aria-labelledby="what-you-can-do"] p')).toHaveText(
+      WHAT_YOU_CAN_DO_MEDICINES,
+    );
+    const genotype = page.locator(
+      '[data-figure-kind="genotype"][data-figure-class="variant-call"][data-figure-basis="observed"]',
+    );
+    await expect(genotype).toHaveCount(1);
+    await expect(genotype.locator('[data-slot="figure-value"]')).toHaveText(hetLetters(variant));
+    await expect(page.getByText(NO_RANGE_YET)).toHaveCount(0);
+    const article = await page.locator("main article").innerText();
+    expect(article, template.slug).not.toMatch(FORBIDDEN_IN_MEDICINES);
+    expect(article, template.slug).not.toMatch(/%/);
+  }
+
+  // DPYD: the first sentence a reader meets, in "What this is", is the
+  // research note's fact for the highest-harm case, character-exact.
+  const dpyd = MEDICINES.find((template) => template.slug === DPYD_SLUG)!;
+  expect(dpyd.summary.startsWith(DPYD_SENTENCE)).toBe(true);
+  await page.goto(`/genome/me/reports/${DPYD_SLUG}`);
+  const whatThisIs = page.locator('section[aria-labelledby="what-this-is"] p');
+  await expect(whatThisIs).toHaveText(dpyd.summary);
+  await expect(whatThisIs).toContainText(DPYD_SENTENCE);
+  expect((await whatThisIs.innerText()).startsWith(DPYD_SENTENCE)).toBe(true);
 });
 
 test("the hub is titled My Genome with three tiles and one primary button", async ({

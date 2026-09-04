@@ -78,7 +78,7 @@ export const MEDICINES_BANNED_PATTERNS: readonly [RegExp, string][] = [
   [/\bmetaboli[sz]er(s)?\b/i, "phenotype word (ADR 0021)"],
   [/\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i, "response language (ADR 0021)"],
   [/\b(?:poor|intermediate|rapid|ultrarapid|extensive|normal)\s+(?:function|activity)\b/i, "phenotype word (ADR 0021)"],
-  [/\b(?:higher|lower|reduced|increased|standard|starting|lower|adjusted)\s+dose\b/i, "dose direction (ADR 0021)"],
+  [/\b(?:higher|lower|reduced|increased|standard|starting|adjusted)\s+dose\b/i, "dose direction (ADR 0021)"],
   [/\b(?:take|start|stop|avoid|switch|choose|prescribe)\s+(?:this|that|the|a|an|your)?\s*(?:medicine|medicines|drug|drugs|dose)\b/i, "drug choice (ADR 0021)"],
 ];
 

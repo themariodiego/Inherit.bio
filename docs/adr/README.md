@@ -23,4 +23,5 @@ writing a superseding ADR, not silently drifting.
 | [0015](./0015-future-child-preview-scope.md) | Future-child preview (Portrait): scope, the closed trait allow-list and the refusals | Proposed |
 | [0017](./0017-family-health-picture.md) | The Family health picture: people side by side without arithmetic between them | Accepted |
 | [0016](./0016-supersede-large-file-transport-and-compute.md) | Supersede large-file transport, formats, and compute placement (supersedes 0001) | Accepted |
-| [0018](./0018-pharmacogenomics-withheld.md) | Pharmacogenomics is withheld; the Medicines category ships as a stated absence | Accepted |
+| [0018](./0018-pharmacogenomics-withheld.md) | Pharmacogenomics is withheld; the Medicines category ships as a stated absence | Superseded by 0021 |
+| [0021](./0021-pharmacogenomics-per-position-reports.md) | The Medicines category ships as per-position reports from CPIC, dbSNP and PubMed (supersedes 0018) | Accepted |

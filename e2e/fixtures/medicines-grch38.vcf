@@ -1,0 +1,23 @@
+##fileformat=VCFv4.2
+##source=Inherit deterministic synthetic fixture; no real person; one changed copy at each position of data/templates/medicines.json
+##reference=GRCh38
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr6,length=170805979>
+##contig=<ID=chr7,length=159345973>
+##contig=<ID=chr10,length=133797422>
+##contig=<ID=chr12,length=133275309>
+##contig=<ID=chr13,length=114364328>
+##contig=<ID=chr16,length=90338345>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	97450058	rs3918290	C	T	50	PASS	.	GT	0/1
+chr6	18138997	rs1800460	C	T	50	PASS	.	GT	0/1
+chr6	18143724	rs1800462	C	G	50	PASS	.	GT	0/1
+chr7	99672916	rs776746	T	C	50	PASS	.	GT	0/1
+chr10	94761900	rs12248560	C	T	50	PASS	.	GT	0/1
+chr10	94781859	rs4244285	G	A	50	PASS	.	GT	0/1
+chr10	94942290	rs1799853	C	T	50	PASS	.	GT	0/1
+chr10	94981296	rs1057910	A	C	50	PASS	.	GT	0/1
+chr12	21178615	rs4149056	T	C	50	PASS	.	GT	0/1
+chr13	48045719	rs116855232	C	T	50	PASS	.	GT	0/1
+chr16	31096368	rs9923231	C	T	50	PASS	.	GT	0/1

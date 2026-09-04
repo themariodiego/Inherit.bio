@@ -4,6 +4,20 @@ Status: `withheld` (brief §8, alternative complete outcome 1). ADR:
 [0018](../adr/0018-pharmacogenomics-withheld.md). Register row:
 `docs/capability-register.md`, "Pharmacogenomics".
 
+> **Note, 2026-09-03 (ADR 0021).** On 2026-09-03 the operator lifted the
+> withholding for the honest subset (`docs/protocol/decisions.md`, “Medicines:
+> the operator lifts the withholding for the honest subset”). The Medicines
+> category now ships as per-position reports in the `variant_call` layer —
+> `data/templates/medicines.json` — under
+> [ADR 0021](../adr/0021-pharmacogenomics-per-position-reports.md), which
+> supersedes ADR 0018; the register row is `shipped-degraded`. This dossier is
+> kept unchanged below as the record of why nothing more ships: no phenotype,
+> dose, response or drug choice, and none of the candidates §4 and the research
+> note exclude (CYP2D6, HLA-B\*57:01, IFNL3, UGT1A1\*28, TPMT \*3C, G6PD).
+> Where the text below describes the absence paragraph, `MEDICINES_ABSENT`, the
+> `withheld` status or the design-2 taxonomy failure as current, it describes
+> the state before that decision.
+
 Every fact in this dossier that came from outside the repository came from
 `docs/design/pharmacogenomics-research-2026-09-03.md`, a read-only research pass
 whose retrieval was performed on **2026-09-03** and which records the URL of

@@ -173,7 +173,10 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   await expect(
     page.getByRole("heading", { name: /E2E test trait/ }),
   ).toBeVisible();
-  await page.goto("/genome/me/reports");
+  // The fixture is an estimate, so the check reads the estimate group: with
+  // the Medicines variant calls seeded (ADR 0021) the list opens on the
+  // Specific variants group, where an estimate would be absent anyway.
+  await page.goto("/genome/me/reports?layer=estimate");
   await expect(page.locator(`a[href="/genome/me/reports/${SLUG}"]`)).toHaveCount(0);
   await expect(page.getByText("E2E test trait")).toHaveCount(0);
 });

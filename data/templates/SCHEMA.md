@@ -39,7 +39,7 @@ templates seeded into `public.report_templates`.
     // optional seed-file provenance, one entry per outside source the facts
     // were read from; validated, not seeded into the database
     "source": {
-      "guideline": { "name": "CPIC", "licence": "CC0 1.0, attribution requested", "url": "https://…", "accessedOn": "2026-09-03" }
+      "guideline": { "name": "CPIC", "licence": "CC0 1.0, attribution requested", "url": "https://api.cpicpgx.org/v1/allele_definition", "accessedOn": "2026-09-03" }
     }
   }
 ]

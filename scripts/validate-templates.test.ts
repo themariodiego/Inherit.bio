@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { BANNED_PATTERNS, bannedLanguage } from "./validate-templates";
+import {
+  BANNED_PATTERNS,
+  MEDICINES_BANNED_PATTERNS,
+  MEDICINES_CATEGORY,
+  bannedLanguage,
+  medicinesBannedLanguage,
+  sourceFindings,
+} from "./validate-templates";
 
 describe("bannedLanguage", () => {
   it("names the §6.4 treatment-advice row for dosage, supplement and 'we recommend you take'", () => {
@@ -51,5 +58,73 @@ describe("bannedLanguage", () => {
         "Your file shows C on both copies at this position. It says nothing about how you respond to a medicine.",
       ),
     ).toEqual([]);
+  });
+});
+
+describe("medicinesBannedLanguage (ADR 0021)", () => {
+  it("names the Medicines rows for phenotype, response, dose-direction and drug-choice language", () => {
+    expect(MEDICINES_CATEGORY).toBe("pharmacogenomics");
+    expect(medicinesBannedLanguage("This is one position, not a poor metabolizer status.")).toEqual([
+      "phenotype word (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("an intermediate metaboliser")).toEqual(["phenotype word (ADR 0021)"]);
+    expect(medicinesBannedLanguage("It does not tell you how you respond to warfarin.")).toEqual([
+      "response language (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("people with this letter may respond differently")).toEqual([
+      "response language (ADR 0021)",
+    ]);
+    expect(medicinesBannedLanguage("CPIC lists this as decreased function")).toEqual([]);
+    expect(medicinesBannedLanguage("this form has normal function")).toEqual(["phenotype word (ADR 0021)"]);
+    expect(medicinesBannedLanguage("a lower dose may be considered")).toEqual(["dose direction (ADR 0021)"]);
+    expect(medicinesBannedLanguage("you could avoid this medicine")).toEqual(["drug choice (ADR 0021)"]);
+    expect(medicinesBannedLanguage("a poor metabolizer who should take a lower dose")).toEqual([
+      "phenotype word (ADR 0021)",
+      "dose direction (ADR 0021)",
+    ]);
+  });
+
+  it("finds nothing in the register a Medicines report uses", () => {
+    expect(
+      medicinesBannedLanguage(
+        "Your file shows C on both copies at this position. CPIC calls C the reference form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose.",
+      ),
+    ).toEqual([]);
+    expect(medicinesBannedLanguage("This is one position, not the pair of forms you carry.")).toEqual([]);
+  });
+
+  it("carries exactly one label per row, in the order the rows are declared", () => {
+    expect(MEDICINES_BANNED_PATTERNS.map(([, why]) => why)).toEqual([
+      "phenotype word (ADR 0021)",
+      "response language (ADR 0021)",
+      "phenotype word (ADR 0021)",
+      "dose direction (ADR 0021)",
+      "drug choice (ADR 0021)",
+    ]);
+  });
+});
+
+describe("sourceFindings", () => {
+  const good = { name: "CPIC", url: "https://api.cpicpgx.org/v1/allele_definition", accessedOn: "2026-09-03", licence: "CC0 1.0" };
+
+  it("accepts an absent source and a well-formed one", () => {
+    expect(sourceFindings(undefined)).toEqual([]);
+    expect(sourceFindings(null)).toEqual([]);
+    expect(sourceFindings({ cpic: good, dbsnp: { ...good, name: "dbSNP", licence: undefined } })).toEqual([]);
+  });
+
+  it("names each missing or malformed field by its key", () => {
+    expect(sourceFindings([])).toEqual(["source must be an object"]);
+    expect(sourceFindings({ cpic: "CPIC" })).toEqual(["source.cpic must be an object"]);
+    expect(sourceFindings({ cpic: { ...good, name: " " } })).toEqual(["source.cpic: missing name"]);
+    expect(sourceFindings({ cpic: { ...good, url: "http://api.cpicpgx.org/v1/" } })).toEqual([
+      "source.cpic: url must be https",
+    ]);
+    expect(sourceFindings({ cpic: { ...good, accessedOn: "3 Sep 2026" } })).toEqual([
+      "source.cpic: accessedOn must be an ISO date (YYYY-MM-DD)",
+    ]);
+    expect(sourceFindings({ cpic: { ...good, licence: "" } })).toEqual([
+      "source.cpic: licence must be a non-empty string when present",
+    ]);
   });
 });
