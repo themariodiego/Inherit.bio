@@ -241,6 +241,9 @@ export function noSecondCopy(parent: string): string {
 
 /** The covered count against the registry's known count (line 2238), on every carrier-pair result. */
 export function knownChangesCovered(covered: number, known: number): string {
+  if (known === 1 && covered === 1) {
+    return "Both files cover the one change known to cause this condition.";
+  }
   return `Both files cover ${covered} of the ${known} changes known to cause this condition.`;
 }
 

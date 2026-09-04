@@ -221,7 +221,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   const outputCount = output ? output.summary.matches.length + output.oneSided.length : 0;
 
   return (
-    <div data-surface="standard" className="mx-auto max-w-4xl space-y-8">
+    <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
           { label: NAV_LABELS.family, href: route("family.index") },

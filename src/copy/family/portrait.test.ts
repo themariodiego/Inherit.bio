@@ -167,6 +167,15 @@ describe("portrait copy", () => {
     );
   });
 
+  it("counts the known changes both files cover, in the singular where there is one", () => {
+    expect(copy.knownChangesCovered(2, 3)).toBe(
+      "Both files cover 2 of the 3 changes known to cause this condition.",
+    );
+    expect(copy.knownChangesCovered(1, 1)).toBe(
+      "Both files cover the one change known to cause this condition.",
+    );
+  });
+
   it("names the blocking screen as the register's contract does", () => {
     expect(copy.blockingHeading("you and Bo")).toBe("Portrait is waiting for you and Bo");
     expect(copy.namesPhrase(["you", "Bo"])).toBe("you and Bo");
