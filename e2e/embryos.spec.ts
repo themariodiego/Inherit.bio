@@ -30,8 +30,10 @@ import {
   INGEST_UNAVAILABLE_SENTENCE,
   NO_TESTING_END,
   SENT_OPTIONS,
+  SENT_QUESTION_HEADING,
   SENT_UNKNOWN_LINK,
   SITUATION_OPTIONS,
+  SITUATION_QUESTION_HEADING,
   STILL_TO_COME_STATUS,
   TESTED_QUESTION_HEADING,
   UPLOAD_H1,
@@ -431,8 +433,14 @@ test("/embryos/request-data: the letter verbatim, one primary action that copies
   await expectAxeClean(page);
 });
 
-/** Every screen of the flow: at most seven interactive elements in the first viewport and exactly one primary action (X6.1). */
-async function expectScreenBudget(page: Page, screen: string) {
+/**
+ * Every screen of the flow: at most seven interactive elements in the first
+ * viewport on the repository's basis (X6.1: the shell's search button and,
+ * on desktop, the attribution link count; the navigation landmarks do not)
+ * and the screen's own primary count — one, or none on a screen of equal
+ * choices (brief line 928: at most one).
+ */
+async function expectScreenBudget(page: Page, screen: string, primaries: 0 | 1) {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.evaluate(() => document.fonts.ready);
@@ -440,10 +448,10 @@ async function expectScreenBudget(page: Page, screen: string) {
     expect(interactives.length, `${screen} at ${viewport.name}: ${interactives.join(" | ")}`).toBeLessThanOrEqual(7);
   }
   await page.setViewportSize({ width: 1280, height: 800 });
-  await expect(page.locator('main [data-variant="default"]'), screen).toHaveCount(1);
+  await expect(page.locator('main [data-variant="default"]'), screen).toHaveCount(primaries);
 }
 
-test("/embryos/upload: the flow's first two steps one question per screen, the two endings, the honest terminal, nothing kept and nothing sent", async ({
+test("/embryos/upload: the flow's first two steps screen by screen, the two endings, the honest terminal, nothing kept and nothing sent", async ({
   page,
 }) => {
   const TYPED_NAME = "Synthetic clinic typed by the test";
@@ -465,8 +473,10 @@ test("/embryos/upload: the flow's first two steps one question per screen, the t
   const headings = page.locator("main :is(h1, h2, h3, h4, h5, h6)");
   expect(await headings.count()).toBeLessThanOrEqual(6);
 
-  // Step 1, question 1.
+  // Step 1: the first question; the second waits for its answer.
   const flow = page.locator('[data-slot="upload-flow"]');
+  const continueButton = page.getByRole("button", { name: CONTINUE_BUTTON });
+  const backButton = page.getByRole("button", { name: BACK_BUTTON });
   await expect(flow).toHaveAttribute("data-screen", "tested");
   await expect(flow).toHaveAttribute("data-step", "1");
   await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(1));
@@ -474,10 +484,10 @@ test("/embryos/upload: the flow's first two steps one question per screen, the t
   await expect(page.getByRole("heading", { level: 2, name: TESTED_QUESTION_HEADING })).toBeVisible();
   await expect(page.getByRole("radio")).toHaveCount(3);
   for (const radio of await page.getByRole("radio").all()) await expect(radio).not.toBeChecked();
-  const continueButton = page.getByRole("button", { name: CONTINUE_BUTTON });
+  await expect(flow.locator('[data-slot="who-question"]')).toHaveCount(0);
   await expect(continueButton).toBeDisabled();
-  await expect(page.getByRole("button", { name: BACK_BUTTON })).toHaveCount(0);
-  await expectScreenBudget(page, "tested");
+  await expect(backButton).toHaveCount(0);
+  await expectScreenBudget(page, "tested", 1);
 
   // "No" ends the flow with the brief's sentence and one way back.
   await page.getByLabel("No", { exact: true }).check();
@@ -485,46 +495,53 @@ test("/embryos/upload: the flow's first two steps one question per screen, the t
   await expect(noTesting).toContainText(NO_TESTING_END);
   await expect(noTesting.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");
   await expect(continueButton).toHaveCount(0);
-  await expectScreenBudget(page, "tested:no");
+  await expect(flow.locator('[data-slot="who-question"]')).toHaveCount(0);
+  await expectScreenBudget(page, "tested:no", 1);
 
-  // "Yes" goes on; the next screen's heading takes focus.
+  // "Yes" asks who did the testing, keeps nothing, and goes on; the next heading takes focus.
   await page.getByLabel("Yes", { exact: true }).check();
   await expect(noTesting).toHaveCount(0);
-  await continueButton.click();
-  await expect(flow).toHaveAttribute("data-screen", "who");
-  await expect(page.getByRole("heading", { level: 2, name: WHO_QUESTION_HEADING })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: WHO_QUESTION_HEADING })).toBeVisible();
   await expect(flow.locator('[data-slot="not-kept-note"]')).toHaveText(WHO_NOT_KEPT_NOTE);
   const who = page.getByRole("textbox", { name: WHO_QUESTION_HEADING });
   await expect(who).toHaveAttribute("autocomplete", "off");
   await who.fill(TYPED_NAME);
-  await expectScreenBudget(page, "who");
+  await expect(continueButton).toBeEnabled();
+  await expectScreenBudget(page, "tested:yes", 1);
   await continueButton.click();
 
-  // Question 3: the four illustrated options and the secondary link.
+  // The four illustrated options and the secondary link, each an action; no primary, no Continue.
   await expect(flow).toHaveAttribute("data-screen", "sent");
-  await expect(flow.locator("[data-option] span")).toHaveText(SENT_OPTIONS.map((option) => option.label));
-  await expect(flow.locator("[data-option] svg[aria-hidden='true']")).toHaveCount(4);
+  await expect(page.getByRole("heading", { level: 2, name: SENT_QUESTION_HEADING })).toBeFocused();
+  await expect(flow.locator("button[data-option] span")).toHaveText(SENT_OPTIONS.map((option) => option.label));
+  await expect(flow.locator("button[data-option] svg[aria-hidden='true']")).toHaveCount(4);
   await expect(flow.locator('[data-slot="sent-unknown"]')).toHaveText(SENT_UNKNOWN_LINK);
-  await expect(continueButton).toBeDisabled();
-  // A PDF ends in the A.6 refusal, verbatim, with the letter.
-  await page.getByLabel("A PDF report only").check();
+  await expect(continueButton).toHaveCount(0);
+  await expect(backButton).toHaveCount(0);
+  await expectScreenBudget(page, "sent", 0);
+
+  // A PDF lands on the A.6 refusal, verbatim, with the letter and a way back.
+  await page.getByRole("button", { name: "A PDF report only" }).click();
+  await expect(flow).toHaveAttribute("data-screen", "pdf-end");
+  await expect(flow).toHaveAttribute("data-step", "1");
   const pdf = flow.locator('[data-slot="flow-end"][data-end="pdf"]');
   await expect(pdf).toContainText(INGEST_REFUSALS.pdf_not_data);
   await expect(pdf.getByRole("link", { name: REQUEST_DATA_BUTTON })).toHaveAttribute("href", "/embryos/request-data");
+  await expect(pdf.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");
   await expect(continueButton).toHaveCount(0);
-  await expectScreenBudget(page, "sent:pdf");
-  // Another answer goes on.
-  await page.getByLabel("One file with a column per embryo").check();
-  await expect(pdf).toHaveCount(0);
-  await expectScreenBudget(page, "sent");
-  await continueButton.click();
+  await expectScreenBudget(page, "pdf-end", 1);
+  await backButton.click();
+  await expect(flow).toHaveAttribute("data-screen", "sent");
 
-  // Step 2: whose embryos, with the exact attestation, never pre-ticked.
+  // Another answer goes to step 2: whose embryos, with the exact attestation, never pre-ticked.
+  await page.getByRole("button", { name: "One file with a column per embryo" }).click();
   await expect(flow).toHaveAttribute("data-screen", "situation");
   await expect(flow).toHaveAttribute("data-step", "2");
   await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(2));
   await expect(flow.locator('[data-slot="still-to-come"]')).toHaveText(STILL_TO_COME_STATUS[2]);
+  await expect(page.getByRole("heading", { level: 2, name: SITUATION_QUESTION_HEADING })).toBeFocused();
   await expect(flow.locator('[data-slot="attestation"]')).toHaveCount(0);
+  await expect(continueButton).toBeDisabled();
   await page.getByLabel(SITUATION_OPTIONS[0].label, { exact: true }).check();
   const attestation = flow.locator('[data-slot="attestation"]');
   await expect(attestation).toHaveText(SITUATION_OPTIONS[0].attestation);
@@ -538,18 +555,27 @@ test("/embryos/upload: the flow's first two steps one question per screen, the t
   await expect(attestation.getByRole("checkbox")).not.toBeChecked();
   await expect(continueButton).toBeDisabled();
   await attestation.getByRole("checkbox").check();
-  await expectScreenBudget(page, "situation");
+  await expectScreenBudget(page, "situation", 1);
   await continueButton.click();
 
-  // Who can sign: each basis states its own sentence.
+  // Who can sign: four actions, each to its named screen with its own sentence.
   await expect(flow).toHaveAttribute("data-screen", "basis");
-  await expect(continueButton).toBeDisabled();
-  await expect(flow.locator('[data-slot="basis-sentence"]')).toHaveCount(0);
-  for (const option of [BASIS_OPTIONS[1], BASIS_OPTIONS[3], BASIS_OPTIONS[2], BASIS_OPTIONS[0]]) {
-    await page.getByLabel(option.label, { exact: true }).check();
+  await expect(flow.locator("button[data-option]")).toHaveText(BASIS_OPTIONS.map((option) => option.label));
+  await expect(continueButton).toHaveCount(0);
+  await expect(backButton).toHaveCount(1);
+  await expectScreenBudget(page, "basis", 0);
+  for (const option of [BASIS_OPTIONS[1], BASIS_OPTIONS[3], BASIS_OPTIONS[2]]) {
+    await page.getByRole("button", { name: option.label, exact: true }).click();
+    await expect(flow).toHaveAttribute("data-screen", "basis-named");
+    await expect(page.getByRole("heading", { level: 2, name: option.label })).toBeFocused();
     await expect(flow.locator('[data-slot="basis-sentence"]')).toHaveText(option.sentence);
+    await expect(continueButton).toBeEnabled();
+    await backButton.click();
+    await expect(flow).toHaveAttribute("data-screen", "basis");
   }
-  await expectScreenBudget(page, "basis");
+  await page.getByRole("button", { name: BASIS_OPTIONS[0].label, exact: true }).click();
+  await expect(flow.locator('[data-slot="basis-sentence"]')).toHaveText(BASIS_OPTIONS[0].sentence);
+  await expectScreenBudget(page, "basis-named", 1);
   await continueButton.click();
 
   // The honest terminal: the sentence, what comes later, the letter; no control that goes nowhere.
@@ -560,12 +586,12 @@ test("/embryos/upload: the flow's first two steps one question per screen, the t
   await expect(terminal.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");
   await expect(flow.locator('[data-slot="step-status"]')).toHaveCount(0);
   await expect(page.locator("main input, main select, main textarea, main form, main input[type='file']")).toHaveCount(0);
-  await expectScreenBudget(page, "unavailable");
+  await expectScreenBudget(page, "unavailable", 1);
   await expectEveryLinkAnswers(page);
   // Back returns with the answers kept in the page.
-  await page.getByRole("button", { name: BACK_BUTTON }).click();
-  await expect(flow).toHaveAttribute("data-screen", "basis");
-  await expect(page.getByLabel(BASIS_OPTIONS[0].label, { exact: true })).toBeChecked();
+  await backButton.click();
+  await expect(flow).toHaveAttribute("data-screen", "basis-named");
+  await expect(page.getByRole("heading", { level: 2, name: BASIS_OPTIONS[0].label })).toBeVisible();
 
   // Nothing left the browser and nothing was stored; a reload starts over.
   expect(apiRequests).toEqual([]);

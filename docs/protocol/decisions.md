@@ -997,3 +997,36 @@ Decisions:
   page shows; its former claim about the landing's closing sentence was
   stale since E1 (D-068).
 
+## 2026-09-04 — Embryo E2, slice 1: the X6.1 budget on the repository's basis
+
+Context: CI run 33924630411 on PR #48 counted nine interactive elements on
+the "What did they send you?" screen at 1280×800. The suite's basis
+(`e2e/helpers.ts#firstViewportInteractives`, X6.1) excludes the
+navigation landmarks, the skip link and the Copilot entry, and the
+signed-in shell deliberately leaves two persistent controls inside the
+count: the global search button on every viewport and, on desktop, the
+attribution link beneath the side rail (`src/components/site/app-shell.tsx`).
+A flow screen therefore has five interactive elements of its own, not
+seven; the request-data page and the Family flows fit because they carry
+two or three.
+
+Decisions:
+- The flow is cut so that no screen carries more than five controls of
+  its own, and the shell is left alone: moving the attribution into a
+  navigation landmark or hiding search on flow surfaces would loosen the
+  basis for every page to fit one screen.
+- The first two questions share a screen: the free-text question appears
+  once the first is answered "Yes" or "I’m not sure", and "No" ends the
+  screen without it (three answers, the input and Continue: five).
+- Screens of equal choices are actions: the four illustrated options and
+  the secondary link (five) each answer and move on, and so do the four
+  bases (four, with Back). Such a screen carries no primary, which brief
+  line 928's "at most one" permits; radios that navigate on change were
+  rejected as an accessibility fault, so the options are buttons.
+- "A PDF report only" lands on its own refusal screen with the letter,
+  Back and the way back to Embryos; each basis leads to its named screen
+  (brief lines 1729-1735) with its sentence, Back and Continue.
+- The reducer records the shell's two controls as `SHELL_INTERACTIVES`
+  beside the cap, so the unit test and the browser suite assert the same
+  arithmetic.
+

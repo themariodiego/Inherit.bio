@@ -60,10 +60,13 @@ RPCs, the sanitiser or the worker exists yet (design §10, part E0).
    mapping plan of at most four neutral column decisions.
 8. **Until E0 exists, the flow tells the truth.** `/embryos/upload` renders
    its first two steps — the three questions and whose embryos these are —
-   one question per screen, with "No" and "A PDF report only" ending the
-   flow on the brief's sentences, and every other path ending on "Inherit
-   cannot take embryo files on this site yet." with the letter to the
-   laboratory. `EMBRYO_INGEST_AVAILABLE` is false, nothing is persisted
+   screen by screen so that no screen carries more than five interactive
+   elements of its own (X6.1's seven on the repository's basis, less the
+   shell's search button and desktop attribution link): the first two
+   questions share a screen, the four illustrated options and the four
+   bases are actions, "No" and "A PDF report only" end the flow on the
+   brief's sentences, and every other path ends on "Inherit cannot take
+   embryo files on this site yet." with the letter to the laboratory. `EMBRYO_INGEST_AVAILABLE` is false, nothing is persisted
    and no request leaves the page. The second parent's contact email, the
    Tier-2 signature block and the file are not asked for until a draft
    can be created: collecting a contact or a typed legal name that nothing
@@ -81,7 +84,9 @@ RPCs, the sanitiser or the worker exists yet (design §10, part E0).
   `brief:485`): killed by ADR 0016 and the canonical PDF row — no OCR, no
   estimate from a report, ever.
 - **All three questions on one screen**: killed by X6.1 — ten interactive
-  elements where at most seven may be.
+  elements where at most seven may be; and one question per screen with
+  Back and Continue on every screen was killed by the same cap once the
+  shell's two persistent controls were counted (CI run 33924630411).
 - **Rendering all five steps with the file step disabled**: killed by the
   no-dead-control rule (`docs/protocol/decisions.md`) — a disabled control
   that will never enable on this deployment is a promise.
