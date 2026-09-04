@@ -5,6 +5,7 @@ import {
   isStarterLayer,
   selectStarterReports,
   STARTER_LIMIT,
+  STARTER_EXCLUDED_CATEGORIES,
 } from "./starter";
 
 function template(
