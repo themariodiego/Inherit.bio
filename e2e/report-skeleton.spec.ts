@@ -62,6 +62,9 @@ const NOTHING_TO_DO =
 /** The Medicines "What you can do" string (ADR 0021), rendered for that category only. */
 const WHAT_YOU_CAN_DO_MEDICINES =
   "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
+/** The evidence sentence a variant_call report renders (ADR 0021). */
+const VARIANT_CALL_EVIDENCE =
+  "This position is named by a published prescribing guideline. Inherit reads the letters only.";
 const MEDICINES_DESCRIPTION =
   "The letters your file shows at single DNA positions that prescribing guidelines name.";
 /** The sentence the DPYD report leads with (the research note's fact). */
@@ -486,6 +489,10 @@ test("a covered Medicines report renders the variant-call genotype figure, the M
   await expect(page.locator('[data-chip="layer"]')).toHaveText("Specific variants");
   await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
   await expect(page.locator('[data-chip="evidence"]')).toHaveText("Emerging");
+  // The evidence sentence beside the chip and under "How sure we are" is the
+  // guideline sentence, never one about replication (ADR 0021).
+  await expect(page.getByText(VARIANT_CALL_EVIDENCE, { exact: false })).toHaveCount(2);
+  await expect(page.getByText("Seen in more than one study")).toHaveCount(0);
 
   // Exactly one claim block, attributed to the subject and named by its
   // locus, carrying one observed genotype figure of class variant-call that

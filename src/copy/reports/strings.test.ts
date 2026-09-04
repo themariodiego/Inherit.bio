@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { wordCount, readabilitySentences } from "../../../scripts/readability";
-import { EVIDENCE_DEFINITIONS } from "./evidence";
+import { EVIDENCE_DEFINITIONS, VARIANT_CALL_EVIDENCE_DEFINITION, evidenceDefinitionFor } from "./evidence";
 import {
   EMBRYO_HEADING_SUBSTITUTIONS,
   REPORT_HEADINGS,
@@ -131,6 +132,24 @@ describe("report strings", () => {
     for (const [level, definition] of Object.entries(EVIDENCE_DEFINITIONS)) {
       expect(wordCount(definition), level).toBeLessThanOrEqual(20);
     }
+    expect(wordCount(VARIANT_CALL_EVIDENCE_DEFINITION)).toBeLessThanOrEqual(20);
+  });
+
+  it("gives a variant_call report the guideline sentence, never one about replication (ADR 0021)", () => {
+    expect(VARIANT_CALL_EVIDENCE_DEFINITION).toBe(
+      "This position is named by a published prescribing guideline. Inherit reads the letters only.",
+    );
+    expect(evidenceDefinitionFor("emerging", "variant_call")).toBe(VARIANT_CALL_EVIDENCE_DEFINITION);
+    expect(evidenceDefinitionFor("emerging", "variant_call")).not.toMatch(/study|studies|brothers|sisters/);
+    expect(evidenceDefinitionFor("emerging", "estimate")).toBe(EVIDENCE_DEFINITIONS.emerging);
+    expect(evidenceDefinitionFor("clinical", "estimate")).toBe(EVIDENCE_DEFINITIONS.clinical);
+    // The report page reads the layer-aware function, not the table.
+    const page = readFileSync(
+      new URL("../../app/(app)/genome/[subject]/reports/[slug]/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(page).toContain("evidenceDefinitionFor(template.evidence, layer)");
+    expect(page).not.toContain("EVIDENCE_DEFINITIONS[");
   });
 
   it("never merges counts: each layer has its own noun", () => {
