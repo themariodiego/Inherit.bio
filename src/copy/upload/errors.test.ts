@@ -8,6 +8,8 @@ import {
   EMBRYO_REASON_PARTS,
   INGEST_REFUSAL_CODES,
   INGEST_REFUSALS,
+  SUBJECT_TARGET_REFUSALS,
+  UPLOAD_COPY_IDS,
   ingestRefusal,
   isIngestRefusalCode,
   type IngestRefusalCode,
@@ -124,5 +126,18 @@ describe("the A.6 refusals", () => {
     expect(EMBRYO_REASON_PARTS.embryo_parent_discordant.before).toBe("");
     expect(EMBRYO_REASON_PARTS.contamination.before).toBe("");
     expect(INGEST_REFUSALS.embryo_call_rate("Embryo 2", 60)).toContain("Embryo 2: we could read only 60 in 100 of the markers");
+  });
+
+  it("name the subject target's refusal of a cohort-shaped source under the register's code and copy id", () => {
+    const register = fs.readFileSync(path.join(process.cwd(), "docs/route-register.json"), "utf8");
+    expect(register).toContain('"const": "subject_source_not_single_sample"');
+    expect(register).toContain('"const": "upload.subject.single-sample-required"');
+    const text = SUBJECT_TARGET_REFUSALS.subject_source_not_single_sample;
+    expect(UPLOAD_COPY_IDS["upload.subject.single-sample-required"]).toBe(text);
+    expect(text.length).toBeLessThanOrEqual(240);
+    expect(text).not.toContain("'");
+    expect(text).not.toMatch(/\brs\d+\b|\b[ACGT]\/[ACGT]\b|\b[ACGT]{2}\b/);
+    for (const sentence of readabilitySentences(text)) expect(wordCount(sentence)).toBeLessThanOrEqual(25);
+    expect(fleschKincaidGrade(withTermsReplaced(text))).toBeLessThanOrEqual(9);
   });
 });

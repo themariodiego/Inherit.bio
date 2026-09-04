@@ -97,7 +97,7 @@ const TERM_EXEMPTIONS = new Map<string, string>([
   ["compare.CELL_WORDS.noPopulationFigure", "design §2.4 cell word"],
   ["qc.NOT_STATED_BY_SOURCE", "brief line 1398, verbatim"],
   ["upload.TESTED_QUESTION_HEADING", "brief line 375, verbatim"],
-  ["upload.SITUATION_OPTIONS[1].label", "brief line 983, verbatim"],
+  ["upload.SITUATION_OPTIONS[1].label", "brief line 985, verbatim"],
 ]);
 
 function withTermsReplaced(text: string): string {
@@ -242,8 +242,8 @@ describe("embryo copy", () => {
     expect(upload.STEP_TOTAL).toBe(5);
     expect(upload.EMBRYO_INGEST_AVAILABLE).toBe(false);
     // The option ids are the register's request-body enums.
-    expect(REGISTER).toContain('"const": "own-embryos"');
-    expect(REGISTER).toContain('"const": "with-genetic-parents-permission"');
+    expect(upload.SITUATION_OPTIONS.map((option) => option.id)).toEqual(["own-embryos", "with-genetic-parents-permission"]);
+    for (const option of upload.SITUATION_OPTIONS) expect(REGISTER).toContain(`"const": "${option.id}"`);
     for (const option of upload.BASIS_OPTIONS) expect(REGISTER).toContain(`"${option.id}"`);
   });
 

@@ -68,12 +68,40 @@ export function isForbiddenHeaderCell(cell: string): boolean {
 
 export type PgtDelimiter = "\t" | ",";
 
-/** Tab when the line carries one, otherwise comma; a surrounding pair of double quotes is stripped from each cell. */
+/**
+ * Tab when the line carries one, otherwise comma. Cells follow RFC 4180: a
+ * cell may be wrapped in double quotes, a delimiter inside quotes is text,
+ * and a doubled quote inside quotes is one literal quote.
+ */
 export function splitHeaderLine(line: string): { delimiter: PgtDelimiter; cells: string[] } {
   const trimmed = line.replace(/\r$/, "");
   const delimiter: PgtDelimiter = trimmed.includes("\t") ? "\t" : ",";
-  const cells = trimmed.split(delimiter).map((cell) => cell.trim().replace(/^"(.*)"$/, "$1"));
-  return { delimiter, cells };
+  return { delimiter, cells: tokenise(trimmed, delimiter) };
+}
+
+function tokenise(line: string, delimiter: PgtDelimiter): string[] {
+  const cells: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index];
+    if (inQuotes) {
+      if (char === '"') {
+        if (line[index + 1] === '"') {
+          cell += '"';
+          index++;
+        } else inQuotes = false;
+      } else cell += char;
+    } else if (char === '"' && cell.trim() === "") {
+      inQuotes = true;
+      cell = "";
+    } else if (char === delimiter) {
+      cells.push(cell);
+      cell = "";
+    } else cell += char;
+  }
+  cells.push(cell);
+  return cells.map((value) => value.trim());
 }
 
 export interface PgtHeader {

@@ -494,6 +494,8 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   const noTesting = flow.locator('[data-slot="flow-end"][data-end="no-testing"]');
   await expect(noTesting).toContainText(NO_TESTING_END);
   await expect(noTesting.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");
+  // The ending appears in place, so its sentence takes focus to be read.
+  await expect(noTesting.locator("p").first()).toBeFocused();
   await expect(continueButton).toHaveCount(0);
   await expect(flow.locator('[data-slot="who-question"]')).toHaveCount(0);
   await expectScreenBudget(page, "tested:no", 1);
@@ -512,6 +514,8 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
 
   // The four illustrated options and the secondary link, each an action; no primary, no Continue.
   await expect(flow).toHaveAttribute("data-screen", "sent");
+  await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(1));
+  await expect(flow.locator('[data-slot="still-to-come"]')).toHaveText(STILL_TO_COME_STATUS[1]);
   await expect(page.getByRole("heading", { level: 2, name: SENT_QUESTION_HEADING })).toBeFocused();
   await expect(flow.locator("button[data-option] span")).toHaveText(SENT_OPTIONS.map((option) => option.label));
   await expect(flow.locator("button[data-option] svg[aria-hidden='true']")).toHaveCount(4);
@@ -524,6 +528,7 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   await page.getByRole("button", { name: "A PDF report only" }).click();
   await expect(flow).toHaveAttribute("data-screen", "pdf-end");
   await expect(flow).toHaveAttribute("data-step", "1");
+  await expect(page.getByRole("heading", { level: 2, name: "A PDF report only" })).toBeFocused();
   const pdf = flow.locator('[data-slot="flow-end"][data-end="pdf"]');
   await expect(pdf).toContainText(INGEST_REFUSALS.pdf_not_data);
   await expect(pdf.getByRole("link", { name: REQUEST_DATA_BUTTON })).toHaveAttribute("href", "/embryos/request-data");
@@ -575,12 +580,16 @@ test("/embryos/upload: the flow's first two steps screen by screen, the two endi
   }
   await page.getByRole("button", { name: BASIS_OPTIONS[0].label, exact: true }).click();
   await expect(flow.locator('[data-slot="basis-sentence"]')).toHaveText(BASIS_OPTIONS[0].sentence);
+  await expect(flow.locator('[data-slot="step-status"]')).toHaveText(stepStatus(2));
+  await expect(flow.locator('[data-slot="still-to-come"]')).toHaveText(STILL_TO_COME_STATUS[2]);
   await expectScreenBudget(page, "basis-named", 1);
   await continueButton.click();
 
   // The honest terminal: the sentence, what comes later, the letter; no control that goes nowhere.
   const terminal = flow.locator('[data-slot="ingest-unavailable"]');
   await expect(terminal).toContainText(INGEST_UNAVAILABLE_SENTENCE);
+  await expect(terminal.locator("p").first()).toBeFocused();
+  await expect(terminal.locator(":is(h1, h2, h3, h4, h5, h6)")).toHaveCount(0);
   await expect(terminal).toContainText(INGEST_NEXT_STEPS);
   await expect(terminal.getByRole("link", { name: REQUEST_DATA_BUTTON })).toHaveAttribute("href", "/embryos/request-data");
   await expect(terminal.getByRole("link", { name: BACK_TO_EMBRYOS_LINK })).toHaveAttribute("href", "/embryos");

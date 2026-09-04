@@ -1030,3 +1030,46 @@ Decisions:
   beside the cap, so the unit test and the browser suite assert the same
   arithmetic.
 
+## 2026-09-04 — Embryo E2, slice 1: corrections after the adversarial review
+
+Context: a four-lens review of the branch (fourteen agents, each finding
+refuted independently) confirmed ten findings; the two rated high are the
+X6.1 breach CI had already caught (D-070). The rest are D-071 to D-076.
+
+Decisions:
+- The flow's own sentences claim only what is true on every path. "Nothing
+  is kept yet. A record is made in a step still to come." replaces a
+  sentence that said both parents sign first, which the design's draft step
+  and the single-parent bases contradict; the closing sentence says the
+  later steps ask "who must sign or what must be shown" instead of naming
+  the other parent's email and signature, which three bases never ask for.
+- The basis labels and sentences are in the third person, because the same
+  screens follow both situations: a genetic parent, and someone uploading
+  with both parents' permission. "One person alone has the legal right to
+  decide for these embryos"; "Both parents will sign in their own
+  accounts."
+- The subject uploader's preflight refuses a recognised laboratory table
+  or a VCF with several samples with the register's own refusal
+  (`subject_source_not_single_sample`, copy id
+  `upload.subject.single-sample-required`) and a link to the Embryo flow,
+  and reserves `unrecognised_format` for the "sniffV2 null" trigger the
+  brief binds; a PDF refusal carries the letter link the sentence
+  promises.
+- `sniffV2` trusts a `#CHROM` line only when the decode window terminated
+  it; a header cut by the window or by a truncated gzip member answers a
+  null sample count. Trailing whitespace on the header line adds no
+  sample. The table header is tokenised per RFC 4180, so a comma inside a
+  quoted cell no longer shifts every later column.
+- An ending that appears in place ("No") moves focus to its sentence; the
+  PDF screen carries the option's own label as its heading with the
+  refusal as a paragraph; the terminal's sentence is a paragraph that takes
+  focus, not a heading, so a block-role sentence is never a heading in the
+  DOM; no ending or sentence is a live region — focus is what gets it read.
+- The ADR, the copy header and the canonical row name the consumers of
+  the refusals that exist today and mark the file processor's re-sniff and
+  the ingest routes as E0's; a claim about a consumer that does not exist
+  is a defect (D-076).
+- The terminal still carries no "Step N of 5": it stands in for steps 3–5
+  rather than being one of them, and naming a step number there would
+  claim a stage the reader has not reached.
+

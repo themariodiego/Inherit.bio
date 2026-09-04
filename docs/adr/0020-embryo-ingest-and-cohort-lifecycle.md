@@ -51,9 +51,13 @@ RPCs, the sanitiser or the worker exists yet (design §10, part E0).
    and every surface says so in one sentence.
 7. **The refusals have one home.** Every A.6 code and sentence lives once
    in `src/copy/upload/errors.ts` (`brief:2196-2209`), re-exported at the
-   brief's path `src/lib/genome/ingest-errors.ts`; the file processor, the
-   embryo ingest, the quality footers and the uploader's preflight consume
-   it. `sniffV2` names BAM/CRAM, PDF, single- and multi-sample VCF, the
+   brief's path `src/lib/genome/ingest-errors.ts`. Today the uploader's
+   browser preflight and the quality footers consume it; the file
+   processor's server-side re-sniff (`brief:2194`) and the embryo ingest
+   routes consume it when E0 wires them. The subject uploader refuses a
+   cohort-shaped source — a laboratory table or a VCF with several samples
+   — with the register's `subject_source_not_single_sample` sentence and a
+   link to the Embryo flow, and a PDF with the letter. `sniffV2` names BAM/CRAM, PDF, single- and multi-sample VCF, the
    four consumer arrays and a laboratory table in that order; the table
    rule is exact equality after normalisation against
    `data/ref/lab-tables/column-synonyms.json`, three of six fields, and a

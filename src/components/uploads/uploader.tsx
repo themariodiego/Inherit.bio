@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { Button } from "@/components/ui/button";
-import { INGEST_REFUSALS } from "@/copy/upload/errors";
+import Link from "next/link";
+import { REQUEST_DATA_BUTTON } from "@/copy/embryos/index";
+import { UPLOAD_H1 } from "@/copy/embryos/upload";
+import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { sniffFileV2 } from "@/lib/genome/parsers/sniff-browser";
+import { route } from "@/lib/primary-routes";
 import type { FileKind } from "@/lib/genome/types";
 import { LIMITS, formatBytes } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";
@@ -35,7 +39,7 @@ type Phase =
   | { step: "registering" }
   | { step: "processing" }
   | { step: "done"; tier: 1 | 2 }
-  | { step: "error"; message: string };
+  | { step: "error"; message: string; action?: { label: string; href: string } };
 
 async function sha256Of(
   file: File,
@@ -72,21 +76,34 @@ export function Uploader() {
 
       // 1. Sniff format from the file head (client-side, before any upload):
       // the browser preflight of every genetic-file flow. A PDF is refused
-      // here with the A.6 sentence before any byte is sent; a file nobody
-      // recognises likewise. Both sentences come from their one home.
+      // here with the A.6 sentence and the letter, before any byte is sent;
+      // a laboratory table or a VCF with several samples is a cohort-shaped
+      // source a subject target may not take (the server repeats this at
+      // finalization); a file nobody recognises gets the A.6 sentence bound
+      // to "sniffV2 null". Every sentence comes from its one home.
       const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
       const sniffed = await sniffFileV2(head);
       if (sniffed.kind === "pdf") {
-        setPhase({ step: "error", message: INGEST_REFUSALS.pdf_not_data });
+        setPhase({
+          step: "error",
+          message: INGEST_REFUSALS.pdf_not_data,
+          action: { label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") },
+        });
         return;
       }
-      if (sniffed.kind === null || sniffed.kind === "pgt_table") {
+      if (sniffed.kind === "pgt_table" || sniffed.kind === "vcf_multisample") {
+        setPhase({
+          step: "error",
+          message: SUBJECT_TARGET_REFUSALS.subject_source_not_single_sample,
+          action: { label: UPLOAD_H1, href: route("embryos.upload") },
+        });
+        return;
+      }
+      if (sniffed.kind === null) {
         setPhase({ step: "error", message: INGEST_REFUSALS.unrecognised_format });
         return;
       }
-      // A multi-sample VCF travels as `vcf`; the server's structural
-      // validator, not this preflight, decides what a subject file may be.
-      const kind: FileKind = sniffed.kind === "vcf_multisample" ? "vcf" : sniffed.kind;
+      const kind: FileKind = sniffed.kind;
       const cap = capFor(kind);
       if (file.size > cap) {
         setPhase({ step: "error", message: INGEST_REFUSALS.too_large(Math.round(cap / (1024 * 1024))) });
@@ -236,6 +253,14 @@ export function Uploader() {
         ) : phase.step === "error" ? (
           <p role="alert" className="text-danger">
             {phase.message}
+            {phase.action ? (
+              <>
+                {" "}
+                <Link href={phase.action.href} className="underline underline-offset-2">
+                  {phase.action.label}
+                </Link>
+              </>
+            ) : null}
           </p>
         ) : null}
       </div>

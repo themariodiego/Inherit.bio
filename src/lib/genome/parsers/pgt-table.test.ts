@@ -77,6 +77,21 @@ describe("detectPgtHeader", () => {
     expect(splitHeaderLine('"Sample","SNP","Call"')).toEqual({ delimiter: ",", cells: ["Sample", "SNP", "Call"] });
   });
 
+  it("keeps a comma inside a quoted cell and reads a doubled quote as one quote", () => {
+    expect(splitHeaderLine('"Embryo, ID","SNP","Call"')).toEqual({ delimiter: ",", cells: ["Embryo, ID", "SNP", "Call"] });
+    expect(splitHeaderLine('"Embryo ""ID""",SNP,Call')).toEqual({ delimiter: ",", cells: ['Embryo "ID"', "SNP", "Call"] });
+    expect(splitHeaderLine('Sample, "SNP" ,Call')).toEqual({ delimiter: ",", cells: ["Sample", "SNP", "Call"] });
+    const header = detectPgtHeader('"Embryo, ID","SNP","Call"')!;
+    expect(header.columnCount).toBe(3);
+    expect(header.resolved).toEqual(["embryo", "rsid", "genotype"]);
+    expect(planMapping(header)).toEqual({
+      complete: true,
+      identifier: { field: "embryo", column: 0 },
+      genotype: 2,
+      locus: { kind: "rsid", column: 1 },
+    });
+  });
+
   it("classifies a table when at least three of the six fields resolve", () => {
     expect(PGT_DETECTION_MINIMUM_FIELDS).toBe(3);
     const header = detectPgtHeader("Embryo,SNP,Call");

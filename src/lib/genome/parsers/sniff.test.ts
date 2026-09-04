@@ -102,11 +102,47 @@ describe("sniff", () => {
 describe("sniffV2", () => {
   const encode = (text: string) => new TextEncoder().encode(text);
 
-  it("keeps the V1 answer for every existing fixture", () => {
-    for (const name of ["23andme.txt", "ancestry.txt", "myheritage.csv", "ftdna.csv", "sample.vcf", "sample.g.vcf", "sample.vcf.gz", "tiny.bam", "tiny.cram"]) {
-      const bytes = fx(name);
-      expect(narrow(sniffV2(bytes)), name).toEqual(sniff(bytes));
+  it("answers the fixed V1 kind for every existing fixture through the wrapper", () => {
+    const expected: Record<string, { kind: string; compressed: boolean }> = {
+      "23andme.txt": { kind: "array_23andme", compressed: false },
+      "ancestry.txt": { kind: "array_ancestry", compressed: false },
+      "myheritage.csv": { kind: "array_myheritage", compressed: false },
+      "ftdna.csv": { kind: "array_ftdna", compressed: false },
+      "sample.vcf": { kind: "vcf", compressed: false },
+      "sample.g.vcf": { kind: "gvcf", compressed: false },
+      "sample.vcf.gz": { kind: "vcf", compressed: true },
+      "tiny.bam": { kind: "bam", compressed: true },
+      "tiny.cram": { kind: "cram", compressed: false },
+    };
+    for (const [name, answer] of Object.entries(expected)) {
+      expect(narrow(sniffV2(fx(name))), name).toEqual(answer);
+      expect(sniff(fx(name)), name).toEqual(answer);
     }
+  });
+
+  it("answers a null count when the #CHROM line is cut off by the head window or a truncated gzip member", () => {
+    // Padding comments push the header across the 64 KiB decode window.
+    const padding = "##contig=<ID=" + "x".repeat(60) + ">\n";
+    let text = "##fileformat=VCFv4.2\n";
+    while (text.length < 65536 - 40) text += padding;
+    const straddling = text + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tEmbryo_1\tEmbryo_2\tEmbryo_3\n1\t100\t.\tA\tG\t.\t.\t.\tGT\t0/1\t0/0\t1/1\n";
+    expect(straddling.indexOf("#CHROM")).toBeLessThan(65536);
+    expect(straddling.indexOf("Embryo_3")).toBeGreaterThan(65536);
+    expect(sniffV2(encode(straddling))).toEqual({ kind: "vcf", compressed: false, sampleCount: null, sampleNames: [] });
+    // A head handed over mid-line, and a gzip member cut inside the header line.
+    const full = "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tE1\tE2\tE3\n1\t1\t.\tA\tG\t.\t.\t.\tGT\t0/1\t0/0\t1/1\n";
+    const cut = encode(full.slice(0, full.indexOf("E2") + 1));
+    expect(sniffV2(cut)).toEqual({ kind: "vcf", compressed: false, sampleCount: null, sampleNames: [] });
+    const gz = gzipSync(Buffer.from(full));
+    // Whatever decompresses before the truncation point ends inside the header line.
+    expect(sniffV2(gz.subarray(0, gz.length - 30)).sampleCount).toBeNull();
+  });
+
+  it("ignores trailing whitespace on the #CHROM line rather than counting an empty sample", () => {
+    const trailingTab = encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\t\n");
+    expect(sniffV2(trailingTab)).toEqual({ kind: "vcf", compressed: false, sampleCount: 1, sampleNames: ["S1"] });
+    const trailingSpace = encode("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2 \n");
+    expect(sniffV2(trailingSpace)).toMatchObject({ kind: "vcf_multisample", sampleCount: 2, sampleNames: ["S1", "S2"] });
   });
 
   it("counts the sample columns of a VCF and names a multi-sample file", () => {

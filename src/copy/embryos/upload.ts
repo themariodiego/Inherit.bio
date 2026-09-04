@@ -59,9 +59,9 @@ export const INGEST_UNAVAILABLE_SENTENCE = "Inherit cannot take embryo files on 
 export const INGEST_UNAVAILABLE_LEDE =
   "You can answer the first questions now and get the letter for your clinic or lab. The later steps open when files can be added.";
 
-/** On the closing screen: what the later steps will ask for. */
+/** On the closing screen: what the later steps will ask for, true on every basis and for either class of uploader. */
 export const INGEST_NEXT_STEPS =
-  "When files can be added, the next steps ask for the other parent’s email and signature. After that come two things to agree to, and then the file.";
+  "When files can be added, the next steps ask who must sign or what must be shown. After that come two things to agree to, and then the file.";
 
 // ---------------------------------------------------------------------------
 // Step 1 — the three questions (brief lines 374-377, verbatim).
@@ -127,8 +127,12 @@ export const SITUATION_OPTIONS: readonly { id: UploadSituation; label: string; a
   },
 ];
 
-/** The checkbox routes the flow; the record is made when both parents sign (brief line 1727). */
-export const NOTHING_KEPT_YET_NOTE = "Nothing is kept until both parents sign, in a step still to come.";
+/**
+ * The checkbox routes the flow; the draft that keeps a record is a later
+ * step (design §2.2 step 2; brief line 1726: nothing leaves quarantine until
+ * every required party has signed). True today and on every basis.
+ */
+export const NOTHING_KEPT_YET_NOTE = "Nothing is kept yet. A record is made in a step still to come.";
 
 export const BASIS_QUESTION_HEADING = "Who can sign for these embryos?";
 
@@ -137,13 +141,15 @@ export type Basis = "two-evidenced-parents" | "donor-gamete-anonymous" | "parent
 /**
  * The four bases of `closed-embryo-cohort-draft-v1`, each with the sentence
  * its named screen states (brief lines 1731 and 1734 verbatim; the other
- * two say what the rule is in fewer words).
+ * two say what the rule is in fewer words). Labels and sentences are in the
+ * third person, because the same screens follow both situations: a genetic
+ * parent, and someone uploading with both parents’ permission.
  */
 export const BASIS_OPTIONS: readonly { id: Basis; label: string; sentence: string }[] = [
   {
     id: "two-evidenced-parents",
     label: "Both parents can sign for themselves",
-    sentence: "The other parent will sign in their own account.",
+    sentence: "Both parents will sign in their own accounts.",
   },
   {
     id: "donor-gamete-anonymous",
@@ -158,7 +164,7 @@ export const BASIS_OPTIONS: readonly { id: Basis; label: string; sentence: strin
   },
   {
     id: "sole-legal-disposition-authority",
-    label: "I alone have the legal right to decide for these embryos",
+    label: "One person alone has the legal right to decide for these embryos",
     sentence:
       "Inherit is not able to judge a family dispute. If the other genetic parent tells us they object, we stop and delete.",
   },

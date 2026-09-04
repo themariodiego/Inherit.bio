@@ -68,12 +68,19 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
   const whoId = useId();
   const noteId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const terminal = useRef<HTMLParagraphElement>(null);
+  const ending = useRef<HTMLParagraphElement>(null);
   const mounted = useRef(false);
 
+  // A new screen: focus its heading (or, on the terminal, its sentence).
   useEffect(() => {
-    if (mounted.current) heading.current?.focus();
+    if (mounted.current) (heading.current ?? terminal.current)?.focus();
     mounted.current = true;
   }, [state.screen]);
+  // "No" ends the first screen in place: focus the ending so it is read.
+  useEffect(() => {
+    if (end === "no-testing") ending.current?.focus();
+  }, [end]);
 
   const send = (event: FlowEvent) => dispatch(event);
   const backButton = (
@@ -141,7 +148,7 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
             </div>
           ) : null}
           {end === "no-testing" ? (
-            <FlowEnd end="no-testing" action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
+            <FlowEnd end="no-testing" sentenceRef={ending} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
               {NO_TESTING_END}
             </FlowEnd>
           ) : (
@@ -186,6 +193,7 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
       {state.screen === "pdf-end" ? (
         <FlowEnd
           end="pdf"
+          heading={SENT_OPTIONS.find((option) => option.id === "pdf-only")!.label}
           headingId={headingId}
           headingRef={heading}
           action={{ label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") }}
@@ -258,7 +266,7 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
           <h2 id={headingId} ref={heading} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
             {chosenBasis.label}
           </h2>
-          <p role="status" data-slot="basis-sentence" className="max-w-prose text-base leading-relaxed text-ink">
+          <p data-slot="basis-sentence" className="max-w-prose text-base leading-relaxed text-ink">
             {chosenBasis.sentence}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -270,13 +278,12 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
 
       {state.screen === "unavailable" ? (
         <section
-          role="status"
           data-slot="ingest-unavailable"
           className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
         >
-          <h2 id={headingId} ref={heading} tabIndex={-1} className="font-medium outline-none">
+          <p id={headingId} ref={terminal} tabIndex={-1} className="font-medium text-ink outline-none">
             {INGEST_UNAVAILABLE_SENTENCE}
-          </h2>
+          </p>
           <p className="text-base leading-relaxed text-ink">{INGEST_NEXT_STEPS}</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg" className="min-h-11">
@@ -342,32 +349,40 @@ function RadioGroup<Id extends string>({
 
 /**
  * A flow ending: one sentence and one primary action (design §1.4: at most
- * one action), with Back when the ending is a screen of its own.
+ * one action). As a screen of its own it carries a short heading that takes
+ * focus, Back and the way back to Embryos; in place on the first screen its
+ * sentence takes focus instead. Neither is a live region: focus is what
+ * gets the ending read.
  */
 function FlowEnd({
   end,
+  heading,
   headingId,
   headingRef,
+  sentenceRef,
   action,
   back,
   children,
 }: {
   end: "no-testing" | "pdf";
+  heading?: string;
   headingId?: string;
   headingRef?: React.RefObject<HTMLHeadingElement | null>;
+  sentenceRef?: React.RefObject<HTMLParagraphElement | null>;
   action: { label: string; href: string };
   back?: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section role="status" data-slot="flow-end" data-end={end} className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-5">
-      {headingId ? (
-        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="text-base leading-relaxed text-ink outline-none">
-          {children}
+    <section data-slot="flow-end" data-end={end} className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-5">
+      {heading ? (
+        <h2 id={headingId} ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">
+          {heading}
         </h2>
-      ) : (
-        <p className="text-base leading-relaxed text-ink">{children}</p>
-      )}
+      ) : null}
+      <p ref={sentenceRef} tabIndex={sentenceRef ? -1 : undefined} className="text-base leading-relaxed text-ink outline-none">
+        {children}
+      </p>
       <div className="flex flex-wrap gap-3">
         <Button asChild size="lg" className="min-h-11">
           <Link href={action.href}>{action.label}</Link>

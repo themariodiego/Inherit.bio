@@ -1,10 +1,11 @@
 /**
  * The genetic-ingest refusals — brief A.6 lines 2196-2209, every code and
  * its sentence defined once (docs/canonical-artifacts.md: "Genetic-ingest
- * rejection IDs and user-facing messages"). The file processor, the embryo
- * ingest routes, the per-embryo quality reasons, the uploader's preflight
- * and the ingest-error tests all consume this file; nothing else spells
- * these sentences.
+ * rejection IDs and user-facing messages"). Today the uploader's browser
+ * preflight, the per-embryo quality reasons (src/copy/embryos/qc.ts) and
+ * the brief's path (src/lib/genome/ingest-errors.ts) consume it; the file
+ * processor's server-side re-sniff and the embryo ingest routes consume it
+ * when part E0 wires them. Nothing else spells these sentences.
  *
  * Each sentence is written to the 240-character cap rather than the cap
  * being raised; none names an allele, a genotype or a variant identifier;
@@ -109,3 +110,22 @@ export function ingestRefusal(code: IngestRefusalCode, slots: IngestRefusalSlots
 export function isIngestRefusalCode(value: unknown): value is IngestRefusalCode {
   return typeof value === "string" && (INGEST_REFUSAL_CODES as readonly string[]).includes(value);
 }
+
+/**
+ * The refusal a subject target owes a cohort-shaped source — a laboratory
+ * genotype table or a VCF with several sample columns (register
+ * `genetic-file-ingest-v1.targetFormatMatrix.rule` and
+ * `ordinarySubjectSingleSample`; `file-processing-v1.multisampleSubjectRejected`
+ * names the code and the copy id). The uploader's preflight says it before
+ * any byte is sent; the server says it again at finalization.
+ */
+export const SUBJECT_TARGET_REFUSALS = {
+  subject_source_not_single_sample:
+    "This looks like a laboratory file for embryos, or a file with several samples. Inherit takes those under Embryos, not here.",
+} as const;
+
+/** The register's copy ids for the upload refusals, resolved to their one string each. */
+export const UPLOAD_COPY_IDS = {
+  "upload.subject.single-sample-required": SUBJECT_TARGET_REFUSALS.subject_source_not_single_sample,
+} as const;
+
