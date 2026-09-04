@@ -2,7 +2,7 @@ import "server-only";
 
 import { genotypeKey } from "@/lib/genome/reports";
 import { getSubjectGenotypesByRsid, type Db } from "@/lib/genome/load";
-import { readSubjectRuns, subjectRunsBelowThreshold, type StoredRohMeasure } from "./roh";
+import { readSubjectRuns, subjectRunsState, type StoredRohMeasure } from "./roh";
 
 /**
  * Carrier pairs: the one home of the trigger rule (design §2.3; brief line
@@ -16,10 +16,11 @@ import { readSubjectRuns, subjectRunsBelowThreshold, type StoredRohMeasure } fro
  * when all of that lines up — each file reads one changed copy and one
  * unchanged copy of a change classed pathogenic or likely pathogenic, the
  * pattern is autosomal recessive, and every file of each person on its own
- * sits below the runs threshold — does a probability exist, and it is the
- * single Mendelian fraction 1 in 4. Every other case renders no number at
- * all and says which of the eight named reasons applies. A failed trigger
- * never drops a pair from the panel (brief line 346).
+ * sits below the runs threshold, and each file covers the other's position
+ * — does a probability exist, and it is the single Mendelian fraction 1 in
+ * 4. Every other case renders no number at all and says which of the ten
+ * named reasons applies. A failed trigger never drops a pair from the panel
+ * (brief line 346).
  *
  * The trigger is gene-level, as the brief says: the two changes may sit at
  * the same position or at different positions in the gene, and the block
@@ -65,8 +66,12 @@ export type CarrierCopies = "one copy" | "two copies" | "copies not shown";
 
 /**
  * The closed reason table (design §2.3; ADR 0017 §5-6): the design's six,
- * `sex-unknown` for an X-linked pattern and `two-copies` for a file that
- * shows two changed copies rather than one.
+ * `sex-unknown` for an X-linked pattern, `two-copies` for a file that shows
+ * two changed copies rather than one, `not-covered` for a file that does
+ * not report the other person's position (never imputed, brief line 1349),
+ * and the two runs answers told apart: `runs-above-threshold` for a file
+ * Inherit measured and found above a threshold, `runs-unchecked` for a
+ * person whose runs were not established at all.
  */
 export const CARRIER_REASONS = [
   "dominant",
@@ -76,6 +81,8 @@ export const CARRIER_REASONS = [
   "no-pattern",
   "sex-unknown",
   "two-copies",
+  "not-covered",
+  "runs-above-threshold",
   "runs-unchecked",
 ] as const;
 
@@ -106,17 +113,31 @@ export interface CarrierMatchPerson {
   variant: CarrierVariantReading;
 }
 
+/** A position one person's file does not report: the other person's change. */
+export interface UncoveredPosition {
+  /** The person whose file does not cover it. */
+  dataSubjectId: string;
+  rsid: number;
+}
+
 interface CarrierMatchCommon {
   gene: string;
   conditionId: string | null;
   conditionName: string | null;
   a: CarrierMatchPerson;
   b: CarrierMatchPerson;
+  /** True when each file reports the position the other person's reading names (always true of a probability). */
+  positionsBothCovered: boolean;
 }
 
 export type CarrierMatch =
   | (CarrierMatchCommon & { kind: "probability"; probability: number })
-  | (CarrierMatchCommon & { kind: "no-probability"; reason: CarrierReason });
+  | (CarrierMatchCommon & {
+      kind: "no-probability";
+      reason: CarrierReason;
+      /** For `not-covered`: the file and the position it does not report. */
+      uncovered: UncoveredPosition | null;
+    });
 
 export interface CarrierPairInput {
   a: CarrierPerson;
@@ -255,6 +276,23 @@ function carriedReading(
   return chosen;
 }
 
+/**
+ * The position of the other person's reading that this person's file does
+ * not report, if any: a probability over a position one file does not
+ * cover would be an imputation (brief line 1349), so the arithmetic is
+ * refused and the position named. B's gap at A's position is named first.
+ */
+export function uncoveredPosition(
+  a: CarrierPerson,
+  b: CarrierPerson,
+  readingA: CarrierVariantReading,
+  readingB: CarrierVariantReading,
+): UncoveredPosition | null {
+  if (!b.genotypes.has(readingA.rsid)) return { dataSubjectId: b.dataSubjectId, rsid: readingA.rsid };
+  if (!a.genotypes.has(readingB.rsid)) return { dataSubjectId: a.dataSubjectId, rsid: readingB.rsid };
+  return null;
+}
+
 function reasonFor(
   condition: CarrierCondition | null,
   a: CarrierPerson,
@@ -287,10 +325,15 @@ function reasonFor(
   // dropping the pair (brief line 346, D-035).
   if (readingA.copies === "two copies" || readingB.copies === "two copies") return "two-copies";
 
+  // Each file must report the other person's position; nothing is imputed.
+  if (uncoveredPosition(a, b, readingA, readingB) !== null) return "not-covered";
+
   // Each person's files are asked on their own; the two are never compared.
-  if (!subjectRunsBelowThreshold(a.runs) || !subjectRunsBelowThreshold(b.runs)) {
-    return "runs-unchecked";
-  }
+  // A measured file above a threshold is the brief's refusal; a person whose
+  // runs were never established is a different, weaker answer.
+  const states = [subjectRunsState(a.runs), subjectRunsState(b.runs)];
+  if (states.includes("above")) return "runs-above-threshold";
+  if (states.includes("unchecked")) return "runs-unchecked";
   return null;
 }
 
@@ -330,19 +373,21 @@ export function evaluateCarrierPairs(input: CarrierPairInput): CarrierMatch[] {
     if (readingA.copies === "copies not shown" && readingB.copies === "copies not shown") continue;
 
     const condition = conditionFor(group.gene, conditions);
+    const uncovered = uncoveredPosition(a, b, readingA, readingB);
     const common: CarrierMatchCommon = {
       gene: group.gene,
       conditionId: condition?.conditionId ?? null,
       conditionName: condition?.conditionName ?? null,
       a: { dataSubjectId: a.dataSubjectId, displayLabel: a.displayLabel, variant: readingA },
       b: { dataSubjectId: b.dataSubjectId, displayLabel: b.displayLabel, variant: readingB },
+      positionsBothCovered: uncovered === null,
     };
 
     const reason = reasonFor(condition, a, b, readingA, readingB);
     matches.push(
       reason === null
         ? { ...common, kind: "probability", probability: BOTH_CHANGED_COPIES_PROBABILITY }
-        : { ...common, kind: "no-probability", reason },
+        : { ...common, kind: "no-probability", reason, uncovered: reason === "not-covered" ? uncovered : null },
     );
   }
 
@@ -390,7 +435,15 @@ export interface CarrierPairSummary {
   classifiedPositions: number;
   /** Classified positions both files cover: the count the empty sentence prints. */
   positionsBothCover: number;
+  /**
+   * What each file reported at the classified positions, exactly as the rule
+   * read them (empty when nothing was read). Portrait reads them again for
+   * the one-sided sentences of brief line 2238, so the same read serves both.
+   */
+  genotypes: { a: ReadonlyMap<number, string>; b: ReadonlyMap<number, string> };
 }
+
+const NO_GENOTYPES: CarrierPairSummary["genotypes"] = { a: new Map(), b: new Map() };
 
 /** Every classified reference position, paged to the read budget. */
 export async function readClassifiedVariants(supabase: Db): Promise<CarrierRefVariant[]> {
@@ -451,14 +504,17 @@ export async function resolveCarrierPair(
   conditions: readonly CarrierCondition[],
 ): Promise<CarrierPairSummary> {
   const classifiedPositions = refVariants.length;
-  if (classifiedPositions === 0) return { matches: [], classifiedPositions, positionsBothCover: 0 };
+  if (classifiedPositions === 0) {
+    return { matches: [], classifiedPositions, positionsBothCover: 0, genotypes: NO_GENOTYPES };
+  }
   const rsids = refVariants.map((variant) => variant.rsid);
   const [readA, readB] = await Promise.all([
     getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids),
     getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids),
   ]);
+  const genotypes = { a: readA.genotypes, b: readB.genotypes };
   const positionsBothCover = countPositionsBothCover(readA.genotypes, readB.genotypes);
-  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover };
+  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover, genotypes };
 
   const [runsA, runsB] = await Promise.all([
     readSubjectRuns(supabase, a.dataSubjectId),
@@ -474,5 +530,6 @@ export async function resolveCarrierPair(
     }),
     classifiedPositions,
     positionsBothCover,
+    genotypes,
   };
 }

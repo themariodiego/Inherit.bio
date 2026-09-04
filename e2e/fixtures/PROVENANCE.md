@@ -51,6 +51,9 @@ data.
   positions, and the real runs measure reports the file measured, holding at
   least one run, and below both thresholds. The spec checks the committed file against the generator's
   output and the stored runs measure against the same real measure.
+- Also ingested for both accounts of `e2e/portrait.spec.ts`, which
+  classifies the same seven positions under its own synthetic gene names
+  (`PTGENE1`–`PTGENE7`) and removes them in `afterAll`.
 - Repository SHA-256:
   `07c47a62ec9ad6fa384ab7a1fde0a439e4434627e90883457e57d613209e8078`.
 

@@ -42,7 +42,8 @@ export interface HealthPictureColumn {
   /** The subject the letters are read from. */
   dataSubjectId: string;
   displayLabel: string;
-  files: number;
+  /** Every file in the record; null renders no count at all (a Portrait chip before any file is read). */
+  files: number | null;
 }
 
 export interface HealthPictureRow {
@@ -90,10 +91,12 @@ export function SubjectChip({
           {KIND_CHIPS[kind]}
         </span>
       ) : null}
-      {/* inherit-figure-exempt: a count of files this record holds, not a result */}
-      <span data-slot="subject-files" className="shrink-0 text-sm font-normal text-ink-muted">
-        {fileCount(column.files)}
-      </span>
+      {column.files === null ? null : (
+        // inherit-figure-exempt: a count of files this record holds, not a result
+        <span data-slot="subject-files" className="shrink-0 text-sm font-normal text-ink-muted">
+          {fileCount(column.files)}
+        </span>
+      )}
     </span>
   );
 }

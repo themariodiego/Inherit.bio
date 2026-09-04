@@ -98,6 +98,7 @@ function condition(overrides: Partial<CarrierCondition> = {}): CarrierCondition 
 function evaluate(
   overrides: {
     variant?: Partial<CarrierRefVariant>;
+    refVariants?: CarrierRefVariant[];
     condition?: Partial<CarrierCondition> | null;
     a?: Partial<CarrierPerson>;
     b?: Partial<CarrierPerson>;
@@ -106,7 +107,7 @@ function evaluate(
   return evaluateCarrierPairs({
     a: person({ dataSubjectId: SELF_A, displayLabel: "Ana", ...overrides.a }),
     b: person({ dataSubjectId: SELF_B, displayLabel: "Bo", ...overrides.b }),
-    refVariants: [refVariant(overrides.variant)],
+    refVariants: overrides.refVariants ?? [refVariant(overrides.variant)],
     conditions: overrides.condition === null ? [] : [condition(overrides.condition ?? {})],
   });
 }
@@ -199,21 +200,52 @@ describe("the one probability", () => {
     ).toBe(1);
   });
 
-  it("triggers on the gene, not the position: two different changes in one gene (D-032)", () => {
+  it("triggers on the gene, not the position: two different changes in one gene, each file covering the other's position (D-032)", () => {
+    const twoPositions = [
+      refVariant({ rsid: 900_001, clinvarSignificance: "Pathogenic" }),
+      refVariant({ rsid: 900_002, alt: "T", clinvarSignificance: "Likely pathogenic" }),
+    ];
     const matches = evaluateCarrierPairs({
-      a: person({ dataSubjectId: SELF_A, displayLabel: "Ana", genotypes: new Map([[900_001, "A/G"]]) }),
-      b: person({ dataSubjectId: SELF_B, displayLabel: "Bo", genotypes: new Map([[900_002, "C/T"]]) }),
-      refVariants: [
-        refVariant({ rsid: 900_001, clinvarSignificance: "Pathogenic" }),
-        refVariant({ rsid: 900_002, alt: "T", clinvarSignificance: "Likely pathogenic" }),
-      ],
+      a: person({ dataSubjectId: SELF_A, displayLabel: "Ana", genotypes: new Map([[900_001, "A/G"], [900_002, "C/C"]]) }),
+      b: person({ dataSubjectId: SELF_B, displayLabel: "Bo", genotypes: new Map([[900_001, "A/A"], [900_002, "C/T"]]) }),
+      refVariants: twoPositions,
       conditions: [condition()],
     });
     expect(matches).toHaveLength(1);
     expect(matches[0].kind).toBe("probability");
+    expect(matches[0].positionsBothCovered).toBe(true);
     // Each person's own variant and classification are carried, not one shared row.
     expect(matches[0].a.variant).toMatchObject({ rsid: 900_001, classification: "Pathogenic", copies: "one copy" });
     expect(matches[0].b.variant).toMatchObject({ rsid: 900_002, classification: "Likely pathogenic", copies: "one copy" });
+  });
+
+  it("never imputes: two changes at different positions, each file lacking the other's position, is refused and the gap named (line 1349)", () => {
+    const twoPositions = [
+      refVariant({ rsid: 900_001, clinvarSignificance: "Pathogenic" }),
+      refVariant({ rsid: 900_002, alt: "T", clinvarSignificance: "Likely pathogenic" }),
+    ];
+    const matches = evaluateCarrierPairs({
+      a: person({ dataSubjectId: SELF_A, displayLabel: "Ana", genotypes: new Map([[900_001, "A/G"]]) }),
+      b: person({ dataSubjectId: SELF_B, displayLabel: "Bo", genotypes: new Map([[900_002, "C/T"]]) }),
+      refVariants: twoPositions,
+      conditions: [condition()],
+    });
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      kind: "no-probability",
+      reason: "not-covered",
+      positionsBothCovered: false,
+      uncovered: { dataSubjectId: SELF_B, rsid: 900_001 },
+    });
+    expect(countCarrierMatches(matches)).toBe(0);
+    // Only the second person's gap: A covers B's position.
+    const oneGap = evaluateCarrierPairs({
+      a: person({ dataSubjectId: SELF_A, displayLabel: "Ana", genotypes: new Map([[900_001, "A/G"], [900_002, "C/C"]]) }),
+      b: person({ dataSubjectId: SELF_B, displayLabel: "Bo", genotypes: new Map([[900_002, "C/T"]]) }),
+      refVariants: twoPositions,
+      conditions: [condition()],
+    });
+    expect(oneGap[0]).toMatchObject({ reason: "not-covered", uncovered: { dataSubjectId: SELF_B, rsid: 900_001 } });
   });
 
   it("carries every file of a person being below threshold, each file asked on its own", () => {
@@ -298,6 +330,18 @@ describe("every other case: no probability and a named reason", () => {
       reason: "two-copies",
     },
     {
+      name: "a file that does not cover the other person's position",
+      overrides: {
+        a: { genotypes: new Map([[900_001, "A/G"]]) },
+        b: { genotypes: new Map([[900_002, "C/T"]]) },
+        refVariants: [
+          refVariant({ rsid: 900_001, clinvarSignificance: "Pathogenic" }),
+          refVariant({ rsid: 900_002, alt: "T", clinvarSignificance: "Pathogenic" }),
+        ],
+      },
+      reason: "not-covered",
+    },
+    {
       name: "two changed copies in the other file",
       overrides: { b: { genotypes: new Map([[900_001, "G/G"]]) } },
       reason: "two-copies",
@@ -305,7 +349,17 @@ describe("every other case: no probability and a named reason", () => {
     {
       name: "one file above the runs threshold",
       overrides: { a: { runs: [RUNS_ABOVE] } },
-      reason: "runs-unchecked",
+      reason: "runs-above-threshold",
+    },
+    {
+      name: "one file above the runs threshold beside one that could not be measured: the measured answer wins",
+      overrides: { a: { runs: [RUNS_ABOVE, RUNS_UNMEASURABLE] } },
+      reason: "runs-above-threshold",
+    },
+    {
+      name: "one file above the runs threshold in one person and none for the other: the measured answer wins",
+      overrides: { a: { runs: [RUNS_ABOVE] }, b: { runs: [] } },
+      reason: "runs-above-threshold",
     },
     {
       name: "one file whose runs could not be measured",
@@ -344,8 +398,8 @@ describe("every other case: no probability and a named reason", () => {
     });
   }
 
-  it("covers every reason the closed table names, and the table has eight", () => {
-    expect(CARRIER_REASONS).toHaveLength(8);
+  it("covers every reason the closed table names, and the table has ten", () => {
+    expect(CARRIER_REASONS).toHaveLength(10);
     expect(new Set(cases.map((testCase) => testCase.reason))).toEqual(new Set(CARRIER_REASONS));
   });
 

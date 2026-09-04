@@ -164,9 +164,9 @@ describe("health-picture copy", () => {
     );
   });
 
-  it("names every reason in the closed table of eight, and no other", () => {
+  it("names every reason in the closed table of ten, and no other", () => {
     expect(Object.keys(copy.CARRIER_REASON_PHRASES).sort()).toEqual([...CARRIER_REASONS].sort());
-    expect(CARRIER_REASONS).toHaveLength(8);
+    expect(CARRIER_REASONS).toHaveLength(10);
     expect(copy.CARRIER_REASON_PHRASES.dominant).toBe("the change runs in a dominant pattern");
     expect(copy.CARRIER_REASON_PHRASES.harmless).toBe("the change is classed as harmless");
     expect(copy.CARRIER_REASON_PHRASES["unknown-meaning"]).toBe(
@@ -180,6 +180,14 @@ describe("health-picture copy", () => {
     );
     expect(copy.CARRIER_REASON_PHRASES["runs-unchecked"]).toBe(
       "Inherit could not check how much of one file is made of long identical stretches",
+    );
+    // The runs answers told apart: a measured file above the limit is not
+    // "could not check"; a position one file does not report is named.
+    expect(copy.CARRIER_REASON_PHRASES["runs-above-threshold"]).toBe(
+      "one file has more long identical stretches than Inherit’s limit allows",
+    );
+    expect(copy.CARRIER_REASON_PHRASES["not-covered"]).toBe(
+      "one file does not cover the position the other person’s change is at",
     );
     // The two beyond the design's six: what is not recorded, said truly
     // (D-031), and two changed copies named rather than dropped (D-035).
