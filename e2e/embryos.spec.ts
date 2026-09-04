@@ -37,7 +37,16 @@ import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
  * A second cohort names a required upload principal with no account, which
  * the capability reader resolves as unreviewed, so the jurisdiction-
  * unavailable state renders under the TEST-LOCAL flag without inventing a
- * jurisdiction row.
+ * jurisdiction row. The flag-off branch (every route refusing for an
+ * account's real, unset jurisdiction) is `e2e/embryos.nojurisdiction.spec.ts`
+ * in the `jurisdiction-off` project, against a second server from the same
+ * build.
+ *
+ * The gate's write and read path (the cookie the acknowledgement sets is
+ * the one `acknowledged()` verifies, and a different session fails) is
+ * proven in `src/lib/embryos/tier2.test.ts` over the pure pair; the
+ * browser proof of the gated and complete states stays blocked on a
+ * seedable `embryo.analysis` grant (E0).
  */
 
 const A = { email: "embryos-a@e2e.local", password: "e2e-embryos-pw" };
