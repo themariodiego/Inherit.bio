@@ -833,4 +833,79 @@ Decisions:
 - A `variant_call` report's evidence chip reads "This position is named by a
   published prescribing guideline. Inherit reads the letters only." rather
   than a sentence about replication and sibling checks.
+## 2026-09-04 — Portrait page (F3b): the decisions the build took
+
+Context: `/family/portrait/[pairId]` built on the F3 libraries and F2's
+carrier pairs; ADR 0015 moved to Accepted with thirteen decisions. The
+ones that depart from the design or the mockup, with their reasons:
+- A missing processed file is not a blocking-screen step: whether another
+  adult has a file is a derived fact the gate withholds on every Family
+  surface, so it is read after the gate and rendered as the outputs'
+  "no file yet" sentence.
+- A paused pair renders the pause sentence, not a step nobody left undone.
+- Output cards and "How sure we are" are labelled sections, not headings,
+  so the page stays at three headings under the six-heading cap however
+  many cards render.
+- The viewer's own missing steps read in the second person.
+- One refusals link after the list (to `/science` until `/science/limits`
+  exists), within the interactive budget.
+- One-sided readings (one parent shows a copy, the other's covered
+  positions show none) render the brief's exact sentence and no
+  distribution: the only cross would show zero affected, contradicting
+  "not zero risk"; they are restricted to registry-recessive genes; two
+  copies on one side renders nothing because the brief gives no sentence.
+- Deletion is the viewer revoking their own `family.portrait` grant
+  through the existing consents route and `revoke_directional_purpose_v1`,
+  which removes the pair's `portrait_results` and returns the pair to
+  pending; no new routine.
+- Open decisions of the design: 6 (the §2 sentence form), 6b (a sub-1%
+  category in its own 1,000 block, unreachable for exact fractions),
+  7 (the chromosomal-sex expectation exists in copy and is not rendered
+  until a citation id exists), 10 (the refusals heading), 11 (one pair
+  bar with both chips). D-031 stays open: an X-linked pair renders the
+  refusal; the cross exists in `mendel.ts` unrendered.
+- Interface extensions on F2's side: `CarrierPairSummary.genotypes`
+  (additive) and `files: number | null` on the health-picture column.
+- Requests: a `--line-strong` token (the page uses `border-ink`);
+  `/science/limits`; a schema note that today every `family.portrait`
+  pair has two accounts, so the "opened their own account" step is
+  reachable only by a future Path B record.
+
+## 2026-09-04 — Portrait: corrections after the adversarial review
+
+Context: the four-lens review of branch `family-f3b` (D-052 to D-058) and
+three findings that changed no rule.
+
+Decisions:
+- The closed reason table has ten reasons. `runs-above-threshold` (a
+  measured file above a threshold) is the only reason Portrait renders the
+  brief's line-1349 refusal for; `runs-unchecked` renders the side-by-side
+  page's sentence with its own phrase, "one file has more long identical
+  stretches than Inherit's limit allows" for the former and "Inherit could
+  not check…" for the latter, because "could not check" is false of a file
+  Inherit measured. `not-covered` names a position one file does not
+  report; nothing is imputed.
+- The exact 25-in-100 arithmetic needs each file to report the position
+  the other person's reading names; otherwise the card renders the
+  cannot-calculate sentence naming that person and position, and never
+  "Both files cover the positions this uses".
+- A gene with a one-sided reading renders that reading alone on Portrait;
+  the carrier rule's refusal for the same gene (the other side's change
+  harmless or of unknown meaning) stays on the side-by-side page, where
+  its sentence is about the two changes and not about a child.
+- No sentence slot takes the first-person placeholder. The viewer's
+  sentences have second-person forms ("Your file does not cover rs…", "You
+  haven't added a file yet", "we found no second copy in you"); the other
+  person is named by the graph's label.
+- On an exact block the runs measure is listed under "What we checked",
+  since it was measured; "What we do not check" keeps the true assumptions.
+- Deleting Portrait revokes the viewer's own grant; the dialog says so and
+  that the page opens again when the viewer turns Portrait on again.
+- The acknowledgement form renders only when the acknowledgement is the
+  viewer's one remaining step.
+- Line 356's talent, athleticism, attractiveness and skin tone each have a
+  refusal card. The brief's two reasons are examples, not mandates: the
+  intelligence one is used as written, the height one keeps its grade-9
+  rewrite (the "Portrait readability" entry above); a reason may run to two
+  sentences, as the brief's own example does.
 
