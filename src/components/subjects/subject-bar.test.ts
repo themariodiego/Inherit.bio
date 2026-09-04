@@ -83,6 +83,9 @@ describe("SubjectBar", () => {
     expect(html).toMatch(/data-slot="subject-kind"[^>]*>Embryo</);
     expect(html).toContain(">3 files<");
     expect(html).not.toContain("/files/upload");
+    // X2.4: an embryo's disc carries no subject colour token.
+    expect(html).not.toMatch(/bg-subject-/);
+    expect(html).toMatch(/data-slot="subject-disc"[^>]*>E</);
   });
 
   it("renders no file count when the count is withheld", () => {

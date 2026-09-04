@@ -82,5 +82,7 @@ export function figureText(spec: StandaloneFigureSpec, denominator?: number | nu
         value: differencePercentagePoints(spec.after, spec.before).text,
         unit: PERCENTAGE_POINTS_GLOSS,
       };
+    case "measure":
+      return { value: spec.value.toFixed(spec.decimals), unit: spec.unit };
   }
 }
