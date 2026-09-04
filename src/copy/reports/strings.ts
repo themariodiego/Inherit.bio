@@ -36,6 +36,24 @@ export const NO_FILE_YET = "Add a file to see a result here.";
 export const NOTHING_TO_DO =
   "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.";
 
+/**
+ * "What you can do" on a Medicines report (ADR 0021). Brief line 630’s fixed
+ * string is false on a position a prescribing guideline names, and filling
+ * the heading with advice is what §6.4 forbids; this sentence is true and
+ * gives none. Selected by `whatYouCanDo` for the `medicines` category only.
+ */
+export const WHAT_YOU_CAN_DO_MEDICINES =
+  "A doctor who prescribes for you may want to know this result. Inherit does not say what any doctor should do with it.";
+
+/**
+ * The statement under "What you can do" for a report’s user-facing category:
+ * the Medicines string for `medicines`, brief line 630’s string for every
+ * other category and for a template whose legacy category is unmapped.
+ */
+export function whatYouCanDo(category: CategoryId | null): string {
+  return category === "medicines" ? WHAT_YOU_CAN_DO_MEDICINES : NOTHING_TO_DO;
+}
+
 export const NOT_DIAGNOSTIC =
   "This is not a diagnosis. Inherit is not a doctor and no clinician has reviewed this. Talk to a qualified professional before acting on anything here.";
 
@@ -115,7 +133,7 @@ export const CATEGORY_DESCRIPTIONS: Record<CategoryId, string> = {
   "food-drink-metabolism": "How your body handles what you eat and drink, from caffeine to milk.",
   "heart-circulation": "Your heart, your blood vessels and the fats and sugar carried in your blood.",
   "immune-allergies": "How your body fights germs and why it may react to harmless things.",
-  medicines: "How your body may respond to some common medicines.",
+  medicines: "The letters your file shows at single DNA positions that prescribing guidelines name.",
   "brain-memory-mood": "Thinking, memory, mood and habits, and how they may change with age.",
   cancer: "Common DNA changes linked to a higher or lower chance of some cancers.",
   "having-children": "Trying for a baby, pregnancy and what a parent may pass to a child.",
@@ -182,11 +200,3 @@ export const LIST_NO_FILE = "Add a file to see which reports it covers.";
 
 /** The reports library has not been seeded. */
 export const LIBRARY_EMPTY = "The report library has not been seeded on this deployment yet.";
-
-/**
- * The Medicines category has no report (X15: an absent category is stated,
- * never silent). Three sentences, no promise: how a body handles a medicine
- * depends on more than one DNA position, and Inherit reads one at a time.
- */
-export const MEDICINES_ABSENT =
-  "Inherit does not offer reports about medicines. How a body handles a medicine depends on more than one DNA position. A report built from one position would say less than it seems to.";

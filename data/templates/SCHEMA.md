@@ -32,8 +32,15 @@ templates seeded into `public.report_templates`.
     "pgs_id": null,                        // set instead of variants for PRS templates
     "citations": [
       { "pmid": "16522833", "label": "Cornelis et al., JAMA 2006" },
-      { "doi": "10.1093/aje/kwq162", "label": "…" }
-    ]
+      { "doi": "10.1093/aje/kwq162", "label": "…" },
+      // optional ISO date the source was read (required on Medicines templates)
+      { "pmid": "28198005", "label": "…", "accessedOn": "2026-09-03" }
+    ],
+    // optional seed-file provenance, one entry per outside source the facts
+    // were read from; validated, not seeded into the database
+    "source": {
+      "guideline": { "name": "CPIC", "licence": "CC0 1.0, attribution requested", "url": "https://…", "accessedOn": "2026-09-03" }
+    }
   }
 ]
 ```
@@ -59,6 +66,18 @@ Rules (enforced by `scripts/validate-templates.ts` and CI):
 - `interpretations` covers all genotypes derivable from ref/alt (both
   homozygotes + heterozygote; for chrom 24/25 haploid calls use single-letter
   keys). Genotype keys use alphabetically sorted allele order.
+- A citation may carry `accessedOn`, an ISO date (`YYYY-MM-DD`) on which the
+  cited source was read. A template may carry `source`: an object whose
+  entries each name an outside source (`name`), its `url` (https), the
+  `accessedOn` date and optionally its `licence`. `source` is validated and
+  stays in the seed file; `scripts/seed.ts` does not store it.
+- Medicines templates (`category: "pharmacogenomics"`, ADR 0021) are
+  `layer: "variant_call"` with `estimate_kind: null`, carry `accessedOn` on
+  every citation and a `source` object, and pass the Medicines-only rows of
+  `MEDICINES_BANNED_PATTERNS`: no metabolizer phenotype, no response language,
+  no dose direction and no drug choice. They say which letters the file shows
+  at one position a prescribing guideline names, which named forms carry that
+  letter, and what the position cannot tell the reader.
 - No diagnostic or medical-advice language: reports describe association and
   effect size in plain terms and always in an informational register.
 - Coverage honesty is handled by the renderer: when a user's file lacks the
@@ -70,4 +89,4 @@ Category slugs (≥12 required at launch):
 `autoimmune`, `mental-health`, `longevity`, `metabolic-obesity`,
 `gastrointestinal`, `environmental-sensitivity`, `addiction`,
 `reproductive-family`, `aesthetic-cosmetic`, `basic-traits`,
-`lifestyle-wellness`.
+`lifestyle-wellness`, `pharmacogenomics` (the Medicines category, ADR 0021).

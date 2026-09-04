@@ -27,7 +27,6 @@ import {
   LAYER_LABELS,
   LIMIT_OF_FILE,
   MORE_SOURCES,
-  NOTHING_TO_DO,
   NOT_COVERED_ARRAY,
   NOT_COVERED_VCF,
   NO_CALL,
@@ -43,6 +42,7 @@ import {
   WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
   coverageSentence,
   supportingStudies,
+  whatYouCanDo,
 } from "@/copy/reports/strings";
 import type { FigureClass } from "@/lib/figures/contract";
 import type { GenotypeSpec } from "@/lib/figures/spec";
@@ -510,8 +510,10 @@ export default async function ReportDetailPage(
           </div>
         }
         whatYouCanDo={
+          // Brief line 630’s fixed string, or the Medicines string for that
+          // category alone (ADR 0021): never advice, never empty.
           <p {...REQUIRED_ACCURACY} className="text-sm leading-relaxed text-ink">
-            {NOTHING_TO_DO}
+            {whatYouCanDo(categoryId)}
           </p>
         }
         whereThisComesFrom={

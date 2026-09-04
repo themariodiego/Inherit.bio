@@ -31,7 +31,15 @@ const CATEGORIES = new Set([
   "aesthetic-cosmetic",
   "basic-traits",
   "lifestyle-wellness",
+  // ADR 0021: the Medicines category’s per-position reports.
+  "pharmacogenomics",
 ]);
+
+/** Legacy slug of the Medicines category (ADR 0021). */
+export const MEDICINES_CATEGORY = "pharmacogenomics";
+
+/** An ISO calendar date, the only form an access date takes in a seed file. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const EVIDENCE = new Set<string>(EVIDENCE_LEVELS);
 const LAYER_SET = new Set<string>(LAYERS);
@@ -56,6 +64,53 @@ export const BANNED_PATTERNS: readonly [RegExp, string][] = [
 /** The label of every banned pattern the text matches, in pattern order. */
 export function bannedLanguage(text: string): string[] {
   return BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
+ * Rows for the Medicines category only (ADR 0021), matched against the whole
+ * serialised template. A Medicines report says which letters the file shows
+ * at a position a prescribing guideline names, which named forms carry that
+ * letter, and what the position cannot tell the reader — never a metabolizer
+ * phenotype, a response, a dose direction or a drug choice, because none of
+ * those follows from one position of an unphased file.
+ */
+export const MEDICINES_BANNED_PATTERNS: readonly [RegExp, string][] = [
+  [/\bmetaboli[sz]er(s)?\b/i, "phenotype word (ADR 0021)"],
+  [/\brespon(?:d|ds|ded|ding|se|ses|sive)\b/i, "response language (ADR 0021)"],
+  [/\b(?:poor|intermediate|rapid|ultrarapid|extensive|normal)\s+(?:function|activity)\b/i, "phenotype word (ADR 0021)"],
+  [/\b(?:higher|lower|reduced|increased|standard|starting|lower|adjusted)\s+dose\b/i, "dose direction (ADR 0021)"],
+  [/\b(?:take|start|stop|avoid|switch|choose|prescribe)\s+(?:this|that|the|a|an|your)?\s*(?:medicine|medicines|drug|drugs|dose)\b/i, "drug choice (ADR 0021)"],
+];
+
+/** The label of every Medicines-only row the text matches, in pattern order. */
+export function medicinesBannedLanguage(text: string): string[] {
+  return MEDICINES_BANNED_PATTERNS.filter(([re]) => re.test(text)).map(([, why]) => why);
+}
+
+/**
+ * Optional seed-file provenance (`source`): one entry per outside source the
+ * template’s facts were read from, each with a name, an https URL and the
+ * ISO date it was read. Not seeded into the database; kept in the file so
+ * the currency of a template can be checked against its sources.
+ */
+export function sourceFindings(source: unknown): string[] {
+  if (source == null) return [];
+  if (typeof source !== "object" || Array.isArray(source)) return ["source must be an object"];
+  const findings: string[] = [];
+  for (const [key, entry] of Object.entries(source as Record<string, unknown>)) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      findings.push(`source.${key} must be an object`);
+      continue;
+    }
+    const { name, url, accessedOn, licence } = entry as Record<string, unknown>;
+    if (typeof name !== "string" || name.trim() === "") findings.push(`source.${key}: missing name`);
+    if (typeof url !== "string" || !/^https:\/\/\S+$/.test(url)) findings.push(`source.${key}: url must be https`);
+    if (typeof accessedOn !== "string" || !ISO_DATE.test(accessedOn))
+      findings.push(`source.${key}: accessedOn must be an ISO date (YYYY-MM-DD)`);
+    if (licence !== undefined && (typeof licence !== "string" || licence.trim() === ""))
+      findings.push(`source.${key}: licence must be a non-empty string when present`);
+  }
+  return findings;
 }
 
 function genotypeKeys(ref: string, alt: string, chrom: number): string[] {
@@ -150,6 +205,27 @@ function main() {
         if (c.pmid && !/^\d{6,9}$/.test(String(c.pmid)))
           errors.push(`${id}: bad pmid ${c.pmid}`);
         if (!c.label) errors.push(`${id}: citation missing label`);
+        // G4.7: an access date, when carried, is an ISO date; Medicines
+        // templates must carry one on every citation (ADR 0021).
+        if (c.accessedOn !== undefined && !(typeof c.accessedOn === "string" && ISO_DATE.test(c.accessedOn)))
+          errors.push(`${id}: citation accessedOn must be an ISO date (YYYY-MM-DD)`);
+        if (t.category === MEDICINES_CATEGORY && c.accessedOn === undefined)
+          errors.push(`${id}: Medicines citations need accessedOn (ADR 0021)`);
+      }
+      for (const finding of sourceFindings(t.source)) errors.push(`${id}: ${finding}`);
+
+      // ADR 0021: a Medicines template is a variant_call over positions, with
+      // its sources and their access dates in the file, and none of the
+      // phenotype, response, dose or drug-choice language its rows forbid.
+      if (t.category === MEDICINES_CATEGORY) {
+        if (layer !== "variant_call")
+          errors.push(`${id}: Medicines templates are variant_call (ADR 0021)`);
+        if (t.estimate_kind != null)
+          errors.push(`${id}: Medicines templates carry estimate_kind null (ADR 0021)`);
+        if (t.source == null) errors.push(`${id}: Medicines templates need a source object (ADR 0021)`);
+        for (const why of medicinesBannedLanguage(JSON.stringify(t))) {
+          errors.push(`${id}: banned language (${why})`);
+        }
       }
 
       const isPrs = t.pgs_id != null;

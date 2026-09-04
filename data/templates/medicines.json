@@ -1,0 +1,518 @@
+[
+  {
+    "slug": "vkorc1-rs9923231-one-position",
+    "category": "pharmacogenomics",
+    "title": "Warfarin, one position · VKORC1",
+    "summary": "This reads one position near VKORC1, the only position CPIC uses to name its two VKORC1 forms. It shows the letters your file has there. It says nothing about how warfarin works in you, and it is not a dose.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 9923231,
+        "gene": "VKORC1",
+        "chrom": 16,
+        "pos38": 31096368,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. CPIC calls C the reference form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose.",
+          "CT": "Your file shows C on one copy and T on the other. CPIC calls T the variant form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose.",
+          "TT": "Your file shows T on both copies at this position. CPIC calls T the variant form of VKORC1. This says nothing about how warfarin works in you, and it is not a dose."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "28198005",
+        "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.VKORC1",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/9923231",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "cyp2c19-rs4244285-one-position",
+    "category": "pharmacogenomics",
+    "title": "Clopidogrel, the *2 position · CYP2C19",
+    "summary": "This reads one of the 43 positions CPIC uses to name CYP2C19 forms: the one where an A marks the *2 form. It cannot say which pair of forms you carry, or how clopidogrel works in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 4244285,
+        "gene": "CYP2C19",
+        "chrom": 10,
+        "pos38": 94781859,
+        "ref": "G",
+        "alt": "A",
+        "interpretations": {
+          "GG": "Your file shows G on both copies at this position. G is the letter of the reference-like *38 form here. The other 42 positions CPIC uses are not read, so this is not a *1 call.",
+          "AG": "Your file shows A on one copy and G on the other. A is the letter of the *2 form at this position. Which forms your other positions carry is not read here.",
+          "AA": "Your file shows A on both copies at this position. A is the letter of the *2 form. This is one position, not the pair of CYP2C19 forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "35034351",
+        "label": "CPIC guideline for CYP2C19 and clopidogrel, 2022 update, Clin Pharmacol Ther 2022",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C19",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/4244285",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "cyp2c19-rs12248560-one-position",
+    "category": "pharmacogenomics",
+    "title": "Clopidogrel, the *17 position · CYP2C19",
+    "summary": "This reads one of the 43 CYP2C19 positions CPIC names. A T here is part of the *17 form, and also of *44 and *45, so this is not a *17 call. It cannot say how clopidogrel works in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 12248560,
+        "gene": "CYP2C19",
+        "chrom": 10,
+        "pos38": 94761900,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C is the reference letter here. The other 42 positions CPIC uses are not read, so this is not a *1 call.",
+          "CT": "Your file shows C on one copy and T on the other. T is part of the *17 form, and also of *44 and *45; *17 needs a second position not read here.",
+          "TT": "Your file shows T on both copies at this position. T is part of the *17 form, and also of *44 and *45; *17 needs a second position not read here."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "35034351",
+        "label": "CPIC guideline for CYP2C19 and clopidogrel, 2022 update, Clin Pharmacol Ther 2022",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C19",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/12248560",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "cyp2c9-rs1799853-one-position",
+    "category": "pharmacogenomics",
+    "title": "Warfarin and NSAIDs, the *2 position · CYP2C9",
+    "summary": "This reads the CYP2C9 position where a T marks the *2 form; *35, *61 and *92 carry it. CPIC reads 88 positions across both copies. This cannot say which forms you carry, or how warfarin or NSAIDs work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 1799853,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94942290,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C is the reference letter here. The other 87 positions CPIC uses for CYP2C9 are not read.",
+          "CT": "Your file shows C on one copy and T on the other. T is the letter of the *2 form here, and of *35, *61 and *92. This is one position, not the pair of forms you carry.",
+          "TT": "Your file shows T on both copies at this position. T is the letter of the *2 form, and of *35, *61 and *92. This is one position, not the pair of forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "28198005",
+        "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017",
+        "accessedOn": "2026-09-03"
+      },
+      {
+        "pmid": "32189324",
+        "label": "CPIC guideline for CYP2C9 and NSAIDs, Clin Pharmacol Ther 2020",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C9",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1799853",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "cyp2c9-rs1057910-one-position",
+    "category": "pharmacogenomics",
+    "title": "Warfarin and NSAIDs, the *3 position · CYP2C9",
+    "summary": "This reads the CYP2C9 position where a C marks the *3 form; *18 and *68 carry it. CPIC reads 88 positions across both copies. This cannot say which forms you carry, or how warfarin or NSAIDs work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 1057910,
+        "gene": "CYP2C9",
+        "chrom": 10,
+        "pos38": 94981296,
+        "ref": "A",
+        "alt": "C",
+        "interpretations": {
+          "AA": "Your file shows A on both copies at this position. A is the reference letter here. The other 87 positions CPIC uses for CYP2C9 are not read.",
+          "AC": "Your file shows A on one copy and C on the other. C is the letter of the *3 form here, and of *18 and *68. This is one position, not the pair of forms you carry.",
+          "CC": "Your file shows C on both copies at this position. C is the letter of the *3 form, and of *18 and *68. This is one position, not the pair of forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "28198005",
+        "label": "CPIC guideline for pharmacogenetics-guided warfarin dosing, 2017 update, Clin Pharmacol Ther 2017",
+        "accessedOn": "2026-09-03"
+      },
+      {
+        "pmid": "32189324",
+        "label": "CPIC guideline for CYP2C9 and NSAIDs, Clin Pharmacol Ther 2020",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C9",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1057910",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "slco1b1-rs4149056-one-position",
+    "category": "pharmacogenomics",
+    "title": "Statins, the *5 position · SLCO1B1",
+    "summary": "This reads the SLCO1B1 position where a C marks the *5 form; *15, *40 and *47 carry it. CPIC’s statin guideline reads three genes, and this is one position in one. It cannot say how statins work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 4149056,
+        "gene": "SLCO1B1",
+        "chrom": 12,
+        "pos38": 21178615,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Your file shows T on both copies at this position. T is the reference letter here. The other 34 positions CPIC uses for SLCO1B1 are not read, so this is not a *1 call.",
+          "CT": "Your file shows C on one copy and T on the other. C is the letter of the *5 form here, and of *15, *40 and *47. This is one position, not the pair of forms you carry.",
+          "CC": "Your file shows C on both copies at this position. C is the letter of the *5 form, and of *15, *40 and *47. This is one position, not the pair of forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "35152405",
+        "label": "CPIC guideline for SLCO1B1, ABCG2 and CYP2C9 and statin-associated musculoskeletal symptoms, Clin Pharmacol Ther 2022",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.SLCO1B1",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/4149056",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "tpmt-rs1800462-one-position",
+    "category": "pharmacogenomics",
+    "title": "Thiopurines, the *2 position · TPMT",
+    "summary": "This reads the TPMT position where a G marks the *2 form, one of 45 positions CPIC uses. It cannot say which pair of TPMT forms you carry, or how thiopurine medicines work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 1800462,
+        "gene": "TPMT",
+        "chrom": 6,
+        "pos38": 18143724,
+        "ref": "C",
+        "alt": "G",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C is the reference letter here. The other 44 positions CPIC uses for TPMT are not read, so this is not a *1 call.",
+          "CG": "Your file shows C on one copy and G on the other. G is the letter of the *2 form at this position. This is one position, not the pair of TPMT forms you carry.",
+          "GG": "Your file shows G on both copies at this position. G is the letter of the *2 form. This is one position, not the pair of TPMT forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "41618934",
+        "label": "CPIC guideline for TPMT and NUDT15 and thiopurine dosing, 2025 update, Clin Pharmacol Ther 2026",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.TPMT",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1800462",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "tpmt-rs1800460-one-position",
+    "category": "pharmacogenomics",
+    "title": "Thiopurines, another position · TPMT",
+    "summary": "This reads the TPMT position where a T marks the *3B form; with a second position, not read here, it is part of *3A. It cannot say which pair of forms you carry, or how thiopurine medicines work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 1800460,
+        "gene": "TPMT",
+        "chrom": 6,
+        "pos38": 18138997,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C is the reference letter here. The other 44 positions CPIC uses for TPMT are not read, so this is not a *1 call.",
+          "CT": "Your file shows C on one copy and T on the other. T is the letter of the *3B form here, and part of *3A with a second position not read here. This is one position, not the pair of forms you carry.",
+          "TT": "Your file shows T on both copies at this position. T is the letter of the *3B form, and part of *3A with a second position not read here. This is one position, not the pair of forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "41618934",
+        "label": "CPIC guideline for TPMT and NUDT15 and thiopurine dosing, 2025 update, Clin Pharmacol Ther 2026",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.TPMT",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/1800460",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "nudt15-rs116855232-one-position",
+    "category": "pharmacogenomics",
+    "title": "Thiopurines, one position · NUDT15",
+    "summary": "This reads the NUDT15 position where a T is part of the *3 form; *3 also needs a second change not read here, so this is not a *3 call. It cannot say how thiopurine medicines work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 116855232,
+        "gene": "NUDT15",
+        "chrom": 13,
+        "pos38": 48045719,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C is the letter of the *1 form here. The other 19 positions CPIC uses for NUDT15 are not read, so this is not a *1 call.",
+          "CT": "Your file shows C on one copy and T on the other. T is part of the *3 form, which also needs a second change not read here. This is one position, not the pair of forms you carry.",
+          "TT": "Your file shows T on both copies at this position. T is part of the *3 form, which also needs a second change not read here. This is one position, not the pair of forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "41618934",
+        "label": "CPIC guideline for TPMT and NUDT15 and thiopurine dosing, 2025 update, Clin Pharmacol Ther 2026",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.NUDT15",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/116855232",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "dpyd-rs3918290-one-position",
+    "category": "pharmacogenomics",
+    "title": "Fluorouracil and capecitabine, the *2A position · DPYD",
+    "summary": "C on both copies here does not rule out a DPYD deficiency, because other positions cause it. This reads the DPYD position where T marks the *2A form, one of 83 CPIC uses. It cannot say how fluorouracil or capecitabine work in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 3918290,
+        "gene": "DPYD",
+        "chrom": 1,
+        "pos38": 97450058,
+        "ref": "C",
+        "alt": "T",
+        "interpretations": {
+          "CC": "Your file shows C on both copies at this position. C on both copies here does not rule out a DPYD deficiency, because other positions cause it. The other 82 positions CPIC uses are not read.",
+          "CT": "Your file shows C on one copy and T on the other. T is the letter of the *2A form at this position. This is one position, not the pair of DPYD forms you carry.",
+          "TT": "Your file shows T on both copies at this position. T is the letter of the *2A form. This is one position, not the pair of DPYD forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "29152729",
+        "label": "CPIC guideline for DPYD and fluoropyrimidine dosing, 2017 update, Clin Pharmacol Ther 2018",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.DPYD",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/3918290",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  },
+  {
+    "slug": "cyp3a5-rs776746-one-position",
+    "category": "pharmacogenomics",
+    "title": "Tacrolimus, the *3 position · CYP3A5",
+    "summary": "This reads the CYP3A5 position where a C marks the *3 form, one of 7 positions CPIC uses. It cannot say which pair of CYP3A5 forms you carry, or how tacrolimus works in you.",
+    "evidence": "emerging",
+    "layer": "variant_call",
+    "estimate_kind": null,
+    "variants": [
+      {
+        "rsid": 776746,
+        "gene": "CYP3A5",
+        "chrom": 7,
+        "pos38": 99672916,
+        "ref": "T",
+        "alt": "C",
+        "interpretations": {
+          "TT": "Your file shows T on both copies at this position. T is the letter of the *1 form here. The other 6 positions CPIC uses are not read, so this is not a *1 call.",
+          "CT": "Your file shows C on one copy and T on the other. C is the letter of the *3 form at this position. This is one position, not the pair of CYP3A5 forms you carry.",
+          "CC": "Your file shows C on both copies at this position. C is the letter of the *3 form. This is one position, not the pair of CYP3A5 forms you carry."
+        }
+      }
+    ],
+    "pgs_id": null,
+    "citations": [
+      {
+        "pmid": "25801146",
+        "label": "CPIC guideline for CYP3A5 and tacrolimus dosing, Clin Pharmacol Ther 2015",
+        "accessedOn": "2026-09-03"
+      }
+    ],
+    "source": {
+      "cpic": {
+        "name": "CPIC allele definitions and guideline table (ClinPGx)",
+        "licence": "CC0 1.0 Universal; attribution requested",
+        "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP3A5",
+        "accessedOn": "2026-09-03"
+      },
+      "dbsnp": {
+        "name": "dbSNP RefSNP record (GRCh38 SPDI)",
+        "licence": "NCBI policy: no restrictions on use; attribution requested",
+        "url": "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/776746",
+        "accessedOn": "2026-09-03"
+      }
+    }
+  }
+]
