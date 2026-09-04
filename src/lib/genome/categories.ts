@@ -1,6 +1,7 @@
 import { EVIDENCE_PUBLIC_LABELS } from "./taxonomy";
 
-// Legacy fifteen-slug category vocabulary. These slugs remain the storage key
+// Legacy sixteen-slug category vocabulary (fifteen from the first library, plus
+// `pharmacogenomics` for the Medicines category, ADR 0021). These slugs remain the storage key
 // in report_templates.category and are still read by the report page, the
 // sensitive-content gate and the Copilot list_reports tool. The nine-category
 // taxonomy in ./taxonomy.ts (CATEGORY_TAXONOMY, categoryFor) is the canonical
@@ -21,6 +22,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   "aesthetic-cosmetic": "Aesthetics & cosmetic",
   "basic-traits": "Basic traits",
   "lifestyle-wellness": "Lifestyle & wellness",
+  pharmacogenomics: "Medicines",
 };
 
 // Five-level evidence rubric labels. The canonical map is

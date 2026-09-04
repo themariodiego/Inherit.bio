@@ -12,8 +12,8 @@ import { SubjectBar } from "@/components/subjects/subject-bar";
 import { NAV_LABELS } from "@/copy/navigation";
 import {
   CONFIRMATION_LEVELS,
-  EVIDENCE_DEFINITIONS,
   EVIDENCE_PUBLIC_LABELS,
+  evidenceDefinitionFor,
 } from "@/copy/reports/evidence";
 import {
   ALL_REPORTS,
@@ -27,7 +27,6 @@ import {
   LAYER_LABELS,
   LIMIT_OF_FILE,
   MORE_SOURCES,
-  NOTHING_TO_DO,
   NOT_COVERED_ARRAY,
   NOT_COVERED_VCF,
   NO_CALL,
@@ -43,6 +42,7 @@ import {
   WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
   coverageSentence,
   supportingStudies,
+  whatYouCanDo,
 } from "@/copy/reports/strings";
 import type { FigureClass } from "@/lib/figures/contract";
 import type { GenotypeSpec } from "@/lib/figures/spec";
@@ -313,7 +313,7 @@ export default async function ReportDetailPage(
   const figureClass: FigureClass = layer === "variant_call" ? "variant-call" : "estimate";
   const categoryId = safeCategoryFor(template);
   const evidenceLabel = EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence;
-  const evidenceDefinition = EVIDENCE_DEFINITIONS[template.evidence];
+  const evidenceDefinition = evidenceDefinitionFor(template.evidence, layer);
 
   // Gating is per template (legacy sensitive categories + the clinical-
   // confirmation content rule), preserved template-for-template across the
@@ -336,7 +336,11 @@ export default async function ReportDetailPage(
   );
   // "Not now" returns to the library at this report's category section; a
   // template with an unmapped legacy category returns to that category's id.
+  // The link names the report's layer: the list renders one group at a time
+  // and, with both layers populated, opens on the first, so the hash resolves
+  // only on the group that holds this category.
   const returnHref = route("genome.reports", subjectParams, {
+    query: { layer },
     hash: categoryId ?? template.category,
   });
 
@@ -510,8 +514,10 @@ export default async function ReportDetailPage(
           </div>
         }
         whatYouCanDo={
+          // Brief line 630’s fixed string, or the Medicines string for that
+          // category alone (ADR 0021): never advice, never empty.
           <p {...REQUIRED_ACCURACY} className="text-sm leading-relaxed text-ink">
-            {NOTHING_TO_DO}
+            {whatYouCanDo(categoryId)}
           </p>
         }
         whereThisComesFrom={

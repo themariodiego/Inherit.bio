@@ -22,7 +22,6 @@ import {
   LAYER_LABELS,
   LIBRARY_EMPTY,
   LIST_NO_FILE,
-  MEDICINES_ABSENT,
   REPORTS_TITLE,
   cannotNumberSentence,
 } from "@/copy/reports/strings";
@@ -144,8 +143,12 @@ export default async function ReportsPage(
   );
   const requestedLayer =
     typeof searchParams.layer === "string" ? searchParams.layer : undefined;
+  // The list opens on the general library (the estimate group) when it has
+  // any report; the layer order of the tabs stays the taxonomy's.
   const activeLayer: FindingLayer | undefined =
-    nonEmptyLayers.find((layer) => layer === requestedLayer) ?? nonEmptyLayers[0];
+    nonEmptyLayers.find((layer) => layer === requestedLayer) ??
+    nonEmptyLayers.find((layer) => layer === "estimate") ??
+    nonEmptyLayers[0];
 
   // The "cannot give you a number" line counts only a layer this reader may
   // actually open.
@@ -277,17 +280,6 @@ export default async function ReportsPage(
             subject={subject.routeSegment}
             layerClass={LAYER_CLASS[activeLayer]}
           />
-          {/* X15: a category with no report is stated, never silent. Not a
-              section and not #medicines, so nothing links to an empty group. */}
-          {groups.some((group) => group.id === "medicines") ? null : (
-            <p
-              data-slot="category-absent"
-              data-category="medicines"
-              className="max-w-prose text-sm text-ink-muted"
-            >
-              {MEDICINES_ABSENT}
-            </p>
-          )}
         </section>
       ) : (
         <p className="text-sm text-ink-muted">{LIBRARY_EMPTY}</p>

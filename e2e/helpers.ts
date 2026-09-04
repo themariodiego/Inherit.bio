@@ -162,20 +162,25 @@ export async function ingestFileAs(
 }
 
 /**
- * Seeded, non-fixture report templates in data/templates — the only library
- * count a product surface may show. Read from disk so no spec hard-codes the
- * number; fixture templates (auto-e2e-*) published by the research spec are
- * excluded by isFixtureSlug on every surface.
+ * Seeded, non-fixture report templates in data/templates for ONE layer — the
+ * only library counts a product surface may show, and never summed across
+ * layers (brief §4 §1.4). Read from disk so no spec hard-codes the number;
+ * the layer is derived as scripts/seed.ts derives it (absent → estimate);
+ * fixture templates (auto-e2e-*) published by the research spec are excluded
+ * by isFixtureSlug on every surface.
  */
-export function seededTemplateCount(): number {
+export function seededTemplateCount(layer: "estimate" | "variant_call"): number {
   const dir = path.join(process.cwd(), "data/templates");
   let count = 0;
   for (const name of fs.readdirSync(dir)) {
     if (!name.endsWith(".json")) continue;
     const templates = JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")) as {
       slug: string;
+      layer?: string;
     }[];
-    count += templates.filter((t) => !t.slug.startsWith("auto-e2e-")).length;
+    count += templates.filter(
+      (t) => !t.slug.startsWith("auto-e2e-") && (t.layer ?? "estimate") === layer,
+    ).length;
   }
   return count;
 }

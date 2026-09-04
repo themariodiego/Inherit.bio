@@ -739,3 +739,98 @@ Decisions:
   client keeps its thread; the model never sees a refused turn.
 - A cohort-scoped prompt cannot be sent until a cohort chat route exists;
   the spec says so, and the cohort-only rules rest on the unit table.
+## 2026-09-03 — Medicines: the operator lifts the withholding for the honest subset
+
+Context: `docs/withheld/pharmacogenomics.md` (D-015, ADR 0018) classified the
+obstacle as safety (primary) and scientific (supporting) and named two
+testable conditions, parts of which depend on a person's judgement rather
+than on code. On 2026-09-03 the operator, in this session, approved shipping
+the Pharmacogenomics ("Medicines") section in full and directed that no other
+section be degraded.
+
+Decision, and what the approval does and does not change:
+- The approval is the operator's judgement on the safety class (dossier
+  condition A, items 3 and 4): the "What you can do" collision is resolved by
+  a Medicines-specific string that is true and is not treatment advice, and
+  the category's net impression is accepted by the operator. No competent
+  reviewer's claim entry exists; the register says so until one does.
+- Condition A, item 1 (the Copilot intent guard of brief line 2262) is inside
+  the operator's control and is built before the category renders; item 2
+  (the §6.4 blocklist rows) stays in force.
+- The approval does not change the science (condition B): a metabolizer
+  phenotype needs the pair of gene copies, which an unphased consumer file
+  cannot supply, so no report states a phenotype, a dose, a drug choice or a
+  response. What ships is what is true: per-position reports in the
+  `variant_call` layer, where brief line 1163 places pharmacogenomic star
+  alleles, saying which letters the file shows at a position a CPIC guideline
+  names, which named forms carry that letter, and what the position cannot
+  tell the reader; sources are CPIC (CC0 1.0), dbSNP and PubMed only, with
+  the guideline's PMID and the access date on every template.
+- Candidates excluded on the research note's verified facts stay excluded and
+  are named in ADR 0021: CYP2D6 (structural variation), HLA-B*57:01 (a proxy
+  that must not be imputed), IFNL3 (retired), UGT1A1*28 and TPMT *3C
+  (multi-allelic, outside the schema), G6PD (X-linked, no haploid key).
+- The category description no longer promises "how your body may respond";
+  it says what the reports are.
+- Currency: every template carries the guideline PMID and the date it was
+  read; the register records that CPIC content is subject to updates and
+  that Inherit has no automatic detection of a superseded guideline yet.
+- Nothing else is removed or weakened: the only subtraction is the absence
+  paragraph the category replaces.
+
+## 2026-09-04 — Medicines: where the category may and may not appear
+
+Context: with eleven `variant_call` templates the reports list, which
+groups by layer in the taxonomy's order (`variant_call` then `estimate`),
+opens on the Specific variants group, which today is Medicines alone; and
+the Overview's starter list admits covered `variant_call` templates.
+
+Decisions:
+- The layer order stays the taxonomy's: a call on specific variants is the
+  higher-evidence layer of brief §1.1 and lists first. The library is a
+  library; prominence there is not a nudge.
+- The Overview's "reports to read first" list excludes the `medicines`
+  category (alongside cancer and brain, memory and mood): a
+  medication-related genotype is never offered as a first read, because the
+  Overview's net impression must not steer anyone towards it.
+- The Overview's split string now shows both halves ("N specific-variant
+  reports · M statistical estimates"), never summed, per X5.2.
+
+## 2026-09-04 — Medicines: corrections after the adversarial review
+
+Context: the four-lens review of branch `medicines` (sixteen findings, one
+already fixed, one a merge-order matter for the orchestrator).
+
+Decisions:
+- The reports list opens on the general library (the estimate group) when
+  it has any report; the Specific variants group is a tab. This amends the
+  entry above: the layer order of the tabs stays the taxonomy's, and the
+  default view is the library a reader came for.
+- A seed template in the `variant_call` layer is stored with a null estimate
+  kind whatever the file says (`scripts/seed-layer.ts`); a reading of
+  letters is not an estimate of anything.
+- No title or summary claims a form from one position: the CYP2C19
+  rs12248560 report is titled as a bare position, and forms are named only
+  as the forms that carry a letter.
+- ADR 0021 states that six of the eleven shipped positions are ones the
+  research note marked exclude, and why each ships as a bare position under
+  the operator's decision: every reason the note gave concerned a phenotype
+  claim, which no report makes.
+- "What you can do" for Medicines reads "Inherit does not say what any
+  doctor should do with this result. You can show it to any doctor you
+  choose." — two sentences, no implied relevance.
+- The Medicines rows of `scripts/validate-templates.ts` are mechanical and
+  read every prose field; a citation label is exempt only because it is the
+  cited work's own title. Every Medicines sentence is at most 25 words, on
+  the readability gate's splitter.
+- The DPYD report leads with "This is one of the positions guidelines list
+  for DPYD. C on both copies here says nothing about the other positions,
+  which this report does not read." — no phenotype, no count Inherit did not
+  read.
+- CPIC is defined at its first mention in every summary. The CPIC endpoints
+  read on 2026-09-03 exposed no version number; each source records
+  `version: null` with a note, and none is invented.
+- A `variant_call` report's evidence chip reads "This position is named by a
+  published prescribing guideline. Inherit reads the letters only." rather
+  than a sentence about replication and sibling checks.
+

@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { wordCount, readabilitySentences } from "../../../scripts/readability";
-import { EVIDENCE_DEFINITIONS } from "./evidence";
+import { EVIDENCE_DEFINITIONS, VARIANT_CALL_EVIDENCE_DEFINITION, evidenceDefinitionFor } from "./evidence";
 import {
   EMBRYO_HEADING_SUBSTITUTIONS,
   REPORT_HEADINGS,
@@ -8,6 +9,7 @@ import {
   headingText,
 } from "./headings";
 import * as strings from "./strings";
+import type { CategoryId } from "@/lib/genome/taxonomy";
 
 /** Every exported string, including those produced by the exported functions. */
 function corpus(): string[] {
@@ -100,10 +102,54 @@ describe("report strings", () => {
     expect(Object.keys(strings.CATEGORY_DESCRIPTIONS)).toHaveLength(9);
   });
 
+  it("selects the Medicines \"What you can do\" string for that category alone (ADR 0021)", () => {
+    expect(strings.WHAT_YOU_CAN_DO_MEDICINES).toBe(
+      "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.",
+    );
+    expect(strings.whatYouCanDo("medicines")).toBe(strings.WHAT_YOU_CAN_DO_MEDICINES);
+    for (const id of Object.keys(strings.CATEGORY_DESCRIPTIONS) as CategoryId[]) {
+      if (id === "medicines") continue;
+      expect(strings.whatYouCanDo(id), id).toBe(strings.NOTHING_TO_DO);
+    }
+    expect(strings.whatYouCanDo(null)).toBe(strings.NOTHING_TO_DO);
+    // Brief line 630’s string is unchanged for every other category.
+    expect(strings.NOTHING_TO_DO).toBe(
+      "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.",
+    );
+    // §6.4: the Medicines string is information, not treatment advice.
+    expect(strings.WHAT_YOU_CAN_DO_MEDICINES).not.toMatch(/\bdosage\b|\bsupplement\b|we recommend you take/i);
+  });
+
+  it("describes Medicines as what the reports are, and no longer states an absence", () => {
+    expect(strings.CATEGORY_DESCRIPTIONS.medicines).toBe(
+      "The letters your file shows at single DNA positions that prescribing guidelines name.",
+    );
+    expect(strings.CATEGORY_DESCRIPTIONS.medicines).not.toMatch(/respond|metaboli/i);
+    expect("MEDICINES_ABSENT" in strings).toBe(false);
+  });
+
   it("keeps every evidence definition within 20 words", () => {
     for (const [level, definition] of Object.entries(EVIDENCE_DEFINITIONS)) {
       expect(wordCount(definition), level).toBeLessThanOrEqual(20);
     }
+    expect(wordCount(VARIANT_CALL_EVIDENCE_DEFINITION)).toBeLessThanOrEqual(20);
+  });
+
+  it("gives a variant_call report the guideline sentence, never one about replication (ADR 0021)", () => {
+    expect(VARIANT_CALL_EVIDENCE_DEFINITION).toBe(
+      "This position is named by a published prescribing guideline. Inherit reads the letters only.",
+    );
+    expect(evidenceDefinitionFor("emerging", "variant_call")).toBe(VARIANT_CALL_EVIDENCE_DEFINITION);
+    expect(evidenceDefinitionFor("emerging", "variant_call")).not.toMatch(/study|studies|brothers|sisters/);
+    expect(evidenceDefinitionFor("emerging", "estimate")).toBe(EVIDENCE_DEFINITIONS.emerging);
+    expect(evidenceDefinitionFor("clinical", "estimate")).toBe(EVIDENCE_DEFINITIONS.clinical);
+    // The report page reads the layer-aware function, not the table.
+    const page = readFileSync(
+      new URL("../../app/(app)/genome/[subject]/reports/[slug]/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(page).toContain("evidenceDefinitionFor(template.evidence, layer)");
+    expect(page).not.toContain("EVIDENCE_DEFINITIONS[");
   });
 
   it("never merges counts: each layer has its own noun", () => {

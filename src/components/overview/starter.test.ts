@@ -5,6 +5,7 @@ import {
   isStarterLayer,
   selectStarterReports,
   STARTER_LIMIT,
+  STARTER_EXCLUDED_CATEGORIES,
 } from "./starter";
 
 function template(
@@ -84,5 +85,11 @@ describe("starter reading list", () => {
       resolved(template("b", "basic-traits"), false),
     ]);
     expect(list).toEqual([]);
+  });
+});
+
+describe("starter exclusions", () => {
+  it("never offers a Medicines report as a first read (ADR 0021)", () => {
+    expect(STARTER_EXCLUDED_CATEGORIES.has("medicines")).toBe(true);
   });
 });

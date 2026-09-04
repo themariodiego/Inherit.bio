@@ -65,6 +65,15 @@ describe("readability copy extraction", () => {
     expect(lifestyleFailures).toEqual([]);
   });
 
+  it("keeps every Medicines template within the grade limit and every title within the plain vocabulary (ADR 0021)", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const medicinesFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
+      failure.startsWith("data/templates/medicines.json:"),
+    );
+
+    expect(medicinesFailures).toEqual([]);
+  });
+
   it("keeps every brain-health template within the long-block grade limit", () => {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const brainHealthFailures = runReadabilityGate(repositoryRoot).failures.filter((failure) =>
