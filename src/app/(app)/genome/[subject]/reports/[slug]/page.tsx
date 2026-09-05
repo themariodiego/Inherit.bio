@@ -5,6 +5,7 @@ import { cache, type ReactNode } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
+import { CitationItem, ReportCallCoverage } from "@/components/reports/report-evidence";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
 import { SupportPanel } from "@/components/reports/support-panel";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -41,9 +42,10 @@ import {
   WHAT_THIS_DOESNT_MEAN_GENERIC,
   WHAT_THIS_DOESNT_MEAN_NOT_COVERED,
   coverageSentence,
-  supportingStudies,
   whatYouCanDo,
 } from "@/copy/reports/strings";
+import { REPORT_METHOD_COPY, REPORT_SOURCES_SCOPE, SCORE_METHOD_LABEL, SOURCE_READ_SCOPE, citedSources } from "@/copy/reports/basis";
+import { reportMethod, summarizeReportCalls, type ReportCallSummary } from "@/lib/genome/report-evidence";
 import type { FigureClass } from "@/lib/figures/contract";
 import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
@@ -54,7 +56,6 @@ import {
 } from "@/lib/genome/load";
 import {
   resolveTemplate,
-  type Citation,
   type ReportTemplate,
   type TemplateVariant,
   type VariantOutcome,
@@ -147,35 +148,6 @@ export async function generateMetadata(
         ? `${context.displayLabel} · ${reportNameOf(context.template.title)}`
         : "Report",
   };
-}
-
-function CitationItem({ citation }: { citation: Citation }) {
-  const link = "underline underline-offset-2";
-  if (citation.pmid) {
-    return (
-      <a
-        href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={link}
-      >
-        {citation.label} (PMID {citation.pmid})
-      </a>
-    );
-  }
-  if (citation.doi) {
-    return (
-      <a
-        href={`https://doi.org/${citation.doi}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={link}
-      >
-        {citation.label} (doi:{citation.doi})
-      </a>
-    );
-  }
-  return <>{citation.label}</>;
 }
 
 function TechnicalNote({ children }: { children: ReactNode }) {
@@ -355,6 +327,7 @@ export default async function ReportDetailPage(
 
   let yourResult: ReactNode;
   let coveredPositions = 0;
+  let callSummary: ReportCallSummary | null = null;
   let anyNotCovered = false;
   if (showResults) {
     const { genotypes, conflicts } = hasData
@@ -365,9 +338,8 @@ export default async function ReportDetailPage(
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>() };
     const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
-    coveredPositions = resolved.variants.filter(
-      (item) => item.outcome.status === "genotyped",
-    ).length;
+    callSummary = hasData && resolved.variants.length > 0 ? summarizeReportCalls(resolved, conflicts) : null;
+    coveredPositions = callSummary?.interpreted ?? 0;
     anyNotCovered =
       hasData && resolved.variants.some((item) => item.outcome.status === "not-covered");
     // The first claim block on the page is the density measurement's primary
@@ -419,8 +391,8 @@ export default async function ReportDetailPage(
   // The mandated coverage sentence (§2 §4.4e) names "this estimate", so it
   // renders on that layer only, and only with a shown result.
   const coverageLine =
-    showResults && hasData && layer === "estimate"
-      ? coverageSentence(coveredPositions, template.variants.length)
+    showResults && hasData && layer === "estimate" && template.variants.length > 0
+      ? coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)
       : null;
 
   const visibleCitations = template.citations.slice(0, VISIBLE_CITATIONS);
@@ -486,7 +458,12 @@ export default async function ReportDetailPage(
       </header>
 
       <ReportSkeleton
-        whatThisIs={<p className="text-base leading-relaxed text-ink">{template.summary}</p>}
+        whatThisIs={
+          <div className="space-y-3">
+            <p data-slot="report-summary" className="text-base leading-relaxed text-ink">{template.summary}</p>
+            <p data-slot="report-method" className="text-sm leading-relaxed text-ink-muted">{REPORT_METHOD_COPY[reportMethod(template)]}</p>
+          </div>
+        }
         yourResult={yourResult}
         whatThisDoesntMean={
           <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
@@ -502,9 +479,11 @@ export default async function ReportDetailPage(
               <span className="text-ink-muted">{` — ${evidenceDefinition}`}</span>
             </p>
             {/* inherit-figure-exempt: a count of the template's citations, not a result figure */}
-            <p>{supportingStudies(template.citations.length)}</p>
+            <p>{citedSources(template.citations.length)}</p>
+            <p className="text-ink-muted">{REPORT_SOURCES_SCOPE}</p>
             {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure */}
             {coverageLine ? <p>{coverageLine}</p> : null}
+            {callSummary ? <ReportCallCoverage summary={callSummary} /> : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
               <div data-confirmation-block="true" className="space-y-1">
                 <p {...REQUIRED_ACCURACY}>{CONFIRMATION_BLOCK}</p>
@@ -523,6 +502,7 @@ export default async function ReportDetailPage(
         whereThisComesFrom={
           <div className="space-y-3 text-sm leading-relaxed">
             <h3 className="font-medium text-ink">{SOURCES_HEADING}</h3>
+            <p className="text-ink-muted">{SOURCE_READ_SCOPE}</p>
             <ul className="space-y-1">
               {visibleCitations.map((citation, index) => (
                 <li key={`${citation.label}-${index}`}>
@@ -541,6 +521,14 @@ export default async function ReportDetailPage(
                   ))}
                 </ul>
               </details>
+            ) : null}
+            {reportMethod(template) === "polygenic-score" ? (
+              <p data-slot="score-method-source">
+                {SCORE_METHOD_LABEL}: {" "}
+                <a href={`https://www.pgscatalog.org/score/${template.pgs_id}/`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                  {template.pgs_id}
+                </a>
+              </p>
             ) : null}
             {/* The template's variants: gene, dbSNP record and GRCh38 locus. */}
             <ul data-slot="variant-provenance" className="space-y-1 font-mono text-ink-muted">
