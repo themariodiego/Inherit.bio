@@ -73,6 +73,16 @@ export async function POST(request: Request) {
   let processed = 0;
   let failed = 0;
 
+  // Independent contact expiry runs even when a mail provider is unavailable.
+  const { error: terminalContactExpiryError } = await admin.rpc(
+    "expire_embryo_terminal_mail_v1",
+  );
+  if (terminalContactExpiryError) {
+    // Preserve unrelated original deadlines even if this independent queue
+    // cannot be purged. The coded failure remains visible to job monitoring.
+    failed++;
+  }
+
   const { data: expiredInvitations, error: invitationExpiryError } =
     await admin.rpc("expire_due_adult_subject_invitations_v1");
   if (invitationExpiryError) {
