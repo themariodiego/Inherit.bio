@@ -1,9 +1,9 @@
 /**
  * <Count> — the only way a report count reaches a page (brief G4.3 read
- * through X5.1). The class prop is mandatory and single-valued, so a merged
- * "{n} reports" spanning layers cannot be emitted; the noun is always the
- * layer word. Emits data-figure-class and data-metric-value. Server
- * component.
+ * through X5.1). Callers partition by layer; runtime guards require one
+ * class, a safe count and a definition id. Explicit starter/unavailable
+ * presentations preserve prescribed wording. A class tag alone cannot
+ * establish the source of a count. Pure rendering works on server or client.
  */
 import { COUNT_NOUNS, cannotNumberSentence } from "@/copy/reports/strings";
 import { STARTER } from "@/copy/overview";

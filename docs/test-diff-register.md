@@ -33,6 +33,19 @@ skipped or retried. Earlier local runs exposed the reused Overview account,
 the reading-order idiom and newly classified starter's distinct note contract;
 those causes were corrected before the complete green run.
 
+Mail deadline slice (2026-09-05): `src/lib/mail-outbox.test.ts` adds ten helper
+checks covering omitted defaults with five clock offsets, unchanged explicit
+deadlines, stable idempotency and coded errors without logging database details.
+`supabase/tests/mail_default_expiry.sql` adds 21 rollback-only assertions for the
+database default, exact shorter deadlines, expired/excessive deadline refusal,
+replay nonrenewal, the original RPC identity and service-only privileges. It
+creates only its own synthetic account through the real provisioning trigger.
+`e2e/mail-expiry.spec.ts` adds a real fresh-account self-upload-to-queued-notice
+check, repeated processing without a renewed deadline, and zero provider
+attempts. No original mail assertion is removed, relaxed or skipped. An initial
+local build rejected a sibling dependency symlink; a frozen offline dependency
+install fixed the worktree setup without changing dependencies or test retries.
+
 ADR 0022 corrects the scientifically false estimate definition and Overview
 note expectations in the report/Overview unit and browser suites. All existing
 definition count, layer, figure and disclosure assertions remain. The exact

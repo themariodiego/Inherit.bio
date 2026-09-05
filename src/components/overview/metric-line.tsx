@@ -1,6 +1,6 @@
 // A count with its unit noun and a 1–12-word note (brief X9.1, acceptance 3).
 // The value is never a dash, "N/A" or empty: callers pass a formatted count
-// such as "151 statistical estimates"; a tile with nothing to count renders
+// such as "2 files"; report-layer quantities use Count instead. A tile with nothing to count renders
 // its empty copy through a plain paragraph instead of this component.
 
 const DASH_LIKE = /^(?:[-–—]|N\/A)?$/;

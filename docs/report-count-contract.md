@@ -67,5 +67,8 @@ retained or strengthened. The main seed has 151 single-locus estimates and
 eleven Medicines position reports: 162 is not a displayed combined count and
 151 is not described as a count of polygenic models.
 
-Local verification is recorded in the handoff. G4.3 remains NO pending the
+Local verification: 13 targeted production-browser tests passed with no skips
+or retries; 1,618 combined unit tests, typecheck, scoped lint and the naming,
+secret and readability gates passed after integration with main `f6d7cca`.
+No hosted data or source templates were edited. G4.3 remains NO pending the
 complete reviewed PR acceptance run; component tests alone are not closure.
