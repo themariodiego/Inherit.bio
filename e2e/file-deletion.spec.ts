@@ -38,6 +38,10 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect((await admin.from("genome_files").select("status").eq("id", fileId).single()).data?.status).toBe("failed");
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
   await owner.auth.signOut({ scope: "local" });
+  // Model a previous acknowledged Storage delete whose database finalization
+  // failed. The real route must accept the next empty idempotent ACK and finish.
+  expect((await admin.storage.from("genomes").remove([file!.bucket_path])).error).toBeNull();
+  expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(1);
   const deleted = page.waitForResponse((response) => response.url().endsWith(`/api/files/${fileId}`) && response.request().method() === "DELETE");
   await row.getByRole("button", { name: "Delete", exact: true }).click();
   expect((await deleted).status()).toBe(204);
@@ -78,4 +82,8 @@ test("foreign account, active processing and another adult cannot use the self-f
   await admin.from("genome_files").update({ subject_id: file.subject_id }).eq("id", fileId);
   expect((await admin.storage.from("genomes").download(file.bucket_path)).error).toBeNull();
   expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(1);
+  // A normal successful route call also removes an object that is still there.
+  expect(await remove()).toBe(204);
+  expect((await admin.storage.from("genomes").download(file.bucket_path)).error).not.toBeNull();
+  expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(0);
 });

@@ -47,6 +47,11 @@ describe("owner-authorized file deletion", () => {
     expect((await call()).status).toBe(503);
     expect(mocks.remove).toHaveBeenCalledTimes(1);
   });
+  it("does not finish after a malformed Storage acknowledgement", async () => {
+    mocks.remove.mockResolvedValue({ data: null, error: null });
+    expect((await call()).status).toBe(503);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  });
   it("catches transport failures without exposing internal details", async () => {
     mocks.remove.mockRejectedValue(new Error("private details"));
     const response = await call();

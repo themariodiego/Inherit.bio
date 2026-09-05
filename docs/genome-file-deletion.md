@@ -44,7 +44,9 @@ per-object Errors field. This provider-level limitation is not solved here.
 `private.genome_file_deletions.file_id` has an exact ON DELETE CASCADE foreign
 key. Existing account database purges therefore remove pending file manifests
 with their file, without a new public purge class or a retained orphan token.
-Pending manifests contain no filename or genome data and are removed on success.
+Pending manifests contain only existing exact object identity, account binding
+and retry metadata, never file contents. Legacy object keys may include a
+filename. The manifest cascades on completion or account purge.
 Completed upload session journals and chat history retain their existing rules;
 the button describes file-based results, not whole-account deletion.
 

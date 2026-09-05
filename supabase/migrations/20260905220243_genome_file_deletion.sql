@@ -94,6 +94,10 @@ begin
     update public.genome_storage_objects set state='purge_queued',revoked_at=coalesce(revoked_at,clock_timestamp())
       where genome_file_id=f.id;
   end if;
+  update public.mail_outbox set state='invalidated', claimed_at=null,
+    last_outcome_code='file_target_unavailable'
+  where template_id='report-ready' and target_kind='genome_file'
+    and target_id=f.id and state in ('queued','claimed');
   return jsonb_build_object('token',d.token,'bucket',d.bucket_id,'name',d.object_name);
 end;
 $$;
