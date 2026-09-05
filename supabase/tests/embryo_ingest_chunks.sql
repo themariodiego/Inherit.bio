@@ -1,45 +1,83 @@
 begin;
 select no_plan();
 
--- Synthetic lifecycle fixtures; these tests exercise persistence primitives,
--- not the still-unimplemented full legal/capability authority resolver.
-insert into auth.users(id, email) values
-  ('7b000000-0000-4000-8000-000000000001', 'ingest-owner@example.invalid');
-insert into auth.sessions(id, user_id, created_at, updated_at, aal) values
-  ('7b000000-0000-4000-8000-000000000002', '7b000000-0000-4000-8000-000000000001',
-    clock_timestamp(), clock_timestamp(), 'aal1');
-insert into public.subject_principals(id, account_id, principal_kind) values
-  ('7b000000-0000-4000-8000-000000000003', '7b000000-0000-4000-8000-000000000001', 'genetic_parent');
-
-create function pg_temp.new_attempt(p_capacity bigint default 200000000)
+-- Each primitive fixture now traverses the real signed two-parent authority
+-- flow. Distinct accounts avoid bypassing the per-account outstanding-attempt
+-- cap. No Storage calls occur; the outer transaction rolls everything back.
+create function pg_temp.new_attempt(p_capacity bigint default 200000000, p_legacy boolean default false)
 returns uuid language plpgsql as $$
 declare
-  v_draft uuid := gen_random_uuid();
-  v_cohort uuid := gen_random_uuid();
-  v_session uuid := gen_random_uuid();
+  v_owner uuid:=gen_random_uuid(); v_parent uuid:=gen_random_uuid();
+  v_auth uuid:=gen_random_uuid(); v_parent_auth uuid:=gen_random_uuid();
+  v_owner_hash text; v_parent_hash text; v_rights_hash text;
+  v_draft uuid; v_cohort uuid; v_session uuid;
+  v_invitation uuid; v_mail record; v_token_hash text; v_key text;
+  v_insurance uuid; v_charter uuid; v_minted jsonb; v_tries integer:=0;
   v_retention uuid;
   v_deadline timestamptz := clock_timestamp() + interval '24 hours';
 begin
-  insert into public.embryo_cohort_drafts (
-    id, owner_account_id, uploader_principal_id, upload_class, basis_case,
-    embryo_count, state, fixed_expires_at, finalized_at, upload_situation
-  ) values (v_draft, '7b000000-0000-4000-8000-000000000001',
-    '7b000000-0000-4000-8000-000000000003', 'embryo_own', 'true_two_parent',
-    2, 'finalized', clock_timestamp() + interval '30 days', clock_timestamp(), 'own_embryos');
-  insert into public.embryo_cohorts (
-    id, draft_id, owner_account_id, upload_class, basis_case,
-    basis_revision, participant_set_revision, donor_attribution_revision,
-    embryo_count, retention_expires_at
-  ) values (v_cohort, v_draft, '7b000000-0000-4000-8000-000000000001',
-    'embryo_own', 'true_two_parent', 1, 1, 1, 2, clock_timestamp() + interval '24 months');
+  insert into auth.users(id,email) values
+    (v_owner,v_owner::text||'@chunk-owner.invalid'),(v_parent,v_parent::text||'@chunk-parent.invalid');
+  insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
+    (v_auth,v_owner,clock_timestamp(),clock_timestamp(),'aal1'),
+    (v_parent_auth,v_parent,clock_timestamp(),clock_timestamp(),'aal1');
+  update public.profiles set jurisdiction_code='GB' where id in (v_owner,v_parent);
+  v_owner_hash:=encode(extensions.digest(v_owner::text,'sha256'),'hex');
+  v_parent_hash:=encode(extensions.digest(v_parent::text,'sha256'),'hex');
+  v_rights_hash:=encode(extensions.digest(gen_random_uuid()::text,'sha256'),'hex');
+  select draft_id into v_draft from public.create_embryo_cohort_draft_v1(
+    v_owner,v_auth,'own_embryos','true_two_parent',2,
+    decode('00112233445566778899aabbccddeeff','hex'),v_owner_hash,
+    array['ffeeddccbbaa99887766554433221100'],array[v_parent_hash],gen_random_uuid()::text,true);
+  foreach v_key in array array['consent.upload-embryo','attestation.embryo-parentage','attestation.embryo-disposition-rights'] loop
+    perform public.sign_embryo_artifact_v1(v_owner,v_auth,'cohort_draft',v_draft,v_key,1,
+      private.embryo_statement_keys_v1(v_key,'parent'),decode('deadbeef','hex'),'GB',gen_random_uuid()::text);
+  end loop;
+  select invitation_id into v_invitation from public.create_embryo_draft_invitation_v1(
+    v_owner,v_auth,v_draft,v_parent_hash,v_rights_hash,gen_random_uuid()::text,true);
+  -- Prior fixture notices may precede this invitation. Claim only bounded
+  -- fixture work and verify the exact invitation before using its token.
+  loop
+    v_tries:=v_tries+1;
+    if v_tries>10 then raise exception 'fixture invitation not claimable'; end if;
+    select * into v_mail from public.claim_mail_outbox();
+    if not found then raise exception 'fixture invitation not claimable'; end if;
+    exit when exists(select 1 from public.mail_outbox where id=v_mail.outbox_id and target_id=v_invitation);
+  end loop;
+  v_token_hash:=encode(extensions.digest(convert_to(v_mail.delivery_token,'UTF8'),'sha256'),'hex');
+  perform public.activate_rights_session_v1(v_token_hash,v_rights_hash,gen_random_uuid()::text);
+  perform public.accept_embryo_co_parent_invitation_v1(v_rights_hash,v_parent,v_parent_hash,
+    decode('deadbeef','hex'),'GB',private.embryo_statement_keys_v1('consent.upload-embryo','parent'),
+    private.embryo_statement_keys_v1('attestation.embryo-parentage'),gen_random_uuid()::text);
+  perform public.sign_embryo_artifact_v1(v_parent,v_parent_auth,'cohort_draft',v_draft,
+    'attestation.embryo-disposition-rights',1,private.embryo_statement_keys_v1('attestation.embryo-disposition-rights'),
+    decode('deadbeef','hex'),'GB',gen_random_uuid()::text);
+  v_insurance:=public.sign_embryo_artifact_v1(v_owner,v_auth,'cohort_draft',v_draft,
+    'disclosure.insurance-and-discrimination',1,private.embryo_statement_keys_v1('disclosure.insurance-and-discrimination'),
+    decode('deadbeef','hex'),'GB',gen_random_uuid()::text);
+  v_charter:=public.sign_embryo_artifact_v1(v_owner,v_auth,'cohort_draft',v_draft,
+    'charter.future-person',1,private.embryo_statement_keys_v1('charter.future-person'),
+    decode('deadbeef','hex'),'GB',gen_random_uuid()::text);
+  select cohort_id into v_cohort from public.finalize_embryo_cohort_v1(
+    v_owner,v_auth,v_draft,v_insurance,v_charter,gen_random_uuid()::text);
+  if not p_legacy then
+    v_minted:=private.create_embryo_ingest_session_v1(v_owner,v_auth,v_cohort,'http://localhost:3000',p_capacity,true);
+    v_session:=(v_minted->>'session')::uuid;
+    -- Synthetic format metadata is explicit fixture setup, not an upload or
+    -- a claim that the unfinished mapping/build decision route is available.
+    update public.embryo_ingest_sessions set source_format='vcf',reference_build='GRCh38' where id=v_session;
+    return v_session;
+  end if;
+  -- The legacy-null-revision regression starts legacy-shaped. Never mutate
+  -- an immutable credential on a newly minted session to make this case.
+  v_session:=gen_random_uuid();
   insert into public.embryo_ingest_sessions (
     id, cohort_id, originating_session_id, uploader_principal_id, basis_case,
     basis_revision, participant_set_revision, donor_attribution_revision,
     source_binding_fingerprint, expires_at, account_auth_session_revision,
     account_revision, ingest_revision, cohort_lifecycle_revision, declared_capacity_bytes
-  ) values (v_session, v_cohort, '7b000000-0000-4000-8000-000000000002',
-    '7b000000-0000-4000-8000-000000000003', 'true_two_parent', 1, 1, 1,
-    repeat('a',64), v_deadline, 1, 1, 1, 1, p_capacity);
+  ) select v_session,v_cohort,v_auth,uploader_principal_id,'true_two_parent',1,1,1,
+    repeat('a',64),v_deadline,null,1,1,1,p_capacity from public.embryo_cohort_drafts where id=v_draft;
   insert into public.retention_rows (
     retention_id, target_kind, target_id, retention_revision,
     target_lifecycle_revision, disposition_revision, fixed_deadline
@@ -143,12 +181,12 @@ select is((select accepted_bytes from public.embryo_ingest_sessions where id=(se
 update attempt set id=pg_temp.new_attempt();
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'reserved','auth-revocation fixture reserves');
-update public.profiles set auth_session_revision=2 where id='7b000000-0000-4000-8000-000000000001';
+update public.profiles set auth_session_revision=2 where id=(select account_id from public.embryo_ingest_sessions where id=(select id from attempt));
 select is(private.commit_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64))->>'status',
   'failure_pending','account-session revocation prevents commit');
 select is((select state from public.embryo_ingest_chunks where session_id=(select id from attempt)),
   'reserved','revoked attempt remains an unreadable pending object set');
-update public.profiles set auth_session_revision=1 where id='7b000000-0000-4000-8000-000000000001';
+update public.profiles set auth_session_revision=1 where id=(select account_id from public.embryo_ingest_sessions where id=(select id from attempt));
 
 update attempt set id=pg_temp.new_attempt();
 update public.embryo_cohorts set basis_revision=2 where id=(select cohort_id from public.embryo_ingest_sessions where id=(select id from attempt));
@@ -188,25 +226,24 @@ select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),50,rep
 select is((select count(*) from public.embryo_ingest_chunks where session_id=(select id from attempt)),50::bigint,
   'quota failure leaves exactly the fifty retry-authority receipts');
 
-update attempt set id=pg_temp.new_attempt();
-update public.embryo_ingest_sessions set account_auth_session_revision=null where id=(select id from attempt);
+update attempt set id=pg_temp.new_attempt(200000000,true);
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'failure_pending','a legacy session without an auth revision is denied');
 
 update attempt set id=pg_temp.new_attempt();
-update public.profiles set non_self_upload_suspended_at=clock_timestamp() where id='7b000000-0000-4000-8000-000000000001';
+update public.profiles set non_self_upload_suspended_at=clock_timestamp() where id=(select account_id from public.embryo_ingest_sessions where id=(select id from attempt));
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'failure_pending','account suspension denies reservation');
-update public.profiles set non_self_upload_suspended_at=null where id='7b000000-0000-4000-8000-000000000001';
+update public.profiles set non_self_upload_suspended_at=null where id=(select account_id from public.embryo_ingest_sessions where id=(select id from attempt));
 
 update attempt set id=pg_temp.new_attempt();
-update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id='7b000000-0000-4000-8000-000000000002';
+update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id=(select originating_session_id from public.embryo_ingest_sessions where id=(select id from attempt));
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'failure_pending','an expired originating session denies reservation');
-update auth.sessions set not_after=null where id='7b000000-0000-4000-8000-000000000002';
+update auth.sessions set not_after=null where id=(select originating_session_id from public.embryo_ingest_sessions where id=(select id from attempt));
 
 update attempt set id=pg_temp.new_attempt();
-delete from auth.sessions where id='7b000000-0000-4000-8000-000000000002';
+delete from auth.sessions where id=(select originating_session_id from public.embryo_ingest_sessions where id=(select id from attempt));
 select is(private.reserve_embryo_ingest_chunk_v1((select id from attempt),0,repeat('d',64),100,2,60,pg_temp.fragments())->>'status',
   'failure_pending','deleted originating session denies reservation');
 

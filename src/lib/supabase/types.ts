@@ -1974,7 +1974,6 @@ export type Database = {
       }
       embryo_cohort_drafts: {
         Row: {
-          upload_situation: string
           basis_case: string
           basis_revision: number
           created_at: string
@@ -1987,10 +1986,10 @@ export type Database = {
           participant_set_revision: number
           state: string
           upload_class: string
+          upload_situation: string
           uploader_principal_id: string
         }
         Insert: {
-          upload_situation?: string
           basis_case: string
           basis_revision?: number
           created_at?: string
@@ -2003,10 +2002,10 @@ export type Database = {
           participant_set_revision?: number
           state?: string
           upload_class: string
+          upload_situation?: string
           uploader_principal_id: string
         }
         Update: {
-          upload_situation?: string
           basis_case?: string
           basis_revision?: number
           created_at?: string
@@ -2019,6 +2018,7 @@ export type Database = {
           participant_set_revision?: number
           state?: string
           upload_class?: string
+          upload_situation?: string
           uploader_principal_id?: string
         }
         Relationships: [
@@ -2033,8 +2033,6 @@ export type Database = {
       }
       embryo_cohorts: {
         Row: {
-          ingest_revision: number
-          publication_revision: number | null
           basis_case: string
           basis_revision: number
           created_at: string
@@ -2042,10 +2040,12 @@ export type Database = {
           draft_id: string
           embryo_count: number
           id: string
+          ingest_revision: number
           key_revision: number
           lifecycle_revision: number
           owner_account_id: string
           participant_set_revision: number
+          publication_revision: number | null
           qc_failed_at: string | null
           recipient_set_revision: number
           retention_expires_at: string
@@ -2054,8 +2054,6 @@ export type Database = {
           uploaded_at: string | null
         }
         Insert: {
-          ingest_revision?: number
-          publication_revision?: number | null
           basis_case: string
           basis_revision: number
           created_at?: string
@@ -2063,10 +2061,12 @@ export type Database = {
           draft_id: string
           embryo_count: number
           id?: string
+          ingest_revision?: number
           key_revision?: number
           lifecycle_revision?: number
           owner_account_id: string
           participant_set_revision: number
+          publication_revision?: number | null
           qc_failed_at?: string | null
           recipient_set_revision?: number
           retention_expires_at: string
@@ -2075,8 +2075,6 @@ export type Database = {
           uploaded_at?: string | null
         }
         Update: {
-          ingest_revision?: number
-          publication_revision?: number | null
           basis_case?: string
           basis_revision?: number
           created_at?: string
@@ -2084,10 +2082,12 @@ export type Database = {
           draft_id?: string
           embryo_count?: number
           id?: string
+          ingest_revision?: number
           key_revision?: number
           lifecycle_revision?: number
           owner_account_id?: string
           participant_set_revision?: number
+          publication_revision?: number | null
           qc_failed_at?: string | null
           recipient_set_revision?: number
           retention_expires_at?: string
@@ -2403,33 +2403,80 @@ export type Database = {
           },
         ]
       }
+      embryo_ingest_delete_objects: {
+        Row: {
+          acknowledged_at: string | null
+          bucket_id: string
+          object_name: string
+          ordinal: number
+          source_id: string
+          source_kind: string
+          state: string
+          unwind_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          bucket_id: string
+          object_name: string
+          ordinal: number
+          source_id: string
+          source_kind: string
+          state?: string
+          unwind_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          bucket_id?: string
+          object_name?: string
+          ordinal?: number
+          source_id?: string
+          source_kind?: string
+          state?: string
+          unwind_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embryo_ingest_delete_objects_unwind_id_fkey"
+            columns: ["unwind_id"]
+            isOneToOne: false
+            referencedRelation: "embryo_ingest_unwinds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embryo_ingest_fragments: {
         Row: {
+          bucket_id: string
           byte_count: number
           content_sha256: string
           created_at: string
           line_count: number
           object_id: string
+          object_name: string
           sample_ordinal: number
           sequence: number
           session_id: string
         }
         Insert: {
+          bucket_id: string
           byte_count: number
           content_sha256: string
           created_at?: string
           line_count: number
           object_id: string
+          object_name: string
           sample_ordinal: number
           sequence: number
           session_id: string
         }
         Update: {
+          bucket_id?: string
           byte_count?: number
           content_sha256?: string
           created_at?: string
           line_count?: number
           object_id?: string
+          object_name?: string
           sample_ordinal?: number
           sequence?: number
           session_id?: string
@@ -2573,6 +2620,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      embryo_ingest_unwinds: {
+        Row: {
+          cohort_id: string | null
+          completed_at: string | null
+          draft_id: string | null
+          fixed_ingest_deadline: string
+          id: string
+          ingest_revision: number
+          matrix_fingerprint: string | null
+          recipients: Json | null
+          session_id: string | null
+          state: string
+          storage_confirmed_at: string | null
+        }
+        Insert: {
+          cohort_id?: string | null
+          completed_at?: string | null
+          draft_id?: string | null
+          fixed_ingest_deadline: string
+          id?: string
+          ingest_revision: number
+          matrix_fingerprint?: string | null
+          recipients?: Json | null
+          session_id?: string | null
+          state?: string
+          storage_confirmed_at?: string | null
+        }
+        Update: {
+          cohort_id?: string | null
+          completed_at?: string | null
+          draft_id?: string | null
+          fixed_ingest_deadline?: string
+          id?: string
+          ingest_revision?: number
+          matrix_fingerprint?: string | null
+          recipients?: Json | null
+          session_id?: string | null
+          state?: string
+          storage_confirmed_at?: string | null
+        }
+        Relationships: []
       }
       embryo_mapping_challenges: {
         Row: {
@@ -2826,6 +2915,54 @@ export type Database = {
           },
         ]
       }
+      embryo_terminal_mail: {
+        Row: {
+          accepted_at: string | null
+          attempt_count: number
+          claim_expires_at: string | null
+          claim_token: string | null
+          cleanup_confirmed_at: string
+          expires_at: string
+          id: string
+          next_attempt_at: string
+          provider_message_hmac: string | null
+          recipient_ciphertext: string | null
+          recipient_pseudonym: string
+          state: string
+          unwind_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          cleanup_confirmed_at: string
+          expires_at: string
+          id?: string
+          next_attempt_at?: string
+          provider_message_hmac?: string | null
+          recipient_ciphertext?: string | null
+          recipient_pseudonym: string
+          state?: string
+          unwind_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          cleanup_confirmed_at?: string
+          expires_at?: string
+          id?: string
+          next_attempt_at?: string
+          provider_message_hmac?: string | null
+          recipient_ciphertext?: string | null
+          recipient_pseudonym?: string
+          state?: string
+          unwind_id?: string
+        }
+        Relationships: []
+      }
       embryo_variants: {
         Row: {
           alternate_allele: string | null
@@ -2881,50 +3018,50 @@ export type Database = {
         Row: {
           closing_date: string
           closing_date_state: string
-          date_revision: number
-          disposition_effective_at: string | null
-          transferred_at: string | null
           cohort_id: string
           created_at: string
+          date_revision: number
           display_label: string | null
+          disposition_effective_at: string | null
           disposition_revision: number
           id: string
           retention_expires_at: string
           sample_ordinal: number
           status: string
           subject_id: string
+          transferred_at: string | null
         }
         Insert: {
           closing_date?: string
           closing_date_state?: string
-          date_revision?: number
-          disposition_effective_at?: string | null
-          transferred_at?: string | null
           cohort_id: string
           created_at?: string
+          date_revision?: number
           display_label?: string | null
+          disposition_effective_at?: string | null
           disposition_revision?: number
           id?: string
           retention_expires_at: string
           sample_ordinal: number
           status?: string
           subject_id: string
+          transferred_at?: string | null
         }
         Update: {
           closing_date?: string
           closing_date_state?: string
-          date_revision?: number
-          disposition_effective_at?: string | null
-          transferred_at?: string | null
           cohort_id?: string
           created_at?: string
+          date_revision?: number
           display_label?: string | null
+          disposition_effective_at?: string | null
           disposition_revision?: number
           id?: string
           retention_expires_at?: string
           sample_ordinal?: number
           status?: string
           subject_id?: string
+          transferred_at?: string | null
         }
         Relationships: [
           {
@@ -3685,9 +3822,9 @@ export type Database = {
       }
       future_person_record_key_print_rights: {
         Row: {
-          delivery_kind: string
           consumed_at: string | null
           created_at: string
+          delivery_kind: string
           embryo_id: string
           id: string
           key_revision: number
@@ -3696,9 +3833,9 @@ export type Database = {
           status: string
         }
         Insert: {
-          delivery_kind?: string
           consumed_at?: string | null
           created_at?: string
+          delivery_kind?: string
           embryo_id: string
           id?: string
           key_revision: number
@@ -3707,9 +3844,9 @@ export type Database = {
           status?: string
         }
         Update: {
-          delivery_kind?: string
           consumed_at?: string | null
           created_at?: string
+          delivery_kind?: string
           embryo_id?: string
           id?: string
           key_revision?: number
@@ -7252,9 +7389,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_embryo_co_parent_invitation_v1: {
+        Args: {
+          p_account_email_hmac: string
+          p_account_id: string
+          p_jurisdiction_code: string
+          p_parentage_statement_keys: string[]
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+          p_token_nonce: string
+          p_upload_statement_keys: string[]
+        }
+        Returns: string
+      }
       acknowledge_portrait_v1: {
         Args: { p_account_id: string; p_subject_id: string }
         Returns: string
+      }
+      activate_rights_session_v1: {
+        Args: {
+          p_form_nonce: string
+          p_session_hash: string
+          p_token_hash: string
+        }
+        Returns: {
+          expires_at: string
+          purpose: string
+          target_id: string
+          target_kind: string
+        }[]
+      }
+      authorize_embryo_ingest_request_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_cookie_hash: string
+          p_ingest_session_id: string
+          p_origin: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
       }
       cancel_account_deletion_v1: {
         Args: {
@@ -7277,159 +7451,14 @@ export type Database = {
           storage_objects: Json
         }[]
       }
-      accept_embryo_co_parent_invitation_v1: {
-        Args: {
-          p_account_email_hmac: string
-          p_account_id: string
-          p_jurisdiction_code: string
-          p_parentage_statement_keys: string[]
-          p_session_hash: string
-          p_signing_name_ciphertext: string
-          p_token_nonce: string
-          p_upload_statement_keys: string[]
-        }
-        Returns: string
-      }
-      activate_rights_session_v1: {
-        Args: { p_form_nonce: string; p_session_hash: string; p_token_hash: string }
-        Returns: {
-          expires_at: string
-          purpose: string
-          target_id: string
-          target_kind: string
-        }[]
-      }
-      create_embryo_cohort_draft_v1: {
-        Args: {
-          p_account_id: string
-          p_basis_case: string
-          p_contact_ciphertexts: string[]
-          p_contact_hmacs: string[]
-          p_embryo_count: number
-          p_owner_contact_ciphertext: string
-          p_owner_contact_hmac: string
-          p_session_id: string
-          p_test_jurisdiction: boolean
-          p_token_nonce: string
-          p_upload_situation: string
-        }
-        Returns: {
-          draft_id: string
-          expires_at: string
-          required_principal_slots: string[]
-        }[]
-      }
-      create_embryo_draft_invitation_v1: {
-        Args: {
-          p_account_id: string
-          p_contact_hmac: string
-          p_draft_id: string
-          p_idempotency_key: string
-          p_session_id: string
-          p_test_jurisdiction: boolean
-          p_token_nonce: string
-        }
-        Returns: {
-          expires_at: string
-          invitation_id: string | null
-        }[]
-      }
-      deliver_embryo_record_key_cards_v1: {
-        Args: {
-          p_account_id: string
-          p_cohort_id: string
-          p_session_id: string
-          p_token_nonce: string
-        }
-        Returns: {
-          cards: Json
-          cohort_id: string
-          key_revision: number
-          recipient_set_revision: number
-        }[]
-      }
-      finalize_embryo_cohort_v1: {
-        Args: {
-          p_account_id: string
-          p_charter_ack_id: string
-          p_draft_id: string
-          p_insurance_ack_id: string
-          p_session_id: string
-          p_token_nonce: string
-        }
-        Returns: {
-          caller_state: string
-          cards: Json
-          cohort_id: string
-          embryo_count: number
-          key_revision: number
-          recipient_set_revision: number
-        }[]
-      }
-      grant_cohort_purpose_v1: {
-        Args: {
-          p_account_id: string
-          p_artifact_key: string
-          p_artifact_version: number
-          p_cohort_id: string
-          p_jurisdiction_code: string
-          p_session_id: string
-          p_signing_name_ciphertext: string
-          p_statement_keys: string[]
-          p_token_nonce: string
-        }
-        Returns: string
-      }
-      job_time_stats: {
-        Args: { p_kind: string }
-        Returns: {
-          completed_count: number
-          p50_seconds: number | null
-          p90_seconds: number | null
-        }[]
-      }
-      record_embryo_disposition_v1: {
-        Args: {
-          p_account_id: string
-          p_action: string
-          p_disposition: string
-          p_embryo_id: string
-          p_proposal_id?: string | null
-          p_session_id: string
-          p_token_nonce: string
-        }
-        Returns: Json
-      }
-      restrict_embryo_cohort_v1: {
-        Args: {
-          p_account_id: string
-          p_cohort_id: string
-          p_session_id: string
-          p_token_nonce: string
-        }
-        Returns: undefined
-      }
-      run_due_embryo_retention_phases_v1: {
+      claim_embryo_terminal_mail_v1: {
         Args: never
         Returns: {
-          draft_id: string
-          owner_account_id: string
+          claim_token: string
+          contact_ciphertext: string
+          idempotency_key: string
+          notice_id: string
         }[]
-      }
-      sign_embryo_artifact_v1: {
-        Args: {
-          p_account_id: string
-          p_artifact_key: string
-          p_artifact_version: number
-          p_jurisdiction_code: string
-          p_session_id: string
-          p_signing_name_ciphertext: string
-          p_statement_keys: string[]
-          p_target_id: string
-          p_target_kind: string
-          p_token_nonce: string
-        }
-        Returns: string
       }
       claim_mail_outbox: {
         Args: never
@@ -7454,6 +7483,15 @@ export type Database = {
       complete_account_deletion_storage_v1: {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
+      }
+      complete_embryo_terminal_mail_v1: {
+        Args: {
+          p_accepted: boolean
+          p_claim_token: string
+          p_notice_id: string
+          p_provider_message_hmac: string
+        }
+        Returns: boolean
       }
       complete_mail_attempt: {
         Args: {
@@ -7491,6 +7529,55 @@ export type Database = {
           subject_id: string
         }[]
       }
+      create_embryo_cohort_draft_v1: {
+        Args: {
+          p_account_id: string
+          p_basis_case: string
+          p_contact_ciphertexts: string[]
+          p_contact_hmacs: string[]
+          p_embryo_count: number
+          p_owner_contact_ciphertext: string
+          p_owner_contact_hmac: string
+          p_session_id: string
+          p_test_jurisdiction: boolean
+          p_token_nonce: string
+          p_upload_situation: string
+        }
+        Returns: {
+          draft_id: string
+          expires_at: string
+          required_principal_slots: string[]
+        }[]
+      }
+      create_embryo_draft_invitation_v1: {
+        Args: {
+          p_account_id: string
+          p_contact_hmac: string
+          p_draft_id: string
+          p_idempotency_key: string
+          p_session_id: string
+          p_test_jurisdiction: boolean
+          p_token_nonce: string
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+        }[]
+      }
+      deliver_embryo_record_key_cards_v1: {
+        Args: {
+          p_account_id: string
+          p_cohort_id: string
+          p_session_id: string
+          p_token_nonce: string
+        }
+        Returns: {
+          cards: Json
+          cohort_id: string
+          key_revision: number
+          recipient_set_revision: number
+        }[]
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -7507,6 +7594,7 @@ export type Database = {
         Returns: string
       }
       expire_due_adult_subject_invitations_v1: { Args: never; Returns: number }
+      expire_embryo_terminal_mail_v1: { Args: never; Returns: number }
       fail_account_deletion_attempt_v1: {
         Args: {
           p_claim_token_hash: string
@@ -7519,11 +7607,43 @@ export type Database = {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
       }
+      finalize_embryo_cohort_v1: {
+        Args: {
+          p_account_id: string
+          p_charter_ack_id: string
+          p_draft_id: string
+          p_insurance_ack_id: string
+          p_session_id: string
+          p_token_nonce: string
+        }
+        Returns: {
+          caller_state: string
+          cards: Json
+          cohort_id: string
+          embryo_count: number
+          key_revision: number
+          recipient_set_revision: number
+        }[]
+      }
       grant_cloud_model_consent: {
         Args: {
           p_account_id: string
           p_data_classes: string[]
           p_provider_key: string
+        }
+        Returns: string
+      }
+      grant_cohort_purpose_v1: {
+        Args: {
+          p_account_id: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_cohort_id: string
+          p_jurisdiction_code: string
+          p_session_id: string
+          p_signing_name_ciphertext: string
+          p_statement_keys: string[]
+          p_token_nonce: string
         }
         Returns: string
       }
@@ -7557,6 +7677,10 @@ export type Database = {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
       }
+      prepare_embryo_ingest_unwind_v1: {
+        Args: { p_cohort_id: string; p_ingest_revision: number }
+        Returns: Json
+      }
       processing_time_stats: {
         Args: never
         Returns: {
@@ -7569,6 +7693,18 @@ export type Database = {
       purge_account_deletion_database_v1: {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: string
+      }
+      record_embryo_disposition_v1: {
+        Args: {
+          p_account_id: string
+          p_action: string
+          p_disposition: string
+          p_embryo_id: string
+          p_proposal_id: string | null
+          p_session_id: string
+          p_token_nonce: string
+        }
+        Returns: Json
       }
       record_resend_mail_event: {
         Args: {
@@ -7610,6 +7746,15 @@ export type Database = {
         }
         Returns: string
       }
+      restrict_embryo_cohort_v1: {
+        Args: {
+          p_account_id: string
+          p_cohort_id: string
+          p_session_id: string
+          p_token_nonce: string
+        }
+        Returns: undefined
+      }
       resume_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
@@ -7620,6 +7765,28 @@ export type Database = {
       }
       revoke_directional_purpose_v1: {
         Args: { p_account_id: string; p_grant_id: string }
+        Returns: string
+      }
+      run_due_embryo_retention_phases_v1: {
+        Args: never
+        Returns: {
+          draft_id: string
+          owner_account_id: string
+        }[]
+      }
+      sign_embryo_artifact_v1: {
+        Args: {
+          p_account_id: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_jurisdiction_code: string
+          p_session_id: string
+          p_signing_name_ciphertext: string
+          p_statement_keys: string[]
+          p_target_id: string
+          p_target_kind: string
+          p_token_nonce: string
+        }
         Returns: string
       }
       stop_family_sharing_v1: {
