@@ -52,7 +52,7 @@
     "slug": "alcohol-flush-aldh2-rs671",
     "category": "gastrointestinal",
     "title": "Alcohol flush reaction · ALDH2",
-    "summary": "ALDH2 clears acetaldehyde, a toxic product made when the body breaks down alcohol. The rs671 change, also called Glu504Lys or ALDH2*2, makes this enzyme much less active. The A copy is common in East Asian groups and rare elsewhere. It is linked to flushing, nausea, and a fast heartbeat after alcohol. Heavy drinking despite flushing is linked to much higher odds of esophageal cancer.",
+    "summary": "ALDH2 helps clear acetaldehyde, a by-product of alcohol breakdown. The A form at rs671, also called Lys504 or ALDH2*2, reduces this enzyme's activity. Acetaldehyde can then build up after alcohol. This helps explain why some people flush or have a faster heartbeat after drinking. It is not a measure of overall alcohol tolerance.",
     "evidence": "emerging",
     "variants": [
       {
@@ -63,15 +63,41 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the G (Glu504) allele: fully active ALDH2. Acetaldehyde is cleared at the typical rate and the classic alcohol flush reaction is not expected from this gene.",
-          "AG": "One copy of the A (Lys504) allele. Because the enzyme works as a tetramer, one inactive copy reduces ALDH2 activity far more than half, and most carriers flush and feel unwell after alcohol. Studies link heavy drinking in AG carriers to higher odds of esophageal squamous cell cancer than in GG heavy drinkers: a large shift. Carriers who drink little or not at all do not show this excess. This is one factor among many in cancer risk.",
-          "AA": "Two A copies mark the Lys504 form and leave very little ALDH2 activity. Even a small amount of alcohol often causes strong flushing and discomfort. Most people with AA drink rarely, which limits alcohol harm in practice. If alcohol is used, acetaldehyde rises sharply."
+          "GG": "Your file shows two G copies, which encode Glu504. It does not show the common Lys504 change linked to alcohol flushing. This one position cannot establish how well the whole enzyme works or rule out other causes of flushing.",
+          "AG": "Your file shows one A copy, which encodes Lys504. This form reduces the activity of the enzyme that clears acetaldehyde, an alcohol by-product. In a small study, people with AG had more acetaldehyde in their breath and stronger heart-rate responses after alcohol than GG participants. This may help explain flushing, but does not predict your symptoms. In a Japanese study, men who drank alcohol and had AG had higher odds of esophageal cancer than men with GG. The association also appeared in the study’s light-drinking group. This is not an estimate of your chance of cancer.",
+          "AA": "Your file shows two A copies, which encode Lys504. This form is linked to very low activity of the enzyme that clears acetaldehyde, an alcohol by-product. An early study found no measurable liver ALDH2 activity in two AA samples and higher blood acetaldehyde after alcohol. That small study does not tell how strongly you would react or how much you drink."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "19320537", "label": "Brooks et al., PLoS Med 2009" }
+      {
+        "pmid": "39075523", "doi": "10.1186/s12967-024-05507-x", "label": "Rwere et al., J Transl Med 2024", "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "Researchers measured breath acetaldehyde, heart rate and cheek temperature after a set alcohol dose.", "locator": "Methods: Human alcohol challenge; Figure 3" },
+          "population": { "text": "Eight healthy East Asian AG volunteers and eight matched GG volunteers took the test. Recruitment sought people who reported flushing. People with AA were excluded.", "locator": "Methods: Participant recruitment and Human alcohol challenge; Figure 2" },
+          "comparison": { "text": "The AG group had more breath acetaldehyde and a larger heart-rate response than the GG group.", "locator": "Results: Human subjects studies; Figure 3A-D" },
+          "limitation": { "text": "This small, selected sample cannot tell how often all carriers flush. It did not test AA or establish a safe intake.", "locator": "Methods: Human alcohol challenge; Discussion: recruitment limitation; report scope limitation" }
+        }
+      },
+      {
+        "pmid": "12419833", "doi": "10.1093/carcin/23.11.1851", "label": "Yokoyama et al., Carcinogenesis 2002", "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "The study compared drinking and ALDH2 gene types in men with and without cancer. It looked at cancer of the food pipe, called esophageal cancer.", "locator": "Abstract: case-control study design" },
+          "population": { "text": "The study had 234 Japanese men with this cancer. It also had 634 Japanese men without cancer who went for health checks. The cancer type was squamous-cell carcinoma.", "locator": "Abstract: study population" },
+          "comparison": { "text": "In the study’s light-drinking group, men with AG had higher odds of this cancer than men with GG.", "locator": "Abstract: light-drinker ALDH2*1/2*2 versus ALDH2*1/2*1 comparison" },
+          "limitation": { "text": "This case-control study cannot give your absolute risk. The cited comparison does not establish the same link in women or people with AA.", "locator": "Abstract: population and genotype comparison; report scope limitation" }
+        }
+      },
+      {
+        "pmid": "2024727", "doi": "10.1111/j.1530-0277.1991.tb00532.x", "label": "Enomoto et al., Alcohol Clin Exp Res 1991", "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "The study tested ALDH2 in the liver. It also measured blood acetaldehyde after alcohol in each gene group.", "locator": "Abstract: methods" },
+          "population": null,
+          "comparison": { "text": "Two AA liver samples had no measurable ALDH2 activity. In AG, activity was lower or too low to measure. After alcohol, blood acetaldehyde was higher in AG and AA than GG.", "locator": "Abstract: liver activity and blood acetaldehyde results" },
+          "limitation": { "text": "The liver samples were few. The abstract does not give the full sample makeup, so it cannot support a population-wide symptom prediction.", "locator": "Abstract: sample counts; report scope limitation" }
+        }
+      }
     ]
   },
   {

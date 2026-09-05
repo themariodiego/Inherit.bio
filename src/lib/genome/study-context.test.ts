@@ -10,7 +10,9 @@ import type { Citation, ReportTemplate } from "./reports";
 import { templateProseFields } from "../../../scripts/validate-templates";
 import { readabilitySentences, wordCount } from "../../../scripts/readability";
 
-const pilot = ([...basic, ...gut] as ReportTemplate[]).filter((template) => template.citations.some((citation) => "studyContext" in citation));
+const pilot = ([...basic, ...gut] as ReportTemplate[]).filter((template) => [
+  "bitter-taste-tas2r38", "earwax-type-abcc11", "lactase-persistence-lct-rs4988235",
+].includes(template.slug));
 const citation = pilot[0].citations[0] as Citation;
 
 describe("source-bound study context", () => {

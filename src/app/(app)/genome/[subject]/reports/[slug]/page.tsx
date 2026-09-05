@@ -493,10 +493,10 @@ export default async function ReportDetailPage(
           </div>
         }
         whatYouCanDo={
-          // Brief line 630’s fixed string, or the Medicines string for that
-          // category alone (ADR 0021): never advice, never empty.
+          // Brief line 630 is conditional; reviewed exceptions offer a
+          // discussion option without treatment or intake advice.
           <p {...REQUIRED_ACCURACY} className="text-sm leading-relaxed text-ink">
-            {whatYouCanDo(categoryId)}
+            {whatYouCanDo(categoryId, template.slug)}
           </p>
         }
         whereThisComesFrom={

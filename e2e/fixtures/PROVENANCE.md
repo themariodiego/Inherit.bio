@@ -6,15 +6,17 @@ data.
 
 ## personal-previews-grch38.vcf
 
-- Classification: hand-written synthetic single-sample GRCh38 VCF with four
-  public report positions and invented genotype calls. The three reviewed
+- Classification: hand-written synthetic single-sample GRCh38 VCF with five
+  public report positions and invented genotype calls. The four reviewed
   trait calls exercise dry earwax, adult lactase activity and the form at
-  the bitter-taste position; the fourth supplies another covered report for
+  the bitter-taste position, plus an ALDH2 AG call; caffeine supplies another covered report for
   the library filter. No genotype was read from a real person or sample.
 - The production-browser test runs the actual upload and processing path
   before reading the cards and their linked reports.
 - Repository SHA-256:
-  `8469c4ecc3da2a5e6e5459a38806484009c57bf887aa85bdb311165c0b2dde6a`.
+  `3a7d4c51e5fea9a241909c24f83433b601289ad3f032128c87c6dd229128b361`.
+- The caffeine row now uses the verified forward GRCh38 REF C / ALT A.
+  This corrects the former swapped alleles without changing its AC call.
 
 ## tiny-grch38.vcf
 
