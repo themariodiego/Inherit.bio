@@ -1,5 +1,10 @@
 # Test diff register
 
+| Test | Change | Why | Retained or strengthened contract |
+| --- | --- | --- | --- |
+| `src/lib/genome/report-previews.test.ts`, `e2e/report-previews.spec.ts` | Extend three previews to four; add two alcohol genotype workflows | A fourth reviewed takeaway is now shipped. | Existing audience, locus, conflict, missing-data, filter, responsive-layout and empty-account assertions remain. Count assertions increase by one; the new report has two source panels. Both citations are required; no caffeine speed preview is created. |
+| `src/lib/genome/study-context.test.ts`, `src/lib/genome/metabolism-context.test.ts` | Keep the original pilot selected by its explicit three slugs; add separate two-report tests | A global context-presence filter would silently enlarge the original pilot and assume all fields are known. | All original pilot assertions remain. New tests verify seed/display round trips, explicit unknown demographics, unchanged evidence/gates and the corrected scientific expectations. |
+
 ADR 0022 corrects the scientifically false estimate definition and Overview
 note expectations in the report/Overview unit and browser suites. All existing
 definition count, layer, figure and disclosure assertions remain. The exact

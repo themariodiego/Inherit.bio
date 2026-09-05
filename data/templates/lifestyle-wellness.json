@@ -3,7 +3,7 @@
     "slug": "caffeine-metabolism-cyp1a2-rs762551",
     "category": "lifestyle-wellness",
     "title": "Caffeine metabolism · CYP1A2",
-    "summary": "CYP1A2 is a liver enzyme that clears most caffeine. A common DNA change, rs762551, affects how strongly this enzyme responds. The change is often written as CYP1A2 -163C>A. People with two A copies clear caffeine faster on average. People with a C copy clear it more slowly.",
+    "summary": "CYP1A2 helps break down caffeine. This marker was studied for the enzyme's response to smoking, not as a reliable label for your everyday caffeine breakdown speed.",
     "evidence": "emerging",
     "variants": [
       {
@@ -14,15 +14,23 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "AA": "Two copies of the A allele, the genotype associated with faster caffeine clearance on average (sometimes called the 'fast metabolizer' genotype). In the Cornelis 2006 study, heavy coffee intake was not linked to higher heart-attack risk in this group. Actual caffeine sensitivity still varies a lot with smoking, medications, body size and habit.",
-          "AC": "One A and one C allele. The C allele is associated with lower CYP1A2 inducibility, so caffeine tends to be cleared somewhat more slowly than in AA individuals, on average. Many other factors (smoking strongly induces CYP1A2, some medications inhibit it) shift caffeine clearance more than this genotype does.",
-          "CC": "Two C copies are linked to slower caffeine clearance on average. Some studies found more sleep problems after caffeine. Cornelis 2006 also found a modest rise in heart attack risk with very high coffee intake. These are group averages, not a forecast for one person."
+          "AA": "Your file shows two A copies. AA smokers had higher enzyme activity than AC smokers in the cited test. This does not predict how coffee will feel.",
+          "AC": "Your file shows one A and one C copy. AC smokers had lower enzyme activity than AA smokers. This is not your measured caffeine breakdown rate.",
+          "CC": "Your file shows two C copies. The five CC smokers did not clearly differ from either other group. The study did not establish a three-way order of breakdown speeds."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "16522833", "label": "Cornelis et al., JAMA 2006" }
+      {
+        "pmid": "10233211", "doi": "10.1046/j.1365-2125.1999.00898.x", "label": "Sachse et al., Br J Clin Pharmacol 1999", "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "Caffeine breakdown products were used to estimate enzyme activity.", "locator": "Methods: caffeine tests" },
+          "population": { "text": "The study tested 185 healthy nonsmokers and 51 smokers, described as Caucasian.", "locator": "Methods" },
+          "comparison": { "text": "AA and AC smokers differed. Nonsmokers showed no clear genotype differences.", "locator": "Results: Figure 2 and genotype comparisons" },
+          "limitation": { "text": "Different urine and blood measures limit comparison. No clear difference does not prove no effect. Sleep and personal intake limits were not tested.", "locator": "Methods; Discussion: different caffeine test ratios; report scope limitation" }
+        }
+      }
     ]
   },
   {
