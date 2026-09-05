@@ -1255,3 +1255,28 @@ Decisions:
   row locks fail fast with NOWAIT; mint/wrapper calls also bound implicit and
   legacy lock waits to 250ms. SQLSTATE 55P03 propagates as retriable contention,
   never a permanent authorization failure or an extended deadline.
+
+## 2026-09-05 — E0 ingest HTTP credential boundary (in progress)
+
+- The service-only request authorizer matches the exact account, originating
+  login, ingest session, cookie digest and mint origin before it locks a target.
+  Wrong credentials cannot mutate a valid attempt. Revocation of its actual
+  login returns only the cohort/revision failure-dispatch envelope and preserves
+  the fixed due target; transient lock contention remains retriable.
+- Separate host-only cookies support the two permitted concurrent attempts.
+  Production cookies use Secure, HttpOnly, SameSite=Strict and the absolute
+  database deadline. Duplicate cookie names fail closed; reads never refresh
+  expiry. Only a digest reaches the database.
+- The HTTP orchestration refuses missing account authority, foreign origins,
+  unavailable jurisdictions and absent cookies before body reads or database
+  access. Its internal metadata projection is closed and ordinal-complete;
+  failure-pending is distinct from authorization and cannot fall through to a
+  writer. The byte reader independently counts the stream against its bounded
+  declared size, cancels on overflow/abort and emits only coded errors.
+- Verification: 65 rollback-only local pgTAP assertions (38 shared fixture
+  assertions), plus 38 cookie/HTTP unit tests. No hosted schema was changed.
+- This is a reusable boundary, not an accepting upload route. Mapping/build
+  decisions, one-time operation tokens, a proven Storage writer drain/fence,
+  whole-cohort unwind and worker publication remain required before accepting
+  bytes. No placeholder endpoint, production capability or acceptance promotion
+  is added to count incomplete work as shipped.
