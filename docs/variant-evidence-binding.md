@@ -38,9 +38,13 @@ findings. It does not complete clinical annotation or the whole-project gates.
   become unknown; existing vendor-profile defaults remain unchanged.
 - Processing an unknown build clears only this file's old variants, ancestry
   and scores, then fails without ready mail or new derivative rows. Source
-  bytes remain. Cleanup failures are explicit and leave the file failed for
-  retry; the three deletes are not an atomic database transaction. A failed
-  deletion can leave old derivatives requiring reconciliation.
+  bytes remain. The initial parsing-state write is checked: failure returns
+  503 before source fetch or derivative work, with no database detail exposed.
+  Cleanup failures are explicit; if the later failed-state write also fails,
+  the saved parsing state still excludes this file from annotated report reads.
+  The three deletes are not an atomic database transaction. A failed deletion
+  can leave old derivatives requiring reconciliation and a stuck parsing state
+  can require retry.
 - GRCh37 point liftover now carries strand and complements single-base calls
   on reversed blocks. Arrays retain null REF/ALT rather than inventing them.
   Non-SNV transformations are withheld and counted among unmapped records:
@@ -70,13 +74,18 @@ recorded Ensembl truth coordinate fixture. These are automated correctness
 tests, not a clinical validation or production migration audit.
 
 Verified on this branch: typecheck, lint with zero warnings, production build,
-1,423 unit tests across 97 files, readability, secrets, template and private
+1,425 unit tests across 97 files, readability, secrets, template and private
 name gates. The two focused Family/Portrait browser suites pass 20/20 tests;
 the JSON report confirms zero skips and zero retries. Next emitted four
 destination-stream-closed messages during browser navigations; tests passed,
 but this is not a zero-runtime-error claim. No hosted migration or data change
 was performed. The React review of the two state attributes found no new
 client boundary, hook, fetching or serialization change.
+
+The parsing-state review follow-up adds two route failure cases; all 1,425
+unit tests, typecheck, lint and readability pass afterward. The browser run
+above precedes this follow-up, which changes only the initial database-error
+branch and its tests.
 
 ## Primary references
 

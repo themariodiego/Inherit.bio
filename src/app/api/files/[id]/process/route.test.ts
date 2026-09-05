@@ -5,6 +5,8 @@ const state = vi.hoisted(() => ({
   inserts: [] as { table: string; rows: Record<string, unknown>[] }[],
   deletes: [] as string[],
   deleteError: null as string | null,
+  updateError: null as string | null,
+  persistedFile: { status: "annotated", build: "GRCh38" } as Record<string, unknown>,
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   auth: { getUser: async () => ({ data: { user: { id: "test-user", email: null } } }) },
@@ -14,7 +16,10 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
 }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (table: string) => ({
   update: (value: Record<string, unknown>) => ({ eq: async () => {
-    state.updates.push({ table, value }); return { error: null };
+    state.updates.push({ table, value });
+    if (value.status === state.updateError) return { error: { code: "unavailable", message: "private database detail" } };
+    if (table === "genome_files") Object.assign(state.persistedFile, value);
+    return { error: null };
   } }),
   delete: () => ({ eq: async () => { state.deletes.push(table); return { error: state.deleteError === table ? { code: "unavailable" } : null }; } }),
   insert: async (rows: Record<string, unknown>[]) => { state.inserts.push({ table, rows }); return { error: null }; },
@@ -24,6 +29,7 @@ import { POST } from "./route";
 
 beforeEach(() => {
   state.updates = []; state.inserts = []; state.deletes = []; state.deleteError = null;
+  state.updateError = null; state.persistedFile = { status: "annotated", build: "GRCh38" };
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-key");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.test");
 });
@@ -35,6 +41,31 @@ async function processVcf(header: string, row: string) {
 }
 
 describe("source build processing boundary", () => {
+  it("stops before source fetch or derivative work when the parsing state cannot be persisted", async () => {
+    state.updateError = "parsing";
+    state.deleteError = "user_variants";
+    const response = await processVcf("", "1\t100\trs1\tA\tG\t.\tPASS\t.\tGT\t0/1");
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe("File processing could not start. Please try again.");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(state.deletes).toEqual([]);
+    expect(state.inserts).toEqual([]);
+    expect(state.updates).toHaveLength(1);
+    expect(state.persistedFile).toEqual({ status: "annotated", build: "GRCh38" });
+  });
+
+  it("keeps a rerun out of annotated reads when both cleanup and the final failed-state update fail", async () => {
+    state.deleteError = "ancestry_results";
+    state.updateError = "failed";
+    const response = await processVcf("", "1\t100\trs1\tA\tG\t.\tPASS\t.\tGT\t0/1");
+    expect(response.status).toBe(500);
+    expect(await response.text()).toContain("Unknown-build derivative cleanup failed: ancestry_results");
+    expect(state.persistedFile).toMatchObject({ status: "parsing", build: null });
+    expect(state.deletes).toEqual(["user_variants", "ancestry_results"]);
+    expect(state.inserts).toEqual([]);
+    expect(state.updates.at(-1)?.value.status).toBe("failed");
+  });
+
   it.each(["", "##reference=GRCh380", "##reference=GRCh38\n##reference=GRCh37"])("invalidates old derivatives and refuses new results for unknown/unsupported/conflicting build: %s", async (header) => {
     const response = await processVcf(header, "1\t100\trs1\tA\tG\t.\tPASS\t.\tGT\t0/1");
     expect(response.status).toBe(500);

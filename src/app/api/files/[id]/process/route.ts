@@ -74,7 +74,7 @@ export async function POST(
   const admin = createAdminClient();
   // A re-run measures the file again at the end, so a stale measure never
   // outlives the calls it was taken from (the all-null shape is admitted).
-  await admin
+  const { error: parsingError } = await admin
     .from("genome_files")
     .update({
       status: "parsing",
@@ -89,6 +89,11 @@ export async function POST(
       roh_measured_at: null,
     })
     .eq("id", id);
+  // This state excludes old derivatives from report reads during a rerun.
+  // Do not fetch or change derivatives unless that boundary was persisted.
+  if (parsingError) {
+    return new Response("File processing could not start. Please try again.", { status: 503 });
+  }
 
   try {
     // Stream the object rather than buffering a Blob.
