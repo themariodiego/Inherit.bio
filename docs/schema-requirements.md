@@ -275,7 +275,7 @@ corrections, suppressions, and notices listed in the purge registry.
   execution registry. Scheduled rows use the 52 stable phase IDs and the
   `(retention_row_id, phase_id, phase_revision)` identity.
 - Purge manifests use only the 25 registered manifest classes, 33 ordered
-  targets, and 108 uniquely classified stores. Workers never infer targets
+  targets, and 109 uniquely classified stores. Workers never infer targets
   from caller input or object prefixes.
 - `legal_audit_log` contains coded fields and random audit-principal IDs only.
   Live account/subject links are separately encrypted and can be crypto-shred.

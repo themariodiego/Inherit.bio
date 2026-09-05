@@ -5263,6 +5263,8 @@
             "public.upload_staging_objects",
             "public.embryo_ingest_sessions",
             "public.embryo_ingest_fragments",
+            "public.embryo_ingest_delete_objects",
+            "public.embryo_ingest_unwinds",
             "public.embryo_fragment_handle_maps",
             "public.embryo_mapping_challenges",
             "public.pending_source_rows"

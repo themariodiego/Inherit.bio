@@ -18,6 +18,19 @@ const ATTRIBUTION =
   "Inherit · an open-source project created by Plus Bio for the public good";
 const DISCLAIMER = "Informational, not medical advice.";
 
+describe("abandoned embryo upload notice", () => {
+  it("states all three terminal facts without a key, source label or genetic finding", async () => {
+    const mail = { id: "embryo-ingest-abandoned", payload: {} } as const;
+    const html = await renderMail(mail);
+    expect(mailSubject(mail)).toBe("The embryo upload did not complete");
+    expect(html).toContain("The upload did not complete.");
+    expect(html).toContain("No genetic source file from this upload is");
+    expect(html).toContain("retained by Inherit.");
+    expect(html).toContain("Every Record Key Card issued for this upload is invalid");
+    expect(html).not.toMatch(/Embryo [0-9]|closing date|record_key|rs[0-9]+/);
+  });
+});
+
 describe("report-ready email", () => {
   it("renders generic file copy, count, dashboard link, and footer lines", async () => {
     const html = await render(

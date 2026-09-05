@@ -1200,6 +1200,110 @@ Decisions:
   Source-reported contamination/dropout ingestion and downstream QC remain
   worker work; the transport does not fabricate those measurements.
 
+
+## 2026-09-05 — E0 chunk persistence (in progress)
+
+- PR #49 merged as `4b827ad` after CI run 33966931548; PR #50 merged as
+  `bcf987c` after run 33985517441. The user explicitly authorized judged
+  merges after review/checks and requested a whole-project update after each PR.
+- A transport receipt is separate from its per-ordinal fragment objects.
+  Reserve metadata and random object IDs before writing Storage; identical
+  retries reuse those IDs and charge bytes, records and chunks once. Mark a
+  receipt stored only after the server verifies every reserved object.
+- Failure marks the attempt nonauthorizing without deleting its expiry target,
+  receipts or object references. The complete cohort-wide unwind is still
+  required; this marker is not a replacement or a success transition.
+- The private service-only primitives recheck the originating session, account
+  revisions, cohort revisions and exact due pair. They do not replace the full
+  five-set/legal/capability resolver and are not exposed by a route.
+- Independent review found an unlocked expiry-pair read (D-091). Shared locks
+  and exact phase/envelope checks close that race. Two simultaneous reservations
+  returned identical object IDs and counters 100 bytes / 1 chunk / 2 records;
+  two simultaneous commits left one stored receipt and next sequence 1.
+- Full-suite testing uses an isolated unseeded local database. The existing
+  local database has prior browser fixtures and is preserved. No hosted changes,
+  enabled capability or acceptance-gate promotion is claimed.
+
+## 2026-09-05 — E0 atomic session lifecycle (in progress)
+
+- Cohort finalization and session minting now share one private transaction.
+  A failed session, handle or due-phase insert rolls back the consumed draft,
+  provisional records, keys and operation nonce. The same nonce can then succeed.
+- Session credentials and ordinal handles use 256 random bits; only their
+  digests are stored. One immutable creation time and exactly 24-hour deadline
+  bind the session and its retention pair. Repeated finalization cannot renew it.
+- The minted authority fingerprint checks the exact five participant sets,
+  current artifact hashes and versions, typed attestations and their revisions,
+  principal/account/jurisdiction revisions, basis review and donor state.
+  Chunk reservation and acknowledgement recheck that fingerprint. An unresolved
+  cohort attestation contradiction refuses authority.
+- Two outstanding attempts exhaust the account cap, including expired and
+  failure-pending work whose cleanup is not complete. These rows are not treated
+  as available capacity merely because the request has stopped.
+- The shared pre-finalization fixture retains all 38 original assertions;
+  the original cohort file still passes all 141 assertions. New transaction
+  tests cover late due-store failure and authority drift without weakening the
+  immutable-artifact guard. Administrative supersession is simulated only in a
+  rolled-back test fixture.
+- These functions remain private, service-only and explicitly TEST-LOCAL-only.
+  HTTP cookie authorization, real capability decisions, Storage verification,
+  worker completion and cohort-wide failure unwind remain unfinished.
+  No production capability, hosted migration or acceptance promotion is claimed.
+- Independent review found missing recipient/disposition fields in the exact
+  due check and lock-order inversions with deletion, chunk writes and co-parent
+  sessions. The due check now rejects each changed field independently. New
+  row locks fail fast with NOWAIT; mint/wrapper calls also bound implicit and
+  legacy lock waits to 250ms. SQLSTATE 55P03 propagates as retriable contention,
+  never a permanent authorization failure or an extended deadline.
+
+## 2026-09-05 — E0 ingest HTTP credential boundary (in progress)
+
+- The service-only request authorizer matches the exact account, originating
+  login, ingest session, cookie digest and mint origin before it locks a target.
+  Wrong credentials cannot mutate a valid attempt. Revocation of its actual
+  login returns only the cohort/revision failure-dispatch envelope and preserves
+  the fixed due target; transient lock contention remains retriable.
+- Separate host-only cookies support the two permitted concurrent attempts.
+  Production cookies use Secure, HttpOnly, SameSite=Strict and the absolute
+  database deadline. Duplicate cookie names fail closed; reads never refresh
+  expiry. Only a digest reaches the database.
+- The HTTP orchestration refuses missing account authority, foreign origins,
+  unavailable jurisdictions and absent cookies before body reads or database
+  access. Its internal metadata projection is closed and ordinal-complete;
+  failure-pending is distinct from authorization and cannot fall through to a
+  writer. The byte reader independently counts the stream against its bounded
+  declared size, cancels on overflow/abort and emits only coded errors.
+- Verification: 65 rollback-only local pgTAP assertions (38 shared fixture
+  assertions), plus 38 cookie/HTTP unit tests. No hosted schema was changed.
+- This is a reusable boundary, not an accepting upload route. Mapping/build
+  decisions, one-time operation tokens, a proven Storage writer drain/fence,
+  whole-cohort unwind and worker publication remain required before accepting
+  bytes. No placeholder endpoint, production capability or acceptance promotion
+  is added to count incomplete work as shipped.
+
+## 2026-09-05 — E0 unwind planning and independent terminal contact (in progress)
+
+- Exact immutable fragment paths and a service-only frozen deletion planner
+  now preserve reserved/unacknowledged objects and the original fixed ingest
+  due pair. Unknown target stores and unbound evidence/source objects fail
+  closed. Access revocation does not erase the original issued-Card notice
+  identity; replacement members or revisions remain forbidden.
+- The user approved a narrow email-ciphertext-only window of at most 24 hours
+  after confirmed file cleanup, with earlier deletion on persisted provider
+  acceptance. No source-retention/access deadline changes. The independent
+  envelope contains random recipient slots and no product-principal FK.
+- The data-free notice template and bounded delivery/expiry workers are tested
+  but have no producer. Ordinary mail and retention continue if this new queue
+  fails. An uncertain accepted provider ACK uses the same idempotency key and
+  does not extend the fixed expiry.
+- Verification: 72 rollback-only local pgTAP assertions, including all 38
+  unchanged shared legal-fixture assertions; 43 targeted mail/render/independent
+  queue unit tests; scoped typecheck, ESLint and readability checks.
+- No Storage ACK, final graph-purge transaction, source-accepting HTTP writer,
+  production capability or completed acceptance gate is claimed. Current
+  Storage semantics do not establish that a cancelled or unknown upload has
+  stopped writing backing bytes. Remaining work and the exact bounds are in
+  `docs/embryo-ingest-unwind-runtime.md`.
 ## 2026-09-05 — Report basis is not evidence replication or assay coverage
 
 - Report citation counts now name cited sources, not supporting studies.
@@ -1273,3 +1377,7 @@ Decisions:
   Reverting application code requires no database rollback; reverting the
   function first would break new callers. Already missed notifications are
   not automatically replayed by this change.
+- Integration with PR 57 main `d02b709` preserves both ingest decision entries
+  and all 45 public RPC types. Combined verification passes 1,588 unit tests,
+  typecheck and the naming, secret and readability gates. The mail type diff
+  against that main remains exactly the optional expiry argument.
