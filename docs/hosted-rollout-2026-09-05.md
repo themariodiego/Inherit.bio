@@ -163,3 +163,18 @@ read back and contains both the taste correction and reviewed-copy
 publication entries. This does not replace authenticated browser checks.
 No password-protection setting was changed and no extra user-facing gate
 was added by the timing correction.
+
+## PR 56 personal report takeaways
+
+PR 56 merged after full CI `33992392637` passed at exact head
+`dc2ed7f9a555719d85d96bb1df149131bc7050a5`; merge commit
+`3f6050c1912b7dc7b2f4f0e61f0c074e6d0d3b0b`. Production alias
+`www.inherit.bio` resolves to READY deployment
+`dpl_22PvYJXjp11C2Dr93CGnQyQuNHPe` at that merge, with no alias error.
+This code-only rollout uses the three already published study contexts;
+no hosted seed, migration, permission change or external genetic-data call
+was added. Root's final local production-browser run passed 13 tests with
+zero failures, skips or retries, including upload-to-takeaway, filtering,
+source details, cross-account absence, report-library and Overview checks.
+Production deployment verification is not an authenticated production
+genetic-file test.

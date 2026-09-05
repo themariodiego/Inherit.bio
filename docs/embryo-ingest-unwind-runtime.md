@@ -75,3 +75,7 @@ name and repository/history secret gates. All 40 existing main public RPC
 signatures are preserved alongside the five added embryo RPCs, including the
 new timing return contract. These are local primitive/integration results,
 not a production upload, physical Storage-drain or final-purge proof.
+
+After integrating PR 56, the combined branch passes **1,578 unit tests**
+across 107 files and typecheck. The database slice is unchanged from the
+712-assertion run above.
