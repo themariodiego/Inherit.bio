@@ -243,3 +243,50 @@ healthy; the short deployment-scoped error/fatal scan returned no rows.
 No actual genome file was reprocessed or deleted. Five public report templates
 now carry the deeper study context; this does not revalidate the entire catalog
 or advance the broader science acceptance requirements.
+
+## PR 61 owner file deletion
+
+Full CI `33996200296` passed at `ee64ccc`, including 136 browser tests.
+The exact deletion and ready-mail-guard migrations were applied as hosted
+versions `20260905224843` and `20260905224845`. Postflight confirmed
+service-only RPC execution, private journal RLS and client denial, processing
+fences, the ready-mail guard and zero pending deletions.
+
+Merge `0745b9d47319db9bd5729513c47ca4fa9e1addd7` deployed READY as
+`dpl_CHCTawVruJL4SZT7yA9SdESUFzTm` on both public domains. Authenticated
+`/files` reload showed both existing files, Delete buttons and report links
+without an application error. Actual deletion tests used synthetic local
+files only; neither real account file was deleted or reprocessed. The short
+deployment-scoped error/fatal scan returned no rows. This repair did not add
+a whole-plan acceptance item.
+
+## PR 63 integrated report release
+
+Full CI `33997076266` passed at exact head
+`edd37da662ca4a6d8cbb6d782d0f2e754fe0d8b1`: 1,682 unit tests, 791 SQL
+assertions and 139 browser tests, with no browser failures, skips or retries.
+The corrected synthetic caffeine fixtures preserve their invented genotype
+and result assertions. The full run covers the previously failing cases.
+
+Before application deployment, exact migration
+`20260905214534_report_observed_calls` was applied as hosted version
+`20260905230114`. Postflight verified RLS, anonymous read denial, client write
+denial, a caller-bound predicate with an empty search path and a composite
+file/owner/subject cascade. The retention register now has 112 stores. No
+observed rows or completion markers were created for historical uploads;
+all three pre-existing hosted files remained. Security advisors returned
+132 INFO, two unchanged WARN and zero ERROR notices.
+
+Merge `34fddb4bca233ca2343224cea213922ba11016aa` deployed READY as
+`dpl_3bPqK7JJcD5kQH91gCLtjfxjqjaG` on both public domains. An authenticated
+report-library refresh and the With results filter returned 26 report links
+with correctly classified counts and no application error. The brief
+deployment-scoped error/fatal scan returned no rows; this is not long-run
+assurance. Neither real account file was deleted or reprocessed.
+
+PR 60 and PR 62 were included as ancestors and marked merged by GitHub.
+This is one integration release, not three separate acceptance gains.
+G4.3 is verified and the whole-plan ledger advances from **16/65 to 17/65**.
+The observed-call projection is report-only; it does not infer reference
+from absence or alter the carrier, ancestry or PRS input sets. Broader report
+science, complete quality provenance and embryo workflows remain incomplete.
