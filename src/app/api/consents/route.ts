@@ -7,6 +7,8 @@ import {
   SHARE_WITH_ADULT_STATEMENT_KEYS,
   readGrantPresentation,
 } from "@/lib/family/grant-token";
+import { embryoConsent } from "@/lib/embryos/consents";
+import { isEmbryoConsentPayload } from "@/lib/embryos/routes";
 import { LLM_DATA_CLASSES, providerKeyFor } from "@/lib/llm";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -14,10 +16,14 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * `POST /api/consents` (register api.consents).
  *
- * Two closed bodies:
+ * Four closed bodies:
  *   - the cloud-model provider consent this route has always served;
  *   - `grant-purpose`, one directional purpose grant between two adults
- *     (policyContracts.directional-purpose-grant-v1).
+ *     (policyContracts.directional-purpose-grant-v1);
+ *   - `sign-artifact` with `cohortDraftId` and `grant-purpose` with
+ *     `cohortId`, the embryo bodies of E0 (`src/lib/embryos/consents.ts`).
+ *     They are told apart by their target key before any adult body is
+ *     tried, so every adult body keeps exactly the behaviour below.
  *
  * The grant body carries the opaque presentation token the permissions
  * column minted and nothing else that could retarget it: the signer, data
@@ -58,6 +64,8 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
   const payload: unknown = await request.json().catch(() => null);
+
+  if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
 
   const grant = grantPurposeBody.safeParse(payload);
   if (grant.success) {

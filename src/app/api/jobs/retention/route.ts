@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 300;
@@ -79,6 +80,41 @@ export async function POST(request: Request) {
       { error: "retention_worker_unavailable" },
       { status: 503 },
     );
+  }
+
+  // Embryo cohort drafts past their 30-day deadline (E0 contract §6.9): the
+  // database expires every draft that is due and shreds its contacts; this
+  // route then tells each owner, whose address it reads from auth alone. A
+  // draft whose owner no longer exists is expired without a notice.
+  const { data: expiredDrafts, error: draftExpiryError } = await admin.rpc(
+    "run_due_embryo_retention_phases_v1",
+  );
+  if (draftExpiryError) {
+    return NextResponse.json(
+      { error: "retention_worker_unavailable" },
+      { status: 503 },
+    );
+  }
+  for (const draft of expiredDrafts ?? []) {
+    try {
+      const { data: owner, error: ownerError } = await admin.auth.admin.getUserById(
+        draft.owner_account_id,
+      );
+      if (ownerError && !isMissingAuthUser(ownerError)) throw ownerError;
+      if (!owner?.user?.email) continue;
+      await enqueueAccountMail({
+        accountId: draft.owner_account_id,
+        email: owner.user.email,
+        mail: { id: "embryo-draft-expired", payload: {} },
+        purpose: "embryo-draft-expired",
+        targetKind: "cohort_draft",
+        targetId: draft.draft_id,
+        semanticKey: draft.draft_id,
+      });
+      processed++;
+    } catch {
+      failed++;
+    }
   }
 
   // The caller cannot select a row or batch size. The database serializes and

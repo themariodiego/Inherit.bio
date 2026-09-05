@@ -1073,3 +1073,71 @@ Decisions:
   rather than being one of them, and naming a step number there would
   claim a stage the reader has not reached.
 
+
+## 2026-09-05 — Embryo E0, slice 1: the cohort runtime
+
+- Decision: E0 lands in three slices and this one is the cohort runtime:
+  the six legal artifacts, the embryo operation nonce store, the
+  basis-authority resolver, the draft, signature, co-parent invitation,
+  rights activation, acceptance, finalization, Record Key delivery,
+  restriction, disposition and cohort `embryo.analysis` grant RPCs, the
+  draft-expiry executor, `job_time_stats` and the forbidden-column guard,
+  with their routes, libraries, mail templates and pgTAP. The finalize
+  route (`api.embryo-cohorts`) ships with the ingest slice, because its
+  closed response carries the ingest session that slice opens; the RPC
+  exists now and pgTAP exercises it. `EMBRYO_INGEST_AVAILABLE` stays
+  `false` and no page changes.
+- Decision: every operation and CSRF token is a sealed HMAC token minted
+  server-side (`src/lib/embryos/operation-token.ts`, the grant-token
+  envelope) and consumed by inserting its SHA-256 into
+  `embryo_operation_nonces` inside the RPC before any other write, so a
+  replay fails with 23505 and zero side effect. One operation-typed token
+  per request, placed where the register puts it (`X-Inherit-CSRF`,
+  `X-Inherit-Operation-Nonce`, or the body `nonce`). The register binds the
+  shape, not the issuer; the purpose-grant nonce is the precedent.
+- Decision: Record Keys use the Crockford base32 alphabet
+  (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`, 20 characters, 100 bits from 13
+  random bytes). The register's "uppercase base32 without ambiguous glyphs"
+  is read as the alphabet designed for that purpose; it drops I, L, O and U
+  rather than the digits. Only the SHA-256 is stored; raw keys exist in the
+  one bounded response.
+- Decision: `donorAttributionIntent: "identified-donor-subject"` is refused
+  with 422 in E0. No `consent.embryo-donor-attribution` artifact is seeded,
+  so accepting the intent would store a donor contact that nothing could
+  ever consume; the anonymous-donor basis is the only donor path until the
+  attribution artifact and its invitation kind exist.
+- Decision: every cohort-draft signature, including the two
+  acknowledgements, uses the register's Tier-2 `cohortDraftId` body with a
+  typed name; the register publishes no Tier-1 body for a draft target.
+- Decision: the co-parent acceptance body carries `jurisdictionCode` only.
+  The register's `jurisdictionAttestationVersion`, `-Hash` and `-Affirmed`
+  fields name a `policy.jurisdiction` artifact the repository does not
+  hold; inventing a hash to satisfy the shape would be a fabricated record
+  (defect D-083).
+- Decision: embryo mail links carry the token in the URL fragment
+  (`/withdraw/request#<token>`), the register's issuance form; the adult
+  path keeps its URL-path form and is recorded as defect D-081.
+- Decision: disposition state lives in `embryos.status`; the QC values
+  count as the "unknown" disposition of the register's state machine, and
+  the QC verdict itself also lives in `embryo_qc`.
+- Decision: draft expiry deletes the draft row and shreds its contacts;
+  invitations remain as terminal tombstones with no ciphertext; signatures
+  and attestations tied only to the draft are deleted, as
+  `docs/retention.md` requires.
+- Decision: the forbidden-column guard is an event trigger created only
+  when the migrating role may create one; elsewhere a notice is raised.
+  pgTAP asserts the guard exists and refuses a sex column, so the local
+  stack and CI prove it; a hosted database where the role cannot create
+  event triggers would carry the notice in its migration log.
+- Decision: `job_time_stats` withholds percentiles under twenty completed
+  jobs; it is the only authenticated-executable function this slice adds.
+- Decision: pgTAP was run locally on a stand-in cluster (PostgreSQL 16 with
+  the roles, `auth`, `storage` and `extensions` objects the migrations
+  reference, and pgTAP from the distribution) because no Docker daemon
+  exists in this environment; CI's Supabase stack remains the authority
+  and the gates ledger records both.
+- Consequence: retention rows and due phases are written for the draft,
+  the proposal, the donated-or-discarded and the transferred-claim-window
+  classes, but only the draft-expiry phase has an executor. The capability
+  register declares the others as recorded-without-executor until the
+  withdrawal slice.
