@@ -1280,3 +1280,27 @@ Decisions:
   whole-cohort unwind and worker publication remain required before accepting
   bytes. No placeholder endpoint, production capability or acceptance promotion
   is added to count incomplete work as shipped.
+
+## 2026-09-05 — E0 unwind planning and independent terminal contact (in progress)
+
+- Exact immutable fragment paths and a service-only frozen deletion planner
+  now preserve reserved/unacknowledged objects and the original fixed ingest
+  due pair. Unknown target stores and unbound evidence/source objects fail
+  closed. Access revocation does not erase the original issued-Card notice
+  identity; replacement members or revisions remain forbidden.
+- The user approved a narrow email-ciphertext-only window of at most 24 hours
+  after confirmed file cleanup, with earlier deletion on persisted provider
+  acceptance. No source-retention/access deadline changes. The independent
+  envelope contains random recipient slots and no product-principal FK.
+- The data-free notice template and bounded delivery/expiry workers are tested
+  but have no producer. Ordinary mail and retention continue if this new queue
+  fails. An uncertain accepted provider ACK uses the same idempotency key and
+  does not extend the fixed expiry.
+- Verification: 72 rollback-only local pgTAP assertions, including all 38
+  unchanged shared legal-fixture assertions; 43 targeted mail/render/independent
+  queue unit tests; scoped typecheck, ESLint and readability checks.
+- No Storage ACK, final graph-purge transaction, source-accepting HTTP writer,
+  production capability or completed acceptance gate is claimed. Current
+  Storage semantics do not establish that a cancelled or unknown upload has
+  stopped writing backing bytes. Remaining work and the exact bounds are in
+  `docs/embryo-ingest-unwind-runtime.md`.

@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(20);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
@@ -9,11 +9,17 @@ select is((select count(*) from public.purge_manifest_classes), 25::bigint,
   'all 25 purge manifest classes are registered');
 select is((select count(*) from public.purge_targets), 33::bigint,
   'all 33 ordered purge targets are registered');
-select is((select count(*) from public.purge_target_stores), 109::bigint,
-  'all 109 purge stores are classified');
+select is((select count(*) from public.purge_target_stores), 111::bigint,
+  'all 111 purge stores are classified');
 select is((select target_id from public.purge_target_stores
   where store_name = 'public.embryo_ingest_chunks'), 'upload-and-ingest-working-state',
   'chunk receipts are classified for attempt cleanup');
+select is((select target_id from public.purge_target_stores
+  where store_name='public.embryo_ingest_delete_objects'),'upload-and-ingest-working-state',
+  'exact unwind object inventory is classified for attempt cleanup');
+select is((select target_id from public.purge_target_stores
+  where store_name='public.embryo_ingest_unwinds'),'upload-and-ingest-working-state',
+  'unwind planning identity is classified for attempt cleanup');
 select is((select count(*) from public.risk_models where subject_class = 'embryo'), 0::bigint,
   'the empty embryo allowlist produces no enabled model binding');
 
