@@ -39,6 +39,8 @@ describe("report evidence rendering", () => {
     expect(page).toContain("let callSummary: ReportCallSummary | null = null");
     expect(page).toContain("{callSummary ? <ReportCallCoverage summary={callSummary} /> : null}");
     expect(page).not.toContain("supportingStudies(template.citations.length)");
+    expect(page).toContain("coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)");
+    expect(page).not.toContain("coverageSentence(coveredPositions, template.variants.length)");
   });
   it("keeps new explanatory copy within the sentence cap and avoids ASCII apostrophes", () => {
     const strings = [
