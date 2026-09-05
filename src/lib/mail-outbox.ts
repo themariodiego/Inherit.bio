@@ -27,7 +27,7 @@ export async function enqueueAccountMail({
   targetKind,
   targetId,
   semanticKey,
-  expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  expiresAt,
 }: EnqueueAccountMail): Promise<string> {
   const normalizedEmail = normalizeEmail(email);
   const idempotencyKey = crypto
@@ -58,7 +58,9 @@ export async function enqueueAccountMail({
       p_target_id: targetId,
       p_template_payload: mail.payload as unknown as Json,
       p_idempotency_key: idempotencyKey,
-      p_expires_at: expiresAt.toISOString(),
+      // The database owns the default clock. Never add an app-clock deadline
+      // at the exact DB maximum; even small clock skew can reject valid mail.
+      ...(expiresAt === undefined ? {} : { p_expires_at: expiresAt.toISOString() }),
     },
   );
   if (error || !data) throw new Error("mail_enqueue_failed");

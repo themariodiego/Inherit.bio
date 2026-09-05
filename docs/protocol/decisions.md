@@ -1245,3 +1245,31 @@ Decisions:
 - See `docs/job-timing-privacy.md` for duration filtering, the intentional
   authenticated cross-account aggregate, tests and remaining password-setting
   eligibility/disclosure checks. No hosted settings were changed.
+
+## 2026-09-05 — Database-owned default mail deadline
+
+- The normal account-mail deadline is chosen by the database from one captured
+  clock value. The application omits that argument unless the caller supplies
+  an explicit deadline. There is no added retention slack: explicit expired
+  deadlines and deadlines beyond the existing thirty-day cap remain refused.
+- The ten-argument RPC identity, service-only privileges, required guard inputs,
+  contact handling and semantic idempotency remain. Only its final argument has
+  a null default. A replay never updates an existing outbox deadline. Generated
+  types change only that argument's optional marker; no main RPC is omitted.
+- The former application default was exactly its own clock plus thirty days,
+  checked against a different database clock. Controlled rollback diagnostics
+  accepted the database maximum and refused a deadline just 25 milliseconds
+  later. Earlier report-ready warnings are consistent with this defect; the
+  precise historical clock offset was not captured and is not proven.
+- Verification on main `3f6050c`: 1,544 unit tests, including ten new helper
+  assertions; 21 new rollback database assertions and all eleven original mail
+  assertions; typecheck, scoped lint and security advisors. A production-build
+  browser test signs in a fresh synthetic account, processes its file, observes
+  one queued report-ready notice, repeats processing and verifies identical
+  deadline/contact identity and zero provider attempts. No email is submitted.
+- The new function was applied only to local test databases, without a reset,
+  shared seed or hosted change. Deploy the migration before the application
+  starts omitting the argument. Old ten-argument callers remain compatible.
+  Reverting application code requires no database rollback; reverting the
+  function first would break new callers. Already missed notifications are
+  not automatically replayed by this change.
