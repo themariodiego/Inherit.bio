@@ -2356,6 +2356,50 @@ export type Database = {
           },
         ]
       }
+      embryo_ingest_chunks: {
+        Row: {
+          byte_count: number
+          content_sha256: string
+          created_at: string
+          maximum_line_bytes: number
+          record_count: number
+          sequence: number
+          session_id: string
+          state: string
+          stored_at: string | null
+        }
+        Insert: {
+          byte_count: number
+          content_sha256: string
+          created_at?: string
+          maximum_line_bytes: number
+          record_count: number
+          sequence: number
+          session_id: string
+          state?: string
+          stored_at?: string | null
+        }
+        Update: {
+          byte_count?: number
+          content_sha256?: string
+          created_at?: string
+          maximum_line_bytes?: number
+          record_count?: number
+          sequence?: number
+          session_id?: string
+          state?: string
+          stored_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embryo_ingest_chunks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "embryo_ingest_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       embryo_ingest_fragments: {
         Row: {
           byte_count: number
@@ -2363,6 +2407,7 @@ export type Database = {
           created_at: string
           line_count: number
           object_id: string
+          sample_ordinal: number
           sequence: number
           session_id: string
         }
@@ -2372,6 +2417,7 @@ export type Database = {
           created_at?: string
           line_count: number
           object_id: string
+          sample_ordinal: number
           sequence: number
           session_id: string
         }
@@ -2381,6 +2427,7 @@ export type Database = {
           created_at?: string
           line_count?: number
           object_id?: string
+          sample_ordinal?: number
           sequence?: number
           session_id?: string
         }
@@ -2392,21 +2439,35 @@ export type Database = {
             referencedRelation: "embryo_ingest_sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "embryo_ingest_fragments_session_id_sequence_fkey"
+            columns: ["session_id", "sequence"]
+            isOneToOne: false
+            referencedRelation: "embryo_ingest_chunks"
+            referencedColumns: ["session_id", "sequence"]
+          },
         ]
       }
       embryo_ingest_sessions: {
         Row: {
           accepted_bytes: number
           accepted_chunks: number
+          accepted_records: number
+          account_auth_session_revision: number | null
+          account_revision: number | null
           basis_case: string
           basis_revision: number
           cohort_id: string
+          cohort_lifecycle_revision: number | null
           completed_at: string | null
           created_at: string
+          declared_capacity_bytes: number | null
           donor_attribution_revision: number
           expected_next_sequence: number
           expires_at: string
+          failure_code: string | null
           id: string
+          ingest_revision: number | null
           originating_session_id: string
           participant_set_revision: number
           source_binding_fingerprint: string
@@ -2416,15 +2477,22 @@ export type Database = {
         Insert: {
           accepted_bytes?: number
           accepted_chunks?: number
+          accepted_records?: number
+          account_auth_session_revision?: number | null
+          account_revision?: number | null
           basis_case: string
           basis_revision: number
           cohort_id: string
+          cohort_lifecycle_revision?: number | null
           completed_at?: string | null
           created_at?: string
+          declared_capacity_bytes?: number | null
           donor_attribution_revision: number
           expected_next_sequence?: number
           expires_at: string
+          failure_code?: string | null
           id?: string
+          ingest_revision?: number | null
           originating_session_id: string
           participant_set_revision: number
           source_binding_fingerprint: string
@@ -2434,15 +2502,22 @@ export type Database = {
         Update: {
           accepted_bytes?: number
           accepted_chunks?: number
+          accepted_records?: number
+          account_auth_session_revision?: number | null
+          account_revision?: number | null
           basis_case?: string
           basis_revision?: number
           cohort_id?: string
+          cohort_lifecycle_revision?: number | null
           completed_at?: string | null
           created_at?: string
+          declared_capacity_bytes?: number | null
           donor_attribution_revision?: number
           expected_next_sequence?: number
           expires_at?: string
+          failure_code?: string | null
           id?: string
+          ingest_revision?: number | null
           originating_session_id?: string
           participant_set_revision?: number
           source_binding_fingerprint?: string
@@ -7713,4 +7788,3 @@ export const Constants = {
     },
   },
 } as const
-

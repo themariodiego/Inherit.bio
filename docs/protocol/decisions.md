@@ -1199,3 +1199,27 @@ Decisions:
   ADR 0020 stays Proposed and the embryo capability rows remain not shipped.
   Source-reported contamination/dropout ingestion and downstream QC remain
   worker work; the transport does not fabricate those measurements.
+
+
+## 2026-09-05 — E0 chunk persistence (in progress)
+
+- PR #49 merged as `4b827ad` after CI run 33966931548; PR #50 merged as
+  `bcf987c` after run 33985517441. The user explicitly authorized judged
+  merges after review/checks and requested a whole-project update after each PR.
+- A transport receipt is separate from its per-ordinal fragment objects.
+  Reserve metadata and random object IDs before writing Storage; identical
+  retries reuse those IDs and charge bytes, records and chunks once. Mark a
+  receipt stored only after the server verifies every reserved object.
+- Failure marks the attempt nonauthorizing without deleting its expiry target,
+  receipts or object references. The complete cohort-wide unwind is still
+  required; this marker is not a replacement or a success transition.
+- The private service-only primitives recheck the originating session, account
+  revisions, cohort revisions and exact due pair. They do not replace the full
+  five-set/legal/capability resolver and are not exposed by a route.
+- Independent review found an unlocked expiry-pair read (D-091). Shared locks
+  and exact phase/envelope checks close that race. Two simultaneous reservations
+  returned identical object IDs and counters 100 bytes / 1 chunk / 2 records;
+  two simultaneous commits left one stored receipt and next sequence 1.
+- Full-suite testing uses an isolated unseeded local database. The existing
+  local database has prior browser fixtures and is preserved. No hosted changes,
+  enabled capability or acceptance-gate promotion is claimed.
