@@ -50,6 +50,18 @@ describe("parseVcf: fixture", () => {
 });
 
 describe("parseVcf: build detection", () => {
+  it.each([
+    "##reference=GRCh380",
+    "##reference=GRCh38\n##reference=GRCh37",
+    "##reference=GRCh37\n##reference=GRCh38",
+    "##reference=custom.fa\n##reference=GRCh38",
+    "##reference=GRCh38\n##contig=<ID=1,length=249250621>",
+    "##contig=<ID=1,length=248956422>\n##reference=GRCh37",
+    "##contig=<ID=1,length=248956422,assembly=GRCh37>",
+    "##contig=<ID=1,length=248956422,assembly=whoknows>",
+  ])("keeps unsupported or conflicting build claims unknown: %s", async (header) => {
+    expect((await parseVcf(fromString(header))).build).toBe("unknown");
+  });
   it("reads ##reference for GRCh37 spellings", async () => {
     for (const ref of ["GRCh37", "hg19", "b37"]) {
       const r = await parseVcf(
@@ -61,7 +73,7 @@ describe("parseVcf: build detection", () => {
 
   it("reads chr-prefixed contig lengths", async () => {
     const r38 = await parseVcf(
-      fromString("##contig=<ID=chr1,length=248956422,assembly=whoknows>\n")
+      fromString("##contig=<ID=chr1,length=248956422,assembly=GRCh38>\n")
     );
     expect(r38.build).toBe("GRCh38");
     const r37 = await parseVcf(

@@ -12,7 +12,7 @@ export const LLM_DATA_CLASSES = [
   "Individual genotypes you ask about (rsID, genotype)",
   "Variant search results (gene, position, genotype)",
   "Report titles, interpretations and coverage states",
-  "Polygenic score results (score, percentile, coverage)",
+  "Score-panel coverage and why a validated score is unavailable",
   "Your chat messages",
 ] as const;
 

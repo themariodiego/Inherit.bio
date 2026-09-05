@@ -7561,7 +7561,7 @@ export type Database = {
         }
         Returns: {
           expires_at: string
-          invitation_id: string
+          invitation_id: string | null
         }[]
       }
       deliver_embryo_record_key_cards_v1: {
@@ -7669,6 +7669,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      job_time_stats: {
+        Args: { p_kind: string }
+        Returns: {
+          n_bucket: string
+          p50_seconds: number | null
+          p95_seconds: number | null
+        }[]
+      }
       mark_independent_login_v1: {
         Args: { p_account_id: string; p_auth_session_id: string }
         Returns: number
@@ -7700,7 +7708,7 @@ export type Database = {
           p_action: string
           p_disposition: string
           p_embryo_id: string
-          p_proposal_id: string | null
+          p_proposal_id?: string | null
           p_session_id: string
           p_token_nonce: string
         }

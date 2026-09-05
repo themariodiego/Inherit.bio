@@ -51,12 +51,17 @@ export async function parseArray(
   const records: VariantRecord[] = [];
   let skipped = 0;
   let build: Build = "GRCh37";
+  const explicitBuilds = new Set<Build>();
 
   for await (const raw of lines) {
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     if (line === "") continue;
     if (line.startsWith("#")) {
-      if (/build\s*38|GRCh38/i.test(line)) build = "GRCh38";
+      for (const match of line.matchAll(/(build\s*|GRCh|hg)(\d+)/gi)) {
+        const number = match[1].toLowerCase() === "hg" && match[2] === "19" ? "37" : match[2];
+        explicitBuilds.add(number === "38" ? "GRCh38" : number === "37" ? "GRCh37" : "unknown");
+      }
+      if (explicitBuilds.size) build = explicitBuilds.size === 1 ? [...explicitBuilds][0] : "unknown";
       continue;
     }
 

@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import fixtures from "./readability-fixtures.json";
+import { readStudyContext } from "../src/lib/genome/study-context";
 import {
   fleschKincaidGrade,
   readabilitySentences,
@@ -614,8 +615,16 @@ function extractTemplateBlocks(repositoryRoot: string): CopyBlock[] {
       title: string;
       summary: string;
       variants: Array<{ interpretations: Record<string, string> }>;
+      citations?: unknown[];
     }>;
     templates.forEach((template, templateIndex) => {
+      for (const citation of template.citations ?? []) {
+        const context = readStudyContext(citation);
+        for (const entry of Object.values(context ?? {})) {
+          if (entry) blocks.push({ path: relativePath, line: templateIndex + 1,
+            text: entry.text, role: "block", legal: false, legalSummary: false, sentenceCap: true });
+        }
+      }
       blocks.push({
         path: relativePath,
         line: templateIndex + 1,

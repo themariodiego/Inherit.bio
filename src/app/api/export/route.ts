@@ -8,6 +8,7 @@ import {
   type Db,
 } from "@/lib/genome/load";
 import { resolveTemplate } from "@/lib/genome/reports";
+import { loadPrsForExport } from "@/lib/genome/prs-output";
 import { EVIDENCE_PUBLIC_LABELS } from "@/lib/genome/taxonomy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -306,49 +307,6 @@ function renderReportsTxt(
   return out.join("\n");
 }
 
-/** The user's polygenic score results joined with score metadata. */
-async function buildPrs(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-) {
-  const rows = await fetchAllRows((from, to) =>
-    admin
-      .from("user_prs")
-      .select(
-        "pgs_id, file_id, raw_score, zscore, percentile, coverage, matched, computed_at",
-      )
-      .eq("user_id", userId)
-      .order("computed_at", { ascending: true })
-      .range(from, to),
-  );
-  if (rows.length === 0) return [];
-
-  const pgsIds = [...new Set(rows.map((r) => r.pgs_id))];
-  const { data: metas, error } = await admin
-    .from("prs_scores")
-    .select("pgs_id, name, trait, ancestry_note")
-    .in("pgs_id", pgsIds);
-  if (error) throw new Error(`prs_scores query failed: ${error.message}`);
-  const metaById = new Map((metas ?? []).map((m) => [m.pgs_id, m]));
-
-  return rows.map((r) => {
-    const meta = metaById.get(r.pgs_id);
-    return {
-      pgs_id: r.pgs_id,
-      name: meta?.name ?? null,
-      trait: meta?.trait ?? null,
-      raw_score: r.raw_score,
-      zscore: r.zscore,
-      percentile: r.percentile,
-      coverage: r.coverage,
-      matched: r.matched,
-      ancestry_note: meta?.ancestry_note ?? null,
-      file_id: r.file_id,
-      computed_at: r.computed_at,
-    };
-  });
-}
-
 /** Chat history from the chats/chat_messages tables. The current Copilot UI
  * keeps conversations client-side only, so an empty result is stated
  * explicitly rather than shipped as a bare empty list. */
@@ -481,12 +439,12 @@ export async function GET() {
         count: reportCount,
       });
 
-      const prs = await buildPrs(admin, user.id);
+      const prs = await loadPrsForExport(admin, user.id);
       archive.append(JSON.stringify(prs, null, 2), { name: "prs.json" });
       contents.push({
         path: "prs.json",
         description:
-          "Your polygenic score results with score metadata and ancestry-portability notes.",
+          "Score-panel coverage, file provenance and why validated personal scores are unavailable. Unvalidated score numbers are not included.",
         count: prs.length,
       });
 
@@ -537,6 +495,7 @@ export async function GET() {
       // per-file row counts are exact and verified against variant_count.
       const manifest = {
         exported_at: exportedAt,
+        prs_format: "coverage-only-v1",
         account_email: user.email,
         contents,
         files: (files ?? []).map((f) => ({
@@ -553,7 +512,7 @@ export async function GET() {
           row_count: rowCounts.get(f.id) ?? 0,
         })),
         ...(warnings.length > 0 ? { warnings } : {}),
-        note: "Export is free and always will be. This archive contains your original uploaded files, all derived variants, all reports, and your chat history — plus ancestry results, polygenic scores, and consent history. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+        note: "Export is free and always will be. This archive contains your original uploaded files, all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",

@@ -787,8 +787,8 @@ select throws_ok(
   '42501', 'forbidden embryo column embryos.sex',
   'no embryo table can gain a sex column');
 select is(
-  (select completed_count from public.job_time_stats('split_cohort_vcf')),
-  0, 'job statistics start at zero');
+  (select n_bucket from public.job_time_stats('split_cohort_vcf')),
+  '<20', 'empty job statistics expose the small-sample bucket, not an exact count');
 select is(
   (select p50_seconds from public.job_time_stats('split_cohort_vcf')),
   null, 'percentiles are withheld under twenty jobs');

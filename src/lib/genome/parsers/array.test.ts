@@ -34,6 +34,10 @@ describe("parseArray: 23andMe", () => {
     const result = await parseArray(fromString(text), "array_23andme");
     expect(result.build).toBe("GRCh38");
   });
+
+  it.each(["# build 36", "# build 380", "# hg18", "# GRCh37\n# GRCh38", "# build 38\n# build 37"])("withholds unsupported/conflicting explicit builds: %s", async (header) => {
+    expect((await parseArray(fromString(header + "\nrs1\t1\t100\tAA"), "array_23andme")).build).toBe("unknown");
+  });
 });
 
 describe("parseArray: AncestryDNA", () => {

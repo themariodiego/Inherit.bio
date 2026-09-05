@@ -8,7 +8,7 @@
 // for '-' chains the forward-strand position is qSize - 1 - qPos.
 
 import { gunzipSync } from "node:zlib";
-import { chromToNumber } from "./types";
+import { chromToNumber, type VariantRecord } from "./types";
 
 interface Block {
   tStart: number; // 0-based source start (forward strand)
@@ -31,7 +31,25 @@ interface ChainState {
 export type Liftover = (
   chrom: number,
   pos: number,
-) => { chrom: number; pos: number } | null;
+) => { chrom: number; pos: number; strand: 1 | -1 } | null;
+
+/** Point liftover is sufficient only for literal single-base calls. */
+export function liftSingleBaseVariant(record: VariantRecord, lift: Liftover): VariantRecord | null {
+  const alleles = record.genotype.split(/[/|]/);
+  if (!alleles.length || alleles.length > 2 || alleles.some((a) => !/^[ACGT]$/.test(a)) ||
+      (record.ref !== null && !/^[ACGT]$/.test(record.ref)) ||
+      (record.alt !== null && record.alt.split(",").some((a) => !/^[ACGT]$/.test(a)))) return null;
+  const mapped = lift(record.chrom, record.pos);
+  if (!mapped) return null;
+  const complement: Record<string, string> = { A: "T", T: "A", C: "G", G: "C" };
+  const orient = (a: string) => mapped.strand === -1 ? complement[a] : a;
+  return {
+    ...record, chrom: mapped.chrom, pos: mapped.pos,
+    ref: record.ref === null ? null : orient(record.ref),
+    alt: record.alt === null ? null : record.alt.split(",").map(orient).join(","),
+    genotype: alleles.map(orient).sort().join("/"),
+  };
+}
 
 /**
  * Parses chain bytes (gzipped or plain text) and returns a point mapper.
@@ -124,6 +142,6 @@ export function buildLiftover(chainBytes: Uint8Array): Liftover {
     if (p >= b.tEnd) return null;
     const q = b.qStart + (p - b.tStart); // 0-based, along qStrand
     const forward = b.qNeg ? b.qSize - 1 - q : q;
-    return { chrom: b.qChrom, pos: forward + 1 }; // back to 1-based
+    return { chrom: b.qChrom, pos: forward + 1, strand: b.qNeg ? -1 : 1 }; // back to 1-based
   };
 }

@@ -1304,3 +1304,48 @@ Decisions:
   Storage semantics do not establish that a cancelled or unknown upload has
   stopped writing backing bytes. Remaining work and the exact bounds are in
   `docs/embryo-ingest-unwind-runtime.md`.
+## 2026-09-05 — Report basis is not evidence replication or assay coverage
+
+- Report citation counts now name cited sources, not supporting studies.
+  The existing metadata does not distinguish independent studies from
+  guidelines, reviews or repeated reports of one cohort. No confidence level
+  is inferred from the number of links.
+- Keep the brief's exact layer chips and six-heading contract. Add precise
+  per-template method context: position-based association, guideline-position
+  reading, or a named polygenic model. A model identifier is provenance, not
+  proof that the individual's score has been calculated or validated. An
+  inconsistent or absent score identifier gives unavailable method context.
+- Show existing citation `accessedOn` dates as source-read dates; absence
+  stays explicit. Neither a current date nor a deployment date stands in for
+  scientific review. Existing citation links retain their original targets.
+- With revealed results only, partition the resolver's available positions
+  into interpreted, conflicting, no-call, unrecognized and unavailable.
+  Repeated rsIDs count once. Conflict overrides a retained call and does not count toward the existing
+  interpreted-position coverage sentence. The new counts explicitly do not
+  measure total assay coverage: current report loading does not recover all
+  explicit VCF reference and no-call rows. No source absence is interpreted
+  as a negative finding.
+- This adds no new clinical classifications, allele-frequency claims,
+  reference-data imports, PRS estimates, calibrated risks, treatment advice,
+  permissions or publication capability. Unsafe coordinate-only enrichment
+  remains outside this renderer. The user's requested expansion of useful
+  genetic evidence still requires source curation, allele-bound observations,
+  independently reviewed interpretation and full report verification; this
+  change is not evidence that the larger request or any acceptance gate is done.
+- Independent scientific review found two new-slice defects before commit:
+  a generic variant-call template was described as a Medicines guideline,
+  and repeated rsIDs inflated the position count. Both are corrected with
+  regression tests; guideline prose is restricted to the Medicines category.
+
+## 2026-09-05 — Correct the job timing disclosure contract
+
+- The existing under-twenty suppression decision remains. It did not approve
+  exact counts, a 30-day window or p90 in place of the brief's p95.
+- `job_time_stats(p_kind)` now returns coarse `n_bucket`, p50 and p95 over
+  ninety days for the three registered embryo/family turnaround kinds only.
+  Both percentiles are withheld below twenty eligible, complete jobs.
+- The RPC name and argument survive; unsafe response fields do not. There
+  are no tracked application callers, so no consumer or timing copy changes.
+- See `docs/job-timing-privacy.md` for duration filtering, the intentional
+  authenticated cross-account aggregate, tests and remaining password-setting
+  eligibility/disclosure checks. No hosted settings were changed.
