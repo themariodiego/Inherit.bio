@@ -1,0 +1,9 @@
+##fileformat=VCFv4.2
+##reference=GRCh38
+##source=Inherit-synthetic-reference-fixture-not-a-real-person
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SYNTHETIC
+2	135851076	rs4988235	G	A	.	PASS	.	GT	0/0
+7	141972905	rs1726866	G	A	.	PASS	.	GT	0/0
+12	111803962	rs671	G	A	.	PASS	.	GT	0/0
+15	74749576	rs762551	C	A	.	PASS	.	GT	0/0
+16	48224287	rs17822931	C	T	.	PASS	.	GT	0/0

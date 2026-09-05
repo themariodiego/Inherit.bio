@@ -194,7 +194,8 @@ export async function POST(
       if (error) throw new Error("Observed-call insert failed");
     }
 
-    await admin.from("user_variants").delete().eq("file_id", id);
+    const { error: variantDeleteError } = await admin.from("user_variants").delete().eq("file_id", id);
+    if (variantDeleteError) throw new Error("Variant replacement failed");
     const BATCH = 10000;
     for (let i = 0; i < records.length; i += BATCH) {
       const rows = records.slice(i, i + BATCH).map((r) => ({
@@ -224,7 +225,8 @@ export async function POST(
       return /^[ACGT]$/.test(alleles[0]) ? alleles[0] : null;
     };
 
-    await admin.from("ancestry_results").delete().eq("file_id", id);
+    const { error: ancestryDeleteError } = await admin.from("ancestry_results").delete().eq("file_id", id);
+    if (ancestryDeleteError) throw new Error("Ancestry replacement failed");
     // One row shape for the whole bulk insert: PostgREST fills a key that
     // some rows omit with null, not the column default, so every row states
     // its state columns explicitly (a null result_state violates NOT NULL).
@@ -316,7 +318,8 @@ export async function POST(
         { genotype: r.genotype, ref: r.ref, alt: r.alt },
       ]),
     );
-    await admin.from("user_prs").delete().eq("file_id", id);
+    const { error: prsDeleteError } = await admin.from("user_prs").delete().eq("file_id", id);
+    if (prsDeleteError) throw new Error("Polygenic replacement failed");
     const prsRows = ALL_PRS_SCORES.map((score) => {
       const result = computePrs(prsLookup, score);
       return {

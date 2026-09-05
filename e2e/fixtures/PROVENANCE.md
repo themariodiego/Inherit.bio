@@ -4,6 +4,19 @@ These fixtures are deterministic synthetic test data. They describe no real
 person and must never be replaced with customer, patient, or personal genome
 data.
 
+## observed-reference-grch38.vcf and observed-reference-grch38.txt
+
+- Classification: hand-written synthetic VCF and consumer-array representations
+  of five public report positions with invented homozygous reference calls.
+  They describe no real person and contain no customer or personal genome.
+- The browser test compares actual processing, report previews and ALDH2
+  detail; VCF `0/0` must match the equivalent array base genotype without
+  creating variant rows or changing variant-only analyses.
+- Repository SHA-256, VCF:
+  `492f53687668cf19561a6ab0402e2d189bf0018f908baa04fdd77bb898fea7cf`.
+- Repository SHA-256, array:
+  `9a6b68acfd4d3f3086b9f735f7765e03cfa97a2fa25d3c29a13ac928e2eb4f2b`.
+
 ## personal-previews-grch38.vcf
 
 - Classification: hand-written synthetic single-sample GRCh38 VCF with four

@@ -33,7 +33,7 @@ describe("report-only observed call resolution", () => {
     const queries: { table: string; eq: ReturnType<typeof vi.fn>; in: ReturnType<typeof vi.fn> }[] = [];
     let observed = [source];
     const db = { from: (table: string) => {
-      const query = { table, select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
+      const query = { table, select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
         then: (resolve: (value: unknown) => void) => resolve({ data: table === "genome_files" ? [file] : table === "report_observed_calls" ? observed : [], error: null }) };
       queries.push(query); return query;
     } } as unknown as Db;
@@ -48,5 +48,39 @@ describe("report-only observed call resolution", () => {
       observed = [{ ...source, ...changed }];
       expect((await loadReportCallRows(db, "subject", [671])).calls).toEqual([]);
     }
+  });
+  it.each(["user_variants", "report_observed_calls"])("reads conflicts after row 1000 in %s and fails the whole load on a later-page error", async (store) => {
+    let fail = false;
+    const observed = { ...call, source_sha256: "a".repeat(64), extraction_version: OBSERVED_CALL_VERSION, source_build: "GRCh38" };
+    const file = { id: "file", build: "GRCh38", observed_call_sha256: observed.source_sha256, observed_call_version: OBSERVED_CALL_VERSION };
+    const offsets: number[] = [];
+    const db = { from: (table: string) => {
+      let offset = 0;
+      const q = { select: () => q, eq: () => q, in: () => q, order: () => q,
+        range: (start: number) => { offset = start; if (table === store) offsets.push(start); return q; },
+        then: (resolve: (result: unknown) => void) => resolve(table === "genome_files" ? { data: [file] } : table !== store ? { data: [] } : offset === 0
+          ? { data: Array.from({ length: 1000 }, () => observed) }
+          : fail ? { data: null, error: { code: "unavailable" } } : { data: [{ ...observed, genotype: "A/G" }] }),
+      }; return q;
+    } } as unknown as Db;
+    const loaded = await loadReportCallRows(db, "subject", [671]);
+    expect(offsets).toEqual([0, 1000]);
+    expect(resolveReportCalls(loaded.calls, [template]).conflicts.has(671)).toBe(true);
+    fail = true;
+    expect((await loadReportCallRows(db, "subject", [671])).calls).toEqual([]);
+  });
+  it("does not drop an older conflicting file beyond the first 1000 files", async () => {
+    const files = Array.from({ length: 1001 }, (_, i) => ({ id: `file-${i}`, build: "GRCh38", observed_call_sha256: null, observed_call_version: null }));
+    const db = { from: (table: string) => {
+      let start = 0; let end = 0; let selected: string[] = [];
+      const q = { select: () => q, eq: () => q, order: () => q,
+        in: (key: string, values: string[]) => { if (key === "file_id") selected = values; return q; },
+        range: (from: number, to: number) => { start = from; end = to; return q; },
+        then: (resolve: (result: unknown) => void) => resolve({ data: table === "genome_files" ? files.slice(start, end + 1) : table === "report_observed_calls" ? [] : selected.flatMap((id) => id === "file-0" ? [{ ...call, file_id: id }] : id === "file-1000" ? [{ ...call, file_id: id, genotype: "A/G" }] : []) }),
+      }; return q;
+    } } as unknown as Db;
+    const loaded = await loadReportCallRows(db, "subject", [671]);
+    expect(loaded.fileCount).toBe(1001);
+    expect(resolveReportCalls(loaded.calls, [template]).conflicts.has(671)).toBe(true);
   });
 });

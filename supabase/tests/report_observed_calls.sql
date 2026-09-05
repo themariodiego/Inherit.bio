@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(19);
 insert into auth.users(id,email,raw_user_meta_data) values
  ('83000000-0000-4000-8000-000000000001','observed-owner@example.invalid','{"display_name":"Observed fixture"}'),
  ('83000000-0000-4000-8000-000000000002','observed-other@example.invalid','{"display_name":"Other fixture"}');
@@ -40,6 +40,16 @@ set local role authenticated;
 select is((select count(*) from public.report_observed_calls),0::bigint,'frozen subject is unreadable immediately');
 reset role;
 update public.subjects set lifecycle='active' where subject_account_id='83000000-0000-4000-8000-000000000001' and subject_class='self';
+update public.genome_files set user_id='83000000-0000-4000-8000-000000000002' where id='83000000-0000-4000-8000-000000000003';
+select is((select user_id from public.report_observed_calls where file_id='83000000-0000-4000-8000-000000000003'),'83000000-0000-4000-8000-000000000002'::uuid,'file rebinding cascades exact identity');
+set local role authenticated;
+select is((select count(*) from public.report_observed_calls),0::bigint,'former file owner cannot read after rebind');
+reset role;
+select set_config('request.jwt.claim.sub','83000000-0000-4000-8000-000000000002',true);
+set local role authenticated;
+select is((select count(*) from public.report_observed_calls),0::bigint,'new file owner cannot read without current subject ownership');
+reset role;
+update public.genome_files set user_id='83000000-0000-4000-8000-000000000001' where id='83000000-0000-4000-8000-000000000003';
 select lives_ok($$select private.assert_supported_account_fk_shape_v1('83000000-0000-4000-8000-000000000001',array[(select id from public.subjects where subject_account_id='83000000-0000-4000-8000-000000000001' and subject_class='self')],'{}'::uuid[])$$,'file-owned projection does not block account graph classification');
 delete from public.genome_files where id='83000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.report_observed_calls),0::bigint,'exact file deletion cascades observed source rows');

@@ -4905,6 +4905,7 @@
         "public.subject_relationships",
         "public.genome_files",
         "public.user_variants",
+        "public.report_observed_calls",
         "public.embryo_variants",
         "public.user_prs",
         "public.ancestry_results",

@@ -77,6 +77,13 @@ describe("observed reference processing", () => {
     expect(state.persistedFile.observed_call_version).toBeNull();
     expect(state.persistedFile.status).toBe("failed");
   });
+  it.each(["user_variants", "ancestry_results", "user_prs"])("does not certify stale evidence when %s replacement deletion fails", async (table) => {
+    state.deleteError = table;
+    expect((await processVcf("##reference=GRCh38", row)).status).toBe(500);
+    expect(state.inserts.some((entry) => entry.table === table)).toBe(false);
+    expect(state.persistedFile).toMatchObject({ status: "failed", observed_call_sha256: null, observed_call_version: null });
+    expect(state.updates.some((entry) => entry.value.status === "annotated")).toBe(false);
+  });
   it("normalizes reversed reference calls without adding them to variant inputs", async () => {
     expect((await processVcf("##reference=GRCh37", "1\t400568\trs1642149602\tT\tG\t.\tPASS\t.\tGT\t0/0")).status).toBe(200);
     expect(state.inserts.find((entry) => entry.table === "report_observed_calls")?.rows[0]).toMatchObject({ source_ref: "T", source_alt: "G", source_gt: "0/0", pos: 418769, ref: "A", alt: "C", genotype: "A/A" });

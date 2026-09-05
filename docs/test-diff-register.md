@@ -184,3 +184,26 @@ this change set. Existing design-token assertions are unchanged.
 | `e2e/copilot.spec.ts` | Disclosure assertion corrected | Consent must describe the narrower data actually sent after the score-output boundary. | Requires score-panel coverage/unavailable-reference disclosure and rejects the former score/percentile claim; existing provider-consent and revocation assertions remain. |
 | `src/lib/genome/report-evidence.test.ts`, `src/components/reports/report-evidence.test.ts` | New report-basis assertions | Citation count was labelled as independent studies; no source-read dates or resolver-state accounting were shown. | Method-kind consistency and safe model identifiers; conflict precedence, missing-store and unrecognized/no-call partition; exact valid source dates with invalid/missing dates refused; rendered citation links and unavailable dates; state counts without genetic values or extra top-level sections; server-side reveal-gate placement; bounded copy. These tests do not prove allele-safe enrichment or whole-file assay coverage. |
 | `e2e/report-skeleton.spec.ts` | Refined source-count assertion and extended method/coverage assertions | A guideline citation is a cited source, not proof of one supporting study; the summary now has a separate method explanation. Reusing fixture accounts accumulated old files on repeated local runs. | Pin cited-source wording, reject the old study-count claim, assert interpreted count and Medicines method limitation. Summary still equals the entire seed text and retains its first-sentence requirement via an explicit summary slot; no existing summary assertion is removed. Per-run fixture identities preserve the exact one-file assertions without deleting prior fixture data. |
+# Observed reference report calls — 2026-09-06
+
+The literal VCF SNP parser now retains a separate report-only observation with
+source quality and GT evidence. Tests pin reference/alternate parity, phased
+diploid calls, unknown optional quality, failed filters, unsupported/symbolic
+ALT, intervals, no-calls and multi-sample exclusion. Existing ROH and
+variant-only analysis inputs are unchanged.
+
+Processing tests pin exact server-read compressed-byte SHA256, owner/file
+binding, reversed GRCh37 reference normalization, idempotent replacement and
+failed-extraction nonpublication. Resolver tests exhaust row/file pagination,
+including conflict after row 1000 in either store and after file 1000; a
+later-page failure returns no partial findings. Missing/failed calls are not
+reported as genotype disagreements.
+
+New rollback-only SQL tests cover grants/RLS, composite owner/subject FK,
+completion hash and parsing-state denial, restricted lifecycle denial, exact
+file cascade, ownership-transfer denial and existing account graph compatibility. The closed purge-store
+count rises from 111 to 112 for the explicitly registered observation table;
+no existing assertion is removed. On main57 plus this slice: 1,615 units and
+731 pgTAP assertions pass, typecheck and scoped lint pass, and the local
+security advisor reports no error-level issues. Browser parity verification is
+recorded separately once run.
