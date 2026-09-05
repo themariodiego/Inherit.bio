@@ -7,6 +7,13 @@ insert into auth.users (id, email, raw_user_meta_data)
 values ('72000000-0000-0000-0000-000000000001',
   'mail-clock@example.invalid', '{"display_name":"Mail clock fixture"}');
 
+-- Readiness now requires a real processed source; preserve all clock/replay
+-- assertions while making their existing synthetic target valid.
+insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,status)
+select '72000000-0000-0000-0000-000000000002',owner_account_id,id,
+ owner_account_id::text||'/mail-clock-fixture','synthetic.txt','array_ancestry',1,1,'annotated'
+from public.subjects where owner_account_id='72000000-0000-0000-0000-000000000001' and subject_class='self';
+
 create function pg_temp.enqueue_fixture(p_key text, p_expiry timestamptz default null)
 returns uuid language sql as $$
   select public.enqueue_account_mail(
