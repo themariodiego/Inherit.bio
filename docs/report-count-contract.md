@@ -70,5 +70,9 @@ eleven Medicines position reports: 162 is not a displayed combined count and
 Local verification: 13 targeted production-browser tests passed with no skips
 or retries; 1,618 combined unit tests, typecheck, scoped lint and the naming,
 secret and readability gates passed after integration with main `f6d7cca`.
-No hosted data or source templates were edited. G4.3 remains NO pending the
-complete reviewed PR acceptance run; component tests alone are not closure.
+No hosted data or source templates were edited by the count slice. Independent
+review and complete CI `33995911775` passed at
+`d1e3aafa894ca98eca0ba362de68d172dae224ca`, after integration with main PR59.
+This closes G4.3 in the release-candidate ledger; component tests alone were
+not used for closure. Deployment remains subject to the combined release's
+full CI and post-deployment checks.
