@@ -7678,7 +7678,7 @@ export type Database = {
           p_account_id: string
           p_contact_ciphertext: string
           p_contact_hmac: string
-          p_expires_at: string
+          p_expires_at?: string
           p_idempotency_key: string
           p_purpose: string
           p_target_id: string

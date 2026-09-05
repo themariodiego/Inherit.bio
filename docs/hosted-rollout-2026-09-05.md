@@ -178,3 +178,32 @@ zero failures, skips or retries, including upload-to-takeaway, filtering,
 source details, cross-account absence, report-library and Overview checks.
 Production deployment verification is not an authenticated production
 genetic-file test.
+
+## PR 57 disabled embryo-ingest foundation
+
+Root verified and applied the four exact migrations reviewed at `cdd6e0a`
+to the hosted Inherit project after preflight found zero ingest sessions,
+cohorts and fragments. Hosted history records the following versions:
+
+| Migration | Hosted version |
+| --- | --- |
+| Chunk reservations | `20260905214320` |
+| Session lifecycle | `20260905214322` |
+| HTTP authorization | `20260905214324` |
+| Unwind runtime | `20260905214326` |
+
+Postflight verified 111 registered purge stores, RLS and no client grants
+on the new tables, zero client-executable privileged embryo functions, and
+the exact 24-hour terminal-contact constraint. No user data or ingest was
+added. The foundation remains disabled; this is not ingest enablement and
+does not advance the recorded whole-plan count of 16/65.
+
+CI `33993182906` passed 1,578 unit, 712 SQL and 131 browser assertions/tests
+with no skips or retries. PR 57 merged at
+`d02b7096570407f714716b91e094b8fe74e9c70f`. Production deployment
+`dpl_98UNSdFNQ5k9XRaMm3ADve8vHGkc` is READY at that exact SHA, with
+`www.inherit.bio` assigned. The homepage returned HTTP 200; anonymous
+reports access returned HTTP 307 to sign-in. Error/fatal runtime counts
+returned no rows during the brief post-deploy window; that is not long-run
+assurance. Advisors reported 131 INFO, two existing WARN and zero ERROR
+findings. Existing job-timing and password-setting notes remain unchanged.
