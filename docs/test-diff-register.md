@@ -3,8 +3,22 @@
 | Test | Change | Why | Retained or strengthened contract |
 | --- | --- | --- | --- |
 | `src/lib/genome/metabolism-context.test.ts`, `src/copy/reports/strings.test.ts`, `src/lib/genome/pharmacogenomics-withheld.test.ts`, `e2e/report-previews.spec.ts` | Add qualitative AG cancer source and exact-slug discussion option | Brief §2.2 line 630 is conditional; removing the cancer association lost a supported learning. | Alcohol source-panel counts rise from two to three; all prior source assertions remain. AG population/exposure limits and absence of personal/AA risk claims are tested. Optional slug argument changes the static page-call assertion, not Medicines behavior. Every category default remains tested; browser checks retain other reports’ exact defaults and prove the override for GG/AG/AA. |
-| `src/lib/genome/report-previews.test.ts`, `e2e/report-previews.spec.ts` | Extend three previews to four; add two alcohol genotype workflows | A fourth reviewed takeaway is now shipped. | Existing audience, locus, conflict, missing-data, filter, responsive-layout and empty-account assertions remain. Count assertions increase by one; the new report has two source panels. Both citations are required; no caffeine speed preview is created. |
+| `src/lib/genome/report-previews.test.ts`, `e2e/report-previews.spec.ts` | Extend three previews to four; add two alcohol genotype workflows | A fourth reviewed takeaway is now shipped. | Existing audience, locus, conflict, missing-data, filter, responsive-layout and empty-account assertions remain. Count assertions increase by one; the new report has three source panels. Both preview metabolism citations are required; no caffeine speed preview is created. |
 | `src/lib/genome/study-context.test.ts`, `src/lib/genome/metabolism-context.test.ts` | Keep the original pilot selected by its explicit three slugs; add separate two-report tests | A global context-presence filter would silently enlarge the original pilot and assume all fields are known. | All original pilot assertions remain. New tests verify seed/display round trips, explicit unknown demographics, unchanged evidence/gates and the corrected scientific expectations. |
+| `e2e/report-skeleton.spec.ts` | Extend original pilot coverage to the exact five contextual report slugs and every source panel | Full CI caught the old three-report/one-source assumption after alcohol context was added. | Retains six headings, absent personal figures, original source text/locator/link/date checks; adds caffeine, all three alcohol sources and the explicit unknown-demographics state. No retry or skip added. |
+
+Mail deadline slice (2026-09-05): `src/lib/mail-outbox.test.ts` adds ten helper
+checks covering omitted defaults with five clock offsets, unchanged explicit
+deadlines, stable idempotency and coded errors without logging database details.
+`supabase/tests/mail_default_expiry.sql` adds 21 rollback-only assertions for the
+database default, exact shorter deadlines, expired/excessive deadline refusal,
+replay nonrenewal, the original RPC identity and service-only privileges. It
+creates only its own synthetic account through the real provisioning trigger.
+`e2e/mail-expiry.spec.ts` adds a real fresh-account self-upload-to-queued-notice
+check, repeated processing without a renewed deadline, and zero provider
+attempts. No original mail assertion is removed, relaxed or skipped. An initial
+local build rejected a sibling dependency symlink; a frozen offline dependency
+install fixed the worktree setup without changing dependencies or test retries.
 
 ADR 0022 corrects the scientifically false estimate definition and Overview
 note expectations in the report/Overview unit and browser suites. All existing
