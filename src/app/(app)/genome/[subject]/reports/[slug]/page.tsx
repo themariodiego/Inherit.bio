@@ -51,9 +51,9 @@ import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectFileCount,
-  getSubjectGenotypesByRsid,
   getSubjectProcessedFiles,
 } from "@/lib/genome/load";
+import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import {
   resolveTemplate,
   type ReportTemplate,
@@ -331,10 +331,10 @@ export default async function ReportDetailPage(
   let anyNotCovered = false;
   if (showResults) {
     const { genotypes, conflicts } = hasData
-      ? await getSubjectGenotypesByRsid(
+      ? await getSubjectReportCalls(
           createAdminClient(),
           dataSubjectId,
-          template.variants.map((variant) => variant.rsid),
+          [template],
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>() };
     const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));

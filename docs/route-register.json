@@ -5219,7 +5219,8 @@
           "targetId": "variant-rows",
           "stores": [
             "public.user_variants",
-            "public.embryo_variants"
+            "public.embryo_variants",
+            "public.report_observed_calls"
           ],
           "joinRule": "select-each-public.user_variants-or-public.embryo_variants-row-by-exact-subject_id-or-by-file_id-joined-to-the-selected-current-or-legacy-genome_files-row; public.embryo_variants-is-the-direct-brief-polymorphic-suppression-source-and-must-have-an-explicit-schema-requirements-shape-and-subject-cohort-file-FKs-rather-than-an-adjacent-alias; adult-draft-complete-and-cohort-draft-complete-require-the-identical-draft-and-upload-revision; cohort-prepublication-complete-requires-the-identical-ingest-revision-worker-attempt-unpublished-source-or-file-cohort-and-sample-ordinal-joins-and-zero-residual-before-genome-file-embryo-subject-or-cohort-deletion",
           "manifestClasses": [

@@ -2,6 +2,7 @@
 
 import type { Build, ParseResult, ReferenceCall, VariantRecord } from "../types";
 import { chromToNumber, parseRsid } from "../types";
+import { observedVcfCall, type ObservedCall } from "../observed-calls";
 
 // chr1 lengths pin the reference build.
 const CHR1_LEN_GRCH38 = 248956422;
@@ -48,11 +49,17 @@ export async function parseVcf(
 ): Promise<ParseResult> {
   const records: VariantRecord[] = [];
   const referenceCalls: ReferenceCall[] = [];
+  const observedCalls: ObservedCall[] = [];
+  let singleSample = false;
+  let sawSampleHeader = false;
+  let ambiguousSamples = false;
+  let lineNumber = 0;
   let skipped = 0;
   let build: Build = "unknown";
   const buildClaims = new Set<Build>();
 
   for await (const raw of lines) {
+    lineNumber++;
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     if (line === "") continue;
     if (line.startsWith("##")) {
@@ -61,7 +68,14 @@ export async function parseVcf(
       build = buildClaims.size === 1 ? [...buildClaims][0] : "unknown";
       continue;
     }
-    if (line.startsWith("#")) continue; // #CHROM column header
+    if (line.startsWith("#")) {
+      if (line.startsWith("#CHROM\t")) {
+        if (sawSampleHeader || line.split("\t").length !== 10) ambiguousSamples = true;
+        sawSampleHeader = true;
+        singleSample = !ambiguousSamples;
+      }
+      continue;
+    }
 
     const f = line.split("\t");
     if (f.length < 10) {
@@ -73,6 +87,10 @@ export async function parseVcf(
     if (chrom === null || !Number.isInteger(pos) || pos <= 0) {
       skipped++;
       continue;
+    }
+    if (singleSample) {
+      const observed = observedVcfCall(f, chrom, pos, lineNumber);
+      if (observed) observedCalls.push(observed);
     }
     const gtIndex = f[8].split(":").indexOf("GT");
     if (gtIndex === -1) {
@@ -146,5 +164,5 @@ export async function parseVcf(
     });
   }
 
-  return { build, records, referenceCalls, skipped };
+  return { build, records, referenceCalls, observedCalls: ambiguousSamples ? [] : observedCalls, skipped };
 }

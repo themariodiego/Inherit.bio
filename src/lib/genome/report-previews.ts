@@ -4,6 +4,7 @@ import { PERSONAL_PREVIEW_TRAITS } from "@/copy/reports/personal-previews";
 import { isGatedTemplate } from "./taxonomy";
 import { genotypeKey, type ReportTemplate } from "./reports";
 import type { Db } from "./load";
+import { loadReportCallRows, resolveReportCalls } from "./report-calls";
 
 export interface PersonalPreview {
   text: string;
@@ -80,15 +81,13 @@ export async function loadPersonalPreviews(
   if (!isOwnPreviewAudience(audience)) return previews;
   const knownFiles = files.filter((file) => file.build === "GRCh37" || file.build === "GRCh38");
   if (knownFiles.length === 0) return previews;
-  const { data, error } = await db.from("user_variants")
-    .select("rsid,chrom,pos,ref,alt,genotype")
-    .eq("user_id", audience.viewerAccountId)
-    .eq("subject_id", audience.subjectId)
-    .in("file_id", knownFiles.map((file) => file.id))
-    .in("rsid", PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid));
-  if (error || !data) return previews;
+  const { calls } = await loadReportCallRows(db, audience.subjectId,
+    PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid), audience.viewerAccountId);
+  const local = resolveReportCalls(calls, templates);
+  const allConflicts = new Set([...conflicts, ...local.conflicts]);
+  for (const [rsid, genotype] of local.genotypes) if (genotype === "--") allConflicts.add(rsid);
   for (const template of templates) {
-    const preview = resolvePersonalPreview(audience, template, data, conflicts);
+    const preview = resolvePersonalPreview(audience, template, calls, allConflicts);
     if (preview) previews.set(template.slug, preview);
   }
   return previews;

@@ -3804,6 +3804,8 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id: string
           is_cohort_file: boolean
+          observed_call_sha256: string | null
+          observed_call_version: string | null
           original_name: string
           processing_finished_at: string | null
           processing_started_at: string | null
@@ -3840,6 +3842,8 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
+          observed_call_sha256?: string | null
+          observed_call_version?: string | null
           original_name: string
           processing_finished_at?: string | null
           processing_started_at?: string | null
@@ -3876,6 +3880,8 @@ export type Database = {
           file_type?: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
+          observed_call_sha256?: string | null
+          observed_call_version?: string | null
           original_name?: string
           processing_finished_at?: string | null
           processing_started_at?: string | null
@@ -5649,6 +5655,95 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "subjects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_observed_calls: {
+        Row: {
+          alt: string
+          chrom: number
+          extraction_version: string
+          file_id: string
+          genotype: string
+          genotype_quality: number | null
+          pos: number
+          quality_state: string
+          read_depth: number | null
+          ref: string
+          rsid: number
+          sample_filter: string | null
+          site_filter: string | null
+          source_alt: string
+          source_build: string
+          source_chrom: number
+          source_gt: string | null
+          source_line: number
+          source_pos: number
+          source_ref: string
+          source_sha256: string
+          subject_id: string
+          usable: boolean
+          user_id: string
+        }
+        Insert: {
+          alt: string
+          chrom: number
+          extraction_version: string
+          file_id: string
+          genotype: string
+          genotype_quality?: number | null
+          pos: number
+          quality_state: string
+          read_depth?: number | null
+          ref: string
+          rsid: number
+          sample_filter?: string | null
+          site_filter?: string | null
+          source_alt: string
+          source_build: string
+          source_chrom: number
+          source_gt?: string | null
+          source_line: number
+          source_pos: number
+          source_ref: string
+          source_sha256: string
+          subject_id: string
+          usable: boolean
+          user_id: string
+        }
+        Update: {
+          alt?: string
+          chrom?: number
+          extraction_version?: string
+          file_id?: string
+          genotype?: string
+          genotype_quality?: number | null
+          pos?: number
+          quality_state?: string
+          read_depth?: number | null
+          ref?: string
+          rsid?: number
+          sample_filter?: string | null
+          site_filter?: string | null
+          source_alt?: string
+          source_build?: string
+          source_chrom?: number
+          source_gt?: string | null
+          source_line?: number
+          source_pos?: number
+          source_ref?: string
+          source_sha256?: string
+          subject_id?: string
+          usable?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_observed_calls_file_id_user_id_subject_id_fkey"
+            columns: ["file_id", "user_id", "subject_id"]
+            isOneToOne: false
+            referencedRelation: "genome_files"
+            referencedColumns: ["id", "user_id", "subject_id"]
           },
         ]
       }
