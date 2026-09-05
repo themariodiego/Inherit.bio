@@ -19,7 +19,7 @@ export async function getProcessedFiles(supabase: Db) {
 export async function getSubjectProcessedFiles(supabase: Db, subjectId: string) {
   const { data } = await supabase
     .from("genome_files")
-    .select("id, original_name, file_type, status, variant_count, created_at, subject_id")
+    .select("id, original_name, file_type, status, variant_count, created_at, subject_id, build")
     .eq("subject_id", subjectId)
     .eq("status", "annotated")
     .order("created_at", { ascending: false });

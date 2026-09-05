@@ -68,7 +68,7 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
   {
     id: "reports.polygenic",
     label: LAYER_LABELS.estimate,
-    consequence: "They can read the model-based reports built from many small effects in your file.",
+    consequence: "They can read reports on links between your DNA and traits found in studies.",
   },
   {
     id: "ancestry",

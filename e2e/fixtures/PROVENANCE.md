@@ -4,6 +4,18 @@ These fixtures are deterministic synthetic test data. They describe no real
 person and must never be replaced with customer, patient, or personal genome
 data.
 
+## personal-previews-grch38.vcf
+
+- Classification: hand-written synthetic single-sample GRCh38 VCF with four
+  public report positions and invented genotype calls. The three reviewed
+  trait calls exercise dry earwax, adult lactase activity and the form at
+  the bitter-taste position; the fourth supplies another covered report for
+  the library filter. No genotype was read from a real person or sample.
+- The production-browser test runs the actual upload and processing path
+  before reading the cards and their linked reports.
+- Repository SHA-256:
+  `8469c4ecc3da2a5e6e5459a38806484009c57bf887aa85bdb311165c0b2dde6a`.
+
 ## tiny-grch38.vcf
 
 - Classification: synthetic VCF assembled solely from four public variant

@@ -93,7 +93,7 @@ export const LAYER_DEFINITIONS: Record<FindingLayer, string> = {
   variant_call:
     "A result about one or a few exact spots in your DNA, read against an outside clinical classification.",
   estimate:
-    "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.",
+    "Links between DNA and traits found in studies. Some reports use one spot; polygenic scores combine many. Neither says what will happen to you.",
 };
 
 /** Count nouns per figure class, singular and plural (G4.3: counts are layer-labelled). */

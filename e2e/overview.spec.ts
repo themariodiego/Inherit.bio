@@ -43,7 +43,7 @@ const STATE_A_LEDE =
 const VARIANT_CALL_DEFINITION =
   "A result about one or a few exact spots in your DNA, read against an outside clinical classification.";
 const ESTIMATE_DEFINITION =
-  "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.";
+  "Links between DNA and traits found in studies. Some reports use one spot; polygenic scores combine many. Neither says what will happen to you.";
 const NOT_DIAGNOSTIC =
   "This is not a diagnosis. Inherit is not a doctor and no clinician has reviewed this. Talk to a qualified professional before acting on anything here.";
 const ANCESTRY_TOO_FEW =
@@ -268,7 +268,7 @@ test("State C: after one processed file — split count with note, ancestry line
     `${seededTemplateCount("variant_call")} specific-variant reports`,
   );
   await expect(page.getByText(/specific-variant reports?$/)).toHaveCount(1);
-  await expect(page.getByText("Statistical estimates from many small effects.", { exact: true })).toBeVisible();
+  await expect(page.getByText("What studies found about DNA and traits.", { exact: true })).toBeVisible();
   await expect(page.getByText("Results read from one spot in your DNA.", { exact: true })).toBeVisible();
   await expect(page.getByText(ESTIMATE_DEFINITION, { exact: true })).toBeVisible();
   await expect(page.getByText(VARIANT_CALL_DEFINITION, { exact: true })).toBeVisible();

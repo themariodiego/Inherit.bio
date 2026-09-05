@@ -141,7 +141,7 @@ describe("overview copy", () => {
       "Ancestry: your file covers too few markers to estimate regions.",
     );
     expect(STATE_C).not.toHaveProperty("ancestryFound");
-    expect(SPLIT_NOTE).toBe("Statistical estimates from many small effects.");
+    expect(SPLIT_NOTE).toBe("What studies found about DNA and traits.");
     expect(words(SPLIT_NOTE)).toBeLessThanOrEqual(12);
     expect(ESTIMATE_DEFINITION).toBe(LAYER_DEFINITIONS.estimate);
     expect(NOT_DIAGNOSTIC).toBe(
