@@ -1,5 +1,13 @@
 # Withheld capability: pharmacogenomics (the Medicines category)
 
+> **Source correction, 2026-09-06:** The cited original research's claim that
+> NUDT15 *3 requires a second change was a table-interpretation error, not a
+> scientific barrier. Its allowed repeat states include the reference state.
+> See the [dated correction and CPIC receipt](../design/nudt15-source-correction-2026-09-06.md).
+> This dossier remains historical; it does not reinstate that error or alter
+> ADR 0021's approved per-position scope. No complete gene-form or phenotype
+> call follows from the correction.
+
 Status: `withheld` (brief §8, alternative complete outcome 1). ADR:
 [0018](../adr/0018-pharmacogenomics-withheld.md). Register row:
 `docs/capability-register.md`, "Pharmacogenomics".

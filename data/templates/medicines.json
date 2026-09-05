@@ -37,7 +37,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.VKORC1",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -85,7 +85,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C19",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -133,7 +133,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C19",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -186,7 +186,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C9",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -239,7 +239,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP2C9",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -287,7 +287,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.SLCO1B1",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -335,7 +335,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.TPMT",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -383,7 +383,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.TPMT",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -397,7 +397,7 @@
     "slug": "nudt15-rs116855232-one-position",
     "category": "pharmacogenomics",
     "title": "Thiopurines, one position · NUDT15",
-    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 20 positions to name NUDT15 forms. This reads the one where a T is part of the *3 form. *3 also needs a second change not read here, so this is not a *3 call. It cannot say how thiopurine medicines work in you.",
+    "summary": "CPIC (a group of clinicians and scientists who write guidelines about genes and medicines) uses 20 positions to name NUDT15 forms. This reads one position where T occurs in CPIC’s *3 definition. This is not a *3 call: the other positions and your pair of forms are not read here. It cannot say how thiopurine medicines work in you.",
     "evidence": "emerging",
     "layer": "variant_call",
     "estimate_kind": null,
@@ -411,8 +411,8 @@
         "alt": "T",
         "interpretations": {
           "CC": "Your file shows C on both copies at this position. C is the letter of the *1 form here. The other 19 positions CPIC uses for NUDT15 are not read, so this is not a *1 call.",
-          "CT": "Your file shows C on one copy and T on the other. T is part of the *3 form, which also needs a second change not read here. This is one position, not the pair of forms you carry.",
-          "TT": "Your file shows T on both copies at this position. T is part of the *3 form, which also needs a second change not read here. This is one position, not the pair of forms you carry."
+          "CT": "Your file shows C on one copy and T on the other. T occurs in CPIC’s *3 definition. This report does not read the other positions or identify your pair of NUDT15 forms.",
+          "TT": "Your file shows T on both copies at this position. T occurs in CPIC’s *3 definition. This report does not read the other positions or identify your pair of NUDT15 forms."
         }
       }
     ],
@@ -431,7 +431,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.NUDT15",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -479,7 +479,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.DPYD",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",
@@ -527,7 +527,7 @@
         "url": "https://api.cpicpgx.org/v1/allele_definition?genesymbol=eq.CYP3A5",
         "accessedOn": "2026-09-03",
         "version": null,
-        "versionNote": "The CPIC API endpoint read on 2026-09-03 exposed no version number for its allele definitions or guideline table."
+        "versionNote": "No unified content version was recorded in the 2026-09-03 source pass. CPIC exposes per-record versions; see docs/design/nudt15-source-correction-2026-09-06.md."
       },
       "dbsnp": {
         "name": "dbSNP RefSNP record (GRCh38 SPDI)",

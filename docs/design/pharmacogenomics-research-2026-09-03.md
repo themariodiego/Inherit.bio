@@ -1,5 +1,12 @@
 # Pharmacogenomics ("Medicines") — read-only research pass
 
+> **Correction, 2026-09-06:** The historical NUDT15 text in §3.3 and the §5
+> candidate table incorrectly treats a second defining position as a required
+> second change. CPIC's *3 definition permits the same repeat state as reference
+> *1. Those claims are superseded by the [dated source receipt and explanation](./nudt15-source-correction-2026-09-06.md).
+> The original text remains as an audit record, not as current evidence for
+> excluding the corrected single-position report or calling a complete allele.
+
 Repository: `/home/user/Inherit.bio` (nothing was modified).
 All network retrieval performed **2026-09-03** (session clock `date -u` = `Thu Sep  3 12:20:26 UTC 2026`).
 Every fact below carries the URL it was read from. Anything I could not read from a primary
@@ -465,6 +472,8 @@ gene copy or on different ones, and that difference changes the answer."
 ---
 
 **NUDT15 rs116855232 — thiopurines.**
+The following historical second-change inference is corrected on 2026-09-06;
+see the dated note above. Two defining positions do not require two changes.
 Verified: chr13:48045719 C>T. Two CPIC alleles carry a call here: \*1 (`C`) and **\*3 (`T`) — but \*3
 also requires rs746071566** (a `GAGTCG(3)`/`GAGTCG(4)` repeat), so this SNP alone does not call \*3.
 23 alleles over 20 positions; lookup method PHENOTYPE. Same 2025 guideline (PMID 41618934). PharmCAT
@@ -668,7 +677,7 @@ diagnos|supplement|treatment`):
 | SLCO1B1 rs4149056 | **populate (guarded)** | Verified; but 6 CPIC alleles touch the position and the 2022 guideline is a three-gene guideline — the report is a partial rendering by construction. |
 | CYP2C19\*17 rs12248560 | **exclude** | Verified that the T allele appears in \*17, \*44, \*45 and ambiguously in \*4; a "\*17" claim from this SNP alone is not supportable. Could be populated only as a bare-position report with no star-allele name. |
 | TPMT rs1800462 / rs1800460 / rs1142345 | **exclude** | Phase-dependent: PharmCAT states \*1/\*3A (intermediate) cannot be distinguished from \*3B/\*3C (poor) in unphased data. **rs1142345 is multi-allelic in CPIC (T>C and T>G)** and cannot be encoded in the one-alt schema. |
-| NUDT15 rs116855232 | **exclude** | \*3 requires a co-defining repeat variant (rs746071566); the SNP alone does not call the allele, and unphased \*1/\*2 vs \*3/\*6 is ambiguous. |
+| NUDT15 rs116855232 | **exclude (historical; corrected 2026-09-06 above)** | Original rationale: \*3 requires a co-defining repeat variant (rs746071566); the SNP alone does not call the allele, and unphased \*1/\*2 vs \*3/\*6 is ambiguous. The required-change inference is superseded by the dated source correction. |
 | DPYD rs3918290 | **exclude** | Activity-score gene (83 positions); CPIC marks the drug pairs "Testing Required"; PharmCAT refuses to call a DPYD diplotype from unphased heterozygous data. Absence of this variant does not exclude deficiency, and the drugs are chemotherapeutics — highest false-reassurance harm of any candidate. |
 | HLA-B\*57:01 tag rs2395029 | **exclude** | CPIC defines HLA-B by allele status with **zero** sequence positions; dbSNP places rs2395029 in **HCP5**; PharmCAT explicitly does not recommend calling or imputing HLA from a VCF. Tag-SNP performance varies by ancestry and the figures are UNVERIFIED. |
 | CYP2D6 (any single SNP) | **exclude** | 184 alleles / 157 positions / 5 structural; PharmCAT states in terms that CYP2D6 must not be called from VCF, that UM cannot be called from SNPs/indels, and that a \*5 deletion makes hemizygous variants look homozygous. |

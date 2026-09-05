@@ -21,7 +21,7 @@ genotype, layer, viewport and withholding assertions. No skip/retry added.
 
 Preliminary production run: observed reference parity and expert Data tests
 passed; ancestry stopped on the old global claim count, Family/Portrait stopped
-on preexisting fixed-email collisions. The next run follows these precise test
+on preexisting fixed-email collisions. The next run with these precise test
 setup/structure corrections passed all 28 cases, no skips/retries (ancestry 2,
 Family 10, expert Data 5, observed parity 1, Portrait 10). The shared carrier
 provenance renderer then received separate gene-versus-long-run source tests.
@@ -36,6 +36,15 @@ per-embryo converted/unknown source facts outside disclosures; loader tests
 require complete published cohort+ordinal file sets. These are synthetic renderer
 and closed-DTO tests, not a claim that the unavailable embryo consent/ingest
 workflow is enabled or has passed end-to-end acceptance.
+
+NUDT15 source correction (2026-09-06): Medicines regressions read the compact
+live-CPIC receipt and bind *1/*3 to the two exact loci and record versions.
+They prove that the *3 allowed repeat states include the *1 reference state,
+then prohibit the false required-second-change statement in all NUDT15 prose.
+They retain useful CT/TT letter reading, the unchanged CC reading and every
+existing locus, guideline, single-position, no-advice and exclusion assertion.
+An empty current *2 location response stays unknown, not an inferred allele.
+No existing assertion, skip, retry, renderer gate or clinical scope is relaxed.
 
 Report count contract (2026-09-06): `Count` units add runtime refusal checks
 for missing/mixed/legacy layers, nonfinite/fractional/negative/unsafe numbers,
