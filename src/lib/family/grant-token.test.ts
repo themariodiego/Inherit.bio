@@ -5,16 +5,30 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
 const {
   SHARE_WITH_ADULT_ARTIFACT,
+  mintArtifactPresentation,
+  mintCohortGrantPresentation,
   mintGrantPresentation,
   mintSharingOperation,
   newNonce,
+  readArtifactPresentation,
+  readCohortGrantPresentation,
   readGrantPresentation,
   readSharingOperation,
 } = await import("./grant-token");
+const { hmacSecret } = await import("@/lib/crypto");
 
 afterAll(() => {
   vi.unstubAllEnvs();
 });
+
+/** The module's own envelope, so a forged payload can be signed correctly and still refused on its content. */
+function sealAs(claims: unknown, context: string): string {
+  const payload = Buffer.from(JSON.stringify(claims), "utf8").toString("base64url");
+  return `${payload}.${hmacSecret(payload, context)}`;
+}
+
+const NOW = 1_800_000_000_000;
+const TEN_MINUTES = 10 * 60 * 1000;
 
 const CLAIMS = {
   accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",

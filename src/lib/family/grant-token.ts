@@ -51,6 +51,8 @@ const PRESENTATION_LIFETIME_MS = 10 * 60 * 1000;
 
 const GRANT_DIGEST_CONTEXT = "family-grant-presentation-v1";
 const OPERATION_DIGEST_CONTEXT = "family-sharing-operation-v1";
+const ARTIFACT_DIGEST_CONTEXT = "artifact-presentation-v1";
+const COHORT_GRANT_DIGEST_CONTEXT = "cohort-grant-presentation-v1";
 
 export interface GrantPresentation {
   /** The account that signs: the data subject's own account, never the recipient's. */
@@ -179,4 +181,154 @@ export function readSharingOperation(
   }
   if (claims.expiresAt <= now) return null;
   return claims;
+}
+
+/**
+ * The presentation token of an embryo artifact signature (E0 contract
+ * §5.3, §6.2, §6.5). The page that renders an artifact for a cohort draft
+ * or a cohort mints one token per rendered artifact, bound to the signer's
+ * account, the target, the artifact's key, version and body hash, and the
+ * statement keys it showed. `POST /api/consents` and the invitation-accept
+ * route read the token, recompute the artifact row from the key and version
+ * and refuse when the hash no longer matches: what was shown is what is
+ * signed, never what the request body says.
+ */
+export interface ArtifactPresentation {
+  accountId: string;
+  targetKind: "cohort_draft" | "cohort";
+  targetId: string;
+  artifactKey: string;
+  artifactVersion: number;
+  artifactBodySha256: string;
+  statementKeys: string[];
+  nonce: string;
+  /** Epoch milliseconds. */
+  expiresAt: number;
+}
+
+/**
+ * The presentation token of a cohort `embryo.analysis` grant (contract
+ * §5.3, §6.2): the same idea as the directional grant above, bound to the
+ * cohort and to the participant-set revision the page rendered, so a grant
+ * cannot be signed against a cohort whose parents changed meanwhile.
+ */
+export interface CohortGrantPresentation {
+  accountId: string;
+  cohortId: string;
+  purpose: "embryo.analysis";
+  artifactKey: string;
+  artifactVersion: number;
+  artifactBodySha256: string;
+  participantSetRevision: number;
+  nonce: string;
+  /** Epoch milliseconds. */
+  expiresAt: number;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+export function mintArtifactPresentation(
+  claims: Omit<ArtifactPresentation, "nonce" | "expiresAt">,
+  now = Date.now(),
+): string {
+  const presentation: ArtifactPresentation = {
+    accountId: claims.accountId,
+    targetKind: claims.targetKind,
+    targetId: claims.targetId,
+    artifactKey: claims.artifactKey,
+    artifactVersion: claims.artifactVersion,
+    artifactBodySha256: claims.artifactBodySha256,
+    statementKeys: [...claims.statementKeys],
+    nonce: newNonce(),
+    expiresAt: now + PRESENTATION_LIFETIME_MS,
+  };
+  return seal(presentation, ARTIFACT_DIGEST_CONTEXT);
+}
+
+/** The claims of an artifact token that is well-formed, unexpired and ours; null otherwise. */
+export function readArtifactPresentation(
+  token: string,
+  now = Date.now(),
+): ArtifactPresentation | null {
+  const claims = unseal<ArtifactPresentation>(token, ARTIFACT_DIGEST_CONTEXT);
+  if (!claims || typeof claims !== "object") return null;
+  if (
+    typeof claims.accountId !== "string" ||
+    (claims.targetKind !== "cohort_draft" && claims.targetKind !== "cohort") ||
+    typeof claims.targetId !== "string" ||
+    typeof claims.artifactKey !== "string" ||
+    typeof claims.artifactVersion !== "number" ||
+    typeof claims.artifactBodySha256 !== "string" ||
+    !isStringArray(claims.statementKeys) ||
+    typeof claims.nonce !== "string" ||
+    typeof claims.expiresAt !== "number"
+  ) {
+    return null;
+  }
+  if (claims.expiresAt <= now) return null;
+  return {
+    accountId: claims.accountId,
+    targetKind: claims.targetKind,
+    targetId: claims.targetId,
+    artifactKey: claims.artifactKey,
+    artifactVersion: claims.artifactVersion,
+    artifactBodySha256: claims.artifactBodySha256,
+    statementKeys: [...claims.statementKeys],
+    nonce: claims.nonce,
+    expiresAt: claims.expiresAt,
+  };
+}
+
+export function mintCohortGrantPresentation(
+  claims: Omit<CohortGrantPresentation, "nonce" | "expiresAt">,
+  now = Date.now(),
+): string {
+  const presentation: CohortGrantPresentation = {
+    accountId: claims.accountId,
+    cohortId: claims.cohortId,
+    purpose: claims.purpose,
+    artifactKey: claims.artifactKey,
+    artifactVersion: claims.artifactVersion,
+    artifactBodySha256: claims.artifactBodySha256,
+    participantSetRevision: claims.participantSetRevision,
+    nonce: newNonce(),
+    expiresAt: now + PRESENTATION_LIFETIME_MS,
+  };
+  return seal(presentation, COHORT_GRANT_DIGEST_CONTEXT);
+}
+
+/** The claims of a cohort grant token that is well-formed, unexpired and ours; null otherwise. */
+export function readCohortGrantPresentation(
+  token: string,
+  now = Date.now(),
+): CohortGrantPresentation | null {
+  const claims = unseal<CohortGrantPresentation>(token, COHORT_GRANT_DIGEST_CONTEXT);
+  if (!claims || typeof claims !== "object") return null;
+  if (
+    typeof claims.accountId !== "string" ||
+    typeof claims.cohortId !== "string" ||
+    claims.purpose !== "embryo.analysis" ||
+    typeof claims.artifactKey !== "string" ||
+    typeof claims.artifactVersion !== "number" ||
+    typeof claims.artifactBodySha256 !== "string" ||
+    typeof claims.participantSetRevision !== "number" ||
+    typeof claims.nonce !== "string" ||
+    typeof claims.expiresAt !== "number"
+  ) {
+    return null;
+  }
+  if (claims.expiresAt <= now) return null;
+  return {
+    accountId: claims.accountId,
+    cohortId: claims.cohortId,
+    purpose: claims.purpose,
+    artifactKey: claims.artifactKey,
+    artifactVersion: claims.artifactVersion,
+    artifactBodySha256: claims.artifactBodySha256,
+    participantSetRevision: claims.participantSetRevision,
+    nonce: claims.nonce,
+    expiresAt: claims.expiresAt,
+  };
 }
