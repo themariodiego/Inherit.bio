@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { CompareTable } from "@/components/embryo/compare/compare-table";
 import { ContextStrip } from "@/components/embryo/compare/context-strip";
@@ -103,6 +104,8 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
   // A failed read is the error state, never an empty comparison (R11).
   const qcRows = rowsOrThrow("embryo_qc", qcResult);
   const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
+  const sourceFacts = new Map(await Promise.all(cohort.embryos.map(async (embryo) =>
+    [embryo.id, await loadEmbryoInputFacts(admin, cohort.id, embryo.subjectId)] as const)));
   return projectComparison({
     cohortId: cohort.id,
     embryos: cohort.embryos.map((embryo) => ({
@@ -112,7 +115,7 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
       display_label: embryo.displayLabel,
       status: embryo.status,
     })),
-    qcRows: qcRows as unknown as EmbryoQcRow[],
+    qcRows: qcRows.map((qc) => ({ ...qc, source_facts: sourceFacts.get(qc.embryo_id) })) as unknown as EmbryoQcRow[],
     scores: scoreRows as unknown as EmbryoScoreRow[],
     registeredConditionIds: registered,
   });

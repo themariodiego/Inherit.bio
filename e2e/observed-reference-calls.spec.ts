@@ -28,10 +28,16 @@ test("explicit VCF reference calls match array findings without entering variant
       expect((await admin.from("report_observed_calls").select("*").eq("file_id", id).order("source_line")).data).toEqual(before.data);
     }
     await page.goto("/genome/me/reports");
+    const inputs = page.locator('[data-slot="preview-input-provenance"]');
+    await expect(inputs).toContainText("Inherit did not create these files");
+    await expect(inputs).toContainText("No change of genome coordinates was needed");
+    await expect(inputs.locator('[data-slot="input-source"]')).toHaveCount(1);
     const previews: string[] = [];
     for (const trait of PERSONAL_PREVIEW_TRAITS) {
       const preview = page.locator(`[data-personal-preview="${trait.slug}"]`);
       await expect(preview).toBeVisible();
+      await expect(page.locator(`#preview-input-${trait.slug}`)).toContainText("File 1");
+      await expect(page.locator(`#preview-input-${trait.slug} [data-figure-kind="coverage"]`)).toHaveCount(1);
       previews.push(await preview.innerText());
     }
     texts.push(previews);
@@ -40,6 +46,10 @@ test("explicit VCF reference calls match array findings without entering variant
     await page.goto("/genome/me/reports/alcohol-flush-aldh2-rs671");
     await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(1);
     await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveCount(6);
+    const detailInputs = page.locator('[data-slot="input-provenance"]');
+    await expect(detailInputs).toContainText("share of listed, supported point records");
+    await expect(detailInputs).not.toContainText("were not recorded for this input");
+    await expect(detailInputs.locator('details')).toHaveCount(0);
     await page.context().clearCookies();
   }
   expect(texts[0]).toEqual(texts[1]);

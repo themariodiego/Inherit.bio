@@ -4049,6 +4049,9 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id: string
           is_cohort_file: boolean
+          input_provenance: Json | null
+          input_source_sha256: string | null
+          processing_run_id: string | null
           observed_call_sha256: string | null
           observed_call_version: string | null
           original_name: string
@@ -4087,6 +4090,9 @@ export type Database = {
           file_type: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
+          input_provenance?: Json | null
+          input_source_sha256?: string | null
+          processing_run_id?: string | null
           observed_call_sha256?: string | null
           observed_call_version?: string | null
           original_name: string
@@ -4125,6 +4131,9 @@ export type Database = {
           file_type?: Database["public"]["Enums"]["genome_file_type"]
           id?: string
           is_cohort_file?: boolean
+          input_provenance?: Json | null
+          input_source_sha256?: string | null
+          processing_run_id?: string | null
           observed_call_sha256?: string | null
           observed_call_version?: string | null
           original_name?: string

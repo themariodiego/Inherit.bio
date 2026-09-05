@@ -1,5 +1,42 @@
 # Test diff register
 
+G4.6 result input provenance (2026-09-06): new parser/snapshot, batched loader,
+multi-file contributor and actual expert-page composition tests pin known versus
+unknown metadata, missing rows, exact subject/file attribution and unchanged
+genotype semantics. Processing tests add a concurrent request barrier, stale
+completion/failure checks and actual compressed-byte digest assertions. The new
+rollback-only SQL suite proves malformed completion rejection (including NULL
+CHECK behavior), trigger denial after simulated client grants, atomic claim
+predicates and real deletion preparation clearing provenance.
+
+Existing embryo closed DTO assertions now include the explicitly bounded
+`source_facts` child; original QC keys remain unchanged. Existing ancestry
+global claim-block count is scoped to the original ancestry-share block because
+three newly visible source-rate blocks legitimately exist; the original share,
+range, sum, attribution, heading and geometry assertions remain. Family and
+Portrait test accounts use per-run unique synthetic addresses to preserve
+earlier local fixtures rather than deleting them. Expert browser assertions
+include provenance headings and per-result coverage while retaining original
+genotype, layer, viewport and withholding assertions. No skip/retry added.
+
+Preliminary production run: observed reference parity and expert Data tests
+passed; ancestry stopped on the old global claim count, Family/Portrait stopped
+on preexisting fixed-email collisions. The next run follows these precise test
+setup/structure corrections passed all 28 cases, no skips/retries (ancestry 2,
+Family 10, expert Data 5, observed parity 1, Portrait 10). The shared carrier
+provenance renderer then received separate gene-versus-long-run source tests.
+Its final Family/Portrait production-browser rerun passed 20/20, with no skips
+or retries. Both runs retained all consent, revocation, unavailable-carrier,
+responsive-budget and accessibility assertions.
+
+Full units: 1,750 passed. Scoped database integration: 61 assertions passed
+(21 input provenance, existing exact-file deletion and observed-call projection),
+with zero security-advisor errors. Actual QcTable/QcBlock render tests verify
+per-embryo converted/unknown source facts outside disclosures; loader tests
+require complete published cohort+ordinal file sets. These are synthetic renderer
+and closed-DTO tests, not a claim that the unavailable embryo consent/ingest
+workflow is enabled or has passed end-to-end acceptance.
+
 Report count contract (2026-09-06): `Count` units add runtime refusal checks
 for missing/mixed/legacy layers, nonfinite/fractional/negative/unsafe numbers,
 missing/multiple/non-string definition ids and wrong-layer unavailable-score

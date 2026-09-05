@@ -514,10 +514,18 @@
         },
         "qc": {
           "kind": "object",
-          "keys": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at"],
-          "required": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at"],
-          "children": {},
+          "keys": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at", "source_facts"],
+          "required": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at", "source_facts"],
+          "children": {"source_facts": {"shape": "inputFacts", "cardinality": "exactly-one"}},
           "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
+          "unknownFields": "reject"
+        },
+        "inputFacts": {
+          "kind": "object",
+          "keys": ["coordinate_conversion", "source_origin", "source_imputation", "call_observation"],
+          "required": ["coordinate_conversion", "source_origin", "source_imputation", "call_observation"],
+          "children": {},
+          "scalarConstraints": "coordinate_conversion-is-not-recorded-converted-not-needed-or-mixed-from-exact-published-cohort-and-subject-source-snapshots;source_origin-is-external-unverified;source_imputation-and-call_observation-are-not-recorded",
           "unknownFields": "reject"
         },
         "EmbryoFinding": {

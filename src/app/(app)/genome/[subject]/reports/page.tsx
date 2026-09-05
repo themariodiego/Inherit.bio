@@ -32,6 +32,9 @@ import {
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { loadPersonalPreviews } from "@/lib/genome/report-previews";
+import { loadInputSources } from "@/lib/genome/input-sources";
+import { InputProvenance } from "@/components/reports/input-provenance";
+import { ClaimBlock } from "@/components/figures/claim-block";
 import { unavailablePolygenicCount } from "@/lib/genome/report-evidence";
 import {
   CATEGORY_TAXONOMY,
@@ -127,13 +130,15 @@ export default async function ReportsPage(
   const resolved = templates.map((t) =>
     resolveTemplate(t, (rsid) => genotypes.get(rsid)),
   );
+  const previewContributors = new Map<string, string[]>();
   const previews = await loadPersonalPreviews(admin, {
     viewerAccountId: user.id,
     ownerAccountId: subject.ownerAccountId,
     subjectClass: subject.subjectClass,
     subjectId: dataSubjectId,
     isFamily: person !== null,
-  }, templates, files, conflicts);
+  }, templates, files, conflicts, previewContributors);
+  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat());
 
   const hasData = files.length > 0;
   const subjectParams = { subject: subject.routeSegment };
@@ -312,6 +317,21 @@ export default async function ReportsPage(
       ) : (
         <p className="text-sm text-ink-muted">{LIBRARY_EMPTY}</p>
       )}
+      {previews.size > 0 ? <section id="preview-input-provenance" data-slot="preview-input-provenance" className="space-y-4">
+        <InputProvenance sources={previewInputs} subject={{ subjectId: dataSubjectId }} />
+        <ul className="space-y-2 text-sm text-ink-muted">
+          {[...previewContributors].map(([slug, ids]) => <li key={slug} id={`preview-input-${slug}`}>
+            {templates.find((template) => template.slug === slug)?.title}
+            {/* inherit-figure-exempt: input labels identify records, not genetic quantities */}
+            {` — ${ids.map((id) => `File ${previewInputs.findIndex((source) => source.fileId === id) + 1}`).join(", ")}`}
+            <ClaimBlock subject={{ subjectId: dataSubjectId }} className="border-0 bg-transparent p-0" figures={[{
+              kind: "coverage", class: "quality", basis: "observed", provenance: { kind: "computed", module: "genome/reports" },
+              read: new Set(resolved.find((report) => report.template.slug === slug)?.variants.filter((entry) => entry.outcome.status === "genotyped").map((entry) => entry.variant.rsid)).size,
+              needed: new Set(templates.find((template) => template.slug === slug)?.variants.map((variant) => variant.rsid)).size,
+            }]} />
+          </li>)}
+        </ul>
+      </section> : null}
     </div>
   );
 }

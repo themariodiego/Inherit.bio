@@ -8,6 +8,7 @@
  * source field and "not measurable from this file" for every null metric.
  */
 import type { ReactNode } from "react";
+import { EmbryoInputProvenance } from "@/components/embryo/input-provenance";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { coverageSpec, dropoutSpec, isZeroRate, rateSpec } from "@/components/embryo/qc-figures";
 import { verdictWord } from "@/components/embryo/compare/qc-table";
@@ -72,6 +73,8 @@ export function QcBlock({ qc, embryoId, subjectId }: { qc: QcDto; embryoId: stri
           {SOURCE_FIELDS.map((field) => (
             <SourceRow key={field} label={QC_FIELD_LABELS[field]} field={field} value={qc[field]} />
           ))}
+          <dt className="font-medium text-ink">{QC_FIELD_LABELS.source_facts}</dt>
+          <dd><EmbryoInputProvenance facts={qc.source_facts} /></dd>
         </dl>
       )}
     />

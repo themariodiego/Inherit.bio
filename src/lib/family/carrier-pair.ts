@@ -427,6 +427,10 @@ export function countPositionsBothCover(
 export const MAX_CLASSIFIED_POSITIONS = 5_000;
 
 export interface CarrierPairSummary {
+  inputFileIds?: { a: string[]; b: string[] };
+  checkedFileIds?: { a: string[]; b: string[] };
+  inputFilesByGene?: Map<string, { a: string[]; b: string[] }>;
+  runsInputFileIds?: { a: string[]; b: string[] };
   matches: CarrierMatch[];
   /** Classified positions in the reference set: zero is the production state today (D-034). */
   classifiedPositions: number;
@@ -496,12 +500,25 @@ export async function resolveCarrierPair(
     getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids),
   ]);
   const genotypes = { a: readA.genotypes, b: readB.genotypes };
+  const inputFileIds = { a: readA.inputFileIds, b: readB.inputFileIds };
+  const checkedFileIds = { a: readA.checkedFileIds, b: readB.checkedFileIds };
+  const inputFilesByGene = new Map<string, { a: string[]; b: string[] }>();
+  for (const variant of refVariants) {
+    if (!variant.geneSymbol) continue;
+    const current = inputFilesByGene.get(variant.geneSymbol) ?? { a: [], b: [] };
+    for (const side of ["a", "b"] as const) {
+      const read = side === "a" ? readA : readB;
+      current[side] = [...new Set([...current[side], ...(read.inputFilesByRsid.get(variant.rsid) ?? [])])].sort();
+    }
+    inputFilesByGene.set(variant.geneSymbol, current);
+  }
   const positionsBothCover = countPositionsBothCover(readA.genotypes, readB.genotypes);
-  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover, genotypes };
+  if (positionsBothCover === 0) return { matches: [], classifiedPositions, positionsBothCover, genotypes, inputFileIds, checkedFileIds, inputFilesByGene };
 
+  const runsInputsA = new Set<string>(), runsInputsB = new Set<string>();
   const [runsA, runsB] = await Promise.all([
-    readSubjectRuns(supabase, a.dataSubjectId),
-    readSubjectRuns(supabase, b.dataSubjectId),
+    readSubjectRuns(supabase, a.dataSubjectId, runsInputsA),
+    readSubjectRuns(supabase, b.dataSubjectId, runsInputsB),
   ]);
 
   return {
@@ -514,5 +531,9 @@ export async function resolveCarrierPair(
     classifiedPositions,
     positionsBothCover,
     genotypes,
+    inputFileIds,
+    checkedFileIds,
+    inputFilesByGene,
+    runsInputFileIds: { a: [...runsInputsA].sort(), b: [...runsInputsB].sort() },
   };
 }

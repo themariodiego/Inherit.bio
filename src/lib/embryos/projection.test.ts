@@ -38,9 +38,10 @@ function score(embryoId: string, finding: ReturnType<typeof syntheticAbsoluteFin
 }
 
 describe("projection", () => {
-  it("projects exactly the twenty QC fields and drops the key", () => {
+  it("projects twenty QC fields plus closed source facts and drops the key", () => {
     const qc = projectQc(syntheticQcRow("e1"));
-    expect(Object.keys(qc)).toHaveLength(20);
+    expect(Object.keys(qc)).toHaveLength(21);
+    expect(qc.source_facts.coordinate_conversion).toBe("not-recorded");
     expect(qc).not.toHaveProperty("embryo_id");
     expect(qc.call_rate).toBe(0.99);
   });

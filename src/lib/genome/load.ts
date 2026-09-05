@@ -94,13 +94,18 @@ export async function getSubjectGenotypesByRsid(
   genotypes: Map<number, string>;
   conflicts: Set<number>;
   fileCount: number;
+  inputFileIds: string[];
+  checkedFileIds: string[];
+  inputFilesByRsid: Map<number, Set<string>>;
 }> {
   const files = await getSubjectProcessedFiles(supabase, subjectId);
   const genotypes = new Map<number, string>();
   const conflicts = new Set<number>();
+  const inputFileIds = new Set<string>();
+  const inputFilesByRsid = new Map<number, Set<string>>();
   const CHUNK = 200;
 
-  if (files.length === 0) return { genotypes, conflicts, fileCount: 0 };
+  if (files.length === 0) return { genotypes, conflicts, fileCount: 0, inputFileIds: [], checkedFileIds: [], inputFilesByRsid };
 
   for (let i = 0; i < rsids.length; i += CHUNK) {
     const { data } = await supabase
@@ -115,6 +120,12 @@ export async function getSubjectGenotypesByRsid(
       (a, b) => (fileOrder.get(a.file_id) ?? 0) - (fileOrder.get(b.file_id) ?? 0),
     );
     for (const row of rows) {
+      inputFileIds.add(row.file_id);
+      if (row.rsid !== null) {
+        const inputs = inputFilesByRsid.get(row.rsid) ?? new Set<string>();
+        inputs.add(row.file_id);
+        inputFilesByRsid.set(row.rsid, inputs);
+      }
       if (row.rsid == null || conflicts.has(row.rsid)) continue;
       const current = genotypes.get(row.rsid);
       if (current == null) genotypes.set(row.rsid, row.genotype);
@@ -125,7 +136,7 @@ export async function getSubjectGenotypesByRsid(
     }
   }
 
-  return { genotypes, conflicts, fileCount: files.length };
+  return { genotypes, conflicts, fileCount: files.length, inputFileIds: [...inputFileIds].sort(), checkedFileIds: files.map((file) => file.id), inputFilesByRsid };
 }
 
 export function templateRsids(templates: ReportTemplate[]): number[] {

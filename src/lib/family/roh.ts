@@ -398,12 +398,13 @@ export function subjectRunsState(files: readonly StoredRohMeasure[]): SubjectRun
 export async function readSubjectRuns(
   supabase: Db,
   subjectId: string,
+  inputFileIds?: Set<string>,
 ): Promise<StoredRohMeasure[]> {
   const { data } = await supabase
     .from("genome_files")
-    .select("roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction")
+    .select("id, roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction")
     .eq("subject_id", subjectId)
     .eq("status", "annotated")
     .order("created_at", { ascending: false });
-  return (data ?? []).map(storedRohMeasure);
+  return (data ?? []).map((row) => { inputFileIds?.add(row.id); return storedRohMeasure(row); });
 }

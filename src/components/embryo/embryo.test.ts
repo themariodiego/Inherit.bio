@@ -284,6 +284,22 @@ describe("ContextStrip", () => {
 });
 
 describe("QcTable and QcBlock", () => {
+  it("shows each embryo's closed source facts in compare and detail without a disclosure", () => {
+    const rows = embryos();
+    rows[0].qc.source_facts = { coordinate_conversion: "converted", source_origin: "external-unverified", source_imputation: "not-recorded", call_observation: "not-recorded" };
+    const comparison = renderToStaticMarkup(h(QcTable, { embryos: rows, subjectIds }));
+    expect(comparison.match(/data-slot="embryo-input-provenance"/g)).toHaveLength(3);
+    expect(comparison).toContain("changed genome coordinates from GRCh37 to GRCh38");
+    expect(comparison).toContain("does not say if genome coordinates were changed");
+    expect(comparison).not.toMatch(/<details|<summary/);
+    for (const row of rows) {
+      const detail = renderToStaticMarkup(h(QcBlock, { qc: row.qc, embryoId: row.id, subjectId: subjectIds.get(row.id)! }));
+      expect(detail.match(/data-slot="embryo-input-provenance"/g)).toHaveLength(1);
+      expect(detail).toContain("Whether the source did so is not known");
+      expect(detail).toContain("does not record whether each source call was measured");
+      expect(detail).not.toMatch(/<details|<summary/);
+    }
+  });
   it("prints the null words for unknown source fields and unmeasured metrics, and figures for measured ones", () => {
     const html = renderToStaticMarkup(h(QcTable, { embryos: embryos(), subjectIds }));
     expect(html.match(new RegExp(NOT_STATED_BY_SOURCE, "g"))!.length).toBeGreaterThanOrEqual(12);

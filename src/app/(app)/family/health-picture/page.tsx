@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { InputProvenance } from "@/components/reports/input-provenance";
+import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { redirect } from "next/navigation";
 import { CarrierPanel } from "@/components/family/carrier-panel";
+import { CarrierInputProvenance } from "@/components/family/carrier-input-provenance";
 import {
   HealthPictureTable,
   type HealthPictureColumn,
@@ -81,6 +84,9 @@ const LAYER_ORDER: readonly FindingLayer[] = ["variant_call", "estimate"];
 const CATEGORY_RANK = new Map(CATEGORY_TAXONOMY.map((entry, index) => [entry.id, index]));
 
 interface ColumnSource {
+  inputSources: InputSourceView[];
+  inputFilesByRsid: Map<number, Set<string>>;
+  resultInputs: { title: string; fileIds: string[]; state: "recorded" | "conflict" | "absent" }[];
   column: HealthPictureColumn;
   /** Null for the viewer's own column. */
   person: FamilyPerson | null;
@@ -150,7 +156,7 @@ export default async function FamilyHealthPicturePage() {
 
   const sources: ColumnSource[] = [];
   const rowsByLayer = new Map<FindingLayer, HealthPictureRow[]>();
-  const pairs: { key: string; summary: CarrierPairSummary; person: FamilyPerson }[] = [];
+  const pairs: { key: string; summary: CarrierPairSummary; person: FamilyPerson; inputSources: { a: InputSourceView[]; b: InputSourceView[] } }[] = [];
   const shownRsids = new Set<number>();
 
   if (ready && self !== null) {
@@ -177,6 +183,9 @@ export default async function FamilyHealthPicturePage() {
         getSubjectFileCount(admin, entry.subjectId),
       ]);
       sources.push({
+        inputSources: (await loadInputSources(admin, entry.subjectId, read.checkedFileIds)).map((source) => ({ ...source, hasResultRecord: read.inputFileIds.includes(source.fileId) })),
+        inputFilesByRsid: read.inputFilesByRsid,
+        resultInputs: [],
         column: {
           subject: entry.subject,
           dataSubjectId: entry.subjectId,
@@ -195,6 +204,11 @@ export default async function FamilyHealthPicturePage() {
       const layer: FindingLayer = template.layer ?? "estimate";
       const cells = sources.map((source) => cellFor(source, template, layer));
       if (!cells.some((cell) => cell.covered)) continue;
+      sources.forEach((source, index) => {
+        if (cells[index].state.kind === "not-shared") return;
+        const fileIds = [...new Set(template.variants.flatMap((variant) => [...(source.inputFilesByRsid.get(variant.rsid) ?? [])]))].sort();
+        source.resultInputs.push({ title: template.title, fileIds, state: cells[index].state.kind === "disagree" ? "conflict" : fileIds.length ? "recorded" : "absent" });
+      });
       for (const variant of template.variants) shownRsids.add(variant.rsid);
       const hrefs = sources.map((source) =>
         source.person === null || viewerMaySee(source.person, LAYER_PURPOSES[layer])
@@ -227,16 +241,20 @@ export default async function FamilyHealthPicturePage() {
     const refVariants = permits(carrierMatch) ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
     for (const person of permits(carrierMatch) ? shared : []) {
+      const summary = await resolveCarrierPair(
+        admin,
+        { dataSubjectId: self.id, displayLabel: self.displayLabel },
+        { dataSubjectId: person.dataSubjectId, displayLabel: person.displayLabel },
+        refVariants, conditions,
+      );
       pairs.push({
         key: person.handle.id,
         person,
-        summary: await resolveCarrierPair(
-          admin,
-          { dataSubjectId: self.id, displayLabel: self.displayLabel },
-          { dataSubjectId: person.dataSubjectId, displayLabel: person.displayLabel },
-          refVariants,
-          conditions,
-        ),
+        summary,
+        inputSources: {
+          a: await loadInputSources(admin, self.id, [...(summary.checkedFileIds?.a ?? []), ...(summary.runsInputFileIds?.a ?? [])]),
+          b: await loadInputSources(admin, person.dataSubjectId, [...(summary.checkedFileIds?.b ?? []), ...(summary.runsInputFileIds?.b ?? [])]),
+        },
       });
     }
   }
@@ -344,6 +362,14 @@ export default async function FamilyHealthPicturePage() {
                 <p className="text-sm leading-relaxed text-ink-muted">
                   {coverageLead(source.column.displayLabel)}
                 </p>
+                <InputProvenance nested sources={source.inputSources} subject={{ subjectId: source.column.dataSubjectId }}
+                  state={source.conflicts.size ? "conflict" : source.resultInputs.some((result) => result.fileIds.length) ? "recorded" : "absent"} />
+                <ul data-slot="family-result-inputs" className="space-y-1 text-sm text-ink-muted">
+                  {source.resultInputs.map((result) => <li key={result.title}>
+                    {/* inherit-figure-exempt: local file labels identify the inputs of each displayed row */}
+                    {`${result.title} — ${result.fileIds.length ? result.fileIds.map((id) => `File ${source.inputSources.findIndex((input) => input.fileId === id) + 1}`).join(", ") : "no position recorded in the checked files"}${result.state === "conflict" ? "; conflicting calls" : ""}`}
+                  </li>)}
+                </ul>
                 <ClaimBlock
                   subject={{ subjectId: source.column.dataSubjectId }}
                   figures={[
@@ -359,6 +385,9 @@ export default async function FamilyHealthPicturePage() {
                 />
               </div>
             ))}
+            {pairs.filter((pair) => pair.summary.classifiedPositions > 0).map((pair) => <CarrierInputProvenance key={pair.key}
+              summary={pair.summary} sources={pair.inputSources}
+              subjects={{ a: { id: sources[0].column.dataSubjectId, label: sources[0].column.displayLabel }, b: { id: pair.person.dataSubjectId, label: pair.person.displayLabel } }} />)}
             <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{NO_RANGE_YET}</p>
             <p
               data-density-required-accuracy

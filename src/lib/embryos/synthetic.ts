@@ -5,11 +5,13 @@
  */
 import type { EmbryoFinding, QcDto } from "./policy";
 import type { EmbryoQcRow } from "./projection";
+import { UNKNOWN_EMBRYO_INPUT } from "./input-facts";
 
 export const SYNTHETIC_COMPUTED_AT = "2026-09-03T10:00:00.000Z";
 
 export function syntheticQc(overrides: Partial<QcDto> = {}): QcDto {
   return {
+    source_facts: { ...UNKNOWN_EMBRYO_INPUT },
     sites_expected: 1000,
     sites_called: 990,
     call_rate: 0.99,
@@ -35,7 +37,9 @@ export function syntheticQc(overrides: Partial<QcDto> = {}): QcDto {
 }
 
 export function syntheticQcRow(embryoId: string, overrides: Partial<QcDto> = {}): EmbryoQcRow {
-  return { embryo_id: embryoId, ...syntheticQc(overrides) };
+  const { source_facts: _sourceFacts, ...row } = syntheticQc(overrides);
+  void _sourceFacts;
+  return { embryo_id: embryoId, ...row };
 }
 
 export function syntheticAbsoluteFinding(
