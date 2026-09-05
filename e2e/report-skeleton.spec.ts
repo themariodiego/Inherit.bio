@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { createConfirmedUser, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
 import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fixture";
 
@@ -21,10 +22,12 @@ import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fi
 // string, the DPYD lead sentence and the absence of every forbidden word;
 // and the hub's three tiles and single primary.
 
-const USER = { email: "skeleton-user@e2e.local", password: "e2e-skeleton-pw" };
+// Fresh identities isolate this suite from files left by an earlier local run.
+const RUN_ID = randomUUID();
+const USER = { email: `skeleton-user-${RUN_ID}@e2e.local`, password: "e2e-skeleton-pw" };
 /** A second account whose only file covers every Medicines position. */
 const MEDICINES_USER = {
-  email: "skeleton-medicines@e2e.local",
+  email: `skeleton-medicines-${RUN_ID}@e2e.local`,
   password: "e2e-skeleton-medicines-pw",
 };
 
@@ -315,7 +318,8 @@ test("a not-covered report keeps the not-covered strings at full ink and every s
     page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
   ).toHaveText([DOESNT_MEAN_GENERIC, DOESNT_MEAN_NOT_COVERED]);
   const howSure = page.locator('section[aria-labelledby="how-sure-we-are"]');
-  await expect(howSure).toContainText("2 supporting studies");
+  await expect(howSure).toContainText("2 cited sources");
+  await expect(howSure).not.toContainText("supporting studies");
   await expect(howSure).toContainText(
     "Your file covered 0 of the 2 positions this estimate uses.",
   );
@@ -519,13 +523,16 @@ test("a covered Medicines report renders the variant-call genotype figure, the M
   await expect(page.getByText(NO_RANGE_YET)).toHaveCount(0);
   const howSure = page.locator('section[aria-labelledby="how-sure-we-are"]');
   await expect(howSure).not.toContainText("positions this estimate uses");
-  await expect(howSure).toContainText("1 supporting study");
+  await expect(howSure).toContainText("1 cited source");
+  await expect(howSure).not.toContainText("supporting study");
+  await expect(howSure.locator('[data-call-state="interpreted"]')).toContainText("1");
+  await expect(page.locator('[data-slot="report-method"]')).toContainText("It does not work out how a medicine will affect you.");
   await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
 
   // "What this is" is the summary; "What you can do" is the Medicines string
   // and never brief line 630's; the generic bullet and the not-diagnostic
   // line are unchanged.
-  await expect(page.locator('section[aria-labelledby="what-this-is"] p')).toHaveText(vkorc1.summary);
+  await expect(page.locator('[data-slot="report-summary"]')).toHaveText(vkorc1.summary);
   await expect(page.locator('section[aria-labelledby="what-you-can-do"] p')).toHaveText(
     WHAT_YOU_CAN_DO_MEDICINES,
   );
@@ -586,7 +593,7 @@ test("every Medicines report carries the Medicines “What you can do” string 
   const dpyd = MEDICINES.find((template) => template.slug === DPYD_SLUG)!;
   expect(dpyd.summary.startsWith(DPYD_SENTENCE)).toBe(true);
   await page.goto(`/genome/me/reports/${DPYD_SLUG}`);
-  const whatThisIs = page.locator('section[aria-labelledby="what-this-is"] p');
+  const whatThisIs = page.locator('[data-slot="report-summary"]');
   await expect(whatThisIs).toHaveText(dpyd.summary);
   await expect(whatThisIs).toContainText(DPYD_SENTENCE);
   expect((await whatThisIs.innerText()).startsWith(DPYD_SENTENCE)).toBe(true);
