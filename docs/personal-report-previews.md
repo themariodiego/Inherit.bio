@@ -44,8 +44,8 @@ array calls can lack those alleles. There is no strand guessing. Conflicts win,
 and any mismatch or missing call withholds the preview, not the library.
 The source database does not track assay-versus-imputation provenance, so copy
 says what the file shows and does not claim a clinically verified measurement.
-Explicit VCF 0/0 reference calls are stored separately and are not yet read by
-this loader. An observed homozygous call in an array file is supported; missing
+Explicit VCF 0/0 reference calls are transient parser output and are discarded,
+not separately persisted for this loader. An observed homozygous call in an array file is supported; missing
 VCF variant rows are never treated as observed reference genotypes.
 
 ## Verification

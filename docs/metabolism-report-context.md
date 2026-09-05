@@ -22,6 +22,11 @@ paraphrases with exact paper locations; no publisher prose or figure is reused.
   Methods; Results / Figure 2 and post-hoc comparisons; Discussion paragraphs
   2–5. The template now explains the tested comparison instead of assigning
   a universal three-way speed ladder. There is no caffeine speed preview.
+- Alcohol: [Yokoyama 2002, PMID 12419833](https://pubmed.ncbi.nlm.nih.gov/12419833/),
+  [DOI](https://doi.org/10.1093/carcin/23.11.1851), abstract population and
+  alcohol-by-genotype comparisons. The AG cancer association stays qualitative,
+  with its Japanese male study population and drinking exposure beside it.
+  No personal absolute risk, AA extrapolation or intake reassurance is added.
 
 Forward GRCh38 identities were checked using the official
 [rs671 VEP response](https://rest.ensembl.org/vep/human/id/rs671?content-type=application/json)
@@ -32,11 +37,17 @@ G allele has no interpretation. Neither template's allele mapping changed.
 
 ## What changed
 
-The alcohol report replaces its review-only citation with the two primary
+The alcohol report replaces its review-only citation with three primary
 sources. It removes GG whole-enzyme assurance, AG low-intake cancer reassurance,
 and AA assumed behavior. Caffeine replaces the former heart-attack citation
 with the directly relevant enzyme study and removes unsupported sleep/intake
 implications. No new personal risk number replaces those claims.
+
+Brief §2.2 line 630 makes the fixed nothing-actionable sentence conditional,
+not universal. This exact alcohol slug in Food, drink and metabolism instead
+offers an optional discussion of the result, flushing and drinking history with
+a doctor. It gives no intake or clinical directive. The Medicines text and all
+other category/slug defaults remain unchanged; no new gate is introduced.
 
 Only the selected alcohol statement and qualifier cross the existing server
 boundary. Both source identifiers are required. Missing, conflicting, misplaced,
@@ -47,11 +58,11 @@ swapped REF/ALT while retaining AC. `e2e/fixtures/PROVENANCE.md` records its
 new exact SHA-256; this is the fixture admission checked by the secret gate.
 Browser GG/AA variants are generated temporarily from that synthetic fixture.
 GG is also tested through a genuine synthetic array upload. Explicit VCF 0/0
-calls currently live outside `user_variants`, the preview loader's source,
+calls are transient parser output that is discarded, not separately persisted,
 so the test first proves no GG preview from that VCF alone. This is a current
 implementation limit, not a scientific reason to withhold observed reference
-calls. A follow-up should reuse them after checking stored locus/build/QC
-provenance, never infer a reference call from an absent variant row.
+calls. A follow-up should retain and reuse explicit observations with adequate
+locus/build/QC provenance, never infer a reference from an absent variant row.
 
 ## Verification scope
 
@@ -68,7 +79,8 @@ only those two local rows are changed and restored after verification.
 Publishing code alone does not publish these template changes. Hosted rollout
 remains a separate reviewed action.
 
-Verified locally on 2026-09-05: 1,539 unit tests; 58 targeted tests; typecheck,
+Verified locally on 2026-09-05 after the cancer-context follow-up: 1,541 unit
+tests; 65 targeted tests; typecheck,
 targeted lint, all 162 template validations, readability, name and secret gates.
 Nine production-browser tests passed with no skips or retries, including all
 five unchanged sensitive-report regressions. A separate desktop/mobile browser

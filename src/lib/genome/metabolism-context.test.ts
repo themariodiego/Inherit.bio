@@ -54,4 +54,17 @@ describe("bounded metabolism report corrections", () => {
     expect(caffeine.citations[0].studyContext?.comparison?.text).toContain("Nonsmokers showed no clear genotype differences");
     expect(JSON.stringify(caffeine)).not.toMatch(/fast metabolizer|slower caffeine clearance|sleep problems|heart.attack|16522833/);
   });
+
+  it("preserves the qualitative AG cancer finding with its study limits, not an AA or personal-risk claim", () => {
+    const source = alcohol.citations.find((citation) => citation.pmid === "12419833")!;
+    expect(source.doi).toBe("10.1093/carcin/23.11.1851");
+    expect(readStudyContext(source)?.population?.text).toContain("234 Japanese men");
+    expect(readStudyContext(source)?.comparison?.text).toContain("light-drinking group");
+    expect(readStudyContext(source)?.limitation?.text).toContain("cannot give your absolute risk");
+    expect(alcohol.variants[0].interpretations.AG).toContain("men who drank alcohol and had AG had higher odds of esophageal cancer than men with GG");
+    expect(alcohol.variants[0].interpretations.AG).toContain("not an estimate of your chance of cancer");
+    expect(alcohol.variants[0].interpretations.AA).not.toMatch(/cancer|odds|risk/);
+    expect(alcohol.variants[0].interpretations.GG).not.toMatch(/cancer|odds|risk/);
+    expect(JSON.stringify(source)).not.toMatch(/5\.82|55\.84|percent|times higher|safe intake/);
+  });
 });

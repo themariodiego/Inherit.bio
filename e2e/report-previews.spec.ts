@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 import { PERSONAL_PREVIEW_TRAITS } from "../src/copy/reports/personal-previews";
+import { NOTHING_TO_DO, WHAT_YOU_CAN_DO_ALCOHOL_FLUSH } from "../src/copy/reports/strings";
 
 const RUN = randomUUID();
 const USER = { email: `preview-${RUN}@e2e.local`, password: "e2e-preview-password" };
@@ -30,7 +31,7 @@ for (const [genotype, gt] of [["GG", "0/0"], ["AA", "1/1"]] as const) {
       const trait = PERSONAL_PREVIEW_TRAITS.find((item) => item.rsid === 671)!;
       await page.goto("/genome/me/reports");
       if (genotype === "GG") {
-        // Explicit VCF 0/0 calls currently live outside user_variants. Do not
+        // Explicit VCF 0/0 calls are currently parsed but not persisted. Do not
         // infer the reference from absence; test a genuinely supplied array call.
         await expect(page.locator(`[data-personal-preview="${trait.slug}"]`)).toHaveCount(0);
         fs.writeFileSync(arrayFixture, "# 23andMe synthetic test data; not a real person\n# reference build 38\n# rsid\tchromosome\tposition\tgenotype\nrs671\t12\t111803962\tGG\n");
@@ -44,7 +45,9 @@ for (const [genotype, gt] of [["GG", "0/0"], ["AA", "1/1"]] as const) {
       await expect(page.locator('[data-slot="report-skeleton"]')).toContainText(genotype === "AA"
         ? "An early study found no measurable liver ALDH2 activity in two AA samples"
         : "It does not show the common Lys504 change linked to alcohol flushing.");
-      await expect(page.locator('[data-slot="study-context"]')).toHaveCount(2);
+      await expect(page.locator('[data-slot="study-context"]')).toHaveCount(3);
+      await expect(page.getByText(WHAT_YOU_CAN_DO_ALCOHOL_FLUSH, { exact: true })).toBeVisible();
+      await expect(page.getByText(NOTHING_TO_DO, { exact: true })).toHaveCount(0);
     } finally {
       fs.unlinkSync(fixture);
       if (fs.existsSync(arrayFixture)) fs.unlinkSync(arrayFixture);
@@ -94,12 +97,19 @@ test("own DNA shows four useful takeaways, filters all results, and links to the
     await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveText(HEADINGS);
     await expect(page.locator('[data-figure-kind="genotype"]').first()).toBeVisible();
     await expect(page.getByRole("link", { name: `PMID ${trait.source.pmid}` })).toBeVisible();
-    await expect(page.locator('[data-slot="study-context"]')).toHaveCount(trait.rsid === 671 ? 2 : 1);
+    await expect(page.locator('[data-slot="study-context"]')).toHaveCount(trait.rsid === 671 ? 3 : 1);
     if (trait.rsid === 671) {
       await expect(page.getByRole("link", { name: "PMID 2024727" })).toBeVisible();
       await expect(page.getByText("Not recorded in this study summary.", { exact: true })).toHaveCount(1);
       await expect(page.locator('[data-slot="report-skeleton"]')).toContainText("Your file shows one A copy");
       await expect(page.locator('[data-slot="report-skeleton"]')).not.toContainText("do not show this excess");
+      await expect(page.getByRole("link", { name: "PMID 12419833" })).toBeVisible();
+      await expect(page.locator('[data-slot="report-skeleton"]')).toContainText("men who drank alcohol and had AG had higher odds of esophageal cancer than men with GG");
+      await expect(page.locator('[data-slot="report-skeleton"]')).toContainText("not an estimate of your chance of cancer");
+      await expect(page.getByText(WHAT_YOU_CAN_DO_ALCOHOL_FLUSH, { exact: true })).toBeVisible();
+      await expect(page.getByText(NOTHING_TO_DO, { exact: true })).toHaveCount(0);
+    } else {
+      await expect(page.getByText(NOTHING_TO_DO, { exact: true })).toBeVisible();
     }
   }
 
@@ -110,6 +120,7 @@ test("own DNA shows four useful takeaways, filters all results, and links to the
   await expect(page.locator('[data-slot="study-context"]')).toContainText("Nonsmokers showed no clear genotype differences.");
   await expect(page.locator('[data-slot="report-skeleton"]')).not.toContainText("fast metabolizer");
   await expect(page.locator('[data-slot="report-skeleton"]')).not.toContainText("heart attack");
+  await expect(page.getByText(NOTHING_TO_DO, { exact: true })).toBeVisible();
 
   // A matching rsID at the wrong coordinate must not gain a personal preview.
   const admin = adminClient();

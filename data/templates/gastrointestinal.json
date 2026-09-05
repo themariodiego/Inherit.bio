@@ -64,7 +64,7 @@
         "alt": "A",
         "interpretations": {
           "GG": "Your file shows two G copies, which encode Glu504. It does not show the common Lys504 change linked to alcohol flushing. This one position cannot establish how well the whole enzyme works or rule out other causes of flushing.",
-          "AG": "Your file shows one A copy, which encodes Lys504. This form reduces the activity of the enzyme that clears acetaldehyde, an alcohol by-product. In a small study, people with AG had more acetaldehyde in their breath and stronger heart-rate responses after alcohol than GG participants. This may help explain flushing, but does not predict your symptoms.",
+          "AG": "Your file shows one A copy, which encodes Lys504. This form reduces the activity of the enzyme that clears acetaldehyde, an alcohol by-product. In a small study, people with AG had more acetaldehyde in their breath and stronger heart-rate responses after alcohol than GG participants. This may help explain flushing, but does not predict your symptoms. In a Japanese study, men who drank alcohol and had AG had higher odds of esophageal cancer than men with GG. The association also appeared in the study’s light-drinking group. This is not an estimate of your chance of cancer.",
           "AA": "Your file shows two A copies, which encode Lys504. This form is linked to very low activity of the enzyme that clears acetaldehyde, an alcohol by-product. An early study found no measurable liver ALDH2 activity in two AA samples and higher blood acetaldehyde after alcohol. That small study does not tell how strongly you would react or how much you drink."
         }
       }
@@ -78,6 +78,15 @@
           "population": { "text": "Eight healthy East Asian AG volunteers and eight matched GG volunteers took the test. Recruitment sought people who reported flushing. People with AA were excluded.", "locator": "Methods: Participant recruitment and Human alcohol challenge; Figure 2" },
           "comparison": { "text": "The AG group had more breath acetaldehyde and a larger heart-rate response than the GG group.", "locator": "Results: Human subjects studies; Figure 3A-D" },
           "limitation": { "text": "This small, selected sample cannot tell how often all carriers flush. It did not test AA or establish a safe intake.", "locator": "Methods: Human alcohol challenge; Discussion: recruitment limitation; report scope limitation" }
+        }
+      },
+      {
+        "pmid": "12419833", "doi": "10.1093/carcin/23.11.1851", "label": "Yokoyama et al., Carcinogenesis 2002", "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "The study compared drinking and ALDH2 gene types in men with and without cancer. It looked at cancer of the food pipe, called esophageal cancer.", "locator": "Abstract: case-control study design" },
+          "population": { "text": "The study had 234 Japanese men with this cancer. It also had 634 Japanese men without cancer who went for health checks. The cancer type was squamous-cell carcinoma.", "locator": "Abstract: study population" },
+          "comparison": { "text": "In the study’s light-drinking group, men with AG had higher odds of this cancer than men with GG.", "locator": "Abstract: light-drinker ALDH2*1/2*2 versus ALDH2*1/2*1 comparison" },
+          "limitation": { "text": "This case-control study cannot give your absolute risk. The cited comparison does not establish the same link in women or people with AA.", "locator": "Abstract: population and genotype comparison; report scope limitation" }
         }
       },
       {
