@@ -3,7 +3,7 @@
     "slug": "bitter-taste-tas2r38",
     "category": "basic-traits",
     "title": "Bitter taste perception (PTC/PROP) · TAS2R38",
-    "summary": "TAS2R38 makes a receptor that detects bitter PTC and PROP chemicals. It also responds to similar chemicals in broccoli and Brussels sprouts. Two changes, rs713598 and rs1726866, mark the common PAV taster and AVI non-taster forms. Together, they explain most differences in tasting PTC and PROP. About 70% of people with European ancestry carry at least one taster form.",
+    "summary": "TAS2R38 makes a bitter taste receptor. Studies link changes in this gene to sensitivity to bitter test chemicals. This report reads two positions. The common PAV and AVI patterns use three positions, so these readings alone do not establish the full pattern. Sensitivity in a taste test is not the same as liking or disliking a food.",
     "evidence": "emerging",
     "variants": [
       {
@@ -27,9 +27,9 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two copies of the G allele, coding Ala262 — the form found on the non-taster (AVI) haplotype. Together with a CC result at rs713598 above, this is the pattern associated on average with little or no PTC/PROP bitterness perception.",
-          "AG": "One A (Val262, taster-type) and one G (Ala262, non-taster-type) allele. Consistent with carrying one taster and one non-taster haplotype when it matches the rs713598 result; associated on average with intermediate bitter sensitivity to PTC/PROP.",
-          "AA": "Two copies of the A allele, coding Val262 on both chromosomes — the form found on the taster (PAV) haplotype. Together with GG at rs713598, this pattern is associated on average with strong bitterness perception of PTC/PROP-type compounds."
+          "GG": "Two G copies code for Ala262, the form at this position in the PAV pattern. That pattern was linked to greater PTC taste sensitivity in the study. This position alone does not establish the full pattern or how strong a taste feels.",
+          "AG": "One G copy codes for Ala262 and one A copy for Val262. These are found in the common PAV and AVI patterns. This reading does not show the full patterns or which changes sit on the same chromosome. It does not give a personal taste score.",
+          "AA": "Two A copies code for Val262, the form at this position in the AVI pattern. That pattern was linked to lower PTC taste sensitivity in the study. This position alone does not establish the full pattern or rule out tasting bitterness."
         }
       }
     ],
@@ -37,7 +37,14 @@
     "citations": [
       {
         "pmid": "12595690",
-        "label": "Kim et al., Science 2003"
+        "label": "Kim et al., Science 2003",
+        "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "Researchers used a blind taste test to measure the weakest amount of PTC that people could taste. PTC is a bitter test chemical.", "locator": "Page 1221, study methods" },
+          "population": { "text": "The study included families from Utah. A second sample from NIH included people with European and East Asian ancestry.", "locator": "Pages 1221–1223, study samples" },
+          "comparison": { "text": "Taste scores differed between groups with different three-position gene patterns. People with two PAV patterns had the highest mean scores; those with two AVI patterns had the lowest.", "locator": "Page 1223, haplotype analysis and Table 3" },
+          "limitation": { "text": "This tested PTC sensitivity, not food choice. The paper compared three-position patterns, not a single letter. This report’s two positions do not establish the full pattern or which changes share one chromosome.", "locator": "Pages 1221–1223, measured outcome and three-position analysis; report scope limitation" }
+        }
       },
       {
         "pmid": "15723792",
@@ -198,7 +205,14 @@
     "citations": [
       {
         "pmid": "16444273",
-        "label": "Yoshiura et al., Nat Genet 2006"
+        "label": "Yoshiura et al., Nat Genet 2006",
+        "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "The study compared wet and dry earwax with changes in ABCC11. It also tested transport activity in cells carrying different forms of the gene.", "locator": "Abstract and Figure 5" },
+          "population": { "text": "The two association stages used 118 and 126 Japanese participants. Earwax type was self-reported in the first stage and checked by ear examination in the second.", "locator": "Supplementary Table 1 description" },
+          "comparison": { "text": "The common gene change closely tracked wet versus dry earwax. The dry-associated form also showed less transport activity in the cell test.", "locator": "Abstract" },
+          "limitation": { "text": "A cell test is not a measure of someone’s body odor. The paper also found a rare deletion, so the common position is not the whole gene.", "locator": "Abstract and Figure 5; scope limitation of the cell test" }
+        }
       }
     ]
   },
