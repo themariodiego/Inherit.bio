@@ -21,6 +21,13 @@
   ],
   "entries": [
     {
+      "name": "SAMtools format specifications",
+      "category": "file-format-producer",
+      "aliases": ["samtools.github.io"],
+      "reason": "Official VCF specifications cited for genotype phasing and per-sample reference-block lengths in the embryo transport review.",
+      "evidence": ["docs/protocol/decisions.md", "src/lib/embryos/vcf-transport.ts"]
+    },
+    {
       "name": "GitHub",
       "category": "dependency-platform",
       "aliases": ["github", "github.com", "githubusercontent.com"],
