@@ -31,9 +31,9 @@ for (const [genotype, gt] of [["GG", "0/0"], ["AA", "1/1"]] as const) {
       const trait = PERSONAL_PREVIEW_TRAITS.find((item) => item.rsid === 671)!;
       await page.goto("/genome/me/reports");
       if (genotype === "GG") {
-        // Explicit VCF 0/0 calls are currently parsed but not persisted. Do not
-        // infer the reference from absence; test a genuinely supplied array call.
-        await expect(page.locator(`[data-personal-preview="${trait.slug}"]`)).toHaveCount(0);
+        // A literal observed VCF 0/0 now supplies the result itself. Adding the
+        // same array call must preserve it; neither uses absence as reference.
+        await expect(page.locator(`[data-personal-preview="${trait.slug}"]`)).toContainText(trait.statements.GG);
         fs.writeFileSync(arrayFixture, "# 23andMe synthetic test data; not a real person\n# reference build 38\n# rsid\tchromosome\tposition\tgenotype\nrs671\t12\t111803962\tGG\n");
         await ingestFileAs(page, user.email, user.password, arrayFixture, "array_23andme");
         await page.goto("/genome/me/reports");

@@ -313,3 +313,20 @@ Before a linked push: run a clean reset, pgTAP/RLS tests, migration data-loss
 checks, generated TypeScript type diff, database advisors, and the canonical
 schema/store coverage gate. A linked production push is not permitted while
 any of those checks fail.
+# Report-only observed SNP projection
+
+`public.report_observed_calls` stores literal single-position SNP observations,
+not inferred reference coverage or an input to ancestry/carrier/PRS models.
+Its composite primary key is `(file_id, source_line)`; `(file_id,user_id,subject_id)`
+references the identical `genome_files` tuple with delete/update cascade.
+The source SHA256, extraction version, source build/locus/REF/ALT/GT and
+normalized GRCh38 locus/REF/ALT/genotype are mandatory provenance (GT may be
+missing for an unusable observation). Site/sample FILTER, GQ and DP preserve
+provided quality; absent quality is not invented. Completion requires the
+file's matching `observed_call_sha256` and `observed_call_version` together with
+annotated status. The table has RLS and no client mutation privileges.
+
+It is an explicit `variant-rows` purge store, selected by exact subject/file
+identity, with `(file_id,source_line)` identifying each row. Exact file deletion
+cascades all observations; there is no new clock or account-only/prefix target.
+See `docs/observed-reference-calls.md` for eligibility and rerun boundaries.

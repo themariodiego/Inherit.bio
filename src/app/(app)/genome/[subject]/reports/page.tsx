@@ -27,10 +27,9 @@ import {
 import {
   getPublishedTemplates,
   getSubjectFileCount,
-  getSubjectGenotypesByRsid,
   getSubjectProcessedFiles,
-  templateRsids,
 } from "@/lib/genome/load";
+import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { loadPersonalPreviews } from "@/lib/genome/report-previews";
 import { unavailablePolygenicCount } from "@/lib/genome/report-evidence";
@@ -120,10 +119,10 @@ export default async function ReportsPage(
   ]);
   // Test fixtures never reach the user-facing library.
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
-  const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
+  const { genotypes, conflicts } = await getSubjectReportCalls(
     admin,
     dataSubjectId,
-    templateRsids(templates),
+    templates,
   );
   const resolved = templates.map((t) =>
     resolveTemplate(t, (rsid) => genotypes.get(rsid)),

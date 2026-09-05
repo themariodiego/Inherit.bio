@@ -1,0 +1,7 @@
+# Inherit synthetic reference fixture, not a real person. Build 38.
+# rsid	chromosome	position	genotype
+rs4988235	2	135851076	GG
+rs1726866	7	141972905	GG
+rs671	12	111803962	GG
+rs762551	15	74749576	CC
+rs17822931	16	48224287	CC

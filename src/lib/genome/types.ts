@@ -49,6 +49,8 @@ export interface ParseResult {
    * allele to say which.
    */
   referenceCalls: ReferenceCall[];
+  /** Report-only literal single-position evidence; never an analysis input. */
+  observedCalls?: import("./observed-calls").ObservedCall[];
   /** Lines skipped as unparseable or no-calls, for honest reporting. */
   skipped: number;
 }
