@@ -65,6 +65,14 @@ function loadDesign(relative: string): FixtureTemplate[] {
 }
 
 const medicines = JSON.parse(source("data/templates/medicines.json")) as SeedTemplate[];
+const nudt15Receipt = JSON.parse(source("docs/design/nudt15-source-receipt-2026-09-06.json")) as {
+  accessedOn: string;
+  alleleDefinitions: { id: number; version: number; name: string; matchesreferencesequence: boolean }[];
+  alleleLocationValues: { alleledefinitionid: number; locationid: number; variantallele: string; version: number }[];
+  sequenceLocations: { id: number; version: number; dbsnpid: string; position: number }[];
+  star2LocationValues: unknown[];
+  unifiedContentVersion: null;
+};
 const design1 = loadDesign("1-guideline-statement/medicines.json");
 const design3 = loadDesign("3-diplotype-caller/medicines.json");
 const design3TwoEntry = loadDesign("3-diplotype-caller/medicines.two-entry.json");
@@ -223,6 +231,47 @@ describe("the Medicines category ships (ADR 0021)", () => {
     expect(star17.summary).toContain("*44 and *45");
     expect(star17.summary).toContain("not a *17 call");
     expect(star17.variants[0].interpretations.TT).toContain("*17 needs a second position not read here");
+  });
+
+  it("does not mistake the NUDT15 reference repeat state for a required second change", () => {
+    const value = (allele: number, location: number) => nudt15Receipt.alleleLocationValues
+      .find((row) => row.alleledefinitionid === allele && row.locationid === location)!.variantallele;
+    expect(nudt15Receipt.accessedOn).toBe("2026-09-06");
+    expect(nudt15Receipt.alleleDefinitions.find((row) => row.id === 779064))
+      .toMatchObject({ name: "*1", version: 187, matchesreferencesequence: true });
+    expect(nudt15Receipt.alleleDefinitions.find((row) => row.id === 779068))
+      .toMatchObject({ name: "*3", version: 187, matchesreferencesequence: false });
+    expect(nudt15Receipt.sequenceLocations).toEqual([
+      expect.objectContaining({ id: 779060, version: 107, dbsnpid: "rs116855232", position: 48045719 }),
+      expect.objectContaining({ id: 949529, version: 99, dbsnpid: "rs746071566", position: 48037784 }),
+    ]);
+    expect(value(779064, 779060)).toBe("C");
+    expect(value(779068, 779060)).toBe("T");
+    expect(value(779064, 949529)).toBe("GAGTCG(3)");
+    expect(value(779068, 949529)).toBe("GAGTCG(3) or GAGTCG(4)");
+    expect(value(779068, 949529).split(" or ")).toContain(value(779064, 949529));
+    const template = medicines.find((row) => row.slug === "nudt15-rs116855232-one-position")!;
+    for (const field of templateProseFields(template)) {
+      expect(field).not.toMatch(/second change|co[- ]required|requires? (?:another|a repeat) (?:change|variant)/i);
+    }
+    expect(template.summary).toContain("not a *3 call");
+    for (const key of ["CT", "TT"]) {
+      expect(template.variants[0].interpretations[key]).toContain("T occurs in CPIC’s *3 definition.");
+      expect(template.variants[0].interpretations[key]).toContain("does not read the other positions or identify your pair");
+    }
+    expect(template.variants[0].interpretations.CC).toContain("not a *1 call");
+  });
+
+  it("records CPIC row versions without inventing a unified version or a missing *2 sequence", () => {
+    expect(nudt15Receipt.alleleDefinitions.find((row) => row.id === 8361554))
+      .toMatchObject({ name: "*2", version: 1 });
+    expect(nudt15Receipt.star2LocationValues).toEqual([]);
+    expect(nudt15Receipt.alleleLocationValues.every((row) => row.version === 1)).toBe(true);
+    expect(nudt15Receipt.unifiedContentVersion).toBeNull();
+    for (const template of medicines) {
+      expect(JSON.stringify(template.source)).not.toContain("exposed no version number");
+      expect(JSON.stringify(template.source)).toContain("CPIC exposes per-record versions");
+    }
   });
 });
 

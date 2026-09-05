@@ -1,5 +1,14 @@
 # Test diff register
 
+NUDT15 source correction (2026-09-06): Medicines regressions read the compact
+live-CPIC receipt and bind *1/*3 to the two exact loci and record versions.
+They prove that the *3 allowed repeat states include the *1 reference state,
+then prohibit the false required-second-change statement in all NUDT15 prose.
+They retain useful CT/TT letter reading, the unchanged CC reading and every
+existing locus, guideline, single-position, no-advice and exclusion assertion.
+An empty current *2 location response stays unknown, not an inferred allele.
+No existing assertion, skip, retry, renderer gate or clinical scope is relaxed.
+
 Report count contract (2026-09-06): `Count` units add runtime refusal checks
 for missing/mixed/legacy layers, nonfinite/fractional/negative/unsafe numbers,
 missing/multiple/non-string definition ids and wrong-layer unavailable-score

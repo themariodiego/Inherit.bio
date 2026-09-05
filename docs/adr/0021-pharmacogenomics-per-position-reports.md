@@ -4,6 +4,15 @@
 - Date: 2026-09-03
 - Supersedes: [ADR 0018](./0018-pharmacogenomics-withheld.md) (Pharmacogenomics is withheld)
 
+> **Correction, 2026-09-06:** The NUDT15 references below to a required
+> second change are superseded by the [dated source correction](../design/nudt15-source-correction-2026-09-06.md).
+> CPIC's *3 definition allows the reference three-repeat state at the second
+> position; it does not require another change. The report still reads one
+> position and does not identify a pair of forms. The earlier no-version claim
+> is also superseded: per-record versions exist, but no unified content version
+> was recorded. Historical rationale remains below; neither error is a current
+> claim or a reason to withhold the corrected letter reading.
+
 ## Context
 
 ADR 0018 withheld pharmacogenomics on an obstacle classified safety (primary)
