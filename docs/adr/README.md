@@ -27,3 +27,4 @@ writing a superseding ADR, not silently drifting.
 | [0019](./0019-embryo-comparison-presentation-model.md) | The embryo comparison presentation model: a matrix in file order, never a ranking | Accepted |
 | [0020](./0020-embryo-ingest-and-cohort-lifecycle.md) | Embryo ingest and cohort lifecycle: ordinal identity, whole-cohort publication, no file until the parties have signed | Proposed |
 | [0021](./0021-pharmacogenomics-per-position-reports.md) | The Medicines category ships as per-position reports from CPIC, dbSNP and PubMed (supersedes 0018) | Accepted |
+| [0022](./0022-accurate-estimate-layer-copy.md) | Accurate estimate-layer definition and unavailable-score count | Accepted |

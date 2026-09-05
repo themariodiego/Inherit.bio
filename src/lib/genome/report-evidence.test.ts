@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reportMethod, summarizeReportCalls, validSourceReadDate } from "./report-evidence";
+import { reportMethod, summarizeReportCalls, unavailablePolygenicCount, validSourceReadDate } from "./report-evidence";
 import { resolveTemplate, type ReportTemplate } from "./reports";
 
 const template: ReportTemplate = {
@@ -12,6 +12,21 @@ const template: ReportTemplate = {
 };
 
 describe("report method identity", () => {
+  it("counts unavailable polygenic scores, not useful single-position reports", () => {
+    expect(unavailablePolygenicCount([])).toBe(0);
+    expect(unavailablePolygenicCount(Array.from({ length: 151 }, () => ({ ...template, estimate_kind: "single_locus" })))).toBe(0);
+    expect(unavailablePolygenicCount([
+      template,
+      { ...template, layer: "variant_call" },
+      { ...template, layer: "estimate", estimate_kind: "polygenic_score", pgs_id: "PGS000001" },
+      { ...template, pgs_id: "PGS000002" },
+    ])).toBe(2);
+    // Broken model identity must not quietly suppress an unavailable-score notice.
+    expect(unavailablePolygenicCount([{ ...template, estimate_kind: "polygenic_score", pgs_id: null }])).toBe(1);
+    expect(unavailablePolygenicCount([{ ...template, estimate_kind: "single_locus", pgs_id: "invalid" }])).toBe(1);
+    expect(unavailablePolygenicCount([{ ...template, layer: "variant_call", pgs_id: "PGS000001" }])).toBe(0);
+  });
+
   it("does not describe a position-based template as a polygenic score", () => {
     expect(reportMethod(template)).toBe("position-association");
     expect(reportMethod({ ...template, estimate_kind: "single_locus" })).toBe("position-association");

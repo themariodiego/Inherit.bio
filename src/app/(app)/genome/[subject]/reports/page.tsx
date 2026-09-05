@@ -34,6 +34,7 @@ import {
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
 import { loadPersonalPreviews } from "@/lib/genome/report-previews";
+import { unavailablePolygenicCount } from "@/lib/genome/report-evidence";
 import {
   CATEGORY_TAXONOMY,
   LAYERS,
@@ -158,10 +159,10 @@ export default async function ReportsPage(
     nonEmptyLayers.find((layer) => layer === "estimate") ??
     nonEmptyLayers[0];
 
-  // The "cannot give you a number" line counts only a layer this reader may
-  // actually open.
+  // The unavailable-score notice counts only polygenic reports this reader
+  // may open, not single-position reports with useful nonnumeric results.
   const estimateCount = allowedLayers.includes("estimate")
-    ? byLayer.get("estimate")!.length
+    ? unavailablePolygenicCount(byLayer.get("estimate")!.map(({ template }) => template))
     : 0;
 
   let groups: LibraryGroup[] = [];

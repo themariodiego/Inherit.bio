@@ -289,7 +289,7 @@ export const STARTER = {
 } as const;
 
 /** The note beside the estimate half of the split string (brief §4 §1.4). */
-export const SPLIT_NOTE = "Statistical estimates from many small effects.";
+export const SPLIT_NOTE = "What studies found about DNA and traits.";
 
 /**
  * The variant-call half's 1–12-word note (X9.1 caps every metric note at

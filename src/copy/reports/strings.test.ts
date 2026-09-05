@@ -59,6 +59,12 @@ describe("report headings", () => {
 });
 
 describe("report strings", () => {
+  it("distinguishes single-position associations from polygenic scores (ADR 0022)", () => {
+    expect(strings.LAYER_DEFINITIONS.estimate).toBe(
+      "Links between DNA and traits found in studies. Some reports use one spot; polygenic scores combine many. Neither says what will happen to you.",
+    );
+  });
+
   it("ship the mandated sentences character-for-character", () => {
     expect(strings.LIMIT_OF_FILE).toBe("This is a limit of your file, not a result about you.");
     expect(strings.NO_RANGE_YET).toBe(

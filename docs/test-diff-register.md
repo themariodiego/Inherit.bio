@@ -1,5 +1,14 @@
 # Test diff register
 
+ADR 0022 corrects the scientifically false estimate definition and Overview
+note expectations in the report/Overview unit and browser suites. All existing
+definition count, layer, figure and disclosure assertions remain. The exact
+unavailable-number sentence is unchanged. New report-evidence assertions
+exclude 151 single-locus reports from the unavailable-score count, include
+actual and malformed polygenic identities, and cover mixed/empty collections.
+The report-library browser test now rejects the blanket unavailable-number
+notice on the single-locus seed. Individual report limitations remain tested.
+
 Personal preview slice: `src/lib/genome/report-previews.test.ts` adds nine mapped-call
 and source/locus/ownership refusal checks. `e2e/report-previews.spec.ts` adds a real
 synthetic upload-to-card/filter/detail workflow, narrow-screen qualifier checks,
