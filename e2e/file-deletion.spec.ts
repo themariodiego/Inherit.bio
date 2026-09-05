@@ -21,6 +21,11 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect(readyMail.data![0].state).toBe("queued");
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
   expect((await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId)).count).toBeGreaterThan(0);
+  const readObservedCalls = () => admin.from("report_observed_calls")
+    .select("file_id", { count: "exact", head: true }).eq("file_id", fileId);
+  const observedBefore = await readObservedCalls();
+  expect(observedBefore.error).toBeNull();
+  expect(observedBefore.count).toBeGreaterThan(0);
   await page.goto("/files");
   page.on("dialog", (dialog) => dialog.accept());
   const row = page.locator("li").filter({ hasText: "tiny-grch38.vcf" });
@@ -42,6 +47,9 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect(processResponse.status()).toBe(503);
   expect(await processResponse.text()).toBe("File processing could not start. Please try again.");
   expect((await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId)).count).toBe(before.count);
+  const observedAfterBlockedProcess = await readObservedCalls();
+  expect(observedAfterBlockedProcess.error).toBeNull();
+  expect(observedAfterBlockedProcess.count).toBe(observedBefore.count);
   expect((await admin.from("genome_files").select("status").eq("id", fileId).single()).data?.status).toBe("failed");
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
   await owner.auth.signOut({ scope: "local" });
@@ -59,6 +67,9 @@ test("file deletion shows failure, retries, and removes the exact source and fil
     expect(result.error).toBeNull();
     expect(result.count, table).toBe(0);
   }
+  const observedAfterDeletion = await readObservedCalls();
+  expect(observedAfterDeletion.error).toBeNull();
+  expect(observedAfterDeletion.count).toBe(0);
   expect((await admin.from("genome_storage_objects").select("object_id").eq("genome_file_id", fileId)).data).toHaveLength(0);
   expect((await admin.from("subjects").select("id").eq("id", file!.subject_id).eq("owner_account_id", userId)).data).toHaveLength(1);
   expect((await readReadyMail()).data).toEqual([{ id: readyMail.data![0].id, state: "invalidated" }]);
