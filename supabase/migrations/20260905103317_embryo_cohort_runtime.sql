@@ -969,7 +969,7 @@ create or replace function public.create_embryo_cohort_draft_v1(
   p_embryo_count integer,
   p_owner_contact_ciphertext bytea,
   p_owner_contact_hmac text,
-  p_contact_ciphertexts bytea[],
+  p_contact_ciphertexts text[],
   p_contact_hmacs text[],
   p_token_nonce text,
   p_test_jurisdiction boolean
@@ -1034,6 +1034,7 @@ begin
     if p_contact_hmacs[v_i] is null
       or p_contact_hmacs[v_i] !~ '^[0-9a-f]{64}$'
       or p_contact_ciphertexts[v_i] is null
+      or p_contact_ciphertexts[v_i] !~ '^([0-9a-f]{2}){16,}$'
       or p_contact_hmacs[v_i] = p_owner_contact_hmac
       or (v_i = 2 and p_contact_hmacs[1] = p_contact_hmacs[2])
     then
@@ -1115,8 +1116,8 @@ begin
       principal_id, contact_ciphertext, contact_hmac, key_revision,
       authority_revision, status
     ) values (
-      v_principal_id, p_contact_ciphertexts[v_i], p_contact_hmacs[v_i], 1, 1,
-      'current'
+      v_principal_id, decode(p_contact_ciphertexts[v_i], 'hex'),
+      p_contact_hmacs[v_i], 1, 1, 'current'
     ) returning id into v_contact_id;
     insert into public.contact_hmac_indexes (
       contact_reference_id, contact_hmac, hmac_key_revision, status, expires_at
@@ -1173,10 +1174,10 @@ end;
 $$;
 
 revoke all on function public.create_embryo_cohort_draft_v1(
-  uuid, uuid, text, text, integer, bytea, text, bytea[], text[], text, boolean
+  uuid, uuid, text, text, integer, bytea, text, text[], text[], text, boolean
 ) from public, anon, authenticated;
 grant execute on function public.create_embryo_cohort_draft_v1(
-  uuid, uuid, text, text, integer, bytea, text, bytea[], text[], text, boolean
+  uuid, uuid, text, text, integer, bytea, text, text[], text[], text, boolean
 ) to service_role;
 
 -- api.consents sign-artifact with cohortDraftId: one Tier-2 signature by the
@@ -1380,9 +1381,11 @@ grant execute on function public.sign_embryo_artifact_v1(
 -- reveals which addresses the draft names.
 create or replace function public.create_embryo_draft_invitation_v1(
   p_account_id uuid,
+  p_session_id uuid,
   p_draft_id uuid,
   p_contact_hmac text,
   p_idempotency_key text,
+  p_token_nonce text,
   p_test_jurisdiction boolean
 )
 returns table (
@@ -1408,6 +1411,11 @@ begin
   then
     raise exception using errcode = '42501', message = 'invitation unavailable';
   end if;
+
+  perform private.consume_embryo_operation_nonce_v1(
+    p_token_nonce, p_account_id, p_session_id, 'invitation_create',
+    'cohort_draft', p_draft_id
+  );
 
   select d.* into v_draft
   from public.embryo_cohort_drafts d
@@ -1520,10 +1528,10 @@ end;
 $$;
 
 revoke all on function public.create_embryo_draft_invitation_v1(
-  uuid, uuid, text, text, boolean
+  uuid, uuid, uuid, text, text, text, boolean
 ) from public, anon, authenticated;
 grant execute on function public.create_embryo_draft_invitation_v1(
-  uuid, uuid, text, text, boolean
+  uuid, uuid, uuid, text, text, text, boolean
 ) to service_role;
 
 -- The mail worker's claim now mints a delivery token for both invitation

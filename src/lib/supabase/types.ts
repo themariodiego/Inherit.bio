@@ -7217,7 +7217,9 @@ export type Database = {
           p_contact_hmac: string
           p_draft_id: string
           p_idempotency_key: string
+          p_session_id: string
           p_test_jurisdiction: boolean
+          p_token_nonce: string
         }
         Returns: {
           expires_at: string

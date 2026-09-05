@@ -60,6 +60,14 @@ export function encryptedLiteral(plaintext: string): string {
 }
 
 /**
+ * The same ciphertext as bare hex, for the `text[]` contact arrays: an array
+ * element travels as plain text and the RPC decodes it itself.
+ */
+export function encryptedHex(plaintext: string): string {
+  return encryptSecret(plaintext).toString("hex");
+}
+
+/**
  * A success body through the closed-shape serializer: the response when the
  * value's keys are exactly the registered ones, the blocked 500 otherwise.
  */

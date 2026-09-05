@@ -1,6 +1,6 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { hmacSecret } from "@/lib/crypto";
-import { invalidRequest, unavailable } from "@/lib/embryos/api";
+import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
 import {
   closedResponse,
   csrfOperation,
@@ -51,13 +51,17 @@ export async function POST(request: Request) {
   );
   const { error } = await createAdminClient().rpc("create_embryo_draft_invitation_v1", {
     p_account_id: context.user.id,
+    p_session_id: context.sessionId,
     p_draft_id: parsed.data.targetCohortDraftId,
     p_contact_hmac: contactHmac,
     p_idempotency_key: idempotencyKey,
+    p_token_nonce: claims.nonce,
     p_test_jurisdiction: true,
   });
   // An unreadable draft or a malformed key is the same opaque receipt; only
   // a database that could not record the invitation is reported.
+  // A replayed operation nonce is refused before any write; it is not a receipt.
+  if (error?.code === "23505") return notFound();
   if (error && error.code !== "42501" && error.code !== "22023") return unavailable();
 
   return closedResponse("api.invitations", ["status"], { status: "received" }, 202);

@@ -69,7 +69,7 @@ select * from public.create_embryo_cohort_draft_v1(
   '7a000000-0000-4000-8000-0000000000a1',
   'own_embryos', 'true_two_parent', 3,
   decode('00112233445566778899aabbccddeeff', 'hex'), repeat('a', 64),
-  array[decode('ffeeddccbbaa99887766554433221100', 'hex')], array[repeat('b', 64)],
+  array['ffeeddccbbaa99887766554433221100'], array[repeat('b', 64)],
   'nonce-draft-0001-aaaaaaaaaaaa', true
 );
 
@@ -101,7 +101,7 @@ select throws_ok(
       '7a000000-0000-0000-0000-000000000001',
       '7a000000-0000-4000-8000-0000000000a1',
       'own_embryos', 'true_two_parent', 3,
-      decode('00', 'hex'), repeat('a', 64), '{}'::bytea[], '{}'::text[],
+      decode('00', 'hex'), repeat('a', 64), '{}'::text[], '{}'::text[],
       'nonce-draft-0002-aaaaaaaaaaaa', true)$$,
   '22023', 'invalid contact cardinality',
   'a two-parent own-embryo draft needs exactly one other contact');
@@ -111,7 +111,7 @@ select throws_ok(
       '7a000000-0000-4000-8000-0000000000a1',
       'own_embryos', 'true_two_parent', 3,
       decode('00', 'hex'), repeat('a', 64),
-      array[decode('01', 'hex')], array[repeat('b', 64)],
+      array['ffeeddccbbaa99887766554433221100'], array[repeat('b', 64)],
       'nonce-draft-0001-aaaaaaaaaaaa', true)$$,
   '23505', 'operation nonce already used',
   'a replayed operation nonce fails closed');
@@ -210,8 +210,9 @@ select is(
 -- ---------------------------------------------------------------------------
 create temporary table inv as
 select * from public.create_embryo_draft_invitation_v1(
-  '7a000000-0000-0000-0000-000000000001', (select draft_id from draft),
-  repeat('b', 64), repeat('1', 64), true
+  '7a000000-0000-0000-0000-000000000001',
+  '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft),
+  repeat('b', 64), repeat('1', 64), 'nonce-invite-0001-aaaaaaaaaaa', true
 );
 
 select ok((select invitation_id from inv) is not null,
@@ -223,8 +224,9 @@ select is(
   1::bigint, 'one invitation mail is queued');
 select ok(
   (select invitation_id from public.create_embryo_draft_invitation_v1(
-    '7a000000-0000-0000-0000-000000000001', (select draft_id from draft),
-    repeat('e', 64), repeat('2', 64), true)) is null,
+    '7a000000-0000-0000-0000-000000000001',
+    '7a000000-0000-4000-8000-0000000000a1', (select draft_id from draft),
+    repeat('e', 64), repeat('2', 64), 'nonce-invite-0002-aaaaaaaaaaa', true)) is null,
   'an address the draft never named gets the same empty receipt and no mail');
 select is(
   (select count(*) from public.subject_invitations
@@ -649,7 +651,7 @@ select * from public.create_embryo_cohort_draft_v1(
   '7a000000-0000-4000-8000-0000000000a1',
   'own_embryos', 'anonymous_donor', 2,
   decode('00112233445566778899aabbccddeeff', 'hex'), repeat('a', 64),
-  '{}'::bytea[], '{}'::text[],
+  '{}'::text[], '{}'::text[],
   'nonce-draft-0003-aaaaaaaaaaaa', true
 );
 create temporary table draft2_parent as
@@ -695,7 +697,7 @@ select is(
 -- ---------------------------------------------------------------------------
 select is(
   has_function_privilege('authenticated',
-    'public.create_embryo_cohort_draft_v1(uuid, uuid, text, text, integer, bytea, text, bytea[], text[], text, boolean)',
+    'public.create_embryo_cohort_draft_v1(uuid, uuid, text, text, integer, bytea, text, text[], text[], text, boolean)',
     'execute'),
   false, 'authenticated cannot create drafts directly');
 select is(

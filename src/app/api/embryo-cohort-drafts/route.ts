@@ -5,6 +5,7 @@ import { basisCaseFor, uploadSituationValue } from "@/lib/embryos/basis";
 import {
   closedResponse,
   csrfOperation,
+  encryptedHex,
   encryptedLiteral,
   jurisdictionDenied,
   originDenied,
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     p_embryo_count: parsed.data.embryoCount,
     p_owner_contact_ciphertext: encryptedLiteral(owner),
     p_owner_contact_hmac: hmacSecret(owner, "contact-email-v1"),
-    p_contact_ciphertexts: contacts.map(encryptedLiteral),
+    p_contact_ciphertexts: contacts.map(encryptedHex),
     p_contact_hmacs: contacts.map((contact) => hmacSecret(contact, "contact-email-v1")),
     p_token_nonce: claims.nonce,
     p_test_jurisdiction: true,
