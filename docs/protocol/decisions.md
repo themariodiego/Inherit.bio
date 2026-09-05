@@ -1094,7 +1094,12 @@ Decisions:
   replay fails with 23505 and zero side effect. One operation-typed token
   per request, placed where the register puts it (`X-Inherit-CSRF`,
   `X-Inherit-Operation-Nonce`, or the body `nonce`). The register binds the
-  shape, not the issuer; the purpose-grant nonce is the precedent.
+  shape, not the issuer; the purpose-grant nonce is the precedent. The
+  public activation form (`api.rights-activate`) is the one token bound to
+  no account: its form nonce is consumed the same way inside
+  `activate_rights_session_v1`, but the register's candidate cookie is not
+  issued or checked, because the `/withdraw/request` page that would set it
+  does not exist yet (defect D-084).
 - Decision: Record Keys use the Crockford base32 alphabet
   (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`, 20 characters, 100 bits from 13
   random bytes). The register's "uppercase base32 without ambiguous glyphs"
@@ -1120,10 +1125,14 @@ Decisions:
 - Decision: disposition state lives in `embryos.status`; the QC values
   count as the "unknown" disposition of the register's state machine, and
   the QC verdict itself also lives in `embryo_qc`.
-- Decision: draft expiry deletes the draft row and shreds its contacts;
-  invitations remain as terminal tombstones with no ciphertext; signatures
-  and attestations tied only to the draft are deleted, as
-  `docs/retention.md` requires.
+- Decision: draft expiry deletes what `docs/retention.md` lists for
+  `embryo.cohort-draft-30d`: the draft row, its parent principals, every
+  invitation, candidate, token hash, rights session, outbox row, contact
+  reference and HMAC index, and the signatures and attestations tied only
+  to the draft. Only the audit event, the retention rows and any refusal-bar
+  HMAC survive. A lapsed disposition proposal is closed by the same executor
+  (`embryo.disposition-proposal-7d`), and `propose` closes a lapsed
+  proposal itself so an embryo is never locked by one.
 - Decision: the forbidden-column guard is an event trigger created only
   when the migrating role may create one; elsewhere a notice is raised.
   pgTAP asserts the guard exists and refuses a sex column, so the local
@@ -1135,7 +1144,18 @@ Decisions:
   the roles, `auth`, `storage` and `extensions` objects the migrations
   reference, and pgTAP from the distribution) because no Docker daemon
   exists in this environment; CI's Supabase stack remains the authority
-  and the gates ledger records both.
+  and the gates ledger records both runs.
+- Decision: the closed-shape serializer's blocked response (`blockedResponse`
+  in `src/lib/embryos/api.ts`) logs a coded event and writes no legal audit
+  row, although `embryo-closed-schema-v1` asks for one pseudonymized event
+  per blocked attempt; no route-callable audit RPC exists yet. Recorded as
+  defect D-085 rather than claimed.
+- Decision: the co-parent path is reachable by API only in this slice. The
+  mailed link (`/withdraw/request#<token>`) and the activation redirect
+  (`/withdraw/session`) are the register's registered paths, but neither
+  page exists; a person following the link today reaches the adult
+  invitation page's "cannot be used" state (defect D-084). The mail is only
+  ever queued under `INHERIT_TEST_JURISDICTION=1` through the API.
 - Consequence: retention rows and due phases are written for the draft,
   the proposal, the donated-or-discarded and the transferred-claim-window
   classes, but only the draft-expiry phase has an executor. The capability

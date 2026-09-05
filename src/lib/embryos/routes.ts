@@ -1,4 +1,5 @@
 import { z } from "zod";
+import jurisdictionsJson from "../../../data/jurisdictions.json";
 import {
   BASES,
   EMBRYO_ANALYSIS_GRANT_STATEMENT_KEYS,
@@ -230,6 +231,25 @@ export function signingJurisdictionCode(raw: string | null | undefined): string 
   if (COUNTRY_CODE.test(code)) return code;
   if (SUBDIVISION_CODE.test(code)) return code.slice(0, 2);
   return "ZZ";
+}
+
+/** The alpha-2 countries `data/jurisdictions.json` registers (`realJurisdictionCatalog.codes`). */
+const REGISTERED_COUNTRIES: ReadonlySet<string> = new Set(jurisdictionsJson.realJurisdictionCatalog.codes);
+
+/**
+ * The two-letter code a request may persist (§6.5): the normalised code
+ * itself, or the country of a subdivision, when that country is in the
+ * register's catalogue; null for anything the register does not know, so
+ * the route answers its opaque 404 instead of writing an unknown code.
+ */
+export function acceptedJurisdictionCode(code: string): string | null {
+  const normalized = code.trim().toUpperCase();
+  const country = COUNTRY_CODE.test(normalized)
+    ? normalized
+    : SUBDIVISION_CODE.test(normalized)
+      ? normalized.slice(0, 2)
+      : null;
+  return country !== null && REGISTERED_COUNTRIES.has(country) ? country : null;
 }
 
 // ---------------------------------------------------------------------------

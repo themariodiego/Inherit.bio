@@ -577,7 +577,7 @@ create table public.embryo_operation_nonces (
   session_id uuid,
   operation text not null check (operation ~ '^[a-z_]{3,40}$'),
   target_kind text not null check (target_kind in (
-    'account', 'cohort_draft', 'cohort', 'embryo', 'rights_session'
+    'account', 'cohort_draft', 'cohort', 'embryo', 'rights_session', 'form'
   )),
   target_id uuid,
   consumed_at timestamptz not null default clock_timestamp()
@@ -1675,7 +1675,8 @@ grant execute on function public.claim_mail_outbox() to service_role;
 -- hash-only, purpose-bound rights session. Anything invalid returns no row.
 create or replace function public.activate_rights_session_v1(
   p_token_hash text,
-  p_session_hash text
+  p_session_hash text,
+  p_form_nonce text
 )
 returns table (
   purpose text,
@@ -1698,6 +1699,12 @@ begin
   if p_token_hash !~ '^[0-9a-f]{64}$' or p_session_hash !~ '^[0-9a-f]{64}$' then
     return;
   end if;
+
+  -- The activation form's one-time nonce is recorded before any read, so a
+  -- replayed form fails closed even when its token is still current.
+  perform private.consume_embryo_operation_nonce_v1(
+    p_form_nonce, null, null, 'rights_activate', 'form', null
+  );
 
   select th.* into v_token
   from public.token_hashes th
@@ -1756,9 +1763,9 @@ begin
 end;
 $$;
 
-revoke all on function public.activate_rights_session_v1(text, text)
+revoke all on function public.activate_rights_session_v1(text, text, text)
   from public, anon, authenticated;
-grant execute on function public.activate_rights_session_v1(text, text)
+grant execute on function public.activate_rights_session_v1(text, text, text)
   to service_role;
 
 -- api.invitation-accept (co_parent): bind the accepting account to the exact
@@ -2382,14 +2389,14 @@ begin
   end if;
 
   for v_right in
-    select pr.id, pr.embryo_id, pr.key_revision, pr.delivery_kind,
+    select pr.id, pr.embryo_id, pr.key_revision, pr.recipient_set_revision,
+           pr.delivery_kind,
            e.sample_ordinal, e.display_label, e.closing_date,
            e.closing_date_state, e.date_revision
     from public.future_person_record_key_print_rights pr
     join public.embryos e on e.id = pr.embryo_id
     where e.cohort_id = v_cohort.id
       and pr.recipient_principal_id = v_recipient
-      and pr.recipient_set_revision = v_cohort.recipient_set_revision
       and pr.status = 'unconsumed'
     order by e.sample_ordinal
     for update of pr
@@ -2404,7 +2411,7 @@ begin
       embryo_id, recipient_principal_id, recipient_set_revision,
       key_revision, key_hash, status
     ) values (
-      v_right.embryo_id, v_recipient, v_cohort.recipient_set_revision,
+      v_right.embryo_id, v_recipient, v_right.recipient_set_revision,
       v_right.key_revision,
       encode(extensions.digest(convert_to(v_record_key, 'UTF8'), 'sha256'), 'hex'),
       'current'
@@ -2558,6 +2565,59 @@ revoke all on function public.restrict_embryo_cohort_v1(uuid, uuid, uuid, text)
 grant execute on function public.restrict_embryo_cohort_v1(uuid, uuid, uuid, text)
   to service_role;
 
+-- Close one proposal (confirmed, expired or cancelled) together with its
+-- retention row, due phase and manifest. The proposal's envelope names it,
+-- so only its own rows are touched.
+create or replace function private.close_embryo_disposition_proposal_v1(
+  p_proposal_id uuid,
+  p_status text,
+  p_outcome_code text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_now timestamptz := clock_timestamp();
+  v_phase record;
+begin
+  update public.embryo_disposition_proposals
+  set status = p_status,
+      confirmed_at = case when p_status = 'confirmed' then v_now else confirmed_at end
+  where id = p_proposal_id;
+
+  for v_phase in
+    select p.retention_row_id, p.phase_id, p.phase_revision
+    from public.retention_due_phases p
+    where p.retention_id = 'embryo.disposition-proposal-7d'
+      and p.phase_id = 'embryo-disposition-proposal-expiry'
+      and p.immutable_envelope ->> 'proposalId' = p_proposal_id::text
+      and p.status = 'pending'
+    for update
+  loop
+    update public.retention_due_phases
+    set status = case when p_status = 'expired' then 'succeeded' else 'cancelled' end,
+        terminal_outcome_code = p_outcome_code, completed_at = v_now
+    where retention_row_id = v_phase.retention_row_id
+      and phase_id = v_phase.phase_id
+      and phase_revision = v_phase.phase_revision;
+    update public.purge_manifests
+    set state = case when p_status = 'expired' then 'complete' else 'cancelled' end
+    where retention_row_id = v_phase.retention_row_id and state = 'frozen';
+    update public.retention_rows
+    set state = case when p_status = 'expired' then 'complete' else 'cancelled' end,
+        ended_at = v_now
+    where id = v_phase.retention_row_id and state in ('scheduled', 'active');
+  end loop;
+end;
+$$;
+
+revoke all on function private.close_embryo_disposition_proposal_v1(uuid, text, text)
+  from public, anon, authenticated;
+grant execute on function private.close_embryo_disposition_proposal_v1(uuid, text, text)
+  to service_role;
+
 -- api.embryo-disposition: propose/confirm for a true two-parent cohort,
 -- direct commit for a single-authority case. Every timestamp and deadline is
 -- the database's; the request supplies only the action and the disposition.
@@ -2584,6 +2644,8 @@ declare
   v_actor uuid;
   v_mode text;
   v_proposal public.embryo_disposition_proposals%rowtype;
+  v_existing public.embryo_disposition_proposals%rowtype;
+  v_proposal_ordinal bigint;
   v_retention_id uuid;
   v_deadline timestamptz;
   v_recipient uuid;
@@ -2643,6 +2705,19 @@ begin
   end if;
 
   if p_action = 'propose' then
+    -- One live proposal per embryo. A lapsed one is closed here so a new
+    -- proposal can be made even before the expiry phase runs.
+    select p.* into v_existing
+    from public.embryo_disposition_proposals p
+    where p.embryo_id = v_embryo.id and p.status = 'pending'
+    for update;
+    if v_existing.id is not null then
+      if v_existing.expires_at > v_now then
+        raise exception using errcode = '55000', message = 'proposal pending';
+      end if;
+      perform private.close_embryo_disposition_proposal_v1(v_existing.id, 'expired', 'proposal_lapsed');
+    end if;
+
     insert into public.embryo_disposition_proposals (
       embryo_id, proposer_principal_id, disposition, basis_revision,
       authority_set_revision, status, expires_at
@@ -2651,12 +2726,16 @@ begin
       v_cohort.participant_set_revision, 'pending', v_now + interval '7 days'
     ) returning * into v_proposal;
 
+    select count(*) into v_proposal_ordinal
+    from public.embryo_disposition_proposals p
+    where p.embryo_id = v_embryo.id;
+
     insert into public.retention_rows (
       retention_id, target_kind, target_id, retention_revision,
       target_lifecycle_revision, disposition_revision, fixed_deadline, state
     ) values (
       'embryo.disposition-proposal-7d', 'subject', v_embryo.subject_id,
-      v_embryo.disposition_revision, v_cohort.lifecycle_revision,
+      v_proposal_ordinal, v_cohort.lifecycle_revision,
       v_embryo.disposition_revision, v_proposal.expires_at, 'scheduled'
     ) returning id into v_retention_id;
     insert into public.retention_due_phases (
@@ -2710,27 +2789,7 @@ begin
     if v_proposal.id is null then
       raise exception using errcode = '42501', message = 'proposal unavailable';
     end if;
-    update public.embryo_disposition_proposals
-    set status = 'confirmed', confirmed_at = v_now
-    where id = v_proposal.id;
-    update public.retention_due_phases
-    set status = 'cancelled', terminal_outcome_code = 'proposal_confirmed',
-        completed_at = v_now
-    where retention_id = 'embryo.disposition-proposal-7d'
-      and target_kind = 'subject' and target_id = v_embryo.subject_id
-      and status = 'pending';
-    update public.purge_manifests pm
-    set state = 'cancelled'
-    from public.retention_rows rr
-    where pm.retention_row_id = rr.id
-      and rr.retention_id = 'embryo.disposition-proposal-7d'
-      and rr.target_kind = 'subject' and rr.target_id = v_embryo.subject_id
-      and pm.state = 'frozen';
-    update public.retention_rows
-    set state = 'cancelled', ended_at = v_now
-    where retention_id = 'embryo.disposition-proposal-7d'
-      and target_kind = 'subject' and target_id = v_embryo.subject_id
-      and state in ('scheduled', 'active');
+    perform private.close_embryo_disposition_proposal_v1(v_proposal.id, 'confirmed', 'proposal_confirmed');
   end if;
 
   -- Commit.
@@ -2876,7 +2935,7 @@ begin
     from (values
       ('transferred-claim-window-open-notice', 'notice-enqueue', v_now + interval '17 years'),
       ('transferred-deletion-notice-90d', 'notice-enqueue', v_deadline - interval '90 days'),
-      ('transferred-final-deletion-notice', 'notice-enqueue', v_deadline - interval '30 days'),
+      ('transferred-final-deletion-notice', 'notice-enqueue', v_deadline - interval '31 days'),
       ('transferred-closing-deny', 'deny', v_deadline),
       ('transferred-closing-purge', 'purge', v_deadline)
     ) as x(phase_id, phase_kind, deadline);
@@ -3149,58 +3208,38 @@ begin
     from public.draft_participant_slots s
     where s.embryo_draft_id = v_draft.id and s.principal_id is not null;
 
-    update public.subject_invitations
-    set status = 'expired', terminal_at = v_now, email_encrypted = null
-    where target_kind = 'cohort_draft' and target_id = v_draft.id
-      and status = 'pending';
-    update public.invitation_candidates ic
-    set state = 'expired'
-    from public.subject_invitations si
-    where ic.invitation_id = si.id
-      and si.target_kind = 'cohort_draft' and si.target_id = v_draft.id
-      and ic.state in ('pending', 'issued');
-    update public.token_hashes th
-    set status = 'expired', ended_at = v_now
-    from public.token_candidates tc
-    join public.subject_invitations si on si.id = tc.target_id
-    where th.candidate_id = tc.id
-      and si.target_kind = 'cohort_draft' and si.target_id = v_draft.id
-      and th.status = 'current';
-    update public.token_candidates tc
-    set state = 'expired'
-    from public.subject_invitations si
-    where tc.target_id = si.id
-      and si.target_kind = 'cohort_draft' and si.target_id = v_draft.id
-      and tc.state in ('pending', 'issued');
-    update public.mail_outbox m
-    set state = 'expired', claimed_at = null, last_outcome_code = 'expired'
-    where m.recipient_principal_id = any (v_principals)
-      and m.state in ('queued', 'claimed');
-    update public.rights_sessions
-    set status = 'expired', ended_at = v_now
-    where target_kind = 'cohort_draft' and target_id = v_draft.id
-      and status = 'active';
-    update public.encrypted_contact_references
-    set contact_ciphertext = null, status = 'shredded', ended_at = v_now
-    where principal_id = any (v_principals) and status <> 'shredded';
-    update public.contact_hmac_indexes chi
-    set status = 'expired', expires_at = least(chi.expires_at, v_now)
-    from public.encrypted_contact_references ecr
-    where chi.contact_reference_id = ecr.id
-      and ecr.principal_id = any (v_principals)
-      and chi.status = 'current';
-    update public.subject_principals
-    set status = case when status = 'pending' then 'deleted' else 'revoked' end,
-        principal_revision = principal_revision + 1
-    where id = any (v_principals)
-      and principal_kind = 'genetic_parent'
-      and status in ('pending', 'active');
-
+    -- docs/retention.md, embryo.cohort-draft-30d: delete the invitations,
+    -- credentials, contacts, HMAC indexes, outbox rows, signatures and the
+    -- draft itself. Only the audit event, a refusal-bar HMAC and the
+    -- retention rows survive.
     delete from public.attestations
     where target_kind = 'cohort_draft' and target_id = v_draft.id;
     delete from public.consent_signatures
     where target_kind = 'cohort_draft' and target_id = v_draft.id;
+    delete from public.rights_sessions
+    where target_kind = 'cohort_draft' and target_id = v_draft.id;
+    delete from public.token_hashes th
+    using public.token_candidates tc
+    join public.subject_invitations si on si.id = tc.target_id
+    where th.candidate_id = tc.id
+      and si.target_kind = 'cohort_draft' and si.target_id = v_draft.id;
+    delete from public.mail_outbox m
+    where m.recipient_principal_id = any (v_principals);
+    delete from public.invitation_candidates ic
+    using public.subject_invitations si
+    where ic.invitation_id = si.id
+      and si.target_kind = 'cohort_draft' and si.target_id = v_draft.id;
+    delete from public.subject_invitations
+    where target_kind = 'cohort_draft' and target_id = v_draft.id;
+    delete from public.contact_hmac_indexes chi
+    using public.encrypted_contact_references ecr
+    where chi.contact_reference_id = ecr.id
+      and ecr.principal_id = any (v_principals);
+    delete from public.encrypted_contact_references
+    where principal_id = any (v_principals);
     delete from public.embryo_cohort_drafts where id = v_draft.id;
+    delete from public.subject_principals
+    where id = any (v_principals) and principal_kind = 'genetic_parent';
 
     update public.retention_due_phases
     set status = 'succeeded', terminal_outcome_code = 'draft_expired',
@@ -3222,6 +3261,44 @@ begin
     owner_account_id := v_draft.owner_account_id;
     return next;
   end loop;
+
+  -- embryo.disposition-proposal-7d: a lapsed proposal is closed with no
+  -- disposition, key or retention change.
+  for v_phase in
+    select p.retention_row_id, p.phase_id, p.phase_revision,
+           (p.immutable_envelope ->> 'proposalId')::uuid as proposal_id
+    from public.retention_due_phases p
+    where p.retention_id = 'embryo.disposition-proposal-7d'
+      and p.phase_id = 'embryo-disposition-proposal-expiry'
+      and p.status = 'pending'
+      and p.phase_deadline <= v_now
+    order by p.phase_deadline
+    for update skip locked
+  loop
+    if exists (
+      select 1 from public.embryo_disposition_proposals pr
+      where pr.id = v_phase.proposal_id and pr.status = 'pending'
+    ) then
+      perform private.close_embryo_disposition_proposal_v1(
+        v_phase.proposal_id, 'expired', 'proposal_expired'
+      );
+      perform private.append_legal_audit_event(
+        'embryo.disposition.proposal-expired', null, 'jobs.retention', 'accepted',
+        '{}'::jsonb
+      );
+    else
+      update public.retention_due_phases
+      set status = 'cancelled', terminal_outcome_code = 'proposal_closed',
+          completed_at = v_now
+      where retention_row_id = v_phase.retention_row_id
+        and phase_id = v_phase.phase_id
+        and phase_revision = v_phase.phase_revision;
+      update public.purge_manifests set state = 'cancelled'
+      where retention_row_id = v_phase.retention_row_id and state = 'frozen';
+      update public.retention_rows set state = 'cancelled', ended_at = v_now
+      where id = v_phase.retention_row_id and state in ('scheduled', 'active');
+    end if;
+  end loop;
   return;
 end;
 $$;
@@ -3230,6 +3307,112 @@ revoke all on function public.run_due_embryo_retention_phases_v1()
   from public, anon, authenticated;
 grant execute on function public.run_due_embryo_retention_phases_v1()
   to service_role;
+
+-- The account-addressed mail allowlist admits the draft owner's terminal
+-- notice; everything else in this function is unchanged from
+-- 20260901020000_mail_outbox_runtime.sql.
+create or replace function public.enqueue_account_mail(
+  p_account_id uuid,
+  p_contact_ciphertext bytea,
+  p_contact_hmac text,
+  p_template_id text,
+  p_purpose text,
+  p_target_kind text,
+  p_target_id uuid,
+  p_template_payload jsonb,
+  p_idempotency_key text,
+  p_expires_at timestamptz
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_principal public.subject_principals%rowtype;
+  v_contact_id uuid;
+  v_outbox_id uuid;
+begin
+  if p_contact_ciphertext is null
+    or p_contact_hmac !~ '^[0-9a-f]{64}$'
+    or p_idempotency_key !~ '^[0-9a-f]{64}$'
+    or jsonb_typeof(p_template_payload) <> 'object'
+    or p_template_id not in ('report-ready', 'research-digest', 'embryo-draft-expired')
+    or p_expires_at <= clock_timestamp()
+    or p_expires_at > clock_timestamp() + interval '30 days'
+  then
+    raise exception using errcode = '22023', message = 'invalid mail candidate';
+  end if;
+
+  select sp.*
+  into strict v_principal
+  from public.subject_principals sp
+  where sp.account_id = p_account_id
+    and sp.principal_kind = 'account_subject'
+    and sp.status = 'active'
+  order by sp.created_at
+  limit 1
+  for update;
+
+  select ecr.id
+  into v_contact_id
+  from public.encrypted_contact_references ecr
+  where ecr.principal_id = v_principal.id
+    and ecr.contact_hmac = p_contact_hmac
+    and ecr.status = 'current'
+  order by ecr.created_at desc
+  limit 1
+  for update;
+
+  if v_contact_id is null then
+    update public.encrypted_contact_references
+    set status = 'rotated', ended_at = clock_timestamp()
+    where principal_id = v_principal.id
+      and status = 'current';
+
+    insert into public.encrypted_contact_references (
+      principal_id, contact_ciphertext, contact_hmac, key_revision,
+      authority_revision, status
+    )
+    values (
+      v_principal.id, p_contact_ciphertext, p_contact_hmac, 1,
+      v_principal.principal_revision, 'current'
+    )
+    returning id into v_contact_id;
+
+    insert into public.contact_hmac_indexes (
+      contact_reference_id, contact_hmac, hmac_key_revision, status, expires_at
+    )
+    values (
+      v_contact_id, p_contact_hmac, 1, 'current',
+      least(p_expires_at, clock_timestamp() + interval '30 days')
+    );
+  end if;
+
+  insert into public.mail_outbox (
+    template_id, purpose, target_kind, target_id,
+    recipient_principal_id, contact_reference_id,
+    recipient_authority_revision, semantic_revision, idempotency_key,
+    template_payload, expires_at
+  )
+  values (
+    p_template_id, p_purpose, p_target_kind, p_target_id,
+    v_principal.id, v_contact_id,
+    v_principal.principal_revision, 1, p_idempotency_key,
+    p_template_payload, p_expires_at
+  )
+  on conflict (idempotency_key) do nothing
+  returning id into v_outbox_id;
+
+  if v_outbox_id is null then
+    select id into strict v_outbox_id
+    from public.mail_outbox
+    where idempotency_key = p_idempotency_key;
+  end if;
+
+  return v_outbox_id;
+end;
+$$;
 
 -- No embryo table may ever gain a sex, gender, karyotype, source-label or
 -- header-derived column, even by a privileged writer. The guard runs after

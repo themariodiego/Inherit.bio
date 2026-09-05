@@ -54,6 +54,14 @@ const OPERATION_DIGEST_CONTEXT = "family-sharing-operation-v1";
 const ARTIFACT_DIGEST_CONTEXT = "artifact-presentation-v1";
 const COHORT_GRANT_DIGEST_CONTEXT = "cohort-grant-presentation-v1";
 
+/**
+ * The exact shape of the digest `hmacSecret` emits: 64 lowercase hex
+ * characters. A signature of any other shape is refused before the constant-
+ * time compare, which would otherwise throw on a segment whose character
+ * count matches but whose UTF-8 byte count does not.
+ */
+const HEX_DIGEST = /^[0-9a-f]{64}$/;
+
 export interface GrantPresentation {
   /** The account that signs: the data subject's own account, never the recipient's. */
   accountId: string;
@@ -99,6 +107,7 @@ function unseal<T>(value: string, context: string): T | null {
   if (separator <= 0) return null;
   const payload = value.slice(0, separator);
   const signature = value.slice(separator + 1);
+  if (!HEX_DIGEST.test(signature)) return null;
   const expected = sign(payload, context);
   if (
     signature.length !== expected.length ||

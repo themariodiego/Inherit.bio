@@ -189,7 +189,8 @@ corrections, suppressions, and notices listed in the purge registry.
   expires_at, required_principal_slots)`, `sign_embryo_artifact_v1(...)
   returns uuid`, `create_embryo_draft_invitation_v1(...) returns
   table(invitation_id, expires_at)`, `activate_rights_session_v1(p_token_hash,
-  p_session_hash) returns table(purpose, target_kind, target_id, expires_at)`,
+  p_session_hash, p_form_nonce) returns table(purpose, target_kind, target_id,
+  expires_at)`,
   `accept_embryo_co_parent_invitation_v1(...) returns uuid`,
   `finalize_embryo_cohort_v1(p_account_id, p_session_id, p_draft_id,
   p_insurance_ack_id, p_charter_ack_id, p_token_nonce) returns
@@ -225,8 +226,11 @@ corrections, suppressions, and notices listed in the purge registry.
   count and the 50th/90th percentile seconds over 30 days, percentiles null
   under 20 jobs.
 - `run_due_embryo_retention_phases_v1()` is the `embryo.cohort-draft-30d`
-  executor: it terminalizes invitations, credentials and contacts, deletes
-  the draft row and returns the owners to notify.
+  and `embryo.disposition-proposal-7d` executor: at a draft's deadline it
+  deletes the invitations, credentials, contacts, HMAC indexes, outbox rows,
+  draft-only signatures, parent principals and the draft row and returns the
+  owners to notify; at a proposal's deadline it closes the lapsed proposal
+  with no disposition change.
 
 ## Files, variants, storage, and downloads
 

@@ -80,6 +80,14 @@ const OPERATION_LIFETIME_MS = 10 * 60 * 1000;
 const OPERATION_DIGEST_CONTEXT = "embryo-operation-v1";
 const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
 
+/**
+ * The exact shape of the digest `hmacSecret` emits: 64 lowercase hex
+ * characters. A signature of any other shape is refused before the constant-
+ * time compare, which would otherwise throw on a segment whose character
+ * count matches but whose UTF-8 byte count does not.
+ */
+const HEX_DIGEST = /^[0-9a-f]{64}$/;
+
 type PublicForm = "rights-activate";
 
 interface PublicFormClaims {
@@ -103,6 +111,7 @@ function unseal<T>(value: string, context: string): T | null {
   if (separator <= 0) return null;
   const payload = value.slice(0, separator);
   const signature = value.slice(separator + 1);
+  if (!HEX_DIGEST.test(signature)) return null;
   const expected = hmacSecret(payload, context);
   if (
     signature.length !== expected.length ||

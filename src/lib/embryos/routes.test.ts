@@ -8,6 +8,7 @@ import {
 import {
   COHORT_DRAFT_CREATED_KEYS,
   DISPOSITIONS,
+  acceptedJurisdictionCode,
   coParentAcceptBody,
   coParentInvitationBody,
   cohortDraftBody,
@@ -233,6 +234,25 @@ describe("api.consents embryo bodies", () => {
     ["G1", "ZZ"],
   ])("records %s as the signing jurisdiction %s", (raw, expected) => {
     expect(signingJurisdictionCode(raw)).toBe(expected);
+  });
+
+  it.each<[string, string | null]>([
+    ["GB", "GB"],
+    ["US", "US"],
+    ["GB-ENG", "GB"],
+    ["US-CA", "US"],
+    ["gb", "GB"],
+    [" de ", "DE"],
+    ["XX", null],
+    ["ZZ", null],
+    ["XX-ABC", null],
+    ["TEST-LOCAL", null],
+    ["GBR", null],
+    ["G1", null],
+    ["", null],
+    ["   ", null],
+  ])("accepts %s for persistence as %s only when the register knows the country", (raw, expected) => {
+    expect(acceptedJurisdictionCode(raw)).toBe(expected);
   });
 });
 

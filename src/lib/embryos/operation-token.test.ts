@@ -86,6 +86,19 @@ describe("embryo operation token", () => {
     expect(readEmbryoOperation("", NOW)).toBeNull();
   });
 
+  it("refuses a signature of the digest's character length but another byte length, without throwing", () => {
+    const token = mintEmbryoOperation(EXPECTED, NOW);
+    const payload = token.slice(0, token.lastIndexOf("."));
+    const wide = `${payload}.${"é".repeat(64)}`;
+    expect(() => readEmbryoOperation(wide, NOW)).not.toThrow();
+    expect(readEmbryoOperation(wide, NOW)).toBeNull();
+    expect(readEmbryoOperation(`abcdefghijklmnopqrstuvwxyz.${"é".repeat(64)}`, NOW)).toBeNull();
+    // Uppercase hex is not the shape the digest has either.
+    const signature = token.slice(token.lastIndexOf(".") + 1);
+    expect(readEmbryoOperation(`${payload}.${signature.toUpperCase()}`, NOW)).toBeNull();
+    expect(verifyEmbryoOperation(wide, EXPECTED, NOW)).toBeNull();
+  });
+
   it("is stale at its expiry and fresh one millisecond before", () => {
     const token = mintEmbryoOperation(EXPECTED, NOW);
     expect(readEmbryoOperation(token, NOW + TEN_MINUTES - 1)).not.toBeNull();
@@ -162,6 +175,12 @@ describe("public form token", () => {
     const [payload, signature] = token.split(".");
     expect(readPublicFormToken(`${payload}.${"0".repeat(signature.length)}`, "rights-activate", NOW)).toBeNull();
     expect(readPublicFormToken("", "rights-activate", NOW)).toBeNull();
+  });
+
+  it("refuses a signature whose byte length differs from its character length, without throwing", () => {
+    const wide = `abcdefghijklmnopqrstuvwxyz.${"é".repeat(64)}`;
+    expect(() => readPublicFormToken(wide, "rights-activate", NOW)).not.toThrow();
+    expect(readPublicFormToken(wide, "rights-activate", NOW)).toBeNull();
   });
 
   it("refuses a correctly signed token for another form or with a malformed nonce", () => {

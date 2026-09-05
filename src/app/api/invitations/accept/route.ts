@@ -12,7 +12,13 @@ import {
 } from "@/lib/embryos/guards";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { readRightsSessionHash } from "@/lib/embryos/rights-session";
-import { coParentAcceptBody, normalizeContact, sameStatementKeys, type CoParentAcceptRequest } from "@/lib/embryos/routes";
+import {
+  acceptedJurisdictionCode,
+  coParentAcceptBody,
+  normalizeContact,
+  sameStatementKeys,
+  type CoParentAcceptRequest,
+} from "@/lib/embryos/routes";
 import { readArtifactPresentation, type ArtifactPresentation } from "@/lib/family/grant-token";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -76,6 +82,9 @@ export async function POST(request: Request) {
   const parsed = coParentAcceptBody.safeParse(await readJson(request));
   if (!parsed.success) return notFound();
   const body = parsed.data;
+  // Only a country the jurisdiction register knows is ever persisted.
+  const jurisdictionCode = acceptedJurisdictionCode(body.jurisdictionCode);
+  if (!jurisdictionCode) return notFound();
 
   const claims = verifyEmbryoOperation(body.nonce, {
     accountId: context.user.id,
@@ -127,7 +136,7 @@ export async function POST(request: Request) {
     p_account_id: context.user.id,
     p_account_email_hmac: hmacSecret(normalizeContact(context.user.email), "contact-email-v1"),
     p_signing_name_ciphertext: encryptedLiteral(body.coParentArtifacts.uploadEmbryo.typedName),
-    p_jurisdiction_code: body.jurisdictionCode,
+    p_jurisdiction_code: jurisdictionCode,
     p_upload_statement_keys: [...body.coParentArtifacts.uploadEmbryo.statementKeys],
     p_parentage_statement_keys: [...body.coParentArtifacts.parentageAttestation.statementKeys],
     p_token_nonce: claims.nonce,

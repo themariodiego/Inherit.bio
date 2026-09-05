@@ -116,8 +116,9 @@ const OPERATION_ID_PATTERN = /^[a-z0-9.-]{1,64}$/;
  * The log line is the observability event and nothing more: the coded
  * template, the coded operation slot and the registered consumer id. No
  * key name, value, target id or payload fragment is ever written. The audit
- * row the register also asks for has no RPC yet (decision §11.7); this
- * function stays async so adding it changes no caller.
+ * row the register also asks for has no RPC yet (the 2026-09-05 embryo E0
+ * slice-1 entry in docs/protocol/decisions.md); this function stays async
+ * so adding it changes no caller.
  */
 export async function blockedResponse(operation: string): Promise<Response> {
   const consumer = OPERATION_ID_PATTERN.test(operation) ? operation : "unregistered";

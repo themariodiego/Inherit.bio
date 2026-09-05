@@ -21,14 +21,18 @@ export async function POST(request: Request) {
 
   const parsed = rightsActivateBody.safeParse(await readJson(request));
   if (!parsed.success) return notFound();
-  if (!readPublicFormToken(parsed.data.nonce, "rights-activate")) return notFound();
+  const form = readPublicFormToken(parsed.data.nonce, "rights-activate");
+  if (!form) return notFound();
   const tokenHash = invitationTokenHash(parsed.data.token);
   if (!tokenHash) return notFound();
 
+  // The form nonce is consumed inside the database before the rights
+  // session is written, so one served form activates at most once.
   const secret = newRightsSessionSecret();
   const { data, error } = await createAdminClient().rpc("activate_rights_session_v1", {
     p_token_hash: tokenHash,
     p_session_hash: rightsSessionHash(secret),
+    p_form_nonce: form.nonce,
   });
   const session = data?.[0];
   if (error || !session) return notFound();

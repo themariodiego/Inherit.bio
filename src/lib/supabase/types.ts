@@ -7183,7 +7183,7 @@ export type Database = {
         Returns: string
       }
       activate_rights_session_v1: {
-        Args: { p_session_hash: string; p_token_hash: string }
+        Args: { p_form_nonce: string; p_session_hash: string; p_token_hash: string }
         Returns: {
           expires_at: string
           purpose: string

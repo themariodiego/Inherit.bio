@@ -65,6 +65,19 @@ describe("directional grant presentation token", () => {
     expect(readGrantPresentation(token, Date.now() + 11 * 60 * 1000)).toBeNull();
   });
 
+  it("refuses a signature of the digest's character length but another byte length, without throwing", () => {
+    const wide = `abcdefghijklmnopqrstuvwxyz.${"é".repeat(64)}`;
+    expect(() => readGrantPresentation(wide)).not.toThrow();
+    expect(readGrantPresentation(wide)).toBeNull();
+    expect(readSharingOperation(wide)).toBeNull();
+    expect(readArtifactPresentation(wide)).toBeNull();
+    expect(readCohortGrantPresentation(wide)).toBeNull();
+    // A well-formed payload with the same malformed signature is refused too.
+    const token = mintGrantPresentation(CLAIMS);
+    const payload = token.slice(0, token.lastIndexOf("."));
+    expect(readGrantPresentation(`${payload}.${"é".repeat(64)}`)).toBeNull();
+  });
+
   it("mints a different nonce every time, so no token is replayable as another", () => {
     const first = readGrantPresentation(mintGrantPresentation(CLAIMS))!;
     const second = readGrantPresentation(mintGrantPresentation(CLAIMS))!;
