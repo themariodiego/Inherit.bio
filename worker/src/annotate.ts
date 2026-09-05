@@ -1,5 +1,5 @@
 // annotate_vcf pipeline stage: download a VCF from Supabase Storage, parse it
-// line by line, and join variants against public.ref_variants by (chrom, pos38).
+// line by line, and bind annotations by build, locus, REF and called ALT.
 //
 // Self-contained on purpose: the worker is a separate app and must not import
 // from the web app's src/. Chromosomes are numeric: 1-22, X=23, Y=24, MT=25.
@@ -42,6 +42,7 @@ export interface ClinvarHit {
 }
 
 export interface AnnotateResult {
+  annotation_status: "allele_matches_only" | "unavailable_build";
   total: number;
   annotated: number;
   clinvar_hits: ClinvarHit[];
@@ -55,10 +56,10 @@ interface RefVariantRow {
   alt: string | null;
   gene_symbol: string | null;
   clinvar_significance: string | null;
+  sources?: unknown;
 }
 
 const BATCH_SIZE = 500;
-const MAX_CLINVAR_HITS = 200;
 
 /** "chr1"/"1" -> 1, X -> 23, Y -> 24, MT/M -> 25; null for scaffolds. */
 export function chromToNumber(raw: string): number | null {
@@ -83,33 +84,38 @@ export function parseVcfLine(line: string): VcfVariant | null {
   if (chrom === null || !Number.isInteger(pos) || pos <= 0) return null;
   const idMatch = /^rs(\d+)$/i.exec(f[2].trim());
   let genotype: string | null = null;
-  if (f.length >= 10) {
+  if (f.length === 10 && (f[6] === "PASS" || f[6] === ".")) {
     const gtIndex = f[8].split(":").indexOf("GT");
     if (gtIndex !== -1) genotype = f[9].split(":")[gtIndex] ?? null;
+    const ftIndex = f[8].split(":").indexOf("FT");
+    const filter = ftIndex === -1 ? null : f[9].split(":")[ftIndex];
+    if (filter != null && filter !== "PASS" && filter !== ".") genotype = null;
   }
   return {
     chrom,
     pos,
     rsid: idMatch ? Number(idMatch[1]) : null,
-    ref: f[3],
-    alt: f[4],
+    ref: f[3].toUpperCase(),
+    alt: f[4].toUpperCase(),
     genotype,
   };
 }
 
 const REF_JOIN_SQL = `
-  select r.rsid, r.chrom, r.pos38, r.ref, r.alt, r.gene_symbol, r.clinvar_significance
+  select r.rsid, r.chrom, r.pos38, r.ref, r.alt, r.gene_symbol, r.clinvar_significance, r.sources
   from public.ref_variants r
   join unnest($1::smallint[], $2::integer[]) as q(chrom, pos)
     on r.chrom = q.chrom and r.pos38 = q.pos`;
 
-// Pathogenic/Likely_pathogenic, but not "Conflicting_interpretations_of_pathogenicity".
-function isPathogenic(significance: string | null): significance is string {
-  return (
-    significance !== null &&
-    /pathogenic/i.test(significance) &&
-    !/conflicting/i.test(significance)
-  );
+/** A matching site is not a matching allele, and an ALT list is not a call. */
+function calledReferenceAllele(v: VcfVariant, row: RefVariantRow): boolean {
+  if (!row.ref || !row.alt || !/^[ACGT]+$/.test(row.ref) || !/^[ACGT]+$/.test(row.alt) ||
+      row.ref === row.alt || v.ref !== row.ref || !v.genotype ||
+      !/^\d+(?:[/|]\d+)?$/.test(v.genotype)) return false;
+  const alleles = [v.ref, ...v.alt.split(",")];
+  const calls = v.genotype.split(/[/|]/).map((i) => alleles[Number(i)]);
+  if (calls.some((a) => !a || !/^[ACGT]+$/.test(a))) return false;
+  return calls.includes(row.alt);
 }
 
 async function flushBatch(
@@ -134,19 +140,12 @@ async function flushBatch(
   const annotated = new Set<VcfVariant>();
   for (const row of rows as RefVariantRow[]) {
     for (const v of byKey.get(`${row.chrom}:${row.pos38}`) ?? []) {
+      if (!calledReferenceAllele(v, row)) continue;
       annotated.add(v);
-      if (isPathogenic(row.clinvar_significance) && result.clinvar_hits.length < MAX_CLINVAR_HITS) {
-        result.clinvar_hits.push({
-          rsid: Number(row.rsid),
-          gene: row.gene_symbol,
-          significance: row.clinvar_significance,
-          chrom: row.chrom,
-          pos: row.pos38,
-          ref: row.ref,
-          alt: row.alt,
-          genotype: v.genotype,
-        });
-      }
+      // The legacy reference row has no allele/condition/assertion provenance,
+      // review state, conflict state or release binding. A matching allele is
+      // not permission to promote its rsID-wide label into a personal finding.
+      // clinvar_hits stays empty pending the reviewed assertion importer.
     }
   }
   result.annotated += annotated.size;
@@ -160,12 +159,34 @@ export async function annotateLines(
   lines: AsyncIterable<string> | Iterable<string>,
   db: Queryable,
 ): Promise<AnnotateResult> {
-  const result: AnnotateResult = { total: 0, annotated: 0, clinvar_hits: [] };
+  const result: AnnotateResult = { annotation_status: "unavailable_build", total: 0, annotated: 0, clinvar_hits: [] };
   let batch: VcfVariant[] = [];
+  const builds = new Set<string>();
+  let dataStarted = false;
   for await (const line of lines) {
+    if (line.startsWith("##")) {
+      if (dataStarted) throw new Error("VCF metadata after data rows");
+      if (line.startsWith("##reference=")) {
+        const matches = line.match(/(?:GRCh\d+|hg\d+|b37)(?!\d)/gi) ?? [];
+        if (!matches.length) builds.add("unknown");
+        for (const match of matches) builds.add(/^(?:GRCh38|hg38)$/i.test(match) ? "GRCh38" : "unsupported");
+      }
+      if (line.startsWith("##contig=") && /[<,]ID=(?:chr)?1[,>]/.test(line)) {
+        const length = /[<,]length=(\d+)[,>]/.exec(line)?.[1];
+        if (length) builds.add(length === "248956422" ? "GRCh38" : "unsupported");
+      }
+      if (line.startsWith("##contig=")) {
+        const assembly = /[<,]assembly=([^,>]+)/.exec(line)?.[1];
+        if (assembly) builds.add(/^(?:GRCh38|hg38)(?:\.p\d+)?$/i.test(assembly) ? "GRCh38" : "unsupported");
+      }
+      continue;
+    }
     const v = parseVcfLine(line);
     if (!v) continue;
+    dataStarted = true;
     result.total++;
+    if (builds.size !== 1 || !builds.has("GRCh38")) continue;
+    result.annotation_status = "allele_matches_only";
     batch.push(v);
     if (batch.length >= BATCH_SIZE) {
       await flushBatch(batch, db, result);

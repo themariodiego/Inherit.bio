@@ -10,9 +10,12 @@ Implemented today:
 - **`annotate_vcf`** — downloads a VCF (plain or `.gz`) from the private
   `genomes` Storage bucket, parses it line by line (streaming, so ~200MB files
   work with bounded memory), joins each variant against `public.ref_variants`
-  by `(chrom, pos38)`, and writes a summary into `worker_jobs.result`:
-  `{ total, annotated, clinvar_hits: [...] }`. `clinvar_hits` lists
-  Pathogenic/Likely pathogenic matches (capped at 200 entries).
+  by known GRCh38 build, locus, REF and called ALT, and writes a summary into
+  `worker_jobs.result`: `{ annotation_status, total, annotated, clinvar_hits: [] }`.
+  Missing/unsupported/conflicting builds yield `unavailable_build` without a
+  reference query; otherwise the status is `allele_matches_only`. The legacy
+  reference labels lack allele/condition/assertion provenance, so personal
+  ClinVar hits remain withheld pending a reviewed assertion importer.
 
 ## Environment variables
 

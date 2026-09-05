@@ -6,8 +6,34 @@ This register covers test and test-runner changes after the baseline. A change
 is listed only when it strengthens or extends an assertion; weakened, deleted,
 skipped, quarantined, or retry-dependent tests are not permitted.
 
+Variant identity correction (2026-09-05): the previous worker expectation that
+two different ALT alleles at one coordinate produce two clinical hits was
+biologically incorrect. It is replaced with exact called-allele matching plus
+explicit clinical withholding, not relaxed to accept either result. Likewise,
+an unrecognized contig assembly no longer overrides a contradictory build.
+All existing genotype/locus truth assertions remain, with strand assertions
+added. See `docs/variant-evidence-binding.md` for the boundary and limitations.
+
+The Family and Portrait browser fixtures previously inserted bare clinical
+labels in the legacy reference table and expected personal findings. Those
+assumptions are replaced by unavailable/not-negative-screen assertions, no
+clinical figures, and no Overview match advertisement. All twenty browser
+tests remain active with zero retries. Positive calculation and rendering
+assertions remain in `src/lib/family/carrier-pair.test.ts`,
+`src/components/family/health-picture.test.ts` and
+`src/components/family/portrait/portrait.test.ts`: pair attribution, variant
+lines, exact fractions, three figures, 100 dots, 25/50/25 outcome counts,
+legend/table fallback, assumptions and each refusal. These component fixtures
+do not bypass the production reader. End-to-end clinical activation is now
+explicitly unproven until the reviewed importer exists.
+
 | Path | Kind | Reason | Strengthened or replacement assertion |
 | --- | --- | --- | --- |
+| `worker/src/annotate.test.ts` | Corrected invalid scientific expectation; strengthened boundaries | Coordinate-only matches and absent GT formerly became clinical hits. | Exact REF and called ALT required; different ALT, malformed/no calls, filtered calls, multi-sample ambiguity and unknown/conflicting build withheld; valid haploid/phased/multiallelic calls counted correctly; legacy clinical hits always empty. |
+| `src/lib/genome/reference-evidence.test.ts`, `src/app/api/jobs/annotation-refresh/route.test.ts` | New evidence-binding tests | rsID-level clinical labels and arbitrary population alleles could be written into allele-specific columns. | Exact forward GRCh38 SNV placement, ALT and source population bound; allele ordering cannot affect output; invalid/conflicting frequencies withheld; reference disappearance clears old labels; independent provenance retained; database failures do not claim success. |
+| `src/lib/genome/parsers/vcf.test.ts`, `src/lib/genome/parsers/array.test.ts`, `src/lib/genome/liftover.test.ts`, `src/app/api/files/[id]/process/route.test.ts` | Strengthened build and transformation assertions | Unknown builds were relabelled GRCh38; point liftover dropped strand. | Unsupported/conflicting explicit builds unknown; cleanup failures explicit; old derivatives invalidated without source deletion; reverse-strand SNP calls complemented through the processing route; original build retained; indels and unknown calls not point-lifted. |
+| `src/app/api/files/[id]/process/route.test.ts` | Two additional failure regressions after review | The initial parsing-state update ignored database errors, so a failed cleanup could leave a rerun annotated. | A failed initial update returns a static 503 response before source fetch, cleanup or inserts, without exposing database diagnostics. If cleanup and the final failed-state update both fail, the successfully persisted parsing state and null build remain. Existing five route cases are retained. |
+| `src/lib/family/carrier-pair.test.ts` | New production-reader guard | Legacy reference labels cannot activate clinical carrier output without reviewed allele/condition/assertion provenance. | Production reader always empty and does not query legacy labels; pure rule tests remain unchanged for verified synthetic inputs. |
 | `playwright.config.ts` | Runner strengthened | G1.5 requires zero retries in every environment and machine-readable proof of zero skipped results. | `retries` is unconditionally `0`; the JSON reporter writes `test-results/results.json`; `scripts/run-e2e.ts` makes `pnpm e2e` fail when any result is skipped or has `retry > 0`. |
 | `e2e/adult-subject-invitation.spec.ts` | New E2E coverage | Covers the TEST-LOCAL adult-subject invitation Path A reservation and acceptance boundary. | Follows the captured email link, proves the raw token is absent from durable mail payloads, binds the subject to the matching recipient account, and proves the inviter has zero directional grants and the subject has zero files. |
 | `scripts/secret-gate.test.ts` | New unit coverage | Pins the G1.17 credential detector against future provider formats and false-positive regressions. | Detects provider tokens, JWTs, private-key headers, credential-bearing URLs, and generic secret assignments while rejecting documented placeholders and environment lookups. |

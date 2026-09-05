@@ -71,7 +71,7 @@ export function CarrierPanel({
       {(unavailableCopy ? [] : groups).map((group) => (
         <div key={group.key} data-slot="carrier-group" className="space-y-4">
           {group.matches.length === 0 ? (
-            <p data-slot="carrier-empty" className="max-w-prose text-base leading-relaxed text-ink">
+            <p role="status" data-state={group.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="carrier-empty" className="max-w-prose text-base leading-relaxed text-ink">
               {group.classifiedPositions === 0
                 ? NO_CLASSIFIED_POSITIONS
                 : // inherit-figure-exempt: a count of positions both files cover, not a result

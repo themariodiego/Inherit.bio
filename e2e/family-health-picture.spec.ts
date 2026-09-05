@@ -53,7 +53,6 @@ const A = { email: "family-hp-a@e2e.local", password: "e2e-family-hp-pw" };
 const B = { email: "family-hp-b@e2e.local", password: "e2e-family-hp-pw" };
 
 /** Neither self subject carries a name, so each sees the other as an adult. */
-const B_AS_SEEN_BY_A = "Another adult";
 
 const BANNER =
   "These are different people compared against different baselines. A bigger number in one column does not mean that person is worse off.";
@@ -64,15 +63,12 @@ const AVAILABILITY =
   "This page shows 2 people because 2 people have agreed to be seen side by side. It shows nothing about anyone who has not.";
 const BASELINE_ABSENT =
   "No baseline: Inherit does not know this person’s sex and age band.";
-const CARRIER_SENTENCE =
-  "For each pregnancy, about 25 in 100 — a 1 in 4 chance — that a child inherits both copies. Each pregnancy is independent; this is not 1 in 4 of your children.";
-const EXACT_MARKER = "This is exact arithmetic, not an estimate.";
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
 const GATE_BUTTON = "Show what’s shared";
 const NEEDS_TWO =
   "This page needs two people who have both agreed to be seen side by side. So far there is 1.";
 const NO_CLASSIFIED_POSITIONS =
-  "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.";
+  "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen.";
 const NOT_SHARED_CELL = "Not shared with you";
 
 /** The three purposes each account grants the other: the joint one and the two report layers. */
@@ -545,7 +541,7 @@ test("the side-by-side table compares nothing and offers no way to order it", as
   expect(content).not.toMatch(/centimorgan|\bcM\b|kinship|shared DNA|related to/i);
 });
 
-test("the carrier panel gives one probability, names both variants, and names a reason for every other match", async ({
+test("the carrier panel withholds unbound clinical labels and explicitly states unavailable", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -555,79 +551,14 @@ test("the carrier panel gives one probability, names both variants, and names a 
   await expect(panel).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "A change you both carry" })).toBeVisible();
 
-  // One block per gene both files carry a change in: the five carried
-  // positions, and nothing for the two where neither file shows the
-  // classified change.
-  const blocks = panel.locator("[data-claim-block]");
-  await expect(blocks).toHaveCount(CARRIED.length);
-  for (const entry of NOT_CARRIED) await expect(panel).not.toContainText(entry.gene);
-  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveCount(0);
-
-  // Exactly one block carries the mandated sentence, and it reads as one line.
-  const sentences = panel.locator('[data-slot="carrier-sentence"]');
-  await expect(sentences).toHaveCount(CARRIED.length);
-  const withProbability = panel.locator(
-    '[data-claim-block]:has([data-figure-basis="exact"])',
-  );
-  await expect(withProbability).toHaveCount(1);
-  await expect(withProbability.locator('[data-slot="carrier-sentence"]')).toHaveText(
-    CARRIER_SENTENCE,
-  );
-  await expect(withProbability.locator("[data-exact-marker]")).toHaveCount(1);
-  await expect(withProbability.locator("[data-exact-marker]")).toHaveText(EXACT_MARKER);
-  const probable = CARRIED.find((entry) => entry.block === "probability")!;
-  await expect(withProbability).toContainText(probable.gene);
-
-  // Brief line 346: both variants and both classifications, not just the
-  // gene — one line per person, with the reference's own label.
-  const variantLines = withProbability.locator('[data-slot="carrier-variant"]');
-  await expect(variantLines).toHaveCount(2);
-  for (let index = 0; index < 2; index++) {
-    await expect(variantLines.nth(index)).toContainText(`rs${probable.rsid}`);
-    await expect(variantLines.nth(index)).toContainText(probable.gene);
-    await expect(variantLines.nth(index)).toContainText(probable.significance);
-  }
-  await expect(variantLines.nth(1)).toContainText(B_AS_SEEN_BY_A);
-
-  // Acceptance 17: no other block anywhere on the page states the fraction.
-  const texts = await page
-    .locator("[data-claim-block]")
-    .evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ""));
-  expect(texts.filter((text) => text.includes("25 in 100"))).toHaveLength(1);
-  expect(texts.filter((text) => text.includes("1 in 4"))).toHaveLength(1);
-
-  // Each pair block names one pair, and both people are chipped in it.
-  const pairs = await panel
-    .locator("[data-claim-block]")
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-subject-pair")));
-  expect(new Set(pairs)).toEqual(new Set([`${selfSubjectA}:${selfSubjectB}`]));
-  await expect(withProbability.locator('[data-slot="carrier-person"]')).toHaveCount(2);
-  await expect(withProbability).toContainText(B_AS_SEEN_BY_A);
-
-  // The other four carry no number, and each says which reason applies,
-  // and names both variants all the same.
-  for (const entry of CARRIED.filter((item) => item.block !== "probability")) {
-    const block = panel.locator(`[data-claim-block]:has-text("${entry.gene}")`);
-    await expect(block).toHaveCount(1);
-    await expect(block.locator('[data-slot="carrier-sentence"]')).toHaveText(
-      `Both of you have a change in ${entry.gene}, but Inherit cannot turn that into a chance for a pregnancy. Reason: ${entry.block}.`,
-    );
-    await expect(block.locator('[data-figure-basis="exact"]')).toHaveCount(0);
-    await expect(block.locator("[data-exact-marker]")).toHaveCount(0);
-    await expect(block.locator('[data-slot="carrier-variant"]')).toHaveCount(2);
-    await expect(block.locator('[data-slot="carrier-variant"]').first()).toContainText(`rs${entry.rsid}`);
-  }
-
-  // Two changed copies in both files: the chip says so, and no probability renders (D-035).
-  const twoCopies = CARRIED.find((entry) => entry.gt === "1/1")!;
-  const twoCopiesBlock = panel.locator(`[data-claim-block]:has-text("${twoCopies.gene}")`);
-  const statuses = twoCopiesBlock.locator('[data-figure-kind="carrier-status"]');
-  await expect(statuses).toHaveCount(2);
-  await expect(statuses.nth(0)).toContainText("two copies");
-  await expect(statuses.nth(1)).toContainText("two copies");
-
-  // Neither marker contradicts the other, and nothing is called a model.
-  await expect(page.locator("[data-modelled-marker]")).toHaveCount(0);
+  // Legacy clinical strings are present but cannot establish an assertion.
+  await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
+  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
+  await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveAttribute("data-state", "unavailable");
+  await expect(panel.locator("[data-exact-marker], [data-figure-kind]")).toHaveCount(0);
+  for (const entry of SYNTHETIC) await expect(panel).not.toContainText(entry.gene);
+  await expect(panel).not.toContainText("No change to show that you both carry");
+  await expect(panel).not.toContainText("25 in 100");
 });
 
 test("the page keeps its budgets and is clean in both themes", async ({ page }) => {
@@ -640,22 +571,15 @@ test("the page keeps its budgets and is clean in both themes", async ({ page }) 
   await expectAxeClean(page);
 });
 
-test("the Overview names the match, carries the pair and shows no value", async ({ page }) => {
+test("the Overview does not advertise a clinical match from unbound reference labels", async ({ page }) => {
   await signIn(page, A.email, A.password);
   // The Overview's carrier line reads nothing before the domain's gate is
   // passed in this session, so the gate is passed on the domain's page first.
   await passGate(page);
   await page.goto("/overview");
-  const line = page.locator(`[data-subject-pair="${selfSubjectA}:${selfSubjectB}"]`);
-  await expect(line).toHaveCount(1);
-  await expect(line.getByRole("link", { name: "1 carrier match to look at" })).toBeVisible();
-  await expect(line).toContainText("Two people carry a change in the same gene.");
-  await expect(line.getByRole("link")).toHaveAttribute(
-    "href",
-    "/family/health-picture#carrier-matches",
-  );
-  await expect(line.locator("[data-figure-kind]")).toHaveCount(0);
-  expect(await line.textContent()).not.toContain("25 in 100");
+  await expect(page.locator("[data-subject-pair]")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /carrier match to look at/ })).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText("Two people carry a change in the same gene.");
 });
 
 test("without that layer's own grant, the other adult's cells read as not shared while the column and the panel remain", async ({
@@ -694,14 +618,15 @@ test("without that layer's own grant, the other adult's cells read as not shared
   );
   expect(await lettersOfA.count()).toBeGreaterThan(0);
 
-  // The joint projection stays: the panel still lists every match.
+  // The joint section stays, with the same unavailable clinical state.
   await expect(page.locator('[data-slot="carrier-panel"] [data-claim-block]')).toHaveCount(
-    CARRIED.length,
+    0,
   );
+  await expect(page.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
   await expect(page.locator('[data-slot="column-footer"]')).toHaveCount(2);
 });
 
-test("with no match left, the panel counts the classified positions both files cover", async ({
+test("with fewer legacy labels, the panel still states unavailable rather than a negative screen", async ({
   page,
 }) => {
   // Only the two positions neither file shows the classified change at
@@ -714,8 +639,9 @@ test("with no match left, the panel counts the classified positions both files c
   const panel = page.locator('[data-slot="carrier-panel"]');
   await expect(panel.locator("[data-claim-block]")).toHaveCount(0);
   await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(
-    `No change to show that you both carry. Inherit checked the ${NOT_CARRIED.length} positions both files cover.`,
+    NO_CLASSIFIED_POSITIONS,
   );
+  await expect(panel).not.toContainText("Inherit checked the");
   expect(await page.content()).not.toContain("25 in 100");
 
   await page.goto("/overview");
