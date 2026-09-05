@@ -1161,3 +1161,41 @@ Decisions:
   classes, but only the draft-expiry phase has an executor. The capability
   register declares the others as recorded-without-executor until the
   withdrawal slice.
+
+## 2026-09-05 — Resume E0 with the bounded transport layer
+
+- The resumed checkout starts at PR #49 head `725eeb1`. GitHub Actions run
+  `33966931548` passed every configured step on that exact head, including
+  real local Supabase, pgTAP and both browser projects. The old local
+  readability checkout is preserved; development continues in a separate
+  worktree. PR #49 remains draft and open at this check.
+- The scratchpad architect plans cited in the handoff are absent from the
+  pushed tree. The committed route register and ADRs 0016/0020 therefore
+  govern this implementation; missing scratch files are not assumed to
+  contain additional implemented code.
+- `embryo-ingest-session-v1.transportWireV1` now owns the explicit VCF and
+  table transport formats. Both browser rewrites and server validators
+  consume existing registered limits. Every request repeats its own exact
+  header and challenge. The browser uses only in-memory source identities;
+  the server matches random handles against its session's ordinal map and
+  returns only whole-chunk-validated per-embryo data.
+- Preserve missing calls, copy counts, read depths, genotype quality,
+  allele depths, sample-filter failure and reference-block spans. Discard
+  source phase-set identifiers and dephase calls so separate blocks cannot
+  silently become one block. Table calls also carry no phase claim.
+  Structural/breakend alleles need a separately reviewed representation;
+  their arbitrary contig-bearing strings are refused by this transport.
+- Primary format references, accessed 2026-09-05: the official
+  [VCF 4.3 specification](https://samtools.github.io/hts-specs/VCFv4.3.pdf),
+  sections 1.6.1–1.6.2, and the
+  [VCF 4.5 specification](https://samtools.github.io/hts-specs/VCFv4.5.pdf),
+  section 5.5. Independent reviewer `embryo_transport_audit` checked those
+  semantics and found D-087 through D-090; all four receive regression
+  tests before publication. This is a code review, not human comprehension
+  evidence.
+- No upload is enabled by a parser passing. Session creation and quotas,
+  the mapping/chunk/complete routes, attempt-failure unwind, worker
+  publication, lifecycle executors, and E2 screens still need integration.
+  ADR 0020 stays Proposed and the embryo capability rows remain not shipped.
+  Source-reported contamination/dropout ingestion and downstream QC remain
+  worker work; the transport does not fabricate those measurements.
