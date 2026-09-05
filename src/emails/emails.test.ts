@@ -32,7 +32,7 @@ describe("abandoned embryo upload notice", () => {
 });
 
 describe("report-ready email", () => {
-  it("renders generic file copy, count, dashboard link, and footer lines", async () => {
+  it("keeps the ready notice, dashboard link and footers without a combined report total", async () => {
     const html = await render(
       createElement(ReportReadyEmail, {
         reportCount: 12,
@@ -41,20 +41,23 @@ describe("report-ready email", () => {
     );
     expect(html).toContain("Your reports are ready");
     expect(html).toContain("your genome file");
-    expect(html).toContain("12 reports are");
+    expect(html).toContain("You can view your reports and their limits on your dashboard.");
+    expect(html).not.toMatch(/\b\d[\d,]* reports?\b/);
     expect(html).toContain("https://example.test/dashboard");
     expect(html).toContain(ATTRIBUTION);
     expect(html).toContain(DISCLAIMER);
   });
 
-  it("uses singular phrasing for one report", async () => {
+  it.each([0, 1, 162])("accepts legacy payload count %i without rendering an unclassified quantity", async (reportCount) => {
     const html = await render(
       createElement(ReportReadyEmail, {
-        reportCount: 1,
+        reportCount,
         dashboardUrl: "https://example.test/d",
       }),
     );
-    expect(html).toContain("1 report is");
+    expect(html).toContain("Your reports are ready");
+    expect(html).toContain("https://example.test/d");
+    expect(html).not.toMatch(/\b\d[\d,]* reports?\b/);
   });
 });
 

@@ -15,7 +15,8 @@ import {
   isStarterCandidate,
   selectStarterReports,
 } from "@/components/overview/starter";
-import { countText } from "@/components/reports/count";
+import { Count } from "@/components/reports/count";
+import { StarterReports } from "@/components/overview/starter-reports";
 import { isFixtureSlug } from "@/components/reports/library";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,6 @@ import {
   SPLIT_NOTE,
   SPLIT_NOTE_VARIANT_CALL,
   VARIANT_CALL_DEFINITION,
-  STARTER,
   STATE_A_LEDE,
   STATE_C,
   STATE_D,
@@ -312,13 +312,6 @@ export default async function OverviewPage() {
   const ledeFor = (domain: DomainId) =>
     DOMAIN_SECTIONS.find((section) => section.id === domain)!.lede;
 
-  const starterLine =
-    starter.length >= 5
-      ? STARTER.five
-      : starter.length > 0
-        ? STARTER.some(starter.length)
-        : STARTER.none;
-
   return (
     <div
       data-density-primary-content
@@ -355,22 +348,22 @@ export default async function OverviewPage() {
               <>
                 {estimateCount > 0 ? (
                   <>
-                    <MetricLine
-                      value={countText(estimateCount, "estimate")}
-                      note={SPLIT_NOTE}
-                    />
-                    <p className="text-sm leading-relaxed text-ink-muted">
+                    <p className="text-base leading-relaxed">
+                      <Count value={estimateCount} layerClass="estimate" describedBy="overview-estimate-definition" className="font-medium" />{" "}
+                      <span data-metric-note className="text-ink-muted">{SPLIT_NOTE}</span>
+                    </p>
+                    <p id="overview-estimate-definition" className="text-sm leading-relaxed text-ink-muted">
                       {ESTIMATE_DEFINITION}
                     </p>
                   </>
                 ) : null}
                 {variantCallCount > 0 ? (
                   <>
-                    <MetricLine
-                      value={countText(variantCallCount, "variant-call")}
-                      note={SPLIT_NOTE_VARIANT_CALL}
-                    />
-                    <p className="text-sm leading-relaxed text-ink-muted">
+                    <p className="text-base leading-relaxed">
+                      <Count value={variantCallCount} layerClass="variant-call" describedBy="overview-variant-call-definition" className="font-medium" />{" "}
+                      <span data-metric-note className="text-ink-muted">{SPLIT_NOTE_VARIANT_CALL}</span>
+                    </p>
+                    <p id="overview-variant-call-definition" className="text-sm leading-relaxed text-ink-muted">
                       {VARIANT_CALL_DEFINITION}
                     </p>
                   </>
@@ -453,29 +446,7 @@ export default async function OverviewPage() {
       {hasReports ? (
         // Starter reading list (§2 §7.2). "You’ve read the starter set" is
         // not rendered: nothing records which reports were opened.
-        <section
-          aria-labelledby="starter-title"
-          data-density-top-level-section
-          className="max-w-prose"
-        >
-          <p id="starter-title" className="text-lg font-semibold">
-            {starterLine}
-          </p>
-          {starter.length > 0 ? (
-            <ol className="mt-4 space-y-1">
-              {starter.map((template) => (
-                <li key={template.slug}>
-                  <Link
-                    href={route("genome.report", { subject: "me", slug: template.slug })}
-                    className="inline-flex min-h-11 items-center text-base text-ink underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
-                  >
-                    {template.title}
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          ) : null}
-        </section>
+        <StarterReports reports={starter} />
       ) : null}
 
       <p

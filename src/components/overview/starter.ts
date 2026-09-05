@@ -63,3 +63,17 @@ export function selectStarterReports(resolved: readonly ResolvedReport[]): Repor
     })
     .slice(0, STARTER_LIMIT);
 }
+
+/** Preserve selection and within-layer order, but never display a mixed count. */
+export function groupStarterReports(reports: readonly ReportTemplate[]) {
+  if (reports.length > STARTER_LIMIT) throw new Error("invalid_starter_count");
+  const groups = new Map<"estimate" | "variant_call", ReportTemplate[]>();
+  for (const report of reports) {
+    const layer = report.layer ?? "estimate";
+    if (layer !== "estimate" && layer !== "variant_call") throw new Error("invalid_starter_layer");
+    const group = groups.get(layer) ?? [];
+    group.push(report);
+    groups.set(layer, group);
+  }
+  return Array.from(groups, ([layer, reports]) => ({ layer, reports }));
+}

@@ -1,5 +1,38 @@
 # Test diff register
 
+Report count contract (2026-09-06): `Count` units add runtime refusal checks
+for missing/mixed/legacy layers, nonfinite/fractional/negative/unsafe numbers,
+missing/multiple/non-string definition ids and wrong-layer unavailable-score
+wording. Starter grouping/render tests preserve exact Five/{n} sentences,
+the five-total cap, selected links and within-layer order; mixed sets render
+separate classified groups, not a combined headline. Email tests replace
+the misleading combined-total expectation with nonnumeric notification/link
+preservation checks for legacy payload counts 0, 1 and 162.
+
+`e2e/report-counts.spec.ts` adds actual-route desktop/phone checks for both
+seeded layers, no-file and processed-file lists, Overview, hub, category
+expansion, filters, local/global search and changelog. Its independent DOM
+detector scans count-pattern text outside known slots too. Six injected
+mutations must fail: missing class, mixed heading, mixed class token, split-span
+unclassified total, dangling definition and legacy count attribute. The phrase
+“one report at a time” is a reading-order idiom, not a catalog count; the
+detector excludes that grammar while retaining bare worded totals.
+
+Existing report-skeleton assertions now require the inactive layer's exact
+definition once inside an operable disclosure rather than requiring its
+absence. The two header-count assertions are scoped to the header because
+category show-all counts are now classified too. Overview uses a fresh per-run
+account, preserving the genuinely empty first state without deleting prior
+fixtures. Its original short-note budget remains pinned on all domain metrics;
+the newly classified starter retains its separate exact full sentence and
+definition link. Every original starter report link is still asserted inside
+the list. No skip, retry setting, figure requirement or density cap changed.
+
+Final targeted production-browser verification: 13 passed, zero failed,
+skipped or retried. Earlier local runs exposed the reused Overview account,
+the reading-order idiom and newly classified starter's distinct note contract;
+those causes were corrected before the complete green run.
+
 ADR 0022 corrects the scientifically false estimate definition and Overview
 note expectations in the report/Overview unit and browser suites. All existing
 definition count, layer, figure and disclosure assertions remain. The exact

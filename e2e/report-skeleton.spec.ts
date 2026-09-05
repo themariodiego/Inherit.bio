@@ -362,9 +362,10 @@ test("the reports list's estimate group renders its one layer definition, layer-
   await expect(page.getByText(/of these reports cannot give you a number yet/)).toHaveCount(0);
 
   // The active group's definition sentence renders once, at the top of the
-  // group; the other layer's definition does not render here.
+  // group; the other layer's exact definition is one click away.
   await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
-  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(0);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).not.toBeVisible();
 
   // The counts are layer-labelled and never merged (fixture auto-e2e-* slugs
   // are excluded from the library by isFixtureSlug): for each populated
@@ -375,7 +376,7 @@ test("the reports list's estimate group renders its one layer definition, layer-
     `[data-slot="count"][data-figure-class="estimate"][data-metric-value="${seeded}"]`,
   );
   await expect(count).toHaveText(`${seeded} statistical estimates`);
-  const counts = page.locator('[data-slot="count"][data-figure-class="estimate"]');
+  const counts = page.locator('main header [data-slot="count"][data-figure-class="estimate"]');
   await expect(counts).toHaveCount(2);
   await expect(counts.first()).toHaveText(/^\d+ statistical estimates? covered by your file$/);
   const variantCounts = page.locator('[data-slot="count"][data-figure-class="variant-call"]');
@@ -440,21 +441,23 @@ test("the reports list opens on the general library and its Specific variants ta
   await page.goto("/genome/me/reports");
 
   // With no layer named the list opens on the general library (the estimate
-  // group): its definition once, the other layer's not at all, its tab
+  // group): its definition once, the other layer's in a disclosure, its tab
   // marked current, and the tabs still in the taxonomy's layer order.
   await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
-  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(0);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(VARIANT_CALL_DEFINITION)).not.toBeVisible();
   const tabs = page.getByRole("navigation", { name: "Report groups" }).getByRole("link");
   await expect(tabs).toHaveText(["Specific variants", "Statistical estimates"]);
   await expect(tabs.nth(1)).toHaveAttribute("aria-current", "page");
   await expect(page.locator("#medicines")).toHaveCount(0);
 
   // The Specific variants tab opens its group: its definition once, the
-  // other layer's not at all, and its tab marked current.
+  // other layer's in a disclosure, and its tab marked current.
   await tabs.nth(0).click();
   await page.waitForURL(/\/genome\/me\/reports\?layer=variant_call$/);
   await expect(page.getByText(VARIANT_CALL_DEFINITION)).toHaveCount(1);
-  await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(0);
+  await expect(page.getByText(ESTIMATE_DEFINITION)).toHaveCount(1);
+  await expect(page.getByText(ESTIMATE_DEFINITION)).not.toBeVisible();
   await expect(page.locator('[data-library-layer="variant-call"]')).toHaveCount(1);
   await expect(tabs.nth(0)).toHaveAttribute("aria-current", "page");
 

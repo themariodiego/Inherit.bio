@@ -23,7 +23,6 @@ import {
   LIBRARY_EMPTY,
   LIST_NO_FILE,
   REPORTS_TITLE,
-  cannotNumberSentence,
 } from "@/copy/reports/strings";
 import {
   getPublishedTemplates,
@@ -198,7 +197,7 @@ export default async function ReportsPage(
     });
   }
 
-  const definitionId = activeLayer ? `layer-${activeLayer}-definition` : undefined;
+  const definitionId = `layer-${activeLayer}-definition`;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -225,9 +224,9 @@ export default async function ReportsPage(
         {nonEmptyLayers.map((layer) => {
           const reports = byLayer.get(layer)!;
           const covered = reports.filter((report) => report.covered).length;
-          const describedBy = layer === activeLayer ? definitionId : undefined;
-          return (
-            <p key={layer} className="text-sm">
+          const describedBy = `layer-${layer}-definition`;
+          const counts = (
+            <>
               {hasData ? (
                 <>
                   <Count
@@ -245,12 +244,23 @@ export default async function ReportsPage(
                 describedBy={describedBy}
               />
               {" in the library."}
-            </p>
+            </>
+          );
+          return layer === activeLayer ? (
+            <p key={layer} className="text-sm">{counts}</p>
+          ) : (
+            <details key={layer} className="text-sm">
+              <summary className="w-fit cursor-pointer">{counts}</summary>
+              <p id={describedBy} className="mt-2 max-w-prose text-ink-muted">
+                {LAYER_DEFINITIONS[layer]}
+              </p>
+            </details>
           );
         })}
         {estimateCount > 0 ? (
           <p className="text-sm text-ink-muted">
-            {cannotNumberSentence(estimateCount)}{" "}
+            <Count value={estimateCount} layerClass="estimate" wording="unavailable"
+              describedBy="layer-estimate-definition" />{" "}
             <Link href={CANNOT_NUMBER_HREF} className="underline underline-offset-2">
               {CANNOT_NUMBER_WHY}
             </Link>
@@ -265,6 +275,7 @@ export default async function ReportsPage(
               key={layer}
               href={route("genome.reports", subjectParams, { query: { layer } })}
               aria-current={layer === activeLayer ? "page" : undefined}
+              aria-describedby={`layer-${layer}-definition`}
               className={cn(
                 "-mb-px border-b-2 px-3 py-2 text-sm",
                 layer === activeLayer
@@ -296,6 +307,7 @@ export default async function ReportsPage(
             groups={groups}
             subject={subject.routeSegment}
             layerClass={LAYER_CLASS[activeLayer]}
+            describedBy={definitionId}
           />
         </section>
       ) : (

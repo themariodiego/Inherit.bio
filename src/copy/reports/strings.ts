@@ -165,9 +165,9 @@ export function fileCount(n: number): string {
 /** Kept as FILE_COUNT for the canonical name; identical to fileCount. */
 export const FILE_COUNT = fileCount;
 
-export function showAll(n: number): string {
-  return `Show all ${n}`;
-}
+export const SHOW_ALL_REPORTS = "Show all";
+export const REPORT_READY_BODY = "We finished processing your genome file. You can view your reports and their limits on your dashboard.";
+export const REPORTS_RELABELLED = "How sure we are: what changed";
 
 export const KIND_CHIPS = {
   self: "You",

@@ -1,13 +1,14 @@
 import { Button, Text } from "@react-email/components";
 import { EmailLayout, brand } from "./base";
+import { REPORT_READY_BODY } from "@/copy/reports/strings";
 
 export interface ReportReadyProps {
+  /** Legacy queue payload compatibility only; never a combined visible total. */
   reportCount: number;
   dashboardUrl: string;
 }
 
 export function ReportReadyEmail({
-  reportCount,
   dashboardUrl,
 }: ReportReadyProps) {
   return (
@@ -20,8 +21,7 @@ export function ReportReadyEmail({
           margin: 0,
         }}
       >
-        We finished processing your genome file.{" "}
-        {`${reportCount} report${reportCount === 1 ? " is" : "s are"} ready on your dashboard.`}
+        {REPORT_READY_BODY}
       </Text>
       <Button
         href={dashboardUrl}

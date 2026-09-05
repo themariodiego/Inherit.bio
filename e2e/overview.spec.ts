@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import {
   adminClient,
   createConfirmedUser,
@@ -17,7 +18,7 @@ import {
 // 1280×800 and 390×844 (≤7 empty, ≤12 populated). The phone navigation is a
 // fixed 64px bottom bar with five labelled, 44px-tall items.
 
-const USER = { email: "overview@e2e.local", password: "e2e-overview-pw" };
+const USER = { email: `overview-${randomUUID()}@e2e.local`, password: "e2e-overview-pw" };
 
 const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
@@ -70,11 +71,14 @@ async function expectNoFiguresOrDashes(page: Page) {
   for (const value of values) {
     expect(value.trim()).not.toBe("");
     expect(value.trim()).not.toMatch(/^(?:[-–—]|N\/A)$/);
-    // Every count is a numeral followed by its unit noun.
-    expect(value.trim()).toMatch(/\d+ \S+/);
+    // The five-item starter wording spells Five; other counts use numerals.
+    expect(value.trim()).toMatch(/(?:\d+|Five) \S+/);
   }
   const notes = page.locator("[data-metric-value] + [data-metric-note]");
-  expect(await notes.count()).toBe(values.length);
+  // X9.1's short metric note belongs to domain tiles. The newly classified
+  // starter count instead retains §7.2's exact full sentence and layer link.
+  const domainValues = page.locator("#my-genome [data-metric-value], #family [data-metric-value], #embryos [data-metric-value]");
+  expect(await notes.count()).toBe(await domainValues.count());
   for (const note of await notes.allTextContents()) {
     const words = note.trim().split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThanOrEqual(1);
@@ -281,7 +285,9 @@ test("State C: after one processed file — split count with note, ancestry line
 
   const starter = page.locator('section[aria-labelledby="starter-title"]');
   await expect(starter.locator("#starter-title")).toHaveText(STARTER_LINE);
-  const starterLinks = starter.getByRole("link");
+  const starterLinks = starter.locator("ol").getByRole("link");
+  await expect(starter.getByRole("link", { name: "Statistical estimates", exact: true }))
+    .toHaveAttribute("href", "#overview-estimate-definition");
   await expect(starterLinks).toHaveCount(STARTER_SLUGS.length);
   for (let i = 0; i < STARTER_SLUGS.length; i++) {
     await expect(starterLinks.nth(i)).toHaveAttribute(
