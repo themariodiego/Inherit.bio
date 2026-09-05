@@ -56,7 +56,7 @@ const NO_RANGE_YET = "We can’t put a range on this yet, so we don’t show a s
 const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
 const LIMIT_OF_FILE = "This is a limit of your file, not a result about you.";
 const ESTIMATE_DEFINITION =
-  "A model that adds up small effects. It is an estimate, not a reading. Scientists call these polygenic scores.";
+  "Links between DNA and traits found in studies. Some reports use one spot; polygenic scores combine many. Neither says what will happen to you.";
 const VARIANT_CALL_DEFINITION =
   "A result about one or a few exact spots in your DNA, read against an outside clinical classification.";
 const DOESNT_MEAN_GENERIC = "It does not say what will happen to you.";
@@ -156,7 +156,7 @@ test("three pilot reports show source-bound study context without inventing pers
     }
     await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
     await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(1);
-    await expect(page.locator('[data-figure="genotype"]')).toHaveCount(0);
+    await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
   }
 });
 
@@ -358,6 +358,8 @@ test("the reports list's estimate group renders its one layer definition, layer-
   await page.goto("/genome/me/reports?layer=estimate");
 
   await expect(page.locator("main h1")).toHaveText("Reports");
+  // All seeded estimates are single-locus, not unavailable polygenic scores.
+  await expect(page.getByText(/of these reports cannot give you a number yet/)).toHaveCount(0);
 
   // The active group's definition sentence renders once, at the top of the
   // group; the other layer's definition does not render here.

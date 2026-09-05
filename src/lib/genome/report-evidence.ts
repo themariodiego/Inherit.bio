@@ -2,6 +2,17 @@ import type { ReportTemplate, ResolvedReport } from "./reports";
 
 export type ReportMethod = "guideline-position" | "specific-position" | "position-association" | "polygenic-score" | "unavailable";
 
+/**
+ * All current polygenic outputs are coverage-only (PRS output boundary).
+ * Single-locus interpretations are useful nonnumeric results, not failed scores.
+ * Revisit this count when validated personal score publication is implemented.
+ */
+export function unavailablePolygenicCount(templates: readonly ReportTemplate[]): number {
+  return templates.filter((template) => template.layer !== "variant_call" && (
+    template.estimate_kind === "polygenic_score" || Boolean(template.pgs_id)
+  )).length;
+}
+
 /** Template identity is not proof that a score has been calculated or validated. */
 export function reportMethod(template: ReportTemplate): ReportMethod {
   if (template.layer === "variant_call") {
