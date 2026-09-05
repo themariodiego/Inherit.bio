@@ -1,7 +1,7 @@
 import AdmZip from "adm-zip";
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { adminClient, anonClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 
 // A13 — export contains originals + normalized variants; account deletion is
 // held for the fixed notice period and remains cancellable before purge starts.
@@ -39,6 +39,30 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
     "vcf",
   );
 
+  // Seed unmistakable legacy analytic quantities. They must not become
+  // personal score numbers merely because an export reads a stored row.
+  const { data: legacyScores, error: scoreError } = await adminClient()
+    .from("user_prs")
+    .update({ raw_score: 7.12345, zscore: 3.87654, percentile: 99.87654 })
+    .eq("file_id", vcfFileId)
+    .select("id");
+  expect(scoreError).toBeNull();
+  expect(legacyScores?.length).toBeGreaterThan(0);
+
+  const owner = anonClient();
+  const { error: signInError } = await owner.auth.signInWithPassword(USER);
+  expect(signInError).toBeNull();
+  const safe = await owner.from("user_prs").select("pgs_id, matched").eq("file_id", vcfFileId);
+  expect(safe.error).toBeNull();
+  expect(safe.data?.length).toBeGreaterThan(0);
+  for (const columns of ["raw_score", "zscore", "percentile", "*"]) {
+    const hidden = await owner.from("user_prs").select(columns).eq("file_id", vcfFileId);
+    expect(hidden.error?.code).toBe("42501");
+    expect(hidden.data).toBeNull();
+  }
+  // Revoke this API-test session only, not the separate browser session.
+  await owner.auth.signOut({ scope: "local" });
+
   const res = await page.request.get("/api/export");
   expect(res.status()).toBe(200);
   expect(res.headers()["content-type"]).toContain("application/zip");
@@ -64,6 +88,7 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
     }[];
     warnings?: string[];
     note: string;
+    prs_format: string;
   };
   expect(manifest.files.length).toBeGreaterThan(0);
   expect(manifest.note).toContain("free");
@@ -118,8 +143,14 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
     expect(reportsTxt).toContain(title);
   }
 
-  // prs.json is present and parseable (an array; may be empty for this file).
-  expect(Array.isArray(JSON.parse(zip.readAsText("prs.json")))).toBe(true);
+  const prsText = zip.readAsText("prs.json");
+  const prs = JSON.parse(prsText) as { file_id: string; status: string; reason: string; coverage: { matched: number; required: number } | null }[];
+  expect(manifest.prs_format).toBe("coverage-only-v1");
+  expect(prs.some((row) => row.file_id === vcfFileId)).toBe(true);
+  expect(prs.every((row) => row.status === "unavailable" && row.reason === "no_validated_reference")).toBe(true);
+  expect(prs.some((row) => row.coverage !== null)).toBe(true);
+  expect(prsText).not.toMatch(/"(?:raw_score|zscore|percentile|risk)"/);
+  for (const sentinel of ["7.12345", "3.87654", "99.87654"]) expect(prsText).not.toContain(sentinel);
 });
 
 test("account deletion schedules a seven-day hold and can be cancelled", async ({
