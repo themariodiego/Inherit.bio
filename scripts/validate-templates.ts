@@ -15,6 +15,7 @@ import {
   titleFindings,
 } from "../src/lib/genome/template-prose";
 import { readabilitySentences, wordCount } from "./readability";
+import { studyContextFindings, readStudyContext } from "../src/lib/genome/study-context";
 
 const CATEGORIES = new Set([
   "heart-cardiovascular",
@@ -104,9 +105,14 @@ export function templateProseFields(t: {
   title?: unknown;
   summary?: unknown;
   variants?: { interpretations?: Record<string, unknown> }[];
+  citations?: unknown[];
 }): string[] {
   const fields: unknown[] = [t.title, t.summary];
   for (const v of t.variants ?? []) fields.push(...Object.values(v.interpretations ?? {}));
+  for (const citation of t.citations ?? []) {
+    const context = readStudyContext(citation);
+    if (context) fields.push(...Object.values(context).map((entry) => entry?.text));
+  }
   return fields.filter((field): field is string => typeof field === "string");
 }
 
@@ -237,6 +243,12 @@ function main() {
       if (!Array.isArray(cites) || cites.length === 0)
         errors.push(`${id}: no citations`);
       for (const c of cites) {
+        for (const finding of studyContextFindings(c)) errors.push(`${id}: ${finding}`);
+        for (const entry of Object.values(readStudyContext(c) ?? {})) {
+          if (!entry) continue;
+          for (const finding of nakedRelativeFindings(entry.text))
+            errors.push(`${id}: study context ${finding.rule}: ${finding.detail}`);
+        }
         if (!c.pmid && !c.doi) errors.push(`${id}: citation missing pmid/doi`);
         if (c.pmid && !/^\d{6,9}$/.test(String(c.pmid)))
           errors.push(`${id}: bad pmid ${c.pmid}`);

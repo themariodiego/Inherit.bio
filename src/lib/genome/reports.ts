@@ -5,6 +5,7 @@
 // their strand complement is 'unrecognized' — never silently reinterpreted.
 
 import type { EstimateKind, EvidenceLevel, FindingLayer } from "./taxonomy";
+import type { StudyContext } from "./study-context";
 
 export interface TemplateVariant {
   rsid: number;
@@ -22,6 +23,7 @@ export interface Citation {
   label: string;
   /** ISO date the cited source was read (G4.7); required on Medicines templates (ADR 0021). */
   accessedOn?: string;
+  studyContext?: StudyContext;
 }
 
 export interface ReportTemplate {

@@ -35,7 +35,17 @@
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "11788828", "label": "Enattah et al., Nat Genet 2002" }
+      {
+        "pmid": "11788828",
+        "label": "Enattah et al., Nat Genet 2002",
+        "accessedOn": "2026-09-05",
+        "studyContext": {
+          "measured": { "text": "The study examined whether lactase enzyme activity stays high after childhood. Lactase breaks down milk sugar in the gut.", "locator": "Abstract" },
+          "population": { "text": "Researchers mapped the region in nine extended Finnish families. They then compared the gene change with enzyme findings in 236 people from four populations.", "locator": "Abstract, family mapping and association samples" },
+          "comparison": { "text": "The main position matched the enzyme finding across the tested sample. The linked position agreed in 229 of the 236 cases. These nearby markers are not two independent confirmations.", "locator": "Abstract, association results and linked region; report scope limitation" },
+          "limitation": { "text": "Enzyme activity is not the same as symptoms after a meal. This comparison cannot tell how much dairy a person can eat comfortably. The sampled populations do not represent everyone.", "locator": "Abstract, measured outcome and sample scope; report scope limitation" }
+        }
+      }
     ]
   },
   {
