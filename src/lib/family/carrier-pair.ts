@@ -415,17 +415,14 @@ export function countPositionsBothCover(
 
 // ---------------------------------------------------------------------------
 // Reading the rows the rule decides on (design §5: computed server-side, at
-// request time). The reads are ordered so the common state costs one query:
-// today every `ref_variants.clinvar_significance` is null, so the classified
-// set is empty, no genotype is read, no runs measure is read and the panel
-// states that it has nothing to check yet.
+// request time). The legacy classification reader is withheld regardless of
+// existing database labels. No genotype or runs measure is read for an empty
+// classified set, and the panel states that it has nothing to check yet.
 // ---------------------------------------------------------------------------
 
 /**
- * A read budget for the classified positions, not a scientific threshold.
- * The seed writes no classification at all, so this read returns nothing on
- * a real deployment; the budget exists so one page load cannot pull an
- * unbounded table.
+ * Reserved read budget for a future verified assertion reader, not a
+ * scientific threshold. The current legacy reader always returns empty.
  */
 export const MAX_CLASSIFIED_POSITIONS = 5_000;
 
@@ -445,30 +442,16 @@ export interface CarrierPairSummary {
 
 const NO_GENOTYPES: CarrierPairSummary["genotypes"] = { a: new Map(), b: new Map() };
 
-/** Every classified reference position, paged to the read budget. */
+/**
+ * No row in the legacy rsID reference table carries the allele/condition/
+ * assertion provenance this rule needs. Neither seed labels nor old refresh
+ * labels may activate personal carrier output. Keep the rule available for
+ * verified fixtures, but withhold the production reader until the reviewed
+ * clinical assertion importer exists.
+ */
 export async function readClassifiedVariants(supabase: Db): Promise<CarrierRefVariant[]> {
-  const PAGE = 1_000;
-  const rows: CarrierRefVariant[] = [];
-  for (let from = 0; from < MAX_CLASSIFIED_POSITIONS; from += PAGE) {
-    const { data } = await supabase
-      .from("ref_variants")
-      .select("rsid, gene_symbol, alt, clinvar_significance")
-      .not("clinvar_significance", "is", null)
-      .not("gene_symbol", "is", null)
-      .order("rsid")
-      .range(from, from + PAGE - 1);
-    const page = data ?? [];
-    for (const row of page) {
-      rows.push({
-        rsid: row.rsid,
-        geneSymbol: row.gene_symbol,
-        alt: row.alt,
-        clinvarSignificance: row.clinvar_significance,
-      });
-    }
-    if (page.length < PAGE) break;
-  }
-  return rows;
+  void supabase;
+  return [];
 }
 
 /** Every registry row that names a gene, read once per request. */

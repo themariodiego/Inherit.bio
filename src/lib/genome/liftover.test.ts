@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { buildLiftover, type Liftover } from "./liftover";
+import { buildLiftover, liftSingleBaseVariant, type Liftover } from "./liftover";
 
 const CHAIN_PATH = join(
   process.cwd(),
@@ -47,6 +47,7 @@ describe("buildLiftover", () => {
       expect(lift(t.chrom, t.pos37)).toEqual({
         chrom: t.chrom38,
         pos: t.pos38,
+        strand: t.rsid === "rs1642149602" ? -1 : 1,
       });
     });
   }
@@ -59,5 +60,22 @@ describe("buildLiftover", () => {
 
   it("returns null for a chromosome absent from the chain file", () => {
     expect(lift(99, 12345)).toBeNull();
+  });
+
+  it("orients all single-base alleles across a reverse-strand block", () => {
+    expect(liftSingleBaseVariant({ rsid: 1642149602, chrom: 1, pos: 400568, ref: "T", alt: "G", genotype: "G/T" }, lift)).toEqual({
+      rsid: 1642149602, chrom: 1, pos: 418769, ref: "A", alt: "C", genotype: "A/C",
+    });
+  });
+
+  it("keeps a reference-free array call reference-free after strand correction", () => {
+    expect(liftSingleBaseVariant({ rsid: 1642149602, chrom: 1, pos: 400568, ref: null, alt: null, genotype: "G/T" }, lift)).toEqual({
+      rsid: 1642149602, chrom: 1, pos: 418769, ref: null, alt: null, genotype: "A/C",
+    });
+  });
+
+  it("withholds indels and unknown calls that point liftover cannot normalize", () => {
+    expect(liftSingleBaseVariant({ rsid: null, chrom: 1, pos: 400568, ref: "CT", alt: "C", genotype: "C/CT" }, lift)).toBeNull();
+    expect(liftSingleBaseVariant({ rsid: null, chrom: 1, pos: 400568, ref: null, alt: null, genotype: "--" }, lift)).toBeNull();
   });
 });

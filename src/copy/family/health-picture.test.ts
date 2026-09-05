@@ -136,7 +136,7 @@ describe("health-picture copy", () => {
 
   it("says in words that there is nothing to check when the reference table classifies nothing (D-034)", () => {
     expect(copy.NO_CLASSIFIED_POSITIONS).toBe(
-      "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.",
+      "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen.",
     );
     expect(copy.NO_CLASSIFIED_POSITIONS).not.toMatch(/\d/);
     expect(copy.NO_CLASSIFIED_POSITIONS).not.toContain("checked the");
