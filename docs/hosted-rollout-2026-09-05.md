@@ -56,8 +56,9 @@ opened merely to silence an advisor.
 1. [Authenticated SECURITY DEFINER execution](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable):
    `public.job_time_stats(text)` intentionally exposes a timing aggregate,
    with an empty search path, not raw jobs. Its exact count, percentile and
-   window contract still require comparison against the resolution brief;
-   the warning was not silently waived or fixed by breaking its caller.
+   window contract were compared against the brief and corrected in PR 55
+   below. The intentionally callable aggregate may still produce this notice;
+   the notice is not treated as proof of a clean or broken implementation.
 2. [Leaked-password protection is disabled](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
    No auth setting was changed during schema rollout.
 
@@ -142,3 +143,23 @@ and one copy-publication entry.
 This is deployment of reviewed repository copy, not new scientific
 validation of every legacy association. The absent Medicines content,
 validated polygenic risk and complete upload lifecycles remain separate.
+
+## PR 55 timing correction
+
+PR 55 merged after full CI run `33990743833` passed at head
+`1eb4a945e01f9fe2e8a549b5568073448f06ef67`; merge commit
+`a2823a6478b8e76c072054f88a3c62a6c2e95329`. Hosted preflight found no
+dependent database objects on the function. The exact committed
+`20260905202657_job_timing_privacy.sql` was applied through the migration
+API, then read back as `TABLE(n_bucket text, p50_seconds integer,
+p95_seconds integer)`, with anon execution denied and authenticated/service
+execution retained. The empty sample returns only `<20` and two null
+percentiles. Root independently repeated the 38 new pgTAP assertions in
+the isolated timing database with no failures and rollback.
+
+Production is READY at that merge commit, deployment
+`dpl_7R8KKFJzt8LFrVo5Z9qCCqYWEEsS`. The public changelog HTML was also
+read back and contains both the taste correction and reviewed-copy
+publication entries. This does not replace authenticated browser checks.
+No password-protection setting was changed and no extra user-facing gate
+was added by the timing correction.
