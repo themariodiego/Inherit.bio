@@ -262,6 +262,24 @@ export default function TermsPage() {
             </>
           ),
         },
+        {
+          id: "future-person",
+          heading: "12. A person born from an embryo",
+          body: (
+            <>
+              <p>
+                The person who may be born from an embryo in an Inherit record
+                is an intended beneficiary of rights one through six of the{" "}
+                <Link href="/legal/future-person">Future Person Charter</Link>.
+                That person may enforce those rights against Inherit.
+              </p>
+              <p>
+                For England and Wales, the Contracts (Rights of Third Parties)
+                Act 1999 applies to this clause and is not excluded.
+              </p>
+            </>
+          ),
+        },
       ]}
     />
   );

@@ -93,7 +93,10 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Ancestry region geometry (quantized TopoJSON) and its build provenance | `public/geo/regions.topo.json`, `public/geo/GEOMETRY_PROVENANCE.md` | the ancestry map, decoded and projected on the server by `src/lib/geo/`; regenerated only by `scripts/build-region-geometry.ts` (ADR 0013) |
 | Forbidden ancestry label words (demonyms and ethnonyms; never a company or product name) | `data/ref/regions/label-denylist.json` | region unit tests and the ancestry E2E |
 | Retention clocks and artifact dispositions | `docs/retention.md` | route disposition IDs, purge jobs, export/deletion UI and legal copy |
-| Legal artifacts and exact versions | `content/legal/{artifact_key}/v{n}.md` | legal routes, consent artifact seed, signatures |
+| Legal artifacts and exact versions | `content/legal/{artifact_key}/v{n}.md` | legal routes, the consent artifact seed (the migration repeats the body verbatim, single-quoted, because a migration cannot read a file; `content/legal/legal-content.test.ts` fails when seed and file differ), signatures |
+| Embryo operation nonce and CSRF token contract (claims, contexts, lifetime, placement) | `src/lib/embryos/operation-token.ts` | every embryo route; `embryo_operation_nonces` records the consumed digests |
+| Record Key alphabet and length | `src/lib/embryos/record-key-cards.ts` (`RECORD_KEY_ALPHABET`, `RECORD_KEY_PATTERN`) | `private.embryo_record_key_v1` is the generating mirror; pgTAP asserts the format |
+| Embryo artifact statement keys | `src/lib/embryos/basis.ts` | `private.embryo_statement_keys_v1` mirrors them; `content/legal/legal-content.test.ts` asserts equality; the bodies number the statements in the same order |
 | Legal rendered-string anchors and review status | `docs/legal-register.json` | legal gate and review checklist |
 | Attestation statements | `content/attestations/<kind>/<version>.md` | server signing routes |
 | Legal/human review records | `docs/reviews/` | jurisdiction resolver and release gate |
