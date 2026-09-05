@@ -34,6 +34,7 @@ import {
   templateRsids,
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import { loadPrsForChat } from "@/lib/genome/prs-output";
 import { parseRsid } from "@/lib/genome/types";
 import { isLocalBaseUrl, providerKeyFor, ssrfReasonForBaseUrl } from "@/lib/llm";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -51,7 +52,8 @@ Hard rules:
 - Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions.
 - Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder.
 - Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex.
-- State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned.`;
+- State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned.
+- A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk. Coverage counts are not risk; do not turn them into one.`;
 
 /** The text of the newest user turn, or null when the request carries none. */
 function latestUserText(messages: UIMessage[]): string | null {
@@ -254,7 +256,9 @@ export async function POST(request: Request) {
           getSubjectGenotypesByRsid(admin, subject.id, [n]),
           admin
           .from("ref_variants")
-          .select("rsid, chrom, pos38, ref, alt, gene_symbol, clinvar_significance, gnomad_af")
+          // Legacy clinical labels/frequencies are rsID-wide, not bound to
+          // the subject's called allele. Do not offer them as personal evidence.
+          .select("rsid, chrom, pos38, ref, alt, gene_symbol")
           .eq("rsid", n)
           .maybeSingle(),
         ]);
@@ -282,7 +286,7 @@ export async function POST(request: Request) {
       execute: async ({ gene }) => {
         const { data: refs } = await admin
           .from("ref_variants")
-          .select("rsid, chrom, pos38, gene_symbol, clinvar_significance")
+          .select("rsid, chrom, pos38, gene_symbol")
           .ilike("gene_symbol", gene)
           .limit(50);
         if (!refs || refs.length === 0) {
@@ -382,27 +386,11 @@ export async function POST(request: Request) {
     }),
     get_prs: tool({
       description:
-        "Get the user's computed polygenic score result for a PGS Catalog ID, with coverage and the ancestry-portability caveat.",
+        "Get score-panel coverage and the reason a validated personal score is unavailable. No percentile, rank or risk is available.",
       inputSchema: z.object({
         score_id: z.string().describe("PGS Catalog ID, e.g. 'PGS000018'"),
       }),
-      execute: async ({ score_id }) => {
-        const { data: meta } = await admin
-          .from("prs_scores")
-          .select("pgs_id, name, trait, n_variants, ancestry_note, citation")
-          .eq("pgs_id", score_id)
-          .maybeSingle();
-        if (!meta) return { error: "unknown score id" };
-        if (files.length === 0) return { ...meta, result: null };
-        const { data: results } = await admin
-          .from("user_prs")
-          .select("raw_score, zscore, percentile, coverage, matched")
-          .eq("subject_id", subject.id)
-          .eq("pgs_id", score_id)
-          .order("computed_at", { ascending: false })
-          .limit(1);
-        return { ...meta, result: results?.[0] ?? null };
-      },
+      execute: async ({ score_id }) => loadPrsForChat(admin, subject.id, score_id, files.length > 0),
     }),
   };
 

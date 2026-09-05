@@ -47,6 +47,19 @@ templates seeded into `public.report_templates`.
 
 Rules (enforced by `scripts/validate-templates.ts` and CI):
 
+- Optional `citations[].studyContext` stores original editorial study context
+  inside the existing citation JSON, not a new evidence rating. It has four
+  required keys: `measured`, `population`, `comparison`, `limitation`. Each is
+  `{ "text": "Plain-language study fact or clearly labelled scope limit.",
+  "locator": "Paper page, table or abstract section" }`, or explicit `null`
+  when not recorded. A valid PMID or DOI and real `accessedOn` date are required.
+  Missing or malformed context is withheld; legacy citations remain valid.
+  Each claim must be checked against the named primary paper. Scope limitations
+  derived from the study design must say so in their locator. Do not copy article
+  prose or infer a population, effect size, causality or actionability. The seed
+  writer preserves this object in `report_templates.citations`; the report shows
+  it under the existing sources heading, never as a personalized finding.
+
 - Every template carries ≥1 citation with a real PMID or DOI.
 - `evidence` is one of the five rubric levels: `clinical`, `established`,
   `emerging`, `preliminary`, `insufficient`. Seeds are always published and an

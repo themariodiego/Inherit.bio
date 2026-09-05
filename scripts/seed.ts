@@ -13,6 +13,8 @@ import type {
 } from "../src/lib/genome/taxonomy";
 import type { Database } from "../src/lib/supabase/types";
 import { seedLayerAndKind } from "./seed-layer";
+import { seedCitations } from "../src/lib/genome/study-context";
+import type { Citation } from "../src/lib/genome/reports";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -80,7 +82,7 @@ interface SeedTemplate {
     interpretations: Record<string, string>;
   }[];
   pgs_id: string | null;
-  citations: { pmid?: string; doi?: string; label: string }[];
+  citations: Citation[];
 }
 
 async function seedTemplates() {
@@ -115,7 +117,7 @@ async function seedTemplates() {
       ...seedLayerAndKind(t),
       variants: t.variants as never,
       pgs_id: t.pgs_id,
-      citations: t.citations as never,
+      citations: seedCitations(t.citations) as never,
       published_at: new Date().toISOString(),
     }));
     const { error } = await db

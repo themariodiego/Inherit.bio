@@ -4,6 +4,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createConfirmedUser, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
 import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fixture";
+import type { ReportTemplate } from "../src/lib/genome/reports";
+import { readStudyContext } from "../src/lib/genome/study-context";
 
 // Report skeleton and figure contract (brief X4, X5, X13) on the My Genome
 // surfaces, against the tiny GRCh38 VCF fixture (rs762551 het → A/C; APOE
@@ -133,6 +135,29 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
   await createConfirmedUser(MEDICINES_USER.email, MEDICINES_USER.password);
+});
+
+test("three pilot reports show source-bound study context without inventing personal findings", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  const templates = ["basic-traits", "gastrointestinal"].flatMap((category) =>
+    JSON.parse(fs.readFileSync(path.join(process.cwd(), `data/templates/${category}.json`), "utf8")) as ReportTemplate[],
+  ).filter((template) => template.citations.some((citation) => citation.studyContext));
+  expect(templates).toHaveLength(3);
+  for (const template of templates) {
+    await page.goto(`/genome/me/reports/${template.slug}`);
+    await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+    const panel = page.locator('[data-slot="study-context"]');
+    await expect(panel).toHaveCount(1);
+    await expect(panel).toContainText("not a personal result");
+    const citation = template.citations.find((source) => source.studyContext)!;
+    for (const entry of Object.values(readStudyContext(citation)!)) {
+      await expect(panel).toContainText(entry!.text);
+      await expect(panel).toContainText(entry!.locator);
+    }
+    await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
+    await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(1);
+    await expect(page.locator('[data-figure="genotype"]')).toHaveCount(0);
+  }
 });
 
 
