@@ -80,6 +80,16 @@ pnpm dev
 proof, network audit, upload/report flows) against a production build and
 the local stack.
 
+## Deploy
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fthemariodiego%2FInherit.bio)
+
+The hosted instance at [inherit.bio](https://inherit.bio) runs on Vercel. A
+clone from the button needs the environment variables described in
+[docs/self-hosting.md](docs/self-hosting.md) before it serves anything, and
+large-file compute (FASTQ/BAM) stays on the self-hosted
+[worker](worker/README.md) either way.
+
 ## Non-goals
 
 No sequencing sales, no imputation ([ADR-0003](docs/adr/0003-no-imputation.md)),
