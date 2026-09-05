@@ -55,7 +55,7 @@ const TINY_ROWS: readonly Row[] = [
   { chrom: "chr2", pos: 135_851_076, id: "rs4988235", ref: "G", alt: "A", gt: "1/1" },
   { chrom: "chr11", pos: 66_560_624, id: "rs1815739", ref: "C", alt: "T", gt: "0/1" },
   { chrom: "chr12", pos: 111_803_962, id: "rs671", ref: "G", alt: "A", gt: "0/0" },
-  { chrom: "chr15", pos: 74_749_576, id: "rs762551", ref: "A", alt: "C", gt: "0/1" },
+  { chrom: "chr15", pos: 74_749_576, id: "rs762551", ref: "C", alt: "A", gt: "0/1" },
 ];
 
 export function buildRows(): Row[] {

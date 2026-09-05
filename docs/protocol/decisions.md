@@ -1381,3 +1381,28 @@ Decisions:
   and all 45 public RPC types. Combined verification passes 1,588 unit tests,
   typecheck and the naming, secret and readability gates. The mail type diff
   against that main remains exactly the optional expiry argument.
+
+## 2026-09-06 — Reconcile report-count acceptance with X5.1
+
+- G4.3 uses X4/X5.1 and ADR 0011's `data-figure-class` values `variant-call`
+  and `estimate`, not the superseded count attribute/classes. The database
+  keeps `variant_call`. ADR 0022's exact definitions are unchanged.
+- Every catalog count now uses the runtime-guarded `Count` component and a
+  required reachable exact definition. Overview no longer bypasses it;
+  inactive list counts expose their definition through their own disclosure;
+  filtered category show-all counts remain bound to the active layer.
+- Section 7.2's exact Five/{n} starter sentences remain for homogeneous sets.
+  ADR 0010 permits both finding layers in the deterministic five-item selection.
+  For mixed sets, X5.1 takes precedence over displaying one total: preserve the
+  selected links/cap and within-layer order, partition the presentation by
+  layer, and retain the exact sentence independently for each group. Paragraphs
+  preserve the four-heading budget; selection eligibility is not narrowed.
+- Report-ready mail retains its compatible payload, notification and link,
+  but does not display a combined count. The public relabel event keeps every
+  entry without a numeric headline. No source, scientific interpretation,
+  account authority, database schema or hosted data changes are included.
+- The complete surface inventory and independent mutation-tested browser
+  detector are documented in `docs/report-count-contract.md`. Thirteen local
+  production-browser tests pass, including both real seeded layers and both
+  viewport sizes. G4.3 remains NO until the reviewed full PR run supplies the
+  remaining acceptance evidence; component correctness alone is insufficient.

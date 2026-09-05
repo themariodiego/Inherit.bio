@@ -207,3 +207,39 @@ reports access returned HTTP 307 to sign-in. Error/fatal runtime counts
 returned no rows during the brief post-deploy window; that is not long-run
 assurance. Advisors reported 131 INFO, two existing WARN and zero ERROR
 findings. Existing job-timing and password-setting notes remain unchanged.
+
+## PR 58 report-ready mail deadline
+
+Exact reviewed migration `20260905212646_mail_default_expiry_database_clock`
+was applied as hosted version `20260905220720`. Postflight verified one
+database-clock default, the unchanged ten-argument RPC identity, fixed search
+path and service-only EXECUTE privileges. Existing missed notices were not
+replayed; no real-user email was sent during verification.
+
+CI `33994098294` passed, including 132 browser tests. Merge
+`f6d7cca9e043d1d39cce3fbd1c35ef67b2cb49c4` deployed READY as
+`dpl_J5cD3boMoio77Fwrah6zLPYM9C36` on both public domains. The short
+post-deploy error/fatal scan returned no rows. Whole-plan acceptance remained
+16/65; this is a reliability repair, not a complete retention-workflow claim.
+
+## PR 59 alcohol and caffeine report context
+
+CI `33995201463` passed at head `e47429c`, including 733 SQL assertions
+and 134 browser tests without skips or retries. The initial run exposed an
+obsolete three-report/one-source expectation; the corrected test checks all
+five contextual reports and every source, including explicitly unknown fields.
+
+At `2026-09-05T22:22:38Z`, an atomic two-row update changed only the reviewed
+title/summary/interpretation/citation content and update timestamps for
+`alcohol-flush-aldh2-rs671` and `caffeine-metabolism-cyp1a2-rs762551`. Exact
+full-row preimages were locked and compared before mutation; postimages matched
+the reviewed repository content, with all unrelated fields unchanged. One
+public changelog entry records the update. The operation was locally tested
+for atomicity and idempotence before the hosted application.
+
+Merge `5c52bddaeecc67d9984be0b6d451c710c84c7fb8` deployed READY as
+`dpl_hM3UviGFhW8xV9zRBEuKGKhbQpTq`. An authenticated library reload remained
+healthy; the short deployment-scoped error/fatal scan returned no rows.
+No actual genome file was reprocessed or deleted. Five public report templates
+now carry the deeper study context; this does not revalidate the entire catalog
+or advance the broader science acceptance requirements.

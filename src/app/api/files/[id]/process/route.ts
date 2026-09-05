@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { OBSERVED_CALL_VERSION } from "@/lib/genome/observed-calls";
 import { PANEL } from "@/lib/ancestry/panel";
 import { measureRunsOfHomozygosity, rohCallsFromParse, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
@@ -47,6 +49,7 @@ export async function POST(
     .eq("id", id)
     .maybeSingle();
   if (!file) return new Response("Not found", { status: 404 });
+  if (file.user_id !== user.id) return new Response("Not found", { status: 404 });
   if (file.tier !== 1) {
     return new Response("Only Tier-1 files are processed serverside", {
       status: 400,
@@ -79,6 +82,8 @@ export async function POST(
     .update({
       status: "parsing",
       build: null,
+      observed_call_sha256: null,
+      observed_call_version: null,
       processing_started_at: new Date().toISOString(),
       error: null,
       roh_status: null,
@@ -107,7 +112,14 @@ export async function POST(
       throw new Error(`storage download failed (${res.status})`);
     }
 
-    const lines = toLines(res.body);
+    const sourceHash = createHash("sha256");
+    async function* hashedBytes() {
+      for await (const bytes of res.body as unknown as AsyncIterable<Uint8Array>) {
+        sourceHash.update(bytes);
+        yield bytes;
+      }
+    }
+    const lines = toLines(hashedBytes());
     let parsed: ParseResult;
     if (ARRAY_KINDS.has(file.file_type)) {
       parsed = await parseArray(lines, file.file_type as ArrayKind);
@@ -116,12 +128,13 @@ export async function POST(
     } else {
       throw new Error(`unsupported tier-1 type ${file.file_type}`);
     }
+    const sourceSha256 = sourceHash.digest("hex");
 
     // Unknown or conflicting coordinates must never be relabelled GRCh38.
     // Invalidate old derivatives from this same file before refusing a rerun;
     // source bytes remain. An error is explicit, never a report-ready state.
     if (parsed.build === "unknown") {
-      for (const table of ["user_variants", "ancestry_results", "user_prs"] as const) {
+      for (const table of ["user_variants", "ancestry_results", "user_prs", "report_observed_calls"] as const) {
         const { error } = await admin.from(table).delete().eq("file_id", id);
         if (error) throw new Error(`Unknown-build derivative cleanup failed: ${table}`);
       }
@@ -136,12 +149,21 @@ export async function POST(
     const runs = measureRunsOfHomozygosity(rohCallsFromParse(parsed));
 
     let records = parsed.records;
+    let observed = (parsed.observedCalls ?? []).map((source) => ({ source, normalized: { ...source } as VariantRecord }));
     let unmapped = 0;
     if (parsed.build === "GRCh37") {
       const chainGz = await fs.readFile(
         path.join(process.cwd(), "data/ref/chain/GRCh37_to_GRCh38.chain.gz"),
       );
       const lift = buildLiftover(new Uint8Array(chainGz));
+      observed = observed.flatMap(({ source }) => {
+        // No-call evidence still needs a canonical locus. Lift its literal
+        // REF/ALT without converting the missing genotype to a called result.
+        const normalized = liftSingleBaseVariant({ ...source, genotype: source.genotype === "--" ? `${source.ref}/${source.ref}` : source.genotype }, lift);
+        if (!normalized) return [];
+        if (source.genotype === "--") normalized.genotype = "--";
+        return [{ source, normalized }];
+      });
       const lifted: VariantRecord[] = [];
       for (const r of records) {
         const mapped = liftSingleBaseVariant(r, lift);
@@ -154,7 +176,26 @@ export async function POST(
       records = lifted;
     }
 
-    await admin.from("user_variants").delete().eq("file_id", id);
+    const { error: observedDeleteError } = await admin.from("report_observed_calls").delete().eq("file_id", id);
+    if (observedDeleteError) throw new Error("Observed-call replacement failed");
+    for (let i = 0; i < observed.length; i += 1000) {
+      const rows = observed.slice(i, i + 1000).map(({ source, normalized }) => ({
+        file_id: id, user_id: user.id, subject_id: file.subject_id!,
+        source_line: source.line, source_sha256: sourceSha256, extraction_version: OBSERVED_CALL_VERSION,
+        source_build: parsed.build, source_chrom: source.chrom, source_pos: source.pos,
+        source_ref: source.ref!, source_alt: source.alt!, source_gt: source.sourceGt,
+        rsid: source.rsid!, chrom: normalized.chrom, pos: normalized.pos,
+        ref: normalized.ref!, alt: normalized.alt!, genotype: normalized.genotype,
+        site_filter: source.filter, sample_filter: source.sampleFilter,
+        genotype_quality: source.genotypeQuality, read_depth: source.depth,
+        quality_state: source.quality, usable: source.usable,
+      }));
+      const { error } = await admin.from("report_observed_calls").insert(rows);
+      if (error) throw new Error("Observed-call insert failed");
+    }
+
+    const { error: variantDeleteError } = await admin.from("user_variants").delete().eq("file_id", id);
+    if (variantDeleteError) throw new Error("Variant replacement failed");
     const BATCH = 10000;
     for (let i = 0; i < records.length; i += BATCH) {
       const rows = records.slice(i, i + BATCH).map((r) => ({
@@ -184,7 +225,8 @@ export async function POST(
       return /^[ACGT]$/.test(alleles[0]) ? alleles[0] : null;
     };
 
-    await admin.from("ancestry_results").delete().eq("file_id", id);
+    const { error: ancestryDeleteError } = await admin.from("ancestry_results").delete().eq("file_id", id);
+    if (ancestryDeleteError) throw new Error("Ancestry replacement failed");
     // One row shape for the whole bulk insert: PostgREST fills a key that
     // some rows omit with null, not the column default, so every row states
     // its state columns explicitly (a null result_state violates NOT NULL).
@@ -276,7 +318,8 @@ export async function POST(
         { genotype: r.genotype, ref: r.ref, alt: r.alt },
       ]),
     );
-    await admin.from("user_prs").delete().eq("file_id", id);
+    const { error: prsDeleteError } = await admin.from("user_prs").delete().eq("file_id", id);
+    if (prsDeleteError) throw new Error("Polygenic replacement failed");
     const prsRows = ALL_PRS_SCORES.map((score) => {
       const result = computePrs(prsLookup, score);
       return {
@@ -306,6 +349,8 @@ export async function POST(
         // genome_files describes the uploaded source; user_variants remains
         // the canonical GRCh38 store. Do not erase the source assembly.
         build: parsed.build,
+        observed_call_sha256: parsed.observedCalls ? sourceSha256 : null,
+        observed_call_version: parsed.observedCalls ? OBSERVED_CALL_VERSION : null,
         variant_count: records.length,
         processing_finished_at: finishedAt,
         ...rohColumns(runs, finishedAt),

@@ -4,6 +4,19 @@ These fixtures are deterministic synthetic test data. They describe no real
 person and must never be replaced with customer, patient, or personal genome
 data.
 
+## observed-reference-grch38.vcf and observed-reference-grch38.txt
+
+- Classification: hand-written synthetic VCF and consumer-array representations
+  of five public report positions with invented homozygous reference calls.
+  They describe no real person and contain no customer or personal genome.
+- The browser test compares actual processing, report previews and ALDH2
+  detail; VCF `0/0` must match the equivalent array base genotype without
+  creating variant rows or changing variant-only analyses.
+- Repository SHA-256, VCF:
+  `492f53687668cf19561a6ab0402e2d189bf0018f908baa04fdd77bb898fea7cf`.
+- Repository SHA-256, array:
+  `9a6b68acfd4d3f3086b9f735f7765e03cfa97a2fa25d3c29a13ac928e2eb4f2b`.
+
 ## personal-previews-grch38.vcf
 
 - Classification: hand-written synthetic single-sample GRCh38 VCF with five
@@ -23,7 +36,9 @@ data.
 - Classification: synthetic VCF assembled solely from four public variant
   coordinates and invented genotype calls.
 - Repository SHA-256:
-  `14b26f8edac8d3697802afac5e0fc63e303afcd4a9173cb274984941f57d556b`.
+  `6f661a97271720aada0b5caf2a9193986d9c9d9c4449c85cb6244ed0c024d423`.
+- The caffeine row uses forward GRCh38 REF C / ALT A, correcting swapped
+  labels while preserving the invented heterozygous A/C call.
 
 ## aims-mixed-grch38.vcf
 
@@ -69,7 +84,9 @@ data.
   classifies the same seven positions under its own synthetic gene names
   (`PTGENE1`–`PTGENE7`) and removes them in `afterAll`.
 - Repository SHA-256:
-  `07c47a62ec9ad6fa384ab7a1fde0a439e4434627e90883457e57d613209e8078`.
+  `b9c5f7d77c8ea9e094869d41189e5198e74e481a72698066074f5d9c312c9f8c`.
+- The shared caffeine row and its generator use forward GRCh38 REF C / ALT A;
+  all genotype calls and the measured run of homozygosity are unchanged.
 
 ## tiny.bam
 

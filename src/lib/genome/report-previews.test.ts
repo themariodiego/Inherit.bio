@@ -105,11 +105,14 @@ describe("reviewed personal previews", () => {
   it("binds the query to owner, subject and processed known-build file IDs, withholds on errors", async () => {
     const query = {
       select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(), then: (resolve: (value: unknown) => void) => resolve({ data: [call], error: null }),
     };
-    const db = { from: vi.fn(() => query) } as unknown as Db;
+    const fileQuery = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
+      range: async () => ({ data: [{ id: "known", build: "GRCh37" }] }) };
+    const db = { from: vi.fn((table: string) => table === "genome_files" ? fileQuery : query) } as unknown as Db;
     const result = await loadPersonalPreviews(db, audience, templates, [{ id: "known", build: "GRCh37" }, { id: "unknown", build: null }], new Set());
-    expect(query.eq.mock.calls).toEqual([["user_id", "owner"], ["subject_id", "subject"]]);
+    expect(query.eq.mock.calls).toEqual([["subject_id", "subject"], ["user_id", "owner"], ["subject_id", "subject"], ["user_id", "owner"]]);
     expect(query.in.mock.calls[0]).toEqual(["file_id", ["known"]]);
     expect(result.get(trait.slug)?.text).toBe(trait.statements.TT);
     query.then = (resolve) => resolve({ data: [call], error: { message: "unavailable" } });

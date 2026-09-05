@@ -1,5 +1,38 @@
 # Test diff register
 
+Report count contract (2026-09-06): `Count` units add runtime refusal checks
+for missing/mixed/legacy layers, nonfinite/fractional/negative/unsafe numbers,
+missing/multiple/non-string definition ids and wrong-layer unavailable-score
+wording. Starter grouping/render tests preserve exact Five/{n} sentences,
+the five-total cap, selected links and within-layer order; mixed sets render
+separate classified groups, not a combined headline. Email tests replace
+the misleading combined-total expectation with nonnumeric notification/link
+preservation checks for legacy payload counts 0, 1 and 162.
+
+`e2e/report-counts.spec.ts` adds actual-route desktop/phone checks for both
+seeded layers, no-file and processed-file lists, Overview, hub, category
+expansion, filters, local/global search and changelog. Its independent DOM
+detector scans count-pattern text outside known slots too. Six injected
+mutations must fail: missing class, mixed heading, mixed class token, split-span
+unclassified total, dangling definition and legacy count attribute. The phrase
+“one report at a time” is a reading-order idiom, not a catalog count; the
+detector excludes that grammar while retaining bare worded totals.
+
+Existing report-skeleton assertions now require the inactive layer's exact
+definition once inside an operable disclosure rather than requiring its
+absence. The two header-count assertions are scoped to the header because
+category show-all counts are now classified too. Overview uses a fresh per-run
+account, preserving the genuinely empty first state without deleting prior
+fixtures. Its original short-note budget remains pinned on all domain metrics;
+the newly classified starter retains its separate exact full sentence and
+definition link. Every original starter report link is still asserted inside
+the list. No skip, retry setting, figure requirement or density cap changed.
+
+Final targeted production-browser verification: 13 passed, zero failed,
+skipped or retried. Earlier local runs exposed the reused Overview account,
+the reading-order idiom and newly classified starter's distinct note contract;
+those causes were corrected before the complete green run.
+
 | Test | Change | Why | Retained or strengthened contract |
 | --- | --- | --- | --- |
 | `supabase/tests/file_ready_mail_target_guard.sql`, `supabase/tests/mail_outbox.sql`, `supabase/tests/mail_default_expiry.sql`, `e2e/file-deletion.spec.ts` | Add exact-file readiness invalidation coverage and real annotated mail fixtures | A queued readiness notice could outlive a deleted file; earlier mail fixtures referenced nonexistent files. | All 11 original outbox and 21 expiry assertions remain. New tests cover missing/pending/wrong-recipient targets, late enqueue, stale queued/claimed sources, live replay and unchanged research/sent history. Browser deletion preserves the exact notice as invalidated; no provider request is made. |
@@ -206,3 +239,55 @@ this change set. Existing design-token assertions are unchanged.
 | `e2e/copilot.spec.ts` | Disclosure assertion corrected | Consent must describe the narrower data actually sent after the score-output boundary. | Requires score-panel coverage/unavailable-reference disclosure and rejects the former score/percentile claim; existing provider-consent and revocation assertions remain. |
 | `src/lib/genome/report-evidence.test.ts`, `src/components/reports/report-evidence.test.ts` | New report-basis assertions | Citation count was labelled as independent studies; no source-read dates or resolver-state accounting were shown. | Method-kind consistency and safe model identifiers; conflict precedence, missing-store and unrecognized/no-call partition; exact valid source dates with invalid/missing dates refused; rendered citation links and unavailable dates; state counts without genetic values or extra top-level sections; server-side reveal-gate placement; bounded copy. These tests do not prove allele-safe enrichment or whole-file assay coverage. |
 | `e2e/report-skeleton.spec.ts` | Refined source-count assertion and extended method/coverage assertions | A guideline citation is a cited source, not proof of one supporting study; the summary now has a separate method explanation. Reusing fixture accounts accumulated old files on repeated local runs. | Pin cited-source wording, reject the old study-count claim, assert interpreted count and Medicines method limitation. Summary still equals the entire seed text and retains its first-sentence requirement via an explicit summary slot; no existing summary assertion is removed. Per-run fixture identities preserve the exact one-file assertions without deleting prior fixture data. |
+# Happy-path reference allele fixture correction — 2026-09-06
+
+The tiny and generated carrier-pair VCFs still labelled GRCh38 rs762551 A>C,
+opposite the reviewed template and corrected personal-preview fixture. Their
+REF/ALT labels now read C>A; every GT remains unchanged, including the A/C
+heterozygote. The generator and provenance hashes are updated together. A
+narrow unit regression checks exact template locus/allele identity across all
+three happy-path fixtures and byte parity with the carrier generator. Existing
+Family, report-gate and report-skeleton result assertions are preserved; no
+resolver condition or expected genotype is relaxed. The stale report-gate
+comment about discarded reference calls is removed.
+
+Four fixture identity unit tests and all eight report-skeleton production
+browser cases pass locally. The combined run recorded 11 passes; Family
+stopped at its invitation-mail fixture and report-gate at an already registered
+fixed test email on the reused local database, before their affected result
+assertions. Their complete verification remains the fresh-database CI run;
+these setup failures are not reported as passes. Typecheck and scoped lint pass.
+
+# Observed reference report calls — 2026-09-06
+
+The literal VCF SNP parser now retains a separate report-only observation with
+source quality and GT evidence. Tests pin reference/alternate parity, phased
+diploid calls, unknown optional quality, failed filters, unsupported/symbolic
+ALT, intervals, no-calls and multi-sample exclusion. Existing ROH and
+variant-only analysis inputs are unchanged.
+
+Processing tests pin exact server-read compressed-byte SHA256, owner/file
+binding, reversed GRCh37 reference normalization, idempotent replacement and
+failed-extraction nonpublication. Resolver tests exhaust row/file pagination,
+including conflict after row 1000 in either store and after file 1000; a
+later-page failure returns no partial findings. Missing/failed calls are not
+reported as genotype disagreements.
+
+New rollback-only SQL tests cover grants/RLS, composite owner/subject FK,
+completion hash and parsing-state denial, restricted lifecycle denial, exact
+file cascade, ownership-transfer denial and existing account graph compatibility. The closed purge-store
+count rises from 111 to 112 for the explicitly registered observation table;
+no existing assertion is removed. On main59 plus this slice: 1,635 units and
+752 pgTAP assertions pass, typecheck and scoped lint pass, and the local
+security advisor reports no error-level issues.
+
+Five production-build browser cases pass: literal VCF/array reference parity,
+alcohol GG and AA, populated previews/filter/detail navigation, and no-file
+account isolation. The new parity case checks source hash, five persisted
+observations, zero variant-only rows and byte-equal idempotent reprocessing.
+Main59's GG case previously asserted the known missing-reference bug before
+adding an array call; it now requires the observed VCF takeaway first and keeps
+the subsequent array-agreement and full-report assertions. The first combined
+run exposed stale local ALDH2 template content; exactly two public template
+rows were advanced to reviewed main59 content with full preimages saved outside
+the repository. No private upload was reprocessed and no hosted data changed.
