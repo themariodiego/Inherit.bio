@@ -1,0 +1,29 @@
+{
+  "accessedOn": "2026-09-06",
+  "accessDateTimezone": "Europe/Copenhagen",
+  "source": "CPIC API, selected fields from live responses; no patient data",
+  "licence": "CC0 1.0 Universal; attribution requested",
+  "urls": {
+    "definitions": "https://api.cpicpgx.org/v1/allele_definition?id=in.(779064,779068,8361554)",
+    "values": "https://api.cpicpgx.org/v1/allele_location_value?alleledefinitionid=in.(779064,779068,8361554)",
+    "locations": "https://api.cpicpgx.org/v1/sequence_location?id=in.(949529,779060)",
+    "star2Values": "https://api.cpicpgx.org/v1/allele_location_value?alleledefinitionid=eq.8361554"
+  },
+  "alleleDefinitions": [
+    { "id": 779064, "version": 187, "genesymbol": "NUDT15", "name": "*1", "matchesreferencesequence": true },
+    { "id": 779068, "version": 187, "genesymbol": "NUDT15", "name": "*3", "matchesreferencesequence": false },
+    { "id": 8361554, "version": 1, "genesymbol": "NUDT15", "name": "*2", "matchesreferencesequence": false }
+  ],
+  "alleleLocationValues": [
+    { "alleledefinitionid": 779064, "locationid": 949529, "variantallele": "GAGTCG(3)", "version": 1 },
+    { "alleledefinitionid": 779064, "locationid": 779060, "variantallele": "C", "version": 1 },
+    { "alleledefinitionid": 779068, "locationid": 949529, "variantallele": "GAGTCG(3) or GAGTCG(4)", "version": 1 },
+    { "alleledefinitionid": 779068, "locationid": 779060, "variantallele": "T", "version": 1 }
+  ],
+  "sequenceLocations": [
+    { "id": 779060, "version": 107, "dbsnpid": "rs116855232", "genesymbol": "NUDT15", "chromosomelocation": "g.48045719C>T", "position": 48045719 },
+    { "id": 949529, "version": 99, "dbsnpid": "rs746071566", "genesymbol": "NUDT15", "chromosomelocation": "g.48037784GAGTCG[2]; g.48037784GAGTCG[4]", "position": 48037784 }
+  ],
+  "star2LocationValues": [],
+  "unifiedContentVersion": null
+}
