@@ -64,3 +64,14 @@ Storage deletion acknowledgement or terminal notice producer is added.
 The independent mail queue has no source-acceptance or retention authority.
 These primitives do not change self-upload/report capabilities or promote an
 embryo acceptance gate.
+
+## Combined integration verification
+
+After integrating main through PR 55 on 2026-09-05, root independently ran
+all 17 database test files in the isolated local database: **712 assertions
+passed**, with rollback and without resetting the shared development stack.
+All **1,548 unit tests** passed, followed by full lint, typecheck, readability,
+name and repository/history secret gates. All 40 existing main public RPC
+signatures are preserved alongside the five added embryo RPCs, including the
+new timing return contract. These are local primitive/integration results,
+not a production upload, physical Storage-drain or final-purge proof.
