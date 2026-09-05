@@ -1,4 +1,30 @@
-# Acceptance matrix (A1–A18)
+# Acceptance matrix
+
+## Current interpretation (2026-09-05)
+
+The full-resolution G1–G8 ledger below is the completion measure: **16/65
+verified**, not a development percentage. The A1–A18 table and its dated
+57-test run are historical baseline evidence, not current production claims.
+Later work can supersede that behavior without completing the stricter gates.
+
+- PRs 51–55 passed full CI and merged. PR 55's exact head was
+  `1eb4a945e01f9fe2e8a549b5568073448f06ef67`, CI `33990743833`;
+  production was verified READY at merge `a2823a6478b8e76c072054f88a3c62a6c2e95329`.
+- Hosted schema and reviewed report-copy parity are recorded in
+  `docs/hosted-rollout-2026-09-05.md`. All 151 published templates match the
+  reviewed repository content; three have source-read dates and deeper study
+  context. This is not scientific revalidation of the whole catalog.
+- PR 52 deliberately replaced unvalidated personal score quantities with
+  coverage-only output in chat, export and authenticated table reads. A6's
+  former percentile claim is no longer a current product capability.
+- ADR 0021 superseded the historical Medicines withholding decision with
+  eleven per-position, letters-only reports in the repository. Those eleven
+  were not added to the hosted catalog by the report-copy rollout.
+- Embryo session/transport/unwind foundations do not complete source acceptance,
+  physical cleanup, final graph purge or upload steps 3–5. No G gate is
+  promoted by these primitives. The capability remains disabled.
+
+## Historical baseline acceptance (A1–A18)
 
 **Required baseline:** `864736979c92a08ba77e8580d61946eba6864918`
 (`8647369`; 48 E2E tests on 2026-08-28).
@@ -7,7 +33,7 @@ G1.2 non-test-code baseline/current counts over the same population:
 `@ts-expect-error` 0/0; `@ts-ignore` 0/0; `as any` 1/1;
 `eslint-disable` 0/0.
 
-**Withheld capabilities: 1** (§8, alternative complete outcome 1).
+**Historical withheld capabilities: 1** (§8, alternative complete outcome 1).
 Pharmacogenomics — the Medicines category — is withheld on an obstacle
 classified safety (primary) and scientific (supporting); its dossier is
 `docs/withheld/pharmacogenomics.md` and its ADR is

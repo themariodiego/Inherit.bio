@@ -3,6 +3,7 @@ import { z } from "zod";
 import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
 
 export const maxDuration = 300;
 
@@ -223,6 +224,15 @@ async function drainMail() {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  try {
+    const terminal = await drainEmbryoTerminalMail(admin);
+    processed += terminal.processed;
+    failed += terminal.failed;
+  } catch {
+    // A broken terminal row must not prevent unrelated ordinary mail delivery.
+    failed++;
+  }
 
   // The request cannot choose a batch size or row. A fixed bound keeps one
   // invocation predictable while the database chooses due work with
