@@ -106,6 +106,13 @@ test("cross-user reads return zero rows on every user table", async () => {
     "user_prs",
     "llm_settings",
     "profiles",
+    // Embryo tables are service-role only: a signed-in account gets a
+    // privilege error, never a row, even for its own cohorts.
+    "embryo_cohort_drafts",
+    "embryo_cohorts",
+    "embryos",
+    "future_person_record_key_hashes",
+    "embryo_operation_nonces",
   ]) {
     const { data, error } = await a.from(table).select("*").limit(10);
     if (error) {
@@ -195,6 +202,9 @@ test("anonymous is denied on every private table and the storage object", async 
     "user_prs",
     "llm_settings",
     "profiles",
+    "embryo_cohorts",
+    "embryos",
+    "embryo_operation_nonces",
   ]) {
     const { data } = await anon.from(table).select("*").limit(10);
     expect(data ?? [], `${table} must be empty for anon`).toHaveLength(0);

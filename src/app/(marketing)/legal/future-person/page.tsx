@@ -13,7 +13,8 @@ export default function FuturePersonPage() {
     <LegalPage
       eyebrow="Charter"
       title="The Future Person Charter"
-      effectiveDate="2026-09-01"
+      effectiveDate="2026-09-05"
+      version={1}
       intro={
         <section data-legal-summary>
           <p data-legal-summary>

@@ -16,6 +16,7 @@ export function LegalPage({
   title,
   intro,
   effectiveDate,
+  version,
   sections,
 }: {
   eyebrow: string;
@@ -23,6 +24,8 @@ export function LegalPage({
   intro?: ReactNode;
   /** ISO date, e.g. "2026-08-28". Omit for undated pages. */
   effectiveDate?: string;
+  /** The published version of the text, shown next to the effective date. */
+  version?: number;
   sections: LegalSection[];
 }) {
   return (
@@ -44,6 +47,7 @@ export function LegalPage({
                 },
               )}
             </time>
+            {version !== undefined && <> · Version {version}</>}
           </p>
         )}
         {intro && (

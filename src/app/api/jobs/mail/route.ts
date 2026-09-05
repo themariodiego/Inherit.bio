@@ -47,9 +47,57 @@ const adultSubjectInvitationPayload = z
   })
   .strict();
 
+// Embryo-purpose templates (contract §7). Every payload is a closed shape:
+// unknown keys fail the mail rather than reaching a template.
+const displayLabel = z.string().regex(/^Embryo [1-9][0-9]?$/);
+const embryoCount = z.number().int().min(1).max(64);
+
+const coParentInvitationPayload = z.object({}).strict();
+
+const embryoUploadNoticePayload = z.object({ embryoCount }).strict();
+
+const recordKeyAddendumPayload = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("date-changed"),
+      displayLabel,
+      closingDateIso: z.iso.date(),
+      closingDateWords: z.string().trim().min(1).max(40),
+    })
+    .strict(),
+  z.object({ kind: z.literal("no-source"), displayLabel }).strict(),
+  z.object({ kind: z.literal("card-invalidated"), embryoCount }).strict(),
+]);
+
+const embryoDispositionNoticePayload = z
+  .object({
+    displayLabel,
+    disposition: z.enum(["stored", "transferred", "donated", "discarded"]),
+    effectiveAt: z.iso.datetime({ offset: true }),
+    retentionExpiresAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
+const cohortRestrictionNoticePayload = z.object({ embryoCount }).strict();
+
+const embryoDraftExpiredPayload = z.object({}).strict();
+
 function applicationUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.inherit.bio";
   return new URL(path, base).toString();
+}
+
+// Embryo-purpose links carry the one-time delivery token in the URL fragment
+// (decision §11.6), so it never reaches a server log or a referrer. A missing
+// or malformed token fails the mail: it is never turned into a link and never
+// silently dropped.
+const deliveryTokenShape = /^[A-Za-z0-9_-]{43}$/;
+
+function fragmentUrl(deliveryToken: string | null | undefined): string {
+  if (!deliveryToken || !deliveryTokenShape.test(deliveryToken)) {
+    throw new Error("mail_token_unavailable");
+  }
+  return `${applicationUrl("/withdraw/request")}#${deliveryToken}`;
 }
 
 function parseMail(
@@ -93,6 +141,43 @@ function parseMail(
         note: parsed.note,
       },
     };
+  }
+  if (templateId === "co-parent-invitation") {
+    coParentInvitationPayload.parse(payload);
+    return {
+      id: templateId,
+      payload: { invitationUrl: fragmentUrl(deliveryToken) },
+    };
+  }
+  if (templateId === "embryo-upload-notice") {
+    const parsed = embryoUploadNoticePayload.parse(payload);
+    // The withdraw link exists only for a row that was issued a token.
+    return {
+      id: templateId,
+      payload: {
+        embryoCount: parsed.embryoCount,
+        withdrawUrl: deliveryToken ? fragmentUrl(deliveryToken) : undefined,
+      },
+    };
+  }
+  if (templateId === "record-key-addendum") {
+    return { id: templateId, payload: recordKeyAddendumPayload.parse(payload) };
+  }
+  if (templateId === "embryo-disposition-notice") {
+    return {
+      id: templateId,
+      payload: embryoDispositionNoticePayload.parse(payload),
+    };
+  }
+  if (templateId === "cohort-restriction-notice") {
+    return {
+      id: templateId,
+      payload: cohortRestrictionNoticePayload.parse(payload),
+    };
+  }
+  if (templateId === "embryo-draft-expired") {
+    embryoDraftExpiredPayload.parse(payload);
+    return { id: templateId, payload: {} };
   }
   throw new Error("mail_template_unknown");
 }
