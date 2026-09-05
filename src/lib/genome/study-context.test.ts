@@ -66,6 +66,39 @@ describe("source-bound study context", () => {
     expect(renderToStaticMarkup(h(CitationItem, { citation: invalid as Citation }))).not.toContain('data-slot="study-context"');
   });
 
+  it.each([
+    { pmid: "invalid", doi: "10.1126/science.1080190" },
+    { pmid: "", doi: "10.1126/science.1080190" },
+    { pmid: 12595690, doi: "10.1126/science.1080190" },
+    { pmid: null, doi: "10.1126/science.1080190" },
+    { pmid: "12595690", doi: "invalid" },
+    { pmid: "12595690", doi: "" },
+    { pmid: "12595690", doi: 1080190 },
+    { pmid: "12595690", doi: null },
+  ])("withholds context when either supplied identifier is malformed: %j", (identifiers) => {
+    const invalid = { ...citation, ...identifiers };
+    expect(studyContextFindings(invalid)).toContain("studyContext needs a valid source identifier");
+    expect(readStudyContext(invalid)).toBeNull();
+    expect(() => seedCitations([invalid])).toThrow();
+    expect(renderToStaticMarkup(h(CitationItem, { citation: invalid as Citation }))).not.toContain('data-slot="study-context"');
+  });
+
+  it.each([
+    { pmid: "12595690", doi: undefined },
+    { pmid: undefined, doi: "10.1126/science.1080190" },
+    { pmid: "12595690", doi: "10.1126/science.1080190" },
+  ])("retains source context with valid supplied identifiers: %j", (identifiers) => {
+    const valid = { ...citation, ...identifiers };
+    expect(studyContextFindings(valid)).toEqual([]);
+    expect(readStudyContext(valid)).toEqual(citation.studyContext);
+    expect(seedCitations([valid])).toEqual([valid]);
+    const html = renderToStaticMarkup(h(CitationItem, { citation: valid }));
+    expect(html).toContain('data-slot="study-context"');
+    expect(html).toContain(identifiers.pmid
+      ? 'href="https://pubmed.ncbi.nlm.nih.gov/12595690/"'
+      : 'href="https://doi.org/10.1126/science.1080190"');
+  });
+
   it("leaves legacy citations unchanged and does not inherit context from a nearby citation", () => {
     const legacy = { label: "Older citation", pmid: "15723792" };
     expect(seedCitations([legacy])).toEqual([legacy]);

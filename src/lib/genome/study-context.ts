@@ -12,8 +12,13 @@ function record(value: unknown): value is Record<string, unknown> {
 export function studyContextFindings(citation: unknown): string[] {
   if (!record(citation) || citation.studyContext === undefined) return [];
   const findings: string[] = [];
-  if (!(typeof citation.pmid === "string" && /^\d{6,9}$/.test(citation.pmid)) &&
-      !(typeof citation.doi === "string" && /^10\.\d{4,9}\/\S+$/.test(citation.doi)))
+  const validPmid = typeof citation.pmid === "string" && /^\d{6,9}$/.test(citation.pmid);
+  const validDoi = typeof citation.doi === "string" && /^10\.\d{4,9}\/\S+$/.test(citation.doi);
+  // The citation renderer prefers PMID. A valid fallback must not admit a
+  // malformed supplied identifier and attach context to an invalid source link.
+  if ((!validPmid && !validDoi) ||
+      (citation.pmid !== undefined && !validPmid) ||
+      (citation.doi !== undefined && !validDoi))
     findings.push("studyContext needs a valid source identifier");
   if (typeof citation.accessedOn !== "string" || !validSourceReadDate(citation.accessedOn))
     findings.push("studyContext needs a valid source-read date");
