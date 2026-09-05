@@ -7389,6 +7389,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finish_genome_file_deletion_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_file_id: string; p_token: string }
+        Returns: undefined
+      }
+      prepare_genome_file_deletion_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_file_id: string }
+        Returns: Json
+      }
       accept_embryo_co_parent_invitation_v1: {
         Args: {
           p_account_email_hmac: string
