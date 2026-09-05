@@ -4,6 +4,7 @@ import {
   isStarterCandidate,
   isStarterLayer,
   selectStarterReports,
+  groupStarterReports,
   STARTER_LIMIT,
   STARTER_EXCLUDED_CATEGORIES,
 } from "./starter";
@@ -32,6 +33,25 @@ function resolved(t: ReportTemplate, covered = true): ResolvedReport {
 }
 
 describe("starter reading list", () => {
+  it("refuses a presentation set above the original five-report cap", () => {
+    expect(() => groupStarterReports(Array.from({ length: 6 }, (_, i) =>
+      template(`report-${i}`, "basic-traits")))).toThrow("invalid_starter_count");
+  });
+  it("partitions a mixed selected set without changing membership or within-layer order", () => {
+    const reports = [
+      template("estimate-a", "basic-traits", "emerging", { layer: "estimate" }),
+      template("call-b", "basic-traits", "emerging", { layer: "variant_call" }),
+      template("estimate-c", "basic-traits", "emerging", { layer: "estimate" }),
+    ];
+    expect(groupStarterReports(reports)).toEqual([
+      { layer: "estimate", reports: [reports[0], reports[2]] },
+      { layer: "variant_call", reports: [reports[1]] },
+    ]);
+    expect(reports.map((report) => report.slug)).toEqual(["estimate-a", "call-b", "estimate-c"]);
+    expect(groupStarterReports([])).toEqual([]);
+    expect(groupStarterReports([reports[1]])).toEqual([{ layer: "variant_call", reports: [reports[1]] }]);
+  });
+
   it("treats rows without layer columns as single-locus estimates (seed derivation)", () => {
     expect(isStarterLayer(template("a", "basic-traits"))).toBe(true);
     expect(isStarterLayer(template("b", "basic-traits", "emerging", { layer: "variant_call" }))).toBe(true);

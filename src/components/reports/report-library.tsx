@@ -16,12 +16,13 @@ import {
   FILTER_REPORTS,
   NO_SEARCH_MATCHES,
   SEARCH_REPORTS_LABEL,
-  showAll,
+  SHOW_ALL_REPORTS,
 } from "@/copy/reports/strings";
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 import { PERSONAL_RESULT_LABEL, WITH_RESULTS_LABEL, NO_RESULT_MATCHES } from "@/copy/reports/personal-previews";
 import type { PersonalPreview } from "@/lib/genome/report-previews";
+import { Count } from "./count";
 
 export type CoverageStatus = keyof typeof COVERAGE_PILLS;
 
@@ -145,11 +146,13 @@ export function ReportLibrary({
   groups,
   subject,
   layerClass,
+  describedBy,
 }: {
   groups: LibraryGroup[];
   /** The subject's route segment; every card links to its genome.report route. */
   subject: string;
   layerClass: LibraryLayerClass;
+  describedBy: string;
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [query, setQuery] = useState("");
@@ -223,6 +226,7 @@ export function ReportLibrary({
             <a
               key={g.id}
               href={`#${g.id}`}
+              aria-describedby={describedBy}
               onClick={(e) => jumpTo(e, g.id)}
               className="rounded-full border border-line bg-card px-3 py-1 text-sm text-ink-muted transition-colors hover:border-forest hover:text-ink"
             >
@@ -269,7 +273,8 @@ export function ReportLibrary({
               </ul>
               {visibleCards.length < g.cards.length ? (
                 <Button type="button" variant="outline" size="sm" onClick={() => expand(g.id)}>
-                  {showAll(g.cards.length)}
+                  {SHOW_ALL_REPORTS}{" "}
+                  <Count value={g.cards.length} layerClass={layerClass} describedBy={describedBy} />
                 </Button>
               ) : null}
             </section>

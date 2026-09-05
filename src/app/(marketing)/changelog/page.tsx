@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { REPORTS_RELABELLED } from "@/copy/reports/strings";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -114,7 +115,7 @@ export default async function ChangelogPage() {
               </time>
               <details className="mt-1">
                 <summary className="cursor-pointer font-medium">
-                  {item.entries.length} reports re-labelled under the new evidence rubric
+                  {REPORTS_RELABELLED}
                 </summary>
                 <ul className="mt-2 space-y-1 text-sm text-ink-muted">
                   {item.entries.map((entry) => (
