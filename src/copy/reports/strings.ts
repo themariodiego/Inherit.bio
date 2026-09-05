@@ -45,13 +45,20 @@ export const NOTHING_TO_DO =
 export const WHAT_YOU_CAN_DO_MEDICINES =
   "Inherit does not say what any doctor should do with this result. You can show it to any doctor you choose.";
 
+export const WHAT_YOU_CAN_DO_ALCOHOL_FLUSH =
+  "You can discuss this result, any flushing, and your drinking history with a doctor if you wish. Inherit does not set an intake limit or tell you what care you need.";
+
 /**
- * The statement under "What you can do" for a report’s user-facing category:
- * the Medicines string for `medicines`, brief line 630’s string for every
- * other category and for a template whose legacy category is unmapped.
+ * Brief §2.2 line 630’s fixed sentence is conditional on nothing actionable.
+ * Preserve category defaults; the reviewed alcohol report has a non-directive
+ * discussion option, not a claim that its result cannot inform clinical advice.
  */
-export function whatYouCanDo(category: CategoryId | null): string {
-  return category === "medicines" ? WHAT_YOU_CAN_DO_MEDICINES : NOTHING_TO_DO;
+export function whatYouCanDo(category: CategoryId | null, slug?: string): string {
+  if (category === "medicines") return WHAT_YOU_CAN_DO_MEDICINES;
+  if (category === "food-drink-metabolism" && slug === "alcohol-flush-aldh2-rs671") {
+    return WHAT_YOU_CAN_DO_ALCOHOL_FLUSH;
+  }
+  return NOTHING_TO_DO;
 }
 
 export const NOT_DIAGNOSTIC =

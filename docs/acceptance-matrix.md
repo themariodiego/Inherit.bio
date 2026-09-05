@@ -12,7 +12,7 @@ Later work can supersede that behavior without completing the stricter gates.
   production was verified READY at merge `a2823a6478b8e76c072054f88a3c62a6c2e95329`.
 - Hosted schema and reviewed report-copy parity are recorded in
   `docs/hosted-rollout-2026-09-05.md`. All 151 published templates match the
-  reviewed repository content; three have source-read dates and deeper study
+  reviewed repository content; five have source-read dates and deeper study
   context. This is not scientific revalidation of the whole catalog.
 - PR 52 deliberately replaced unvalidated personal score quantities with
   coverage-only output in chat, export and authenticated table reads. A6's

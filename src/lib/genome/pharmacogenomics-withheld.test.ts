@@ -240,7 +240,7 @@ describe("the report renderer’s fixed strings for Medicines (ADR 0021)", () =>
     expect(medicinesBannedLanguage(WHAT_YOU_CAN_DO_MEDICINES)).toEqual([]);
     // The report page selects it through the one function, by the nine-category id.
     const page = source("src/app/(app)/genome/[subject]/reports/[slug]/page.tsx");
-    expect(page).toContain("{whatYouCanDo(categoryId)}");
+    expect(page).toContain("{whatYouCanDo(categoryId, template.slug)}");
     expect(page).not.toContain("{NOTHING_TO_DO}");
   });
 

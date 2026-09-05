@@ -15,6 +15,19 @@ export const PERSONAL_PREVIEW_TRAITS = [
     qualifier: "This describes earwax type, not a measure of body odor.",
   },
   {
+    slug: "alcohol-flush-aldh2-rs671", rsid: 671, chrom: 12, pos38: 111803962, ref: "G", alt: "A",
+    source: {
+      pmid: "39075523", supportingPmids: ["2024727"], accessedOn: "2026-09-05",
+      locator: "Rwere 2024, Figure 3: AG/GG response. Enomoto 1991, abstract: AA liver and blood tests.",
+    },
+    statements: {
+      GG: "Your file does not show the common ALDH2 change linked to alcohol flushing.",
+      AG: "Your file shows one copy of a form that slows the breakdown of an alcohol by-product called acetaldehyde. This can help explain flushing.",
+      AA: "Your file shows two copies of a form linked to very low ALDH2 activity. This enzyme clears acetaldehyde, a by-product of alcohol.",
+    } as Record<string, string>,
+    qualifier: "This explains one route to flushing, not your overall alcohol tolerance.",
+  },
+  {
     slug: "lactase-persistence-lct-rs4988235", rsid: 4988235, chrom: 2, pos38: 135851076, ref: "G", alt: "A",
     source: { pmid: "11788828", accessedOn: "2026-09-05", locator: "Abstract: association with biochemically verified lactase activity" },
     statements: {

@@ -137,25 +137,35 @@ test.beforeAll(async () => {
   await createConfirmedUser(MEDICINES_USER.email, MEDICINES_USER.password);
 });
 
-test("three pilot reports show source-bound study context without inventing personal findings", async ({ page }) => {
+test("all five contextual reports show each source without inventing personal findings", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
-  const templates = ["basic-traits", "gastrointestinal"].flatMap((category) =>
+  const templates = ["basic-traits", "gastrointestinal", "lifestyle-wellness"].flatMap((category) =>
     JSON.parse(fs.readFileSync(path.join(process.cwd(), `data/templates/${category}.json`), "utf8")) as ReportTemplate[],
   ).filter((template) => template.citations.some((citation) => citation.studyContext));
-  expect(templates).toHaveLength(3);
+  expect(templates.map((template) => template.slug).sort()).toEqual([
+    "alcohol-flush-aldh2-rs671", "bitter-taste-tas2r38",
+    "caffeine-metabolism-cyp1a2-rs762551", "earwax-type-abcc11",
+    "lactase-persistence-lct-rs4988235",
+  ]);
   for (const template of templates) {
     await page.goto(`/genome/me/reports/${template.slug}`);
     await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
-    const panel = page.locator('[data-slot="study-context"]');
-    await expect(panel).toHaveCount(1);
-    await expect(panel).toContainText("not a personal result");
-    const citation = template.citations.find((source) => source.studyContext)!;
-    for (const entry of Object.values(readStudyContext(citation)!)) {
-      await expect(panel).toContainText(entry!.text);
-      await expect(panel).toContainText(entry!.locator);
+    const citations = template.citations.filter((source) => source.studyContext);
+    await expect(page.locator('[data-slot="study-context"]')).toHaveCount(citations.length);
+    for (const [index, citation] of citations.entries()) {
+      const panel = page.locator('[data-slot="study-context"]').nth(index);
+      await expect(panel).toContainText("not a personal result");
+      for (const entry of Object.values(readStudyContext(citation)!)) {
+        if (entry === null) {
+          await expect(panel).toContainText("Not recorded in this study summary.");
+        } else {
+          await expect(panel).toContainText(entry.text);
+          await expect(panel).toContainText(entry.locator);
+        }
+      }
+      await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
     }
-    await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
-    await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(1);
+    await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(citations.length);
     await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
   }
 });
