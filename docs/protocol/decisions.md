@@ -1223,3 +1223,35 @@ Decisions:
 - Full-suite testing uses an isolated unseeded local database. The existing
   local database has prior browser fixtures and is preserved. No hosted changes,
   enabled capability or acceptance-gate promotion is claimed.
+
+## 2026-09-05 — E0 atomic session lifecycle (in progress)
+
+- Cohort finalization and session minting now share one private transaction.
+  A failed session, handle or due-phase insert rolls back the consumed draft,
+  provisional records, keys and operation nonce. The same nonce can then succeed.
+- Session credentials and ordinal handles use 256 random bits; only their
+  digests are stored. One immutable creation time and exactly 24-hour deadline
+  bind the session and its retention pair. Repeated finalization cannot renew it.
+- The minted authority fingerprint checks the exact five participant sets,
+  current artifact hashes and versions, typed attestations and their revisions,
+  principal/account/jurisdiction revisions, basis review and donor state.
+  Chunk reservation and acknowledgement recheck that fingerprint. An unresolved
+  cohort attestation contradiction refuses authority.
+- Two outstanding attempts exhaust the account cap, including expired and
+  failure-pending work whose cleanup is not complete. These rows are not treated
+  as available capacity merely because the request has stopped.
+- The shared pre-finalization fixture retains all 38 original assertions;
+  the original cohort file still passes all 141 assertions. New transaction
+  tests cover late due-store failure and authority drift without weakening the
+  immutable-artifact guard. Administrative supersession is simulated only in a
+  rolled-back test fixture.
+- These functions remain private, service-only and explicitly TEST-LOCAL-only.
+  HTTP cookie authorization, real capability decisions, Storage verification,
+  worker completion and cohort-wide failure unwind remain unfinished.
+  No production capability, hosted migration or acceptance promotion is claimed.
+- Independent review found missing recipient/disposition fields in the exact
+  due check and lock-order inversions with deletion, chunk writes and co-parent
+  sessions. The due check now rejects each changed field independently. New
+  row locks fail fast with NOWAIT; mint/wrapper calls also bound implicit and
+  legacy lock waits to 250ms. SQLSTATE 55P03 propagates as retriable contention,
+  never a permanent authorization failure or an extended deadline.

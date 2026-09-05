@@ -2330,18 +2330,21 @@ export type Database = {
       embryo_fragment_handle_maps: {
         Row: {
           consumed_at: string | null
+          expires_at: string | null
           handle_hash: string
           sample_ordinal: number
           session_id: string
         }
         Insert: {
           consumed_at?: string | null
+          expires_at?: string | null
           handle_hash: string
           sample_ordinal: number
           session_id: string
         }
         Update: {
           consumed_at?: string | null
+          expires_at?: string | null
           handle_hash?: string
           sample_ordinal?: number
           session_id?: string
@@ -2454,12 +2457,16 @@ export type Database = {
           accepted_chunks: number
           accepted_records: number
           account_auth_session_revision: number | null
+          account_id: string | null
           account_revision: number | null
+          authority_fingerprint: string | null
           basis_case: string
           basis_revision: number
+          capability_revision: number | null
           cohort_id: string
           cohort_lifecycle_revision: number | null
           completed_at: string | null
+          cookie_hash: string | null
           created_at: string
           declared_capacity_bytes: number | null
           donor_attribution_revision: number
@@ -2468,10 +2475,16 @@ export type Database = {
           failure_code: string | null
           id: string
           ingest_revision: number | null
+          origin: string | null
           originating_session_id: string
           participant_set_revision: number
+          reference_build: string | null
           source_binding_fingerprint: string
+          source_format: string | null
           status: string
+          transport_challenge: string | null
+          transport_revision: number | null
+          upload_id: string | null
           uploader_principal_id: string
         }
         Insert: {
@@ -2479,12 +2492,16 @@ export type Database = {
           accepted_chunks?: number
           accepted_records?: number
           account_auth_session_revision?: number | null
+          account_id?: string | null
           account_revision?: number | null
+          authority_fingerprint?: string | null
           basis_case: string
           basis_revision: number
+          capability_revision?: number | null
           cohort_id: string
           cohort_lifecycle_revision?: number | null
           completed_at?: string | null
+          cookie_hash?: string | null
           created_at?: string
           declared_capacity_bytes?: number | null
           donor_attribution_revision: number
@@ -2493,10 +2510,16 @@ export type Database = {
           failure_code?: string | null
           id?: string
           ingest_revision?: number | null
+          origin?: string | null
           originating_session_id: string
           participant_set_revision: number
+          reference_build?: string | null
           source_binding_fingerprint: string
+          source_format?: string | null
           status?: string
+          transport_challenge?: string | null
+          transport_revision?: number | null
+          upload_id?: string | null
           uploader_principal_id: string
         }
         Update: {
@@ -2504,12 +2527,16 @@ export type Database = {
           accepted_chunks?: number
           accepted_records?: number
           account_auth_session_revision?: number | null
+          account_id?: string | null
           account_revision?: number | null
+          authority_fingerprint?: string | null
           basis_case?: string
           basis_revision?: number
+          capability_revision?: number | null
           cohort_id?: string
           cohort_lifecycle_revision?: number | null
           completed_at?: string | null
+          cookie_hash?: string | null
           created_at?: string
           declared_capacity_bytes?: number | null
           donor_attribution_revision?: number
@@ -2518,10 +2545,16 @@ export type Database = {
           failure_code?: string | null
           id?: string
           ingest_revision?: number | null
+          origin?: string | null
           originating_session_id?: string
           participant_set_revision?: number
+          reference_build?: string | null
           source_binding_fingerprint?: string
+          source_format?: string | null
           status?: string
+          transport_challenge?: string | null
+          transport_revision?: number | null
+          upload_id?: string | null
           uploader_principal_id?: string
         }
         Relationships: [
