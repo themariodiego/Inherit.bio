@@ -118,12 +118,28 @@ describe("report strings", () => {
       expect(strings.whatYouCanDo(id), id).toBe(strings.NOTHING_TO_DO);
     }
     expect(strings.whatYouCanDo(null)).toBe(strings.NOTHING_TO_DO);
-    // Brief line 630’s string is unchanged for every other category.
+    // Brief line 630’s default string is unchanged for every other category.
     expect(strings.NOTHING_TO_DO).toBe(
       "There is nothing you need to do about this result. It does not change what any doctor would advise for you today.",
     );
     // §6.4: the Medicines string is information, not treatment advice.
     expect(strings.WHAT_YOU_CAN_DO_MEDICINES).not.toMatch(/\bdosage\b|\bsupplement\b|we recommend you take/i);
+  });
+
+  it("offers discussion only for the reviewed alcohol slug, preserving all other defaults", () => {
+    expect(strings.whatYouCanDo("food-drink-metabolism", "alcohol-flush-aldh2-rs671"))
+      .toBe(strings.WHAT_YOU_CAN_DO_ALCOHOL_FLUSH);
+    expect(strings.WHAT_YOU_CAN_DO_ALCOHOL_FLUSH).toBe(
+      "You can discuss this result, any flushing, and your drinking history with a doctor if you wish. Inherit does not set an intake limit or tell you what care you need.",
+    );
+    for (const id of Object.keys(strings.CATEGORY_DESCRIPTIONS) as CategoryId[]) {
+      expect(strings.whatYouCanDo(id, "some-other-report")).toBe(
+        id === "medicines" ? strings.WHAT_YOU_CAN_DO_MEDICINES : strings.NOTHING_TO_DO,
+      );
+    }
+    expect(strings.whatYouCanDo("medicines", "alcohol-flush-aldh2-rs671")).toBe(strings.WHAT_YOU_CAN_DO_MEDICINES);
+    expect(strings.whatYouCanDo(null, "alcohol-flush-aldh2-rs671")).toBe(strings.NOTHING_TO_DO);
+    expect(strings.whatYouCanDo("food-drink-metabolism", "alcohol-dependence-aldh2-rs671")).toBe(strings.NOTHING_TO_DO);
   });
 
   it("describes Medicines as what the reports are, and no longer states an absence", () => {

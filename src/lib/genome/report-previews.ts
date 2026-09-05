@@ -45,6 +45,8 @@ export function resolvePersonalPreview(
   const trait = PERSONAL_PREVIEW_TRAITS.find((item) => item.slug === template.slug);
   if (!trait || conflicts.has(trait.rsid) ||
       !template.citations.some((citation) => citation.pmid === trait.source.pmid)) return null;
+  if ("supportingPmids" in trait.source && trait.source.supportingPmids.some((pmid) =>
+    !template.citations.some((citation) => citation.pmid === pmid))) return null;
   const variants = template.variants.filter((variant) => variant.rsid === trait.rsid);
   if (variants.length !== 1) return null;
   const variant = variants[0];

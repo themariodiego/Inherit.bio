@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import basic from "../../../data/templates/basic-traits.json";
 import gut from "../../../data/templates/gastrointestinal.json";
+import lifestyle from "../../../data/templates/lifestyle-wellness.json";
 import { PERSONAL_PREVIEW_TRAITS } from "@/copy/reports/personal-previews";
 import type { ReportTemplate } from "./reports";
 import type { Db } from "./load";
@@ -16,8 +17,8 @@ const template = templateFor(trait.slug);
 const call: PreviewCall = { rsid: trait.rsid, chrom: trait.chrom, pos: trait.pos38, ref: trait.ref, alt: trait.alt, genotype: "T/T" };
 
 describe("reviewed personal previews", () => {
-  it("covers exactly three source-bound traits and all nine diploid calls", () => {
-    expect(PERSONAL_PREVIEW_TRAITS).toHaveLength(3);
+  it("covers exactly four source-bound traits and all twelve diploid calls", () => {
+    expect(PERSONAL_PREVIEW_TRAITS).toHaveLength(4);
     for (const item of PERSONAL_PREVIEW_TRAITS) {
       const report = templateFor(item.slug);
       expect(report.citations.some((source) => source.pmid === item.source.pmid)).toBe(true);
@@ -30,6 +31,22 @@ describe("reviewed personal previews", () => {
         expect(Object.keys(result!)).toEqual(["text", "qualifier"]);
       }
     }
+  });
+
+  it("requires both alcohol sources and never turns the caffeine association into a speed preview", () => {
+    const alcohol = templateFor("alcohol-flush-aldh2-rs671");
+    const alcoholCall = { rsid: 671, chrom: 12, pos: 111803962, ref: "G", alt: "A", genotype: "A/A" };
+    for (const pmid of ["39075523", "2024727"]) {
+      expect(resolvePersonalPreview(audience, {
+        ...alcohol, citations: alcohol.citations.filter((source) => source.pmid !== pmid),
+      }, [alcoholCall], new Set())).toBeNull();
+    }
+    expect(resolvePersonalPreview(audience, alcohol, [alcoholCall], new Set([671]))).toBeNull();
+    expect(resolvePersonalPreview({ ...audience, isFamily: true }, alcohol, [alcoholCall], new Set())).toBeNull();
+    const caffeine = { ...lifestyle[0], layer: "estimate" } as ReportTemplate;
+    expect(resolvePersonalPreview(audience, caffeine, [{
+      rsid: 762551, chrom: 15, pos: 74749576, ref: "C", alt: "A", genotype: "A/A",
+    }], new Set())).toBeNull();
   });
 
   it.each([
