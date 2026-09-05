@@ -20,6 +20,8 @@ import {
 } from "@/copy/reports/strings";
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
+import { PERSONAL_RESULT_LABEL, WITH_RESULTS_LABEL, NO_RESULT_MATCHES } from "@/copy/reports/personal-previews";
+import type { PersonalPreview } from "@/lib/genome/report-previews";
 
 export type CoverageStatus = keyof typeof COVERAGE_PILLS;
 
@@ -31,6 +33,8 @@ export interface LibraryCard {
   /** Gene symbol of every template variant; searched alongside the title. */
   genes: string[];
   status: CoverageStatus;
+  /** Already authorized and reduced by the server; no source call records. */
+  preview?: PersonalPreview;
 }
 
 export interface LibraryGroup {
@@ -100,7 +104,15 @@ function EstimateCard({ card, subject }: { card: LibraryCard; subject: string })
           {card.evidenceLabel}
         </Badge>
       </div>
-      <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
+      {card.preview ? (
+        <div data-personal-preview={card.slug} className="mt-2 space-y-2 text-sm">
+          <p className="font-medium text-ink">{PERSONAL_RESULT_LABEL}</p>
+          <p className="leading-relaxed text-ink">{card.preview.text}</p>
+          <p className="leading-relaxed text-ink-muted">{card.preview.qualifier}</p>
+        </div>
+      ) : (
+        <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{card.summary}</p>
+      )}
       <p className="mt-2">
         <StatusPill status={card.status} />
       </p>
@@ -141,6 +153,7 @@ export function ReportLibrary({
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [query, setQuery] = useState("");
+  const [withResults, setWithResults] = useState(false);
   const searchId = "report-search";
 
   /**
@@ -166,7 +179,9 @@ export function ReportLibrary({
   // category whose cards all filter out is hidden, chip included.
   const needle = query.trim().toLowerCase();
   const visibleGroups = groups
-    .map((g) => ({ ...g, cards: g.cards.filter((card) => cardMatches(card, g.label, needle)) }))
+    .map((g) => ({ ...g, cards: g.cards.filter((card) =>
+      (!withResults || card.status === "covered") && cardMatches(card, g.label, needle),
+    ) }))
     .filter((g) => g.cards.length > 0);
 
   const Card = layerClass === "estimate" ? EstimateCard : VariantCallRow;
@@ -186,6 +201,16 @@ export function ReportLibrary({
           className="max-w-md bg-card"
         />
       </div>
+
+      <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={withResults}
+          onChange={(event) => setWithResults(event.target.checked)}
+          className="size-4 accent-forest"
+        />
+        {WITH_RESULTS_LABEL}
+      </label>
 
       {/* The category strip stays a collapsed disclosure at EVERY width: the
           first-viewport interactive budget (≤12, docs/density-baseline.json)
@@ -207,9 +232,9 @@ export function ReportLibrary({
         </nav>
       </details>
 
-      {needle !== "" && visibleGroups.length === 0 ? (
+      {(needle !== "" || withResults) && visibleGroups.length === 0 ? (
         <p aria-live="polite" className="text-sm text-ink-muted">
-          {NO_SEARCH_MATCHES}
+          {withResults ? NO_RESULT_MATCHES : NO_SEARCH_MATCHES}
         </p>
       ) : null}
 

@@ -33,6 +33,7 @@ import {
   templateRsids,
 } from "@/lib/genome/load";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import { loadPersonalPreviews } from "@/lib/genome/report-previews";
 import {
   CATEGORY_TAXONOMY,
   LAYERS,
@@ -119,7 +120,7 @@ export default async function ReportsPage(
   ]);
   // Test fixtures never reach the user-facing library.
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
-  const { genotypes } = await getSubjectGenotypesByRsid(
+  const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
     admin,
     dataSubjectId,
     templateRsids(templates),
@@ -127,6 +128,13 @@ export default async function ReportsPage(
   const resolved = templates.map((t) =>
     resolveTemplate(t, (rsid) => genotypes.get(rsid)),
   );
+  const previews = await loadPersonalPreviews(admin, {
+    viewerAccountId: user.id,
+    ownerAccountId: subject.ownerAccountId,
+    subjectClass: subject.subjectClass,
+    subjectId: dataSubjectId,
+    isFamily: person !== null,
+  }, templates, files, conflicts);
 
   const hasData = files.length > 0;
   const subjectParams = { subject: subject.routeSegment };
@@ -170,13 +178,21 @@ export default async function ReportsPage(
         evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
         genes: template.variants.map((variant) => variant.gene),
         status: hasData ? (covered ? "covered" : "not-covered") : "awaiting",
+        preview: previews.get(template.slug),
       });
       byCategory.set(category, list);
     }
     groups = CATEGORY_TAXONOMY.flatMap((category) => {
       const cards = byCategory.get(category.id);
       return cards && cards.length > 0
-        ? [{ id: category.id, label: category.label, description: CATEGORY_DESCRIPTIONS[category.id], cards }]
+        ? [{
+          id: category.id,
+          label: category.label,
+          description: CATEGORY_DESCRIPTIONS[category.id],
+          // Put usable reviewed takeaways before the category's Show all
+          // boundary. Stable within each set; this is not a health ranking.
+          cards: [...cards].sort((a, b) => Number(Boolean(b.preview)) - Number(Boolean(a.preview))),
+        }]
         : [];
     });
   }

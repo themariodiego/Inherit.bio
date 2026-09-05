@@ -1,5 +1,14 @@
 # Test diff register
 
+Personal preview slice: `src/lib/genome/report-previews.test.ts` adds nine mapped-call
+and source/locus/ownership refusal checks. `e2e/report-previews.spec.ts` adds a real
+synthetic upload-to-card/filter/detail workflow, narrow-screen qualifier checks,
+wrong-locus refusal and cross-account serialized-output checks. Existing report
+gate and six-heading assertions are unchanged and run alongside this slice.
+The pilot no-file assertion in `e2e/report-skeleton.spec.ts` now targets the real
+`data-figure-kind` attribute rather than a nonexistent attribute, so it can
+detect an accidental genotype figure. This strengthens the negative assertion.
+
 Baseline: `864736979c92a08ba77e8580d61946eba6864918` (`8647369`).
 
 This register covers test and test-runner changes after the baseline. A change

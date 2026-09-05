@@ -156,7 +156,7 @@ test("three pilot reports show source-bound study context without inventing pers
     }
     await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
     await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(1);
-    await expect(page.locator('[data-figure="genotype"]')).toHaveCount(0);
+    await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
   }
 });
 
