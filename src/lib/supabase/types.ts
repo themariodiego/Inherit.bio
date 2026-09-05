@@ -7275,9 +7275,9 @@ export type Database = {
       job_time_stats: {
         Args: { p_kind: string }
         Returns: {
-          completed_count: number
+          n_bucket: string
           p50_seconds: number | null
-          p90_seconds: number | null
+          p95_seconds: number | null
         }[]
       }
       record_embryo_disposition_v1: {
@@ -7713,4 +7713,3 @@ export const Constants = {
     },
   },
 } as const
-

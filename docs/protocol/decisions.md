@@ -1232,3 +1232,16 @@ Decisions:
   a generic variant-call template was described as a Medicines guideline,
   and repeated rsIDs inflated the position count. Both are corrected with
   regression tests; guideline prose is restricted to the Medicines category.
+
+## 2026-09-05 — Correct the job timing disclosure contract
+
+- The existing under-twenty suppression decision remains. It did not approve
+  exact counts, a 30-day window or p90 in place of the brief's p95.
+- `job_time_stats(p_kind)` now returns coarse `n_bucket`, p50 and p95 over
+  ninety days for the three registered embryo/family turnaround kinds only.
+  Both percentiles are withheld below twenty eligible, complete jobs.
+- The RPC name and argument survive; unsafe response fields do not. There
+  are no tracked application callers, so no consumer or timing copy changes.
+- See `docs/job-timing-privacy.md` for duration filtering, the intentional
+  authenticated cross-account aggregate, tests and remaining password-setting
+  eligibility/disclosure checks. No hosted settings were changed.
