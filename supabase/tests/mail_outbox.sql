@@ -34,6 +34,11 @@ values (
   'account_subject', 1, 'active'
 );
 
+insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,status)
+values ('71000000-0000-0000-0000-000000000004','71000000-0000-0000-0000-000000000001',
+  '71000000-0000-0000-0000-000000000002','71000000-0000-0000-0000-000000000001/mail-fixture',
+  'mail-fixture.txt','array_ancestry',1,1,'annotated');
+
 select lives_ok(
   $$select public.enqueue_account_mail(
     '71000000-0000-0000-0000-000000000001',

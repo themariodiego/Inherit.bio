@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { fileDeletionError } from "@/copy/upload/file-deletion";
 
 export function FileRowActions({
   fileId,
@@ -59,23 +59,25 @@ export function FileRowActions({
         onClick={async () => {
           if (
             !window.confirm(
-              "Delete this file, its variants, and derived results? This cannot be undone.",
+              "Delete this file, its variants, and file-based results? This cannot be undone.",
             )
           )
             return;
           setBusy(true);
-          const supabase = createClient();
-          const { data: row } = await supabase
-            .from("genome_files")
-            .select("bucket_path")
-            .eq("id", fileId)
-            .maybeSingle();
-          if (row) {
-            await supabase.storage.from("genomes").remove([row.bucket_path]);
+          setError(null);
+          try {
+            const response = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+            if (!response.ok) {
+              const result = await response.json().catch(() => null);
+              setError(fileDeletionError(result?.error));
+              return;
+            }
+            router.refresh();
+          } catch {
+            setError(fileDeletionError(null));
+          } finally {
+            setBusy(false);
           }
-          await supabase.from("genome_files").delete().eq("id", fileId);
-          setBusy(false);
-          router.refresh();
         }}
       >
         Delete
