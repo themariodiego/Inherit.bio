@@ -19,7 +19,6 @@ import {
   BANNER_FIRST,
   BANNER_SECOND,
   BLOCKING_BODY,
-  CHANCE_NOT_PREDICTION,
   DELETE_BUTTON,
   DELETE_CONFIRM_BUTTON,
   DELETE_DIALOG_HEADING,
@@ -27,18 +26,13 @@ import {
   HEADER_SENTENCE,
   NO_CLASSIFIED_POSITIONS,
   OPEN_CONSENTS_BUTTON,
-  OUTCOME_LEGEND,
   PORTRAIT_H1,
   PORTRAIT_STEPS,
   REFUSALS,
   REFUSALS_HEADING,
-  SEGREGATION_SENTENCE,
-  SEE_AS_TABLE_BUTTON,
   TRAIT_NAMES,
   VIEWER_PORTRAIT_STEPS,
   blockingHeading,
-  carrierNoProbabilitySentence,
-  knownChangesCovered,
   missingStep,
   unregisteredCard,
   viewerMissingStep,
@@ -81,8 +75,6 @@ const OTHER = "Another adult";
 
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
 const GATE_BUTTON = "Show what’s shared";
-const EXACT_MARKER = "This is exact arithmetic, not an estimate.";
-const DERIVATION = "1 in 4 (25%) affected · 2 in 4 (50%) carriers · 1 in 4 (25%) neither";
 const SINGULAR_CHILD = /your child will|your baby will|your future child is|your baby’s/i;
 const FORBIDDEN_MEDIA = "main img, main canvas, main svg[role=img]";
 
@@ -108,13 +100,8 @@ const SYNTHETIC: readonly SyntheticEntry[] = [
   { gene: "PTGENE7", significance: "Likely pathogenic", conditionId: "portrait-other-letter-2", mode: "autosomal_recessive", gt: "0/2", block: null },
 ];
 
-const rsidOf = (index: number) => CARRIER_FIXTURE_POSITIONS[index].rsid;
-const CARRIED = SYNTHETIC.map((entry, index) => ({ ...entry, rsid: rsidOf(index) })).filter(
-  (entry) => entry.block !== null,
-);
-const REFUSED = CARRIED.filter((entry) => entry.block !== "probability");
-const PROBABLE = CARRIED.find((entry) => entry.block === "probability")!;
 
+const rsidOf = (index: number) => CARRIER_FIXTURE_POSITIONS[index].rsid;
 let accountA = "";
 let accountB = "";
 let selfSubjectA = "";
@@ -488,7 +475,7 @@ test("once B has turned Portrait on and acknowledged, the page withholds every r
   await expect(page.locator('[data-slot="portrait-header-sentence"]')).toHaveText(HEADER_SENTENCE);
 });
 
-test("the page proper: one exact block with the derivation and 100 dots, a refusal for every other match, and never a picture", async ({
+test("the page proper withholds legacy-label outputs, states unavailable rather than negative, and never shows a picture", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -500,88 +487,15 @@ test("the page proper: one exact block with the derivation and 100 dots, a refus
   expect(await headings.count()).toBeLessThanOrEqual(6);
   await expect(page.getByRole("heading", { name: "What a child could inherit" })).toBeVisible();
 
-  // One output card per gene both files show a change in, each its own
-  // pair-attributed claim block; nothing for the two positions neither
-  // file shows the classified change at.
-  const outputs = page.locator('[data-slot="portrait-output"]');
-  await expect(outputs).toHaveCount(CARRIED.length);
-  const blocks = page.locator("[data-claim-block]");
-  await expect(blocks).toHaveCount(CARRIED.length);
-  const pairs = await blocks.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-subject-pair")));
-  expect(new Set(pairs)).toEqual(new Set([`${selfSubjectA}:${selfSubjectB}`]));
-  for (const entry of SYNTHETIC.filter((item) => item.block === null)) {
-    await expect(page.locator("main")).not.toContainText(entry.gene);
-  }
-
-  // The segregation sentence once per output; the chance line in every block (G5.9(b)).
-  await expect(page.locator('[data-slot="segregation"]')).toHaveCount(CARRIED.length);
-  for (let index = 0; index < CARRIED.length; index++) {
-    await expect(blocks.nth(index).locator('[data-slot="segregation"]')).toHaveText(SEGREGATION_SENTENCE);
-    await expect(blocks.nth(index).locator('[data-slot="chance-not-prediction"]')).toHaveText(CHANCE_NOT_PREDICTION);
-    await expect(blocks.nth(index).locator('[data-slot="carrier-person"]')).toHaveCount(2);
-    await expect(blocks.nth(index).locator('[data-slot="how-sure"]')).toHaveCount(1);
-  }
-  // "How sure we are" is never collapsible.
-  await expect(page.locator('details [data-slot="how-sure"]')).toHaveCount(0);
-  await expect(page.locator('[data-slot="how-sure"]')).toHaveCount(CARRIED.length);
-
-  // The recessive block: the exactness label once, the mandated derivation,
-  // three exact figures at 100, the 100 dots, the legend, the sentences,
-  // the table fallback and the count against the registry.
-  const exact = page.locator('[data-claim-block]:has([data-output-kind="carrier-pair"])');
-  await expect(exact).toHaveCount(1);
-  await expect(exact).toContainText(PROBABLE.gene);
-  await expect(page.locator("[data-exact-marker]")).toHaveCount(1);
-  await expect(exact.locator("[data-exact-marker]")).toHaveText(EXACT_MARKER);
-  await expect(exact.locator('[data-slot="portrait-derivation"]')).toHaveText(DERIVATION);
-  await expect(page.locator('[data-figure-basis="exact"]')).toHaveCount(3);
-  await expect(exact.locator('[data-figure-basis="exact"]')).toHaveCount(3);
-  await expect(exact.locator('[data-slot="outcome-dot"]')).toHaveCount(100);
-  await expect(page.locator('[data-slot="outcome-dot"]')).toHaveCount(100);
-  await expect(exact.locator('[data-slot="outcome-dot"][data-outcome="affected"]')).toHaveCount(25);
-  await expect(exact.locator('[data-slot="outcome-dot"][data-outcome="carrier"]')).toHaveCount(50);
-  await expect(exact.locator('[data-slot="outcome-dot"][data-outcome="neither"]')).toHaveCount(25);
-  await expect(exact.locator('[data-slot="outcome-bar-segment"]')).toHaveCount(3);
-  await expect(exact.locator('[data-slot="outcome-legend-item"]')).toHaveCount(3);
-  for (const outcome of ["affected", "carrier", "neither"] as const) {
-    await expect(exact.locator(`[data-slot="outcome-legend-item"][data-outcome="${outcome}"]`)).toContainText(
-      OUTCOME_LEGEND[outcome],
-    );
-  }
-  const sentences = exact.locator('[data-slot="outcome-sentence"]');
-  await expect(sentences).toHaveCount(3);
-  await expect(sentences.nth(0)).toHaveText("Out of 100 possible children, about 25 would have the condition.");
-  await expect(sentences.nth(1)).toHaveText("Out of 100 possible children, about 50 would carry one copy of the change.");
-  await expect(sentences.nth(2)).toHaveText("Out of 100 possible children, about 25 would have no copy of the change.");
-  await expect(exact.locator("figure figcaption")).toHaveCount(1);
-  const table = exact.locator('details[data-slot="outcome-table"]');
-  await expect(table.locator("summary")).toHaveText(SEE_AS_TABLE_BUTTON);
-  await expect(table.locator("table")).toHaveCount(1);
-  await expect(exact.locator('[data-slot="known-covered"]')).toHaveText(knownChangesCovered(1, 1));
-  await expect(exact.locator('[data-slot="carrier-variant"]')).toHaveCount(2);
-  await expect(exact.locator('[data-slot="carrier-variant"]').first()).toContainText(`rs${PROBABLE.rsid}`);
-  await expect(exact.locator('[data-slot="carrier-variant"]').nth(1)).toContainText(OTHER);
-
-  // Acceptance 17: no other block states the fraction, and nothing is a model.
-  const texts = await blocks.evaluateAll((nodes) => nodes.map((node) => node.textContent ?? ""));
-  expect(texts.filter((text) => text.includes("25 in 100"))).toHaveLength(1);
-  expect(texts.filter((text) => text.includes("1 in 4"))).toHaveLength(1);
-  await expect(page.locator("[data-modelled-marker]")).toHaveCount(0);
-
-  // Every other match: the side-by-side page's sentence with its named
-  // reason, an X-linked pattern included (D-031), and no fraction.
-  for (const entry of REFUSED) {
-    const block = page.locator(`[data-claim-block]:has([data-output-kind="carrier-pair-refused"][data-gene="${entry.gene}"])`);
-    await expect(block).toHaveCount(1);
-    await expect(block.locator('[data-slot="carrier-sentence"]')).toHaveText(
-      carrierNoProbabilitySentence(entry.gene, entry.block as never),
-    );
-    await expect(block.locator('[data-figure-basis="exact"]')).toHaveCount(0);
-    await expect(block.locator("[data-exact-marker]")).toHaveCount(0);
-    await expect(block.locator('[data-slot="outcome-dot"]')).toHaveCount(0);
-    await expect(block.locator('[data-figure-kind="carrier-status"]')).toHaveCount(2);
-    await expect(block).not.toContainText("Out of 100 possible pregnancies");
-  }
+  // Legacy labels are intentionally present in the database. They lack
+  // reviewed allele/condition/assertion provenance and cannot activate output.
+  await expect(page.locator('[data-slot="portrait-output"]')).toHaveCount(0);
+  await expect(page.locator("[data-claim-block]")).toHaveCount(0);
+  await expect(page.locator('[data-slot="portrait-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
+  await expect(page.locator('[data-slot="portrait-empty"]')).toHaveAttribute("data-state", "unavailable");
+  await expect(page.locator("[data-exact-marker], [data-modelled-marker], [data-figure-basis=exact], [data-slot=outcome-dot]")).toHaveCount(0);
+  for (const entry of SYNTHETIC) await expect(page.locator("main")).not.toContainText(entry.gene);
+  await expect(page.locator("main")).not.toContainText("No change to show that you both carry");
 
   // G5.9(a): no image, avatar or face anywhere in the result region; the
   // dots are spans. Line 2238: no monogenic zero.
@@ -650,14 +564,16 @@ test("A's session and B's session render byte-equal finding text (brief line 133
   await signIn(page, A.email, A.password);
   await passGate(page);
   const fromA = await findingTexts(page);
-  expect(fromA.length).toBeGreaterThanOrEqual(3 + 1 + 1 + REFUSED.length);
-  expect(fromA).toContain(DERIVATION);
+  expect(fromA).toEqual([]);
+  const unavailableA = await page.locator('[data-slot="portrait-empty"]').textContent();
+  expect(unavailableA).toBe(NO_CLASSIFIED_POSITIONS);
   await page.request.post("/auth/sign-out");
 
   await signIn(page, B.email, B.password);
   await passGate(page);
   const fromB = await findingTexts(page);
   expect(fromB).toEqual(fromA);
+  await expect(page.locator('[data-slot="portrait-empty"]')).toHaveText(unavailableA!);
   // B sees A as the other adult and themself as "You"; the findings name nobody.
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${OTHER} / ${PORTRAIT_H1}`);
   for (const text of fromB) expect(text).not.toContain(OTHER);

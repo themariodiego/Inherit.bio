@@ -9,18 +9,23 @@ const CHR1_LEN_GRCH37 = 249250621;
 
 function buildFromHeader(line: string): Build | null {
   if (line.startsWith("##reference=")) {
-    if (/GRCh38|hg38/i.test(line)) return "GRCh38";
-    if (/GRCh37|hg19|b37/i.test(line)) return "GRCh37";
-    return null;
+    const names = line.match(/(?:GRCh\d+|hg\d+|b37)(?!\d)/gi) ?? [];
+    const builds = new Set(names.map((name) => /^(?:GRCh38|hg38)$/i.test(name) ? "GRCh38" :
+      /^(?:GRCh37|hg19|b37)$/i.test(name) ? "GRCh37" : "unknown"));
+    return builds.size === 1 ? [...builds][0] as Build : "unknown";
   }
   if (line.startsWith("##contig=")) {
+    const assembly = /[<,]assembly=([^,>]+)/.exec(line)?.[1];
+    const assemblyBuild = assembly ? buildFromHeader(`##reference=${assembly}`) : null;
     const id = /[<,]ID=(?:chr)?1[,>]/.exec(line);
     const len = /[<,]length=(\d+)[,>]/.exec(line);
     if (id && len) {
       const n = Number(len[1]);
-      if (n === CHR1_LEN_GRCH38) return "GRCh38";
-      if (n === CHR1_LEN_GRCH37) return "GRCh37";
+      if (n === CHR1_LEN_GRCH38) return assemblyBuild && assemblyBuild !== "GRCh38" ? "unknown" : "GRCh38";
+      if (n === CHR1_LEN_GRCH37) return assemblyBuild && assemblyBuild !== "GRCh37" ? "unknown" : "GRCh37";
+      return "unknown";
     }
+    return assemblyBuild;
   }
   return null;
 }
@@ -45,12 +50,15 @@ export async function parseVcf(
   const referenceCalls: ReferenceCall[] = [];
   let skipped = 0;
   let build: Build = "unknown";
+  const buildClaims = new Set<Build>();
 
   for await (const raw of lines) {
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     if (line === "") continue;
     if (line.startsWith("##")) {
-      if (build === "unknown") build = buildFromHeader(line) ?? "unknown";
+      const claim = buildFromHeader(line);
+      if (claim) buildClaims.add(claim);
+      build = buildClaims.size === 1 ? [...buildClaims][0] : "unknown";
       continue;
     }
     if (line.startsWith("#")) continue; // #CHROM column header
