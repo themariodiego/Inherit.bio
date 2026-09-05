@@ -239,6 +239,25 @@ this change set. Existing design-token assertions are unchanged.
 | `e2e/copilot.spec.ts` | Disclosure assertion corrected | Consent must describe the narrower data actually sent after the score-output boundary. | Requires score-panel coverage/unavailable-reference disclosure and rejects the former score/percentile claim; existing provider-consent and revocation assertions remain. |
 | `src/lib/genome/report-evidence.test.ts`, `src/components/reports/report-evidence.test.ts` | New report-basis assertions | Citation count was labelled as independent studies; no source-read dates or resolver-state accounting were shown. | Method-kind consistency and safe model identifiers; conflict precedence, missing-store and unrecognized/no-call partition; exact valid source dates with invalid/missing dates refused; rendered citation links and unavailable dates; state counts without genetic values or extra top-level sections; server-side reveal-gate placement; bounded copy. These tests do not prove allele-safe enrichment or whole-file assay coverage. |
 | `e2e/report-skeleton.spec.ts` | Refined source-count assertion and extended method/coverage assertions | A guideline citation is a cited source, not proof of one supporting study; the summary now has a separate method explanation. Reusing fixture accounts accumulated old files on repeated local runs. | Pin cited-source wording, reject the old study-count claim, assert interpreted count and Medicines method limitation. Summary still equals the entire seed text and retains its first-sentence requirement via an explicit summary slot; no existing summary assertion is removed. Per-run fixture identities preserve the exact one-file assertions without deleting prior fixture data. |
+# Happy-path reference allele fixture correction — 2026-09-06
+
+The tiny and generated carrier-pair VCFs still labelled GRCh38 rs762551 A>C,
+opposite the reviewed template and corrected personal-preview fixture. Their
+REF/ALT labels now read C>A; every GT remains unchanged, including the A/C
+heterozygote. The generator and provenance hashes are updated together. A
+narrow unit regression checks exact template locus/allele identity across all
+three happy-path fixtures and byte parity with the carrier generator. Existing
+Family, report-gate and report-skeleton result assertions are preserved; no
+resolver condition or expected genotype is relaxed. The stale report-gate
+comment about discarded reference calls is removed.
+
+Four fixture identity unit tests and all eight report-skeleton production
+browser cases pass locally. The combined run recorded 11 passes; Family
+stopped at its invitation-mail fixture and report-gate at an already registered
+fixed test email on the reused local database, before their affected result
+assertions. Their complete verification remains the fresh-database CI run;
+these setup failures are not reported as passes. Typecheck and scoped lint pass.
+
 # Observed reference report calls — 2026-09-06
 
 The literal VCF SNP parser now retains a separate report-only observation with

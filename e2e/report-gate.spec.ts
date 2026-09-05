@@ -142,8 +142,7 @@ test("non-sensitive report shows its result directly, with no gate", async ({
 }) => {
   await signIn(page, USER.email, USER.password);
   // CYP1A2 rs762551 is a real 0/1 call in the tiny fixture (A/C), and
-  // lifestyle-wellness is not a gated category. (rs671 is 0/0 there — the
-  // parser drops reference calls, so ALDH2 resolves not-covered.)
+  // lifestyle-wellness is not a gated category.
   await page.goto("/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551");
   await expect(page.getByTestId("sensitive-gate")).toHaveCount(0);
   const genotype = page.locator(GENOTYPE_NODE);
