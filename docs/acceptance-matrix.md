@@ -18,8 +18,10 @@ Later work can supersede that behavior without completing the stricter gates.
   coverage-only output in chat, export and authenticated table reads. A6's
   former percentile claim is no longer a current product capability.
 - ADR 0021 superseded the historical Medicines withholding decision with
-  eleven per-position, letters-only reports in the repository. Those eleven
-  were not added to the hosted catalog by the report-copy rollout.
+  eleven per-position, letters-only reports. Following PR 64's source
+  correction, all eleven were published with matching changelog entries at
+  `2026-09-05T23:26:58Z`. The existing 151 estimates were unchanged. This
+  does not complete the catalog-wide scientific citation gate.
 - Embryo session/transport/unwind foundations do not complete source acceptance,
   physical cleanup, final graph purge or upload steps 3–5. No G gate is
   promoted by these primitives. The capability remains disabled.
