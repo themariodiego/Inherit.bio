@@ -58,3 +58,14 @@ Legacy uploads require a deliberate rerun; derivative-only batch backfill,
 gVCF blocks, ALT `.` records and missing-rsID coordinate lookup are follow-ups.
 Data browser, carrier-pair and export's legacy per-file resolver are unchanged
 and do not yet acquire the additional reference observations.
+
+## Verification
+
+On main59 plus this change, 1,635 unit tests, 752 rollback-only SQL assertions
+and five production-build browser tests pass. Browser checks use invented
+genotypes only and prove literal VCF reference results match supplied array
+calls, with no reference rows entering variant-only analyses. The existing
+alcohol GG test now expects the supported VCF result before its agreeing array
+upload. Typecheck, scoped lint, fixture provenance/name/secret gates, template
+validation and readability checks pass. No hosted migration or automatic
+historical processing was performed.

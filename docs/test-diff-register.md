@@ -223,7 +223,17 @@ New rollback-only SQL tests cover grants/RLS, composite owner/subject FK,
 completion hash and parsing-state denial, restricted lifecycle denial, exact
 file cascade, ownership-transfer denial and existing account graph compatibility. The closed purge-store
 count rises from 111 to 112 for the explicitly registered observation table;
-no existing assertion is removed. On main57 plus this slice: 1,615 units and
-731 pgTAP assertions pass, typecheck and scoped lint pass, and the local
-security advisor reports no error-level issues. Browser parity verification is
-recorded separately once run.
+no existing assertion is removed. On main59 plus this slice: 1,635 units and
+752 pgTAP assertions pass, typecheck and scoped lint pass, and the local
+security advisor reports no error-level issues.
+
+Five production-build browser cases pass: literal VCF/array reference parity,
+alcohol GG and AA, populated previews/filter/detail navigation, and no-file
+account isolation. The new parity case checks source hash, five persisted
+observations, zero variant-only rows and byte-equal idempotent reprocessing.
+Main59's GG case previously asserted the known missing-reference bug before
+adding an array call; it now requires the observed VCF takeaway first and keeps
+the subsequent array-agreement and full-report assertions. The first combined
+run exposed stale local ALDH2 template content; exactly two public template
+rows were advanced to reviewed main59 content with full preimages saved outside
+the repository. No private upload was reprocessed and no hosted data changed.
