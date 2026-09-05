@@ -296,7 +296,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
                 {carrierDecision.userFacingCopy}
               </p>
             ) : output && outputCount === 0 ? (
-              <p role="status" data-state="empty" data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
+              <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
                 {output.summary.classifiedPositions === 0
                   ? NO_CLASSIFIED_POSITIONS
                   : output.summary.positionsBothCover === 0

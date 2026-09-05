@@ -201,7 +201,7 @@ export function noCarrierMatches(positions: number): string {
  * check and no count to print (D-034).
  */
 export const NO_CLASSIFIED_POSITIONS =
-  "Inherit has no classified positions to check yet, so it cannot look for a change you both carry.";
+  "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen.";
 
 /** The name each person's own reading is rendered beside, in the block header. */
 export function carrierPersonPrefix(name: string): string {

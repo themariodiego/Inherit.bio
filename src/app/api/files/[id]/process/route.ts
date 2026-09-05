@@ -5,7 +5,7 @@ import { PANEL } from "@/lib/ancestry/panel";
 import { measureRunsOfHomozygosity, rohCallsFromParse, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
 import { classify, type HaplogroupCall } from "@/lib/genome/haplogroups";
-import { buildLiftover } from "@/lib/genome/liftover";
+import { buildLiftover, liftSingleBaseVariant } from "@/lib/genome/liftover";
 import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
 import { computePrs } from "@/lib/genome/prs";
 import { ALL_PRS_SCORES } from "@/lib/genome/prs-data";
@@ -74,10 +74,11 @@ export async function POST(
   const admin = createAdminClient();
   // A re-run measures the file again at the end, so a stale measure never
   // outlives the calls it was taken from (the all-null shape is admitted).
-  await admin
+  const { error: parsingError } = await admin
     .from("genome_files")
     .update({
       status: "parsing",
+      build: null,
       processing_started_at: new Date().toISOString(),
       error: null,
       roh_status: null,
@@ -88,6 +89,11 @@ export async function POST(
       roh_measured_at: null,
     })
     .eq("id", id);
+  // This state excludes old derivatives from report reads during a rerun.
+  // Do not fetch or change derivatives unless that boundary was persisted.
+  if (parsingError) {
+    return new Response("File processing could not start. Please try again.", { status: 503 });
+  }
 
   try {
     // Stream the object rather than buffering a Blob.
@@ -111,6 +117,17 @@ export async function POST(
       throw new Error(`unsupported tier-1 type ${file.file_type}`);
     }
 
+    // Unknown or conflicting coordinates must never be relabelled GRCh38.
+    // Invalidate old derivatives from this same file before refusing a rerun;
+    // source bytes remain. An error is explicit, never a report-ready state.
+    if (parsed.build === "unknown") {
+      for (const table of ["user_variants", "ancestry_results", "user_prs"] as const) {
+        const { error } = await admin.from(table).delete().eq("file_id", id);
+        if (error) throw new Error(`Unknown-build derivative cleanup failed: ${table}`);
+      }
+      throw new Error("Genome build is unknown or conflicting; a supported reference build is required");
+    }
+
     // Runs of homozygosity, measured once in the file's own coordinates from
     // the variant records and the reference calls the parser kept (chrom,
     // pos, genotype, ref), before any liftover so the two share one build
@@ -127,9 +144,9 @@ export async function POST(
       const lift = buildLiftover(new Uint8Array(chainGz));
       const lifted: VariantRecord[] = [];
       for (const r of records) {
-        const mapped = lift(r.chrom, r.pos);
+        const mapped = liftSingleBaseVariant(r, lift);
         if (mapped) {
-          lifted.push({ ...r, chrom: mapped.chrom, pos: mapped.pos });
+          lifted.push(mapped);
         } else {
           unmapped++;
         }
@@ -286,7 +303,9 @@ export async function POST(
       .from("genome_files")
       .update({
         status: "annotated",
-        build: "GRCh38",
+        // genome_files describes the uploaded source; user_variants remains
+        // the canonical GRCh38 store. Do not erase the source assembly.
+        build: parsed.build,
         variant_count: records.length,
         processing_finished_at: finishedAt,
         ...rohColumns(runs, finishedAt),
@@ -325,6 +344,8 @@ export async function POST(
       variants: records.length,
       skipped: parsed.skipped,
       unmapped,
+      sourceBuild: parsed.build,
+      normalizedBuild: "GRCh38",
     });
   } catch (err) {
     // Error text must never contain genotype data — only mechanics.

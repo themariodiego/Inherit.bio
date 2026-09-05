@@ -386,6 +386,8 @@ describe("carrier panel", () => {
     );
     expect(html).toContain(copy.NO_CLASSIFIED_POSITIONS);
     expect(html).not.toContain("checked the");
+    expect(html).toContain('data-state="unavailable"');
+    expect(html).toContain("This is not a negative carrier screen.");
     expect(html).not.toContain(copy.noCarrierMatches(0));
     expect(html).not.toContain("data-claim-block");
     expect(html).not.toContain('data-slot="runs-provenance"');

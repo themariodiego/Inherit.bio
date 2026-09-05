@@ -9,12 +9,18 @@ import {
   evaluateCarrierPairs,
   isHarmlessClassification,
   isPathogenicClassification,
+  readClassifiedVariants,
   type CarrierCondition,
   type CarrierPerson,
   type CarrierRefVariant,
 } from "./carrier-pair";
 import { measureRunsOfHomozygosity, rohColumns, storedRohMeasure, type StoredRohMeasure } from "./roh";
 import { CARRIER_REASON_PHRASES, carrierNoProbabilitySentence } from "@/copy/family/health-picture";
+
+it("never activates carrier findings from the legacy reference-label reader", async () => {
+  const client = { from: () => { throw new Error("Legacy reference labels must not be queried for clinical assertions"); } };
+  expect(await readClassifiedVariants(client as unknown as Parameters<typeof readClassifiedVariants>[0])).toEqual([]);
+});
 
 /**
  * The trigger rule and its closed reason table (design §2.3, §6.1; ADR 0017
