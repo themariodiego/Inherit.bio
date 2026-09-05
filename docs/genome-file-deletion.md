@@ -50,6 +50,13 @@ filename. The manifest cascades on completion or account purge.
 Completed upload session journals and chat history retain their existing rules;
 the button describes file-based results, not whole-account deletion.
 
+Preparation invalidates queued or claimed report-ready notices for this exact
+file, including on retry. A separate mail insert guard serializes with the file
+lock and refuses a missing, deletion-pending or non-annotated target, closing
+the process-finished/late-enqueue gap. Mail claiming also invalidates stale file
+readiness and excludes it from selection. Research digests and already-sent
+history are untouched. An already-submitted provider request cannot be recalled.
+
 SQL assertions cover live-session/owner/non-self restrictions, unsupported
 stored derivatives, processing/worker refusal, exact immutable retries,
 premature finalization, update fences, source-before-row order and cascades.
@@ -65,7 +72,11 @@ The migration was tested on a disposable local database named
 The local sequence stack is used only for synthetic end-to-end verification.
 Hosted migration application and deployment require the normal reviewed rollout.
 
-Local checks: 1,590 unit tests, 21 SQL assertions, two production-browser tests,
+Local checks after integration with main: 1,608 unit tests, 71 targeted SQL
+assertions, three production-browser tests,
 typecheck, targeted lint, readability/name/secret gates and zero error-level
 security-advisor findings. The final browser pass includes Process refusal
 after deletion preparation and unchanged derived-row counts before retry.
+It also proves the queued readiness notice becomes invalidated and that normal
+processing still queues one notice without renewing its deadline. One existing
+early-stream-close log appeared during navigation, with no failed assertion.

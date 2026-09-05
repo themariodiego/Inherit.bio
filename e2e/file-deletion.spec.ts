@@ -13,6 +13,12 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   const { data: file, error } = await admin.from("genome_files").select("bucket_path,subject_id,storage_object_id").eq("id", fileId).single();
   expect(error).toBeNull();
   expect(file?.storage_object_id).toBeTruthy();
+  const readReadyMail = () => admin.from("mail_outbox").select("id,state")
+    .eq("template_id", "report-ready").eq("target_kind", "genome_file").eq("target_id", fileId);
+  const readyMail = await readReadyMail();
+  expect(readyMail.error).toBeNull();
+  expect(readyMail.data).toHaveLength(1);
+  expect(readyMail.data![0].state).toBe("queued");
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
   expect((await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId)).count).toBeGreaterThan(0);
   await page.goto("/files");
@@ -30,6 +36,7 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
   const sessionId = (await owner.auth.getClaims()).data!.claims.session_id as string;
   expect((await admin.rpc("prepare_genome_file_deletion_v1", { p_account_id: userId, p_session_id: sessionId, p_file_id: fileId })).error).toBeNull();
+  expect((await readReadyMail()).data).toEqual([{ id: readyMail.data![0].id, state: "invalidated" }]);
   const before = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId);
   const processResponse = await page.request.post(`/api/files/${fileId}/process`);
   expect(processResponse.status()).toBe(503);
@@ -54,6 +61,7 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   }
   expect((await admin.from("genome_storage_objects").select("object_id").eq("genome_file_id", fileId)).data).toHaveLength(0);
   expect((await admin.from("subjects").select("id").eq("id", file!.subject_id).eq("owner_account_id", userId)).data).toHaveLength(1);
+  expect((await readReadyMail()).data).toEqual([{ id: readyMail.data![0].id, state: "invalidated" }]);
 });
 
 test("foreign account, active processing and another adult cannot use the self-file shortcut", async ({ page, browser }) => {
