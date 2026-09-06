@@ -79,8 +79,26 @@ preserving another file. The server-only cron GET adapter also passes its
 credential/body/selector refusal and unchanged-worker delegation tests.
 Neither capability is hosted verification, and the adapter has not invoked
 the composite production retention worker. PR75's separate legacy bridge is
-still awaiting corrected CI. Signing activation requires the owner to finish
+now released as recorded below. Signing activation requires the owner to finish
 the prepared dashboard dialog. Acceptance remains **18/65**.
+
+### 2026-09-06 · PR75 production transition bridge verified
+
+PR75 merged at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, deployed as
+`dpl_GdFqNrewbxF28SCT23LuR5qwxGVJ` on both production aliases. Corrected CI
+`34050146592` passed 2,236 units, 220 browser cases with zero skips/retries,
+and database/build/repository gates. The new case proves real staged bytes
+can complete, process and download while new legacy issuance is refused.
+Independent local desktop/mobile pause visuals and no-lease/no-Storage refusal
+checks passed on the unchanged release runtime.
+
+Authenticated live `/files/upload` and `/files` show an enabled picker after
+deployment: the default-off behavior is verified. No hosted pause was enabled,
+no Storage policy was removed, and no real file was changed. The broad canonical
+branch remains local; this release supplies its compatible transition control.
+Acceptance stays **18/65**. Owner signing activation is pending; staged schema,
+capacity/authorization canary, recurring cleanup, report-ready notifications
+and remaining regressions still prevent calling the own-file milestone delivered.
 
 ### 2026-09-06 · PR73 released
 

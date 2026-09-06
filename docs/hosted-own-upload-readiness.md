@@ -1,15 +1,19 @@
 # Hosted own-upload rollout prerequisites
 
 Rollout preparation checkpoint, 6 September 2026. This is not a rollout receipt. The
-new upload/report work is local; production remains the independently released
-PR74 at `ed0bdc257ff5e515b0c182c966b1a7728a744e5b`.
+new upload/report work is local; production is the independently released
+PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
 ## Verified scope
 
 - Inherit Supabase project: `zuvloczwgrayonqabnss`, reported ACTIVE_HEALTHY.
 - Vercel project: `prj_K7bVowhjFr0uIapXraH41hthJkgy`, team slug `mariodiego`.
-- Production PR74 deployment: `dpl_DRBcMWz4mqNXNPjbhiBqSgpVkYZF`, READY,
-  with `www.inherit.bio` assigned.
+- Production PR75 deployment: `dpl_GdFqNrewbxF28SCT23LuR5qwxGVJ`, READY,
+  with both `inherit.bio` and `www.inherit.bio` assigned to the exact merge.
+  Authenticated `/files/upload` and `/files` were checked after deployment:
+  both retain an enabled Choose file button. No real file was submitted,
+  downloaded, deleted or reprocessed. Pause-on behavior is CI/local evidence,
+  not a production assertion.
 - The scoped hosted database audit found no `upload_authorization_config`,
   `own_normalization_runs` or `own_analysis_runs` yet. It found neither
   `pg_cron` nor `pg_net` installed. The genomes bucket is private; its
@@ -211,8 +215,9 @@ immediately before any proposed composite canary.
 Local prerequisites advanced at `9b45b75`: 24 actual-provider browser cases
 pass, including canonical pause/resumption with 18 uploads and exact bytes.
 The unchanged runtime passed 2,661 units at `a8d82b5`. A separate default-off
-legacy bridge is under PR75, awaiting corrected CI run `34050146592` at
-`9e92ea6`; no production pause has been enabled. The refreshed Vercel dashboard
+legacy bridge PR75 passed CI run `34050146592` at `9e92ea6`: 2,236 units,
+220 browser cases with zero skips/retries and database/build/repository gates.
+It merged at `a7d5a8e` and is deployed with its pause off. The refreshed Vercel dashboard
 still reports $1.71/$20 included usage and $0 on-demand charges. This bridge
 requires no hosted DDL and preserves existing completion handlers.
 
