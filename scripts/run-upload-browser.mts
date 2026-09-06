@@ -199,13 +199,14 @@ try {
   // deliberately invalid upload must remain refused by the actual provider,
   // while its CORS response follows the unchanged gateway's policy.
   for (const method of ["OPTIONS", "POST"]) {
-    const boundary = await new Promise<{ status: number; origin?: string }>((resolve, reject) => {
+    const boundary = await new Promise<{ status: number; origin?: string; allowedHeaders?: string }>((resolve, reject) => {
       const request = http.request({ hostname: "127.0.0.1", port: address.port, method,
         path: "http://127.0.0.1:54321/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001",
         headers: { Origin: "http://localhost:3100", "Content-Length": "0",
-          "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization,content-type,x-upsert" } }, response => {
+          "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "apikey,authorization,content-type,x-upsert" } }, response => {
         response.resume(); response.on("end", () => resolve({ status: response.statusCode ?? 0,
-          origin: response.headers["access-control-allow-origin"] as string | undefined }));
+          origin: response.headers["access-control-allow-origin"] as string | undefined,
+          allowedHeaders: response.headers["access-control-allow-headers"] as string | undefined }));
       });
       request.on("error", reject); request.setTimeout(5000, () => request.destroy(new Error("Proxy boundary timeout"))); request.end();
     });
@@ -214,6 +215,11 @@ try {
     const policy = await gatewayCors(new URL("http://127.0.0.1:54321/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001"),
       "http://localhost:3100", "POST", {});
     assert.equal(boundary.origin, policy["access-control-allow-origin"], "Proxy must preserve gateway CORS policy");
+    if (method === "OPTIONS") {
+      const allowedHeaders = boundary.allowedHeaders?.toLowerCase().split(",").map(header => header.trim()) ?? [];
+      assert(allowedHeaders.includes("apikey") || allowedHeaders.includes("*"),
+        "The actual local gateway must allow the browser's public API-key header");
+    }
   }
   console.log("Real local Storage browser proxy ready; issuer and Auth keys unchanged.");
   tests = spawn("corepack", ["pnpm", "exec", "playwright", "test", "--config=playwright.upload.config.ts"], {

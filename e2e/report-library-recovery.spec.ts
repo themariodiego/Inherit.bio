@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 test("/genome/[subject]/reports empty-history: preserve private search and result filter through browser Back", async ({ page }, testInfo) => {
   const user = { email: `library-history-${randomUUID()}@e2e.local`, password: "synthetic-library-password" };
@@ -70,10 +71,9 @@ test("/genome/[subject]/reports partial-coverage: return to a result search and 
   const user = { email: `library-recovery-${randomUUID()}@e2e.local`, password: "synthetic-library-password" };
   await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
-  // Use the real ingestion helper. This test cannot stand in for successful
-  // canonical upload-to-results verification while that helper is migrating.
-  await ingestFileAs(page, user.email, user.password,
-    path.join(process.cwd(), "e2e/fixtures/personal-previews-grch38.vcf"), "vcf");
+  await uploadOwnFileWithChosenReports(page,
+    path.join(process.cwd(), "e2e/fixtures/personal-previews-grch38.vcf"),
+    { fileType: "vcf", purposes: ["reports.polygenic"] });
   await page.goto("/genome/me/reports");
   const search = page.getByLabel("Search reports by title, gene, or category");
   const resultsOnly = page.getByLabel("With results", { exact: true });
