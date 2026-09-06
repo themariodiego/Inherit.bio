@@ -28,6 +28,15 @@ require no signer/lease/Storage work after authenticated pause, and check
 unchanged finalize/preparation behavior with the pause enabled. Its final
 integrated browser receipt is recorded separately when actually run.
 
+At `a8d82b5`, all 2,661 units passed and the expanded browser run passed the
+existing 23 cases. Its new pause case stopped at an ambiguous alert locator
+that also selected the Next route announcer. Both alerts now select their
+actual message and retain exact-text assertions. Independent read-only review
+confirmed the remaining expectations against canonical runtime and local schema,
+including the actual Storage trigger's `uploaded` lease state. No authorization,
+byte-preservation, preparation, cleanup or download assertion was relaxed.
+The corrected 24-case integrated run remains pending.
+
 
 Copilot pre-merge usability review: four extra cases bring the completion
 corpus to 64 and new unit coverage to 69 tests. Three first failed on

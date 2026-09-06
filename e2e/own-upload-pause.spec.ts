@@ -112,7 +112,8 @@ test("canonical pause refuses new issuance while an acknowledged source finalize
       await route.fulfill({ status: reply.status, contentType: "application/json", body: reply.body });
     }, { times: 1 });
     await chooseFixture(page, resumedFixture);
-    await expect(page.getByRole("alert")).toHaveText(OWN_UPLOAD_COPY.uploadsPaused);
+    await expect(page.getByRole("alert").filter({ hasText: OWN_UPLOAD_COPY.uploadsPaused }))
+      .toHaveText(OWN_UPLOAD_COPY.uploadsPaused);
     expect(await leases()).toEqual(beforeLeases);
     expect(await sources()).toEqual(retainedSources);
     expect(await storageInventory(accountId)).toEqual(beforeStorage);
@@ -140,7 +141,10 @@ test("canonical pause refuses new issuance while an acknowledged source finalize
     const storageAck = await storedResponse;
     expect(storageAck.ok()).toBe(true);
     expect(storageAck.url()).toBe(`${SUPABASE_URL}/storage/v1/object/genomes/${issued.stagingKey}`);
-    await expect(page.getByRole("alert")).toBeVisible();
+    const interruptedMessage = "The upload could not finish. Your existing files are unchanged. Please try again.";
+    const interruptedAlert = page.getByRole("alert").filter({ hasText: interruptedMessage });
+    await expect(interruptedAlert).toBeVisible();
+    await expect(interruptedAlert).toHaveText(interruptedMessage);
     expect(interruptedUploadId).toBe(issued.uploadId);
     expect(storageWrites).toBe(1);
     const interrupted = await admin.from("upload_sessions").select("status,consumed_at,finalized_file_id")
