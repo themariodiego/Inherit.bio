@@ -82,17 +82,28 @@ not completion of another whole-plan gate: acceptance stays **18/65**.
 
 ### 2026-09-06 · Local MVP journey verified, not released
 
-Milestone 1 now has an integrated actual-provider browser receipt at `53b630c`:
-**3/3 cases passed, no skips or retries**, including upload, independent report
-choice, a real source-backed MCM6 finding, withdrawal, retained raw-data browsing
-and exact original-file download. The full unit suite passes **2,584 tests in
-161 files**; secret and readability gates pass. See
+Milestones 1–2 now have an integrated actual-provider browser receipt at
+`bc31011`: **4/4 cases passed, no skips or retries**, with three actual uploads.
+This includes independent report choice, a real source-backed MCM6 finding,
+filter/Back recovery, withdrawal, retained raw-data browsing and exact original
+download. Overview offers the report-choice entry before generation, shows
+covered starter links only after generation, and removes those links after
+withdrawal. Only ready report layers have counts; no genotype or personal
+interpretation is serialized by Overview. The full unit suite passes
+**2,602 tests in 163 files**; secret and readability gates pass. See
 [the local receipt](local-upload-browser-verification.md) for exact scope.
 
 This advances milestones 1–3 locally, but does not prove the two-file deletion
 journey or hosted deployment. It is not part of PR73. Hosted signing/capacity,
 scheduled retention and the migrated full browser regression remain release
 prerequisites. No additional whole-plan gate is claimed; acceptance is **18/65**.
+
+The mobile review identified the next MVP layout improvement: the five useful
+starter reports are below the unused Family and Embryos sections. Bring the
+reader's own findings higher while preserving the deterministic five-report
+cap and distinct report-layer definitions. Then verify two-file controls and
+the hosted signing/capacity/retention prerequisites; do not add unrelated
+features to make the gate count look larger.
 
 Report: the user-visible outcome; merged/deployed/locally tested status;
 which milestone advanced; exact G gate IDs newly proved (if any); and the
