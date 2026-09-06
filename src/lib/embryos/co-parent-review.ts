@@ -23,7 +23,7 @@ export async function loadCoParentReview(request: Request, now = Date.now()) {
   if (!sessionHash) return null;
   const admin = createAdminClient();
   const { data: session, error: sessionError } = await admin.from("rights_sessions")
-    .select("purpose, target_kind, target_id, principal_id, authority_revision, status, expires_at")
+    .select("token_hash_id, purpose, target_kind, target_id, principal_id, authority_revision, status, expires_at")
     .eq("session_hash", sessionHash).maybeSingle();
   if (sessionError || !session || session.purpose !== "co-parent-invitation"
     || session.target_kind !== "cohort_draft" || session.status !== "active"
@@ -33,8 +33,22 @@ export async function loadCoParentReview(request: Request, now = Date.now()) {
   if (!context) return { kind: "sign-in" as const };
   if (!context.user.email || !context.user.email_confirmed_at) return null;
 
+  // Follow the credential's immutable chain. Never substitute another
+  // invitation merely because it names the same parent and draft.
+  const { data: token, error: tokenError } = await admin.from("token_hashes")
+    .select("candidate_id, token_hash, token_revision")
+    .eq("id", session.token_hash_id).eq("status", "consumed").maybeSingle();
+  if (tokenError || !token) return null;
+  const { data: candidate, error: candidateError } = await admin.from("token_candidates")
+    .select("target_id")
+    .eq("id", token.candidate_id).eq("purpose", "co-parent-invitation")
+    .eq("target_kind", "subject_invitation").eq("token_revision", token.token_revision)
+    .eq("state", "issued").gt("expires_at", new Date(now).toISOString()).maybeSingle();
+  if (candidateError || !candidate) return null;
+
   const { data: invitation, error: invitationError } = await admin.from("subject_invitations")
     .select("id")
+    .eq("id", candidate.target_id).eq("token_hash", token.token_hash)
     .eq("invitee_principal_id", session.principal_id)
     .eq("target_kind", "cohort_draft").eq("target_id", session.target_id)
     .eq("invitation_kind", "co_parent").eq("status", "pending")

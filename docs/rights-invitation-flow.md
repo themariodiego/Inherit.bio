@@ -68,14 +68,44 @@ on the review page; interstitial typography/theme parity still needs review.
 
 ## Required before release / acceptance
 
+### Exact invitation binding (local follow-up)
+
+The activation and acceptance RPCs now use one private authority resolver.
+It follows the original token hash, its candidate and the exact invitation;
+checks token and invitation revisions, pending slot/principal, current contact
+authority, draft lifetime and existing refusal bars; and locks the matched
+authority rows for the mutation. Review also follows the exact token chain,
+instead of substituting an invitation with the same principal/draft pair.
+
+The new database regression suite passes all 48 assertions. Running those
+same assertions against the previous functions inside a rolled-back transaction
+produces 28 failures, including acceptance of a replacement invitation for the
+same parent and draft. The existing 141-assertion cohort suite passes as well.
+The review unit suite passes 30 cases, including eight new token-chain cases;
+typecheck, scoped lint and local security advisors pass.
+
+This does not yet establish the cross-version contact lock, concurrent refusal
+insertion/provider-submit ordering, or complete refusal transaction. Those must
+be integrated with issuance, mail and cleanup before release. No refusal UI is
+enabled by this change.
+
+The shared development database is not a clean CI database: a full database
+run fails on leftover synthetic-row totals and missing ingest functions.
+Its older turnaround function was brought to the already-committed
+`20260905202657_job_timing_privacy.sql` definition to run the cohort suite.
+No shared reset or fixture-data cleanup was performed. The new migration
+was applied locally as SQL without adding migration-history entries; local
+history already trails several main-branch migrations. A clean full migration
+and database run remains required for release.
+
 This is not a completed rights workflow and must not ship as one:
 
 1. Implement accountless refusal with its registered atomic invalidation,
    global contact refusal bar, exact draft/evidence cleanup and minimal notices.
    The email already promises this action; no pretend refusal control is added.
-2. Complete activation/mutation current-authority and refusal-bar rechecks,
-   including the exact invitation binding rather than relying only on a
-   principal/draft pair; cover races and revision changes in database tests.
+2. Complete the cross-version contact lock and current-authority/refusal-bar
+   rechecks across issuance, activation, mutation and provider submission;
+   cover concurrency in addition to the local exact-binding regression suite.
 3. Finish the review's participant/basis information for every invitation class,
    broader browser states, both themes, narrow viewports and accessibility.
 4. Complete the adult URL-token migration and the other registered rights

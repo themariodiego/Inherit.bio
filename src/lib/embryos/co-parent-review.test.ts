@@ -34,6 +34,12 @@ beforeEach(() => {
     profiles: [{ id: IDS.account, deletion_requested_at: null }],
     consent_signatures: [{ signer_principal_id: IDS.inviter, target_kind: "cohort_draft", target_id: IDS.draft, artifact_key: "consent.upload-embryo", signing_name_encrypted: `\\x${encryptSecret("Synthetic Inviter").toString("hex")}` }],
   };
+  const tokenId = crypto.randomUUID();
+  const candidateId = crypto.randomUUID();
+  rows.rights_sessions[0].token_hash_id = tokenId;
+  rows.subject_invitations[0].token_hash = "a".repeat(64);
+  rows.token_hashes = [{ id: tokenId, candidate_id: candidateId, token_hash: "a".repeat(64), token_revision: 1, status: "consumed" }];
+  rows.token_candidates = [{ id: candidateId, target_id: rows.subject_invitations[0].id, purpose: "co-parent-invitation", target_kind: "subject_invitation", token_revision: 1, state: "issued", expires_at: EXPIRY }];
   rows.consent_signatures[0].signer_account_id = rows.embryo_cohort_drafts[0].owner_account_id;
   mocks.context.mockResolvedValue({ user: { id: IDS.account, email: EMAIL, email_confirmed_at: EXPIRY }, sessionId: IDS.auth });
   mocks.artifact.mockImplementation(async (key: string) => ({ artifact_key: key, version: 1, body_sha256: "b".repeat(64), body_markdown: "Full signed body", summary_markdown: "Summary", effective_on: "2026-09-05", summary_of_changes: null }));
@@ -101,6 +107,23 @@ describe("co-parent invitation review authority", () => {
     expect(reads.some(read => read.table === "consent_signatures")).toBe(false);
   });
 
+  it.each([
+    "replacement-invitation", "replacement-token", "revoked-token", "wrong-token-revision",
+    "wrong-candidate-purpose", "wrong-candidate-kind", "expired-candidate", "invalidated-candidate",
+  ])("rejects %s before reading any draft or signing name", async mode => {
+    if (mode === "replacement-invitation") rows.subject_invitations[0].id = crypto.randomUUID();
+    if (mode === "replacement-token") rows.subject_invitations[0].token_hash = "b".repeat(64);
+    if (mode === "revoked-token") rows.token_hashes[0].status = "revoked";
+    if (mode === "wrong-token-revision") rows.token_candidates[0].token_revision = 2;
+    if (mode === "wrong-candidate-purpose") rows.token_candidates[0].purpose = "adult-subject-invitation";
+    if (mode === "wrong-candidate-kind") rows.token_candidates[0].target_kind = "cohort_draft";
+    if (mode === "expired-candidate") rows.token_candidates[0].expires_at = new Date(NOW).toISOString();
+    if (mode === "invalidated-candidate") rows.token_candidates[0].state = "invalidated";
+    expect(await loadCoParentReview(request(), NOW)).toBeNull();
+    expect(reads.some(read => read.table === "embryo_cohort_drafts" || read.table === "consent_signatures")).toBe(false);
+    expect(mocks.artifact).not.toHaveBeenCalled();
+  });
+
   it("binds both full artifacts and the accept control to the exact account, auth session and draft", async () => {
     const review = await loadCoParentReview(request(), NOW);
     expect(review?.kind).toBe("review");
@@ -123,6 +146,7 @@ describe("co-parent invitation review authority", () => {
     expect(reads.map(read => read.table).sort()).toEqual([
       "consent_signatures", "draft_participant_slots", "embryo_cohort_drafts", "profiles",
       "rights_sessions", "subject_invitations", "subject_principals",
+      "token_candidates", "token_hashes",
     ]);
   });
 
