@@ -1,5 +1,26 @@
 # Test diff register
 
+Legacy upload pause (2026-09-06): adds 15 focused route/presentation units
+and one browser case, preserving every existing case and assertion. The
+browser case uses a third same-build app instance with pause enabled, actual
+authenticated refusal responses, no new leases/Storage transport when paused,
+and real UI-uploaded bytes completed and downloaded through the paused app.
+Its stale-page response relay models app-server routing only; its deliberate
+finalization abort simulates an interruption after real Storage completion.
+Discovery is 220 total cases: 217 Chromium and three jurisdiction-off, with
+no skip or retry exception. CI `34049028691` at `703c88d` passed 219 browser
+cases and failed this new case before its positive transfer: the stale-page
+alert locator also matched the Next route announcer. Both new-case alerts now
+select their actual message and retain exact-text assertions (pause copy and
+Chromium's deliberately aborted fetch error). No production code, provider,
+lease-state, byte, cleanup or download assertion changes. The remaining flow
+was reviewed against this release's legacy runtime: Storage leaves a lease
+`issued`, completion requires that state and promotes it, and Tier-1 processing
+sets the file to `annotated`. The canonical branch has different lease semantics.
+Scoped lint, typecheck and unchanged 220-case discovery pass; corrected CI is
+still required. The local canonical database policy must not be reverted to
+make a legacy test pass.
+
 Copilot pre-merge usability review: four extra cases bring the completion
 corpus to 64 and new unit coverage to 69 tests. Three first failed on
 conditional symptoms, explicitly unknown diagnosis and report-reading

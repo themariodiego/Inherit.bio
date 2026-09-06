@@ -14,6 +14,8 @@ import { route } from "@/lib/primary-routes";
 import type { FileKind } from "@/lib/genome/types";
 import { LIMITS, formatBytes } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";
+import { UPLOADS_PAUSED_MESSAGE } from "@/copy/upload/pause";
+import { uploadIssuanceError } from "@/lib/uploads/upload-issuance-error";
 
 const TIER_BY_KIND: Record<FileKind, 1 | 2> = {
   array_23andme: 1,
@@ -58,12 +60,13 @@ async function sha256Of(
   return hasher.digest("hex");
 }
 
-export function Uploader() {
+export function Uploader({ paused = false }: { paused?: boolean }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
+    if (paused) return;
     try {
       const supabase = createClient();
       const {
@@ -130,7 +133,7 @@ export function Uploader() {
           contentType: "application/octet-stream",
         }),
       });
-      if (!issueRes.ok) throw new Error("Could not authorize this upload.");
+      if (!issueRes.ok) throw new Error(await uploadIssuanceError(issueRes));
       const issued = (await issueRes.json()) as {
         uploadId: string;
         bucketName: string;
@@ -203,6 +206,7 @@ export function Uploader() {
       <input
         ref={inputRef}
         type="file"
+        disabled={paused}
         className="sr-only"
         aria-hidden
         tabIndex={-1}
@@ -215,21 +219,21 @@ export function Uploader() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="font-medium">Upload raw DNA data</h2>
-          <p className="mt-1 max-w-md text-sm text-ink-muted">
+          {paused ? <p role="status" className="mt-1 max-w-md text-sm text-ink-muted">{UPLOADS_PAUSED_MESSAGE}</p> : <p className="mt-1 max-w-md text-sm text-ink-muted">
             23andMe, AncestryDNA, MyHeritage, FamilyTreeDNA, VCF/VCF.GZ and
             gVCF are fully processed (limits {formatBytes(LIMITS.arrayMaxBytes)}
             /{formatBytes(LIMITS.vcfMaxBytes)}). BAM/CRAM up to{" "}
             {formatBytes(LIMITS.bamMaxBytes)} are stored, hashed and
             downloadable; analysis needs the self-host worker. Uploads go
             directly to your private storage with resume support.
-          </p>
+          </p>}
         </div>
         <Button
           onClick={() => inputRef.current?.click()}
           disabled={
-            phase.step !== "idle" &&
+            paused || (phase.step !== "idle" &&
             phase.step !== "done" &&
-            phase.step !== "error"
+            phase.step !== "error")
           }
         >
           Choose file
