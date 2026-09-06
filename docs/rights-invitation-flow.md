@@ -51,6 +51,9 @@ Verification:
   including cohort runtime, adult invitation, exact binding, public refusal,
   kind-aware cleanup, canonical notices and storage guards. Local security
   advisors report no warning/error findings.
+- At implementation commit `4468dd8`, the complete clean-checkout unit suite
+  passes **2,194 tests in 139 files** (22.44 seconds). This includes production
+  email rendering/capture; it is not a complete clean migration or browser CI run.
 
 The combined database run found assertions that counted unrelated terminal
 notices left by earlier synthetic browser runs. The tests now bind counts and
@@ -68,6 +71,12 @@ other rights purposes and the complete route/state matrix. The SQL checkpoint
 before a network call does not prove atomic provider delivery against a
 concurrent refusal. A receipt currently covers this holder's explicit refusal,
 not every independently terminalized invitation.
+
+Next concrete safety fix: the cleanup claimant currently rejects shared
+objects reached through another evidence-ingest session, but reviewed evidence
+also has direct references from cohort/claim/correction/appeal tables. Those
+references must be checked before issuing any Storage delete, alongside
+protection against evidence writes after the draft has been cancelled.
 
 The earlier sections below are chronological checkpoints, not claims that the
 latest refusal UI is still missing.
