@@ -212,7 +212,8 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
     await expect(page.getByRole("heading", { name: "Data and methods", exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Open the genome browser", exact: true }).click();
     await page.getByRole("textbox", { name: "Search variants", exact: true }).fill("rs4988235");
-    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.locator("form").filter({ has: page.getByRole("textbox", { name: "Search variants", exact: true }) })
+      .getByRole("button", { name: "Search", exact: true }).click();
     const sourceRow = page.locator("#results table tbody tr");
     await expect(sourceRow).toHaveCount(1);
     await expect(sourceRow).toContainText("rs4988235");
