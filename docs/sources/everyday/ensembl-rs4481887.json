@@ -1,0 +1,39 @@
+{
+  "url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+  "httpStatus": 200,
+  "readAt": "2026-09-06T07:35:32.525Z",
+  "responseSha256": "419640f9a971447df97512d719ac3ad63f08ff3a0092353650832fa5b4a140de",
+  "record": {
+    "ambiguity": "D",
+    "source": "Variants (including SNPs and indels) imported from dbSNP",
+    "MAF": 0.159733,
+    "mappings": [
+      {
+        "start": 248333561,
+        "ancestral_allele": "G",
+        "allele_string": "A/G/T",
+        "seq_region_name": "1",
+        "location": "1:248333561-248333561",
+        "end": 248333561,
+        "strand": 1,
+        "coord_system": "chromosome",
+        "assembly_name": "GRCh38"
+      }
+    ],
+    "minor_allele": "A",
+    "evidence": [
+      "Frequency",
+      "1000Genomes",
+      "Cited",
+      "Phenotype_or_Disease",
+      "TOPMed",
+      "gnomAD"
+    ],
+    "name": "rs4481887",
+    "var_class": "SNP",
+    "most_severe_consequence": "intergenic_variant",
+    "synonyms": [
+      "rs57066458"
+    ]
+  }
+}

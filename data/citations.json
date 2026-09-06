@@ -108,5 +108,85 @@
     "access_date": "2026-09-06",
     "quote": "the light skin-associated SLC45A2 allelic F374 variant restores only moderate pigmentation",
     "claim": "Le et al. 2020: human SLC45A2 forms tested in deficient mouse pigment cells, Figures 7–8; F374 has less pigment and faster loss than L374, not a human heterozygote gradient."
+  },
+  {
+    "id": "doi:10.1186-2044-7248-1-22",
+    "type": "doi",
+    "identifier": "10.1186/2044-7248-1-22",
+    "url": "https://doi.org/10.1186/2044-7248-1-22",
+    "quote": "The C allele is associated",
+    "claim": "Cilantro soapiness and liking are separate survey outcomes; the A-associated direction is a fitted per-allele association, not measured personal taste or proof of OR6A2 causality.",
+    "archived_path": null,
+    "access_date": "2026-09-06"
+  },
+  {
+    "id": "pmid:20585627",
+    "type": "pmid",
+    "identifier": "20585627",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+    "quote": "Alleles are listed as major/minor.",
+    "claim": "Tables 2, 9 and 10 bind the reported alleles to asparagus-odor and bright-light-sneeze survey outcomes in northern European participants; no controlled sensory test or personal probability.",
+    "archived_path": null,
+    "access_date": "2026-09-06"
+  },
+  {
+    "id": "pmid:16444273",
+    "type": "pmid",
+    "identifier": "16444273",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+    "quote": "wet and dry types",
+    "claim": "Author abstract: common coding-strand G/A earwax association, a rare deletion and cell transport assay. Forward-genome C/T mapping is supported separately, not inferred from a label.",
+    "archived_path": null,
+    "access_date": "2026-09-06"
+  },
+  {
+    "id": "dataset:ensembl-variation-rs72921001",
+    "type": "dataset",
+    "identifier": "Ensembl GRCh38 rs72921001",
+    "url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+    "archived_path": "docs/sources/everyday/ensembl-rs72921001.json",
+    "access_date": "2026-09-06",
+    "quote": "11:6868417-6868417",
+    "claim": "Exact GRCh38 position and forward allele list for rs72921001; no evidence of a trait effect or of a user's genotype."
+  },
+  {
+    "id": "dataset:ensembl-variation-rs4481887",
+    "type": "dataset",
+    "identifier": "Ensembl GRCh38 rs4481887",
+    "url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+    "archived_path": "docs/sources/everyday/ensembl-rs4481887.json",
+    "access_date": "2026-09-06",
+    "quote": "1:248333561-248333561",
+    "claim": "Exact GRCh38 position and forward allele list for rs4481887; no evidence of a trait effect or of a user's genotype."
+  },
+  {
+    "id": "dataset:ensembl-variation-rs10427255",
+    "type": "dataset",
+    "identifier": "Ensembl GRCh38 rs10427255",
+    "url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+    "archived_path": "docs/sources/everyday/ensembl-rs10427255.json",
+    "access_date": "2026-09-06",
+    "quote": "2:145367955-145367955",
+    "claim": "Exact GRCh38 position and forward allele list for rs10427255; no evidence of a trait effect or of a user's genotype."
+  },
+  {
+    "id": "dataset:ensembl-variation-rs17822931",
+    "type": "dataset",
+    "identifier": "Ensembl GRCh38 rs17822931",
+    "url": "https://rest.ensembl.org/variation/human/rs17822931?content-type=application/json",
+    "archived_path": "docs/sources/everyday/ensembl-rs17822931.json",
+    "access_date": "2026-09-06",
+    "quote": "16:48224287-48224287",
+    "claim": "Exact GRCh38 position and forward allele list for rs17822931; no evidence of a trait effect or of a user's genotype."
+  },
+  {
+    "id": "dataset:ensembl-vep-rs17822931",
+    "type": "dataset",
+    "identifier": "Ensembl GRCh38 rs17822931 ABCC11 transcript mapping",
+    "url": "https://rest.ensembl.org/vep/human/id/rs17822931?content-type=application/json",
+    "archived_path": "docs/sources/everyday/ensembl-vep-rs17822931.json",
+    "access_date": "2026-09-06",
+    "quote": "G/R",
+    "claim": "ABCC11 transcripts are reverse-strand; forward T at rs17822931 maps Gly180 to Arg. Another alternate allele exists, so an unreviewed G call must not acquire a C/T interpretation."
   }
 ]

@@ -504,3 +504,30 @@ invitation form's short labels: `accepted`, `full`, `live`, `saving`,
 and `statements`. These exact words are explicitly registered in the plain
 vocabulary. No jargon entry, scorer, numeric threshold, legal statement,
 required caveat, scanned surface or gate assertion changes.
+
+# Everyday report follow-through — 2026-09-06
+
+PR72 expands the three-category contextual-report check from five reports to
+eight, retaining all original reports and checking the three new contexts.
+Source links now cover both PMID and DOI; exact dates remain independently
+pinned per reviewed report. Each publication's date is checked within its own
+entry, distinct from additional allele-mapping source dates.
+
+The reference-call parity test retains all five original fixture records and
+adds three explicit synthetic reference calls in temporary VCF/array files.
+It now verifies eight persisted VCF observations, zero variant-only rows,
+unchanged repeated processing, all seven personal previews, source provenance
+and exact VCF/array takeaway parity. No committed genome fixture is changed.
+
+The initial full CI run `34020598312` passed build, units, gates, database and
+independent-session lock checks, then failed two browser cases because their
+old fixture/inventory assumptions had not been extended. It recorded 207
+passes and seven serial-suite cases not run. It is not accepted as green.
+The fixes expand fixture and source coverage; no retry, skip or weakened
+production rule is introduced. The final full CI run remains required.
+
+The combined local production-build rerun passed all 16 cases in
+`observed-reference-calls.spec.ts`, `report-previews.spec.ts` and
+`report-skeleton.spec.ts`, including the seven serial cases not run after
+the CI failure. Typecheck and scoped lint also passed. Full PR CI must still
+pass on the updated revision before publication.

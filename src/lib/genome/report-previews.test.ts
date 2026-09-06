@@ -12,16 +12,17 @@ const audience: PreviewAudience = {
 };
 const templates = [...basic, ...gut].map((template) => ({ ...template, layer: "estimate", pgs_id: null })) as ReportTemplate[];
 const templateFor = (slug: string) => templates.find((template) => template.slug === slug)!;
-const trait = PERSONAL_PREVIEW_TRAITS[0];
+const trait = PERSONAL_PREVIEW_TRAITS.find((item) => item.rsid === 17822931)!;
 const template = templateFor(trait.slug);
 const call: PreviewCall = { rsid: trait.rsid, chrom: trait.chrom, pos: trait.pos38, ref: trait.ref, alt: trait.alt, genotype: "T/T" };
 
 describe("reviewed personal previews", () => {
-  it("covers exactly four source-bound traits and all twelve diploid calls", () => {
-    expect(PERSONAL_PREVIEW_TRAITS).toHaveLength(4);
+  it("covers seven source-bound traits and all twenty-one diploid calls", () => {
+    expect(PERSONAL_PREVIEW_TRAITS).toHaveLength(7);
     for (const item of PERSONAL_PREVIEW_TRAITS) {
       const report = templateFor(item.slug);
-      expect(report.citations.some((source) => source.pmid === item.source.pmid)).toBe(true);
+      expect(report.citations.some((source) => "pmid" in item.source
+        ? source.pmid === item.source.pmid : source.doi === item.source.doi)).toBe(true);
       for (const [key, text] of Object.entries(item.statements)) {
         const result = resolvePersonalPreview(audience, report, [{
           rsid: item.rsid, chrom: item.chrom, pos: item.pos38, ref: item.ref, alt: item.alt,
@@ -47,6 +48,18 @@ describe("reviewed personal previews", () => {
     expect(resolvePersonalPreview(audience, caffeine, [{
       rsid: 762551, chrom: 15, pos: 74749576, ref: "C", alt: "A", genotype: "A/A",
     }], new Set())).toBeNull();
+  });
+
+  it("does not interpret third alleles from the mapping records as the reviewed common calls", () => {
+    for (const [rsid, extra] of [[4481887, "T"], [17822931, "G"]] as const) {
+      const item = PERSONAL_PREVIEW_TRAITS.find((entry) => entry.rsid === rsid)!;
+      const report = templateFor(item.slug);
+      for (const genotype of [`${extra}/${extra}`, `${item.ref}/${extra}`, `${item.alt}/${extra}`]) {
+        expect(resolvePersonalPreview(audience, report, [{
+          rsid, chrom: item.chrom, pos: item.pos38, ref: item.ref, alt: item.alt, genotype,
+        }], new Set())).toBeNull();
+      }
+    }
   });
 
   it.each([

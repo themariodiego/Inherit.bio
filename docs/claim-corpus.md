@@ -21,14 +21,21 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   existing route register, discovered email entrypoints and explicit code-owned
   prose policies. Missing policies and undeclared states fail; they never mean
   that a surface needs no checking. Capture labels are not application URLs.
-- The canonical files now contain 39 independently reviewed, exact statements
-  for COMT, BDNF, FAAH and SLC45A2: four summaries and 35 study-context
-  paragraphs, supported by nine publications and two Ensembl position records.
+- The canonical files contain 71 exact statements in eight reports: eight
+  summaries, 51 study-context paragraphs and 12 genotype interpretations.
+  The released first four reports (COMT, BDNF, FAAH and SLC45A2) account for
+  39 independently reviewed statements. The everyday-trait follow-through
+  adds 32 statements for cilantro, asparagus odor, bright-light sneezing and
+  earwax; see `docs/sources/everyday/review.md` for source-review and release
+  status. The combined register has 19 sources: 12 publications and seven
+  Ensembl position/transcript records.
   `src/components/claims/claim.tsx` renders those statements with numbered,
   source-bound links on the actual report detail page. Changed hosted prose
   remains unregistered rather than borrowing attribution from different text.
   Existing source details remain available; `/science#sources` explicitly
-  describes this four-report scope, not a complete catalog review.
+  describes the selected-report scope, not a complete catalog review.
+  Genotype attribution matches the exact report, rsID, diploid letters and
+  prose. DOI study contexts resolve through the same canonical source index.
 - `src/lib/claims/capture-emails.ts` renders all 12 named production mail
   exports in 11 files through 27 synthetic fixtures. It retains exact HTML,
   subject, input and observation bytes with digests and the clean checkout
@@ -70,6 +77,6 @@ The DOM collector rejects unsupported frames, shadow roots and generated CSS
 text; those require explicit adapters, not dropped observations. Figures still
 need their registered text alternatives. Metadata receipts are checked by the
 audit; the email adapter binds its own captured bytes, not the other three
-channels. The actual four-report DOM tests likewise do not constitute complete
+channels. The actual eight-report DOM tests likewise do not constitute complete
 state, export or email coverage. These limitations must not become silent
 exemptions. Whole-plan acceptance remains 18/65.

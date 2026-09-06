@@ -12,6 +12,71 @@ const USER = { email: `preview-${RUN}@e2e.local`, password: "e2e-preview-passwor
 const EMPTY = { email: `preview-empty-${RUN}@e2e.local`, password: "e2e-preview-password" };
 const FIXTURE = path.join(process.cwd(), "e2e/fixtures/personal-previews-grch38.vcf");
 const HEADINGS = ["What this is", "Your result", "What this doesn’t mean", "How sure we are", "What you can do", "Where this comes from"];
+const ORIGINAL_PREVIEWS = PERSONAL_PREVIEW_TRAITS.filter((trait) => [17822931, 671, 4988235, 1726866].includes(trait.rsid));
+
+for (const [gt, keys] of [
+  ["0/0", ["CC", "AA", "CC", "CC"]],
+  ["0/1", ["AC", "AG", "CT", "CT"]],
+  ["1/1", ["AA", "GG", "TT", "TT"]],
+] as const) {
+  test(`everyday report upload ${gt} binds the actual result to its sources and personal preview`, async ({ page }) => {
+    const user = { email: `everyday-${gt.replace("/", "-")}-${RUN}@e2e.local`, password: USER.password };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "inherit-everyday-preview-"));
+    const file = path.join(dir, "synthetic-everyday.vcf");
+    const cases = [
+      { slug: "cilantro-soapy-taste-or6a2", rsid: 72921001, chrom: 11, pos: 6868417, ref: "C", alt: "A" },
+      { slug: "asparagus-odor-detection-or2m7", rsid: 4481887, chrom: 1, pos: 248333561, ref: "A", alt: "G" },
+      { slug: "photic-sneeze-reflex-2q22", rsid: 10427255, chrom: 2, pos: 145367955, ref: "C", alt: "T" },
+      { slug: "earwax-type-abcc11", rsid: 17822931, chrom: 16, pos: 48224287, ref: "C", alt: "T" },
+    ];
+    // Invented calls only; explicitly includes reference, mixed and alternate
+    // inputs so a missing VCF entry can never stand in for a reference call.
+    fs.writeFileSync(file, [
+      "##fileformat=VCFv4.2", "##reference=GRCh38",
+      "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE",
+      ...cases.map((c) => [c.chrom, c.pos, `rs${c.rsid}`, c.ref, c.alt, ".", "PASS", ".", "GT", gt].join("\t")),
+      "",
+    ].join("\n"));
+    try {
+      await createConfirmedUser(user.email, user.password);
+      await signIn(page, user.email, user.password);
+      await ingestFileAs(page, user.email, user.password, file, "vcf");
+      await page.goto("/genome/me/reports");
+      await page.getByLabel("With results", { exact: true }).check();
+      await expect(page.locator("[data-personal-preview]")).toHaveCount(4);
+      for (const [i, item] of cases.entries()) {
+        await page.goto("/genome/me/reports");
+        const preview = page.locator(`[data-personal-preview="${item.slug}"]`);
+        await expect(preview).toContainText("Your file shows");
+        await page.locator(`a[href="/genome/me/reports/${item.slug}"]`).click();
+        await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveText(HEADINGS);
+        const claimId = `report.${item.slug}.interpretation.rs${item.rsid}.${keys[i].toLowerCase()}`;
+        const interpretation = page.locator(`[data-claim-id="${claimId}"]`);
+        await expect(interpretation).toBeVisible();
+        await expect(page.locator('[data-slot="report-interpretation"]')).toHaveCount(1);
+        await expect(page.locator('[data-claim-region="report-summary"][data-claim-registration="registered"]')).toBeVisible();
+        await expect(page.locator('[data-slot="study-context"]').first().locator("[data-claim-id]")).toHaveCount(4);
+        const links = interpretation.locator("sup a");
+        await expect(links).toHaveCount(2);
+        for (const link of await links.all()) {
+          const target = (await link.getAttribute("href"))!.slice(1);
+          await link.click();
+          await expect(page.locator(`[id="${target}"]`)).toBeInViewport();
+          // The citation entry also contains its study-context self-links.
+          // Check the external source itself, not those inline references.
+          await expect(page.locator(`[id="${target}"] a[href^="https://"]`)).toHaveCount(1);
+        }
+        await expect(page.locator('[data-genetic-value="risk"], [data-genetic-value="percentile"]')).toHaveCount(0);
+        if (item.rsid === 4481887 && gt === "0/1") await expect(interpretation).toContainText("not halfway between");
+        if (item.rsid === 10427255 && gt === "0/0") await expect(interpretation).toContainText("Most people with CC still reported no reflex");
+        if (item.rsid === 72921001) await expect(page.locator('[data-slot="study-context"]').first()).toContainText("not the same outcome");
+      }
+    } finally {
+      fs.unlinkSync(file);
+      fs.rmdirSync(dir);
+    }
+  });
+}
 
 for (const [genotype, gt] of [["GG", "0/0"], ["AA", "1/1"]] as const) {
   test(`alcohol ${genotype} upload shows the matching takeaway and qualified full result`, async ({ page }) => {
@@ -62,7 +127,7 @@ test("own DNA shows four useful takeaways, filters all results, and links to the
   const fileId = await ingestFileAs(page, USER.email, USER.password, FIXTURE, "vcf");
   await page.goto("/genome/me/reports");
   await expect(page.locator("[data-personal-preview]")).toHaveCount(4);
-  for (const trait of PERSONAL_PREVIEW_TRAITS) {
+  for (const trait of ORIGINAL_PREVIEWS) {
     const preview = page.locator(`[data-personal-preview="${trait.slug}"]`);
     await expect(preview).toContainText(trait.qualifier);
     await expect(preview).toContainText("Your file shows");
@@ -84,19 +149,20 @@ test("own DNA shows four useful takeaways, filters all results, and links to the
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByLabel("With results", { exact: true }).check();
-  for (const trait of PERSONAL_PREVIEW_TRAITS) {
+  for (const trait of ORIGINAL_PREVIEWS) {
     const preview = page.locator(`[data-personal-preview="${trait.slug}"]`);
     await preview.scrollIntoViewIfNeeded();
     await expect(preview).toBeVisible();
     expect(await preview.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await preview.locator("p").last().evaluate((element) => getComputedStyle(element).webkitLineClamp)).toBe("none");
   }
-  for (const trait of PERSONAL_PREVIEW_TRAITS) {
+  for (const trait of ORIGINAL_PREVIEWS) {
     await page.goto("/genome/me/reports");
     await page.locator(`a[href="/genome/me/reports/${trait.slug}"]`).click();
     await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveText(HEADINGS);
     await expect(page.locator('[data-figure-kind="genotype"]').first()).toBeVisible();
-    await expect(page.getByRole("link", { name: `PMID ${trait.source.pmid}` })).toBeVisible();
+    const sourceUrl = "pmid" in trait.source ? `https://pubmed.ncbi.nlm.nih.gov/${trait.source.pmid}/` : `https://doi.org/${trait.source.doi}`;
+    await expect(page.locator(`a[href="${sourceUrl}"]`).first()).toBeVisible();
     await expect(page.locator('[data-slot="study-context"]')).toHaveCount(trait.rsid === 671 ? 3 : 1);
     if (trait.rsid === 671) {
       await expect(page.getByRole("link", { name: "PMID 2024727" })).toBeVisible();

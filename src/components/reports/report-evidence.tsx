@@ -50,7 +50,7 @@ export function CitationItem({ citation, reportClaim }: { citation: Citation;
           <dl className="space-y-3">
             {STUDY_CONTEXT_FIELDS.map((field) => {
               const fact = context[field];
-              const claim = reportClaim && fact ? registeredStudyContext(reportClaim.slug, citation.pmid, field, fact.text) : undefined;
+              const claim = reportClaim && fact ? registeredStudyContext(reportClaim.slug, citation.pmid ?? citation.doi, field, fact.text) : undefined;
               return (
               <div key={field}>
                 <dt className="font-medium text-ink">{STUDY_CONTEXT_LABELS[field]}</dt>

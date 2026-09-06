@@ -137,15 +137,15 @@ test.beforeAll(async () => {
   await createConfirmedUser(MEDICINES_USER.email, MEDICINES_USER.password);
 });
 
-test("all five contextual reports show each source without inventing personal findings", async ({ page }) => {
+test("all eight contextual reports show each source without inventing personal findings", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   const templates = ["basic-traits", "gastrointestinal", "lifestyle-wellness"].flatMap((category) =>
     JSON.parse(fs.readFileSync(path.join(process.cwd(), `data/templates/${category}.json`), "utf8")) as ReportTemplate[],
   ).filter((template) => template.citations.some((citation) => citation.studyContext));
   expect(templates.map((template) => template.slug).sort()).toEqual([
-    "alcohol-flush-aldh2-rs671", "bitter-taste-tas2r38",
-    "caffeine-metabolism-cyp1a2-rs762551", "earwax-type-abcc11",
-    "lactase-persistence-lct-rs4988235",
+    "alcohol-flush-aldh2-rs671", "asparagus-odor-detection-or2m7", "bitter-taste-tas2r38",
+    "caffeine-metabolism-cyp1a2-rs762551", "cilantro-soapy-taste-or6a2", "earwax-type-abcc11",
+    "lactase-persistence-lct-rs4988235", "photic-sneeze-reflex-2q22",
   ]);
   for (const template of templates) {
     await page.goto(`/genome/me/reports/${template.slug}`);
@@ -163,9 +163,16 @@ test("all five contextual reports show each source without inventing personal fi
           await expect(panel).toContainText(entry.locator);
         }
       }
-      await expect(page.getByRole("link", { name: new RegExp(`PMID ${citation.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`);
+      const href = citation.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/` : `https://doi.org/${citation.doi}`;
+      const sourceLink = page.locator(`a[href="${href}"]`);
+      await expect(sourceLink).toHaveCount(1);
+      await expect(sourceLink).toBeVisible();
+      const refreshed = ["asparagus-odor-detection-or2m7", "cilantro-soapy-taste-or6a2", "earwax-type-abcc11", "photic-sneeze-reflex-2q22"].includes(template.slug);
+      const expectedDate = refreshed ? "2026-09-06" : "2026-09-05";
+      expect(citation.accessedOn).toBe(expectedDate);
+      // Inspect this publication's date, not the separately dated mapping sources.
+      await expect(sourceLink.locator("..").locator("time")).toHaveAttribute("datetime", expectedDate);
     }
-    await expect(page.locator('time[datetime="2026-09-05"]')).toHaveCount(citations.length);
     await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
   }
 });

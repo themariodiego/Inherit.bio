@@ -505,3 +505,15 @@ templates changed (33 titles, the rest prose) and the gate exits 0.
 Clean state: `pnpm gate:readability` exits 0 over 1,613 blocks (956 long,
 434 short-role, 266 sentence-capped, 144 copy-registry) on the tree with the
 template rewrites applied.
+
+## 2026-09-06 — everyday report follow-through
+
+Four existing reports now distinguish the measured study outcome from the
+reader's own experience; three gain short personal takeaways in the library.
+The plain vocabulary gains six everyday words: `bright`, `smelling`,
+`sneezing`, `soap`, `tasting` and `urine`. No jargon entry, grade threshold,
+sentence cap, extraction rule or baseline is removed or weakened.
+
+The source-review receipt is `docs/sources/everyday/review.md`. The original
+four personal-preview fixtures and their assertions remain covered alongside
+the three new upload/genotype cases.

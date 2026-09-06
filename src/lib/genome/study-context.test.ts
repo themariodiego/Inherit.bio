@@ -36,7 +36,11 @@ describe("source-bound study context", () => {
       const html = renderToStaticMarkup(h(CitationItem, { citation: source }));
       expect(html).toContain('data-slot="study-context"');
       expect(html).toContain(`PMID ${source.pmid}`);
-      expect(html).toContain('dateTime="2026-09-05"');
+      // Earwax was re-read for the everyday follow-through; the other two
+      // pilot sources keep their original dates rather than being re-certified.
+      const expectedDate = template.slug === "earwax-type-abcc11" ? "2026-09-06" : "2026-09-05";
+      expect(source.accessedOn).toBe(expectedDate);
+      expect(html).toContain(`dateTime="${expectedDate}"`);
       expect(html).toContain("not a personal result");
       for (const entry of Object.values(readStudyContext(source)!)) {
         expect(html).toContain(entry!.text);

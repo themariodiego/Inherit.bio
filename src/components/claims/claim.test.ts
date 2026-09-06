@@ -7,26 +7,31 @@ import claims from "../../../data/claims.json";
 import mental from "../../../data/templates/mental-health.json";
 import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
+import basic from "../../../data/templates/basic-traits.json";
+import type { ReportTemplate } from "../../lib/genome/reports";
 import { Claim } from "./claim";
 import { ClaimSources } from "./sources";
-import { ReportSummary, ReportSummarySources } from "../reports/report-summary";
+import { ReportInterpretation, ReportSummary, ReportSummarySources } from "../reports/report-summary";
 import { CitationItem } from "../reports/report-evidence";
 import SciencePage from "../../app/(marketing)/science/page";
-import { annotateReportSources, claimSourceIds, legacySourceId, presentationCitations, registeredReportSummary, reportSummarySourceIds } from "../../lib/claims/presentation";
+import { annotateReportSources, claimSourceIds, legacySourceId, presentationCitations, registeredReportSummary, registeredReportInterpretation, reportSourceIds, reportSummarySourceIds } from "../../lib/claims/presentation";
 import { collectDomSurface } from "../../lib/claims/collect-dom";
 
 const summaries = claims.filter((claim) => claim.claim_id.endsWith(".summary"));
-const templates = [...mental, ...addiction, ...environmental].filter((template) =>
-  summaries.some((claim) => claim.claim_id === `report.${template.slug}.summary`));
+const templates = [...mental, ...addiction, ...environmental, ...basic].filter((template) =>
+  summaries.some((claim) => claim.claim_id === `report.${template.slug}.summary`)) as ReportTemplate[];
 let browser: Browser;
 beforeAll(async () => { browser = await chromium.launch({ headless: true }); });
 afterAll(async () => { await browser?.close(); });
 
 function renderedReport(template: typeof templates[number]) {
   const existingIds = template.citations.map(legacySourceId);
-  const sourceIds = reportSummarySourceIds(template.slug, template.summary, existingIds);
+  const sourceIds = reportSourceIds(template);
   return renderToStaticMarkup(h("main", null,
     h(ReportSummary, { slug: template.slug, text: template.summary, sourceIds }),
+    ...template.variants.flatMap((variant) => Object.entries(variant.interpretations).flatMap(([genotype, text]) =>
+      registeredReportInterpretation(template.slug, variant.rsid, genotype, text)
+        ? [h(ReportInterpretation, { key: genotype, slug: template.slug, rsid: variant.rsid, genotype, text, sourceIds })] : [])),
     h("ul", null, annotateReportSources(sourceIds, template.citations).map(({ citation, anchor }, index) => h("li", {
       key: index, id: anchor,
     }, h(CitationItem, { citation, reportClaim: { slug: template.slug, sourceIds } })))),
@@ -68,7 +73,9 @@ describe("canonical claim display connected to real report components", () => {
         expect(observed.text).toBe(claim.text_verbatim);
         expect([...observed.citationIds].sort()).toEqual(claimSourceIds([claim.claim_id]).sort());
       }
-      expect(observation.claimRegions.map((region) => region.regionId)).toEqual(["report-summary"]);
+      expect(observation.claimRegions.map((region) => region.regionId)).toEqual([
+        "report-summary", ...expected.filter((claim) => claim.claim_id.includes(".interpretation.")).map(() => "report-interpretation"),
+      ]);
       const targets = await page.locator("[data-claim-id] sup a").evaluateAll((links) => links.map((link) => {
         const href = link.getAttribute("href")!;
         const target = document.getElementById(href.slice(1));
@@ -78,7 +85,8 @@ describe("canonical claim display connected to real report components", () => {
       expect(targets.every((target) => target.count === 1)).toBe(true);
       for (const source of canonical.evidence) expect(targets.some((target) => target.sourceHref === source.doi_or_url)).toBe(true);
       for (const citation of template.citations) {
-        await expect(page.locator(`a[href="https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/"]`).count()).resolves.toBe(1);
+        const href = citation.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/` : `https://doi.org/${citation.doi}`;
+        await expect(page.locator(`a[href="${href}"]`).count()).resolves.toBe(1);
       }
     } finally { await page.close(); }
   });
@@ -94,6 +102,38 @@ describe("canonical claim display connected to real report components", () => {
       expect(html).not.toContain("data-claim-id");
       expect(html).not.toContain("<sup");
     }
+  });
+
+  it("binds genotype prose to the exact report, position, letters and text", () => {
+    const template = templates.find((t) => t.slug === "cilantro-soapy-taste-or6a2")!;
+    const variant = template.variants[0];
+    const text = variant.interpretations.AC;
+    expect(registeredReportInterpretation(template.slug, variant.rsid, "CA", text)?.text_verbatim).toBe(text);
+    for (const [slug, rsid, genotype, prose] of [
+      [template.slug, variant.rsid, "CC", text],
+      [template.slug, 17822931, "AC", text],
+      ["another-report", variant.rsid, "AC", text],
+      [template.slug, variant.rsid, "AC", text + " Changed."],
+      [template.slug, variant.rsid, "--", text],
+    ] as const) {
+      const markup = renderToStaticMarkup(h(ReportInterpretation, { slug, rsid, genotype, text: prose, sourceIds: [] }));
+      expect(markup).toContain('data-claim-registration="unregistered"');
+      expect(markup).not.toContain("data-claim-id");
+    }
+  });
+
+  it("keeps exact genotype and context sources when only the hosted summary has changed", () => {
+    const template = structuredClone(templates.find((t) => t.slug === "cilantro-soapy-taste-or6a2")!);
+    const before = reportSourceIds(template);
+    template.summary += " Changed.";
+    const sourceIds = reportSourceIds(template);
+    expect(sourceIds).toEqual(before);
+    const html = renderToStaticMarkup(h(ReportInterpretation, {
+      slug: template.slug, rsid: template.variants[0].rsid, genotype: "AC",
+      text: template.variants[0].interpretations.AC, sourceIds,
+    }));
+    expect(html).toContain("data-claim-id");
+    expect(html).toContain("Source 1");
   });
 
   it("assigns each source anchor only once across visible and overflow legacy entries", () => {

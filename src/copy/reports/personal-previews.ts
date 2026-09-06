@@ -5,6 +5,36 @@ export const NO_RESULT_MATCHES = "No reports with results match this search. Cle
 /** Reviewed position-specific paraphrases; source locations are recorded for every trait. */
 export const PERSONAL_PREVIEW_TRAITS = [
   {
+    slug: "cilantro-soapy-taste-or6a2", rsid: 72921001, chrom: 11, pos38: 6868417, ref: "C", alt: "A",
+    source: { doi: "10.1186/2044-7248-1-22", accessedOn: "2026-09-06", locator: "Table 2 and Methods: per-A association with self-reported soapiness" },
+    statements: {
+      CC: "Your file shows two copies of a form linked to noticing a soapy taste in cilantro.",
+      AC: "Your file shows one copy of a form linked to less frequent reports of soapy-tasting cilantro.",
+      AA: "Your file shows two copies of a form linked to less frequent reports of soapy-tasting cilantro.",
+    } as Record<string, string>,
+    qualifier: "The link was small and studied in people with European ancestry. It does not test whether you like cilantro.",
+  },
+  {
+    slug: "asparagus-odor-detection-or2m7", rsid: 4481887, chrom: 1, pos38: 248333561, ref: "A", alt: "G",
+    source: { pmid: "20585627", accessedOn: "2026-09-06", locator: "Table 9: odor detection by genotype; one and two A copies were similar" },
+    statements: {
+      AA: "Your file shows a form linked to noticing an odor after asparagus. The study asked about urine.",
+      AG: "Your file shows a form linked to noticing an odor after asparagus. The study asked about urine.",
+      GG: "Your file shows a form linked to noticing the asparagus odor less often. Most people with it in the study still noticed the odor.",
+    } as Record<string, string>,
+    qualifier: "This is a survey link, not a separate test of making or smelling an odor.",
+  },
+  {
+    slug: "photic-sneeze-reflex-2q22", rsid: 10427255, chrom: 2, pos38: 145367955, ref: "C", alt: "T",
+    source: { pmid: "20585627", accessedOn: "2026-09-06", locator: "Tables 2 and 10: bright-light sneeze reports by genotype" },
+    statements: {
+      CC: "Your file shows two copies of a form linked to more reports of sneezing in bright light.",
+      CT: "Your file shows one copy of a form linked to more reports of sneezing in bright light.",
+      TT: "Your file shows the form linked to fewer reports of sneezing in bright light.",
+    } as Record<string, string>,
+    qualifier: "People in every group reported the reflex. Your own response may differ.",
+  },
+  {
     slug: "earwax-type-abcc11", rsid: 17822931, chrom: 16, pos38: 48224287, ref: "C", alt: "T",
     source: { pmid: "16444273", accessedOn: "2026-09-05", locator: "Abstract: dry earwax association and dominance of the wet type" },
     statements: {

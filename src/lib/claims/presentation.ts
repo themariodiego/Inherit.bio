@@ -1,5 +1,6 @@
 import citations from "../../../data/citations.json";
 import claims from "../../../data/claims.json";
+import type { ReportTemplate } from "../genome/reports";
 
 // This is the presentation index of the single canonical files, not a second
 // registry or a substitute for commit-clock, source-review and corpus checks.
@@ -48,7 +49,15 @@ export function registeredReportSummary(slug: string, text: string) {
 
 export function registeredStudyContext(slug: string, pmid: string | undefined, field: string, text: string) {
   if (!pmid) return undefined;
-  const claim = presentationClaim(`report.${slug}.study.${pmid}.${field}`);
+  const claim = presentationClaim(`report.${slug}.study.${pmid.toLowerCase().replaceAll("/", "-")}.${field}`);
+  return claim?.text_verbatim === text ? claim : undefined;
+}
+
+/** Identity and exact prose must both match; a changed result cannot borrow a citation. */
+export function registeredReportInterpretation(slug: string, rsid: number, genotype: string, text: string) {
+  if (!Number.isSafeInteger(rsid) || rsid <= 0 || !/^[ACGT]{2}$/.test(genotype)) return undefined;
+  const key = genotype.split("").sort().join("").toLowerCase();
+  const claim = presentationClaim(`report.${slug}.interpretation.rs${rsid}.${key}`);
   return claim?.text_verbatim === text ? claim : undefined;
 }
 
@@ -59,8 +68,32 @@ export function reportSummarySourceIds(slug: string, text: string, existingIds: 
   return [...new Set([...existingIds.filter((id) => required.includes(id)), ...required])];
 }
 
+/** Collect only exact registered prose, independently of summary rollout state. */
+export function reportSourceIds(template: ReportTemplate): string[] {
+  const ids: string[] = [];
+  const summary = registeredReportSummary(template.slug, template.summary);
+  if (summary) ids.push(summary.claim_id);
+  for (const variant of template.variants) {
+    for (const [genotype, text] of Object.entries(variant.interpretations)) {
+      const claim = registeredReportInterpretation(template.slug, variant.rsid, genotype, text);
+      if (claim) ids.push(claim.claim_id);
+    }
+  }
+  for (const citation of template.citations) {
+    for (const [field, value] of Object.entries(citation.studyContext ?? {})) {
+      if (!value) continue;
+      const claim = registeredStudyContext(template.slug, citation.pmid ?? citation.doi, field, value.text);
+      if (claim) ids.push(claim.claim_id);
+    }
+  }
+  const required = claimSourceIds(ids);
+  return [...new Set([...template.citations.map(legacySourceId).filter((id) => required.includes(id)), ...required])];
+}
+
 export function legacySourceId(citation: { pmid?: string; doi?: string }): string {
-  return citation.pmid ? `pmid:${citation.pmid}` : `doi:${citation.doi?.toLowerCase() ?? ""}`;
+  if (citation.pmid) return `pmid:${citation.pmid}`;
+  const doi = citation.doi?.toLowerCase() ?? "";
+  return presentationCitations.find((source) => source.type === "doi" && source.identifier.toLowerCase() === doi)?.id ?? `doi:${doi}`;
 }
 
 export function annotateReportSources<T extends { pmid?: string; doi?: string }>(sourceIds: readonly string[], citations: readonly T[]) {
