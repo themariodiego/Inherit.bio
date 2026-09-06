@@ -5,6 +5,44 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At source `bc31011`, `node --import tsx scripts/run-upload-browser.mts`
+exits zero: **4/4 cases pass, zero skips, retries or flaky cases**, in 52.4
+seconds. The run began at `2026-09-06T16:07:25.902Z`; **three actual browser
+uploads** reached the installed Storage provider. The four-case coverage
+below remains intact, with fresh Overview checks added to the chosen journey:
+
+- Prepared before any report choice: **Choose reports** links to the library,
+  with no personal starter link. Saving the polygenic choice alone retains
+  that prepared state; no completed result is inferred from permission.
+- After generation: an actual covered **Bitter taste perception** starter
+  link appears in both the DOM and fresh server document, within the existing
+  five-item cap. The library/detail still prove the original MCM6 milk-sugar
+  finding, source, partial coverage and scientific citation.
+- After purpose withdrawal: the starter link disappears from both the DOM
+  and fresh document. All Overview states exclude genotype figures,
+  serialized genotype fields and the known personal interpretation text.
+  Existing analytic read-denial, retained-source browser and exact original
+  download assertions still pass.
+
+Desktop and 390px Overview screenshots were captured and visually inspected:
+text and controls are readable without clipping. The starter list remains
+below Family and Embryos; moving useful own results earlier is a future UX
+priority, not a change or acceptance claim in this checkpoint.
+
+The first Overview run at `5a06279` passed three cases but expected MCM6 in
+the starter list. The real fixture covers more than five reports, and the
+unchanged category/slug ordering places other covered reports first. The
+test now checks the actual bitter-taste starter and the existing cap; no
+runtime selection, fixture, permission or MCM6 result assertion was changed.
+
+Full units passed separately at `bc31011`: **2,602 tests in 163 files**.
+Final teardown confirms no listeners on 3100/3101, zero isolated provider
+processes and normal runner/proxy exit. The generated report contains no
+credential markers; traces remain disabled. This remains local own-account
+verification, not hosted signing trust or whole-plan acceptance (18/65).
+
+## Earlier four-case recovery checkpoint
+
 At source `d782d1a`, `node --import tsx scripts/run-upload-browser.mts`
 exits zero: **4/4 cases pass, zero skips, retries or flaky cases**, in 48.1
 seconds. The run began at `2026-09-06T15:53:14.889Z`; **three actual browser
