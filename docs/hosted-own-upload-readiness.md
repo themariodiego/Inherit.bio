@@ -1,8 +1,78 @@
 # Hosted own-upload rollout prerequisites
 
-Rollout preparation checkpoint, 6 September 2026. This is not a rollout receipt. The
-new upload/report work is local; production is the independently released
+Rollout preparation checkpoint, 6 September 2026. This is not a feature-release receipt.
+The new upload/report runtime remains local; compatible hosted schema is staged; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
+
+## Current checkpoint · 18:35 UTC, 6 September 2026
+
+The owner completed signing-key activation. The authenticated dashboard labels
+replacement `d5e4e50d-7017-4c8f-9435-22c07b5234a9` Current and both older keys
+Previous. No revocation or private-key retrieval was performed. Vercel confirms
+the signing variable exists as a sensitive Production-only variable; its value
+was not inspected. Successful hosted token minting and actual Storage acceptance
+remain unverified.
+
+All twelve compatible own-upload migrations were applied sequentially through
+Supabase migration operations, each with an explicit transaction and 5-second
+lock timeout. Independent poststage verification matched each complete SQL body
+to the local file, checked the current v2 consent artifact hashes and enabled
+immutability trigger, and confirmed all 23 public RPCs are service-only. The
+four new private tables have RLS and deny ordinary-user table privileges.
+The upload role retains only the intended Storage insertion capability.
+
+The incompatible `20260906133807_cutover_subject_upload_transport.sql` remains
+unapplied: the existing legacy staging policy is preserved. Configuration rows,
+canonical leases/source markers, normalization rows and analysis rows are all
+zero. No real genetic file was changed. Security advisor reports zero errors;
+its existing definer and leaked-password-protection warnings remain open.
+
+Vercel Standard Protection is enabled for all deployment URLs except custom
+domains. The public custom domain still returns HTTP 200; the generated URL
+requires Vercel authentication. A detached canary checkout at `8166c3b` passed
+a deployment-file dry run: 1,058 tracked files, 19,349,767 bytes, with no actual
+credential files. No canary has yet been deployed. Existing active cron targets
+still point to PR75. Scheduler isolation, explicit upload capacity, a fresh
+synthetic account and the real hosted journey are the next ordered checks.
+
+Existing Vercel included usage was rechecked at $1.71/$20, with $0 on-demand.
+The next authorized hosted batch is one protected candidate build and two tiny
+synthetic uploads, with bounded HTTP checks and no external model calls,
+background-worker invocation, new resources or plan changes.
+
+The following older checkpoints are retained as historical evidence; this
+section supersedes their pending-activation and unstaged-schema statements.
+
+### Protected canary preparation · 18:48 UTC
+
+The included first custom environment `own-upload-canary` was created with
+Vercel type `preview`, no branch matcher and no public domain. Five necessary
+existing variables are shared internally by environment ID: Supabase URL,
+public key and service role, BYOK encryption key, and upload signer. Their
+Production targets remain intact. No values were retrieved. Worker and email
+credentials were excluded; deployment-only worker secrets are explicitly empty.
+This avoids the unproven cron behavior of a production `--skip-domain` deploy.
+
+Temporary canonical capacity is now configured and read back: 64 KiB per array
+or VCF, 256 KiB per account, two active uploads, exact hosted Auth issuer.
+These are tiny protected-canary limits, not public file-size commitments.
+The configuration is global to canonical issuance, whose public wrappers are
+service-only; PR75 does not consult it. Current provider-wide Storage size
+configuration is not independently confirmed; the two canary fixtures total
+972 bytes and actual provider acceptance is still required.
+
+First deployment `dpl_FXTojShhFADjYjbRKV3PYcAZFhcA` was BLOCKED before building
+because the local commit author's machine-only email is not GitHub-attributed.
+Its source remains `8166c3b`. The follow-up documentation commit uses the
+existing owner's verified GitHub email without rewriting historical authorship
+or changing runtime source. The protected custom environment and all three
+active production cron definitions were checked; crons still target PR75.
+
+Synthetic Auth Admin setup through the existing Supabase CLI did not return
+within bounded attempts; both processes were stopped before account creation.
+No user list, existing account update, consent seed or private signing-key
+retrieval occurred. A supported alternative credential path for the actual
+new-account operation is being checked; no hosted genetic upload has run.
 
 ## Verified scope
 

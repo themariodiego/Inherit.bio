@@ -69,6 +69,26 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-06 · Signing activation and compatible hosted schema verified
+
+The owner activated the replacement signing key and retained the older keys.
+Twelve compatible migrations are now staged in hosted Supabase. Independent
+poststage checks confirmed exact SQL-body hashes, current consent artifacts,
+service-only public RPCs, private-table RLS and the unchanged legacy staging
+policy. Temporary tiny-file capacity is configured; canonical source rows remain empty. This
+closes activation and compatible-schema prerequisites, not the hosted journey.
+
+Generated Vercel deployment URLs now require authentication; public custom
+domains retain the PR75 release. The candidate source is frozen at `8166c3b`.
+A protected custom preview environment now isolates scheduled jobs and shares
+only necessary app configuration. Its first deployment was blocked before build
+by the machine-only Git author email; a documentation-only attribution update
+is prepared. Next: a successful candidate build and two tiny synthetic files
+through real hosted authorization, Storage and rendered results. No hosted
+signing-success claim has been made yet.
+Acceptance remains **18/65**; recurring retention, required notices and broader
+journey regressions still remain beyond this canary.
+
 ### Current local rollout prerequisite: verified pause and recovery
 
 At `9b45b75`, all 24 selected actual-provider browser cases pass with 18
@@ -79,8 +99,8 @@ preserving another file. The server-only cron GET adapter also passes its
 credential/body/selector refusal and unchanged-worker delegation tests.
 Neither capability is hosted verification, and the adapter has not invoked
 the composite production retention worker. PR75's separate legacy bridge is
-now released as recorded below. Signing activation requires the owner to finish
-the prepared dashboard dialog. Acceptance remains **18/65**.
+now released as recorded below. Signing activation and compatible schema staging
+are now verified above. Acceptance remains **18/65**.
 
 ### 2026-09-06 · PR75 production transition bridge verified
 
@@ -96,7 +116,8 @@ Authenticated live `/files/upload` and `/files` show an enabled picker after
 deployment: the default-off behavior is verified. No hosted pause was enabled,
 no Storage policy was removed, and no real file was changed. The broad canonical
 branch remains local; this release supplies its compatible transition control.
-Acceptance stays **18/65**. Owner signing activation is pending; staged schema,
+Acceptance stays **18/65**. Signing activation and compatible schema staging
+are verified above; the
 capacity/authorization canary, recurring cleanup, report-ready notifications
 and remaining regressions still prevent calling the own-file milestone delivered.
 
