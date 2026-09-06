@@ -34,7 +34,11 @@ requirements, observations, artifact receipts and full audit result.
 
 Local Chromium parses those retained HTML bytes with JavaScript and network
 access disabled. The same DOM collector used by the corpus tests reads the
-entire body. Subject bytes are separately observed as plain text, never as HTML.
+entire body. Its exact checked-in function is compiled with TypeScript for the
+browser realm and retained as a hashed `collector.js` artifact. This avoids
+host-runner function-name helpers leaking into Playwright serialization; both
+Vitest and standalone `tsx` capture paths are tested for observation parity.
+Subject bytes are separately observed as plain text, never as HTML.
 Any attempted resource request fails capture. This captures renderer output,
 not a delivered-mail provider transformation or mail-client screenshot.
 

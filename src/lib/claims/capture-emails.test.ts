@@ -1,6 +1,8 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { renderMail, mailSubject } from "../email";
 import { captureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
@@ -100,6 +102,7 @@ describe("actual production email HTML and envelope capture", () => {
       expect(pair[1].payloadSha256).toBe(receipt.subject.sha256);
     }
     expect(JSON.parse(await readFile(join(outputDirectory, "capture.json"), "utf8"))).toEqual(result);
+    expect(sha256(await readFile(join(outputDirectory, result.collector.path)))).toBe(result.collector.sha256);
   });
   it("preserves actual public digest prose without fabricating wrappers or exemptions", () => {
     const full = result.observations.find((o) => o.surface.endsWith("#fixture=research-digest--public-catalog"))!;
@@ -117,4 +120,17 @@ describe("actual production email HTML and envelope capture", () => {
     await expect(captureEmailClaims({ outputDirectory, ...resolvers })).rejects.toMatchObject({ code: "EEXIST" });
     expect(await readFile(join(outputDirectory, "capture.json"))).toEqual(before);
   });
+  it("captures in the standalone tsx runner without host-only serialization helpers", async () => {
+    const directory = join(await mkdtemp(join(tmpdir(), "inherit-email-standalone-test-")), "capture");
+    const script = `import { captureEmailClaims } from "./src/lib/claims/capture-emails";
+      (async () => { const result = await captureEmailClaims({ outputDirectory: ${JSON.stringify(directory)},
+        registry: { resolveCitation: () => undefined, resolveClaim: () => undefined },
+        resolveSeed: () => false, resolveComputed: () => false });
+        console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
+    const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: projectRoot, timeout: 30_000 });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 27, observations: 54, ok: false });
+    const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
+    expect(retained.observations).toEqual(result.observations);
+    expect(retained.collector.sha256).toBe(result.collector.sha256);
+  }, 40_000);
 });

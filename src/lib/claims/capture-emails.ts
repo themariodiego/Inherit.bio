@@ -4,8 +4,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import ts from "typescript";
 import { mailSubject, renderMail } from "../email";
-import { collectDomSurface } from "./collect-dom";
 import { auditClaimCorpus, type CorpusAudit, type CorpusInput, type ObservedSurface, type RequiredSurface } from "./corpus";
 import { emailFixtures } from "./email-fixtures";
 import { assertEmailFixtureCoverage, readEmailInventory, readPublicDigestCatalog } from "./email-inventory";
@@ -30,6 +30,7 @@ export interface EmailCaptureReceipt {
 export interface EmailCaptureResult {
   contract: "email-renderer-capture-v1";
   contentCommitSha: string;
+  collector: { path: string; sha256: string };
   requiredSurfaces: RequiredSurface[];
   observations: ObservedSurface[];
   receipts: EmailCaptureReceipt[];
@@ -52,11 +53,20 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
   const contentCommitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" }).trim();
   if (!/^[a-f0-9]{40}$/.test(contentCommitSha)) throw new Error("email-capture:invalid-content-commit");
   const assertSourcesUnchanged = () => {
-    const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", "src/emails", "src/lib/email.ts", "src/lib/primary-routes.ts", "src/copy", "data/templates", "package.json", "pnpm-lock.yaml"], { cwd: projectRoot, encoding: "utf8" });
+    const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", "src/emails", "src/lib/email.ts", "src/lib/primary-routes.ts", "src/lib/claims/collect-dom.ts", "src/copy", "data/templates", "package.json", "pnpm-lock.yaml"], { cwd: projectRoot, encoding: "utf8" });
     if (dirty.trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
     if (execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" }).trim() !== contentCommitSha) throw new Error("email-capture:content-commit-changed");
   };
   assertSourcesUnchanged();
+  // Compile the actual source function, not its host-runner serialization: tsx
+  // may add external keepNames helpers that do not exist in the browser realm.
+  const collectorSource = await readFile(join(projectRoot, "src/lib/claims/collect-dom.ts"), "utf8");
+  const collectorTree = ts.createSourceFile("collect-dom.ts", collectorSource, ts.ScriptTarget.Latest, true);
+  const declarations = collectorTree.statements.filter(ts.isFunctionDeclaration).filter((f) => f.name?.text === "collectDomSurface");
+  if (declarations.length !== 1) throw new Error("email-capture:invalid-collector-export");
+  const collectorExpression = ts.transpileModule(`(${declarations[0].getText(collectorTree).replace(/^export\s+/, "")})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+  }).outputText.trim().replace(/;$/, "");
   const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
   assertEmailFixtureCoverage(readEmailInventory(projectRoot), fixtures);
   // Required surfaces come from fixtures BEFORE any rendering succeeds.
@@ -76,6 +86,7 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
     return { path, sha256: sha256(retained) };
   };
   try {
+    const collector = await artifact("collector.js", collectorExpression);
     for (const fixture of fixtures) {
       const input = await artifact(`${fixture.id}.input.json`, JSON.stringify({ source: "synthetic-fixture-with-public-catalog", fixture }, null, 2));
       const html = await artifact(`${fixture.id}.html`, await renderMail(fixture.mail));
@@ -86,12 +97,12 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
         const retainedHtml = await readFile(join(options.outputDirectory, html.path));
         if (sha256(retainedHtml) !== html.sha256) throw new Error("email-capture:artifact-byte-mismatch");
         await page.setContent(retainedHtml.toString("utf8"), { waitUntil: "load" });
-        bodyObservation = await page.evaluate(collectDomSurface, { surface: fixture.required.surface, channel: "email" as const, contentCommitSha, payloadSha256: html.sha256 });
+        bodyObservation = await page.evaluate<ObservedSurface>(`${collectorExpression}(${JSON.stringify({ surface: fixture.required.surface, channel: "email", contentCommitSha, payloadSha256: html.sha256 })})`);
         await page.setContent("<!doctype html><html><body></body></html>");
         const retainedSubject = await readFile(join(options.outputDirectory, subject.path));
         if (sha256(retainedSubject) !== subject.sha256) throw new Error("email-capture:artifact-byte-mismatch");
         await page.evaluate((value) => { document.body.textContent = value; }, retainedSubject.toString("utf8"));
-        subjectObservation = await page.evaluate(collectDomSurface, { surface: `${fixture.required.surface}#envelope=subject`, channel: "email" as const, contentCommitSha, payloadSha256: subject.sha256 });
+        subjectObservation = await page.evaluate<ObservedSurface>(`${collectorExpression}(${JSON.stringify({ surface: `${fixture.required.surface}#envelope=subject`, channel: "email", contentCommitSha, payloadSha256: subject.sha256 })})`);
         if (requestAttempted) throw new Error("email-capture:unexpected-network-request");
       } finally { await page.close(); }
       const pair = [bodyObservation, subjectObservation];
@@ -102,7 +113,7 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
     assertSourcesUnchanged();
     const audit = auditClaimCorpus({ contentCommitSha, requiredSurfaces, observations,
       registry: options.registry, resolveSeed: options.resolveSeed, resolveComputed: options.resolveComputed });
-    const result: EmailCaptureResult = { contract: "email-renderer-capture-v1", contentCommitSha, requiredSurfaces, observations, receipts, audit };
+    const result: EmailCaptureResult = { contract: "email-renderer-capture-v1", contentCommitSha, collector, requiredSurfaces, observations, receipts, audit };
     await artifact("capture.json", JSON.stringify(result, null, 2));
     return result;
   } finally { await context.close(); await browser.close(); }
