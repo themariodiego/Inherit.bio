@@ -473,8 +473,8 @@ PR72 merged at `2026-09-06T10:19:11Z` as
 `2450606187c2edd48afe31b5b0b006acfb272534`. Production deployment
 `dpl_4AAe6EsYZo2kZEVdwMCNJP7u31BT` is READY for that exact merge, with
 both `inherit.bio` and `www.inherit.bio` assigned and no alias error.
-The main integration run `34027087529` was still running at this receipt;
-it is not represented as a completed run.
+The main integration run `34027087529` subsequently completed successfully,
+verified before starting the own-upload consent implementation checks.
 
 The real public science page rendered all 19 sources with read dates and
 the explicit selected-report scope. All four authenticated detail routes

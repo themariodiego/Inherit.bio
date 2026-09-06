@@ -5130,6 +5130,7 @@ export type Database = {
           account_revision: number
           auth_session_revision: number
           created_at: string
+          date_of_birth: string | null
           deletion_requested_at: string | null
           digest_opt_in: boolean
           display_name: string | null
@@ -5142,6 +5143,7 @@ export type Database = {
           account_revision?: number
           auth_session_revision?: number
           created_at?: string
+          date_of_birth?: string | null
           deletion_requested_at?: string | null
           digest_opt_in?: boolean
           display_name?: string | null
@@ -5154,6 +5156,7 @@ export type Database = {
           account_revision?: number
           auth_session_revision?: number
           created_at?: string
+          date_of_birth?: string | null
           deletion_requested_at?: string | null
           digest_opt_in?: boolean
           display_name?: string | null
@@ -7979,6 +7982,23 @@ export type Database = {
           p_token_nonce: string
         }
         Returns: string
+      }
+      sign_own_upload_artifact_v1: {
+        Args: {
+          p_account_id: string
+          p_account_revision: number
+          p_artifact_body_sha256: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_auth_session_revision: number
+          p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_statement_keys: string[]
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
       }
       stop_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }

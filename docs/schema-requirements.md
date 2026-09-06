@@ -340,3 +340,40 @@ annotated state clears both provenance values. A fresh UUID claims an eligible
 non-active processing run and binds completion/failure updates. No client grant,
 new store, retention clock or historical backfill is added. See
 `docs/result-input-provenance.md` for the per-result read and unknown-state rules.
+
+## Own-account upload consent integration (in progress)
+
+Implement `consent-action-capability-v1`'s own-subject case for the existing
+self subject and a finalized adult subject held by that same person's account.
+The class artifact is `content/legal/consent.upload-self/v1.md`; no uploader,
+owner-only or family-grantee relation may sign it. The insurance disclosure
+remains a separate explicit decision and uses its existing versioned artifact.
+
+Add nullable `profiles.date_of_birth` with no guessed/backfilled value. The
+signing boundary requires a stored adult birth date; signup and existing-account
+completion must be connected before this upload work is released. Preserve all
+`consent.self-source-migrated` signatures and grants unchanged.
+An invoker trigger denies direct anon/authenticated birth-date inserts or
+changes despite the pre-existing table-level profile grants. The future
+account-completion route must validate and write this field server-side.
+
+Extend existing `account_operation_nonces.operation` with
+`own_upload_artifact_sign`, retaining its existing account/session ownership,
+15-minute maximum clock, RLS and account-deletion cleanup. Store no token,
+birth date, subject identifier or artifact text in the nonce row. The signed
+presentation supplies the exact subject, artifact hash/version and current
+account, auth-session, jurisdiction and subject-binding revisions.
+
+Add `upload_class` to the existing `subject_consents.consent_type` values:
+this is a revocable store-only grant, not an analytic-purpose grant. Signing a
+new class version supersedes only an earlier upload-class grant for that exact
+subject/account. It must not revoke historical self-source or purpose grants.
+
+The public signing RPC is SECURITY INVOKER and service-role-only. Its unexposed
+private implementation is service-role-only with fixed search path; it locks
+and rechecks the live originating auth session, profile, subject/binding,
+published artifact and one-use nonce before recording the signature and class
+grant atomically. Stale or altered presentation, another person's subject,
+non-adult/missing birth date, deletion hold, revoked session, nonce replay or
+invalid statement keys must leave zero signature/grant changes. No genetic
+upload, processing, mail or model operation is part of this transaction.
