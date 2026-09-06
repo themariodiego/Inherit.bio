@@ -163,6 +163,11 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   const overviewViewport = page.viewportSize();
   try {
     await page.setViewportSize({ width: 390, height: 844 });
+    const starterBounds = await page.locator('section[aria-labelledby="starter-title"]').boundingBox();
+    const familyBounds = await page.locator("section#family").boundingBox();
+    expect(starterBounds).not.toBeNull();
+    expect(familyBounds).not.toBeNull();
+    expect(starterBounds!.y + starterBounds!.height).toBeLessThan(familyBounds!.y);
     await page.screenshot({ path: test.info().outputPath("overview-chosen-result-mobile.png"), fullPage: true });
   } finally {
     if (overviewViewport) await page.setViewportSize(overviewViewport);
