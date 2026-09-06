@@ -144,12 +144,29 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   const owner = anonClient();
   const auth = await owner.auth.signInWithPassword(user);
   expect(auth.error).toBeNull();
-  const generatedScores = await admin.from("user_prs").select("file_id,pgs_id,coverage,matched").eq("file_id", fileId).order("pgs_id");
+  const generatedScores = await admin.from("user_prs").select("file_id,pgs_id,matched").eq("file_id", fileId).order("pgs_id");
   expect(generatedScores.error).toBeNull();
   expect(generatedScores.data!.length, "real generated score coverage metadata").toBeGreaterThan(0);
-  const visibleScores = await owner.from("user_prs").select("file_id,pgs_id,coverage,matched").eq("file_id", fileId).order("pgs_id");
+  const visibleScores = await owner.from("user_prs").select("file_id,pgs_id,matched").eq("file_id", fileId).order("pgs_id");
   expect(visibleScores.error).toBeNull();
   expect(visibleScores.data).toEqual(generatedScores.data);
+  // The published API exposes matched counts plus public score denominators,
+  // not a stored coverage fraction or raw score (20260905195248).
+  const denominators = await owner.from("prs_scores").select("pgs_id,n_variants")
+    .in("pgs_id", visibleScores.data!.map(score => score.pgs_id));
+  expect(denominators.error).toBeNull();
+  for (const score of visibleScores.data!) {
+    const definition = denominators.data!.find(row => row.pgs_id === score.pgs_id);
+    expect(definition).toBeDefined();
+    expect(definition!.n_variants).toBeGreaterThan(0);
+    expect(score.matched).toBeGreaterThanOrEqual(0);
+    expect(score.matched).toBeLessThanOrEqual(definition!.n_variants);
+  }
+  for (const forbiddenColumn of ["raw_score", "coverage"]) {
+    const forbidden = await owner.from("user_prs").select(forbiddenColumn).eq("file_id", fileId);
+    expect(forbidden.error?.code, `${forbiddenColumn} is deliberately not exposed`).toBe("42501");
+    expect(forbidden.data).toBeNull();
+  }
   const ancestry = await admin.from("ancestry_results").select("id").eq("file_id", fileId);
   expect(ancestry.error).toBeNull();
   expect(ancestry.data).toEqual([]);
