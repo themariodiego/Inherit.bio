@@ -3,6 +3,36 @@
 2026-09-06. **Partial verification, not a completed upload-to-results journey.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## Latest verified checkpoint
+
+At source `294d8a0`, the production-browser runner exits zero: **2/2 cases
+pass, no skips or retries**, including one actual browser upload through the
+installed provider. The complete own-account sequence reaches prepared UI;
+the stored file downloaded through the original, unproxied provider equals
+the original fixture byte for byte. Exact source revision and normalized rows
+are verified, with zero unchosen purposes, analytic results, worker jobs or
+report-ready notices. The prepared screenshot was visually inspected.
+
+The real HTTP adapter exposes a zero-byte POST as a non-null empty stream.
+Finalization and normalization now check bounded EOF rather than testing only
+`request.body === null`; any content or a stalled body is refused. The same
+helper protects the bodyless retention route. Four helper tests and the 58
+finalizer/normalizer regressions pass. Chromium did not expose the File-backed
+XHR body to its debugging protocol, so byte equality is verified through the
+actual stored-object download rather than an absent instrumentation field.
+
+The clean source checkout passes **2,521 tests in 155 files** with
+`corepack pnpm test --maxWorkers=2`; the secret gate passes over 1,022 tracked
+files and 255 authored commits. Initial full runs found an old mock missing
+the database's nullable structural-evidence field (corrected to explicit NULL)
+and a five-second GIAB test timeout while two suites and a browser build ran
+concurrently. With suites serialized and two workers, unchanged parser
+assertions and timeout pass. No fixture was purged or assertion weakened.
+
+This proves upload through preparation, **not selected report generation**.
+The report-choice backend is separate; UI mounting, exact-purpose generation,
+live output authorization and withdrawal cleanup remain before release.
+
 ## Infrastructure and scope
 
 Run `node --import tsx scripts/run-upload-browser.mts` from the repository root.
@@ -61,7 +91,7 @@ minutes. Sixty focused consent/account tests passed, including exact expiry
 and clock-headroom assertions. The parent independently applied the same
 headroom to report-choice presentations.
 
-## Tests and current handoff
+## Initial infrastructure handoff (superseded by the checkpoint above)
 
 - `e2e/own-upload-positive.spec.ts` requires actual consent screens, picker,
   exact restricted Storage bytes, finalization, source-bound normalization,
