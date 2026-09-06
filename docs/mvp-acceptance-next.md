@@ -10,10 +10,11 @@ separate report choices. Unmerged code is not a production capability.
 There is both real progress and a real bottleneck. PR72 released useful,
 source-backed report improvements, but its evidence covers eight reports,
 not the catalog-wide G1.11/G4.7 gates. The new own-upload implementation has
-local consent, transport, complete-source validation and cleanup receipts;
-it does not yet prove browser file selection through chosen personal results.
-The temporary new-source processing refusal must not ship as the finished
-experience. More foundation-only PRs would leave this user problem unsolved.
+local consent, transport, complete-source validation and cleanup receipts.
+The latest local browser checkpoint now proves file selection through chosen
+personal results, withdrawal, retained source browsing and original download.
+Hosted signing, retention execution and broader regressions still separate
+this verified local journey from a delivered production milestone.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every
@@ -79,11 +80,19 @@ production deployment `dpl_8J7MvprofssBdKKqGJvdVcPjQ2cz` READY on that exact
 commit, with `www.inherit.bio` assigned. This is a deployed usability slice,
 not completion of another whole-plan gate: acceptance stays **18/65**.
 
-Milestone 1 separately has a local actual-provider browser receipt through
-file preparation at `294d8a0`. Independent choice controls and chosen-result
-generation/read guards are being integrated on the upload branch. They are
-not part of PR73 or its production deployment; no new-upload report result is
-claimed delivered from the filter release.
+### 2026-09-06 · Local MVP journey verified, not released
+
+Milestone 1 now has an integrated actual-provider browser receipt at `53b630c`:
+**3/3 cases passed, no skips or retries**, including upload, independent report
+choice, a real source-backed MCM6 finding, withdrawal, retained raw-data browsing
+and exact original-file download. The full unit suite passes **2,584 tests in
+161 files**; secret and readability gates pass. See
+[the local receipt](local-upload-browser-verification.md) for exact scope.
+
+This advances milestones 1–3 locally, but does not prove the two-file deletion
+journey or hosted deployment. It is not part of PR73. Hosted signing/capacity,
+scheduled retention and the migrated full browser regression remain release
+prerequisites. No additional whole-plan gate is claimed; acceptance is **18/65**.
 
 Report: the user-visible outcome; merged/deployed/locally tested status;
 which milestone advanced; exact G gate IDs newly proved (if any); and the

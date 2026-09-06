@@ -1,9 +1,52 @@
 # Local canonical upload browser boundary checks
 
-2026-09-06. **Partial verification, not a completed upload-to-results journey.**
+2026-09-06. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
+
+At source `53b630c`, `node --import tsx scripts/run-upload-browser.mts`
+exits zero: **3/3 cases pass, zero skips, retries or flaky cases**, in 42.7
+seconds. The run began at `2026-09-06T15:18:46.064Z`; **two actual browser
+uploads** reached the installed Storage provider through the loopback proxy.
+
+- Own upload: real account/consent screens, picker, restricted Storage bearer,
+  finalization and source-bound preparation; stored bytes equal the original
+  fixture, with no unchosen results or report-ready notice.
+- Useful chosen result: `personal-previews-grch38.vcf`, only **Trait reports
+  and estimates** enabled, no personal result before explicit generation,
+  then the actual MCM6 milk-sugar finding (`A/G` at rs4988235), coverage of one
+  of two listed positions, honest missing-input copy and PMID 11788828.
+  The private completion journal contains only the selected polygenic purpose
+  bound to the current source and grant. No ancestry output is generated.
+- Positive owner REST reads return nonempty permitted score metadata and
+  public score denominators. Requests for `raw_score` and stored `coverage`
+  are refused by the existing column boundary; no permission was widened.
+- Turning that report purpose off hides personal findings in fresh report
+  documents/RSC and the DOM, and removes analytic REST access. The source
+  stays stored: five source records remain owner-readable, an actual genome
+  browser search still shows rs4988235 `A/G`, and the real **Download** link
+  returns all **425 original bytes**. That download verifies the existing
+  ownership-scoped endpoint, **not** canonical download-session acceptance.
+- No-file report-library recovery also passes. Upload and chosen-report
+  browser error assertions pass. Desktop and 390px mobile choice panels and the complete
+  chosen report were captured and visually inspected.
+
+Teardown is verified: no listeners on ports 3100/3101, zero isolated browser
+provider processes, and the runner's in-process proxy closed before exit.
+No cookie, refresh-token or private-signer markers remain in generated test
+reports. Network traces were disabled. Earlier APIRequest diagnostics were
+removed; that exact synthetic account had zero sessions and refresh tokens.
+Native browser downloads avoid APIRequest's different CONNECT transport and
+credential-bearing error formatter. A separate existing-file probe verified
+the real Download link and exact bytes before the final integrated run.
+
+This is a useful local vertical journey, not proof of all report purposes,
+all upload formats, other-adult/embryo flows, hosted signing configuration,
+real-jurisdiction launch or the complete acceptance matrix. Source-ingest
+provenance fields that are not yet recorded remain explicitly unavailable.
+
+## Earlier upload-through-preparation checkpoint
 
 At source `294d8a0`, the production-browser runner exits zero: **2/2 cases
 pass, no skips or retries**, including one actual browser upload through the
@@ -29,9 +72,9 @@ and a five-second GIAB test timeout while two suites and a browser build ran
 concurrently. With suites serialized and two workers, unchanged parser
 assertions and timeout pass. No fixture was purged or assertion weakened.
 
-This proves upload through preparation, **not selected report generation**.
-The report-choice backend is separate; UI mounting, exact-purpose generation,
-live output authorization and withdrawal cleanup remain before release.
+That earlier checkpoint proved upload through preparation, **not selected
+report generation**. The newer checkpoint above supersedes this limitation
+for the single local own-account chosen-trait journey only.
 
 ## Infrastructure and scope
 
@@ -72,7 +115,7 @@ browser fixtures; no broad cleanup or deletion of existing data is performed.
 | --- | --- | --- |
 | Account completion → insurance → own-upload presentation | First run: account completion 200 and insurance signature 201, then unavailable UI. Database logged `issue_own_upload_nonce_v1` validation error before creating the third nonce. Context, artifacts and existing signature matched. | Fixed the host/database expiry race, below. |
 | Browser cross-origin preflight | Second run: valid lease issued, but no Storage POST response. Direct installed provider OPTIONS returned 404 without CORS; unchanged local gateway returned 200 with its CORS headers. | Fixed test proxy gateway handling; third run passed the preflight/denied-POST checks and reached actual Storage. |
-| Restricted browser upload → canonical finalization | Third run: synthetic session reached `uploaded`; no final object was claimed and no file was finalized. The browser's canonical `/finalize` response was 422. | Still failing. A valid issued UUID and query-free, body-omitted browser POST reaches the endpoint, whose pre-claim guard rejects any non-null `request.body`. Next can represent a zero-byte POST as an empty stream. Integration must verify bounded zero-byte EOF rather than infer body presence solely from that property. |
+| Restricted browser upload → canonical finalization | Initial third run: synthetic session reached `uploaded`; no final object was claimed and no file was finalized. The browser's canonical `/finalize` response was 422. | Fixed by bounded zero-byte EOF handling, verified in both passing checkpoints above. Next can represent a zero-byte POST as an empty stream; non-null body alone did not prove content. |
 | Empty report-library filter → recovery | Passed in all three runs; final recorded case took 1.9 seconds. Keyboard activation clears the results-only filter, restores search focus and shows the unchanged uncovered library. | Verified locally. Not a whole G gate. |
 
 ### Consent expiry race
@@ -113,8 +156,7 @@ headroom to report-choice presentations.
   and no isolated browser-provider process remained in the Storage container.
   The runner exited after closing its in-process proxy.
 
-Next: fix and test the zero-byte finalization boundary, then rerun the same
-positive assertions. Only afterward claim normalization/UI completion or
-expand into chosen report generation. Real-jurisdiction launch, hosted signer
+The initial handoff's finalization and chosen-report next steps are resolved
+by the passing checkpoints above. Real-jurisdiction launch, hosted signer
 configuration, scheduled retention and all four upload paths remain outside
 this local receipt.

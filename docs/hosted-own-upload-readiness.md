@@ -18,6 +18,25 @@ PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
   the application possesses its private key or can mint a trusted upload JWT.
 - Vercel environment-name/target inventory was not completed in this audit.
   No secret value was fetched, printed, rotated or changed.
+- Hosted Edge Functions `bootstrap`, `seed-reference` and `prs-backfill` are
+  ACTIVE with `verify_jwt: true`. No callers were found in current `src` or
+  `scripts`; this does not prove they have no external callers. Review their
+  authentication compatibility before rotation; do not disable verification
+  as a shortcut.
+
+## Owner authorization and access checkpoint
+
+On 6 September 2026 the owner explicitly approved controlled signing-key
+import and activation, retaining the existing key and testing synthetic
+uploads first. This is authorization, not evidence of execution. No key has
+been generated, imported, activated or revoked at this checkpoint.
+
+The connected Supabase tools expose database and Edge Function operations,
+but no signing-key management operation. The inspected Brave dashboard redirects
+to Supabase sign-in. Neither `SUPABASE_ACCESS_TOKEN` nor `VERCEL_TOKEN` is set
+in the current shell. Do not extract browser or connector session credentials;
+use an authenticated supported management interface or an owner-assisted
+dashboard handoff. Never ask the owner to paste private signing material in chat.
 
 ## Hosted trust is not the local harness
 
