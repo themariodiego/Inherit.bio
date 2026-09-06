@@ -1,5 +1,6 @@
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test } from "@playwright/test";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
 import path from "node:path";
 
 // A15 — legal pages complete; placeholder-grep gate passes (run separately as
@@ -206,17 +207,11 @@ test("disclaimers appear on the report SURFACE, not only in ToS", async ({
   const user = { email: "legal-report@e2e.local", password: "e2e-legal-pw" };
   await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
-  await ingestFileAs(
-    page,
-    user.email,
-    user.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
+  await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
 
   await page.goto("/genome/me/reports");
-  const firstReport = page.locator('a[href^="/genome/me/reports/"]').first();
-  await firstReport.click();
+  await page.getByRole("link", { name: "Caffeine metabolism", exact: true }).first().click();
+  await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(1);
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
   // The one not-diagnostic line (§5 §6.1), character-for-character.
   await expect(page.getByTestId("report-disclaimer")).toHaveText(

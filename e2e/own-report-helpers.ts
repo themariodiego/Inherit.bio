@@ -10,20 +10,14 @@ import { subjectProcessingReceipt, subjectSynchronousReportReceipt } from "../sr
 type SupportedPurpose = Exclude<OwnReportPurpose, "ancestry">;
 type ChosenPurposes = readonly [SupportedPurpose, ...SupportedPurpose[]];
 
-/** An explicit result precondition, separate from storage/preparation.
- * This helper never supplies a default purpose, writes a grant/file row,
- * revokes an unrelated choice or marks a source annotated. Repeated uploads
- * may reuse a still-live choice but must complete against their own source.
+/** Upload and prepare a real source without creating any report permission.
+ * Existing, explicit choices may still run automatically for a later file.
  */
-export async function uploadOwnFileWithChosenReports(
+export async function uploadOwnFilePrepared(
   page: Page,
   filePath: string,
-  { fileType, purposes }: { fileType: string; purposes: ChosenPurposes },
+  { fileType }: { fileType: string },
 ): Promise<string> {
-  if (!purposes.length || new Set(purposes).size !== purposes.length
-    || purposes.some(purpose => purpose !== "reports.monogenic" && purpose !== "reports.polygenic")) {
-    throw new Error("Choose unique, currently supported report purposes explicitly");
-  }
   const processed = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
     && response.request().method() === "POST");
   void processed.catch(() => {});
@@ -35,6 +29,48 @@ export async function uploadOwnFileWithChosenReports(
   // file/source/purpose completion proof below.
   expect(subjectProcessingReceipt.parse(await preparation.json()).fileId).toBe(fileId);
 
+  const source = await adminClient().from("genome_files")
+    .select("file_type,status,sha256,upload_revision,normalization_source_revision,normalization_completed_at,single_logical_sample_verified_at")
+    .eq("id", fileId).single();
+  expect(source.error).toBeNull();
+  expect(source.data).toMatchObject({ file_type: fileType, status: "stored",
+    sha256: createHash("sha256").update(readFileSync(filePath)).digest("hex") });
+  expect(source.data!.normalization_completed_at).not.toBeNull();
+  expect(source.data!.single_logical_sample_verified_at).not.toBeNull();
+  expect(source.data!.normalization_source_revision).toBe(source.data!.upload_revision);
+  return fileId;
+}
+
+/** Prepare a real source, then explicitly choose and generate its reports. */
+export async function uploadOwnFileWithChosenReports(
+  page: Page,
+  filePath: string,
+  { fileType, purposes }: { fileType: string; purposes: ChosenPurposes },
+): Promise<string> {
+  validatePurposes(purposes);
+  const fileId = await uploadOwnFilePrepared(page, filePath, { fileType });
+  await generateOwnFileWithChosenReports(page, fileId, purposes);
+  return fileId;
+}
+
+function validatePurposes(purposes: ChosenPurposes) {
+  if (!purposes.length || new Set(purposes).size !== purposes.length
+    || purposes.some(purpose => purpose !== "reports.monogenic" && purpose !== "reports.polygenic")) {
+    throw new Error("Choose unique, currently supported report purposes explicitly");
+  }
+}
+
+/** Explicit result precondition for a source already prepared through the UI.
+ * No default purpose, grant/file insertion or fabricated completed state.
+ * Repeated uploads may reuse a live choice but need their own completion.
+ */
+export async function generateOwnFileWithChosenReports(
+  page: Page,
+  fileId: string,
+  purposes: ChosenPurposes,
+): Promise<void> {
+  validatePurposes(purposes);
+  if (!/^[0-9a-f-]{36}$/.test(fileId)) throw new Error("Expected a canonical fixture identifier");
   await page.goto("/genome/me/reports");
   const choices = page.getByRole("region", { name: "Choose your reports", exact: true });
   await expect(choices).toBeVisible();
@@ -66,15 +102,6 @@ export async function uploadOwnFileWithChosenReports(
   expect(generation.status()).toBe(200);
   expect(subjectSynchronousReportReceipt.parse(await generation.json()).fileId).toBe(fileId);
 
-  const source = await adminClient().from("genome_files")
-    .select("file_type,status,sha256,upload_revision,normalization_source_revision,normalization_completed_at,single_logical_sample_verified_at")
-    .eq("id", fileId).single();
-  expect(source.error).toBeNull();
-  expect(source.data).toMatchObject({ file_type: fileType, status: "stored",
-    sha256: createHash("sha256").update(readFileSync(filePath)).digest("hex") });
-  expect(source.data!.normalization_completed_at).not.toBeNull();
-  expect(source.data!.single_logical_sample_verified_at).not.toBeNull();
-  expect(source.data!.normalization_source_revision).toBe(source.data!.upload_revision);
   // This journal is intentionally private. Read only the canonical fixture's
   // purpose/state/source/grant flags in the exact local Docker database; no
   // result payload, genotype, credential or unrelated account is returned.
@@ -92,5 +119,4 @@ export async function uploadOwnFileWithChosenReports(
   expect(JSON.parse(stdout.trim())).toEqual([...purposes].sort().map(purpose => ({
     purpose, state: "complete", completed: true, same_source: true, live_exact_purpose: true,
   })));
-  return fileId;
 }

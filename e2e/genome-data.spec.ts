@@ -1,10 +1,10 @@
+import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import {
-  adminClient,
   createConfirmedUser,
   firstViewportInteractives,
-  ingestFileAs,
   signIn,
 } from "./helpers";
 
@@ -25,7 +25,7 @@ import {
 // - the Settings and ancestry entry points (the report footer is pinned by
 //   `report-skeleton.spec.ts`).
 
-const USER = { email: "genome-data@e2e.local", password: "e2e-genome-data-pw" };
+const USER = { email: `genome-data-${randomUUID()}@e2e.local`, password: "e2e-genome-data-pw" };
 
 const BROWSER = "/genome/me/data/browser";
 const DATA = "/genome/me/data";
@@ -50,26 +50,7 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
 
-/** Upload and process the fixture, then wait for the row to be annotated (the pattern of overview.spec.ts). */
-async function ingestAndWait(page: Page) {
-  const fileId = await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
-    path.join(process.cwd(), TINY_FIXTURE),
-    "vcf",
-  );
-  const admin = adminClient();
-  await expect
-    .poll(
-      async () => {
-        const { data } = await admin.from("genome_files").select("status").eq("id", fileId).single();
-        return (data as { status: string } | null)?.status;
-      },
-      { timeout: 60_000 },
-    )
-    .toBe("annotated");
-}
+let preparedFileId: string;
 
 async function subjectName(page: Page): Promise<string> {
   const name = (await page.locator('[data-slot="subject-name"]').textContent())?.trim();
@@ -81,7 +62,7 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await ingestAndWait(page);
+  preparedFileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), TINY_FIXTURE), { fileType: "vcf" });
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${BROWSER}?q=rs762551`);
 
@@ -224,6 +205,7 @@ test("the data page is titled Data and methods with one coverage figure per scor
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
+  await generateOwnFileWithChosenReports(page, preparedFileId, ["reports.polygenic"]);
   await page.goto(DATA);
 
   await expect(page.locator("main h1")).toHaveText(DATA_AND_METHODS);

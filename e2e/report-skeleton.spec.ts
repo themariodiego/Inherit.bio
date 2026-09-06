@@ -1,8 +1,9 @@
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { createConfirmedUser, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
+import { createConfirmedUser, seededTemplateCount, signIn } from "./helpers";
 import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fixture";
 import type { ReportTemplate } from "../src/lib/genome/reports";
 import { readStudyContext } from "../src/lib/genome/study-context";
@@ -205,13 +206,7 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
+  await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
 
   await page.goto(CAFFEINE);
 
@@ -541,7 +536,7 @@ test("a covered Medicines report renders the variant-call genotype figure, the M
   expect(check.ok).toBe(true);
 
   await signIn(page, MEDICINES_USER.email, MEDICINES_USER.password);
-  await ingestFileAs(page, MEDICINES_USER.email, MEDICINES_USER.password, MEDICINES_FIXTURE, "vcf");
+  await uploadOwnFileWithChosenReports(page, MEDICINES_FIXTURE, { fileType: "vcf", purposes: ["reports.monogenic"] });
 
   const vkorc1 = MEDICINES.find((template) => template.slug === VKORC1_SLUG)!;
   const [variant] = vkorc1.variants;

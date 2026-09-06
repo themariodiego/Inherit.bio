@@ -1,7 +1,8 @@
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
+import { adminClient, seededTemplateCount, signIn } from "./helpers";
 import { LAYER_DEFINITIONS } from "../src/copy/reports/strings";
 import { inspectReportCounts } from "./report-count-audit";
 
@@ -20,8 +21,8 @@ test("real report counts stay single-layer through upload, Overview, both librar
   await signIn(page, account.email, account.password);
   await page.goto("/genome/me/reports");
   await assertCounts(page); // no-file library still contains both seeded layers
-  await ingestFileAs(page, account.email, account.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), "vcf");
+  await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
+    { fileType: "vcf", purposes: ["reports.monogenic", "reports.polygenic"] });
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/overview");
