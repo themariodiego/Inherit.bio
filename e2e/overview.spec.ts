@@ -297,9 +297,25 @@ test("State C: after one processed file — split count with note, ancestry line
   }
   await expect(page.getByText(NOT_DIAGNOSTIC, { exact: true })).toBeAttached();
 
+  // Own supported findings follow their definitions and precede unused domains
+  // in both reading order and the desktop/phone layout.
+  const sections = page.locator("[data-density-top-level-section]");
+  await expect(sections).toHaveCount(4);
+  expect(await sections.evaluateAll((items) => items.map((item) =>
+    item.id || item.getAttribute("aria-labelledby"),
+  ))).toEqual(["my-genome", "starter-title", "family", "embryos"]);
+
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.evaluate(() => document.fonts.ready);
+    const rects = await sections.evaluateAll((items) => items.map((item) => {
+      const { top, bottom } = item.getBoundingClientRect();
+      return { top, bottom };
+    }));
+    for (let i = 1; i < rects.length; i++) {
+      expect(rects[i].top, `${viewport.name}: section ${i} follows section ${i - 1}`)
+        .toBeGreaterThanOrEqual(rects[i - 1].bottom);
+    }
     const interactives = await firstViewportInteractives(page);
     expect(interactives.length, `${viewport.name}: ${interactives.join(" | ")}`).toBeLessThanOrEqual(12);
   }
