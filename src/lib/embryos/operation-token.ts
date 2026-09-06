@@ -19,9 +19,9 @@ import { hmacSecret } from "@/lib/crypto";
  *
  * The public-form token is the same envelope with no account in it: the
  * rights-activation form is filled in before any sign-in, so the token only
- * proves the form was served recently by this deployment. It is not
- * one-time; activation is made one-time by consuming the invitation token
- * hash in the database.
+ * proves the form was served recently by this deployment. The activation
+ * route also binds it to a non-authorizing browser cookie. The database
+ * consumes both the form nonce and the invitation token hash once.
  */
 
 export type EmbryoOperation =

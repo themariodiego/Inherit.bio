@@ -1,6 +1,6 @@
 import { SENSITIVE_HEADERS, notFound } from "@/lib/embryos/api";
-import { originDenied, readJson } from "@/lib/embryos/guards";
-import { readPublicFormToken } from "@/lib/embryos/operation-token";
+import { readJson } from "@/lib/embryos/guards";
+import { readRightsActivationCandidate } from "@/lib/embryos/rights-activation";
 import { invitationTokenHash, newRightsSessionSecret, rightsCookie, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { rightsActivateBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -16,12 +16,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * fixed by the token's purpose, never by the request.
  */
 export async function POST(request: Request) {
-  const forbidden = originDenied(request);
-  if (forbidden) return forbidden;
-
   const parsed = rightsActivateBody.safeParse(await readJson(request));
   if (!parsed.success) return notFound();
-  const form = readPublicFormToken(parsed.data.nonce, "rights-activate");
+  const form = readRightsActivationCandidate(request, parsed.data.nonce);
   if (!form) return notFound();
   const tokenHash = invitationTokenHash(parsed.data.token);
   if (!tokenHash) return notFound();

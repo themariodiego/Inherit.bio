@@ -315,6 +315,8 @@ and 207 browser cases**. Browser time was 9.8 minutes; the runner explicitly
 confirmed no skips and no retries. This includes all 64 new completion cases,
 the final usability corrections, and the unchanged earlier refusal tests.
 The superseded-head CI run was cancelled, not counted as passing evidence.
+Post-merge main CI `34009931957` also completed successfully at the exact
+merge SHA (rechecked during the invitation-flow implementation).
 
 Production `dpl_HEGnV6PunNctYfGh7Voi9VMsT5VG`
 (`inherit-4w57kk9ap-mariodiego.vercel.app`) is READY at the exact merge.
