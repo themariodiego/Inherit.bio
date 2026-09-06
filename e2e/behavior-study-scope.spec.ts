@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import mental from "../data/templates/mental-health.json";
 import addiction from "../data/templates/addiction.json";
+import environmental from "../data/templates/environmental-sensitivity.json";
 import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 import { isGatedTemplate } from "../src/lib/genome/taxonomy";
 import { readStudyContext } from "../src/lib/genome/study-context";
@@ -10,11 +11,12 @@ import type { ReportTemplate } from "../src/lib/genome/reports";
 
 const USER = { email: `behavior-scope-${randomUUID()}@e2e.local`, password: "e2e-behavior-scope-password" };
 const CASES = [
-  { slug: "stress-anxiety-comt-rs4680", key: "AG", letters: "A/G" },
-  { slug: "mood-stress-resilience-bdnf-rs6265", key: "CT", letters: "C/T" },
-  { slug: "problem-substance-use-faah-rs324420", key: "AA", letters: "A/A" },
+  { slug: "stress-anxiety-comt-rs4680", key: "AG", letters: "A/G", extraPositionSources: 0 },
+  { slug: "mood-stress-resilience-bdnf-rs6265", key: "CT", letters: "C/T", extraPositionSources: 0 },
+  { slug: "problem-substance-use-faah-rs324420", key: "AA", letters: "A/A", extraPositionSources: 1 },
+  { slug: "skin-uv-sensitivity-slc45a2", key: null, letters: null, extraPositionSources: 1 },
 ];
-const templates = [...mental, ...addiction] as ReportTemplate[];
+const templates = [...mental, ...addiction, ...environmental] as ReportTemplate[];
 test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => { await createConfirmedUser(USER.email, USER.password); });
 
@@ -25,7 +27,7 @@ for (const [index, entry] of CASES.entries()) {
       path.join(process.cwd(), "e2e/fixtures/behavior-scope-grch38.vcf"), "vcf");
     const template = templates.find((t) => t.slug === entry.slug)!;
     await page.goto(`/genome/me/reports/${entry.slug}`);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(template.title);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(template.title.split(" · ")[0]);
     if (isGatedTemplate(template)) {
       // The existing sensitive-category opt-in is unchanged; the source facts
       // remain readable before the synthetic personal result is revealed.
@@ -36,14 +38,33 @@ for (const [index, entry] of CASES.entries()) {
       await expect(page).toHaveURL(new RegExp(`${entry.slug}\\?reveal=1$`));
     }
     const genotype = page.locator('[data-figure-kind="genotype"]');
-    await expect(genotype).toHaveCount(1);
-    await expect(genotype).toContainText(entry.letters);
-    await expect(page.locator("#your-result").locator("..")).toContainText(template.variants[0].interpretations[entry.key]);
+    if (entry.key !== null) {
+      await expect(genotype).toHaveCount(1);
+      await expect(genotype).toContainText(entry.letters);
+      await expect(page.locator("#your-result").locator("..")).toContainText(template.variants[0].interpretations[entry.key]);
+    } else {
+      // This actual route must stay usable without an observed call. The
+      // synthetic input intentionally contains no SLC45A2 position.
+      await expect(genotype).toHaveCount(0);
+      await expect(page.locator("#your-result").locator("..")).toContainText("does not cover");
+    }
     await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveText([
       "What this is", "Your result", "What this doesn’t mean", "How sure we are", "What you can do", "Where this comes from",
     ]);
     await expect(page.locator('[data-slot="study-context"]')).toHaveCount(template.citations.length);
-    await expect(page.locator('time[datetime="2026-09-06"]')).toHaveCount(template.citations.length);
+    await expect(page.locator('time[datetime="2026-09-06"]')).toHaveCount(template.citations.length + entry.extraPositionSources);
+    const explanation = page.locator('[data-slot="report-summary"] [data-claim-id]');
+    await expect(explanation).toHaveAttribute("data-claim-id", `report.${entry.slug}.summary`);
+    await expect(explanation).toContainText(template.summary);
+    const refs = explanation.locator("sup a");
+    await expect(refs).toHaveCount(template.citations.length + entry.extraPositionSources);
+    for (const link of await refs.all()) {
+      const href = await link.getAttribute("href");
+      expect(href).toMatch(/^#claim-source-/);
+      const targets = await page.evaluate((id) => [...document.querySelectorAll("[id]")].filter((element) => element.id === id).length, href!.slice(1));
+      expect(targets).toBe(1);
+    }
+    if (entry.extraPositionSources) await expect(page.locator('a[href^="https://rest.ensembl.org/vep/human/id/"]')).toHaveCount(1);
     for (const [sourceIndex, source] of template.citations.entries()) {
       const panel = page.locator('[data-slot="study-context"]').nth(sourceIndex);
       await expect(panel).toBeVisible();
@@ -52,6 +73,7 @@ for (const [index, entry] of CASES.entries()) {
         await expect(panel).toContainText(fact.text);
         await expect(panel).toContainText(fact.locator);
       }
+      await expect(panel.locator("[data-claim-id]")).toHaveCount(Object.values(readStudyContext(source)!).filter(Boolean).length);
       await expect(page.getByRole("link", { name: new RegExp(`PMID ${source.pmid}`) })).toHaveAttribute("href", `https://pubmed.ncbi.nlm.nih.gov/${source.pmid}/`);
     }
     await expect(page.locator('[data-figure-kind="percentile"], [data-figure-kind="relative"]')).toHaveCount(0);

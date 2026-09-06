@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 
 // Sensitive-report gate — reports in life-altering categories (cancer-risk,
@@ -23,7 +24,7 @@ import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 // sharing a browser). Storage failures only lose the memory, never the
 // ability to reveal.
 
-const USER = { email: "gate-user@e2e.local", password: "e2e-gate-pw" };
+const USER = { email: `gate-user-${randomUUID()}@e2e.local`, password: "e2e-gate-pw" };
 
 const FGFR2_SLUG = "breast-cancer-fgfr2-rs2981582";
 

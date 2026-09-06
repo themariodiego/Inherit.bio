@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EVIDENCE_DEFINITIONS, EVIDENCE_PUBLIC_LABELS } from "@/copy/reports/evidence";
 import { EVIDENCE_LEVELS } from "@/lib/genome/taxonomy";
+import { ClaimSources } from "@/components/claims/sources";
+import { presentationCitations } from "@/lib/claims/presentation";
 
 export const metadata: Metadata = { title: "Science" };
 
@@ -43,6 +45,12 @@ export default function SciencePage() {
         <h2 id="not-offered-heading" className="display text-2xl">What Inherit does not do</h2>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-muted">Inherit does not match you with relatives. It does not work out how much DNA two people share. Your file is compared with public reference data, not with another person’s file.</p>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-muted">Inherit does not offer prenatal or newborn screening. Those are clinical tests with their own rules, and a clinic is the right place for them.</p>
+      </section>
+
+      <section id="sources" aria-labelledby="sources-heading" className="mt-16 scroll-mt-24">
+        <h2 id="sources-heading" className="display text-2xl">Sources checked for these reports</h2>
+        <p className="mt-3 mb-6 text-base leading-relaxed text-ink-muted">This list covers the linked explanations for COMT, BDNF, FAAH and SLC45A2. Other reports still list their sources on their own pages. This is not a complete review of the report library.</p>
+        <ClaimSources sourceIds={presentationCitations.map((source) => source.id)} scienceIndex />
       </section>
 
       <section id="polygenic" aria-labelledby="polygenic-heading" className="mt-16 scroll-mt-24">

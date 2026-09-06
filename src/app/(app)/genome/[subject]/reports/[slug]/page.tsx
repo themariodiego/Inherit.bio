@@ -6,6 +6,8 @@ import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { CitationItem, ReportCallCoverage } from "@/components/reports/report-evidence";
+import { ReportSummary, ReportSummarySources } from "@/components/reports/report-summary";
+import { annotateReportSources, legacySourceId, reportSummarySourceIds } from "@/lib/claims/presentation";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
 import { SupportPanel } from "@/components/reports/support-panel";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -403,8 +405,11 @@ export default async function ReportDetailPage(
       ? coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)
       : null;
 
-  const visibleCitations = template.citations.slice(0, VISIBLE_CITATIONS);
-  const moreCitations = template.citations.slice(VISIBLE_CITATIONS);
+  const existingSourceIds = template.citations.map(legacySourceId);
+  const summarySourceIds = reportSummarySourceIds(template.slug, template.summary, existingSourceIds);
+  const annotatedCitations = annotateReportSources(summarySourceIds, template.citations);
+  const visibleCitations = annotatedCitations.slice(0, VISIBLE_CITATIONS);
+  const moreCitations = annotatedCitations.slice(VISIBLE_CITATIONS);
 
   return (
     <article
@@ -468,7 +473,7 @@ export default async function ReportDetailPage(
       <ReportSkeleton
         whatThisIs={
           <div className="space-y-3">
-            <p data-slot="report-summary" className="text-base leading-relaxed text-ink">{template.summary}</p>
+            <ReportSummary slug={template.slug} text={template.summary} sourceIds={summarySourceIds} />
             <p data-slot="report-method" className="text-sm leading-relaxed text-ink-muted">{REPORT_METHOD_COPY[reportMethod(template)]}</p>
           </div>
         }
@@ -512,9 +517,10 @@ export default async function ReportDetailPage(
             <h3 className="font-medium text-ink">{SOURCES_HEADING}</h3>
             <p className="text-ink-muted">{SOURCE_READ_SCOPE}</p>
             <ul className="space-y-1">
-              {visibleCitations.map((citation, index) => (
-                <li key={`${citation.label}-${index}`}>
-                  <CitationItem citation={citation} />
+              {visibleCitations.map(({ citation, anchor, number }, index) => (
+                <li key={`${citation.label}-${index}`} id={anchor}>
+                  {number ? <span data-ui-chrome-kind="item-count" className="font-medium">{number}. </span> : null}
+                  <CitationItem citation={citation} reportClaim={summarySourceIds.length ? { slug: template.slug, sourceIds: summarySourceIds } : undefined} />
                 </li>
               ))}
             </ul>
@@ -522,14 +528,17 @@ export default async function ReportDetailPage(
               <details>
                 <summary className="cursor-pointer text-ink-muted">{MORE_SOURCES}</summary>
                 <ul className="mt-2 space-y-1">
-                  {moreCitations.map((citation, index) => (
-                    <li key={`${citation.label}-${index}`}>
-                      <CitationItem citation={citation} />
+                  {moreCitations.map(({ citation, anchor, number }, index) => (
+                    <li key={`${citation.label}-${index}`} id={anchor}>
+                      {number ? <span data-ui-chrome-kind="item-count" className="font-medium">{number}. </span> : null}
+                      <CitationItem citation={citation} reportClaim={summarySourceIds.length ? { slug: template.slug, sourceIds: summarySourceIds } : undefined} />
                     </li>
                   ))}
                 </ul>
               </details>
             ) : null}
+            <ReportSummarySources sourceIds={summarySourceIds} existingIds={existingSourceIds} />
+            {summarySourceIds.length > 0 ? <Link href="/science#sources" className="underline underline-offset-2">About these sources</Link> : null}
             {reportMethod(template) === "polygenic-score" ? (
               <p data-slot="score-method-source">
                 {SCORE_METHOD_LABEL}: {" "}
