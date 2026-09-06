@@ -58,5 +58,9 @@
   {"id":"c57","answer":"Use the report and start aspirin.","refusal":"treatment"},
   {"id":"c58","answer":"I recommend aspirin and speaking with a doctor.","refusal":"treatment"},
   {"id":"c59","answer":"You can use the filter to find reports your file covers."},
-  {"id":"c60","answer":"You have access to the source links in each report."}
+  {"id":"c60","answer":"You have access to the source links in each report."},
+  {"id":"c61","answer":"If you have symptoms, speak with a doctor."},
+  {"id":"c62","answer":"I do not know whether you have cancer."},
+  {"id":"c63","answer":"Start by reading your report and its source details."},
+  {"id":"c64","answer":"If you have a variant, you have cancer.","refusal":"diagnosis"}
 ]

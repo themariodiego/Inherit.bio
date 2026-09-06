@@ -60,6 +60,14 @@ existing refusal suite; it is not evidence of an error-free runtime log.
 
 ## Full-plan boundary
 
+Pre-merge usability review added four more cases (64 completion cases total).
+Three first reproduced false refusals for conditional symptoms, explicitly
+unknown diagnosis and instructions to read a report. Local-prefix exceptions
+now preserve those answers without exempting a later affirmative diagnosis.
+All 218 focused tests pass; the revised complete CI run must verify all
+64 browser cases. The 62-case receipt above remains evidence for its earlier
+revision, not an invented run of the expanded suite.
+
 Full-plan acceptance remains **18/65** and G4.8 remains **NO**.
 These self-scope output regressions do not replace A.9's exact 80-case suite,
 its family/cohort/Portrait tools and inherited scopes, or its release-time

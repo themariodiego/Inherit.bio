@@ -1,5 +1,13 @@
 # Test diff register
 
+Copilot pre-merge usability review: four extra cases bring the completion
+corpus to 64 and new unit coverage to 69 tests. Three first failed on
+conditional symptoms, explicitly unknown diagnosis and report-reading
+instructions; a fourth proves a conditional clause does not exempt a later
+affirmative diagnosis. All 218 focused tests pass. The expanded browser
+suite must pass on the final PR head; earlier run counts below are retained
+as dated evidence, not relabelled.
+
 Copilot output repair (2026-09-06): adds 60 completion cases, 65 unit tests
 and 60 actual-chat-route browser cases. Existing input-refusal assertions
 remain unchanged. Each output case first reaches the local provider and the

@@ -854,10 +854,10 @@ export function checkResponsePolicy(text: string, scope: CopilotScopeKind = "sel
   const person = `(?:you|your (?:${RELATIVES}))`;
   const action = "take|taking|start|starting|stop|stopping|try|use|using|add|increase|reduce|cut|quit|switch|avoid|eat|drink|supplement|adjust|change|double|skip|exercise|follow";
   const factObject = new RegExp(`^(?:(?:${DETERMINERS}) )?(?:(?!(?:and|but|or|because|so|yet)\\b)${QUALIFIER}){0,2}(?:${FILE_FACT_WORDS})\\b`, "u");
-  const productObject = new RegExp(`^(?:(?:to|from|a|an|the|this|that|your|my|our) )?(?:(?!(?:and|but|or|because|so|yet)\\b)\\w+ ){0,2}(?:${outputProductWords})\\b`, "u");
+  const productObject = new RegExp(`^(?:by (?:reading|opening|reviewing|checking) )?(?:(?:to|from|a|an|the|this|that|your|my|our) )?(?:(?!(?:and|but|or|because|so|yet)\\b)\\w+ ){0,2}(?:${outputProductWords})\\b`, "u");
   const clinicalConversation = /^(?:speaking|talking|asking|consulting|seeing|contacting|discussing|speak|talk|ask|consult|see|contact|discuss)\b(?:(?!\b(?:and|but|then)\b).)*\b(?:doctor|clinician|counsellor|counselor|clinical team)\b/u;
   const productTreatmentPurpose = /\b(?:to|for) (?:choos(?:e|ing)|adjust(?:ing)?|chang(?:e|ing)|select(?:ing)?|start(?:ing)?|stop(?:ping)?) (?:your |a |the )?(?:treatment|medication|medicine|dose|dosage|diet|supplements?)\b/u;
-  const safeFrame = /\b(?:(?:cannot|can't|can not|does not|doesn't|do not|don't|will not|won't) (?:tell|say|show|prove|confirm|predict|establish|mean|determine)(?: you)?(?: that| whether| if)?|not (?:evidence|proof|a claim|a prediction) that) $/u;
+  const safeFrame = /\b(?:(?:cannot|can't|can not|does not|doesn't|do not|don't|will not|won't) (?:tell|say|show|prove|confirm|predict|establish|mean|determine|know)(?: you)?(?: that| whether| if)?|not (?:evidence|proof|a claim|a prediction) that|if|whether) $/u;
   const rules: Array<{ id: string; intent: GatedIntent; pattern: RegExp; object?: "fact" | "product" }> = [
     { id: "output.diagnosis.have", intent: "diagnosis", pattern: new RegExp(`\\b${person} (?:definitely |certainly |already |clearly )?(?:(?:do|does) not |don't |doesn't )?(?:have|has|have got|suffer from|are suffering from) `, "gu"), object: "fact" },
     { id: "output.diagnosis.state", intent: "diagnosis", pattern: new RegExp(`\\b${person} (?:are|is|aren't|isn't|are not|is not) (?:definitely |certainly |clearly )?(?:a |an )?(?:${SELF_STATE_WORDS}|${CONDITION_WORDS})\\b`, "gu") },
