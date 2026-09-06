@@ -406,17 +406,16 @@ export async function POST(request: Request) {
   });
 
   // Output guard (brief line 2262): the whole answer is buffered and checked
-  // before its first byte is sent. Everything the model authored (its text,
-  // any reasoning, every tool input) is one string for the checks; reasoning
-  // is never sent on. A number absent from this turn's tool JSON, or a
-  // citation outside the report and score citations the tools returned,
-  // replaces the answer with the fixed refusal for that check; nothing
-  // partial is ever serialized.
+  // before its first byte is sent. Reasoning is excluded from this stream
+  // and never sent on. Model-authored text and tool inputs are checked for
+  // prohibited assertions, unsupported numbers and unsupported citations.
+  // A failure replaces the entire answer, including tool parts, with the
+  // matching fixed refusal; no partial completion is serialized.
   const chunks = await bufferUIMessageStream(
     toUIMessageStream({ stream: result.stream, sendReasoning: false }),
   );
   const { text, toolJson } = foldStreamChunks(chunks);
-  const output = checkResponse(text, toolJson, allowedNumerals as AllowedNumerals);
+  const output = checkResponse(text, toolJson, allowedNumerals as AllowedNumerals, { scope: guardScope.kind });
   if (!output.ok) {
     console.info(`[copilot] replaced ${output.violation}`);
     return refusalResponse(output.violation, refusalFor(output.violation, subject.displayLabel));

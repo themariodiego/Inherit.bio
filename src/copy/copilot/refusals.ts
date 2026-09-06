@@ -2,7 +2,7 @@
  * Copilot refusals (brief lines 402, 1036, 1038, 2262; §6.4). One string per
  * gated intent and one per output check, served by `src/lib/copilot/guard.ts`
  * as the whole assistant turn: no model is called for a gated intent, and a
- * model answer that fails the numeral or citation check is replaced with the
+ * model answer that fails an assertion, numeral or citation check is replaced with the
  * matching string here, never partly redacted.
  *
  * House rules: typographic apostrophes (U+2019), sentence case, second

@@ -58,7 +58,10 @@ function chunk(delta: Record<string, unknown>, finish: string | null = null) {
   };
 }
 
-export function startMockLlm(port: number): Promise<() => Promise<void>> {
+export function startMockLlm(
+  port: number,
+  options: { answerForPrompt?: (prompt: string) => string | undefined } = {},
+): Promise<() => Promise<void>> {
   const server = http.createServer((req, res) => {
     calls += 1;
     if (!req.url?.endsWith("/chat/completions")) {
@@ -109,12 +112,16 @@ export function startMockLlm(port: number): Promise<() => Promise<void>> {
             ? toolMsg.content
             : JSON.stringify(toolMsg?.content ?? "");
         const genotype = /"genotype"\s*:\s*"([^"]+)"/.exec(toolText)?.[1];
-        const answer = adversarial
+        const scripted = options.answerForPrompt?.(messageText(lastUser));
+        const answer = scripted ?? (adversarial
           ? `According to your Caffeine metabolism report (CYP1A2, rs762551), about ${ADVERSARIAL_NUMBER} of people share your genotype ${genotype ?? "unknown"}. This is informational, not medical advice.`
-          : `According to your Caffeine metabolism report (CYP1A2, rs762551), your genotype is ${genotype ?? "unknown"}. This is informational, not medical advice.`;
+          : `According to your Caffeine metabolism report (CYP1A2, rs762551), your genotype is ${genotype ?? "unknown"}. This is informational, not medical advice.`);
         sse(res, chunk({ role: "assistant", content: "" }));
-        for (const word of answer.split(" ")) {
-          sse(res, chunk({ content: word + " " }));
+        // Scripted completions deliberately split inside words and numerals.
+        // The production route, not this mock, must reassemble and check them.
+        const deltas = scripted === undefined ? answer.split(" ").map(word => word + " ") : [...answer];
+        for (const delta of deltas) {
+          sse(res, chunk({ content: delta }));
         }
         sse(res, chunk({}, "stop"));
       }
