@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { CoParentReview } from "@/lib/embryos/co-parent-review";
 import { typedNameIsValid } from "@/lib/embryos/basis";
+import { InvitationRefusalForm } from "./invitation-refusal-form";
 
 const STATEMENTS: Record<string, string> = {
   "genetic-parent-or-authority": "I am a genetic parent of these embryos, or I alone hold the legal right to decide what happens to them.",
@@ -14,9 +15,10 @@ const STATEMENTS: Record<string, string> = {
   "false-statement-warning-read": "I have read the warning about false statements at the end of this attestation, and I understand it.",
 };
 
-export function CoParentReviewForm({ review, countries }: {
+export function CoParentReviewForm({ review, countries, refusalNonce }: {
   review: CoParentReview;
   countries: { code: string; name: string }[];
+  refusalNonce: string;
 }) {
   const [status, setStatus] = useState<"ready" | "pending" | "accepted" | "failed">("ready");
   const [nameError, setNameError] = useState(false);
@@ -107,6 +109,7 @@ export function CoParentReviewForm({ review, countries }: {
         </fieldset>
         {status === "failed" ? <p role="alert">We could not confirm acceptance. This form may have expired or the invitation may have changed. <button type="button" onClick={() => window.location.reload()} className="min-h-11 text-forest underline">Check the request again</button>.</p> : null}
       </form>
+      <InvitationRefusalForm nonce={refusalNonce} />
     </section>
   );
 }

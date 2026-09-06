@@ -1,5 +1,14 @@
 # Readability audit
 
+## 2026-09-06 — accountless invitation refusal
+
+The refusal UI uses ten newly registered ordinary words: `anything`,
+`choice`, `decline`, `declined`, `else`, `need`, `part`, `recorded`,
+`take` and `want`. These make the action and receipt readable without a
+typed signature or legal terminology. The vocabulary additions do not change
+the scorer, thresholds, sentence cap, jargon rules or fixture expectations.
+The gate passes across 2,434 blocks after this registration.
+
 Date: 2026-09-01
 
 Baseline: `864736979c92a08ba77e8580d61946eba6864918`

@@ -47,13 +47,13 @@ test.afterAll(async () => {
   if (mailServer) await new Promise<void>(resolve => mailServer.close(() => resolve()));
 });
 
-async function reserveInvitation() {
+async function reserveInvitation(contactEmail = recipient.email) {
   const admin = adminClient();
   const { data: drafts, error: draftError } = await admin.rpc("create_embryo_cohort_draft_v1", {
     p_account_id: ownerId, p_session_id: authSessionId,
     p_upload_situation: "own_embryos", p_basis_case: "true_two_parent", p_embryo_count: 3,
     p_owner_contact_ciphertext: encrypted(owner.email), p_owner_contact_hmac: contactHash(owner.email),
-    p_contact_ciphertexts: [encryptSecret(recipient.email).toString("hex")], p_contact_hmacs: [contactHash(recipient.email)],
+    p_contact_ciphertexts: [encryptSecret(contactEmail).toString("hex")], p_contact_hmacs: [contactHash(contactEmail)],
     p_token_nonce: nonce(), p_test_jurisdiction: true,
   });
   expect(draftError).toBeNull();
@@ -67,7 +67,7 @@ async function reserveInvitation() {
   expect(signError).toBeNull();
   const { data: invitations, error: inviteError } = await admin.rpc("create_embryo_draft_invitation_v1", {
     p_account_id: ownerId, p_session_id: authSessionId, p_draft_id: draftId,
-    p_contact_hmac: contactHash(recipient.email), p_idempotency_key: crypto.randomBytes(32).toString("hex"),
+    p_contact_hmac: contactHash(contactEmail), p_idempotency_key: crypto.randomBytes(32).toString("hex"),
     p_token_nonce: nonce(), p_test_jurisdiction: true,
   });
   expect(inviteError).toBeNull();
@@ -163,6 +163,64 @@ test("/withdraw/request → session: real co-parent email, explicit activation, 
   const grants = await admin.from("directional_grants").select("grant_id", { count: "exact", head: true }).eq("recipient_account_id", ownerId);
   expect(grants.count).toBe(0);
 });
+
+for (const mode of ["anonymous", "other-account"] as const) {
+  test(`/withdraw/session: ${mode} refusal → cleanup → notices → safe retry`, async ({ page, request }, testInfo) => {
+    const email = `refuse-${crypto.randomUUID()}@e2e.local`;
+    const { draftId, invitationId } = await reserveInvitation(email);
+    const admin = adminClient();
+    let emailed: string | undefined;
+    for (let batch = 0; batch < 10 && !emailed; batch++) {
+      const run = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+      expect(run.status()).toBe(200);
+      emailed = messages.find(m => [m.to].flat().includes(email))?.html?.match(/http:\/\/localhost:3100\/withdraw\/request#[A-Za-z0-9_-]{43}/u)?.[0];
+    }
+    expect(emailed).toBeTruthy();
+    if (mode === "other-account") await signIn(page, stranger.email, stranger.password);
+    else {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(() => localStorage.setItem("theme", "dark"));
+    }
+    await page.goto(emailed!);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
+    expect(await page.content()).not.toContain("Synthetic Inviter");
+    await expect(page.getByRole("button", { name: "Sign and accept invitation" })).toHaveCount(0);
+    const decline = page.getByRole("button", { name: "Decline invitation", exact: true });
+    await expect(decline).toBeEnabled();
+    await decline.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`refusal-${mode}.png`), fullPage: true });
+    const responsePromise = page.waitForResponse(r => r.url().endsWith("/api/withdraw/session") && r.request().method() === "POST");
+    await decline.click();
+    const response = await responsePromise;
+    expect(response.status()).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted", operation: "refuse" });
+    const originalBody = response.request().postDataJSON();
+    expect(Object.keys(originalBody).sort()).toEqual(["nonce", "operation"]);
+    await expect(page.getByRole("heading", { name: "You have declined this invitation" })).toBeVisible();
+    const invitation = await admin.from("subject_invitations").select("status").eq("id", invitationId).single();
+    expect(invitation.data?.status).toBe("refused");
+    const cleanup = await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+    expect(cleanup.status()).toBe(200);
+    expect((await cleanup.json()).failed).toBe(0);
+    expect((await admin.from("embryo_cohort_drafts").select("id").eq("id", draftId)).data).toEqual([]);
+    const replay = await page.request.post("/api/withdraw/session", {
+      headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin" }, data: originalBody,
+    });
+    expect(replay.status()).toBe(202);
+    expect(await replay.json()).toEqual({ status: "accepted", operation: "refuse" });
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "You have declined this invitation" })).toBeVisible();
+    const mail = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+    expect(mail.status()).toBe(200);
+    expect((await mail.json()).failed).toBe(0);
+    const notices = await admin.from("mail_outbox").select("state").eq("target_kind", "subject_invitation")
+      .eq("target_id", invitationId).not("invitation_terminal_notice_id", "is", null);
+    expect(notices.data).toEqual([{ state: "submitted" }, { state: "submitted" }]);
+    expect(messages.filter(m => [m.to].flat().includes(email))).toHaveLength(2);
+  });
+}
 
 test("/withdraw/request missing or malformed fragment: generic page, no activation", async ({ page }) => {
   for (const fragment of ["", "#short", `#${"x".repeat(44)}`]) {

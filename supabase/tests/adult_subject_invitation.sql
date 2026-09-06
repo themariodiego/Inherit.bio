@@ -39,10 +39,9 @@ select * from public.claim_mail_outbox();
 select matches((select delivery_token from claimed_invitation_mail),
   '^[A-Za-z0-9_-]{43}$',
   'the mail worker receives one ephemeral URL-safe token');
-select is(
-  position((select delivery_token from claimed_invitation_mail)
-    in (select template_payload::text from public.mail_outbox))::integer,
-  0,
+select ok(
+  (select bool_and(position((select delivery_token from claimed_invitation_mail)
+    in template_payload::text)=0) from public.mail_outbox),
   'the raw invitation token is absent from durable mail payloads'
 );
 

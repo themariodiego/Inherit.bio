@@ -88,7 +88,7 @@ const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
  */
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
 
-type PublicForm = "rights-activate";
+type PublicForm = "rights-activate" | "invitation-refuse";
 
 interface PublicFormClaims {
   form: PublicForm;

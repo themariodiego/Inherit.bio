@@ -2703,6 +2703,8 @@ export type Database = {
       }
       embryo_operation_nonces: {
         Row: {
+          rights_session_hash: string | null
+          rights_receipt_expires_at: string | null
           account_id: string | null
           consumed_at: string
           nonce_hash: string
@@ -2712,6 +2714,8 @@ export type Database = {
           target_kind: string
         }
         Insert: {
+          rights_session_hash?: string | null
+          rights_receipt_expires_at?: string | null
           account_id?: string | null
           consumed_at?: string
           nonce_hash: string
@@ -2721,6 +2725,8 @@ export type Database = {
           target_kind: string
         }
         Update: {
+          rights_session_hash?: string | null
+          rights_receipt_expires_at?: string | null
           account_id?: string | null
           consumed_at?: string
           nonce_hash?: string
@@ -7568,6 +7574,22 @@ export type Database = {
           deletion_id: string
           storage_objects: Json
         }[]
+      }
+      read_co_parent_refusal_v1: {
+        Args: { p_session_hash: string }
+        Returns: string | null
+      }
+      refuse_co_parent_invitation_session_v1: {
+        Args: { p_session_hash: string; p_nonce: string }
+        Returns: undefined
+      }
+      expire_invitation_refusal_receipts_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      authorize_mail_submission_v1: {
+        Args: { p_outbox_id: string; p_attempt_ordinal: number }
+        Returns: boolean
       }
       claim_refused_invitation_draft_purge_v1: {
         Args: { p_claim_token_hash: string }

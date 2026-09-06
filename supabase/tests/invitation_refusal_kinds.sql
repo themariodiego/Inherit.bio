@@ -104,7 +104,10 @@ select ok((select contact_ciphertext is null and status='shredded' from public.e
 select is((select count(*) from public.retention_due_phases
  where target_id=(select draft_id from donor_draft) and immutable_envelope->>'reason'='invitation-refused'),
  0::bigint,'the donor fallback queues no draft purge');
-select is((select count(*) from private.invitation_terminal_notices where recipient_kind='contact'),
+select is((select count(*) from private.invitation_terminal_notices where recipient_kind='contact'
+ and invitation_id in (select invitation_id from inv union all select invitation_id from adult
+ union all select invitation_id from third_parent_a union all select invitation_id from third_parent_b
+ union all select '9a000000-0000-0000-0000-0000000000d4'::uuid)),
  1::bigint,'the contact notice is coalesced across accounts and key versions');
 select is((select count(*) from private.invitation_terminal_notices where recipient_kind='account'
  and notice_kind='donor-attribution-ended'),1::bigint,

@@ -72,6 +72,8 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
       - name: Database tests (pgTAP)
         run: pnpm exec supabase test db
+      - name: Invitation transition locks (independent database sessions)
+        run: pnpm test:invitation-locks
       - name: Seed local Supabase
         run: pnpm seed
       - name: Full browser suite

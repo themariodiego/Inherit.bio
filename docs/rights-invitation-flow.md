@@ -3,6 +3,75 @@
 Branch: `codex/rights-invitation-flow`. **Not released.**
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
+## Latest: connected public refusal (local, not released)
+
+The co-parent recipient now has a working **Decline invitation** action without
+an account, a signature, a reason or a jurisdiction choice. A person signed into
+a different account can decline without seeing the draft's private review.
+The server accepts only a closed, bounded JSON operation with a same-origin
+request, the rights cookie and its session-bound form nonce.
+
+The action uses the existing atomic refusal, canonical notice and physical
+cleanup workers. A hash-only receipt survives draft/session cleanup until the
+original session deadline (never longer than 24 hours after consumption).
+Retrying the same operation and reloading the receipt work after cleanup.
+Both receipt columns must be present together; retention independently removes
+expired receipts. This is not an extension of genetic-data retention.
+
+The shared transition lock now precedes authority access in ten existing
+writers, including invitation issuance, activation, acceptance, finalization,
+expiry and ordinary mail claims. Stored contact aliases are checked for refusal
+bars. The ordinary mail worker checks its exact claim immediately before
+submission and does not write a failure over an accepted provider request when
+the database receipt is lost.
+
+Verification:
+
+- Five production-build browser cases pass (30.9 seconds, no skips/retries):
+  original acceptance, signed-out refusal, wrong-account refusal, malformed
+  fragments and actual Storage cleanup. Refusal cases run the production mail
+  and retention routes, inspect notice delivery and retry after the draft is
+  physically purged. Only Resend is replaced with the loopback test provider.
+- The signed-out screen was visually inspected at 390px in dark mode; the
+  other-account screen was inspected at desktop width in light mode. Neither
+  has horizontal overflow. This is not complete accessibility coverage.
+- 22 public-form/API units plus six mail-route units pass. The mail units
+  cover denied/unavailable authority, check-before-send ordering, successful
+  delivery, provider failure and lost acceptance receipts.
+- `pnpm test:invitation-locks` passes 16 checks using independent PostgreSQL
+  backends. It is wired into CI after pgTAP. Each probe runs as service_role,
+  waits on the exact lock, and is cancelled inside an uncommitted transaction.
+  No extension, database privilege change, fixture purge or reset is needed.
+- The first dblink test approach could not authenticate under local trust
+  rules. It was removed, not enabled by granting privileged dblink access.
+- Typecheck, scoped warning-as-error lint and the full readability gate pass.
+  Ten ordinary words used in the refusal UI were explicitly registered;
+  no readability threshold, scoring rule or jargon exclusion changed.
+- The final focused database run passes **358 assertions in nine suites**,
+  including cohort runtime, adult invitation, exact binding, public refusal,
+  kind-aware cleanup, canonical notices and storage guards. Local security
+  advisors report no warning/error findings.
+
+The combined database run found assertions that counted unrelated terminal
+notices left by earlier synthetic browser runs. The tests now bind counts and
+date changes to their own invitation fixtures and account separately for
+already-due expiry work. No shared rows were removed to make the suite pass.
+An additional older `embryo_authority.sql` run fails in setup: its broad fixture
+deletion hits a relationship still referenced by a directional grant. It was
+not edited or bypassed. This is not a full clean-database test receipt.
+
+Still required before release: wider shared/live evidence protection and write
+fencing, review of all changed authority paths, clean migration/full CI and
+hosted verification. Full G5.4 additionally needs active-key rotation and
+retirement behavior, account/network quotas, the adult URL-token migration,
+other rights purposes and the complete route/state matrix. The SQL checkpoint
+before a network call does not prove atomic provider delivery against a
+concurrent refusal. A receipt currently covers this holder's explicit refusal,
+not every independently terminalized invitation.
+
+The earlier sections below are chronological checkpoints, not claims that the
+latest refusal UI is still missing.
+
 ## Connected locally
 
 - `/withdraw/request` is a small generic document, not a target lookup. Its

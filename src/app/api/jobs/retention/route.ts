@@ -74,6 +74,9 @@ export async function POST(request: Request) {
   let processed = 0;
   let failed = 0;
 
+  const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");
+  if (refusalReceiptExpiryError) failed++;
+
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.
   try {
