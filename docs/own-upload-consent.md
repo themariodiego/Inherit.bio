@@ -147,7 +147,11 @@ Verification in this checkpoint:
   account suspension, missing sessions and denial of table/object reads,
   updates and deletes. A non-null declared-format snapshot is enforced.
 - A focused three-file unit run passes 59 tests; typecheck and scoped lint
-  exit zero. This is not a new full-unit or full-browser regression receipt.
+  exit zero. At source commit
+  `cd58b24a565c8c73a295828ee2dd64369411b80a`, the clean-checkout full unit
+  run passes 2,309 tests across 144 files, and the secret gate passes over
+  974 tracked files and 246 authored commits. The database security advisor
+  reports no findings. No new full-browser regression was run.
 - Generated public types include only the changed upload-session table and
   new issuer RPC; unrelated local schema differences are excluded.
 
