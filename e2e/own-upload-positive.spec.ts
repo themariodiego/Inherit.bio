@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "./helpers";
+import { ANON_KEY, adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "./helpers";
 import { directUploadReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 test("canonical browser upload stores exact source bytes and prepares them without generating unchosen results", async ({ page }) => {
@@ -39,7 +39,8 @@ test("canonical browser upload stores exact source bytes and prepares them witho
   const storageHeaders = await storage.request().allHeaders();
   // Compare locally without rendering the restricted bearer in assertion output.
   expect(storageHeaders.authorization === `Bearer ${lease.uploadToken}`).toBe(true);
-  expect(Boolean(storageHeaders.apikey) && storageHeaders.apikey === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe(true);
+  const expectedGatewayKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ANON_KEY;
+  expect(Boolean(storageHeaders.apikey) && storageHeaders.apikey === expectedGatewayKey).toBe(true);
   expect(storageHeaders.cookie).toBeUndefined();
   const preparation = await prepared;
   expect(preparation.status()).toBe(200);
