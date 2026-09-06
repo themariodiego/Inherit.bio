@@ -1,0 +1,41 @@
+{
+  "url": "https://rest.ensembl.org/vep/human/id/rs16891982?content-type=application/json",
+  "readAt": "2026-09-06T02:13:14.374Z",
+  "httpStatus": 200,
+  "scope": "Selected unchanged fields and one unchanged transcript_consequences record; other annotations, clinical labels, frequencies and alternate placements omitted.",
+  "record": {
+    "id": "rs16891982",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "5",
+    "start": 33951588,
+    "end": 33951588,
+    "strand": 1,
+    "allele_string": "C/A/G"
+  },
+  "transcript_consequence": {
+    "gene_id": "ENSG00000164175",
+    "gene_symbol_source": "HGNC",
+    "protein_end": 374,
+    "protein_start": 374,
+    "impact": "MODERATE",
+    "consequence_terms": [
+      "missense_variant"
+    ],
+    "cds_start": 1122,
+    "cdna_end": 1232,
+    "amino_acids": "L/F",
+    "variant_allele": "G",
+    "polyphen_score": 0.971,
+    "polyphen_prediction": "probably_damaging",
+    "sift_prediction": "deleterious",
+    "strand": -1,
+    "codons": "ttG/ttC",
+    "transcript_id": "ENST00000296589",
+    "biotype": "protein_coding",
+    "sift_score": 0,
+    "cdna_start": 1232,
+    "hgnc_id": "HGNC:16472",
+    "cds_end": 1122,
+    "gene_symbol": "SLC45A2"
+  }
+}

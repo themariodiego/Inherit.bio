@@ -1,0 +1,828 @@
+[
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.12553913.comparison",
+    "text_verbatim": "Met was linked to lower release after the lab cells were stimulated. Release without stimulation was unchanged.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12553913",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12553913/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: depolarization-induced versus constitutive secretion. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.12553913.limitation",
+    "text_verbatim": "The cell test did not measure protein release in these people's brains or their response to life stress.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:12553913",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12553913/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: separate human and cell endpoints; report scope limitation. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.12553913.measured",
+    "text_verbatim": "Memory tests and brain scans were studied in people. Protein release was tested separately in lab-grown nerve cells.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12553913",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12553913/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: human memory/imaging and transfected-neuron experiments. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.24433458.comparison",
+    "text_verbatim": "One-copy and two-copy Met carriers were pooled. The stress link was stronger for life events than for childhood adversity.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:24433458",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Discussion: Met-dominant model and stressor-stratified results. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.24433458.limitation",
+    "text_verbatim": "Stress measures varied, and many samples were small. The method did not give the size of a personal effect.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:24433458",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Limitations: stress measurement, sample size and combined P-value method; personal-effect scope limit. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.24433458.measured",
+    "text_verbatim": "This review combined studies of life stress, depression and the Val66Met change.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:24433458",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods: study selection and statistical analysis. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.24433458.population",
+    "text_verbatim": "It covered 22 studies with 14,233 people. Most samples had European ancestry.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:24433458",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results: study selection; Limitations: sample ancestry. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.30845820.comparison",
+    "text_verbatim": "The BDNF site in this report was tested. Its depression and gene-by-stress results did not pass the study's checks for many tests.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:30845820",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 2: BDNF rs6265; Results: multiple-testing thresholds. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.30845820.limitation",
+    "text_verbatim": "The stress measures were not the same in every earlier study. These results do not prove that every possible BDNF effect is absent.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:30845820",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods: environmental moderators; Discussion: scope and limitations; report inference limit. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.30845820.measured",
+    "text_verbatim": "Researchers tested earlier gene claims across several measures of depression and stress. They set out the analyses in advance.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:30845820",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods: preregistered analyses, depression outcomes and environmental moderators. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.study.30845820.population",
+    "text_verbatim": "The analyses used large population and case-control samples, with 62,138 to 443,264 people across subsets.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:30845820",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: sample sizes across subsamples. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.mood-stress-resilience-bdnf-rs6265.summary",
+    "text_verbatim": "An older review linked the Met form of BDNF to depression after life stress. A much larger later study did not confirm this link. The difference matters: a finding about how a protein works does not establish how you cope with stress.",
+    "surfaces": [
+      "/genome/[subject]/reports/mood-stress-resilience-bdnf-rs6265#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:24433458",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "The older BDNF/life-stress association from a meta-analysis, not a personal effect."
+      },
+      {
+        "citation": "pmid:30845820",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Larger later preregistered analyses, including rs6265, did not confirm the depression/stress candidate signal."
+      },
+      {
+        "citation": "pmid:12553913",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12553913/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "The cell protein experiment is distinct from human mood or life-stress response."
+      }
+    ],
+    "net_impression_note": "Preserve the entire summary, including its study/population limits. This is public research context, not a computed personal finding. Exact reviewed object: docs/sources/reviews/batch-02/independent-correction-review.md. Intended surfaces only; runtime wrapping and actual capture remain unproved.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.problem-substance-use-faah-rs324420.study.12060782.comparison",
+    "text_verbatim": "AA, but not AC, was more common in the group reporting drug or alcohol problems than in controls.",
+    "surfaces": [
+      "/genome/[subject]/reports/problem-substance-use-faah-rs324420#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12060782",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results: first subsection; Table 2, problem drug/alcohol group. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.problem-substance-use-faah-rs324420.study.12060782.limitation",
+    "text_verbatim": "Survey groups may differ in other ways. The lab test did not measure signal levels in these people's brains.",
+    "surfaces": [
+      "/genome/[subject]/reports/problem-substance-use-faah-rs324420#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:12060782",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Discussion: questionnaire grouping and linkage; distinction between human survey and laboratory endpoints (report scope). Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.problem-substance-use-faah-rs324420.study.12060782.measured",
+    "text_verbatim": "A health survey asked about drug and alcohol use. A separate lab test measured how readily the protein broke down.",
+    "surfaces": [
+      "/genome/[subject]/reports/problem-substance-use-faah-rs324420#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12060782",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods: Subjects; Results: protein stability experiment. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.problem-substance-use-faah-rs324420.study.12060782.population",
+    "text_verbatim": "The survey analysis used white participants from a medical screening clinic.",
+    "surfaces": [
+      "/genome/[subject]/reports/problem-substance-use-faah-rs324420#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12060782",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods: Subjects, Study A selection. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.problem-substance-use-faah-rs324420.summary",
+    "text_verbatim": "FAAH breaks down anandamide, a signal made by the body. In a lab test, the A form broke down more readily when exposed to an enzyme that cuts proteins. A 2002 study found AA more often in people reporting drug or alcohol problems; one A copy did not show that link.",
+    "surfaces": [
+      "/genome/[subject]/reports/problem-substance-use-faah-rs324420#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:12060782",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "FAAH/anandamide background, protease susceptibility assay, AA problem drug/alcohol association and lack of AC enrichment."
+      },
+      {
+        "citation": "dataset:ensembl-vep-rs324420",
+        "doi_or_url": "https://rest.ensembl.org/vep/human/id/rs324420?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 rs324420 forward A maps to the Thr129 protein form; annotation does not establish the human association."
+      }
+    ],
+    "net_impression_note": "Preserve the entire summary, including its study/population limits. This is public research context, not a computed personal finding. Exact reviewed object: docs/sources/reviews/batch-02/independent-correction-review.md. Intended surfaces only; runtime wrapping and actual capture remain unproved.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.18483556.comparison",
+    "text_verbatim": "This site remained linked to all three traits after accounting for three other sites in the same gene.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18483556",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, SLC45A2/MATP multivariable analysis. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.18483556.limitation",
+    "text_verbatim": "These group associations do not predict one person's skin color or safe UV exposure.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:18483556",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, SLC45A2/MATP paragraphs; scope of the association study. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.18483556.measured",
+    "text_verbatim": "Researchers studied hair color, skin color and tanning ability.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18483556",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, SLC45A2/MATP paragraphs. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.18483556.population",
+    "text_verbatim": "The wider study used groups of European ancestry in the United States and Australia. This site's analysis used skin-cancer study controls.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:18483556",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract; Results, SLC45A2/MATP paragraphs; Materials and Methods, Study populations. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.29974532.comparison",
+    "text_verbatim": "The team tested links between this site and reported sun sensitivity. They also tested other pigment-related variants.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:29974532",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract, Methods and Results. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.29974532.limitation",
+    "text_verbatim": "The abstract reports a link at this site but does not give a C-versus-G contrast. It cannot set a personal sun limit.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:29974532",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract, Results; scope of the reported result. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.29974532.measured",
+    "text_verbatim": "A questionnaire recorded skin and hair traits, sun sensitivity and sun exposure.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:29974532",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract, Methods. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.29974532.population",
+    "text_verbatim": "The study included 456 people from Spain.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:29974532",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract, Methods. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.32966160.comparison",
+    "text_verbatim": "Phe374 made less pigment and broke down faster than Leu374.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:32966160",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, Figures 7 and 8. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.32966160.limitation",
+    "text_verbatim": "Testing each form in cells does not establish a halfway effect for people with one copy of each.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:32966160",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Figures 7 and 8; scope of the cell experiment. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.32966160.measured",
+    "text_verbatim": "Lab tests measured pigment and how long the two protein forms lasted.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:32966160",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, Figures 7 and 8. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.study.32966160.population",
+    "text_verbatim": "The tests used mouse pigment cells given human SLC45A2 protein forms, not people exposed to sunlight.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:32966160",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results, Figures 7 and 8; Materials and Methods. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-04/slc45a2-independent-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.skin-uv-sensitivity-slc45a2.summary",
+    "text_verbatim": "SLC45A2 helps cells make skin pigment. At rs16891982, C codes for Leu374, the darker-skin-associated form, while G codes for Phe374, the lighter-skin-associated form. Lab work found less pigment with Phe374 than with Leu374. Human studies also linked this site to skin color, tanning and reported sun sensitivity. These findings do not measure your skin color or how much sun your skin can tolerate.",
+    "surfaces": [
+      "/genome/[subject]/reports/skin-uv-sensitivity-slc45a2#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:32966160",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Pigment role and Leu/Phe functional comparison in cells; not personal skin color or UV tolerance."
+      },
+      {
+        "citation": "pmid:18483556",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "The specific SLC45A2 association with skin color and tanning, not the adjacent IRF4 direction."
+      },
+      {
+        "citation": "pmid:29974532",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Reported sun sensitivity association at this site without an abstract-level C/G contrast."
+      },
+      {
+        "citation": "dataset:ensembl-vep-rs16891982",
+        "doi_or_url": "https://rest.ensembl.org/vep/human/id/rs16891982?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 forward C/G and negative-strand L374F binding; the additional A allele remains outside this template."
+      }
+    ],
+    "net_impression_note": "Preserve the entire summary, including its study/population limits. This is public research context, not a computed personal finding. Exact reviewed object: docs/sources/reviews/batch-04/slc45a2-independent-review.md. Intended surfaces only; runtime wrapping and actual capture remain unproved.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights, transcription; independent source review by Codex agent report_evidence_implementation (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.11381111.comparison",
+    "text_verbatim": "More Met copies were linked to fewer repeat errors on the card-sorting test.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:11381111",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: Met-allele dose and perseverative errors. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.11381111.limitation",
+    "text_verbatim": "A test result in this sample is not a measure of everyday anxiety, pain or coping with stress.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:11381111",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: measured outcomes and study population; report scope limitation. Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.11381111.measured",
+    "text_verbatim": "People sorted cards and took a memory test. Researchers recorded errors and brain activity.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:11381111",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: Wisconsin Card Sorting Test and fMRI tasks. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.11381111.population",
+    "text_verbatim": "The main sample had 175 people with schizophrenia, 219 siblings and 55 controls. Brain scans used smaller groups.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:11381111",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: cognitive and fMRI sample sizes. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.15956988.comparison",
+    "text_verbatim": "Researchers compared scores across three COMT sites and their combined patterns, not just this one site.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:15956988",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: individual SNP and haplotype analyses. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.15956988.limitation",
+    "text_verbatim": "Other sites may contribute to the link. These personality scores are not a clinical test or a test of sudden stress.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:15956988",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: other functional variants; distinction between measured traits and clinical/stress outcomes (report scope). Supports the stated boundary of the measured evidence, not proof that all other effects are absent."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.15956988.measured",
+    "text_verbatim": "A personality survey measured traits such as being outgoing and prone to negative feelings.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:15956988",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: NEO-PI-R extraversion and neuroticism outcomes. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.study.15956988.population",
+    "text_verbatim": "The study included 497 college students. The reported links were found in women.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:15956988",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Abstract: sample and sex-specific results. Supports this exact study-specific paragraph within the population and comparison limits."
+      }
+    ],
+    "net_impression_note": "Read with the other context fields for this publication; do not turn a study result into a personal score. docs/sources/reviews/batch-02/independent-correction-review.md records the independent source review. Intended detail and JSON-export context only; not present in the current text export or digest email.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.stress-anxiety-comt-rs4680.summary",
+    "text_verbatim": "COMT helps break down dopamine, a brain signal. Its Val and Met forms differ in enzyme activity. A study of 497 college students linked this gene region to some personality scores in women. That does not show how well someone handles sudden stress or pain.",
+    "surfaces": [
+      "/genome/[subject]/reports/stress-anxiety-comt-rs4680#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:11381111",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "COMT/dopamine and Val/Met activity background; study endpoints do not establish acute stress or pain."
+      },
+      {
+        "citation": "pmid:15956988",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "497-student, female-specific personality association; no universal or genotype-specific anxiety ranking."
+      }
+    ],
+    "net_impression_note": "Preserve the entire summary, including its study/population limits. This is public research context, not a computed personal finding. Exact reviewed object: docs/sources/reviews/batch-02/independent-correction-review.md. Intended surfaces only; runtime wrapping and actual capture remain unproved.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  }
+]

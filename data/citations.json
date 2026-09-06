@@ -1,0 +1,112 @@
+[
+  {
+    "id": "dataset:ensembl-vep-rs16891982",
+    "type": "dataset",
+    "identifier": "Ensembl VEP human rs16891982 GRCh38",
+    "url": "https://rest.ensembl.org/vep/human/id/rs16891982?content-type=application/json",
+    "archived_path": "docs/sources/ensembl/rs16891982-2026-09-06.json",
+    "access_date": "2026-09-06",
+    "quote": "\"amino_acids\":\"L/F\"",
+    "claim": "Public coordinate and forward-allele/protein mapping only, transcript ENST00000296589. No personal call, clinical label, phenotype prediction or full-gene interpretation."
+  },
+  {
+    "id": "dataset:ensembl-vep-rs324420",
+    "type": "dataset",
+    "identifier": "Ensembl VEP human rs324420 GRCh38",
+    "url": "https://rest.ensembl.org/vep/human/id/rs324420?content-type=application/json",
+    "archived_path": "docs/sources/ensembl/rs324420-2026-09-06.json",
+    "access_date": "2026-09-06",
+    "quote": "\"amino_acids\":\"P/T\"",
+    "claim": "Public coordinate and forward-allele/protein mapping only, transcript ENST00000243167. No personal call, clinical label, phenotype prediction or full-gene interpretation."
+  },
+  {
+    "id": "pmid:11381111",
+    "type": "pmid",
+    "identifier": "11381111",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/11381111/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "low-activity Met allele",
+    "claim": "Egan et al. 2001: COMT activity background, card-sorting errors and smaller fMRI groups; not anxiety, pain or personal dopamine levels."
+  },
+  {
+    "id": "pmid:12060782",
+    "type": "pmid",
+    "identifier": "12060782",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12060782/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "enhanced sensitivity to proteolytic degradation",
+    "claim": "Sipe et al. 2002: separate protein assay and questionnaire-defined drug/alcohol problem groups, including AA versus AC distinction; not measured brain signaling or causality."
+  },
+  {
+    "id": "pmid:12553913",
+    "type": "pmid",
+    "identifier": "12553913",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12553913/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "lower depolarization-induced secretion",
+    "claim": "Egan et al. 2003: separate human memory/imaging and transfected-neuron experiments, stimulated versus constitutive release; not a human mood response assay."
+  },
+  {
+    "id": "pmid:15956988",
+    "type": "pmid",
+    "identifier": "15956988",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/15956988/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "with effects confined to women.",
+    "claim": "Stein et al. 2005: personality-inventory associations in 497 undergraduates, three COMT sites and haplotypes; no verified genotype-specific anxiety direction."
+  },
+  {
+    "id": "pmid:18483556",
+    "type": "pmid",
+    "identifier": "18483556",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/18483556/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "only rs16891982 remained significant in the model",
+    "claim": "Han et al. 2008: the SLC45A2/MATP model for hair color, skin color and tanning in skin-cancer controls after adjustment for three other sites; not the adjacent IRF4 result."
+  },
+  {
+    "id": "pmid:24433458",
+    "type": "pmid",
+    "identifier": "24433458",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/24433458/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "the evidence was stronger for an interaction with stressful life events",
+    "claim": "Hosang et al. 2014: 22-study BDNF/life-stress meta-analysis, pooled Met carriers, stressor distinction and methodological limits; no calibrated personal effect."
+  },
+  {
+    "id": "pmid:29974532",
+    "type": "pmid",
+    "identifier": "29974532",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/29974532/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "were genotyped in 456 Spaniards.",
+    "claim": "Hernando et al. 2018: questionnaire traits and reported photosensitivity association in Spain; abstract does not give a C-versus-G contrast."
+  },
+  {
+    "id": "pmid:30845820",
+    "type": "pmid",
+    "identifier": "30845820",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30845820/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "No clear evidence was found for any candidate gene polymorphism associations with depression phenotypes",
+    "claim": "Border et al. 2019: preregistered large-sample depression and interaction analyses, including BDNF rs6265 in Table 2; nonconfirmation does not prove every possible effect absent."
+  },
+  {
+    "id": "pmid:32966160",
+    "type": "pmid",
+    "identifier": "32966160",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/32966160/",
+    "archived_path": null,
+    "access_date": "2026-09-06",
+    "quote": "the light skin-associated SLC45A2 allelic F374 variant restores only moderate pigmentation",
+    "claim": "Le et al. 2020: human SLC45A2 forms tested in deficient mouse pigment cells, Figures 7–8; F374 has less pigment and faster loss than L374, not a human heterozygote gradient."
+  }
+]
