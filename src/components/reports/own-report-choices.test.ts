@@ -20,6 +20,7 @@ describe("independent report choice panel", () => {
   it("starts with three unchecked choices, no inferred opt-in and a disabled generation button", () => {
     const html = render();
     expect(html.match(/type="checkbox"/g)).toHaveLength(3);
+    expect(html.indexOf("Trait reports and estimates")).toBeLessThan(html.indexOf("Observed genetic variants"));
     expect(html).not.toContain("checked=");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Generate selected reports<\/button>/);
     for (const purpose of OWN_REPORT_PURPOSES) expect(html).toContain(`Terms for ${purpose}`);

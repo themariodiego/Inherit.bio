@@ -58,6 +58,8 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
   const inFlight = useRef(false);
   const selectedFile = files.some(file => file.id === fileId) ? fileId : files[0]?.id;
   const canGenerate = view.choices.some(choice => choice.granted && choice.purposeKey !== "ancestry");
+  const orderedChoices = [...view.choices].sort((a, b) =>
+    Number(b.purposeKey === "reports.polygenic") - Number(a.purposeKey === "reports.polygenic"));
   async function generate() {
     if (inFlight.current || !selectedFile || !canGenerate) return;
     inFlight.current = true; setPending(true); setMessage(""); setError("");
@@ -72,7 +74,7 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
   return <section aria-labelledby="own-report-choices-title" className="space-y-4 rounded-2xl border border-line bg-card p-5">
     <h2 id="own-report-choices-title" className="display text-2xl">Choose your reports</h2>
     <p className="max-w-prose text-sm text-ink-muted">Start with trait reports to explore findings from your file. Each choice is independent; you do not need to enable everything. You can turn a choice off here later.</p>
-    <div className="grid gap-4 md:grid-cols-3">{view.choices.map(choice => <ReportChoice
+    <div className="grid gap-4 md:grid-cols-3">{orderedChoices.map(choice => <ReportChoice
       key={`${choice.purposeKey}:${choice.grantId}:${choice.token}`} choice={choice} subjectId={view.subjectId}
       onSaved={text => { setMessage(text); setError(""); router.refresh(); }} />)}</div>
     {files.length > 1 ? <label className="block space-y-2 text-sm"><span>File to use</span>

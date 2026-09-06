@@ -53,6 +53,9 @@ begin
 end; $$;
 select throws_ok($$select pg_temp.authority(false)$$,'42501','not_found','locked resolver denies unselected reports');
 select throws_ok($$select pg_temp.authority(true)$$,'42501','not_found','read-only resolver denies unselected reports');
+select ok(private.own_prepared_source_readable_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select id from normalization_subject)),
+ 'prepared canonical source is browsable before any analytic purpose exists');
 select public.grant_own_report_purpose_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  (select id from normalization_subject),public.own_report_context_v1('77900000-0000-4000-8000-000000000001',
  '77900000-0000-4000-8000-000000000010',(select id from normalization_subject)),
@@ -68,6 +71,34 @@ select throws_ok($$select public.read_own_report_calls_v1('77900000-0000-4000-80
 select is(public.filter_own_analysis_files_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  (select id from normalization_subject),'reports.polygenic',array['77900000-0000-4000-8000-000000000040']::uuid[],true),
  '{}'::uuid[],'completed-only result allowlist denies enabled but ungenerated file');
+insert into public.report_templates(slug,category,title,summary,evidence,estimate_kind,variants,citations)
+ values('own-read-fixture','basic-traits','Fixture','Rollback-only result read fixture.','emerging','single_locus',
+ '[{"rsid":123,"gene":"X","chrom":1,"pos38":100000,"ref":"A","alt":"G","interpretations":{"AA":"x","AG":"y","GG":"z"}}]',
+ '[{"pmid":"12345678","label":"fixture"}]');
+insert into public.prs_scores(pgs_id,name,trait,n_variants,citation,source_url,ancestry_note)
+ values('OWN-READ-FIXTURE','Fixture','Fixture',1,'{}','https://example.invalid/fixture','Synthetic fixture only');
+create temporary table generation_manifest as select public.own_report_generation_v1('begin',
+ '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ '77900000-0000-4000-8000-000000000040','reports.polygenic') as receipt;
+select public.own_report_generation_v1('complete','77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040','reports.polygenic',
+ (select (receipt->>'claim')::uuid from generation_manifest),
+ '{"reports":[{"slug":"own-read-fixture","status":"resolved"}],"prs":[{"pgs_id":"OWN-READ-FIXTURE","raw_score":0,"coverage":1,"matched":1}]}');
+select is(jsonb_array_length(public.read_own_report_calls_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040','reports.polygenic',array[123]::bigint[],0)),
+ 1,'actual completed selected generation exposes the exact bounded source call');
+select set_config('request.jwt.claims','{"sub":"77900000-0000-4000-8000-000000000001","session_id":"77900000-0000-4000-8000-000000000010","role":"authenticated"}',true);
+savepoint positive_read_only;
+set local role authenticated;
+set local transaction_read_only=on;
+do $$ begin
+ if not private.own_stored_analysis_readable_v1('77900000-0000-4000-8000-000000000040','reports.polygenic') then
+  raise exception 'completed selected RLS authorization failed'; end if;
+ if (select count(*) from public.user_prs where file_id='77900000-0000-4000-8000-000000000040')<>1 then
+  raise exception 'completed selected row not visible through authenticated read-only RLS'; end if;
+end $$;
+rollback to positive_read_only;
+select pass('positive completed authenticated read-only SELECT succeeds through actual restrictive RLS');
 update public.genome_files set build=null where id='77900000-0000-4000-8000-000000000040';
 select throws_ok($$select pg_temp.authority(false)$$,'42501','not_found','locked source fails closed on null build');
 select throws_ok($$select pg_temp.authority(true)$$,'42501','not_found','read-only source fails closed on null build');
@@ -88,11 +119,31 @@ select ok(not has_function_privilege('inherit_upload_only','private.own_stored_a
  'upload-only token cannot probe report choices');
 select is((select count(*) from public.user_variants where file_id='77900000-0000-4000-8000-000000000040'),1::bigint,
  'unselected/ungenerated result denial does not remove canonical data');
+select public.revoke_directional_purpose_v1('77900000-0000-4000-8000-000000000001',
+ (select grant_id from public.purpose_grants where target_id=(select id from normalization_subject) and purpose='reports.polygenic'));
+select throws_ok($$select pg_temp.authority(false)$$,'42501','not_found','withdrawn purpose is immediately inaccessible to locked reads');
+select throws_ok($$select pg_temp.authority(true)$$,'42501','not_found','withdrawn purpose is immediately inaccessible to read-only RLS');
+select is((select count(*) from public.user_prs where file_id='77900000-0000-4000-8000-000000000040'),0::bigint,
+ 'withdrawal removes exact selected derived coverage rows');
+select is((select count(*) from public.user_variants where file_id='77900000-0000-4000-8000-000000000040'),1::bigint,
+ 'withdrawal preserves independently permitted canonical source browsing');
+select ok(private.own_prepared_source_readable_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select id from normalization_subject)),
+ 'prepared canonical source remains browsable after analytic purpose withdrawal');
+select is(public.filter_own_prepared_sources_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000099',
+ array['77900000-0000-4000-8000-000000000040']::uuid[]),'{}'::uuid[],'prepared source denies a different subject');
+update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
+ where subject_id=(select id from normalization_subject) and consent_type='upload_class';
+select ok(not private.own_prepared_source_readable_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select id from normalization_subject)),
+ 'source browser fails closed when its own store consent is withdrawn');
 -- Explicit transaction_read_only is exercised without pgTAP internals (which write temp state).
 set constraints all immediate;
 select * from finish();
 set local transaction_read_only=on;
 do $$ begin
- if pg_temp.authority(true)->>'sourceRevision' is distinct from '1' then raise exception 'read-only authority missing'; end if;
+ if private.own_stored_analysis_readable_v1('77900000-0000-4000-8000-000000000040','reports.polygenic') then
+  raise exception 'withdrawn read-only authority retained'; end if;
 end $$;
 rollback;

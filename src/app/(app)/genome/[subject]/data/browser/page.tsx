@@ -56,10 +56,9 @@ import { COVERAGE_PILLS, FILES_DISAGREE, GENOTYPE_LABEL } from "@/copy/reports/s
 import type { GenotypeSpec } from "@/lib/figures/spec";
 import {
   getSubjectFileCount,
-  getSubjectGenotypesByRsid,
-  getSubjectProcessedFiles,
   type Db,
 } from "@/lib/genome/load";
+import { getPreparedSourceFiles, getPreparedSourceGenotypes } from "@/lib/genome/prepared-sources";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import {
   formatLocus,
@@ -136,14 +135,15 @@ function reportNameOf(title: string): string {
 
 /** One rsID: the subject's files must agree, or the row says they disagree. */
 async function searchRsid(admin: Db, subjectId: string, rsid: number): Promise<Outcome> {
-  const [{ genotypes, conflicts, inputFileIds, checkedFileIds }, { data: mine }, { data: reference }] = await Promise.all([
-    getSubjectGenotypesByRsid(admin, subjectId, [rsid]),
-    admin
+  const { genotypes, conflicts, inputFileIds, checkedFileIds } = await getPreparedSourceGenotypes(admin, subjectId, [rsid]);
+  const [{ data: mine }, { data: reference }] = await Promise.all([
+    checkedFileIds.length ? admin
       .from("user_variants")
       .select("chrom, pos, ref, alt")
       .eq("subject_id", subjectId)
+      .in("file_id", checkedFileIds)
       .eq("rsid", rsid)
-      .limit(1),
+      .limit(1) : Promise.resolve({ data: [] }),
     admin
       .from("ref_variants")
       .select("rsid, chrom, pos38, ref, alt, gene_symbol")
@@ -219,7 +219,7 @@ async function searchGene(admin: Db, subjectId: string, query: string): Promise<
     .order("pos38")
     .limit(100);
   if (!refs || refs.length === 0) return null;
-  const { genotypes, conflicts, inputFileIds, checkedFileIds } = await getSubjectGenotypesByRsid(
+  const { genotypes, conflicts, inputFileIds, checkedFileIds } = await getPreparedSourceGenotypes(
     admin,
     subjectId,
     refs.map((row) => row.rsid),
@@ -295,11 +295,17 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   // The search reads the processed files; the subject bar counts every file
   // in the record, whatever its status.
   const [files, fileCount] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
+    getPreparedSourceFiles(admin, subject.id),
     getSubjectFileCount(admin, subject.id),
   ]);
-  const active = files[0] ?? null;
-  const outcome = q && active ? await search(admin, subject.id, active.id, q) : EMPTY;
+  let selectedActive: (typeof files)[number] | null = files[0] ?? null;
+  let outcome = q && selectedActive ? await search(admin, subject.id, selectedActive.id, q) : EMPTY;
+  if (q && selectedActive) {
+    const currentIds = new Set((await getPreparedSourceFiles(admin, subject.id)).map(file => file.id));
+    if (!currentIds.has(selectedActive.id)) selectedActive = null;
+    if (outcome.checkedFileIds.some(id => !currentIds.has(id))) outcome = EMPTY;
+  }
+  const active = selectedActive;
   const { hits, truncated, locus, message, showReportsLink, clinicalGene, trait } = outcome;
 
   // One genotype figure per covered row; the block owns the attribution and

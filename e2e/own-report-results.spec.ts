@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { adminClient, anonClient, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "./helpers";
@@ -62,7 +63,8 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   const prepared = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
     && response.request().method() === "POST");
   void prepared.catch(() => {});
-  const fileId = await uploadOwnFileThroughUi(page, path.join(process.cwd(), "e2e/fixtures/personal-previews-grch38.vcf"));
+  const fixture = path.join(process.cwd(), "e2e/fixtures/personal-previews-grch38.vcf");
+  const fileId = await uploadOwnFileThroughUi(page, fixture);
   const preparation = await prepared;
   expect(preparation.status()).toBe(200);
   expect(subjectNormalizationReceipt.parse(await preparation.json())).toEqual({
@@ -194,9 +196,32 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
     const retained = await owner.from("genome_files").select("id,status").eq("id", fileId).single();
     expect(retained.error).toBeNull();
     expect(retained.data).toEqual({ id: fileId, status: "stored" });
-    const calls = await owner.from("report_observed_calls").select("file_id").eq("file_id", fileId);
-    expect(calls.error).toBeNull();
-    expect(calls.data).toHaveLength(5);
+    // Observed-call REST has a separate legacy-only policy; canonical source
+    // browsing uses user_variants. Do not widen that API just for this test.
+    const observed = await admin.from("report_observed_calls").select("file_id").eq("file_id", fileId);
+    expect(observed.error).toBeNull();
+    expect(observed.data).toHaveLength(5);
+    const sourceFields = "file_id,rsid,chrom,pos,ref,alt,genotype";
+    const storedCalls = await admin.from("user_variants").select(sourceFields).eq("file_id", fileId).order("pos");
+    expect(storedCalls.error).toBeNull();
+    expect(storedCalls.data).toHaveLength(5);
+    const ownerCalls = await owner.from("user_variants").select(sourceFields).eq("file_id", fileId).order("pos");
+    expect(ownerCalls.error).toBeNull();
+    expect(ownerCalls.data).toEqual(storedCalls.data);
+    await page.goto("/genome/me/data");
+    await expect(page.getByRole("heading", { name: "Data and methods", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Open the genome browser", exact: true }).click();
+    await page.getByRole("textbox", { name: "Search variants", exact: true }).fill("rs4988235");
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    const sourceRow = page.locator("#results table tbody tr");
+    await expect(sourceRow).toHaveCount(1);
+    await expect(sourceRow).toContainText("rs4988235");
+    await expect(sourceRow.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/G");
+    // Existing ownership-scoped download route only. This proves original
+    // bytes survive report withdrawal, not the future canonical download gate.
+    const original = await page.request.get(`/api/files/${fileId}/download`);
+    expect(original.status()).toBe(200);
+    expect(await original.body()).toEqual(readFileSync(fixture));
   } finally {
     await owner.auth.signOut();
   }

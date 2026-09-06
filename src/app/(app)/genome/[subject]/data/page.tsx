@@ -19,7 +19,8 @@ import {
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
 import type { CoverageSpec } from "@/lib/figures/spec";
-import { getSubjectFileCount, getSubjectProcessedFiles } from "@/lib/genome/load";
+import { getSubjectFileCount } from "@/lib/genome/load";
+import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -44,7 +45,7 @@ export default async function GenomeDataPage(
   // The coverage facts read the processed files; the subject bar counts
   // every file in the record, whatever its status.
   const [files, fileCount] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
+    getPreparedSourceFiles(admin, subject.id),
     getSubjectFileCount(admin, subject.id),
   ]);
 

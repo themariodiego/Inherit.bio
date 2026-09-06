@@ -8072,6 +8072,10 @@ export type Database = {
         Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
         Returns: Json
       }
+      filter_own_prepared_sources_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_subject_id: string; p_file_ids: string[] };
+        Returns: string[];
+      };
       filter_own_analysis_files_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_subject_id: string; p_purpose: string;

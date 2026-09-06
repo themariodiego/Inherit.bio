@@ -33,8 +33,8 @@ returns boolean language sql security definer set search_path=pg_catalog,private
   and r.authority-'context'=p_authorization-'context'
   -- Session refresh is not a new source or grant; live session is independently
   -- checked by the caller. Durable consent/binding context must remain exact.
-  and (r.authority->'context')-array['accountRevision','authSessionRevision','originatingSessionRevision']
-   =(p_authorization->'context')-array['accountRevision','authSessionRevision','originatingSessionRevision']);
+  and (r.authority->'context')-array['authSessionRevision','originatingSessionRevision']
+   =(p_authorization->'context')-array['authSessionRevision','originatingSessionRevision']);
 $function$;
 revoke all on function private.own_analysis_completion_matches_v1(uuid,text,jsonb) from public,anon,authenticated,inherit_upload_only;
 grant execute on function private.own_analysis_completion_matches_v1(uuid,text,jsonb) to service_role;
