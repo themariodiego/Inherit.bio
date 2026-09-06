@@ -1,5 +1,16 @@
 # Test diff register
 
+Copilot output repair (2026-09-06): adds 60 completion cases, 65 unit tests
+and 60 actual-chat-route browser cases. Existing input-refusal assertions
+remain unchanged. Each output case first reaches the local provider and the
+real genotype tool, then receives a character-split completion. Both complete
+network text and visible text must equal the expected answer or exact refusal;
+refusals carry no original tool chunks. The mock's optional completion hook is
+test-only, with its prior behavior retained by default. A fresh-build targeted
+run passed all 62 new/existing browser cases with no skips or retries. The
+final test additionally waits for the Send button before navigating away.
+See `docs/copilot-output-contract.md` for evidence and full-plan limits.
+
 Email receipt commit binding (2026-09-06): eight additional disposable-Git
 tests reject unstaged/staged fixture and audit-policy changes, untracked new
 presentation files, ignored source/config inputs, changed HEAD and output paths
