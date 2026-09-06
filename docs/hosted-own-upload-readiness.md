@@ -51,6 +51,19 @@ or connector session credentials; use a supported management interface or an
 owner-assisted dashboard handoff. Never ask the owner to paste private signing
 material in chat. Establish production-only secret storage before creating a key.
 
+The owner subsequently signed into Vercel. Its environment list has no
+`INHERIT_UPLOAD_SIGNING_JWK`. The new-variable form is prepared with that name,
+Secret type and Production only, with an empty value and no save submission.
+Existing values were not revealed. Both credential forms await owner entry;
+first import as standby and save the identical key securely, then verify the
+public key identifier before activation. Do not redeploy merely to save a key.
+
+The owner explicitly requires no spending: no new paid resources, upgrades or
+paid add-ons. Prefer existing resources and free limits, including Cloudflare
+where appropriate. This checkpoint provisions no service and initiates no
+deployment. Any usage-bearing canary or scheduler requires a verified bounded
+cost plan rather than assuming the provider is free.
+
 ## Hosted trust is not the local harness
 
 The local browser harness gives an isolated instance of the actual Storage
