@@ -203,6 +203,14 @@ Verification so far:
   with no reset/history changes. The test was rerun without weakening its
   zero-failure assertion. Full clean migration/CI verification is still due.
 
+At implementation commit `ffad5e4`, the full clean-checkout unit suite passes
+**2,167 tests in 138 files** (21.26 seconds), including the actual production
+email renderer/Chromium capture fixtures. The final combined targeted database
+run passes **321 assertions in seven suites**. Local security advisors report
+no warning/error findings. Typecheck, scoped warning-as-error lint, the full
+readability gate and `git diff --check` pass. The browser receipt above covers
+the production route and real local storage, not the public refusal journey.
+
 All invitation writers still need the shared transition lock and provider
 submission ordering proof. Evidence upload/write fencing and shared/live
 authority cases need wider coverage before public refusal is enabled. No
