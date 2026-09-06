@@ -84,6 +84,12 @@ same parent and draft. The existing 141-assertion cohort suite passes as well.
 The review unit suite passes 30 cases, including eight new token-chain cases;
 typecheck, scoped lint and local security advisors pass.
 
+At implementation commit `4c1e606`, all **2,147 unit tests in 136 files**
+pass from the clean checkout (24.10 seconds). Both targeted production-build
+browser cases pass in 23.0 seconds without skips or retries, including the
+actual local mail/activation/sign-in/review/acceptance journey. Only the mail
+provider is replaced by the loopback fixture. No hosted action was taken.
+
 This does not yet establish the cross-version contact lock, concurrent refusal
 insertion/provider-submit ordering, or complete refusal transaction. Those must
 be integrated with issuance, mail and cleanup before release. No refusal UI is
