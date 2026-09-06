@@ -36,6 +36,7 @@ select public.sign_own_upload_artifact_v1('76200000-0000-4000-8000-000000000001'
  (select body_sha256 from public.consent_artifacts where artifact_key='consent.upload-self' and version=1),
  array['own-adult-dna'],1,1,1,1,1,repeat('b',64));
 create temporary table role_upload as select pg_temp.issue_role_upload() receipt;
+grant select on role_upload to service_role;
 select throws_ok($$update public.upload_sessions set declared_format=null
  where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,
  '23514',null,'token-bound sessions require a non-null declared format');
@@ -84,6 +85,50 @@ reset role;
 select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
  'uploaded','the insert and bearer consumption commit as one transaction');
 -- A second legitimate upload provides a fresh unused bearer for revocation tests.
+update role_upload set receipt=pg_temp.issue_role_upload();
+select pg_temp.set_upload_claims();
+savepoint provider_probe;
+set local role inherit_upload_only;
+select lives_ok($$insert into storage.objects(bucket_id,name,metadata)
+ values('genomes',current_setting('request.jwt.claims')::jsonb->>'staging_key','{"contentLength":8,"mimetype":"application/octet-stream"}')$$,
+ 'the provider permission probe accepts its actual declared-length metadata');
+reset role;
+select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ 'uploaded','even a direct committed probe-shaped insert consumes its bearer');
+rollback to provider_probe;
+select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ 'issued','the provider probe rollback restores the unconsumed session');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+set local role service_role;
+select throws_ok($$insert into storage.objects(bucket_id,name,owner_id,metadata)
+ values('genomes',(select receipt->>'stagingKey' from role_upload),'76200000-0000-4000-8000-000000000001','{"size":7}')$$,
+ '42501',null,'elevated completion rejects an incomplete body');
+select throws_ok($$insert into storage.objects(bucket_id,name,metadata)
+ values('genomes',(select receipt->>'stagingKey' from role_upload),'{"size":8}')$$,
+ '42501',null,'elevated completion must preserve the exact uploader owner');
+reset role;
+update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
+ where account_id='76200000-0000-4000-8000-000000000001' and consent_type='upload_class';
+set local role service_role;
+select throws_ok($$insert into storage.objects(bucket_id,name,owner_id,metadata)
+ values('genomes',(select receipt->>'stagingKey' from role_upload),'76200000-0000-4000-8000-000000000001','{"size":8}')$$,
+ '42501','upload_unavailable','elevated completion rechecks consent withdrawn after the probe');
+reset role;
+update public.subject_consents set revoked_at=null,revocation_reason=null
+ where account_id='76200000-0000-4000-8000-000000000001' and consent_type='upload_class';
+set local role service_role;
+select lives_ok($$insert into storage.objects(bucket_id,name,owner_id,metadata)
+ values('genomes',(select receipt->>'stagingKey' from role_upload),'76200000-0000-4000-8000-000000000001','{"size":8}')$$,
+ 'elevated final insertion succeeds with exact bytes and current authority');
+select throws_ok($$update storage.objects set metadata='{"size":9}'
+ where name=(select receipt->>'stagingKey' from role_upload) and bucket_id='genomes'$$,
+ '42501',null,'even elevated writes cannot replace completed staging content');
+select throws_ok($$update storage.objects set name=gen_random_uuid()::text
+ where name=(select receipt->>'stagingKey' from role_upload) and bucket_id='genomes'$$,
+ '42501',null,'elevated renaming cannot bypass the staging immutability check');
+reset role;
+select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ 'uploaded','elevated completion durably consumes the exact session');
 update role_upload set receipt=pg_temp.issue_role_upload();
 select pg_temp.set_upload_claims();
 update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'

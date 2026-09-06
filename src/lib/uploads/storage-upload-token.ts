@@ -66,8 +66,11 @@ export function mintStorageUploadToken(input: StorageUploadAuthorization, now = 
     const authorization = storageUploadAuthorizationSchema.parse(input);
     if (!Number.isSafeInteger(now) || now <= 0) throw new UploadTokenUnavailable();
     const issuedAt = Math.floor(now / 1000);
-    const expiresAt = Math.floor(Date.parse(authorization.expiresAt) / 1000);
-    if (!Number.isSafeInteger(expiresAt) || expiresAt <= issuedAt || expiresAt - issuedAt > 30 * 60) {
+    const databaseExpiry = Math.floor(Date.parse(authorization.expiresAt) / 1000);
+    // Database and application clocks can straddle a second boundary. Always
+    // shorten the bearer to both ceilings; never extend its persisted lease.
+    const expiresAt = Math.min(databaseExpiry, issuedAt + 30 * 60);
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= issuedAt) {
       throw new UploadTokenUnavailable();
     }
     const { kid, key } = signingKey();

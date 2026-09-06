@@ -209,15 +209,70 @@ create policy genomes_upload_token_create_only on storage.objects for insert to 
 with check(
  bucket_id='genomes'
  and name=(current_setting('request.jwt.claims',true)::jsonb->>'staging_key')
- and case when jsonb_typeof(metadata->'size')='number'
-  then (metadata->>'size')::numeric>0
-   and (metadata->>'size')::numeric<=(current_setting('request.jwt.claims',true)::jsonb->>'maximum_bytes')::numeric
+ and case when jsonb_typeof(coalesce(metadata->'size',metadata->'contentLength'))='number'
+  then coalesce(metadata->>'size',metadata->>'contentLength')::numeric>0
+   and coalesce(metadata->>'size',metadata->>'contentLength')::numeric<=(current_setting('request.jwt.claims',true)::jsonb->>'maximum_bytes')::numeric
   else false end
  and private.authorize_storage_upload_insert()
 );
 
--- A successful Storage INSERT consumes only this bearer. The trigger runs in
--- the same transaction, including Storage's rollback-only permission probe.
+-- Storage's permission probe rolls back and contains contentLength, not size.
+-- Its completed-object write uses a service payload. Recheck the stored live
+-- authority there and consume the exact session with the metadata commit.
+-- The upload role does not gain a new callable function or any table reads.
+create function private.guard_storage_upload_write()
+returns trigger language plpgsql security definer set search_path=pg_catalog,private
+as $function$
+declare u public.upload_sessions%rowtype; locked_u public.upload_sessions%rowtype;
+ c jsonb; caller_role text:=auth.jwt()->>'role';
+begin
+ if tg_op='UPDATE' then
+  perform 1 from public.upload_sessions where token_jti is not null
+   and storage_bucket=old.bucket_id and staging_object_name=old.name;
+  if found then raise exception using errcode='42501',message='upload_unavailable'; end if;
+ end if;
+ select * into u from public.upload_sessions where token_jti is not null
+  and storage_bucket=new.bucket_id and staging_object_name=new.name;
+ if u.id is null then return new; end if;
+ if tg_op<>'INSERT' or coalesce(caller_role,'') not in ('inherit_upload_only','service_role') then
+  raise exception using errcode='42501',message='upload_unavailable'; end if;
+ if caller_role='inherit_upload_only' and not private.authorize_storage_upload_insert() then
+  raise exception using errcode='42501',message='upload_unavailable'; end if;
+ if caller_role='inherit_upload_only' and not (new.metadata ? 'size') then
+  -- The AFTER trigger consumes this caller-role INSERT after its RLS check.
+  return new;
+ end if;
+ -- Acquire account/session/subject/consent locks before the upload-row lock,
+ -- consistent with issuance and the caller-role permission predicate.
+ c:=private.own_upload_store_authority_v1(u.account_id,u.auth_session_id,u.subject_id);
+ select * into locked_u from public.upload_sessions where id=u.id for update;
+ if to_jsonb(locked_u) is distinct from to_jsonb(u)
+  or u.status<>'issued' or u.consumed_at is not null or u.expires_at<=clock_timestamp()
+  or jsonb_typeof(new.metadata->'size') is distinct from 'number'
+  or (new.metadata->>'size')::numeric is distinct from u.expected_size::numeric
+  or (caller_role='service_role' and new.owner_id is distinct from u.account_id::text)
+  or c is distinct from jsonb_build_object('accountRevision',u.account_revision,
+   'authSessionRevision',u.account_auth_session_revision,'jurisdictionRevision',u.jurisdiction_revision,
+   'subjectBindingRevision',u.subject_binding_revision,'accountBindingRevision',u.account_binding_revision,
+   'subjectLifecycleRevision',u.subject_lifecycle_revision,'originatingSessionRevision',u.originating_session_revision,
+   'uploadConsentId',u.upload_consent_id) then
+  raise exception using errcode='42501',message='upload_unavailable'; end if;
+ if caller_role='service_role' then
+  update public.upload_sessions set status='uploaded' where id=u.id;
+ end if;
+ return new;
+exception when insufficient_privilege or object_not_in_prerequisite_state or invalid_text_representation or numeric_value_out_of_range then
+ raise exception using errcode='42501',message='upload_unavailable';
+end;
+$function$;
+revoke all on function private.guard_storage_upload_write() from public,anon,authenticated,inherit_upload_only;
+grant execute on function private.guard_storage_upload_write() to service_role;
+-- Lock live authority before the object INSERT acquires a unique-index lock.
+-- Otherwise an in-flight completion can deadlock with a new permission probe
+-- that holds the account lock while waiting on that same object index entry.
+create trigger inherit_guard_storage_upload before insert or update on storage.objects
+ for each row execute function private.guard_storage_upload_write();
+
 create function private.consume_storage_upload_insert()
 returns trigger language plpgsql security definer set search_path=pg_catalog,private
 as $function$

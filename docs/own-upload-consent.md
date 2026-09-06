@@ -155,22 +155,79 @@ Verification in this checkpoint:
 - Generated public types include only the changed upload-session table and
   new issuer RPC; unrelated local schema differences are excluded.
 
-**Provider integration issue discovered during verification:** the installed
+**Provider integration issue discovered in that checkpoint:** the installed
 Storage implementation at `/app/dist/storage/uploader.js` uses
 `metadata.contentLength` in its rollback-only permission probe, whereas this
-draft policy requires completed-object `metadata.size`. Its final metadata
+initial policy required completed-object `metadata.size`. Its final metadata
 write uses `db.asSuperUser()`; the connection implementation replaces the
-caller payload with the superuser payload. Therefore the current upload-role
-trigger proves consumption only for a direct SQL INSERT, not the real HTTP
-upload sequence. The draft is deliberately not connected or released.
-Do not interpret the passing SQL suite as provider replay protection.
+caller payload with the superuser payload. The original upload-role trigger
+therefore proved consumption only for a direct SQL INSERT. That gap prompted
+the provider integration work below; it was not released to users.
 
-Before cutover, test the provider's actual probe and final-write sequence,
-enforce completion-time live authority and one-time consumption there, and
-verify denial/cleanup on interrupted or competing uploads. Verify ES256
-acceptance through the Storage HTTP endpoint with a registered test key.
-No HTTP upload or file-byte proof has been obtained for this new bearer yet.
-This is an implementation gap, not a request for more operator access.
+### Provider HTTP integration checkpoint (2026-09-06; unreleased)
+
+The policy now recognizes the provider's declared-length permission probe.
+A private BEFORE trigger rechecks the stored live authority and exact byte
+count/owner at the elevated completed-object write, consumes its session in
+that transaction, and refuses changes to completed staging objects. Caller-
+role inserts consume in an AFTER trigger, after RLS. Both trigger functions
+remain unexposed and non-callable by the upload role; its two approved helper
+grants and lack of table reads are unchanged.
+
+An initial AFTER-only completion check caused real HTTP race failures and
+database deadlocks. Moving the elevated authority lock ahead of the object
+insert's unique-index lock fixed that ordering. The regression harness now
+forces both real permission probes to finish before allowing either competing
+transfer to proceed; it does not replace the provider's authorization result.
+
+`scripts/storage-upload-http.mts` starts the installed Storage HTTP app
+(local image `public.ecr.aws/supabase/storage-api:v1.70.3`) in a separate
+process inside the local container, listening on an ephemeral loopback port.
+Only that process loads the ephemeral ES256 public key. It uses the actual
+application signer, provider HTTP routes, RLS, metadata writes and file backend.
+It does not restart shared services, alter Auth's signing keys or configure
+hosted credentials. The local issuer configuration is initialized explicitly.
+Accounts and artifact decisions are synthetic setup, not UI journey evidence.
+
+Verified:
+
+- The application bearer transfers synthetic non-genetic bytes over HTTP;
+  an exact privileged fixture read confirms the stored content. Wrong bucket,
+  key, body size, replay, upsert, read, list and deletion attempts are denied.
+- All five forced two-request races produce exactly one successful upload.
+  The winner's content is unchanged; backend HEAD confirms that the other
+  prepared version is physically absent, not merely missing from metadata.
+- Withdrawal after issuance denies a new request. Separately, a streaming
+  request pauses after its actual permission probe; withdrawing consent then
+  denies completion, leaves no object row and physically removes that version.
+- Provider cleanup removes the run's exact object keys, followed by physical
+  absence checks for every prepared version. One one-byte orphan from an
+  earlier interrupted test was independently located by its synthetic fixture
+  binding, removed through the backend and confirmed absent. No real genome
+  or existing account file was read or removed.
+- The three own-upload SQL suites pass 113 assertions (41 for Storage),
+  including probe rollback, elevated completion, incomplete body/owner denial,
+  withdrawal after probe and completed-object mutation/rename denial.
+- All 22 signer unit tests pass. A measured small database/host clock offset
+  exposed a second-boundary expiry refusal; minting now caps the JWT at the
+  earlier of database expiry and issuance plus 30 minutes, never extending
+  either ceiling. Expired leases still fail.
+
+Run locally with:
+
+```sh
+NODE_PATH=./node_modules/next/dist/compiled node --conditions=react-server --import tsx scripts/storage-upload-http.mts
+```
+
+This proves this local provider's standard HTTP upload route, not hosted key
+provisioning, queued-cleanup timing, the legacy resumable route, finalization,
+analysis consent or file-to-report browser acceptance. The harness disables
+queue dispatch only in its isolated process so physical cleanup is synchronous;
+hosted cleanup behavior still needs separate verification. Synthetic account,
+consent and upload-session receipts remain in the shared local test database.
+The browser and API have not been switched to the new transport. Next connect
+canonical issuance and fresh-key finalization, then explicit purpose consent
+and the real file-to-report journey. Full-plan acceptance is still 18/65.
 
 ### Remaining release work
 

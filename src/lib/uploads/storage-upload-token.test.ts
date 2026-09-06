@@ -56,9 +56,14 @@ describe("dedicated Storage upload JWT signing", () => {
     }, now + 100));
     expect(token.payload.exp).toBe(now / 1000 + 71);
   });
-  it.each([0, -1, 1_801_000, 7_200_000])("refuses invalid or overlong expiry offset %s", offset => {
+  it.each([0, -1])("refuses an expired lease offset %s", offset => {
     const expiresAt = new Date(now + offset).toISOString();
     expect(() => mintStorageUploadToken({ ...authorization, expiresAt }, now)).toThrow(UploadTokenUnavailable);
+  });
+  it.each([1_801_000, 7_200_000])("shortens a later database ceiling %s to a maximum 30-minute bearer", offset => {
+    const token = decode(mintStorageUploadToken({ ...authorization, expiresAt: new Date(now + offset).toISOString() }, now));
+    expect(token.payload.exp).toBe(now / 1000 + 1800);
+    expect(token.payload.exp).toBeLessThanOrEqual((now + offset) / 1000);
   });
   it("refuses extra claims rather than minting a caller-selected audience or role", () => {
     for (const extra of [{ role: "service_role" }, { aud: "authenticated" }, { refresh_token: "not-allowed" },
