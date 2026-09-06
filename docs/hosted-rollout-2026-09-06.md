@@ -87,3 +87,81 @@ source facts; they do not assert that the unfinished embryo writer or consent
 journey is enabled. Historical missing source facts remain explicitly unknown,
 and independently supported results remain available. No other G gate is
 promoted by this release.
+
+## PR67: three behavior-report source corrections
+
+Reviewed head `1c2b1c70d67293579a88f4e03cc4269867e1e884` passed full CI
+`34003548461`: 1,851 unit tests in 124 files, 812 database assertions in
+22 suites, and 142 browser tests with no skips or retries. The three new
+browser cases ingest an explicitly synthetic VCF and verify actual report
+calls, source context, citation dates and the existing sensitive-result opt-in.
+Independent scientific verification and exact source-object hashes are in
+`docs/sources/reviews/batch-02/independent-correction-review.md`.
+
+PR67 merged as `1a2f8a494f2d483d1803190ad58380ff67f333ae`.
+Production deployment `dpl_mw5CLhiRnxmB6zvdGbH5aVtW5dgb` is READY at that
+exact commit, with `inherit.bio` and `www.inherit.bio` verified in its alias
+list. The Next.js build took about 32 seconds.
+
+### Exact catalog publication
+
+The following existing public report objects were updated at
+`2026-09-06T01:32:47.811873Z`:
+
+- `stress-anxiety-comt-rs4680`: distinguish enzyme findings and the particular
+  personality study from an unsupported personal stress or anxiety advantage.
+- `mood-stress-resilience-bdnf-rs6265`: distinguish cell experiments from human
+  outcomes and explain the older positive review and larger nonconfirmation.
+- `problem-substance-use-faah-rs324420`: restore the combined drug-or-alcohol
+  questionnaire outcome and avoid unsupported heterozygote or brain-level claims.
+
+All seed fields in the pre-publication objects matched the existing live
+catalog before writing. A short, table-locked transaction checks full old
+rows, accepts an already-correct new row as a no-write replay, refuses other
+drift and verifies full new rows except their changed `updated_at` timestamp.
+Only title, summary, interpretations within variants, citations and
+`updated_at` change. Slugs, coordinates, genotype keys, evidence levels,
+categories, original publication dates and compliance fields remain unchanged.
+
+- Publication SQL SHA256:
+  `55a91dc93a8b18245f0209f74c7023302ba8ef262896527ab9e7e840f3c94a9c`.
+- Local approved before/after JSON SHA256:
+  `ed564176ac6872fdbfe8d913374a3831e50aedebdacc5858f501dcd12cf5f2b9`.
+- Independent read-only rollout review by `report_evidence_implementation`
+  found no blocking defect on 2026-09-06. This is an agent review, not a
+  clinical sign-off.
+- Six local SQL checks passed: exact publication, zero-write replay, title
+  drift refusal, metadata drift refusal, missing-target refusal and drift
+  after publication refusal. Each used a temporary catalog clone and rolled
+  back; no public local table was mutated or database reset.
+- A separate hosted read verified all three exact new rows and a catalog
+  total of 162. The other 159 full rows retained fingerprint
+  `47d3bea9ddf35bf787de6e3981464663` before and after.
+- All three source files remain. A digest over ID, status, build, variant
+  count and processing start/finish timestamps was unchanged:
+  `b43e5a371344cb59431833188cf8d856`. No individual file metadata was exported.
+
+No file, account, evidence tier, consent, email queue or changelog row was
+modified. These are corrections to existing reports, not new reports,
+evidence relabels or withdrawals. No new gate was added to result access.
+
+### Rendered verification and boundaries
+
+After production publication, the existing signed-in library showed the
+corrected BDNF title and summary. Following its actual link opened the revised
+detail with all three expected PubMed links, three `2026-09-06` source-read
+dates and all four study-context fields for each source. The file did not
+cover this position; this live check establishes the catalog-to-page path,
+not a personal genotype result. No reveal action or file deletion was used.
+The three covered-result paths were instead verified using the synthetic
+fixture in the full production-build CI browser suite.
+
+A deployment-scoped error/fatal count scan from `2026-09-06T01:32:00Z` through
+the immediate checks returned no matching entries. This is only a short
+smoke check, not long-term monitoring. Deployment and database skills guided
+the bounded rollout; full-story verification kept catalog publication and
+actual page rendering separate from a green preview build.
+
+Full-plan acceptance remains **18/65**. The source inventory and registry
+validator are foundations, not a complete rendered claim gate; G1.11 and
+G4.7 remain unaccepted.
