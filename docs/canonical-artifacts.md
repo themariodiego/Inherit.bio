@@ -127,6 +127,11 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 
 ## Database schema and enums
 
+The operator-approved exception in ADR 0023 permits only the zero-argument
+boolean Storage predicate described there, in addition to the existing live
+session helper. It overrides earlier sole-helper wording; no table-read grant
+or arbitrary-target helper is authorized.
+
 `docs/schema-requirements.md` is the pre-migration request ledger. Once a requirement is implemented, the ordered SQL in `supabase/migrations/` is authoritative. Generated Supabase TypeScript types are a mirror, never a schema authority. The Platform workstream is the sole migration author.
 
 | Item | Canonical home |

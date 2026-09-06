@@ -1,5 +1,30 @@
 # Inherit v2 schema requirements
 
+## Approved upload-only predicate exception (2026-09-06)
+
+The operator approved one additional private, zero-argument boolean check
+for the upload-only Storage policy. It derives the exact account, originating
+session, upload ID, bearer ID and staging key only from validated JWT claims;
+it returns no record or personal data. It is callable by `inherit_upload_only`
+and the service role only, not `anon` or `authenticated`. This is not a table
+SELECT grant or a generic target-authorizing RPC.
+
+Add a private, RLS-protected singleton upload configuration with the exact
+deployment Auth issuer; no implicit issuer inference or production key is
+seeded. The live-session check returns only authorization and revisions.
+Session revision is the provider's stored refresh-token counter plus one
+(a null initial counter maps to one); it is not a token's bearer ID.
+
+Extend existing upload sessions additively with the Storage bucket, declared
+format, upload bearer ID and immutable account/session/subject/lifecycle/
+consent snapshots. Legacy rows remain unchanged and cannot acquire the new
+role's authority. New issuance requires the exact current upload-class store
+grant and insurance artifact; analysis permission is deliberately not implied.
+The new Storage policy creates only its exact staging object in `genomes`.
+Its role has no SELECT, UPDATE, DELETE or application-table privileges.
+Activation of the new endpoint and retirement of legacy transport must be one
+reviewed integration release; this migration alone is not that release.
+
 Status: binding implementation checklist
 
 This document translates `docs/route-register.json`, `docs/retention.md`, and

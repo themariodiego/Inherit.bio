@@ -119,6 +119,55 @@ This is not production evidence. No hosted changes or real account file
 operations were performed. No new PR is open for this branch. The full
 regression suite has not yet run against an isolated clean database.
 
+### Upload-only authorization checkpoint (2026-09-06; unreleased)
+
+The operator approved the private zero-argument boolean permission check in
+ADR 0023. That exception is recorded in the canonical artifacts and route
+register. It does not grant the upload role table reads or allow arbitrary
+target parameters.
+
+The local implementation now includes an ES256 server-only signer with a
+closed receipt/claim shape, a 30-minute ceiling and no service-key fallback.
+The additive database migration issues an exact-key upload session only after
+checking live account/session, adult account context, both current artifact
+decisions and store-only consent. It snapshots the relevant revisions. The
+new role has Storage INSERT permission only; the private predicate rechecks
+those snapshots and current consent. No signing key has been provisioned or
+rotated, and neither the API nor the browser uses this path yet.
+
+Verification in this checkpoint:
+
+- 22 signer unit tests pass, including actual public-key signature
+  verification, invalid/private-public-mismatched keys, expiry limits,
+  closed claims, issuer restrictions and key rotation.
+- 31 new rollback-only SQL assertions pass. Together with the two existing
+  own-upload suites, all 103 database assertions pass on the shared local
+  database without deleting earlier fixtures. The new assertions cover
+  authorization, exact bucket/key/size, replay, revocation, changed revisions,
+  account suspension, missing sessions and denial of table/object reads,
+  updates and deletes. A non-null declared-format snapshot is enforced.
+- A focused three-file unit run passes 59 tests; typecheck and scoped lint
+  exit zero. This is not a new full-unit or full-browser regression receipt.
+- Generated public types include only the changed upload-session table and
+  new issuer RPC; unrelated local schema differences are excluded.
+
+**Provider integration issue discovered during verification:** the installed
+Storage implementation at `/app/dist/storage/uploader.js` uses
+`metadata.contentLength` in its rollback-only permission probe, whereas this
+draft policy requires completed-object `metadata.size`. Its final metadata
+write uses `db.asSuperUser()`; the connection implementation replaces the
+caller payload with the superuser payload. Therefore the current upload-role
+trigger proves consumption only for a direct SQL INSERT, not the real HTTP
+upload sequence. The draft is deliberately not connected or released.
+Do not interpret the passing SQL suite as provider replay protection.
+
+Before cutover, test the provider's actual probe and final-write sequence,
+enforce completion-time live authority and one-time consumption there, and
+verify denial/cleanup on interrupted or competing uploads. Verify ES256
+acceptance through the Storage HTTP endpoint with a registered test key.
+No HTTP upload or file-byte proof has been obtained for this new bearer yet.
+This is an implementation gap, not a request for more operator access.
+
 ### Remaining release work
 
 1. Connect the original signup age/jurisdiction contract. Initial completion

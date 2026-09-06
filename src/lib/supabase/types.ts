@@ -7136,51 +7136,84 @@ export type Database = {
       }
       upload_sessions: {
         Row: {
+          account_auth_session_revision: number | null
+          account_binding_revision: number | null
           account_id: string
+          account_revision: number | null
           auth_session_id: string
           cohort_id: string | null
           consumed_at: string | null
           content_type: string
           created_at: string
-          expected_sha256: string
+          declared_format: string | null
+          expected_sha256: string | null
           expected_size: number
           expires_at: string
           id: string
+          jurisdiction_revision: number | null
+          originating_session_revision: number | null
           staging_object_name: string
           status: string
+          storage_bucket: string
+          subject_binding_revision: number | null
           subject_id: string | null
+          subject_lifecycle_revision: number | null
+          token_jti: string | null
+          upload_consent_id: string | null
           upload_revision: number
         }
         Insert: {
+          account_auth_session_revision?: number | null
+          account_binding_revision?: number | null
           account_id: string
+          account_revision?: number | null
           auth_session_id: string
           cohort_id?: string | null
           consumed_at?: string | null
           content_type: string
           created_at?: string
-          expected_sha256: string
+          declared_format?: string | null
+          expected_sha256?: string | null
           expected_size: number
           expires_at: string
           id?: string
+          jurisdiction_revision?: number | null
+          originating_session_revision?: number | null
           staging_object_name: string
           status?: string
+          storage_bucket?: string
+          subject_binding_revision?: number | null
           subject_id?: string | null
+          subject_lifecycle_revision?: number | null
+          token_jti?: string | null
+          upload_consent_id?: string | null
           upload_revision: number
         }
         Update: {
+          account_auth_session_revision?: number | null
+          account_binding_revision?: number | null
           account_id?: string
+          account_revision?: number | null
           auth_session_id?: string
           cohort_id?: string | null
           consumed_at?: string | null
           content_type?: string
           created_at?: string
-          expected_sha256?: string
+          declared_format?: string | null
+          expected_sha256?: string | null
           expected_size?: number
           expires_at?: string
           id?: string
+          jurisdiction_revision?: number | null
+          originating_session_revision?: number | null
           staging_object_name?: string
           status?: string
+          storage_bucket?: string
+          subject_binding_revision?: number | null
           subject_id?: string | null
+          subject_lifecycle_revision?: number | null
+          token_jti?: string | null
+          upload_consent_id?: string | null
           upload_revision?: number
         }
         Relationships: [
@@ -7196,6 +7229,13 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upload_sessions_upload_consent_id_fkey"
+            columns: ["upload_consent_id"]
+            isOneToOne: false
+            referencedRelation: "subject_consents"
             referencedColumns: ["id"]
           },
         ]
@@ -7987,6 +8027,17 @@ export type Database = {
         Args: {
           p_account_id: string
           p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      issue_own_storage_upload_v1: {
+        Args: {
+          p_account_id: string
+          p_declared_format: string
+          p_session_id: string
+          p_sha256: string
+          p_size_bytes: number
           p_subject_id: string
         }
         Returns: Json
