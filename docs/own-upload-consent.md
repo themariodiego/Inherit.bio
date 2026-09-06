@@ -303,6 +303,56 @@ Synthetic file metadata remains as test evidence after the harness removes its
 physical objects. Browser integration, actual report generation, crash cleanup
 and hosted provider behavior remain unverified. Acceptance stays **18/65**.
 
+### Interrupted-upload retention checkpoint (2026-09-06; unreleased)
+
+New dedicated-role sessions now register `upload.staging-2h` in the existing
+retention tables at issuance, with a fixed two-hour deadline and exact working
+object references. Claiming finalization adds its uncommitted copy reference;
+publishing the immutable file atomically cancels the staging phase and removes
+those working references. Existing uploads are not backfilled.
+
+The existing bodyless `POST /api/jobs/retention` now drains this independent
+queue. The database selects due work, invalidates the abandoned session,
+freezes its `upload-working` manifest and issues a five-minute claim. Retries
+and expired-worker recovery keep the same object addresses. The service
+rechecks the claim, removes only those exact Storage objects through the
+provider, and finishes only after a separate zero-residual metadata check.
+Only then are working references and the upload session deleted. Retention
+control records remain nonauthorizing completion evidence. A Storage trigger
+consults those frozen addresses to refuse delayed writes after session purge.
+No bucket listing, prefix deletion, file read, email or analytic job is needed.
+
+Verified so far:
+
+- The focused worker/route unit suites pass 14 assertions, including strict
+  manifests, fresh claims, failed deletion/authorization/commit, bounded
+  batches and refusal of a request body lacking Content-Length.
+- The new rollback-only SQL suite passes 19 assertions for registration,
+  frozen references, revoked finalization, retry, expired claim recovery,
+  premature completion denial, zero working rows and delayed-write refusal.
+  Two more publication assertions verify cancellation and reference removal.
+- The real local provider harness passes a simulated cleanup-worker crash
+  after an unfinished copy. A new claim recovers the same manifest, both
+  staging and copy are physically absent after deletion, and only then is
+  the working session removed. Existing upload races, revocation, multi-range
+  finalization, gzip and malformed-source checks continue to pass.
+- Application and standalone harness typechecks and scoped lint pass. The
+  local Supabase security advisor reports no issues.
+
+The local Docker runtime stopped between checks. Its existing Colima instance
+was restarted without a reset, then database/Storage health and the provider
+test were verified. No database fixture was purged to recover the runtime.
+
+This closes the missing cleanup executor, not deployment scheduling or the
+full retention acceptance gate. The existing retention route is POST-only in
+the canonical register and is not in `vercel.json`; a verified machine POST
+schedule remains required before release. No GET alias or unrelated job was
+added to work around that contract. Hosted queued physical-deletion timing,
+integration with the complete account/source purge graph, and broader clean-
+database regressions remain to be verified before shipping. The new migration
+was iterated on the local database without migration history; do not blindly
+reapply it. Acceptance remains **18/65**.
+
 ### Remaining release work
 
 1. Connect the original signup age/jurisdiction contract. Initial completion

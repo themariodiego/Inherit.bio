@@ -284,12 +284,47 @@ async function checkFinalization(bytes: Buffer, compressed: boolean, rejected = 
   const saved = JSON.parse(sql(`select json_build_object('raw',sha256,'decoded',source_sha256,'version',structural_validator_version,
     'name',original_name,'verified',single_logical_sample_verified_at is not null) from public.genome_files where id='${receipt.fileId}';`));
   assert.deepEqual(saved, { raw: evidence.rawSha256, decoded: evidence.decodedSha256, version: "single-logical-sample-v1", name: "Genome file", verified: true });
+  assert.equal(sql(`select status from public.retention_due_phases where retention_id='upload.staging-2h'
+    and target_id='${item.receipt.uploadId}';`), "cancelled");
   if (compressed) assert.notEqual(evidence.rawSha256, evidence.decodedSha256);
   assert.equal(sql(`select count(*) from public.worker_jobs where file_id='${receipt.fileId}';`), "0");
   assert.equal(sql(`select count(*) from public.purpose_grants where target_id='${fixture}';`), "0");
   assert.deepEqual(await provider({ probeVersions: begin.stagingKey }), { present: 0, absent: 1 });
   assert.deepEqual(await provider({ probeVersions: begin.finalKey }), { present: 1, absent: 0 });
   console.log(`PASS ${format}: complete hash/structure, fresh immutable file, exact saved evidence, zero analysis jobs`);
+}
+async function checkExpiredUploadCleanup(bytes: Buffer) {
+  const item = issue(bytes.length, bytes);
+  successful(await upload(item, { body: bytes.toString("base64") }), "abandoned-upload fixture stored");
+  const begin = JSON.parse(sql(`set role service_role; select public.begin_own_upload_finalization_v1(
+    '${account}','${session}','${item.receipt.uploadId}');`));
+  for (const key of [begin.stagingKey, begin.finalKey]) assert.match(key, /^[0-9a-f-]{36}$/);
+  assert.equal(begin.stagingKey, item.receipt.stagingKey); finalKeys.push(begin.finalKey);
+  successful(await provider({ method: "POST", path: "/object/copy", admin: true,
+    headers: { "Content-Type": "application/json" },
+    body: Buffer.from(JSON.stringify({ bucketId: "genomes", sourceKey: begin.stagingKey, destinationKey: begin.finalKey })).toString("base64") }), "unfinished final copy stored before simulated crash");
+  const version = sql(`select version from storage.objects where bucket_id='genomes' and name='${begin.finalKey}';`);
+  assert.equal((await provider({ observeCopy: { stagingKey: begin.stagingKey, finalKey: begin.finalKey, version } })).ready, true);
+  // Advance only this run's synthetic deadline, never a global retention queue.
+  sql(`update public.retention_due_phases set phase_deadline='1900-01-01' where retention_id='upload.staging-2h'
+    and target_id='${item.receipt.uploadId}';`);
+  const first = JSON.parse(sql(`set role service_role; select public.claim_own_upload_purge_v1(repeat('a',64));`));
+  assert.match(first.manifestId, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(first.objects.map((object: { objectName: string }) => object.objectName).sort(), [begin.stagingKey, begin.finalKey].sort());
+  sql(`update public.retention_due_phases set claim_expires_at=clock_timestamp()-interval '1 second'
+    where retention_id='upload.staging-2h' and target_id='${item.receipt.uploadId}';`);
+  const recovered = JSON.parse(sql(`set role service_role; select public.claim_own_upload_purge_v1(repeat('b',64));`));
+  assert.deepEqual(recovered, first, "a replacement worker retains the exact frozen object manifest");
+  assert.equal(sql(`set role service_role; select public.authorize_own_upload_purge_v1('${first.manifestId}',repeat('b',64));`), "t");
+  successful(await provider({ method: "DELETE", path: "/object/genomes", admin: true,
+    headers: { "Content-Type": "application/json" },
+    body: Buffer.from(JSON.stringify({ prefixes: [begin.stagingKey, begin.finalKey] })).toString("base64") }), "recovered cleanup removes both exact provider objects");
+  assert.equal(sql(`set role service_role; select public.finish_own_upload_purge_v1('${first.manifestId}',repeat('b',64));`), "t");
+  assert.equal(sql(`select count(*) from public.upload_sessions where id='${item.receipt.uploadId}';`), "0");
+  for (const key of [begin.stagingKey, begin.finalKey]) {
+    assert.deepEqual(await provider({ probeVersions: key }), { present: 0, absent: 1 });
+  }
+  console.log("PASS crashed cleanup worker recovered; staging/copy bytes physically absent and working session purged");
 }
 let ready = false;
 let primaryFailure = false;
@@ -338,6 +373,7 @@ try {
     Buffer.from(opaqueRow.toString().repeat(Math.ceil(INGEST_CHUNK_MAXIMUM_BYTES / opaqueRow.length)))]), false);
   await checkFinalization(gzipSync(single), true);
   await checkFinalization(Buffer.concat([single, Buffer.from("opaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\n".repeat(1500)), single]), false, true);
+  await checkExpiredUploadCleanup(single);
   const inFlight = issue();
   const admission = await upload(inFlight, { pause: true });
   assert.equal(admission.admitted, true, `real provider permission probe passed before consent withdrawal: ${JSON.stringify({status:admission.status,error:admission.error})}`);

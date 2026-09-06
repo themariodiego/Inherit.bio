@@ -7269,6 +7269,7 @@ export type Database = {
         Row: {
           created_at: string
           object_id: string
+          object_kind: string
           object_name: string
           state: string
           upload_session_id: string
@@ -7276,6 +7277,7 @@ export type Database = {
         Insert: {
           created_at?: string
           object_id: string
+          object_kind?: string
           object_name: string
           state: string
           upload_session_id: string
@@ -7283,6 +7285,7 @@ export type Database = {
         Update: {
           created_at?: string
           object_id?: string
+          object_kind?: string
           object_name?: string
           state?: string
           upload_session_id?: string
@@ -7291,7 +7294,7 @@ export type Database = {
           {
             foreignKeyName: "upload_staging_objects_upload_session_id_fkey"
             columns: ["upload_session_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "upload_sessions"
             referencedColumns: ["id"]
           },
@@ -8063,6 +8066,22 @@ export type Database = {
           p_upload_id: string
         }
         Returns: Json
+      }
+      claim_own_upload_purge_v1: {
+        Args: { p_claim_token_hash: string }
+        Returns: Json
+      }
+      authorize_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: boolean
+      }
+      finish_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: boolean
+      }
+      fail_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: undefined
       }
       authorize_own_upload_finalization_v1: {
         Args: {

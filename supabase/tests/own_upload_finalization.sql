@@ -90,6 +90,10 @@ delete from storage.objects where bucket_id='genomes' and name=(select receipt->
 select throws_ok($$select pg_temp.complete_finalize(repeat('c',64))$$,'42501','upload_unavailable','the browser hash cannot be replaced by a different attestation');
 create temporary table finalized_receipt as select pg_temp.complete_finalize() receipt;
 select is((select receipt->>'status' from finalized_receipt),'finalized_ready_for_processing','publication is ready for later processing, not an analysis claim');
+select is((select status from public.retention_due_phases where retention_id='upload.staging-2h'
+ and target_id=(select (receipt->>'uploadId')::uuid from role_upload)),'cancelled','the immutable publication cancels only its staging expiry phase');
+select is((select count(*) from public.upload_staging_objects where upload_session_id=(select (receipt->>'uploadId')::uuid from role_upload)),0::bigint,
+ 'published source is no longer a working object eligible for staging cleanup');
 select is((select count(*) from public.worker_jobs where file_id=(select (receipt->>'fileId')::uuid from finalized_receipt)),0::bigint,
  'finalization creates no processing job');
 select is((select count(*) from public.purpose_grants where target_id=(select id from upload_role_subject)),0::bigint,

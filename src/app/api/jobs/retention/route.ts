@@ -4,6 +4,7 @@ import { z } from "zod";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
+import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 
 export const maxDuration = 300;
 
@@ -35,7 +36,7 @@ function authorized(request: Request): boolean {
 function requestHasSelectors(request: Request): boolean {
   const url = new URL(request.url);
   return (
-    url.search.length > 0 ||
+    request.body !== null || url.search.length > 0 ||
     request.headers.has("transfer-encoding") ||
     Number(request.headers.get("content-length") ?? "0") > 0
   );
@@ -73,6 +74,12 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  // Independent due work: a failed mail/embryo queue must not strand uploads.
+  try {
+    const uploads = await drainOwnUploadCleanup(admin);
+    processed += uploads.processed; failed += uploads.failed;
+  } catch { failed++; }
 
   const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");
   if (refusalReceiptExpiryError) failed++;
