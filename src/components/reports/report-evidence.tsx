@@ -1,4 +1,6 @@
 import type { Citation } from "@/lib/genome/reports";
+import { Claim } from "@/components/claims/claim";
+import { registeredStudyContext } from "@/lib/claims/presentation";
 import { readStudyContext, STUDY_CONTEXT_FIELDS } from "@/lib/genome/study-context";
 import { STUDY_CONTEXT_LABELS, STUDY_CONTEXT_SCOPE, STUDY_CONTEXT_UNKNOWN } from "@/copy/reports/study-context";
 import { REPORT_CALL_STATES, validSourceReadDate, type ReportCallSummary } from "@/lib/genome/report-evidence";
@@ -23,7 +25,9 @@ export function ReportCallCoverage({ summary }: { summary: ReportCallSummary }) 
   );
 }
 
-export function CitationItem({ citation }: { citation: Citation }) {
+export function CitationItem({ citation, reportClaim }: { citation: Citation;
+  reportClaim?: { slug: string; sourceIds: readonly string[] };
+}) {
   const href = citation.pmid
     ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`
     : citation.doi ? `https://doi.org/${citation.doi}` : null;
@@ -44,13 +48,18 @@ export function CitationItem({ citation }: { citation: Citation }) {
         <div data-slot="study-context" className="space-y-2 pt-2">
           <p className="text-ink-muted">{STUDY_CONTEXT_SCOPE}</p>
           <dl className="space-y-3">
-            {STUDY_CONTEXT_FIELDS.map((field) => (
+            {STUDY_CONTEXT_FIELDS.map((field) => {
+              const fact = context[field];
+              const claim = reportClaim && fact ? registeredStudyContext(reportClaim.slug, citation.pmid, field, fact.text) : undefined;
+              return (
               <div key={field}>
                 <dt className="font-medium text-ink">{STUDY_CONTEXT_LABELS[field]}</dt>
-                <dd>{context[field]?.text ?? STUDY_CONTEXT_UNKNOWN}</dd>
+                <dd>{claim && reportClaim ? <Claim id={claim.claim_id} citationId={claim.evidence[0].citation}
+                  sourceIds={reportClaim.sourceIds} /> : fact?.text ?? STUDY_CONTEXT_UNKNOWN}</dd>
                 {context[field] ? <dd className="text-ink-muted text-xs">{context[field].locator}</dd> : null}
               </div>
-            ))}
+              );
+            })}
           </dl>
         </div>
       ) : null}

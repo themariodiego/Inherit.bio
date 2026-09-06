@@ -1,5 +1,24 @@
 # Test diff register
 
+Email receipt commit binding (2026-09-06): eight additional disposable-Git
+tests reject unstaged/staged fixture and audit-policy changes, untracked new
+presentation files, ignored source/config inputs, changed HEAD and output paths
+that resolve inside the checkout. Clean tracked inputs and known generated
+outputs remain valid. The capture now checks the complete checkout before
+rendering and receipt publication; its actual-render tests must run after
+committing inputs. No product source annotation or gate acceptance is implied.
+
+Production email capture (2026-09-06): ten new tests independently discover
+12 named exports across 11 mail files and render 27 explicit fixtures through
+the production mail renderer. All 54 body/subject observations have retained
+HTML or plain-text bytes, fixture inputs and SHA-256 receipts. Tests preserve
+real public catalog prose, reject missing/new exports and output overwrite,
+block outbound requests, compare standalone `tsx` and Vitest observations,
+retain the browser collector artifact, and require missing-channel/region/claim
+failures instead of a fabricated passing corpus. No existing assertions,
+production templates or canonical source records change. This adapter does
+not complete G1.11/G4.7; see `sources/email-renderer-capture.md`.
+
 Rendered-claim infrastructure (2026-09-06): the supplied-corpus audit now has
 82 pure tests, the actual DOM collector has 28 Chromium tests, and the
 independent capture planner has 14 tests including the current canonical
@@ -406,3 +425,36 @@ the subsequent array-agreement and full-report assertions. The first combined
 run exposed stale local ALDH2 template content; exactly two public template
 rows were advanced to reviewed main59 content with full preimages saved outside
 the repository. No private upload was reprocessed and no hosted data changed.
+
+# Source-linked report presentation — 2026-09-06
+
+Seven canonical-data tests bind 39 reviewed statements to the exact four
+template summaries and 35 non-null study-context fields. Nine new component
+tests render the production React components and collect their actual DOM in
+network-blocked Chromium. They assert verbatim statements, exact source sets,
+unique fragment targets, preserved legacy source details, visible reference
+numbering, raw/unregistered handling of changed hosted prose, and the scoped
+11-source Science index. A duplicate-source regression covers the complete
+legacy list before its visible/overflow split. These are not full corpus tests.
+
+The behavior-study browser suite now covers SLC45A2 alongside COMT, BDNF and
+FAAH. It uses the existing synthetic file's real no-call state for SLC45A2,
+not an invented genotype. Existing observed-call, six-section, study-context,
+locator and source-date assertions remain. Expected dates explicitly include
+the additional Ensembl position sources for FAAH and SLC45A2. New assertions
+check each registered summary/context and each reference target.
+
+The report-gate fixture now uses a UUID email instead of a fixed address;
+none of its five reveal/leak assertions changed. An initial reused-database
+run passed the four report cases but stopped on the old fixed-address account
+collision. After the fixture fix, all nine production-build browser cases
+passed without retries. Exactly four local public catalog rows were temporarily
+aligned with current seeds; exact full-row preimages were verified restored
+after both runs. No database reset or hosted/private-file operation occurred.
+
+Before integrating email capture, the full unit suite passed 1,999 tests in
+130 files. Typecheck, lint, template integrity, readability, name and secret
+gates passed. A separate visual check of the production-built Science page
+returned HTTP 200, eleven sources and no page errors or framework overlays.
+The combined branch's final CI is still required before release. These checks
+do not advance whole-plan acceptance beyond 18/65.

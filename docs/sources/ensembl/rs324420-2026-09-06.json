@@ -1,0 +1,41 @@
+{
+  "url": "https://rest.ensembl.org/vep/human/id/rs324420?content-type=application/json",
+  "readAt": "2026-09-06T02:13:14.550Z",
+  "httpStatus": 200,
+  "scope": "Selected unchanged fields and one unchanged transcript_consequences record; other annotations, clinical labels, frequencies and alternate placements omitted.",
+  "record": {
+    "id": "rs324420",
+    "assembly_name": "GRCh38",
+    "seq_region_name": "1",
+    "start": 46405089,
+    "end": 46405089,
+    "strand": 1,
+    "allele_string": "C/A"
+  },
+  "transcript_consequence": {
+    "cds_start": 385,
+    "biotype": "protein_coding",
+    "hgnc_id": "HGNC:3553",
+    "codons": "Cca/Aca",
+    "cdna_start": 417,
+    "cdna_end": 417,
+    "polyphen_prediction": "benign",
+    "amino_acids": "P/T",
+    "polyphen_score": 0.018,
+    "impact": "MODERATE",
+    "transcript_id": "ENST00000243167",
+    "gene_symbol_source": "HGNC",
+    "sift_score": 0.12,
+    "strand": 1,
+    "sift_prediction": "tolerated",
+    "consequence_terms": [
+      "missense_variant"
+    ],
+    "protein_start": 129,
+    "protein_end": 129,
+    "variant_allele": "A",
+    "gene_id": "ENSG00000117480",
+    "gene_symbol": "FAAH",
+    "cds_end": 385
+  }
+}
