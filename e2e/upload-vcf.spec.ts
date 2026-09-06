@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { createConfirmedUser, signIn } from "./helpers";
 
 // A5 — the GIAB HG001 chr20-22 subset uploads through the real UI, parses,
@@ -7,7 +8,7 @@ import { createConfirmedUser, signIn } from "./helpers";
 // (honest "what your file supports" labels) is asserted on the ancestry
 // page: chr20-22 has no MT/Y and nearly no AIM coverage.
 
-const USER = { email: "vcf-user@e2e.local", password: "e2e-vcf-pw" };
+const USER = { email: `vcf-user-${randomUUID()}@e2e.local`, password: "e2e-vcf-pw" };
 
 test.describe.configure({ mode: "serial" });
 
@@ -60,8 +61,28 @@ test("variant search by rsID returns genotype; genome browser displays variants 
   expect(await rows.count()).toBeGreaterThan(0);
   // The results table is one attributed claim block (X4) under the
   // four-level breadcrumb of brief §1.4, with the subject's full name.
-  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  const resultBlock = page.locator('section[aria-labelledby="results-heading"] [data-claim-block][data-subject-id]');
+  await expect(resultBlock).toHaveCount(1);
   await expect(page.locator("[data-claim-block] table")).toHaveCount(1);
+  const inputs = page.locator('[data-slot="browser-input-provenance"]');
+  await expect(inputs).toBeVisible();
+  await expect(inputs.locator('details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
+  await expect(inputs.locator('[data-slot="input-source"]')).toHaveCount(2);
+  await expect(inputs.locator('[data-claim-block][data-subject-id]')).toHaveCount(3);
+  await expect(page.locator('[data-claim-block][data-subject-id]')).toHaveCount(4);
+  for (const block of await inputs.locator('[data-claim-block]').all()) {
+    await expect(block).toHaveAttribute('data-subject-id', (await resultBlock.getAttribute('data-subject-id'))!);
+    await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
+  }
+  await expect(inputs.locator('[data-provenance="computed:genome/browser"] [data-slot="figure-value"]')).toHaveText(`read ${await rows.count()} of the ${await rows.count()} positions this needs`);
+  const rates = inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]');
+  await expect(rates).toHaveCount(2);
+  // The checked-in benchmark has 160,835 supported diploid SNP calls;
+  // its 26,295 other records are outside this rate, not failed DNA calls.
+  await expect(rates.first()).toHaveText('read 160,835 of the 160,835 positions this needs');
+  await expect(rates.last()).toHaveText((await rates.first().textContent())!);
+  await expect(inputs).toContainText('No change of genome coordinates was needed.');
+  await expect(inputs).toContainText('cannot verify where they came from');
   const name = (await page.locator('[data-slot="subject-name"]').textContent())?.trim();
   expect(name).toBeTruthy();
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(

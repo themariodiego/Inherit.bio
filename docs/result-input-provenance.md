@@ -19,6 +19,9 @@ observed once using the same array tokenization/row classifier and literal VCF
 call classifier as the parser. Counters distinguish called and missing supported
 point records, unsupported rows, failed source filters and interval records.
 They describe listed records, not unique genomic positions or assay coverage.
+Readable literal diploid SNPs do not need an rsID to count toward file quality.
+The report-observation wrapper still requires one; this does not expand report
+matching, variant-only inputs or reference-call inference.
 Ambiguous/multi-sample VCF structure has no one-sample read-rate claim.
 
 The snapshot records source-build declaration versus format assumption, target

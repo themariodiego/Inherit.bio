@@ -31,6 +31,15 @@ describe("input record counts use the parser's own row rules", () => {
     expect(parsed).toEqual(await parseVcf(lines(text)));
     expect(counts).toEqual({ called: 2, noCall: 1, failedFilter: 1, blocks: 1, unsupported: 2, singleSample: true, buildClaim: true });
   });
+  it.each([".", "local-position-id"])("counts readable point calls without an rsID (%s), without changing report inputs", async (id) => {
+    const unnamed = row.replace("rs671", id);
+    const text = [header, unnamed, unnamed.replace("0/0", "0/1"), unnamed.replace("0/0", "./."), unnamed.replace("PASS", "LowQual"), unnamed.replace("\tA\t", "\t<NON_REF>\t")].join("\n");
+    const counts = emptyReadCounts();
+    const parsed = await parseVcf(countInputLines(lines(text), "vcf", counts));
+    expect(parsed).toEqual(await parseVcf(lines(text)));
+    expect(parsed.observedCalls).toEqual([]);
+    expect(counts).toEqual({ called: 3, noCall: 1, failedFilter: 1, blocks: 1, unsupported: 0, singleSample: true, buildClaim: true });
+  });
   it.each(["##contig=<ID=chr2,length=242193529>", "##reference=unrecognised"])("does not certify an unrecognised build header: %s", async (claim) => {
     const counts = emptyReadCounts();
     await parseVcf(countInputLines(lines(`${claim}\n${row}`), "vcf", counts));

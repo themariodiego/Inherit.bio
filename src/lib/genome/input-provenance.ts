@@ -2,7 +2,7 @@ import type { Build, FileKind } from "./types";
 import { chromToNumber } from "./types";
 import { arrayFields, arrayRow, type ArrayKind } from "./parsers/array";
 import { buildFromHeader } from "./parsers/vcf";
-import { observedVcfCall } from "./observed-calls";
+import { observedVcfPointCall } from "./observed-calls";
 
 export const INPUT_PROVENANCE_VERSION = "listed-calls-v1";
 
@@ -58,7 +58,7 @@ export async function* countInputLines(lines: AsyncIterable<string>, kind: FileK
         if (columns.length !== 10 || chrom === null || !Number.isInteger(pos) || pos <= 0) counts.unsupported++;
         else if (/(?:^|;)END=|(?:^|;)SVLEN=/.test(columns[7]) || columns[8].split(":").includes("LEN") || columns[4].includes("<NON_REF>")) counts.blocks++;
         else {
-          const observed = observedVcfCall(columns, chrom, pos, 0);
+          const observed = observedVcfPointCall(columns, chrom, pos, 0);
           const gt = observed?.sourceGt;
           if (observed && gt && /^(?:\.|[01])[/|](?:\.|[01])$/.test(gt) && gt.includes(".")) counts.noCall++;
           else if (observed && observed.genotype !== "--") counts.called++;

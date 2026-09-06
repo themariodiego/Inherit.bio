@@ -22,7 +22,13 @@ function numeric(raw: string | undefined): number | null {
 
 /** Never interprets a symbolic ALT, interval anchor, absent row or multi-sample row. */
 export function observedVcfCall(f: string[], chrom: number, pos: number, line: number): ObservedCall | null {
-  if (f.length !== 10 || !/^rs[1-9]\d*$/i.test(f[2]) ||
+  if (!/^rs[1-9]\d*$/i.test(f[2] ?? "")) return null;
+  return observedVcfPointCall(f, chrom, pos, line);
+}
+
+/** File read quality does not require an rsID; report matching still does. */
+export function observedVcfPointCall(f: string[], chrom: number, pos: number, line: number): ObservedCall | null {
+  if (f.length !== 10 ||
       !/^[ACGT]$/.test(f[3]) || !/^[ACGT]$/.test(f[4]) || f[3] === f[4] ||
       /(?:^|;)(?:END|SVLEN)=/.test(f[7])) return null;
   const keys = f[8].split(":");
@@ -38,7 +44,7 @@ export function observedVcfCall(f: string[], chrom: number, pos: number, line: n
   const alleles = [f[3], f[4]];
   const genotype = validGt ? sourceGt.split(/[/|]/).map((index) => alleles[Number(index)]).sort().join("/") : "--";
   return {
-    line, rsid: Number(f[2].slice(2)), chrom, pos, ref: f[3], alt: f[4], genotype,
+    line, rsid: /^rs[1-9]\d*$/i.test(f[2]) ? Number(f[2].slice(2)) : null, chrom, pos, ref: f[3], alt: f[4], genotype,
     sourceGt, filter, sampleFilter, genotypeQuality: numeric(value("GQ")), depth: numeric(value("DP")),
     quality, usable: validGt && quality !== "failed",
   };
