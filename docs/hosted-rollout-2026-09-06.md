@@ -165,3 +165,76 @@ actual page rendering separate from a green preview build.
 Full-plan acceptance remains **18/65**. The source inventory and registry
 validator are foundations, not a complete rendered claim gate; G1.11 and
 G4.7 remain unaccepted.
+
+## PR68: SLC45A2 correction and rendered-claim collection
+
+Reviewed head `a632ac3005bb91cce8f1656491771cc89cc6a7b9` passed complete CI
+`34005278651`: 1,983 unit tests in 128 files, 812 database assertions across
+22 suites and 142 production-build browser tests, with no skips or retries.
+The browser suite completed at `2026-09-06T02:11:41Z`. Existing assertions,
+gates and access restrictions were not weakened.
+
+PR68 merged as `7308b0627167bb91043c5e6f369cb7a02606f101`. Production
+deployment `dpl_9DeCGjSrcDn2DMPusANZXk16wsy5` is READY at that exact merge,
+with both `inherit.bio` and `www.inherit.bio` aliases. Next.js build time was
+about 27 seconds, from epoch milliseconds `1788660769603` to `1788660796820`.
+
+### Exact one-report publication
+
+The existing `skin-uv-sensitivity-slc45a2` report was corrected at
+`2026-09-06T02:13:45.821783Z`. Only `summary`, `variants`, `citations` and the
+transaction-assigned `updated_at` changed. Identity, title, locus, allele
+keys, evidence, layer, status, publication dates and access metadata remain
+unchanged. This repairs the reversed pigment association; it does not add
+an ancestry inference, a heterozygote midpoint or a personal sunlight limit.
+
+The exact template object is bound to SHA-256
+`b16d453f7e716a188e107ee1b865c662de570e5d9be507b079afd805f717c6ba` by
+`docs/sources/reviews/batch-04/slc45a2-independent-review.md`. That is an
+independent agent source review, not human clinical sign-off.
+
+All live seed fields matched the main-branch preimage before publication.
+The update used full-row pre/postimages, short lock/statement timeouts,
+an exact target count, drift refusal, zero-write replay and bidirectional
+comparison of every unrelated catalog row. No custom catalog triggers
+were present. Operational publication review by agent
+`/root/report_science_coverage` independently approved the package and
+reproduced all six temporary-clone checks: exact update, replay, title drift,
+metadata drift, missing target and post-publication drift. The local shared
+catalog had 163 rows; those tests preserved all 162 unrelated local rows.
+They did not reset or mutate any public local table.
+
+Publication SQL SHA-256:
+`8a1856dae00a121d95f63fc4a2efef78b8b4c0e0e1d196b6a84a22b1002ffebb`.
+Approved full-row JSON SHA-256:
+`0355598e5680555faec76598aac76b6f2e27e161ee5bd9512cbcfe1c71eb4fe7`.
+
+Fresh hosted readback proved the complete postimage (excluding its assigned
+update timestamp). Hosted catalog count remained 162. The full-row fingerprint
+of the other 161 reports remained `10d8a8e4aa11ae7b5497104f4e53d6cf`.
+The existing all-file processing-state fingerprint remained
+`b43e5a371344cb59431833188cf8d856`, using the same file-field formula above.
+No user file, genotype, account, consent, mail or historical publication was
+changed. No new-report/evidence-relabel changelog event was invented for
+this ordinary correction.
+
+### Actual rendered verification
+
+The existing signed-in report library located the SLC45A2 report after
+turning off the results-only filter; it was not among that account's covered
+results. Its actual report link loaded the detail page with heading
+“Skin response to UV light”. A read-only DOM check confirmed the complete
+approved public summary verbatim, all three PMID links (29974532, 18483556,
+32966160), three source dates of `2026-09-06` and all four study-context labels
+for each source. No personal genotype was exported or exposed for this check.
+
+The deployment-scoped error/fatal count scan from `2026-09-06T02:13:16Z`
+through `2026-09-06T02:14:57Z` returned no entries. This is a bounded smoke
+check, not a first-hour or long-term monitoring claim. Database, deployment
+and verification skills guided the exact-row publication and separate live
+rendered check; no telemetry service was added.
+
+Full-plan acceptance remains **18/65**. Actual DOM collection and independent
+capture planning are merged, but canonical content population, production
+claim wrapping, complete renderer integration and the final claims gate
+remain unfinished. No acceptance credit is added by this release receipt.
