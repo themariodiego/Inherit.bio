@@ -8,6 +8,7 @@ import { adminClient, anonClient, createConfirmedUser, signIn, uploadOwnFileThro
 import { OWN_REPORT_CHOICES, OWN_REPORT_PURPOSES } from "../src/lib/uploads/own-report-purpose";
 import { subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { NOT_COVERED_VCF } from "../src/copy/reports/strings";
+import { INPUT_PROVENANCE_COPY } from "../src/copy/reports/input-provenance";
 
 const LIBRARY = "/genome/me/reports";
 const SLUG = "lactase-persistence-lct-rs4988235";
@@ -187,6 +188,11 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   await expect(page.getByText(NOT_COVERED_VCF, { exact: true })).toBeVisible();
   await expect(page.locator('[data-slot="report-skeleton"] h2')).toHaveCount(6);
   await expect(page.locator('a[href="https://pubmed.ncbi.nlm.nih.gov/11788828/"]').first()).toBeVisible();
+  const sourceFacts = page.locator('[data-slot="input-provenance"]');
+  await expect(sourceFacts).toContainText(INPUT_PROVENANCE_COPY.sameBuild);
+  await expect(sourceFacts).toContainText(INPUT_PROVENANCE_COPY.declared);
+  await expect(sourceFacts.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]'))
+    .toHaveText("read 5 of the 5 positions this needs");
   await page.screenshot({ path: test.info().outputPath("chosen-milk-sugar-report.png"), fullPage: true });
 
   const grants = await admin.from("purpose_grants").select("purpose,grant_id,revoked_at").eq("target_id", source.data!.subject_id);

@@ -1,6 +1,7 @@
 import "server-only";
 import type { Db } from "./load";
 import { readInputSnapshot, type InputProvenanceSnapshot } from "./input-provenance";
+import { loadCanonicalInputSources, type InputSourceContext } from "./canonical-input-sources";
 
 /** Display facts only: never source paths, file names, hashes or raw headers. */
 export interface InputSourceView {
@@ -12,12 +13,13 @@ export interface InputSourceView {
 }
 
 /** The caller must authorize the subject and purpose before this admin query. */
-export async function loadInputSources(db: Db, subjectId: string, fileIds: readonly string[]): Promise<InputSourceView[]> {
+export async function loadInputSources(db: Db, subjectId: string, fileIds: readonly string[],
+  context?: InputSourceContext): Promise<InputSourceView[]> {
   const ids = [...new Set(fileIds)].sort();
   const result: InputSourceView[] = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
     const { data, error } = await db.from("genome_files")
-      .select("id,file_type,status,processing_finished_at,input_provenance,input_source_sha256")
+      .select("id,file_type,status,processing_finished_at,input_provenance,input_source_sha256,single_logical_sample_verified_at")
       .eq("subject_id", subjectId).in("id", ids.slice(offset, offset + 100)).order("id");
     // IDs came from the authorized result read. A metadata outage is not a
     // reason to hide that supported result or invent a quality measurement.
@@ -26,10 +28,18 @@ export async function loadInputSources(db: Db, subjectId: string, fileIds: reado
       continue;
     }
     const byId = new Map((data ?? []).map((file) => [file.id, file]));
+    const modernIds = context ? ids.slice(offset, offset + 100).filter(id =>
+      byId.get(id)?.single_logical_sample_verified_at != null) : [];
+    const canonical = new Map((context ? await loadCanonicalInputSources(db, subjectId, modernIds, context) : [])
+      .map(source => [source.fileId, source]));
     for (const fileId of ids.slice(offset, offset + 100)) {
       const file = byId.get(fileId);
       if (!file) {
         result.push({ fileId, fileType: "unknown", processedAt: null, snapshot: null });
+        continue;
+      }
+      if (file.single_logical_sample_verified_at !== null) {
+        result.push(canonical.get(fileId) ?? { fileId, fileType: "unknown", processedAt: null, snapshot: null });
         continue;
       }
       const snapshot = readInputSnapshot(file.input_provenance, file.processing_finished_at, file.status, file.input_source_sha256);

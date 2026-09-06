@@ -76,7 +76,8 @@ export default async function GenomeDataPage(
       return meta ? [{ row, meta }] : [];
     })
     .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
-  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id));
+  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id),
+    { kind: "report", purpose: "reports.polygenic" });
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">

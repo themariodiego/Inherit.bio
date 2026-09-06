@@ -330,7 +330,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   // the outer read selected the track; never substitute that older set here.
   const checkedIds = outcome.checkedFileIds;
   const sourceFacts = await loadInputSources(admin, subject.id,
-    [...checkedIds, ...(showRegion ? [active.id] : [])]);
+    [...checkedIds, ...(showRegion ? [active.id] : [])], { kind: "prepared" });
   const tableInputs = sourceFacts.filter((source) => checkedIds.includes(source.fileId))
     .map((source) => ({ ...source, hasResultRecord: outcome.inputFileIds.includes(source.fileId) }));
   const inputState = hits.some((hit) => hit.conflict) ? "conflict"

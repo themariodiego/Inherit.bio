@@ -140,7 +140,8 @@ export default async function ReportsPage(
     isFamily: person !== null,
   }, templates.filter(t => (t.layer ?? "estimate") === "estimate"), files,
   layerCalls.get("estimate")?.conflicts ?? new Set(), previewContributors);
-  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat());
+  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat(),
+    { kind: "report", purpose: "reports.polygenic" });
 
   const subjectParams = { subject: subject.routeSegment };
 

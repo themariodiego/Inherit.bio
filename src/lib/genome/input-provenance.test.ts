@@ -67,6 +67,7 @@ describe("completion-bound provenance", () => {
   it("refuses stale hash, completion or processing state", () => {
     expect(readInputSnapshot(snapshot, snapshot.completedAt, "parsing", digest)).toBeNull();
     expect(readInputSnapshot(snapshot, snapshot.completedAt, "failed", digest)).toBeNull();
+    expect(readInputSnapshot(snapshot, snapshot.completedAt, "stored", digest)).toBeNull();
     expect(readInputSnapshot(snapshot, snapshot.completedAt, "annotated", "b".repeat(64))).toBeNull();
     expect(readInputSnapshot(snapshot, "2026-09-06T00:00:01Z", "annotated", digest)).toBeNull();
   });

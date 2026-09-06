@@ -354,7 +354,8 @@ export default async function ReportDetailPage(
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>(), calls: [], checkedFileIds: [] };
     const recordedFiles = new Set(calls.map((call) => call.file_id));
-    inputSources = (await loadInputSources(createAdminClient(), dataSubjectId, checkedFileIds))
+    inputSources = (await loadInputSources(createAdminClient(), dataSubjectId, checkedFileIds,
+      { kind: "report", purpose: layer === "variant_call" ? "reports.monogenic" : "reports.polygenic" }))
       .map((source) => ({ ...source, hasResultRecord: recordedFiles.has(source.fileId) }));
     inputState = conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
     const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
