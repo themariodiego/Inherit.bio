@@ -108,6 +108,12 @@ Verified on this branch:
   file controls render, and the flow records no browser page errors.
 - Readability passes (2,475 blocks); static legal checks pass (25 files).
   The local database security advisor reports no findings.
+- At source commit `49d8d9bfaaa920fcbcb2f8d537dd151aa2dd9d3a`,
+  `corepack pnpm test` exits zero: 2,287 tests in 143 files. The checkout
+  was clean; only the regenerable, ignored CLI version cache was moved out
+  before the strict email-capture checkout check. No database fixture was
+  removed. The post-commit secret gate also exits zero over 969 tracked
+  files and 244 authored commits.
 
 This is not production evidence. No hosted changes or real account file
 operations were performed. No new PR is open for this branch. The full
