@@ -12,6 +12,9 @@ import { NOT_COVERED_VCF } from "../src/copy/reports/strings";
 const LIBRARY = "/genome/me/reports";
 const SLUG = "lactase-persistence-lct-rs4988235";
 const DETAIL = `${LIBRARY}/${SLUG}`;
+// This fixture covers more than five reports. The unchanged category/slug
+// ordering puts bitter taste in Overview's first five, but not MCM6.
+const OVERVIEW_STARTER = `${LIBRARY}/bitter-taste-tas2r38`;
 const PURPOSE = "reports.polygenic";
 const LABEL = OWN_REPORT_CHOICES[PURPOSE].label;
 const TAKEAWAY = "Your file shows a form linked to keeping the enzyme that breaks down milk sugar active in adulthood.";
@@ -70,13 +73,14 @@ async function expectOverview(page: Page, state: "prepared" | "results" | "withd
   // could also occur in an unrelated public word or build identifier.
   expect(/(?:"|\\")genotype(?:"|\\")\s*:\s*(?:"|\\")/.test(document),
     "Overview must not serialize genotype values").toBe(false);
-  const starter = page.locator(`[data-starter-layer] a[href="${DETAIL}"]`);
+  const starter = page.locator(`[data-starter-layer] a[href="${OVERVIEW_STARTER}"]`);
   if (state === "results") {
     await expect(starter).toBeVisible();
-    expect(document.includes(DETAIL), "completed starter link in fresh server document").toBe(true);
+    expect(await page.locator("[data-starter-layer] ol li").count()).toBeLessThanOrEqual(5);
+    expect(document.includes(OVERVIEW_STARTER), "completed starter link in fresh server document").toBe(true);
   } else {
-    await expect(page.locator(`a[href="${DETAIL}"]`)).toHaveCount(0);
-    expect(document.includes(DETAIL), "no personal starter link without completed live report access").toBe(false);
+    await expect(page.locator(`a[href="${OVERVIEW_STARTER}"]`)).toHaveCount(0);
+    expect(document.includes(OVERVIEW_STARTER), "no personal starter link without completed live report access").toBe(false);
   }
   if (state === "prepared") {
     const choose = page.getByRole("link", { name: "Choose reports", exact: true });
