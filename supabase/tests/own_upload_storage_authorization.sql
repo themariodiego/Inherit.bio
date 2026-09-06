@@ -6,6 +6,8 @@ grant usage on schema extensions to inherit_upload_only;
 insert into private.upload_authorization_config(singleton,auth_issuer)
  values(true,'http://127.0.0.1:54321/auth/v1')
  on conflict(singleton) do update set auth_issuer=excluded.auth_issuer;
+update private.upload_authorization_config set maximum_array_bytes=52428800,maximum_vcf_bytes=52428800,
+ maximum_account_bytes=1073741824,maximum_active_uploads=32 where singleton;
 insert into auth.users(id,email,raw_user_meta_data) values
  ('76200000-0000-4000-8000-000000000001','upload-role@e2e.local','{"display_name":"Synthetic uploader"}');
 insert into auth.sessions(id,user_id,created_at,updated_at,aal) values

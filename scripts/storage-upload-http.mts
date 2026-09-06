@@ -12,7 +12,10 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash, generateKeyPairSync, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { gzipSync } from "node:zlib";
 import { mintStorageUploadToken, storageUploadAuthorizationSchema } from "../src/lib/uploads/storage-upload-token";
+import { SubjectStructureError, validateSubjectStructure } from "../src/lib/uploads/subject-structure";
+import { INGEST_CHUNK_MAXIMUM_BYTES } from "../src/lib/genome/ingest-limits";
 
 const project = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
@@ -31,6 +34,9 @@ const fixture = sql(`begin;
  end$$;
  insert into private.upload_authorization_config(singleton,auth_issuer)
  values(true,'http://127.0.0.1:54321/auth/v1') on conflict(singleton) do nothing;
+ -- Explicit local fixture policy, clamped to config.toml's 50MiB Storage cap.
+ update private.upload_authorization_config set maximum_array_bytes=52428800,maximum_vcf_bytes=52428800,
+  maximum_account_bytes=1073741824,maximum_active_uploads=32 where singleton;
  insert into auth.users(id,email,raw_user_meta_data)
  values('${account}','storage-http-${account}@e2e.local','{"display_name":"Synthetic upload test"}');
  insert into auth.sessions(id,user_id,created_at,updated_at,aal)
@@ -57,10 +63,12 @@ process.env.INHERIT_UPLOAD_SIGNING_JWK = JSON.stringify({ ...keys.privateKey.exp
 process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
 const synthetic = Buffer.from("Synthetic upload transport fixture. No genetic data.\n");
 const receipts: ReturnType<typeof storageUploadAuthorizationSchema.parse>[] = [];
-function issue(size = synthetic.length) {
+const finalKeys: string[] = [];
+function issue(size = synthetic.length, bytes: Buffer = synthetic, format = "VCF") {
+  assert(["VCF", "VCF.GZ"].includes(format));
   const receipt = storageUploadAuthorizationSchema.parse(JSON.parse(sql(
-    `select public.issue_own_storage_upload_v1('${account}','${session}','${fixture}','VCF',${size},
-    '${createHash("sha256").update(synthetic).digest("hex")}');`)));
+    `select public.issue_own_storage_upload_v1('${account}','${session}','${fixture}','${format}',${size},
+    '${createHash("sha256").update(bytes).digest("hex")}');`)));
   receipts.push(receipt);
   return { receipt, token: mintStorageUploadToken(receipt) };
 }
@@ -132,6 +140,13 @@ lines.on('line',async line=>{
    }
    emit(message.id,{present,absent});return;
   }
+  if(message.observeCopy){
+   const {stagingKey,finalKey,version}=message.observeCopy;
+   const source=versions.get(stagingKey)?.[0];
+   if(!source||!source.key.endsWith('/'+stagingKey)||![finalKey,version].every(value=>/^[0-9a-f-]{36}$/.test(value)))throw new Error('Invalid test copy');
+   versions.set(finalKey,[{...source,key:source.key.slice(0,-stagingKey.length)+finalKey,version}]);
+   emit(message.id,{ready:true});return;
+  }
   if(message.pause){
    const http=require('node:http');
    const body=Buffer.from(message.body,'base64');
@@ -154,8 +169,10 @@ lines.on('line',async line=>{
   if(message.admin) headers.Authorization='Bearer '+process.env.SERVICE_KEY;
   const response=await fetch(origin+message.path,{method:message.method,headers,
    body:message.body===undefined?undefined:Buffer.from(message.body,'base64'),signal:AbortSignal.timeout(12000)});
-  const body=await response.text();
-  emit(message.id,{status:response.status,body});
+  if(message.binary){
+   const bodyBase64=Buffer.from(await response.arrayBuffer()).toString('base64');
+   emit(message.id,{status:response.status,bodyBase64,contentRange:response.headers.get('content-range')});
+  }else{const body=await response.text();emit(message.id,{status:response.status,body});}
  }catch(error){emit(message?.id,{error:error?.name||'ProviderError'});}
 });
 lines.on('close',async()=>{if(app)await app.close();process.exit(0);});
@@ -165,7 +182,8 @@ const child = spawn("docker", ["exec", "-i", `supabase_storage_${project}`, "nod
 const reader = createInterface({ input: child.stdout });
 let sequence = 0;
 type ProviderResult = { status?: number; body?: string; ready?: boolean; closed?: boolean; admitted?: boolean;
-  present?: number; absent?: number; error?: string; results?: ProviderResult[]; admittedCount?: number };
+  present?: number; absent?: number; error?: string; results?: ProviderResult[]; admittedCount?: number;
+  bodyBase64?: string; contentRange?: string | null };
 const pending = new Map<number, { resolve: (value: ProviderResult) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>();
 // Do not forward provider stderr or raw logs: they are not a test receipt.
 child.stderr.resume();
@@ -201,6 +219,77 @@ function denied(result: ProviderResult, label: string) {
   assert(result.status !== undefined && result.status >= 400 && result.status < 500,
     `${label}: HTTP ${result.status ?? result.error}`);
   console.log(`PASS ${label}`);
+}
+// These checks join the real provider bytes to the real finalization transaction.
+// They complement route-unit tests, not a substitute for the pending browser flow.
+async function checkFinalization(bytes: Buffer, compressed: boolean, rejected = false) {
+  const format = compressed ? "VCF.GZ" : "VCF";
+  const item = issue(bytes.length, bytes, format);
+  successful(await upload(item, { body: bytes.toString("base64") }), `structural ${format} fixture stored`);
+  const argumentsSql = `'${account}','${session}','${item.receipt.uploadId}'`;
+  const begin = JSON.parse(sql(`set role service_role; select public.begin_own_upload_finalization_v1(${argumentsSql});`));
+  assert.equal(begin.status, "authorized");
+  for (const key of [begin.claim, begin.stagingKey, begin.finalKey]) assert.match(key, /^[0-9a-f-]{36}$/);
+  assert.equal(begin.stagingKey, item.receipt.stagingKey); assert.notEqual(begin.stagingKey, begin.finalKey);
+  finalKeys.push(begin.finalKey);
+  const claimedSql = `${argumentsSql},'${begin.claim}'`;
+  const recheck = () => assert.deepEqual(JSON.parse(sql(`set role service_role;
+    select public.authorize_own_upload_finalization_v1(${claimedSql});`)), begin);
+  async function* ranges(key: string) {
+    for (let start = 0; start < bytes.length; start += INGEST_CHUNK_MAXIMUM_BYTES) {
+      recheck(); const end = Math.min(start + INGEST_CHUNK_MAXIMUM_BYTES, bytes.length) - 1;
+      const response = await provider({ method: "GET", path: `/object/authenticated/genomes/${key}`, admin: true,
+        headers: { Range: `bytes=${start}-${end}` }, binary: true });
+      assert.equal(response.status, 206); assert.equal(response.contentRange, `bytes ${start}-${end}/${bytes.length}`);
+      const body = Buffer.from(response.bodyBase64!, "base64"); assert.equal(body.length, end - start + 1); yield body;
+    }
+  }
+  let evidence: Awaited<ReturnType<typeof validateSubjectStructure>>;
+  try {
+    evidence = await validateSubjectStructure(ranges(begin.stagingKey), { declaredFormat: format,
+      expectedSize: begin.expectedSize, expectedSha256: begin.expectedSha256, maximumDecodedBytes: begin.maximumDecodedBytes });
+  } catch (error) {
+    if (!rejected || !(error instanceof SubjectStructureError)) throw error;
+    assert.equal(error.code, "subject_source_not_single_sample");
+    const cleanup = JSON.parse(sql(`set role service_role; select public.abort_own_upload_finalization_v1(${claimedSql});`));
+    assert.deepEqual(cleanup, { bucket: "genomes", stagingKey: begin.stagingKey, finalKey: begin.finalKey });
+    successful(await provider({ method: "DELETE", path: "/object/genomes", admin: true,
+      headers: { "Content-Type": "application/json" },
+      body: Buffer.from(JSON.stringify({ prefixes: [begin.stagingKey, begin.finalKey] })).toString("base64") }), "rejected complete source removed by provider");
+    assert.equal(sql(`set role service_role; select public.ack_own_upload_finalization_cleanup_v1(${claimedSql});`), "t");
+    assert.deepEqual(await provider({ probeVersions: begin.stagingKey }), { present: 0, absent: 1 });
+    assert.equal(sql(`select count(*) from public.genome_files where user_id='${account}' and bucket_path='${begin.finalKey}';`), "0");
+    console.log("PASS second source beyond preflight rejected; no file published and physical bytes removed"); return;
+  }
+  assert(!rejected, "invalid fixture must not pass structural validation");
+  recheck();
+  successful(await provider({ method: "POST", path: "/object/copy", admin: true,
+    headers: { "Content-Type": "application/json" },
+    body: Buffer.from(JSON.stringify({ bucketId: "genomes", sourceKey: begin.stagingKey, destinationKey: begin.finalKey })).toString("base64") }), "validated source copied to a fresh provider key");
+  const object = JSON.parse(sql(`select json_build_object('id',id,'version',version) from storage.objects
+    where bucket_id='genomes' and name='${begin.finalKey}';`));
+  assert.match(object.id, /^[0-9a-f-]{36}$/);
+  assert.equal((await provider({ observeCopy: { stagingKey: begin.stagingKey, finalKey: begin.finalKey, version: object.version } })).ready, true);
+  const copyHash = createHash("sha256"); for await (const chunk of ranges(begin.finalKey)) copyHash.update(chunk);
+  assert.equal(copyHash.digest("hex"), evidence.rawSha256); recheck();
+  successful(await provider({ method: "DELETE", path: "/object/genomes", admin: true,
+    headers: { "Content-Type": "application/json" },
+    body: Buffer.from(JSON.stringify({ prefixes: [begin.stagingKey] })).toString("base64") }), "staging removed before final publication");
+  recheck();
+  const receipt = JSON.parse(sql(`set role service_role; select public.complete_own_upload_finalization_v1(${claimedSql},
+    '${object.id}','${evidence.rawSha256}','${evidence.decodedSha256}');`));
+  assert.match(receipt.fileId, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(receipt, { fileId: receipt.fileId, status: "finalized_ready_for_processing", analysisState: "ready_for_processing",
+    next: { routeId: "api.file-process", operation: "process" } });
+  const saved = JSON.parse(sql(`select json_build_object('raw',sha256,'decoded',source_sha256,'version',structural_validator_version,
+    'name',original_name,'verified',single_logical_sample_verified_at is not null) from public.genome_files where id='${receipt.fileId}';`));
+  assert.deepEqual(saved, { raw: evidence.rawSha256, decoded: evidence.decodedSha256, version: "single-logical-sample-v1", name: "Genome file", verified: true });
+  if (compressed) assert.notEqual(evidence.rawSha256, evidence.decodedSha256);
+  assert.equal(sql(`select count(*) from public.worker_jobs where file_id='${receipt.fileId}';`), "0");
+  assert.equal(sql(`select count(*) from public.purpose_grants where target_id='${fixture}';`), "0");
+  assert.deepEqual(await provider({ probeVersions: begin.stagingKey }), { present: 0, absent: 1 });
+  assert.deepEqual(await provider({ probeVersions: begin.finalKey }), { present: 1, absent: 0 });
+  console.log(`PASS ${format}: complete hash/structure, fresh immutable file, exact saved evidence, zero analysis jobs`);
 }
 let ready = false;
 let primaryFailure = false;
@@ -242,6 +331,13 @@ try {
   assert.deepEqual(await provider({ probeVersions: competing.receipt.stagingKey }), { present: 1, absent: 1 },
     "the losing transfer version is physically removed while the winner remains");
   }
+  const single = Buffer.from("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSYNTHETIC_PRIVATE_LABEL\n"
+    + "opaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\n");
+  const opaqueRow = Buffer.from("opaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\n");
+  await checkFinalization(Buffer.concat([single,
+    Buffer.from(opaqueRow.toString().repeat(Math.ceil(INGEST_CHUNK_MAXIMUM_BYTES / opaqueRow.length)))]), false);
+  await checkFinalization(gzipSync(single), true);
+  await checkFinalization(Buffer.concat([single, Buffer.from("opaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\topaque\n".repeat(1500)), single]), false, true);
   const inFlight = issue();
   const admission = await upload(inFlight, { pause: true });
   assert.equal(admission.admitted, true, `real provider permission probe passed before consent withdrawal: ${JSON.stringify({status:admission.status,error:admission.error})}`);
@@ -261,10 +357,10 @@ try {
     await provider({ abortPaused: true });
     const cleanup = await provider({ method: "DELETE", path: "/object/genomes", admin: true,
       headers: { "Content-Type": "application/json" },
-      body: Buffer.from(JSON.stringify({ prefixes: receipts.map(item => item.stagingKey) })).toString("base64") });
+      body: Buffer.from(JSON.stringify({ prefixes: [...receipts.map(item => item.stagingKey), ...finalKeys] })).toString("base64") });
     successful(cleanup, "only this run's synthetic object keys removed through Storage");
-    for (const receipt of receipts) {
-      const objects = await provider({ probeVersions: receipt.stagingKey });
+    for (const key of [...receipts.map(item => item.stagingKey), ...finalKeys]) {
+      const objects = await provider({ probeVersions: key });
       assert.equal(objects.present, 0, "all prepared versions from this run must be physically absent after cleanup");
     }
     console.log("PASS physical cleanup verified for all prepared test-object versions");

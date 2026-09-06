@@ -58,6 +58,11 @@ function signingKey() {
   return { kid: value.kid, key: crypto.createPrivateKey({ key: value, format: "jwk" }) };
 }
 
+/** Check deployment readiness before the database commits an upload lease. */
+export function assertStorageUploadSignerAvailable(): void {
+  try { signingKey(); issuer(); } catch { throw new UploadTokenUnavailable(); }
+}
+
 /** The key stays server-side. The bearer belongs only in ephemeral memory and
  * the Authorization header for its one Storage INSERT. It is not a refresh,
  * login, database, download or general application token. */

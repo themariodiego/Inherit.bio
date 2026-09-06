@@ -7149,8 +7149,14 @@ export type Database = {
           expected_sha256: string | null
           expected_size: number
           expires_at: string
+          final_object_name: string | null
+          finalization_claim: string | null
+          finalization_cleanup_pending: boolean
+          finalization_started_at: string | null
+          finalized_file_id: string | null
           id: string
           jurisdiction_revision: number | null
+          maximum_decoded_bytes: number | null
           originating_session_revision: number | null
           staging_object_name: string
           status: string
@@ -7176,8 +7182,14 @@ export type Database = {
           expected_sha256?: string | null
           expected_size: number
           expires_at: string
+          final_object_name?: string | null
+          finalization_claim?: string | null
+          finalization_cleanup_pending?: boolean
+          finalization_started_at?: string | null
+          finalized_file_id?: string | null
           id?: string
           jurisdiction_revision?: number | null
+          maximum_decoded_bytes?: number | null
           originating_session_revision?: number | null
           staging_object_name: string
           status?: string
@@ -7203,8 +7215,14 @@ export type Database = {
           expected_sha256?: string | null
           expected_size?: number
           expires_at?: string
+          final_object_name?: string | null
+          finalization_claim?: string | null
+          finalization_cleanup_pending?: boolean
+          finalization_started_at?: string | null
+          finalized_file_id?: string | null
           id?: string
           jurisdiction_revision?: number | null
+          maximum_decoded_bytes?: number | null
           originating_session_revision?: number | null
           staging_object_name?: string
           status?: string
@@ -7217,6 +7235,13 @@ export type Database = {
           upload_revision?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "upload_sessions_finalized_file_id_fkey"
+            columns: ["finalized_file_id"]
+            isOneToOne: false
+            referencedRelation: "genome_files"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "upload_sessions_cohort_id_fkey"
             columns: ["cohort_id"]
@@ -8031,14 +8056,61 @@ export type Database = {
         }
         Returns: Json
       }
+      begin_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      authorize_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      complete_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_decoded_sha256: string
+          p_raw_sha256: string
+          p_session_id: string
+          p_storage_object_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      abort_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      ack_own_upload_finalization_cleanup_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: boolean
+      }
       issue_own_storage_upload_v1: {
         Args: {
           p_account_id: string
           p_declared_format: string
           p_session_id: string
-          p_sha256: string
+          p_sha256: string | null
           p_size_bytes: number
-          p_subject_id: string
+          p_subject_id: string | null
         }
         Returns: Json
       }

@@ -234,6 +234,64 @@ The browser and API have not been switched to the new transport. Next connect
 canonical issuance and fresh-key finalization, then explicit purpose consent
 and the real file-to-report journey. Full-plan acceptance is still 18/65.
 
+### Complete-source finalization checkpoint (2026-09-06; unreleased)
+
+The server modules now implement the closed canonical upload declaration and
+bodyless own-subject finalization, but the public routes and browser are not
+switched yet. Issuance resolves `me` atomically, checks deployment-owned format,
+account-byte and active-lease limits, and requires a working dedicated signer
+before creating a lease. The browser cannot supply names, roles, keys or tiers.
+The declaration reader is bounded to 4,096 bytes; no file crosses this endpoint.
+
+Finalization claims one exclusive lease and rechecks live account/session and
+store authority before each bounded Storage read, copy, staging deletion and
+publication. Every read requires an exact 206 Content-Range. The complete raw
+source is hashed independently; gzip is decoded under the server-resolved
+limit and separately hashed. Structural validation checks all rows and rejects
+multiple/concatenated datasets, including content beyond the preflight window.
+It does not interpret genetic calls or retain sample labels. A fresh final key
+is copied and independently rehashed before staging deletion and the atomic
+file/evidence commit. The resulting structural tuple is immutable. Publication
+creates neither analytic-purpose grants nor processing jobs.
+
+An abort claim records cleanup against only that uncommitted staging/final
+pair and remains usable after authority withdrawal. Cleanup acknowledgement
+requires both metadata entries to be absent. A committed file cannot be
+aborted, including when the application loses its completion response.
+Durable recovery of abandoned leases and failed cleanup is still required;
+the pending flag alone is not a functioning cleanup worker.
+
+Verified locally at this checkpoint:
+
+- 109 new unit assertions pass across issuance, complete-source validation and
+  finalization. They include real ES256 receipt verification, bounded request
+  consumption, plain/gzip hashes, multi-range reads, truncated/misreported
+  ranges, revocation at every operation boundary, storage failures, cleanup
+  failures and protection of an uncertain committed result.
+- Four own-upload SQL suites pass 139 rollback-only assertions, including 26
+  new finalization/capacity assertions. Application typecheck, a separate
+  typecheck of the standalone provider harness and scoped lint pass.
+- The real local Storage harness now joins uploaded bytes, complete structural
+  validation, fresh-key copy and the actual service-role finalization RPC.
+  Plain VCF and VCF.GZ produce exact raw/decoded evidence, a neutral filename
+  and zero processing jobs or analytic grants. A second dataset beyond 64 KiB
+  is rejected and physically removed. The five upload races and mid-transfer
+  revocation checks still pass. Every prepared staging/copy version is checked
+  physically absent after exact-key test cleanup.
+- The first extended harness run exposed a test query using a nonexistent job
+  table after successful plain-file finalization. It was corrected to the
+  actual `worker_jobs.file_id` schema; assertions were retained and the next
+  run passed. Its synthetic objects were also removed and absence verified.
+
+No hosted schema, key, deployment or real account file was changed. The new
+migration was applied only to the shared local stack without a migration-history
+entry; do not blindly rerun it there. Deployment limit fields default to null
+and need verified operator configuration before cutover. Only the local
+synthetic harness sets explicit limits matching the local 50 MiB Storage cap.
+Synthetic file metadata remains as test evidence after the harness removes its
+physical objects. Browser integration, actual report generation, crash cleanup
+and hosted provider behavior remain unverified. Acceptance stays **18/65**.
+
 ### Remaining release work
 
 1. Connect the original signup age/jurisdiction contract. Initial completion
