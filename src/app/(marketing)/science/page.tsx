@@ -49,7 +49,7 @@ export default function SciencePage() {
 
       <section id="sources" aria-labelledby="sources-heading" className="mt-16 scroll-mt-24">
         <h2 id="sources-heading" className="display text-2xl">Sources checked for these reports</h2>
-        <p className="mt-3 mb-6 text-base leading-relaxed text-ink-muted">This list covers the linked explanations for COMT, BDNF, FAAH and SLC45A2. Other reports still list their sources on their own pages. This is not a complete review of the report library.</p>
+        <p className="mt-3 mb-6 text-base leading-relaxed text-ink-muted">This list covers linked explanations in selected reports, including taste, smell, earwax and sneezing in bright light. Other reports still list their sources on their own pages. This is not a complete review of the report library.</p>
         <ClaimSources sourceIds={presentationCitations.map((source) => source.id)} scienceIndex />
       </section>
 

@@ -6,8 +6,8 @@ import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { CitationItem, ReportCallCoverage } from "@/components/reports/report-evidence";
-import { ReportSummary, ReportSummarySources } from "@/components/reports/report-summary";
-import { annotateReportSources, legacySourceId, reportSummarySourceIds } from "@/lib/claims/presentation";
+import { ReportInterpretation, ReportSummary, ReportSummarySources } from "@/components/reports/report-summary";
+import { annotateReportSources, legacySourceId, reportSourceIds } from "@/lib/claims/presentation";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
 import { SupportPanel } from "@/components/reports/support-panel";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -164,6 +164,8 @@ function TechnicalNote({ children }: { children: ReactNode }) {
 }
 
 function VariantResult({
+  reportSlug,
+  sourceIds,
   variant,
   outcome,
   conflict,
@@ -174,6 +176,8 @@ function VariantResult({
   showLocus,
   densityPrimaryClaim,
 }: {
+  reportSlug: string;
+  sourceIds: readonly string[];
   variant: TemplateVariant;
   outcome: VariantOutcome;
   conflict: boolean;
@@ -211,7 +215,8 @@ function VariantResult({
         aria-label={locusLabel}
         densityPrimaryClaim={densityPrimaryClaim}
       >
-        <p className="mt-3 text-sm leading-relaxed text-ink">{outcome.interpretation}</p>
+        <ReportInterpretation slug={reportSlug} rsid={variant.rsid} genotype={outcome.genotype}
+          text={outcome.interpretation} sourceIds={sourceIds} />
         {layer === "estimate" ? (
           <p {...REQUIRED_ACCURACY} className="mt-2 text-sm text-ink">
             {NO_RANGE_YET}
@@ -329,6 +334,8 @@ export default async function ReportDetailPage(
   const hasVcf = files.some((file) => VCF_TYPES.has(file.file_type));
   const notCovered = hasVcf ? NOT_COVERED_VCF : NOT_COVERED_ARRAY;
 
+  const existingSourceIds = template.citations.map(legacySourceId);
+  const summarySourceIds = reportSourceIds(template);
   let yourResult: ReactNode;
   let coveredPositions = 0;
   let callSummary: ReportCallSummary | null = null;
@@ -364,6 +371,8 @@ export default async function ReportDetailPage(
         {resolved.variants.map(({ variant, outcome }) => (
           <VariantResult
             key={variant.rsid}
+            reportSlug={template.slug}
+            sourceIds={summarySourceIds}
             variant={variant}
             outcome={outcome}
             conflict={conflicts.has(variant.rsid)}
@@ -405,8 +414,6 @@ export default async function ReportDetailPage(
       ? coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)
       : null;
 
-  const existingSourceIds = template.citations.map(legacySourceId);
-  const summarySourceIds = reportSummarySourceIds(template.slug, template.summary, existingSourceIds);
   const annotatedCitations = annotateReportSources(summarySourceIds, template.citations);
   const visibleCitations = annotatedCitations.slice(0, VISIBLE_CITATIONS);
   const moreCitations = annotatedCitations.slice(VISIBLE_CITATIONS);

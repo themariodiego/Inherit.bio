@@ -1,0 +1,39 @@
+{
+  "url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+  "httpStatus": 200,
+  "readAt": "2026-09-06T07:35:32.592Z",
+  "responseSha256": "f45503658392bbec3548d9de2acaf726ac56ca9196a068da9852b191826db651",
+  "record": {
+    "mappings": [
+      {
+        "assembly_name": "GRCh38",
+        "end": 145367955,
+        "location": "2:145367955-145367955",
+        "ancestral_allele": "T",
+        "coord_system": "chromosome",
+        "strand": 1,
+        "seq_region_name": "2",
+        "start": 145367955,
+        "allele_string": "C/T"
+      }
+    ],
+    "evidence": [
+      "Frequency",
+      "1000Genomes",
+      "Cited",
+      "Phenotype_or_Disease",
+      "TOPMed",
+      "gnomAD"
+    ],
+    "ambiguity": "Y",
+    "var_class": "SNP",
+    "most_severe_consequence": "intergenic_variant",
+    "MAF": 0.436813,
+    "synonyms": [
+      "rs61329152"
+    ],
+    "name": "rs10427255",
+    "minor_allele": "C",
+    "source": "Variants (including SNPs and indels) imported from dbSNP"
+  }
+}

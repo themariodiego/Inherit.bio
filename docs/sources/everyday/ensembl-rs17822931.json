@@ -1,0 +1,53 @@
+{
+  "url": "https://rest.ensembl.org/variation/human/rs17822931?content-type=application/json",
+  "httpStatus": 200,
+  "readAt": "2026-09-06T07:35:33.394Z",
+  "responseSha256": "096725518a22ed4a46ba7e694f743c1d547e05aa482a4c85fd5a2a990c7d0193",
+  "record": {
+    "ambiguity": "B",
+    "minor_allele": null,
+    "synonyms": [
+      "RCV004714398",
+      "RCV000003737",
+      "RCV000003739",
+      "RCV000003738",
+      "VCV000003558",
+      "PA166155121",
+      "VAR_025438",
+      "rs52813591",
+      "rs58140753",
+      "607040.0001"
+    ],
+    "source": "Variants (including SNPs and indels) imported from dbSNP",
+    "most_severe_consequence": "missense_variant",
+    "var_class": "SNP",
+    "clinical_significance": [
+      "benign"
+    ],
+    "evidence": [
+      "Frequency",
+      "1000Genomes",
+      "Cited",
+      "ESP",
+      "Phenotype_or_Disease",
+      "ExAC",
+      "TOPMed",
+      "gnomAD"
+    ],
+    "mappings": [
+      {
+        "start": 48224287,
+        "assembly_name": "GRCh38",
+        "ancestral_allele": "C",
+        "allele_string": "C/G/T",
+        "end": 48224287,
+        "seq_region_name": "16",
+        "strand": 1,
+        "location": "16:48224287-48224287",
+        "coord_system": "chromosome"
+      }
+    ],
+    "name": "rs17822931",
+    "MAF": null
+  }
+}

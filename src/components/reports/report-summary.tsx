@@ -1,6 +1,22 @@
 import { Claim } from "@/components/claims/claim";
 import { ClaimSources } from "@/components/claims/sources";
-import { registeredReportSummary } from "@/lib/claims/presentation";
+import { registeredReportInterpretation, registeredReportSummary } from "@/lib/claims/presentation";
+
+export function ReportInterpretation({ slug, rsid, genotype, text, sourceIds }: {
+  slug: string; rsid: number; genotype: string; text: string; sourceIds: readonly string[];
+}) {
+  const claim = registeredReportInterpretation(slug, rsid, genotype, text);
+  // During catalog rollout, changed hosted text remains visible but is never
+  // attributed to the reviewed text. Existing genotype and access checks apply.
+  return (
+    <p data-slot="report-interpretation" data-claim-region="report-interpretation"
+      data-claim-registration={claim ? "registered" : "unregistered"}
+      className="mt-3 text-sm leading-relaxed text-ink">
+      {claim ? <Claim id={claim.claim_id} citationId={claim.evidence[0].citation}
+        sourceIds={sourceIds} /> : text}
+    </p>
+  );
+}
 
 export function ReportSummary({ slug, text, sourceIds }: { slug: string; text: string; sourceIds: readonly string[] }) {
   const claim = registeredReportSummary(slug, text);

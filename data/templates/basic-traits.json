@@ -40,10 +40,22 @@
         "label": "Kim et al., Science 2003",
         "accessedOn": "2026-09-05",
         "studyContext": {
-          "measured": { "text": "Researchers used a blind taste test to measure the weakest amount of PTC that people could taste. PTC is a bitter test chemical.", "locator": "Page 1221, study methods" },
-          "population": { "text": "The study included families from Utah. A second sample from NIH included people with European and East Asian ancestry.", "locator": "Pages 1221–1223, study samples" },
-          "comparison": { "text": "Taste scores differed between groups with different three-position gene patterns. People with two PAV patterns had the highest mean scores; those with two AVI patterns had the lowest.", "locator": "Page 1223, haplotype analysis and Table 3" },
-          "limitation": { "text": "This tested PTC sensitivity, not food choice. The paper compared three-position patterns, not a single letter. This report’s two positions do not establish the full pattern or which changes share one chromosome.", "locator": "Pages 1221–1223, measured outcome and three-position analysis; report scope limitation" }
+          "measured": {
+            "text": "Researchers used a blind taste test to measure the weakest amount of PTC that people could taste. PTC is a bitter test chemical.",
+            "locator": "Page 1221, study methods"
+          },
+          "population": {
+            "text": "The study included families from Utah. A second sample from NIH included people with European and East Asian ancestry.",
+            "locator": "Pages 1221–1223, study samples"
+          },
+          "comparison": {
+            "text": "Taste scores differed between groups with different three-position gene patterns. People with two PAV patterns had the highest mean scores; those with two AVI patterns had the lowest.",
+            "locator": "Page 1223, haplotype analysis and Table 3"
+          },
+          "limitation": {
+            "text": "This tested PTC sensitivity, not food choice. The paper compared three-position patterns, not a single letter. This report’s two positions do not establish the full pattern or which changes share one chromosome.",
+            "locator": "Pages 1221–1223, measured outcome and three-position analysis; report scope limitation"
+          }
         }
       },
       {
@@ -55,8 +67,8 @@
   {
     "slug": "cilantro-soapy-taste-or6a2",
     "category": "basic-traits",
-    "title": "Cilantro soapy taste · OR6A2 region",
-    "summary": "Genes play a small part in whether cilantro tastes fresh or soapy. A study of about 26,000 people found a link near several smell receptor genes. The site, rs72921001, is close to OR6A2. This receptor detects chemicals that give cilantro its smell. Each A copy was linked to lower odds of a soapy taste: a small shift. A second group confirmed the link. Still, this site explains only about 0.5% of the difference between people.",
+    "title": "Cilantro tasting like soap · OR6A2 region",
+    "summary": "A DNA change near smell receptor genes is linked to whether cilantro tastes soapy. OR6A2 is one possible explanation, not a proven cause. The study found a small link, not a test of whether you will enjoy cilantro.",
     "evidence": "emerging",
     "variants": [
       {
@@ -67,9 +79,9 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "CC": "Two C copies are linked to slightly higher odds that cilantro tastes soapy. They are also linked to a little more dislike of cilantro. The shift is small, and many people with CC love it. Exposure and cooking habits strongly shape preference.",
-          "AC": "One C and one A allele. Intermediate on average: somewhat lower odds of the soapy perception than CC. This variant is a minor nudge, not a determinant, and many other genetic and environmental factors are involved.",
-          "AA": "Two A copies mark the lowest average odds of a soapy cilantro taste at this site. In the first study, each A copy was linked to lower odds: a small shift. Taste still varies widely among people with AA."
+          "CC": "Your file shows two C copies. In the study, C was linked to reporting a soapy cilantro taste. This does not mean cilantro must taste soapy to you.",
+          "AC": "Your file shows one A copy. A was linked to less frequent reports of a soapy cilantro taste. The study fitted an average effect per copy, not a measured taste score for you.",
+          "AA": "Your file shows two A copies. A was linked to less frequent reports of a soapy cilantro taste. This does not rule out tasting soap or disliking cilantro."
         }
       }
     ],
@@ -77,15 +89,34 @@
     "citations": [
       {
         "doi": "10.1186/2044-7248-1-22",
-        "label": "Eriksson et al., Flavour 2012"
+        "label": "Eriksson et al., Flavour 2012",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": {
+            "text": "People answered separate questions about a soapy taste and whether they liked fresh cilantro.",
+            "locator": "Methods, phenotype collection"
+          },
+          "population": {
+            "text": "The main study had 14,604 participants of European ancestry. A separate group of 11,851 answered the liking question.",
+            "locator": "Results and Methods; filtered, non-overlapping replication group"
+          },
+          "comparison": {
+            "text": "The A form was linked to fewer reports of soapiness. The separate liking result was weaker.",
+            "locator": "Table 2 and Results, soapiness versus preference"
+          },
+          "limitation": {
+            "text": "Smelling soap and disliking cilantro are not the same outcome. Nearby genes may explain the link; the study did not prove which one.",
+            "locator": "Results and discussion, OR6A2 and OR10A2 candidates"
+          }
+        }
       }
     ]
   },
   {
     "slug": "asparagus-odor-detection-or2m7",
     "category": "basic-traits",
-    "title": "Asparagus metabolite smell · OR2M7",
-    "summary": "Most people make sulfur-smelling chemicals in urine after eating asparagus. Yet most people cannot smell them. This smell difference maps to a group of receptor genes on chromosome 1. rs4481887 marks the region near OR2M7. In studies of almost 7,000 people, each G copy was linked to higher odds of not smelling the odor: a moderate shift. About 60% of all people studied could not smell it.",
+    "title": "Smelling asparagus in urine · OR2M7 region",
+    "summary": "A DNA region near smell receptor genes is linked to noticing an odor in urine after eating asparagus. The study asked people what they noticed. It did not separately measure their urine or test their sense of smell.",
     "evidence": "emerging",
     "variants": [
       {
@@ -96,9 +127,9 @@
         "ref": "A",
         "alt": "G",
         "interpretations": {
-          "AA": "Two A copies mark the highest average chance of smelling the sulfur odor after asparagus. The amount of odor and many other smell receptor genes also matter. This result changes the chance; it does not give a sure answer.",
-          "AG": "One A and one G allele. Intermediate on average: the G copy is linked to higher odds of not detecting the asparagus odor, a moderate shift, so heterozygotes fall between the two homozygous groups in group studies.",
-          "GG": "Two G copies mark the highest average odds of not smelling asparagus waste chemicals. The body still makes them. This harmless smell difference occurred in most people in the studies."
+          "AA": "Your file shows two A copies. In the study, people with A copies more often reported noticing the odor than people with GG. One and two A copies gave similar results.",
+          "AG": "Your file shows one A copy. In the study, this group more often reported noticing the odor than the GG group. Its result was close to the AA group, not halfway between.",
+          "GG": "Your file shows two G copies. This group less often reported noticing the odor than groups with A copies. Even so, most people with GG in that study said they could smell it."
         }
       }
     ],
@@ -106,7 +137,26 @@
     "citations": [
       {
         "pmid": "20585627",
-        "label": "Eriksson et al., PLoS Genet 2010"
+        "label": "Eriksson et al., PLoS Genet 2010",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": {
+            "text": "An online survey asked whether people noticed an odor after eating asparagus.",
+            "locator": "Methods, phenotype collection"
+          },
+          "population": {
+            "text": "The study used answers from 4,742 unrelated participants with northern European ancestry.",
+            "locator": "Table 1 and Results, study population"
+          },
+          "comparison": {
+            "text": "Groups with one or two A copies more often noticed the odor than the GG group.",
+            "locator": "Table 9 and Results, dominant model discussion"
+          },
+          "limitation": {
+            "text": "Self-reports cannot separate making an odor from detecting it. This position does not measure either process in you.",
+            "locator": "Discussion, production versus detection; phenotype question"
+          }
+        }
       },
       {
         "pmid": "27965198",
@@ -117,8 +167,8 @@
   {
     "slug": "photic-sneeze-reflex-2q22",
     "category": "basic-traits",
-    "title": "Photic sneeze reflex · 2q22 region (near ZEB2)",
-    "summary": "The photic sneeze reflex is sneezing when moving from dim light into bright sunlight. It affects roughly a quarter of people and runs strongly in families. A 23andMe GWAS first associated it with rs10427255 on chromosome 2q22 near ZEB2. Each C allele was linked to higher odds in European-ancestry participants: a small shift. The same locus reached genome-wide significance in an independent Chinese-population GWAS. It is a benign quirk of sensory wiring, not a medical condition.",
+    "title": "Sneezing in bright light · 2q22 region",
+    "summary": "Some people sneeze when they move into bright light. A study linked this reflex to a DNA region near ZEB2. It compared survey answers, not a controlled light test. The result describes a group pattern, not a certain response.",
     "evidence": "emerging",
     "variants": [
       {
@@ -129,9 +179,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C allele, the version associated in the original European-ancestry study with the highest average odds of the photic sneeze reflex at this locus. Each C copy is linked to higher odds: a small shift. Many CC carriers never sun-sneeze; this common variant explains only a small part of the trait.",
-          "CT": "One C and one T allele, associated on average with intermediate odds of the photic sneeze reflex. Reported effect sizes are modest and have differed somewhat between populations, so the genotype shifts probability only slightly either way.",
-          "TT": "Two T copies mark the lowest average odds of sun sneezing in the first study. Some people with TT still have the reflex. Other genes and body processes also play a part."
+          "CC": "Your file shows two C copies. This group more often reported sneezing in bright light than the other groups in the study. Most people with CC still reported no reflex.",
+          "CT": "Your file shows one C copy. Reports of sneezing in bright light fell between the CC and TT groups in this study. Your own response may differ.",
+          "TT": "Your file shows two T copies. This group less often reported sneezing in bright light than groups with C copies. Some people with TT still had the reflex."
         }
       }
     ],
@@ -139,7 +189,26 @@
     "citations": [
       {
         "pmid": "20585627",
-        "label": "Eriksson et al., PLoS Genet 2010"
+        "label": "Eriksson et al., PLoS Genet 2010",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": {
+            "text": "People reported whether bright light made them sneeze.",
+            "locator": "Methods, phenotype collection"
+          },
+          "population": {
+            "text": "The study included 5,390 unrelated participants with northern European ancestry.",
+            "locator": "Table 1 and Results, study population"
+          },
+          "comparison": {
+            "text": "The C form was linked to more reports of this reflex. The reflex occurred in every genotype group.",
+            "locator": "Tables 2 and 10"
+          },
+          "limitation": {
+            "text": "The region is near ZEB2, but the study did not prove that this gene causes the reflex.",
+            "locator": "Results and Discussion, photic sneeze"
+          }
+        }
       },
       {
         "pmid": "30899065",
@@ -184,7 +253,7 @@
     "slug": "earwax-type-abcc11",
     "category": "basic-traits",
     "title": "Wet or dry earwax · ABCC11",
-    "summary": "Earwax type is one of the clearest single-gene common traits in humans. The rs17822931 variant in ABCC11 (Gly180Arg; forward-strand C>T) determines it almost completely: T/T gives dry, flaky earwax, while carrying at least one C allele gives the wet type, which is dominant. The dry type is the norm in East Asian populations and rare in people of European or African ancestry. The same transporter variant reduces apocrine sweat-gland secretions, so the T allele is also associated with less underarm odor.",
+    "summary": "A change in ABCC11 is strongly linked to wet or dry earwax. This report checks that common position, not every change in the gene.",
     "evidence": "emerging",
     "variants": [
       {
@@ -195,9 +264,9 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two copies of the C (Gly180) allele. This genotype corresponds to the wet, sticky earwax type in essentially all studies, and on average to more apocrine sweat secretion and stronger underarm odor than T-allele carriers. All types of earwax are normal and need no particular care.",
-          "CT": "One C and one T allele. Because the wet type is dominant, this genotype corresponds to wet earwax in nearly everyone, on average slightly less so than CC. It also means carrying one copy of the reduced-secretion allele.",
-          "TT": "Two T copies make the Arg180 form and lead to dry, flaky earwax. This type occurs in almost everyone in Korean and northern Chinese groups but is uncommon in European and African groups. It is also linked to less sweat that causes underarm odor. This is a harmless and well-known body difference."
+          "CC": "Your file shows two C copies, the form linked to wet, sticky earwax. This is not a body odor measurement.",
+          "CT": "Your file shows one C and one T copy. The C form is linked to wet earwax even with one copy.",
+          "TT": "Your file shows two T copies, the form linked to dry, flaky earwax. The paper also found a rare change elsewhere in ABCC11."
         }
       }
     ],
@@ -206,12 +275,24 @@
       {
         "pmid": "16444273",
         "label": "Yoshiura et al., Nat Genet 2006",
-        "accessedOn": "2026-09-05",
+        "accessedOn": "2026-09-06",
         "studyContext": {
-          "measured": { "text": "The study compared wet and dry earwax with changes in ABCC11. It also tested transport activity in cells carrying different forms of the gene.", "locator": "Abstract and Figure 5" },
-          "population": { "text": "The two association stages used 118 and 126 Japanese participants. Earwax type was self-reported in the first stage and checked by ear examination in the second.", "locator": "Supplementary Table 1 description" },
-          "comparison": { "text": "The common gene change closely tracked wet versus dry earwax. The dry-associated form also showed less transport activity in the cell test.", "locator": "Abstract" },
-          "limitation": { "text": "A cell test is not a measure of someone’s body odor. The paper also found a rare deletion, so the common position is not the whole gene.", "locator": "Abstract and Figure 5; scope limitation of the cell test" }
+          "measured": {
+            "text": "The study compared earwax types and tested gene forms in cells.",
+            "locator": "Author abstract"
+          },
+          "population": {
+            "text": "The paper examined wet and dry earwax and compared gene frequencies across populations.",
+            "locator": "Author abstract"
+          },
+          "comparison": {
+            "text": "The dry form had lower transport activity in cells.",
+            "locator": "Author abstract, cGMP assay"
+          },
+          "limitation": {
+            "text": "The cell test did not measure body odor. The paper also found a rare deletion.",
+            "locator": "Author abstract; limit of the cell assay"
+          }
         }
       }
     ]

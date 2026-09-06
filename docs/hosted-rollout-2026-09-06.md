@@ -366,7 +366,8 @@ PR71 merged at `2026-09-06T07:23:36Z` as
 `98ee24bd938b0a9475b529c1cea544008a7170a0`; full CI `34018132773` passed:
 2,202 unit tests in 139 files, 1,044 database assertions in 30 suites,
 30 independent-session lock checks, and 213 browser cases without skips or
-retries. Main integration run `34019023140` is still running at this checkpoint.
+retries. Main integration run `34019023140` also completed successfully,
+confirmed through the run API on 2026-09-06.
 
 ### Hosted schema and preservation
 

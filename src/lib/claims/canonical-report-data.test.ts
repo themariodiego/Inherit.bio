@@ -6,6 +6,8 @@ import claims from "../../../data/claims.json";
 import mental from "../../../data/templates/mental-health.json";
 import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
+import basic from "../../../data/templates/basic-traits.json";
+import type { ReportTemplate } from "../genome/reports";
 import { validateClaimRegistry, type ClaimOccurrence } from "./registry";
 import { readStudyContext } from "../genome/study-context";
 
@@ -16,12 +18,20 @@ const reviewed = {
   "mood-stress-resilience-bdnf-rs6265": "f005cd05fb0f576f35b3cbd1858db24cc185befef3ad5d62b8d979e7f3ad5638",
   "problem-substance-use-faah-rs324420": "debc18bc119dfc8a2a10ac6046f61250ca24bc540556d0aeb1b1d858e5b56abf",
   "skin-uv-sensitivity-slc45a2": "b16d453f7e716a188e107ee1b865c662de570e5d9be507b079afd805f717c6ba",
+  "cilantro-soapy-taste-or6a2": "b268966b7d5977bdc9dc1aefa80cef51da5bee23e892a530f469f154d3cb3578",
+  "asparagus-odor-detection-or2m7": "25a187d6da880233af5f10917cb847c9354b1cb1f9bdc8ca145e6a6725781206",
+  "photic-sneeze-reflex-2q22": "64e5889a8e5cd32baa20534aa30f856c07f50644a78ca06162e75aef85e9c4d5",
+  "earwax-type-abcc11": "387b6f8c0adbe89f60cc4effe56cb03f9501838b70920abb4e7dea5a2e661a36",
 };
-const templates = [...mental, ...addiction, ...environmental].filter((t) => Object.hasOwn(reviewed, t.slug));
+const everyday = new Set(["cilantro-soapy-taste-or6a2", "asparagus-odor-detection-or2m7", "photic-sneeze-reflex-2q22", "earwax-type-abcc11"]);
+const templates = [...mental, ...addiction, ...environmental, ...basic].filter((t) => Object.hasOwn(reviewed, t.slug)) as ReportTemplate[];
 const expected = templates.flatMap((t) => [
   { id: `report.${t.slug}.summary`, text: t.summary, slug: t.slug, summary: true },
   ...t.citations.flatMap((citation) => Object.entries(readStudyContext(citation) ?? {}).flatMap(([field, value]) =>
-    value ? [{ id: `report.${t.slug}.study.${citation.pmid}.${field}`, text: value.text, slug: t.slug, summary: false }] : [])),
+    value ? [{ id: `report.${t.slug}.study.${(citation.pmid ?? citation.doi!).replaceAll("/", "-")}.${field}`, text: value.text, slug: t.slug, summary: false }] : [])),
+  ...(everyday.has(t.slug) ? t.variants.flatMap((v) => Object.entries(v.interpretations).map(([genotype, text]) => ({
+    id: `report.${t.slug}.interpretation.rs${v.rsid}.${genotype.toLowerCase()}`, text, slug: t.slug, summary: false,
+  }))) : []),
 ]);
 const intended = (item: typeof expected[number]) => [
   `/genome/[subject]/reports/${item.slug}#state=complete`,
@@ -38,16 +48,16 @@ const validate = (overrides = {}) => validateClaimRegistry({
 });
 
 describe("initial canonical report content, not full corpus acceptance", () => {
-  it("binds the exact four independently reviewed objects", () => {
-    expect(templates).toHaveLength(4);
+  it("binds four independently reviewed and four primary-source-reviewed report objects", () => {
+    expect(templates).toHaveLength(8);
     for (const template of templates) {
       expect(createHash("sha256").update(JSON.stringify(template)).digest("hex"))
         .toBe(reviewed[template.slug as keyof typeof reviewed]);
     }
   });
-  it("registers every reviewed summary and non-null context, and no unreviewed genotype prose", () => {
-    expect(claims).toHaveLength(39);
-    expect(citations).toHaveLength(11);
+  it("registers every reviewed summary and context, plus exactly the twelve reviewed everyday interpretations", () => {
+    expect(claims).toHaveLength(71);
+    expect(citations).toHaveLength(19);
     expect(claims.map((c) => c.claim_id).sort()).toEqual(expected.map((item) => item.id).sort());
     for (const item of expected) {
       const claim = claims.find((c) => c.claim_id === item.id)!;
@@ -57,7 +67,9 @@ describe("initial canonical report content, not full corpus acceptance", () => {
       expect(claim.reviewer).toContain("not human signoff");
       expect(claim.reviewed_on).toBe("2026-09-06");
     }
-    expect(claims.some((c) => c.claim_id.includes("interpretation"))).toBe(false);
+    const interpretations = claims.filter((c) => c.claim_id.includes(".interpretation."));
+    expect(interpretations).toHaveLength(12);
+    expect(interpretations.every((c) => [...everyday].some((slug) => c.claim_id.startsWith(`report.${slug}.`)))).toBe(true);
   });
   it("validates canonical shape, exact references and source archival paths against the seed fixture", () => {
     const result = validate();
@@ -97,8 +109,8 @@ describe("initial canonical report content, not full corpus acceptance", () => {
   it("keeps aggregate publication quotations within the existing receipt allocations", () => {
     // Counts include committed prior excerpts and the pending batch-04 Han excerpt.
     // Canonical snippets are shorter subsets when reusing those publications.
-    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16 };
-    for (const citation of citations.filter((c) => c.type === "pmid")) {
+    const priorWords: Record<string, number> = { "11381111": 12, "12060782": 12, "12553913": 9, "15956988": 5, "18483556": 16, "16444273": 15, "10.1186/2044-7248-1-22": 14 };
+    for (const citation of citations.filter((c) => c.type === "pmid" || c.type === "doi")) {
       expect(citation.quote.trim().split(/\s+/u).length + (priorWords[citation.identifier] ?? 0)).toBeLessThanOrEqual(25);
     }
   });

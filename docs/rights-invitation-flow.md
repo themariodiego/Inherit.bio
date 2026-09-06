@@ -1,7 +1,7 @@
 # Rights invitation flow — implementation checkpoint
 
 PR71 merged as `e9778f8d5e5847deeb5b3d057f7c25ba67b418da` and is live
-on both public domains. The full main-branch integration run is still pending.
+on both public domains. Full main-branch integration run `34019023140` passed.
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
 ## Release receipt (2026-09-06)

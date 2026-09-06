@@ -824,5 +824,745 @@
     "net_impression_note": "Preserve the entire summary, including its study/population limits. This is public research context, not a computed personal finding. Exact reviewed object: docs/sources/reviews/batch-02/independent-correction-review.md. Intended surfaces only; runtime wrapping and actual capture remain unproved.",
     "reviewed_on": "2026-09-06",
     "reviewer": "Codex agent report_source_rights; independent scientific reread of report_science_coverage corrections (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.summary",
+    "text_verbatim": "A DNA change near smell receptor genes is linked to whether cilantro tastes soapy. OR6A2 is one possible explanation, not a proven cause. The study found a small link, not a test of whether you will enjoy cilantro.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Source review: measured outcome and population bounds; no personal calibration or causal gene conclusion."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs72921001",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.interpretation.rs72921001.cc",
+    "text_verbatim": "Your file shows two C copies. In the study, C was linked to reporting a soapy cilantro taste. This does not mean cilantro must taste soapy to you.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 2, Results and Methods: per-A association with soapiness, not genotype-group sensory scores."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs72921001",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.interpretation.rs72921001.ac",
+    "text_verbatim": "Your file shows one A copy. A was linked to less frequent reports of a soapy cilantro taste. The study fitted an average effect per copy, not a measured taste score for you.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 2, Results and Methods: per-A association with soapiness, not genotype-group sensory scores."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs72921001",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.interpretation.rs72921001.aa",
+    "text_verbatim": "Your file shows two A copies. A was linked to less frequent reports of a soapy cilantro taste. This does not rule out tasting soap or disliking cilantro.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 2, Results and Methods: per-A association with soapiness, not genotype-group sensory scores."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs72921001",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.study.10.1186-2044-7248-1-22.measured",
+    "text_verbatim": "People answered separate questions about a soapy taste and whether they liked fresh cilantro.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods, phenotype collection"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.study.10.1186-2044-7248-1-22.population",
+    "text_verbatim": "The main study had 14,604 participants of European ancestry. A separate group of 11,851 answered the liking question.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results and Methods; filtered, non-overlapping replication group"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.study.10.1186-2044-7248-1-22.comparison",
+    "text_verbatim": "The A form was linked to fewer reports of soapiness. The separate liking result was weaker.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 2 and Results, soapiness versus preference"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.cilantro-soapy-taste-or6a2.study.10.1186-2044-7248-1-22.limitation",
+    "text_verbatim": "Smelling soap and disliking cilantro are not the same outcome. Nearby genes may explain the link; the study did not prove which one.",
+    "surfaces": [
+      "/genome/[subject]/reports/cilantro-soapy-taste-or6a2#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "doi:10.1186-2044-7248-1-22",
+        "doi_or_url": "https://doi.org/10.1186/2044-7248-1-22",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results and discussion, OR6A2 and OR10A2 candidates"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.summary",
+    "text_verbatim": "A DNA region near smell receptor genes is linked to noticing an odor in urine after eating asparagus. The study asked people what they noticed. It did not separately measure their urine or test their sense of smell.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Source review: measured outcome and population bounds; no personal calibration or causal gene conclusion."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs4481887",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.interpretation.rs4481887.aa",
+    "text_verbatim": "Your file shows two A copies. In the study, people with A copies more often reported noticing the odor than people with GG. One and two A copies gave similar results.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 9, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs4481887",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.interpretation.rs4481887.ag",
+    "text_verbatim": "Your file shows one A copy. In the study, this group more often reported noticing the odor than the GG group. Its result was close to the AA group, not halfway between.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 9, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs4481887",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.interpretation.rs4481887.gg",
+    "text_verbatim": "Your file shows two G copies. This group less often reported noticing the odor than groups with A copies. Even so, most people with GG in that study said they could smell it.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 9, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs4481887",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs4481887?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.study.20585627.measured",
+    "text_verbatim": "An online survey asked whether people noticed an odor after eating asparagus.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods, phenotype collection"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.study.20585627.population",
+    "text_verbatim": "The study used answers from 4,742 unrelated participants with northern European ancestry.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 1 and Results, study population"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.study.20585627.comparison",
+    "text_verbatim": "Groups with one or two A copies more often noticed the odor than the GG group.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 9 and Results, dominant model discussion"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.asparagus-odor-detection-or2m7.study.20585627.limitation",
+    "text_verbatim": "Self-reports cannot separate making an odor from detecting it. This position does not measure either process in you.",
+    "surfaces": [
+      "/genome/[subject]/reports/asparagus-odor-detection-or2m7#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Discussion, production versus detection; phenotype question"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.summary",
+    "text_verbatim": "Some people sneeze when they move into bright light. A study linked this reflex to a DNA region near ZEB2. It compared survey answers, not a controlled light test. The result describes a group pattern, not a certain response.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Source review: measured outcome and population bounds; no personal calibration or causal gene conclusion."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs10427255",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.interpretation.rs10427255.cc",
+    "text_verbatim": "Your file shows two C copies. This group more often reported sneezing in bright light than the other groups in the study. Most people with CC still reported no reflex.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 10, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs10427255",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.interpretation.rs10427255.ct",
+    "text_verbatim": "Your file shows one C copy. Reports of sneezing in bright light fell between the CC and TT groups in this study. Your own response may differ.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 10, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs10427255",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.interpretation.rs10427255.tt",
+    "text_verbatim": "Your file shows two T copies. This group less often reported sneezing in bright light than groups with C copies. Some people with TT still had the reflex.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 10, genotype-group counts; Table 2, allele coding; study population and survey methods."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs10427255",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs10427255?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.study.20585627.measured",
+    "text_verbatim": "People reported whether bright light made them sneeze.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Methods, phenotype collection"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.study.20585627.population",
+    "text_verbatim": "The study included 5,390 unrelated participants with northern European ancestry.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Table 1 and Results, study population"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.study.20585627.comparison",
+    "text_verbatim": "The C form was linked to more reports of this reflex. The reflex occurred in every genotype group.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Tables 2 and 10"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.photic-sneeze-reflex-2q22.study.20585627.limitation",
+    "text_verbatim": "The region is near ZEB2, but the study did not prove that this gene causes the reflex.",
+    "surfaces": [
+      "/genome/[subject]/reports/photic-sneeze-reflex-2q22#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:20585627",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/20585627/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Results and Discussion, photic sneeze"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.summary",
+    "text_verbatim": "A change in ABCC11 is strongly linked to wet or dry earwax. This report checks that common position, not every change in the gene.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1",
+      "email:src/emails/research-digest.tsx#fixture=research-digest--public-catalog"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Source review: measured outcome and population bounds; no personal calibration or causal gene conclusion."
+      },
+      {
+        "citation": "dataset:ensembl-variation-rs17822931",
+        "doi_or_url": "https://rest.ensembl.org/variation/human/rs17822931?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "GRCh38 position and forward allele identity only. Observed personal letters come from the authorized report resolver, not this reference record."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.interpretation.rs17822931.cc",
+    "text_verbatim": "Your file shows two C copies, the form linked to wet, sticky earwax. This is not a body odor measurement.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract, earwax association and rare deletion; coding-strand G/A is complemented to forward C/T using the separate mapping record."
+      },
+      {
+        "citation": "dataset:ensembl-vep-rs17822931",
+        "doi_or_url": "https://rest.ensembl.org/vep/human/id/rs17822931?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Reverse-strand ABCC11 transcript and forward T-to-Arg180 mapping. The source paper's coding A corresponds to forward T; personal letters still come only from the authorized resolver."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.interpretation.rs17822931.ct",
+    "text_verbatim": "Your file shows one C and one T copy. The C form is linked to wet earwax even with one copy.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract, earwax association and rare deletion; coding-strand G/A is complemented to forward C/T using the separate mapping record."
+      },
+      {
+        "citation": "dataset:ensembl-vep-rs17822931",
+        "doi_or_url": "https://rest.ensembl.org/vep/human/id/rs17822931?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Reverse-strand ABCC11 transcript and forward T-to-Arg180 mapping. The source paper's coding A corresponds to forward T; personal letters still come only from the authorized resolver."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.interpretation.rs17822931.tt",
+    "text_verbatim": "Your file shows two T copies, the form linked to dry, flaky earwax. The paper also found a rare change elsewhere in ABCC11.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract, earwax association and rare deletion; coding-strand G/A is complemented to forward C/T using the separate mapping record."
+      },
+      {
+        "citation": "dataset:ensembl-vep-rs17822931",
+        "doi_or_url": "https://rest.ensembl.org/vep/human/id/rs17822931?content-type=application/json",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Reverse-strand ABCC11 transcript and forward T-to-Arg180 mapping. The source paper's coding A corresponds to forward T; personal letters still come only from the authorized resolver."
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.study.16444273.measured",
+    "text_verbatim": "The study compared earwax types and tested gene forms in cells.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.study.16444273.population",
+    "text_verbatim": "The paper examined wet and dry earwax and compared gene frequencies across populations.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.study.16444273.comparison",
+    "text_verbatim": "The dry form had lower transport activity in cells.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "objective",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract, cGMP assay"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
+  },
+  {
+    "claim_id": "report.earwax-type-abcc11.study.16444273.limitation",
+    "text_verbatim": "The cell test did not measure body odor. The paper also found a rare deletion.",
+    "surfaces": [
+      "/genome/[subject]/reports/earwax-type-abcc11#state=complete",
+      "export:account-export-v1"
+    ],
+    "claim_type": "descriptive",
+    "evidence": [
+      {
+        "citation": "pmid:16444273",
+        "doi_or_url": "https://pubmed.ncbi.nlm.nih.gov/16444273/",
+        "accessed_on": "2026-09-06",
+        "what_it_supports": "Author abstract; limit of the cell assay"
+      }
+    ],
+    "net_impression_note": "Study-specific interpretation, not a measured trait or calibrated personal probability. The source review and genotype mapping are recorded in docs/sources/everyday/review.md. This is agent source review, not independent clinical approval.",
+    "reviewed_on": "2026-09-06",
+    "reviewer": "Codex agent root, primary-source and coordinate review (not human signoff)"
   }
 ]

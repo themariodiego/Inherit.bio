@@ -1,0 +1,36 @@
+{
+  "url": "https://rest.ensembl.org/variation/human/rs72921001?content-type=application/json",
+  "httpStatus": 200,
+  "readAt": "2026-09-06T07:35:31.853Z",
+  "responseSha256": "2204c04c1a7e878c7af1645c411b7e15f4acfa733ab7f7ce17982062fb325086",
+  "record": {
+    "most_severe_consequence": "intron_variant",
+    "source": "Variants (including SNPs and indels) imported from dbSNP",
+    "name": "rs72921001",
+    "evidence": [
+      "Frequency",
+      "1000Genomes",
+      "Cited",
+      "TOPMed",
+      "gnomAD"
+    ],
+    "var_class": "SNP",
+    "mappings": [
+      {
+        "ancestral_allele": "C",
+        "assembly_name": "GRCh38",
+        "location": "11:6868417-6868417",
+        "seq_region_name": "11",
+        "coord_system": "chromosome",
+        "strand": 1,
+        "end": 6868417,
+        "start": 6868417,
+        "allele_string": "C/A"
+      }
+    ],
+    "synonyms": [],
+    "minor_allele": "A",
+    "MAF": 0.32398,
+    "ambiguity": "M"
+  }
+}
