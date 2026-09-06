@@ -4,6 +4,20 @@ These fixtures are deterministic synthetic test data. They describe no real
 person and must never be replaced with customer, patient, or personal genome
 data.
 
+## behavior-scope-grch38.vcf
+
+- Classification: hand-written synthetic single-sample GRCh38 VCF. It
+  describes no real person: FAAH AA, BDNF CT and COMT AG were invented to
+  exercise the three revised reports. No genotype came from a person.
+- Coordinates and reference/alternate letters match the existing template
+  positions, independently checked against Ensembl on 2026-09-06; see
+  `docs/sources/reviews/batch-02/independent-correction-review.md`.
+- The browser test uses the actual upload, processing and report routes,
+  including the existing mental-health opt-in. It checks the resulting
+  letters, interpretation, source context and source-read dates.
+- Repository SHA-256:
+  `91995e8a7754eba9e8d9bd6c04aa543cbf58f748be819a437d5eda10712bfaaa`.
+
 ## observed-reference-grch38.vcf and observed-reference-grch38.txt
 
 - Classification: hand-written synthetic VCF and consumer-array representations

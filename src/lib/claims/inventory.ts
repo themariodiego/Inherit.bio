@@ -49,7 +49,7 @@ function pointerPart(value: string): string {
 
 /** Strict real calendar date; validity alone does not demonstrate a source read. */
 function calendarDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000-")) return false;
   const instant = Date.parse(`${value}T00:00:00.000Z`);
   return Number.isFinite(instant) && new Date(instant).toISOString().slice(0, 10) === value;
 }
@@ -98,9 +98,19 @@ export function inventoryTemplateSources(inputs: readonly TemplateInput[]): Temp
           if ((citation.pmid !== undefined && !validPmid) || (citation.doi !== undefined && !validDoi)) {
             issue(input.path, pointer, "malformed-source-identifier");
           }
-          // Match the current citation renderer's preferred identifier, but
-          // retain the alternate identifier to detect publication duplicates.
-          const key = validPmid ? `pmid:${citation.pmid}` : validDoi ? `doi:${citation.doi}` : null;
+          // Preserve declared identifiers in occurrences; keys normalize DOI
+          // case and are reconciled only from explicit, unambiguous pairs below.
+          const key = validPmid ? `pmid:${citation.pmid}` : validDoi ? `doi:${(citation.doi as string).toLowerCase()}` : null;
+          // Keep prose even when its source id is malformed. Losing the text
+          // would make a broken citation shrink the scope of the review.
+          if (citation.studyContext !== undefined) {
+            if (!record(citation.studyContext)) issue(input.path, `${pointer}/studyContext`, "invalid-study-context");
+            else for (const [field, value] of Object.entries(citation.studyContext)) {
+              if (value === null) continue;
+              const textPointer = `${pointer}/studyContext/${pointerPart(field)}/text`;
+              addClaim(textPointer, "study-context", record(value) ? value.text : undefined, key ? [key] : []);
+            }
+          }
           if (!key) { issue(input.path, pointer, "unresolvable-source-identifier"); return; }
           sourceKeys.push(key);
           if (!calendarDate(citation.accessedOn)) issue(input.path, pointer, "missing-or-invalid-declared-access-date");
@@ -112,14 +122,6 @@ export function inventoryTemplateSources(inputs: readonly TemplateInput[]): Temp
             identifiers: { ...(validPmid ? { pmid: citation.pmid as string } : {}),
               ...(validDoi ? { doi: citation.doi as string } : {}) } });
           sources.set(key, source);
-          if (citation.studyContext !== undefined) {
-            if (!record(citation.studyContext)) issue(input.path, `${pointer}/studyContext`, "invalid-study-context");
-            else for (const [field, value] of Object.entries(citation.studyContext)) {
-              if (value === null) continue;
-              const textPointer = `${pointer}/studyContext/${pointerPart(field)}/text`;
-              addClaim(textPointer, "study-context", record(value) ? value.text : undefined, [key]);
-            }
-          }
         });
       }
       addClaim(`${base}/title`, "title", template.title);
@@ -136,6 +138,38 @@ export function inventoryTemplateSources(inputs: readonly TemplateInput[]): Temp
       });
     });
   }
-  result.sources = [...sources.keys()].sort().map((key) => sources.get(key)!);
+  const doiPmids = new Map<string, Set<string>>();
+  const pmidDois = new Map<string, Set<string>>();
+  for (const source of sources.values()) for (const { identifiers } of source.occurrences) {
+    if (!identifiers.pmid || !identifiers.doi) continue;
+    const doi = identifiers.doi.toLowerCase();
+    const pmids = doiPmids.get(doi) ?? new Set<string>();
+    pmids.add(identifiers.pmid); doiPmids.set(doi, pmids);
+    const dois = pmidDois.get(identifiers.pmid) ?? new Set<string>();
+    dois.add(doi); pmidDois.set(identifiers.pmid, dois);
+  }
+  const aliases = new Map<string, string>();
+  for (const [doi, pmids] of doiPmids) {
+    const [pmid] = pmids;
+    if (pmids.size === 1 && pmidDois.get(pmid)?.size === 1) aliases.set(`doi:${doi}`, `pmid:${pmid}`);
+  }
+  const reconciled = new Map<string, SourceCandidate>();
+  for (const source of sources.values()) {
+    const key = aliases.get(source.key) ?? source.key;
+    const target = reconciled.get(key) ?? { key, occurrences: [] };
+    for (const occurrence of source.occurrences) {
+      const { pmid, doi } = occurrence.identifiers;
+      if ((pmid && (pmidDois.get(pmid)?.size ?? 0) > 1) ||
+          (doi && (doiPmids.get(doi.toLowerCase())?.size ?? 0) > 1)) {
+        issue(occurrence.path, occurrence.pointer, "conflicting-source-alias");
+      }
+      target.occurrences.push(occurrence);
+    }
+    reconciled.set(key, target);
+  }
+  for (const claim of result.claims) {
+    claim.candidateSourceKeys = [...new Set(claim.candidateSourceKeys.map((key) => aliases.get(key) ?? key))];
+  }
+  result.sources = [...reconciled.keys()].sort().map((key) => reconciled.get(key)!);
   return result;
 }

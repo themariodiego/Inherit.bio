@@ -1,0 +1,11 @@
+##fileformat=VCFv4.2
+##source=Inherit hand-written synthetic fixture; invented calls; no real person
+##reference=GRCh38
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr11,length=135086622>
+##contig=<ID=chr22,length=50818468>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SYNTHETIC
+chr1	46405089	rs324420	C	A	50	PASS	.	GT	1/1
+chr11	27658369	rs6265	C	T	50	PASS	.	GT	0/1
+chr22	19963748	rs4680	G	A	50	PASS	.	GT	0/1
