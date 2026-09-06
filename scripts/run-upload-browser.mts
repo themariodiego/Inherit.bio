@@ -133,7 +133,7 @@ let forwardedUploads = 0;
 const proxy = http.createServer(async (request, response) => {
   try {
     const target = new URL(request.url ?? "");
-    const allowed = ["http://127.0.0.1:54321", "http://localhost:3100", "http://localhost:3101"];
+    const allowed = ["http://127.0.0.1:54321", "http://localhost:3100", "http://localhost:3101", "http://localhost:3102"];
     if (!allowed.includes(target.origin) || target.username || target.password) {
       response.writeHead(403); response.end("Local test proxy destination refused"); return;
     }

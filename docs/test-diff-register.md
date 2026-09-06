@@ -1,5 +1,34 @@
 # Test diff register
 
+Own-upload MVP verification (2026-09-06): the two-file control case proves
+exact downloads, conflict refusal, visible deletion failure/retry, real
+selected-source Storage removal and preservation of the other source. The
+source-facts case adds actual GRCh37 conversion, called/no-call counts,
+private-hash non-disclosure and analytic withdrawal with retained raw access.
+Behavior-study, report-preview and sensitive-gate cases now choose their
+explicit polygenic purpose through the real UI, preserving interpretation,
+source/claim, SSR leak, cross-account and sensitive-reveal assertions. Native
+browser requests replace only proxy-incompatible APIRequestContext calls.
+No legacy `annotated` status or analytic grant is fabricated.
+
+The first expanded run exposed stale local reference templates and a malformed
+synthetic vendor header. Local reference seeding and the fixture header were
+corrected; detection and expected scientific behavior were retained. A legacy
+embryo unit fixture now states its actual null canonical marker. Visual review
+separated file-wide listed-call wording from report coverage. At `5d755c9`,
+all 2,619 units and all 23 selected real-provider browser cases pass with zero
+skips/retries; sixteen uploads crossed actual Storage. This is not full-suite
+or hosted acceptance.
+
+The cron adapter adds credential/selector/HEAD refusal and exact fresh-POST
+forwarding tests while preserving the existing worker tests. At `77dbad1`,
+all 2,641 units pass; no scheduled or hosted cleanup is claimed. Canonical
+issuance-pause tests preserve current auth/consent/capacity checks when off,
+require no signer/lease/Storage work after authenticated pause, and check
+unchanged finalize/preparation behavior with the pause enabled. Its final
+integrated browser receipt is recorded separately when actually run.
+
+
 Copilot pre-merge usability review: four extra cases bring the completion
 corpus to 64 and new unit coverage to 69 tests. Three first failed on
 conditional symptoms, explicitly unknown diagnosis and report-reading
