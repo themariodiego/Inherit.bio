@@ -9,8 +9,8 @@ if (process.env.VERCEL || process.env.CI || !proxy || !/^http:\/\/127\.0\.0\.1:[
 
 export default defineConfig({
   ...base,
-  testMatch: ["own-upload-positive.spec.ts", "report-library-recovery.spec.ts"],
-  grep: /canonical browser upload|empty: recover/,
+  testMatch: ["own-upload-positive.spec.ts", "own-report-results.spec.ts", "report-library-recovery.spec.ts"],
+  grep: /canonical browser upload|canonical chosen report|empty: recover/,
   projects: [{ name: "chromium", use: base.projects![0].use }],
   use: {
     ...base.use,

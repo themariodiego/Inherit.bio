@@ -10,7 +10,7 @@ import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { route } from "@/lib/primary-routes";
 import { BrowserPreparationError, BrowserUploadError, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 
-type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "prepared"; fileId: string }
+type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "prepared" | "results-ready"; fileId: string }
   | { step: "preparation-error"; fileId: string; code: "build_unknown" | "unavailable" }
   | { step: "error"; message: string; action?: { label: string; href: string } };
 
@@ -36,12 +36,12 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
-  const busy = !["idle", "prepared", "preparation-error", "error"].includes(phase.step);
+  const busy = !["idle", "prepared", "results-ready", "preparation-error", "error"].includes(phase.step);
   async function prepare(fileId: string) {
     setPhase({ step: "preparing", fileId });
     try {
-      await prepareSubjectFile(fileId);
-      setPhase({ step: "prepared", fileId });
+      const receipt = await prepareSubjectFile(fileId);
+      setPhase({ step: receipt.analysisState === "active" ? "results-ready" : "prepared", fileId });
     } catch (error) {
       setPhase({ step: "preparation-error", fileId,
         code: error instanceof BrowserPreparationError ? error.code : "unavailable" });
@@ -87,8 +87,11 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
         : phase.step === "uploading" ? <p>Uploading to private storage… {phase.pct}%</p>
         : phase.step === "validating" ? <p>Verifying the complete uploaded file…</p>
         : phase.step === "preparing" ? <p>Your file is stored. Preparing it for your results…</p>
-        : phase.step === "prepared" ? <p className="text-ok">
-          Your file is stored and prepared. Reports have not been generated yet.{" "}
+        : phase.step === "prepared" || phase.step === "results-ready" ? <p className="text-ok">
+          {phase.step === "results-ready" ? "Your file is stored and your selected reports are ready."
+            : "Your file is stored and prepared. Reports have not been generated yet."}{" "}
+          <Link href={route("genome.reports", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
+            className="underline underline-offset-2">{phase.step === "results-ready" ? "Explore your reports" : "Choose your reports"}</Link>{" · "}
           <Link href={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
             className="underline underline-offset-2">View your file</Link>
         </p>

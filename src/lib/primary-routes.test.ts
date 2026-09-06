@@ -56,6 +56,7 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "settings.consents",
   "api.account-completion",
   "api.consents",
+  "api.consent-revoke",
   "api.file-upload-session",
   "api.file-finalize",
   "api.file-process",

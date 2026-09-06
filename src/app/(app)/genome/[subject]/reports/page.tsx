@@ -27,7 +27,6 @@ import {
 import {
   getPublishedTemplates,
   getSubjectFileCount,
-  getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
@@ -44,6 +43,8 @@ import {
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
 import { grantedLayers } from "@/lib/family/access";
+import { loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
+import { OwnReportChoicesEntry } from "@/components/reports/own-report-choices-entry";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -116,19 +117,19 @@ export default async function ReportsPage(
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
   const [files, fileCount, allTemplates] = await Promise.all([
-    getSubjectProcessedFiles(admin, dataSubjectId),
+    loadOwnAnalysisCandidateFiles(admin, dataSubjectId),
     getSubjectFileCount(admin, dataSubjectId),
     getPublishedTemplates(admin),
   ]);
   // Test fixtures never reach the user-facing library.
   const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
-  const { genotypes, conflicts } = await getSubjectReportCalls(
-    admin,
-    dataSubjectId,
-    templates,
-  );
+  // Each layer has its own input map: one selected purpose cannot populate
+  // another layer's coverage, genotypes or personalized text.
+  const layerCalls = new Map(await Promise.all(allowedLayers.map(async layer => [layer,
+    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer)),
+  ] as const)));
   const resolved = templates.map((t) =>
-    resolveTemplate(t, (rsid) => genotypes.get(rsid)),
+    resolveTemplate(t, (rsid) => layerCalls.get(t.layer ?? "estimate")?.genotypes.get(rsid)),
   );
   const previewContributors = new Map<string, string[]>();
   const previews = await loadPersonalPreviews(admin, {
@@ -137,10 +138,10 @@ export default async function ReportsPage(
     subjectClass: subject.subjectClass,
     subjectId: dataSubjectId,
     isFamily: person !== null,
-  }, templates, files, conflicts, previewContributors);
+  }, templates.filter(t => (t.layer ?? "estimate") === "estimate"), files,
+  layerCalls.get("estimate")?.conflicts ?? new Set(), previewContributors);
   const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat());
 
-  const hasData = files.length > 0;
   const subjectParams = { subject: subject.routeSegment };
 
   // One group per layer; a layer with zero templates is absent, not empty.
@@ -181,7 +182,7 @@ export default async function ReportsPage(
         summary: template.summary,
         evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
         genes: template.variants.map((variant) => variant.gene),
-        status: hasData ? (covered ? "covered" : "not-covered") : "awaiting",
+        status: (layerCalls.get(activeLayer)?.fileCount ?? 0) > 0 ? (covered ? "covered" : "not-covered") : "awaiting",
         preview: previews.get(template.slug),
       });
       byCategory.set(category, list);
@@ -221,7 +222,7 @@ export default async function ReportsPage(
 
       <header className="space-y-3">
         <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
-        {!hasData ? <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p> : null}
+        {fileCount === 0 ? <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p> : null}
         {/* One count line per non-empty layer, each carrying its own layer
             noun (G4.3), so a future variant_call layer is never described
             as estimates: the covered count, then the layer total. */}
@@ -231,7 +232,7 @@ export default async function ReportsPage(
           const describedBy = `layer-${layer}-definition`;
           const counts = (
             <>
-              {hasData ? (
+              {(layerCalls.get(layer)?.fileCount ?? 0) > 0 ? (
                 <>
                   <Count
                     value={covered}
@@ -271,6 +272,7 @@ export default async function ReportsPage(
           </p>
         ) : null}
       </header>
+      {!person ? <OwnReportChoicesEntry subject={subject.routeSegment} /> : null}
 
       {nonEmptyLayers.length > 1 ? (
         <nav aria-label="Report groups" className="flex gap-1 border-b border-line">

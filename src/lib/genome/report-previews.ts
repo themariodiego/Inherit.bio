@@ -87,7 +87,7 @@ export async function loadPersonalPreviews(
   const knownFiles = files.filter((file) => file.build === "GRCh37" || file.build === "GRCh38");
   if (knownFiles.length === 0) return previews;
   const { calls } = await loadReportCallRows(db, audience.subjectId,
-    PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid), audience.viewerAccountId);
+    PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid), audience.viewerAccountId, "reports.polygenic");
   const local = resolveReportCalls(calls, templates);
   const allConflicts = new Set([...conflicts, ...local.conflicts]);
   for (const [rsid, genotype] of local.genotypes) if (genotype === "--") allConflicts.add(rsid);

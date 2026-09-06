@@ -3,7 +3,7 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, uploadSessionBody } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, uploadSessionBody } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
@@ -27,7 +27,7 @@ export async function prepareSubjectFile(fileId: string) {
     const code = value && typeof value === "object" && "error" in value ? value.error : null;
     throw new BrowserPreparationError(code === "build_unknown" ? "build_unknown" : "unavailable");
   }
-  const receipt = subjectNormalizationReceipt.safeParse(value);
+  const receipt = subjectProcessingReceipt.safeParse(value);
   if (!receipt.success || receipt.data.fileId !== fileId) throw new BrowserPreparationError("unavailable");
   return receipt.data;
 }

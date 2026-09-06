@@ -8072,6 +8072,20 @@ export type Database = {
         Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
         Returns: Json
       }
+      filter_own_analysis_files_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string; p_purpose: string;
+          p_file_ids: string[]; p_stored_result: boolean
+        }
+        Returns: string[]
+      }
+      read_own_report_calls_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
+          p_rsids: number[]; p_offset: number
+        }
+        Returns: Json
+      }
       grant_own_report_purpose_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_subject_id: string; p_snapshot: Json;

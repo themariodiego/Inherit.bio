@@ -2477,7 +2477,21 @@
         "embryo-donor-attribution-v1"
       ]
     },
+    "own-report-synchronous-v1": {
+      "decision": "docs/adr/0024-own-report-synchronous-generation.md",
+      "route": "api.file-process",
+      "scope": "only structurally verified, normalized Tier-1 sources bound to the acting account's active self subject",
+      "operations": { "reports.monogenic": "variant_call report templates", "reports.polygenic": "estimate report templates and existing coverage-only PGS computation" },
+      "identity": "server selects each operation independently from its current exact self-direction canonical purpose grant; request bodies, filenames and client-selected operation overrides are forbidden",
+      "checkpoints": "the identical current grant, artifact, source/hash/normalization revision, principal/binding, jurisdiction and lifecycle authority is checked before every bounded genetic read and in the atomic completion transaction; an incomplete or revoked run exposes no completed-result marker",
+      "completion": "private.own_analysis_runs records the exact per-purpose source and grant snapshot and computation revision; completed report interpretations and selected PGS rows commit atomically with that marker; genome_files remains stored and no global annotated flag authorizes another purpose",
+      "read": "every result reader requires both the current exact-purpose authority and a matching completed-purpose run; normal session refresh does not substitute for durable source or consent binding checks",
+      "response": "use only file-processing-v1 synchronous processed or already_processed receipts after every selected supported operation is currently complete; no supported selected operation returns the normalization_complete/not_generated receipt",
+      "excluded": ["ancestry generation", "other_adult", "embryo", "family analysis", "outside models", "implicit purpose grants", "worker-job receipts", "validated personal PGS score or risk claims"],
+      "queueCompatibility": "worker-job-enqueue-v1 is unchanged and mandatory for its registered queued operations; this explicit synchronous exception creates no worker_jobs row and cannot claim a queued or running job"
+    },
     "analysis-eligibility-v1": {
+      "synchronousOwnReportException": "own-report-synchronous-v1 permits only its two registered own-account Tier-1 report purposes without a worker_jobs row; operation identity is server-selected, and the same normalization, exact-purpose, source-revision, lifecycle and current-authority checks apply before each genetic read and atomic result write",
       "source": "server-resolved-file-subject-cohort-current-consents-attestations-disclosure-acknowledgements-and-for-every-embryo-job-the-exact-embryo-basis-authority-v1-output-sets-basis-revision-and-embryo-donor-attribution-v1-state",
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "enqueueContract": "worker-job-enqueue-v1",
@@ -14916,6 +14930,7 @@
         "scopeSource": "database-owned-file-row",
         "requestObjectPath": "forbidden",
         "normalizationOrchestration": "select-only-analysis-eligibility-v1.jobKindPurposeCapabilityMatrix.ingest.normalize-for-the-exact-current-source-revision; self-may-run-the-registered-synchronous-Tier-1-path-or-conditionally-enqueue-and-other_adult-requires-its-confirmed-upload-revision-and-conditionally-enqueues-or-reuses-the-one-normalization-job; after-normalization_complete-re-evaluate-current-purpose-rows-and-conditionally-enqueue-their-exact-analytic-jobs-with-no-purpose-creation",
+        "synchronousOwnReports": "after exact-source normalization, own-report-synchronous-v1 may synchronously generate only the currently selected own monogenic/polygenic report operations; this exception does not enqueue or alter other registered job kinds",
         "contracts": [
           "resource-authorization-v1",
           "genetic-file-ingest-v1",

@@ -53,7 +53,6 @@ import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectFileCount,
-  getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
@@ -73,6 +72,7 @@ import {
 } from "@/lib/genome/taxonomy";
 import { LAYER_PURPOSES, viewerMaySee } from "@/lib/family/access";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
+import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -125,7 +125,7 @@ const loadReport = cache(async (segment: string, slug: string) => {
   const admin = createAdminClient();
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
-  const [{ data: raw }, files, fileCount] = await Promise.all([
+  const [{ data: raw }, candidateFiles, fileCount] = await Promise.all([
     admin
       .from("report_templates")
       .select(
@@ -134,10 +134,13 @@ const loadReport = cache(async (segment: string, slug: string) => {
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle(),
-    getSubjectProcessedFiles(admin, context.dataSubjectId),
+    loadOwnAnalysisCandidateFiles(admin, context.dataSubjectId),
     getSubjectFileCount(admin, context.dataSubjectId),
   ]);
   if (!raw) return { kind: "not-found" } as const;
+  const layer = (raw.layer ?? "estimate") as FindingLayer;
+  const files = await filterOwnAnalysisFiles(admin, context.dataSubjectId,
+    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", candidateFiles);
   return { ...context, files, fileCount, template: raw as unknown as ReportTemplate };
 });
 
@@ -386,7 +389,9 @@ export default async function ReportDetailPage(
         ))}
       </div>
     ) : (
-      <p className="text-sm text-ink">{NO_FILE_YET}</p>
+      <p className="text-sm text-ink">{fileCount === 0 ? NO_FILE_YET : (
+        <>Choose this result type in <Link className="underline" href={reportsHref}>Reports</Link> to see what your file supports.</>
+      )}</p>
     );
   } else {
     yourResult = (

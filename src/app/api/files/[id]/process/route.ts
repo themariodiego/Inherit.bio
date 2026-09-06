@@ -20,6 +20,7 @@ import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeSubjectFile } from "@/lib/uploads/subject-normalization";
+import { generateOwnReports } from "@/lib/uploads/own-report-generation";
 
 export const maxDuration = 300;
 
@@ -56,7 +57,9 @@ export async function POST(
   // New sources prepare canonical rows under store consent only. They never
   // enter the legacy all-analysis dispatcher below.
   if (file.single_logical_sample_verified_at !== null) {
-    return normalizeSubjectFile(request, id);
+    const prepared = await normalizeSubjectFile(request, id);
+    if (prepared.status !== 200) return prepared;
+    return generateOwnReports(request, id);
   }
   if (file.tier !== 1) {
     return new Response("Only Tier-1 files are processed serverside", {

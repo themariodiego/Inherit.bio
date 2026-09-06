@@ -68,6 +68,23 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-06 · PR73 released
+
+PR73 (`a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`) improves milestone 2:
+clear empty search/results-only filters, restore search focus, and retain the
+same filters on browser Back without putting the search in a URL or persistent
+browser storage. CI run `34038938075` passed **219 browser cases, no skips or
+retries**, plus its unit, database, build and repository gates. Vercel reports
+production deployment `dpl_8J7MvprofssBdKKqGJvdVcPjQ2cz` READY on that exact
+commit, with `www.inherit.bio` assigned. This is a deployed usability slice,
+not completion of another whole-plan gate: acceptance stays **18/65**.
+
+Milestone 1 separately has a local actual-provider browser receipt through
+file preparation at `294d8a0`. Independent choice controls and chosen-result
+generation/read guards are being integrated on the upload branch. They are
+not part of PR73 or its production deployment; no new-upload report result is
+claimed delivered from the filter release.
+
 Report: the user-visible outcome; merged/deployed/locally tested status;
 which milestone advanced; exact G gate IDs newly proved (if any); and the
 next user-visible blocker. Keep **18/65** until a complete gate has its actual

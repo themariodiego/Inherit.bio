@@ -35,6 +35,12 @@ beforeEach(() => {
 });
 
 describe("preparing an already finalized file", () => {
+  it.each(["processed", "already_processed"])("preserves the authoritative %s receipt for previously chosen reports", async status => {
+    const value = { fileId, status, analysisState: "active" };
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json(value));
+    expect(await prepareSubjectFile(fileId)).toEqual(value);
+    expect(requests).toHaveLength(0);
+  });
   it("makes one bodyless request for the exact file, without uploading or claiming reports exist", async () => {
     const normalized = { fileId, status: "normalization_complete", analysisState: "not_generated" };
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(normalized));
@@ -46,7 +52,7 @@ describe("preparing an already finalized file", () => {
   });
   it.each([
     { fileId: subjectId, status: "normalization_complete", analysisState: "not_generated" },
-    { fileId, status: "processed", analysisState: "active" },
+    { fileId, status: "processed", analysisState: "not_generated" },
     { fileId, status: "normalization_complete", analysisState: "not_generated", unexpected: true },
   ])("rejects mismatched or open preparation receipts", async receipt => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt));

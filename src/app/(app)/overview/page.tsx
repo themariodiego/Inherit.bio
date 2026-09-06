@@ -228,7 +228,7 @@ export default async function OverviewPage() {
       candidates.map((t) => resolveTemplate(t, (rsid) => genotypes.get(rsid))),
     );
 
-    const { data: admixRow } = await admin
+    const { data: admixRow } = await supabase
       .from("ancestry_results")
       .select("result")
       .eq("subject_id", self.id)

@@ -37,6 +37,8 @@ import { viewerMaySee } from "@/lib/family/access";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
 
 /**
  * One resolver for both domains (design §2.2): this account's own records,
@@ -118,19 +120,26 @@ export default async function AncestryPage(
   if (person && !viewerMaySee(person, "ancestry")) notFound();
 
   const admin = createAdminClient();
+  const candidates = await loadOwnAnalysisCandidateFiles(admin, dataSubjectId);
+  const allowed = await filterOwnAnalysisFiles(admin, dataSubjectId, "ancestry", candidates);
+  // Own reads use RLS too, keeping the live-grant lock and result SELECT in
+  // one database statement. Family keeps its established legacy authorization.
+  const resultClient = person ? admin : await createClient();
   const [fileCount, { data: results }] = await Promise.all([
     // The subject bar counts every file in the record, whatever its status.
     getSubjectFileCount(admin, dataSubjectId),
-    admin
+    allowed.length ? resultClient
       .from("ancestry_results")
       .select("kind, result, support_note, file_id, model_id, model_version")
       .eq("subject_id", dataSubjectId)
-      .order("created_at", { ascending: false }),
+      .in("file_id", allowed.map(f => f.id))
+      .order("created_at", { ascending: false }) : { data: [] },
   ]);
-
-  const admix = results?.find((row) => row.kind === "admixture");
-  const mt = results?.find((row) => row.kind === "mtdna");
-  const y = results?.find((row) => row.kind === "ydna");
+  const current = new Set((await filterOwnAnalysisFiles(admin, dataSubjectId, "ancestry", allowed)).map(f => f.id));
+  const readable = results?.filter(row => current.has(row.file_id));
+  const admix = readable?.find((row) => row.kind === "admixture");
+  const mt = readable?.find((row) => row.kind === "mtdna");
+  const y = readable?.find((row) => row.kind === "ydna");
   const regions = admix ? admixtureView(admix.result, admix.support_note) : null;
   const [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
     [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result ? [result.file_id] : [])),

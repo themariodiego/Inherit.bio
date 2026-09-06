@@ -119,10 +119,10 @@ describe("reviewed personal previews", () => {
     const query = {
       select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(), then: (resolve: (value: unknown) => void) => resolve({ data: [call], error: null }),
+      in: vi.fn().mockReturnThis(), then: (resolve: (value: unknown) => void) => resolve({ data: [{ ...call, file_id: "known" }], error: null }),
     };
     const fileQuery = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
-      range: async () => ({ data: [{ id: "known", build: "GRCh37" }] }) };
+      range: async () => ({ data: [{ id: "known", status: "annotated", single_logical_sample_verified_at: null, build: "GRCh37" }] }) };
     const db = { from: vi.fn((table: string) => table === "genome_files" ? fileQuery : query) } as unknown as Db;
     const result = await loadPersonalPreviews(db, audience, templates, [{ id: "known", build: "GRCh37" }, { id: "unknown", build: null }], new Set());
     expect(query.eq.mock.calls).toEqual([["subject_id", "subject"], ["user_id", "owner"], ["subject_id", "subject"], ["user_id", "owner"]]);

@@ -49,6 +49,7 @@ const ROUTE_PATTERNS = {
   "settings.consents": "/settings/consents",
   "api.account-completion": "/api/account/completion",
   "api.consents": "/api/consents",
+  "api.consent-revoke": "/api/consents/[id]/revoke",
   "api.file-upload-session": "/api/files/upload-session",
   "api.file-finalize": "/api/files/[id]/finalize",
   "api.file-process": "/api/files/[id]/process",

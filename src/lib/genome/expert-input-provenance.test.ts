@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   files: vi.fn(), user: vi.fn(), queries: [] as { table: string; filters: unknown[][] }[],
 }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from }) }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.user } }) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.user }, from: mocks.from }) }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
 vi.mock("@/lib/genome/load", () => ({ getSubjectProcessedFiles: mocks.files, getSubjectFileCount: async () => 2, getSubjectGenotypesByRsid: mocks.genotypes }));
 vi.mock("@/lib/genome/input-sources", () => ({ loadInputSources: mocks.sources }));

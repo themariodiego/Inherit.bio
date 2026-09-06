@@ -22,6 +22,10 @@ export const subjectFinalizationReceipt = z.object({ fileId: uuid, status: z.lit
 export const subjectNormalizationReceipt = z.object({ fileId: uuid,
   status: z.literal("normalization_complete"), analysisState: z.literal("not_generated"),
 }).strict();
+export const subjectSynchronousReportReceipt = z.object({ fileId: uuid,
+  status: z.enum(["processed", "already_processed"]), analysisState: z.literal("active"),
+}).strict();
+export const subjectProcessingReceipt = z.union([subjectNormalizationReceipt, subjectSynchronousReportReceipt]);
 
 /** Parser identities stay internal; neither filenames nor vendor labels select authority. */
 export function declaredSubjectFormat(kind: FileKind, compressed: boolean): SubjectUploadFormat | null {

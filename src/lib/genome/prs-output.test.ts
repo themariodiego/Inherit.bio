@@ -18,7 +18,7 @@ function mockDb(results: Result[]) {
   const db = {
     from(table: string) {
       const chain: Record<string, (...args: unknown[]) => unknown> = {};
-      for (const operation of ["select", "eq", "in", "order", "range", "maybeSingle", "limit"]) {
+      for (const operation of ["select", "eq", "in", "is", "order", "range", "maybeSingle", "limit"]) {
         chain[operation] = (...args) => {
           calls.push({ table, operation, args });
           if (["range", "maybeSingle", "limit"].includes(operation)) return take();
@@ -63,7 +63,8 @@ describe("chat PRS query boundary", () => {
     const output = await loadPrsForChat(db, "subject-a", META.pgs_id, true);
     expect(output).toMatchObject({ pgs_id: META.pgs_id, result: { coverage: { matched: 25, required: 50 }, status: "unavailable" } });
     expectNoScores(output);
-    expect(calls).toContainEqual({ table: "user_prs", operation: "select", args: ["matched"] });
+    expect(calls).toContainEqual({ table: "user_prs", operation: "select", args: ["matched,genome_files!inner(single_logical_sample_verified_at)"] });
+    expect(calls).toContainEqual({ table: "user_prs", operation: "is", args: ["genome_files.single_logical_sample_verified_at", null] });
     expect(calls).toContainEqual({ table: "user_prs", operation: "eq", args: ["subject_id", "subject-a"] });
     expect(calls).toContainEqual({ table: "user_prs", operation: "eq", args: ["pgs_id", META.pgs_id] });
   });

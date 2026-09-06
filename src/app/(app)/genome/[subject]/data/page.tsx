@@ -55,7 +55,7 @@ export default async function GenomeDataPage(
   // against a global fallback panel, so nothing numeric about risk is shown
   // (§4 §2.5, X4.2).
   const { data: prsRows } = files.length > 0
-    ? await admin
+    ? await supabase
         .from("user_prs")
         .select("pgs_id, matched, file_id")
         .eq("subject_id", subject.id)
