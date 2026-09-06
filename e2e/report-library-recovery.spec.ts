@@ -3,6 +3,48 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 
+test("/genome/[subject]/reports empty-history: preserve private search and result filter through browser Back", async ({ page }, testInfo) => {
+  const user = { email: `library-history-${randomUUID()}@e2e.local`, password: "synthetic-library-password" };
+  await createConfirmedUser(user.email, user.password);
+  await signIn(page, user.email, user.password);
+  const leakedSearchRequests: string[] = [];
+  const browserErrors: string[] = [];
+  page.on("request", request => { if (request.url().includes("MCM6")) leakedSearchRequests.push(request.url()); });
+  page.on("pageerror", error => browserErrors.push(error.message));
+  page.on("console", message => { if (message.type() === "error") browserErrors.push(message.text()); });
+  await page.goto("/genome/me/reports");
+  const search = page.getByLabel("Search reports by title, gene, or category");
+  const resultsOnly = page.getByLabel("With results", { exact: true });
+  const cards = page.locator('[data-card="estimate"]');
+  await search.fill("MCM6");
+  await expect(cards).toHaveCount(1);
+  const title = await cards.locator("h3").innerText();
+  await cards.getByRole("link").click();
+  await expect(page.locator('[data-slot="report-skeleton"]')).toBeVisible();
+  await page.goBack();
+  await expect(search).toHaveValue("MCM6");
+  await expect(resultsOnly).not.toBeChecked();
+  await expect(cards.locator("h3")).toHaveText(title);
+  await resultsOnly.check();
+  await expect(cards).toHaveCount(0);
+  // This genuine browser history entry has no matching result to click.
+  // Forward reopens the already visited report; Back must restore both filters.
+  await page.goForward();
+  await expect(page.locator('[data-slot="report-skeleton"]')).toBeVisible();
+  await page.goBack();
+  await expect(search).toHaveValue("MCM6");
+  await expect(resultsOnly).toBeChecked();
+  await expect(cards).toHaveCount(0);
+  expect(new URL(page.url()).search).toBe("");
+  expect(leakedSearchRequests).toEqual([]);
+  expect(browserErrors).toEqual([]);
+  expect(await page.evaluate(() => localStorage.getItem("inheritReportFiltersV1"))).toBeNull();
+  await page.screenshot({ path: testInfo.outputPath("report-filter-back-restored.png"), fullPage: true });
+  await page.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await expect(search).toBeFocused();
+});
+
 test("/genome/[subject]/reports empty: recover from a results-only filter without a file", async ({ page }) => {
   const user = { email: `library-empty-${randomUUID()}@e2e.local`, password: "synthetic-library-password" };
   await createConfirmedUser(user.email, user.password);

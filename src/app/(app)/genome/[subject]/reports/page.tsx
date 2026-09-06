@@ -310,6 +310,7 @@ export default async function ReportsPage(
           <ReportLibrary
             groups={groups}
             subject={subject.routeSegment}
+            historySubjectId={dataSubjectId}
             layerClass={LAYER_CLASS[activeLayer]}
             describedBy={definitionId}
           />
