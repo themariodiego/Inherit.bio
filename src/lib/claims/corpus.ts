@@ -1,4 +1,5 @@
 import type { ClaimOccurrence, ClaimRegistry } from "./registry";
+import { CITATION_TYPES } from "./registry";
 
 export const CORPUS_CHANNELS = ["static-build", "seeded-authenticated", "email", "export"] as const;
 export type CorpusChannel = (typeof CORPUS_CHANNELS)[number];
@@ -90,6 +91,15 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
   const resolve = <T>(fn: () => T, path: string): T | undefined => {
     try { return fn(); } catch { add("resolver-failed", path); return undefined; }
   };
+  const citationExists = (sourceId: string, path: string): boolean => {
+    const source: unknown = resolve(() => input.registry.resolveCitation(sourceId), path);
+    // Enforce the synchronous resolver boundary, not just truthiness. Full
+    // identifier/date/source validation still belongs to the canonical registry.
+    return object(source) && typeof source.then !== "function" && source.id === sourceId &&
+      CITATION_TYPES.includes(source.type as (typeof CITATION_TYPES)[number]) &&
+      ["identifier", "url", "access_date", "quote", "claim"].every((key) => text(source[key])) &&
+      (source.archived_path === null || text(source.archived_path));
+  };
   const channel = (value: unknown, path: string) => {
     if (typeof value !== "string" || !CORPUS_CHANNELS.includes(value as CorpusChannel)) { add("unknown-channel", path); return false; }
     return true;
@@ -123,7 +133,7 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
     if (typeof value !== "string") { add("invalid-provenance", path); return; }
     const citation = /^citation:([a-z0-9][a-z0-9._:-]{0,127})$/.exec(value);
     if (citation) {
-      if (!resolve(() => input.registry.resolveCitation(citation[1]), path)) add("unknown-citation", path);
+      if (!citationExists(citation[1], path)) add("unknown-citation", path);
       return { type: "citation", target: citation[1] };
     }
     const seed = /^seed:([a-z][a-z0-9_]*)\/([A-Za-z0-9][A-Za-z0-9._:-]{0,255})$/.exec(value);
@@ -186,7 +196,7 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
       const ids = new Set<string>();
       for (const [si, source] of citations.entries()) {
         const sp = `${cp}.citationIds[${si}]`;
-        if (!id(source) || !resolve(() => input.registry.resolveCitation(source as string), sp)) add("unknown-citation", sp);
+        if (!id(source) || !citationExists(source, sp)) add("unknown-citation", sp);
         if (typeof source === "string") { if (ids.has(source)) add("wrong-citation", sp); ids.add(source); }
         if (resolved && !resolved.claim.evidence.some((e) => e.citation === source)) add("wrong-citation", sp);
       }

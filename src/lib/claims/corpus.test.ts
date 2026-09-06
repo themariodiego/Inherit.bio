@@ -135,6 +135,17 @@ describe("renderer-supplied claim corpus audit", () => {
     const input = fixture(); input.resolveComputed = (() => Promise.resolve(true)) as unknown as CorpusInput["resolveComputed"];
     expect(codes(input)).toContain("unknown-module");
   });
+  it.each(["async-missing", "async-found", "wrong-id", "incomplete"])("refuses malformed citation resolver results: %s", (kind) => {
+    const input = fixture();
+    const original = input.registry.resolveCitation;
+    input.registry.resolveCitation = ((sourceId: string) => kind === "async-missing" ? Promise.resolve(undefined) :
+      kind === "async-found" ? Promise.resolve(original(sourceId)) : kind === "wrong-id" ? { ...original(sourceId), id: "fixture.wrong" } :
+      { id: sourceId }) as unknown as typeof original;
+    const result = auditClaimCorpus(input);
+    expect(result.ok).toBe(false);
+    expect(result.issues.some((issue) => issue.code === "unknown-citation" && issue.path.includes("citationIds"))).toBe(true);
+    expect(result.issues.some((issue) => issue.code === "unknown-citation" && issue.path.endsWith("provenance"))).toBe(true);
+  });
   it("rejects unknown claims and non-verbatim claim text", () => {
     const input = fixture(); input.observations[0].claims[0].claimId = "fixture.unknown";
     input.observations[1].claims[0].text = "Different synthetic text.";

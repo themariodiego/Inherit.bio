@@ -50,7 +50,7 @@ export function planClaimCaptures(input: CapturePlanInput): ClaimCapture[] {
   const routePaths = new Set<string>();
   let pageCount = 0;
   for (const route of register.routes as unknown[]) {
-    if (!row(route) || !nonempty(route.kind)) fail("invalid-route");
+    if (!row(route) || !["page", "redirect", "endpoint"].includes(route.kind as string)) fail("invalid-route");
     if (route.kind !== "page") continue;
     pageCount++;
     if (!nonempty(route.id) || !nonempty(route.path) || !route.path.startsWith("/") || !nonempty(route.auth) ||

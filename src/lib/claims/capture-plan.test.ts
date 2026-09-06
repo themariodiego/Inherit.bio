@@ -59,6 +59,11 @@ describe("independent rendered-claim capture planning", () => {
     const second = fixture(); second.emailEntrypoints = [...second.emailEntrypoints, ...second.emailEntrypoints];
     expect(() => planClaimCaptures(second)).toThrow("duplicate-capture");
   });
+  it("rejects an unknown route kind instead of silently omitting its page", () => {
+    const input = fixture();
+    editRegister(input, (r) => { r.routes.push({ ...r.routes[0], id: "fixture.missing", path: "/missing", kind: "paeg" }); });
+    expect(() => planClaimCaptures(input)).toThrow("invalid-route");
+  });
   it.each(["pages", "emails", "exports"])("refuses missing %s inventory", (kind) => {
     const input = fixture();
     if (kind === "pages") editRegister(input, (r) => { r.routes = []; });
