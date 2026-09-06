@@ -18,6 +18,11 @@ describe("always-visible input provenance", () => {
     expect(html).toContain("were not recorded");
     expect(html).toContain("supplied no record");
     expect(html).toContain('data-provenance="computed:genome/input-provenance"');
+    expect(html).toContain("read 1 of the 2 positions this needs");
+    expect(html).toContain("calls in 9 of 10 listed, supported records");
+    expect(html).not.toContain("read 9 of the 10 positions this needs");
+    expect(html).toContain("not the share of your genome tested");
+    expect(html.match(/data-figure-kind="coverage"/g)).toHaveLength(2);
     expect(html).not.toMatch(/<details|<summary|private-file|sha256|bucket_path/);
   });
   it.each(["absent", "noCall", "conflict"] as const)("shows the honest %s state and does not hide it", (state) => {

@@ -192,7 +192,7 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   await expect(sourceFacts).toContainText(INPUT_PROVENANCE_COPY.sameBuild);
   await expect(sourceFacts).toContainText(INPUT_PROVENANCE_COPY.declared);
   await expect(sourceFacts.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]'))
-    .toHaveText("read 5 of the 5 positions this needs");
+    .toHaveText("calls in 5 of 5 listed, supported records");
   await page.screenshot({ path: test.info().outputPath("chosen-milk-sugar-report.png"), fullPage: true });
 
   const grants = await admin.from("purpose_grants").select("purpose,grant_id,revoked_at").eq("target_id", source.data!.subject_id);

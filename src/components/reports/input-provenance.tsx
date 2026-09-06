@@ -35,6 +35,7 @@ export function InputProvenance({ sources, subject, coverage, state = "recorded"
           <ClaimBlock subject={subject} className="border-0 bg-transparent p-0" figures={[{
             kind: "coverage", class: "quality", basis: "observed", provenance: { kind: "computed", module: "genome/input-provenance" },
             read: source.snapshot.counts.called, needed: source.snapshot.counts.called + source.snapshot.counts.noCall,
+            wording: "listed-calls",
           }]} />
         </> : <p>{COPY.unknownRate}</p>}
         <p>{COPY.qualityScope}</p>

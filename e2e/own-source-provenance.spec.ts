@@ -34,7 +34,7 @@ test("canonical source facts explain converted coordinates and listed no-calls w
     await expect(facts).toContainText(COPY.callScope);
     await expect(facts).not.toContainText(COPY.unknown);
     await expect(facts.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]'))
-      .toHaveText("read 1 of the 2 positions this needs");
+      .toHaveText("calls in 1 of 2 listed, supported records");
     const document = await response!.text();
     expect(document.includes(createHash("sha256").update(bytes).digest("hex")), "source hash stays private").toBe(false);
   }
@@ -65,6 +65,6 @@ test("canonical source facts explain converted coordinates and listed no-calls w
   const tableFacts = page.locator('[data-slot="table-input-provenance"]');
   await expect(tableFacts).toContainText(COPY.converted);
   await expect(tableFacts.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]'))
-    .toHaveText("read 1 of the 2 positions this needs");
+    .toHaveText("calls in 1 of 2 listed, supported records");
   await expect(page.locator('#results [data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/G");
 });

@@ -39,7 +39,13 @@ export type NaturalFrequencySpec = FigureCommon &
 
 export type PercentileSpec = FigureCommon & { kind: "percentile"; value: number };
 
-export type CoverageSpec = FigureCommon & { kind: "coverage"; read: number; needed: number };
+export type CoverageSpec = FigureCommon & {
+  kind: "coverage";
+  read: number;
+  needed: number;
+  /** Source-file call counts use listed records, not positions a report needs. */
+  wording?: "listed-calls";
+};
 
 export type IntervalSpec = FigureCommon & {
   kind: "interval";
