@@ -98,12 +98,21 @@ journey or hosted deployment. It is not part of PR73. Hosted signing/capacity,
 scheduled retention and the migrated full browser regression remain release
 prerequisites. No additional whole-plan gate is claimed; acceptance is **18/65**.
 
-The mobile review identified the next MVP layout improvement: the five useful
-starter reports are below the unused Family and Embryos sections. Bring the
-reader's own findings higher while preserving the deterministic five-report
-cap and distinct report-layer definitions. Then verify two-file controls and
-the hosted signing/capacity/retention prerequisites; do not add unrelated
-features to make the gate count look larger.
+### 2026-09-06 · Own findings and two-file controls verified locally
+
+At `784efbf`, **5/5 browser cases** pass with five actual provider uploads,
+zero skips/retries, including the previous four journeys. Own starter reports
+now precede Family/Embryos. Prepared-file rows link to report choices. Two
+conflicting sources download exactly; after a visible simulated HTTP failure,
+the real deletion retry removes only the selected source and its derivatives,
+preserves the other source's exact rows/bytes and restores its useful finding.
+See the local receipt for the distinction between UI failure injection and
+real provider deletion. Desktop/mobile layouts were inspected.
+
+Milestone 3 now has local two-file evidence, while hosted signing/capacity,
+recurring cleanup, source provenance and migrated regressions remain. The
+Overview ordering can be released separately on PR73 without importing the
+upload cutover. This does not close another broad gate: **18/65**.
 
 Report: the user-visible outcome; merged/deployed/locally tested status;
 which milestone advanced; exact G gate IDs newly proved (if any); and the

@@ -115,6 +115,45 @@ source control, build artifacts or verification traces.
 
 ## Ordered release work
 
+### 6 September follow-up: compatibility and bounded cost preflight
+
+Read-only live checks still identify PR73 as production, no open PR at the
+start of the batch, and no hosted own-upload migrations. The local ref had a
+single-branch fetch configuration; `origin/main` was explicitly refreshed to
+the GitHub-confirmed PR73 commit before reviewing the release base.
+
+The migrations are **not all additive**. `20260906133807` drops the ordinary
+session staging policy used by PR73; both legacy upload API aliases also have
+new incompatible contracts. Stage reviewed compatible schema separately,
+then coordinate the transport policy and app cutover, including old tabs and
+in-flight uploads. A Vercel-only rollback is not a complete recovery plan.
+The consent-language migration also requires its transaction-held lock and
+exact prerequisite artifact hashes; never apply its statements piecemeal.
+
+Authenticated usage dashboards were read without changing settings. Both
+accounts are already Pro. Vercel showed $1.71 of $20 included credit consumed
+and $0 on-demand charges. Supabase showed 1.042/100 GB average Storage,
+0.926/250 GB egress, 1.204/250 GB cached egress, 4,920/2,000,000 Edge Function
+invocations and 111/100,000 MAU, with no quota exceeded and overage billing
+disabled. Inherit has an existing 8 GB disk. These are a time-bound usage
+snapshot, not permission to add resources or a production-wide capacity cap.
+Existing compute/subscription charges are not caused or changed by this work.
+
+For the isolated Overview release, bound hosted work to one preview and one
+production build, with local preflight and ordinary page verification only.
+The public repository uses standard `ubuntu-latest` CI. Recheck allowances if
+the scope expands or a further hosted attempt is needed. No external model,
+new scheduler, paid add-on, plan upgrade or bulk processing is part of this
+release. An own-upload hosted canary still needs a separately bounded plan.
+
+The retention POST is a composite executor: it also processes due invitations,
+embryo expiry/notices and account purges. Before any hosted canary invocation,
+read only the due-work counts and establish its full scope. Do not describe a
+call to this handler as synthetic-only merely because its intended fixture is
+synthetic. Existing working keys and real genomic records remain untouched.
+
+### Remaining ordered rollout
+
 1. Finish local integrated regression and review the additive migrations,
    including account/source/grant transitions and exact-purpose cleanup.
 2. Establish the production signing-key custody and rotation plan, with an

@@ -5,6 +5,45 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At source `784efbf`, the local runner passes **5/5 cases**, zero skips,
+retries or flaky cases, in 57.7 seconds (start `2026-09-06T16:44:59.902Z`).
+Five actual browser uploads crossed the installed Storage provider. The
+four earlier journeys remain green. The additional two-file case proves:
+
+- Two explicitly chosen polygenic results use distinct uploaded sources and
+  retain the same live purpose choice across the second upload.
+- Conflicting MCM6 calls suppress the result; neither file silently wins.
+- Both real Download links return their exact original bytes. Prepared files
+  now link back to report choices without claiming preparation is analysis.
+- An intercepted deletion HTTP 503 leaves a visible retry action. The retry
+  uses the real application and Storage provider and returns 204. A successful
+  independent Storage list confirms the exact removed object is absent.
+- The selected source and its variant, observed-call, score, ancestry and
+  worker rows are gone. The other source's exact variant and score rows are
+  unchanged; its original still downloads and its supported A/G finding is
+  discoverable again through the library and detail.
+
+The injected 503 proves UI recovery only; existing route units remain the
+actual provider-failure injection evidence. Report-ready mail, account-wide
+deletion and canonical download-session acceptance are not claimed here.
+Existing legacy deletion/mail tests were retained unchanged.
+
+Desktop and 390px screenshots were inspected. Own starter reports now appear
+after My Genome and before Family/Embryos, with the existing five-item cap,
+report-layer definitions and no-personal-payload/withdrawal checks intact.
+Files controls fit the mobile width. Generic file names remain a usability
+limitation; this test identifies controls by exact source links.
+
+Scoped lint, typecheck and the existing 16 Overview unit tests passed. The
+earlier 2,602-unit receipt is not relabelled as a fresh full-suite run. Both
+local web servers and the proxy/provider runner exited. The first five-case
+attempt passed the four existing cases but stopped because the new test
+expected only the first sentence of the existing deletion error. The exact
+expectation was corrected to include its second sentence; runtime behavior
+and deletion assertions were not relaxed. Full-plan acceptance stays **18/65**.
+
+## Prior four-case checkpoint
+
 At source `bc31011`, `node --import tsx scripts/run-upload-browser.mts`
 exits zero: **4/4 cases pass, zero skips, retries or flaky cases**, in 52.4
 seconds. The run began at `2026-09-06T16:07:25.902Z`; **three actual browser
