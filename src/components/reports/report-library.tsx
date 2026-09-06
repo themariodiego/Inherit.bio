@@ -6,7 +6,7 @@
 // serializable props. The two layers never share a list container (§4 §1.3);
 // the page renders one <ReportLibrary> per layer.
 
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,21 @@ import { cn } from "@/lib/utils";
 import { PERSONAL_RESULT_LABEL, WITH_RESULTS_LABEL, NO_RESULT_MATCHES } from "@/copy/reports/personal-previews";
 import type { PersonalPreview } from "@/lib/genome/report-previews";
 import { Count } from "./count";
+import {
+  EMPTY_REPORT_FILTER_SNAPSHOT, MAX_REPORT_QUERY_LENGTH, reportFilterSnapshot, withReportFilters,
+  type ReportFilterState,
+} from "./report-filter-history";
+
+const FILTER_CHANGE_EVENT = "inherit:report-filter-change";
+function subscribeToFilterHistory(listener: () => void) {
+  window.addEventListener("popstate", listener);
+  window.addEventListener(FILTER_CHANGE_EVENT, listener);
+  return () => {
+    window.removeEventListener("popstate", listener);
+    window.removeEventListener(FILTER_CHANGE_EVENT, listener);
+  };
+}
+const serverFilterSnapshot = () => EMPTY_REPORT_FILTER_SNAPSHOT;
 
 export type CoverageStatus = keyof typeof COVERAGE_PILLS;
 
@@ -146,18 +161,28 @@ function VariantCallRow({ card, subject }: { card: LibraryCard; subject: string 
 export function ReportLibrary({
   groups,
   subject,
+  historySubjectId,
   layerClass,
   describedBy,
 }: {
   groups: LibraryGroup[];
   /** The subject's route segment; every card links to its genome.report route. */
   subject: string;
+  /** Resolved subject UUID, not the account-relative route alias "me". */
+  historySubjectId: string;
   layerClass: LibraryLayerClass;
   describedBy: string;
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
-  const [query, setQuery] = useState("");
-  const [withResults, setWithResults] = useState(false);
+  const snapshot = useSyncExternalStore(subscribeToFilterHistory,
+    () => reportFilterSnapshot(window.history.state, historySubjectId, layerClass), serverFilterSnapshot);
+  const { query, withResults } = JSON.parse(snapshot) as ReportFilterState;
+  const updateFilters = (filters: ReportFilterState) => {
+    // No URL argument: private search text stays out of requests, referrers and logs.
+    // Write in the event before navigation; a mount effect must never overwrite Back's state.
+    window.history.replaceState(withReportFilters(window.history.state, historySubjectId, layerClass, filters), "");
+    window.dispatchEvent(new Event(FILTER_CHANGE_EVENT));
+  };
   const searchInput = useRef<HTMLInputElement>(null);
   const searchId = "report-search";
 
@@ -181,8 +206,7 @@ export function ReportLibrary({
   };
 
   const clearFilters = () => {
-    setQuery("");
-    setWithResults(false);
+    updateFilters({ query: "", withResults: false });
     // Return keyboard users to the control they can use next; the reset
     // button disappears once there is no active filter.
     searchInput.current?.focus();
@@ -211,7 +235,8 @@ export function ReportLibrary({
           type="search"
           value={query}
           autoComplete="off"
-          onChange={(event) => setQuery(event.target.value)}
+          maxLength={MAX_REPORT_QUERY_LENGTH}
+          onChange={(event) => updateFilters({ query: event.target.value, withResults })}
           className="max-w-md bg-card"
         />
       </div>
@@ -220,7 +245,7 @@ export function ReportLibrary({
         <input
           type="checkbox"
           checked={withResults}
-          onChange={(event) => setWithResults(event.target.checked)}
+          onChange={(event) => updateFilters({ query, withResults: event.target.checked })}
           className="size-4 accent-forest"
         />
         {WITH_RESULTS_LABEL}
