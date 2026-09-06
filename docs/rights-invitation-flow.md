@@ -106,6 +106,45 @@ and database run remains required for release.
 
 This is not a completed rights workflow and must not ship as one:
 
+### Refusal transaction (private local implementation)
+
+`20260906051253_invitation_refusal_transaction.sql` now implements a private
+co-parent refusal transaction. It consumes the operation nonce, resolves
+stored contact-key aliases, preserves an existing bar's original deadline,
+and dispatches each matching pending invitation by its stored kind. Co-parent
+and unconfirmed adult drafts are cancelled and get narrow purge work; an
+optional donor loses attribution while its embryo draft, real parent slot,
+count and original deadline are preserved. Collateral cancellation of another
+parent does not create a bar for that parent's address.
+
+Old tokens, sessions, reminder rows and queued/claimed invitation mail are
+invalidated. The original invited contact is shredded after copying the
+minimal notice recipient to a separate private intent. That intent has an
+unchangeable maximum 30-day deadline and is classified in the purge register;
+the inviter intent stores only the server-derived account and authority
+revision. Neither notice contains a genetic result or another person's address.
+Draft-bound legal evidence object IDs enter the existing purge manifest.
+
+The two new refusal database suites cover transaction rollback on notice
+failure, accountless invocation, exact cancellation and evidence scope,
+replay, key aliases, cross-account adult cancellation and donor preservation.
+Their 59 assertions pass, together with the 48 exact-binding and 141 existing
+cohort assertions: **248 passing database assertions across four suites**.
+The third-party fixture creates both real pending parent slots and proves
+that cancelling the other parent's invitation does not bar that address.
+A retired inviter also cannot prevent a recipient's refusal. Local security
+advisors report no warning/error findings for the current database.
+The donor fixture seeds the declared pending-draft shape; it does not pretend
+the still-missing donor invitation UI or issuance path exists.
+
+**Still not callable by API roles or connected to a UI.** The intent store is
+not a delivered email or a canonical `mail_outbox` row. Materialization into
+that outbox, recipient/provider rechecks, fixed-deadline intent/contact expiry
+and actual evidence/draft purge execution remain to be connected and tested.
+All invitation writers still need the shared transition lock; its private
+existence alone is not a concurrency proof. Existing expiry code must not be
+used unchanged for the cancelled-draft branch. No production action was taken.
+
 1. Implement accountless refusal with its registered atomic invalidation,
    global contact refusal bar, exact draft/evidence cleanup and minimal notices.
    The email already promises this action; no pretend refusal control is added.
