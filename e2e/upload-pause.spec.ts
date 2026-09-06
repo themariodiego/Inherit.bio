@@ -72,7 +72,8 @@ test("upload pause refuses new leases while a real in-flight source still comple
       await route.fulfill({ status: reply.status, contentType: "application/json", body: reply.body });
     }, { times: 1 });
     await chooseFixture(page, fixture);
-    await expect(page.getByRole("alert")).toHaveText(UPLOADS_PAUSED_MESSAGE);
+    await expect(page.getByRole("alert").filter({ hasText: UPLOADS_PAUSED_MESSAGE }))
+      .toHaveText(UPLOADS_PAUSED_MESSAGE);
     expect(await leaseCount()).toBe(0);
     expect(storageWrites).toBe(0);
     const refusedFiles = await admin.from("genome_files").select("id", { count: "exact", head: true }).eq("user_id", accountId);
@@ -92,7 +93,11 @@ test("upload pause refuses new leases while a real in-flight source still comple
     expect(issued.bucketName).toBe("genomes-staging");
     expect(issued.tier).toBe(1);
     expect(issued.objectName).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-    await expect(page.getByRole("alert")).toBeVisible();
+    // Chromium reports the deliberately aborted fetch through the uploader;
+    // the separate Next route announcer also has role=alert.
+    const interruptedAlert = page.getByRole("alert").filter({ hasText: "Failed to fetch" });
+    await expect(interruptedAlert).toBeVisible();
+    await expect(interruptedAlert).toHaveText("Failed to fetch");
     expect(storageWrites).toBeGreaterThan(0);
     expect(await leaseCount()).toBe(1);
     const lease = await admin.from("upload_sessions").select("status,consumed_at").eq("id", issued.uploadId).single();
