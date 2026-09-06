@@ -338,6 +338,11 @@ Verified so far:
   finalization, gzip and malformed-source checks continue to pass.
 - Application and standalone harness typechecks and scoped lint pass. The
   local Supabase security advisor reports no issues.
+- At source commit `18e409494671759c0f9fface65ef90453d1d3ef9`, all
+  2,431 unit tests in 148 files pass with `corepack pnpm test --maxWorkers=4`.
+  All five own-upload SQL suites pass 160 assertions. The secret gate passes
+  over 988 tracked files and 252 authored commits. The checkout was clean;
+  only the regenerable CLI cache was moved before the strict capture checks.
 
 The local Docker runtime stopped between checks. Its existing Colima instance
 was restarted without a reset, then database/Storage health and the provider
