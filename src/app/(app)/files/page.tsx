@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { legacyUploadsPaused } from "@/lib/uploads/legacy-upload-pause";
 
 export const metadata: Metadata = { title: "My files" };
 
@@ -56,7 +57,7 @@ export default async function UploadsPage() {
         )}
       </div>
 
-      <Uploader />
+      <Uploader paused={legacyUploadsPaused()} />
 
       <div className="space-y-1 text-xs text-ink-muted">
         <p>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LIMITS } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { legacyUploadsPaused } from "@/lib/uploads/legacy-upload-pause";
 
 const fileTypes = [
   "array_23andme",
@@ -48,6 +49,14 @@ export async function POST(request: Request) {
   const sessionId = claimsData?.claims.session_id;
   if (!user || typeof sessionId !== "string") {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Authenticate as before, then refuse before subject lookup or lease creation.
+  // Completion deliberately does not consult this new-issuance-only switch.
+  if (legacyUploadsPaused()) {
+    return NextResponse.json({ error: "uploads_paused" }, {
+      status: 503, headers: { "Cache-Control": "private, no-store" },
+    });
   }
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));

@@ -10,8 +10,11 @@ import { defineConfig, devices } from "@playwright/test";
 // of the same build on OFF_PORT with the flag unset, so the refused branch
 // of every jurisdiction guard is proven in a browser rather than claimed.
 // Playwright starts the servers in order, so the second reuses the build.
+// A third instance tests the operational upload pause against the same build;
+// it retains the main jurisdiction setting and never replaces jurisdiction-off.
 const PORT = 3100;
 const OFF_PORT = 3101;
+const PAUSED_PORT = 3102;
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
 
 const SERVER_ENV = {
@@ -25,6 +28,7 @@ const SERVER_ENV = {
   BYOK_ENCRYPTION_KEY: "5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=",
   JOBS_SECRET: "e2e-jobs-secret",
   CRON_SECRET: "e2e-cron-secret",
+  INHERIT_PAUSE_LEGACY_UPLOADS: "false",
   EMAIL_FROM: "Inherit <inherit@e2e.local>",
   // The durable mail worker submits to a mock Resend API started by
   // research.spec.ts (the SDK honors RESEND_BASE_URL). Auth emails flow
@@ -79,6 +83,19 @@ export default defineConfig({
         NEXT_PUBLIC_SITE_URL: `http://localhost:${OFF_PORT}`,
         NEXT_PUBLIC_APP_URL: `http://localhost:${OFF_PORT}`,
         INHERIT_TEST_JURISDICTION: "",
+      },
+    },
+    {
+      command: `corepack pnpm start --port ${PAUSED_PORT}`,
+      port: PAUSED_PORT,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        ...SERVER_ENV,
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${PAUSED_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${PAUSED_PORT}`,
+        INHERIT_TEST_JURISDICTION: "1",
+        INHERIT_PAUSE_LEGACY_UPLOADS: "true",
       },
     },
   ],
