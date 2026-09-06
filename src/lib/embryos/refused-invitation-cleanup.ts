@@ -26,6 +26,11 @@ export async function drainRefusedInvitationCleanup(admin: ReturnType<typeof cre
       const objects = manifest.parse(work.storage_objects);
       for (let offset = 0; offset < objects.length; offset += 1_000) {
         const batch = objects.slice(offset, offset + 1_000);
+        const authorization = await admin.rpc("authorize_refused_invitation_storage_v1", {
+          p_manifest_id: work.manifest_id, p_claim_token_hash: claim,
+          p_ordinals: batch.map((entry) => entry.ordinal),
+        });
+        if (authorization.error || authorization.data !== true) throw new Error("refusal_storage_authority_stale");
         const { error: storageError } = await admin.storage.from("legal-evidence")
           .remove(batch.map((entry) => entry.objectName));
         if (storageError) throw new Error("refusal_storage_delete_failed");

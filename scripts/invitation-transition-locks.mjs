@@ -27,6 +27,15 @@ const probes = [
   "run_due_embryo_retention_phases_v1()",
   "claim_refused_invitation_draft_purge_v1(repeat('a',64))",
   "finish_refused_invitation_draft_purge_v1(null,null)",
+  "authorize_refused_invitation_storage_v1(null,null,null)",
+];
+const statements = [
+  ...probes.map((probe) => ({ name: probe.split("(")[0], sql: `select public.${probe}` })),
+  ...["legal_evidence_ingest_sessions", "legal_evidence_fragments", "legal_evidence_documents",
+    "legal_evidence_review_copies", "legal_evidence_working_data", "legal_evidence_assignments",
+    "reviewed_evidence", "legal_reviews", "embryo_basis_bindings", "future_person_claim_documents",
+    "future_person_claim_objections", "correction_assignments", "appeal_evidence"]
+    .map((table) => ({ name: `${table} statement trigger`, sql: `delete from public.${table} where false` })),
 ];
 
 function session() {
@@ -82,14 +91,14 @@ const holder = session();
 try {
   await holder.query("set statement_timeout='8s'; set idle_in_transaction_session_timeout='15s'");
   await holder.query("select pg_advisory_lock(1869509217,1)");
-  for (const probe of probes) {
+  for (const probe of statements) {
     const peer = session();
     try {
       const pid = Number(await peer.query("select pg_backend_pid()"));
       assert(Number.isSafeInteger(pid) && pid > 0);
       await peer.query("begin; set local role service_role; set local statement_timeout='5s'; set local idle_in_transaction_session_timeout='10s'");
       // Attach the rejection handler immediately: cancellation is expected.
-      const attempt = peer.query(`select public.${probe}`).then(
+      const attempt = peer.query(probe.sql).then(
         () => ({ error: null }), (error) => ({ error }),
       );
       let waiting = false;
@@ -103,11 +112,11 @@ try {
       // Cancel this exact test backend before releasing the holder's lock.
       await holder.query(`select pg_cancel_backend(${pid})`);
       const result = await attempt;
-      assert(waiting, `${probe}: did not wait on the transition lock; ${result.error ?? "returned early"}`);
+      assert(waiting, `${probe.name}: did not wait on the transition lock; ${result.error ?? "returned early"}`);
       assert.match(String(result.error), /57014/, "Probe must end by query cancellation");
-      console.log(`PASS ${probe.split("(")[0]} waits before authority access`);
+      console.log(`PASS ${probe.name} waits before authority access`);
     } finally { await peer.close(); }
   }
   assert.equal(await holder.query("select pg_advisory_unlock(1869509217,1)"), "t");
-  console.log(`${probes.length}/${probes.length} independent-session lock checks passed.`);
+  console.log(`${statements.length}/${statements.length} independent-session lock checks passed.`);
 } finally { await holder.close(); }

@@ -11,6 +11,7 @@ function fixture(objects: unknown = [object], fail?: string) {
   const rpc = vi.fn(async (...args: [name: string, parameters?: Record<string, unknown>]) => {
     const [name] = args;
     if (name === fail) return { error: new Error("private database detail"), data: null };
+    if (name === "authorize_refused_invitation_storage_v1") return { data: fail !== "authority_false", error: null };
     if (name === "claim_refused_invitation_draft_purge_v1") {
       if (claimed) return { data: [], error: null };
       claimed = true;
@@ -34,9 +35,10 @@ describe("refused invitation cleanup worker", () => {
     expect(f.rpc).toHaveBeenCalledWith("finish_refused_invitation_draft_purge_v1", {
       ...claim, p_manifest_id: "manifest",
     });
-    expect(f.remove.mock.invocationCallOrder[0]).toBeLessThan(f.rpc.mock.invocationCallOrder[1]);
+    expect(f.rpc.mock.invocationCallOrder[1]).toBeLessThan(f.remove.mock.invocationCallOrder[0]);
+    expect(f.remove.mock.invocationCallOrder[0]).toBeLessThan(f.rpc.mock.invocationCallOrder[2]);
     expect(f.rpc.mock.calls.map(([name]) => name)).toEqual([
-      "claim_refused_invitation_draft_purge_v1", "complete_refused_invitation_storage_v1",
+      "claim_refused_invitation_draft_purge_v1", "authorize_refused_invitation_storage_v1", "complete_refused_invitation_storage_v1",
       "finish_refused_invitation_draft_purge_v1", "claim_refused_invitation_draft_purge_v1",
     ]);
   });
@@ -46,8 +48,9 @@ describe("refused invitation cleanup worker", () => {
     expect(await drainRefusedInvitationCleanup(f.admin)).toEqual({ processed: 1, failed: 0 });
     expect(f.remove.mock.calls.map(([paths]) => paths.length)).toEqual([1000, 1]);
     expect(f.rpc.mock.calls.filter(([name]) => name === "complete_refused_invitation_storage_v1")).toHaveLength(2);
+    expect(f.rpc.mock.calls.filter(([name]) => name === "authorize_refused_invitation_storage_v1")).toHaveLength(2);
   });
-  it.each(["storage", "complete_refused_invitation_storage_v1", "finish_refused_invitation_draft_purge_v1"])(
+  it.each(["authority_false", "authorize_refused_invitation_storage_v1", "storage", "complete_refused_invitation_storage_v1", "finish_refused_invitation_draft_purge_v1"])(
     "keeps cleanup retryable after %s failure without exposing details", async failure => {
       const f = fixture([object], failure);
       const log = vi.spyOn(console, "error");
@@ -60,6 +63,7 @@ describe("refused invitation cleanup worker", () => {
         expect(f.rpc.mock.calls.some(([name]) => name === "finish_refused_invitation_draft_purge_v1")).toBe(false);
       }
       expect(log).not.toHaveBeenCalled();
+      if (failure === "authorize_refused_invitation_storage_v1" || failure === "authority_false") expect(f.remove).not.toHaveBeenCalled();
       log.mockRestore();
     },
   );

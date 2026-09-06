@@ -7591,6 +7591,10 @@ export type Database = {
         Args: { p_outbox_id: string; p_attempt_ordinal: number }
         Returns: boolean
       }
+      authorize_refused_invitation_storage_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string; p_ordinals: number[] }
+        Returns: boolean
+      }
       claim_refused_invitation_draft_purge_v1: {
         Args: { p_claim_token_hash: string }
         Returns: { manifest_id: string; storage_objects: Json }[]

@@ -3,8 +3,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET } from "./helpers";
 
 // This exercises the production retention route and real Storage API. The
-// refusal UI is not implemented yet: pgTAP proves the refusal transaction,
-// while this fixture seeds its cancelled-draft/queued-phase boundary.
+// co-parent suite covers the refusal UI. This fixture focuses on the
+// cancelled-draft/queued-phase boundary with actual evidence objects.
 test("jobs.retention: physically delete refused-draft evidence without deleting another draft", async ({ request }) => {
   const admin = adminClient();
   const email = `cleanup-${randomUUID()}@e2e.local`;
@@ -43,7 +43,7 @@ test("jobs.retention: physically delete refused-draft evidence without deleting 
     expect(d.error).toBeNull();
     const session = await admin.from("legal_evidence_ingest_sessions").insert({
       principal_id: d.data!.uploader_principal_id, target_kind: "cohort_draft", target_id: draftId,
-      evidence_kind: "embryo-basis", session_revision: 1, state: "cancelled",
+      evidence_kind: "embryo-basis", session_revision: 1, state: "open",
       expires_at: new Date(Date.now() + 86_400_000).toISOString(),
     }).select("id").single();
     expect(session.error).toBeNull();
@@ -59,6 +59,7 @@ test("jobs.retention: physically delete refused-draft evidence without deleting 
     .eq("target_id", target).eq("phase_id", "embryo-cohort-draft-expiry").single();
   expect(phase.error).toBeNull();
   expect((await admin.from("embryo_cohort_drafts").update({ state: "cancelled" }).eq("id", target)).error).toBeNull();
+  expect((await admin.from("legal_evidence_ingest_sessions").update({ state: "cancelled" }).eq("id", targetSession)).error).toBeNull();
   expect((await admin.from("retention_due_phases").update({
     phase_deadline: new Date(Date.now() - 1000).toISOString(),
     immutable_envelope: { draftId: target, reason: "invitation-refused" },

@@ -3,6 +3,44 @@
 Branch: `codex/rights-invitation-flow`. **Not released.**
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
+## Latest: shared evidence and late-write protection
+
+Cleanup now checks every direct reviewed-evidence foreign-key path: live cohort
+basis, claim documents, claim objections, correction decisions and appeals.
+A cohort naming only the legal review also blocks deletion. An independent
+review target or a second reviewed row sharing the same object blocks it too.
+This preserves shared evidence pending its independent disposition; it does
+not pretend that a blocked shared package has completed the refusal purge.
+
+Thirteen evidence/reference tables take the invitation lock in a BEFORE
+STATEMENT trigger, before row locks, then check new attachments per row.
+Cancelled sessions cannot reopen, move to another target, receive late
+fragments/documents/copies/working data/assignments, or gain independent
+evidence references. Frozen object identities cannot be reused. The cleanup
+executor can still release a reviewed original while retaining its minimal
+review receipt.
+
+The Storage worker rechecks its exact claim, lease, manifest ordinals and
+evidence exclusivity before each batch, and still verifies actual object
+absence before acknowledging deletion. No Storage schema, permission or
+metadata-deletion behavior changed.
+
+Verification: 31 new database assertions exercise pre-existing shared
+references through actual refusal and cleanup, late writes, exact batch
+authorization, API privileges and the complete direct-reference table list.
+All 30 independent-session lock checks pass, including the thirteen statement
+triggers. Eleven worker units cover authorization failure/false results before
+Storage, batch limits and retries. The five production-build browser tests
+pass again in 25.2 seconds with no skips or retries, including real Storage
+deletion and preservation of another draft. Typecheck, scoped lint and local
+security advisors pass.
+
+Remaining review must distinguish relational write fencing from provider
+transport: this does not revoke an already-issued Storage upload URL or prove
+physical network dispatch atomic with a database transaction. The evidence
+upload issuer and transport lifecycle still need release review. Full clean
+migration/CI and hosted verification remain required before merge.
+
 ## Latest: connected public refusal (local, not released)
 
 The co-parent recipient now has a working **Decline invitation** action without
