@@ -1,15 +1,17 @@
 # Browser-suite migration after the own-upload cutover
 
-2026-09-06 checkpoint at `5d755c9`. The local actual-provider runner passes
-**23/23 cases in eight specs**, with 16 uploads and zero skips/retries. See
+2026-09-06 checkpoint at `9b45b75`. The local actual-provider runner passes
+**24/24 cases in nine specs**, with 18 uploads and zero skips/retries. See
 [the receipt](local-upload-browser-verification.md). Standard discovery finds
-**224 cases in 41 files**; that entire suite has not passed on this branch.
+**225 cases in 42 files**; that entire suite has not passed on this branch.
 `ingestFileAs` still has **21 calls in 18 spec files**. An affected-file count
 is not a count of demonstrated failures. Acceptance remains **18/65**.
 
 ## Migrated and verified
 
 - Preparation, chosen own reports and two-file download/deletion/recovery.
+- Canonical issuance pause and real acknowledged-upload completion,
+  preparation and exact downloads while another source remains unchanged.
 - Three report-library recovery cases, four behavior study-scope cases,
   seven report-preview cases and five sensitive report-gate cases.
 - Canonical conversion/listed-call provenance and withdrawal. Report library,
@@ -30,6 +32,8 @@ The runner still uses actual local Storage with ephemeral public trust,
 loopback transport and no Auth rotation. It refuses hosted/CI execution.
 A separately reviewed CI bootstrap remains required. Do not remove that
 refusal and call the ordinary CI setup a real upload proof.
+The pause case also requires the dedicated third paused app server on 3102;
+ordinary full-suite configuration does not yet supply that canonical server.
 
 ## Remaining prioritized work
 

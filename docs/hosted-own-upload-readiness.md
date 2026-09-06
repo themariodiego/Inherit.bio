@@ -62,6 +62,14 @@ public key identifier before activation. Do not redeploy merely to save a key.
 
 ### Latest verified owner-completed state
 
+The dashboard was checked again around 17:51 UTC: the replacement remains
+Standby, current and legacy keys are unchanged. The Rotate signing key dialog
+is prepared, with no confirmations selected and no final submission. Browser
+tool policy requires owner submission for a credential change; an asynchronous
+handoff requests that activation while retaining both older keys. No private
+key is needed in chat or reread from Vercel. The dialog warns about the three
+retired Edge Functions already verified as unconditional 410 tombstones.
+
 The owner generated a replacement after the first new private key appeared
 in a chat screenshot. Never reuse that exposed key or reproduce its material.
 The owner reports saving the replacement in Vercel and creating its Supabase
@@ -199,6 +207,20 @@ newly due work can enter its global selection. Refresh the aggregate inventory
 immediately before any proposed composite canary.
 
 ### Remaining ordered rollout
+
+Local prerequisites advanced at `9b45b75`: 24 actual-provider browser cases
+pass, including canonical pause/resumption with 18 uploads and exact bytes.
+The unchanged runtime passed 2,661 units at `a8d82b5`. A separate default-off
+legacy bridge is under PR75, awaiting corrected CI run `34050146592` at
+`9e92ea6`; no production pause has been enabled. The refreshed Vercel dashboard
+still reports $1.71/$20 included usage and $0 on-demand charges. This bridge
+requires no hosted DDL and preserves existing completion handlers.
+
+The authenticated GET retention adapter is implemented locally at `77dbad1`
+and included in those unit checks. It rejects HEAD, foreign credentials,
+selectors and bodies before invoking the unchanged bodyless POST once with
+server-owned authorization. No schedule is configured and no hosted retention
+worker was invoked. Refresh the aggregate due-work inventory before that step.
 
 1. Finish local integrated regression and review the additive migrations,
    including account/source/grant transitions and exact-purpose cleanup.

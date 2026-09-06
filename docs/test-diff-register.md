@@ -35,7 +35,9 @@ actual message and retain exact-text assertions. Independent read-only review
 confirmed the remaining expectations against canonical runtime and local schema,
 including the actual Storage trigger's `uploaded` lease state. No authorization,
 byte-preservation, preparation, cleanup or download assertion was relaxed.
-The corrected 24-case integrated run remains pending.
+At `9b45b75`, the corrected 24-case integrated run passes with zero skips,
+retries or flaky cases and 18 actual Storage uploads. Desktop/mobile paused
+file controls were inspected. Runtime is unchanged from the 2,661-unit source.
 
 
 Copilot pre-merge usability review: four extra cases bring the completion

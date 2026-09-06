@@ -69,6 +69,19 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### Current local rollout prerequisite: verified pause and recovery
+
+At `9b45b75`, all 24 selected actual-provider browser cases pass with 18
+uploads and zero skips/retries; desktop/mobile layouts were inspected. The
+unchanged runtime passed 2,661 units at `a8d82b5`. New canonical issuance can
+be paused while an acknowledged source still finalizes, prepares and downloads,
+preserving another file. The server-only cron GET adapter also passes its
+credential/body/selector refusal and unchanged-worker delegation tests.
+Neither capability is hosted verification, and the adapter has not invoked
+the composite production retention worker. PR75's separate legacy bridge is
+still awaiting corrected CI. Signing activation requires the owner to finish
+the prepared dashboard dialog. Acceptance remains **18/65**.
+
 ### 2026-09-06 · PR73 released
 
 PR73 (`a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`) improves milestone 2:

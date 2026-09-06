@@ -5,6 +5,34 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At `9b45b75027e5201ef6d2653b34876ac62e0af805`, the expanded **24/24 cases**
+pass with zero skips, retries or flaky cases: start `2026-09-06T17:57:03.042Z`,
+155.3 seconds, **18 actual provider uploads**. This source changes only test
+selectors and this register after `a8d82b5`, where all **2,661 units in 166
+files** passed. No runtime code changed between those receipts.
+
+The ninth selected spec proves canonical issuance pause on both entry pages
+and both API aliases. Refused issuance and an already-open page's actual
+paused-server response create no leases, source rows or Storage objects.
+A real second upload is interrupted only after Storage acknowledgment, then
+finalizes and prepares through native requests to the paused app. Both files
+download exactly; the earlier source remains unchanged, the staging object
+is independently absent, and report-choice/deletion controls remain available.
+Desktop 1280px and mobile 390px screenshots were inspected without overflow.
+The canonical pause is separate from the legacy bridge's flag; neither is
+enabled on production by this test. Three local server ports closed on exit.
+
+The first expanded run passed the previous 23 cases and stopped in the new
+case because its alert locator also selected Next's route announcer. Both
+alerts now select their exact messages. Independent review checked remaining
+expectations against the runtime and actual local schema before the second
+attempt. No byte, authority, source, cleanup or recovery assertion was relaxed.
+The stale-response relay affects only app-server routing; it does not replace
+authorization or Storage decisions. The standard suite discovers **225 cases
+in 42 files**; this is still a selected local receipt, not full-suite acceptance.
+
+## Previous source-provenance checkpoint
+
 At source `5d755c934d45ecbb09747a9f2b81668c13150900`, **23/23 cases** pass
 with zero skips, retries or flaky cases. Start `2026-09-06T17:12:31.941Z`,
 155.5 seconds, **16 actual provider uploads**. All **2,619 unit tests in 164
@@ -242,7 +270,9 @@ Browser Storage requests reach the actual provider with their original
 restricted Authorization header. Other local traffic is forwarded unchanged;
 external tunnels are refused. The app's server-side Storage calls still use
 the normal local gateway, sharing the identical database and file backend.
-There is no `route.fulfill`, substituted Storage decision or seeded file row.
+There is no substituted Storage decision or seeded file row. Selected recovery
+cases use app-response interception for a UI deletion failure or relay an
+actual paused-server response; their resumed operations use the real provider.
 The original HTTP provider harness remains separate and unchanged.
 
 CORS is served by the normal local gateway, not the internal Storage app.
