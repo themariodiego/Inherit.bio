@@ -6,13 +6,14 @@
 // serializable props. The two layers never share a list container (§4 §1.3);
 // the page renders one <ReportLibrary> per layer.
 
-import { useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   COVERAGE_PILLS,
+  CLEAR_REPORT_FILTERS,
   FILTER_REPORTS,
   NO_SEARCH_MATCHES,
   SEARCH_REPORTS_LABEL,
@@ -157,6 +158,7 @@ export function ReportLibrary({
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const [withResults, setWithResults] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
   const searchId = "report-search";
 
   /**
@@ -178,6 +180,14 @@ export function ReportLibrary({
     setExpanded((current) => new Set([...current, id]));
   };
 
+  const clearFilters = () => {
+    setQuery("");
+    setWithResults(false);
+    // Return keyboard users to the control they can use next; the reset
+    // button disappears once there is no active filter.
+    searchInput.current?.focus();
+  };
+
   // The search filters client-side; an empty query shows everything and a
   // category whose cards all filter out is hidden, chip included.
   const needle = query.trim().toLowerCase();
@@ -196,6 +206,7 @@ export function ReportLibrary({
           {SEARCH_REPORTS_LABEL}
         </label>
         <Input
+          ref={searchInput}
           id={searchId}
           type="search"
           value={query}
@@ -214,6 +225,12 @@ export function ReportLibrary({
         />
         {WITH_RESULTS_LABEL}
       </label>
+
+      {query !== "" || withResults ? (
+        <Button type="button" variant="outline" className="min-h-11" onClick={clearFilters}>
+          {CLEAR_REPORT_FILTERS}
+        </Button>
+      ) : null}
 
       {/* The category strip stays a collapsed disclosure at EVERY width: the
           first-viewport interactive budget (≤12, docs/density-baseline.json)

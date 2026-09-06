@@ -159,6 +159,7 @@ export const MORE_SOURCES = "More sources";
 /** The reports list: the collapsed category strip and the search box above it. */
 export const FILTER_REPORTS = "Filter reports";
 export const SEARCH_REPORTS_LABEL = "Search reports by title, gene, or category";
+export const CLEAR_REPORT_FILTERS = "Clear filters";
 export const NO_SEARCH_MATCHES = "No reports match your search.";
 /** The h3 above the citations in "Where this comes from". */
 export const SOURCES_HEADING = "Sources";
