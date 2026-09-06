@@ -1,20 +1,31 @@
 import { defineConfig, devices } from "@playwright/test";
+import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
 
 // E2E runs against a production build served locally, backed by the local
 // Supabase stack (pnpm supabase start) — real PostgREST, real storage, real
 // auth emails captured by Mailpit. No mocks of the things under test.
 //
-// Two servers from one build (design w10 §6.2): the main suite runs under
+// Three servers from one build (design w10 §6.2): the main suite runs under
 // the TEST-LOCAL jurisdiction flag on PORT; the `jurisdiction-off` project
 // runs the `*.nojurisdiction.spec.ts` specs against a second `next start`
 // of the same build on OFF_PORT with the flag unset, so the refused branch
 // of every jurisdiction guard is proven in a browser rather than claimed.
-// Playwright starts the servers in order, so the second reuses the build.
+// The independent pause server uses TEST-LOCAL with issuance paused.
+// Playwright starts the servers in order, so the latter two reuse the build.
 const PORT = 3100;
 const OFF_PORT = 3101;
+const PAUSE_PORT = 3102;
+const providerProxy = process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY;
+const signer = process.env.INHERIT_UPLOAD_SIGNING_JWK;
+// Discovery does not start a provider or build. Executing tests must use pnpm e2e.
+if (!process.argv.includes("--list") && (!providerProxy || !signer)) {
+  throw new Error("Run pnpm e2e through the real local Storage provider bootstrap");
+}
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
 
 const SERVER_ENV = {
+  INHERIT_UPLOAD_SIGNING_JWK: signer ?? "",
+  INHERIT_CANONICAL_UPLOADS_PAUSED: "false",
   NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
   NEXT_PUBLIC_SUPABASE_ANON_KEY:
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
@@ -44,7 +55,8 @@ export default defineConfig({
     : [["list"], ["json", { outputFile: "test-results/results.json" }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
-    trace: "retain-on-failure",
+    trace: "off", // Upload/presentation bearers must never enter persisted traces.
+    launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: NO_JURISDICTION },
@@ -58,7 +70,7 @@ export default defineConfig({
     {
       command: `corepack pnpm build && corepack pnpm start --port ${PORT}`,
       port: PORT,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 300_000,
       env: {
         ...SERVER_ENV,
@@ -72,13 +84,26 @@ export default defineConfig({
       // resolver reads every account's real (unset) jurisdiction.
       command: `corepack pnpm start --port ${OFF_PORT}`,
       port: OFF_PORT,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 120_000,
       env: {
         ...SERVER_ENV,
         NEXT_PUBLIC_SITE_URL: `http://localhost:${OFF_PORT}`,
         NEXT_PUBLIC_APP_URL: `http://localhost:${OFF_PORT}`,
         INHERIT_TEST_JURISDICTION: "",
+      },
+    },
+    {
+      command: `corepack pnpm start --port ${PAUSE_PORT}`,
+      port: PAUSE_PORT,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        ...SERVER_ENV,
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${PAUSE_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${PAUSE_PORT}`,
+        INHERIT_TEST_JURISDICTION: "1",
+        INHERIT_CANONICAL_UPLOADS_PAUSED: "true",
       },
     },
   ],

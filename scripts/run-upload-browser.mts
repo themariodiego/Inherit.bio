@@ -1,5 +1,6 @@
-/** Local production-browser proof with the installed Storage provider.
- * Run: node --import tsx scripts/run-upload-browser.mts
+/** Local or disposable-CI production-browser proof with the installed Storage provider.
+ * Full standard gate: pnpm e2e; focused local proof: node --import tsx scripts/run-upload-browser.mts
+ * Append local-only Playwright selectors after --; CI never permits narrowing.
  * No key files, Auth rotation, database resets or application test switches.
  * The browser's HTTP proxy routes Storage to an isolated provider process;
  * the app continues using the normal local stack and its identical DB/backend.
@@ -10,18 +11,41 @@ import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http, { type IncomingMessage } from "node:http";
 import { createInterface } from "node:readline";
+import { verifyBrowserTransport } from "./local-storage-browser-transport";
+import { assertLocalProviderEnvironment, localBrowserTarget, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 
-assert(!process.env.VERCEL && !process.env.CI, "Manual local Docker browser proof only");
-assert(!process.env.PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK,
-  "Loopback proxying must remain enabled");
+const arguments_ = process.argv.slice(2);
+const fullSuite = arguments_[0] === "--full";
+const bootstrapOnly = arguments_[0] === "--bootstrap-only";
+if (fullSuite || bootstrapOnly) arguments_.shift();
+assert(arguments_.length === 0 || arguments_[0] === "--", "Pass local Playwright selectors after --");
+const selectors = arguments_.slice(1);
+assertLocalProviderEnvironment(process.env, fullSuite, selectors);
 const project = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
 assert(project, "Exact local project ID required");
-const policy = execFileSync("docker", ["exec", "-i", `supabase_db_${project}`,
+for (const service of ["db", "storage"]) {
+  // Inspect only identity/liveness, never Config.Env (provider credentials).
+  const identity = JSON.parse(execFileSync("docker", ["inspect", "--format",
+    '{{json .Name}} {{json (index .Config.Labels "com.supabase.cli.project")}} {{json .State.Running}}',
+    `supabase_${service}_${project}`], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 15_000 })
+    .trim().replace(/^("[^"]*") ("[^"]*") (true|false)$/, "[$1,$2,$3]"));
+  assert.deepEqual(identity, [`/supabase_${service}_${project}`, project, true], "Exact running local Docker identity required");
+}
+const sql = (query: string) => execFileSync("docker", ["exec", "-i", `supabase_db_${project}`,
   "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], {
-  input: "select json_build_object('issuer',auth_issuer,'array',maximum_array_bytes,'vcf',maximum_vcf_bytes,'account',maximum_account_bytes,'active',maximum_active_uploads) from private.upload_authorization_config where singleton;",
-  encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 15_000,
+  input: query, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 15_000,
 }).trim();
+if (process.env.CI) {
+  // Only the fresh disposable job may initialize absent test capacity. Do not
+  // overwrite existing settings, reset a database or alter shared local state.
+  // 50MiB matches the repository Storage cap; this is not a hosted policy.
+  sql(`insert into private.upload_authorization_config(singleton,auth_issuer,
+    maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads)
+    values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32)
+    on conflict(singleton) do nothing;`);
+}
+const policy = sql("select json_build_object('issuer',auth_issuer,'array',maximum_array_bytes,'vcf',maximum_vcf_bytes,'account',maximum_account_bytes,'active',maximum_active_uploads) from private.upload_authorization_config where singleton;");
 const limits = JSON.parse(policy);
 assert.equal(limits.issuer, "http://127.0.0.1:54321/auth/v1", "Existing local issuer must match; never changed here");
 for (const key of ["array", "vcf", "account", "active"]) {
@@ -85,14 +109,20 @@ reader.on("line", line => {
   const request = pending.get(id);
   if (request) { clearTimeout(request.timer); pending.delete(id); request.resolve(result); }
 });
+provider.on("error", () => {
+  for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error("Local provider failed to start")); }
+  pending.clear();
+});
+provider.stdin.on("error", () => {}); // No stdin/request payload in diagnostics.
 provider.on("close", () => {
   for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error("Local provider exited")); }
   pending.clear();
 });
-function requestProvider(message: Record<string, unknown>): Promise<ProviderResult> {
+function requestProvider(message: Record<string, unknown>, timeout = 40_000): Promise<ProviderResult> {
   return new Promise((resolve, reject) => {
+    if (!provider.stdin.writable || provider.stdin.destroyed) { reject(new Error("Local provider is unavailable")); return; }
     const id = ++sequence;
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error("Local provider timeout")); }, 40_000);
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error("Local provider timeout")); }, timeout);
     pending.set(id, { resolve, reject, timer });
     provider.stdin.write(JSON.stringify({ id, ...message }) + "\n");
   });
@@ -130,15 +160,16 @@ async function gatewayCors(target: URL, origin: string, method: string, headers:
   return result;
 }
 let forwardedUploads = 0;
+let forwardedTransportProbes = 0;
 const proxy = http.createServer(async (request, response) => {
   try {
-    const target = new URL(request.url ?? "");
-    const allowed = ["http://127.0.0.1:54321", "http://localhost:3100", "http://localhost:3101", "http://localhost:3102"];
-    if (!allowed.includes(target.origin) || target.username || target.password) {
+    let target: URL;
+    try { target = localBrowserTarget(request.url ?? ""); } catch {
       response.writeHead(403); response.end("Local test proxy destination refused"); return;
     }
+    if (target.pathname.startsWith("/__inherit_transport_")) forwardedTransportProbes++;
     const headers = cleanHeaders(request.headers);
-    if (target.origin === allowed[0] && target.pathname.startsWith("/storage/v1/") && request.method !== "OPTIONS") {
+    if (target.origin === LOCAL_STORAGE_ORIGIN && target.pathname.startsWith("/storage/v1/") && request.method !== "OPTIONS") {
       const bytes = await requestBytes(request);
       headers["content-length"] = String(bytes.length);
       const result = await requestProvider({ method: request.method,
@@ -170,18 +201,22 @@ const proxy = http.createServer(async (request, response) => {
     response.end("Local provider request failed");
   }
 });
-proxy.on("connect", (_request, socket) => socket.destroy()); // No external TLS tunnel.
+proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, including external TLS. APIRequest stays direct.
 let tests: ChildProcess | undefined;
 let stopping = false;
 async function stop() {
   if (stopping) return;
   stopping = true;
-  if (tests?.exitCode === null) tests.kill("SIGTERM");
+  if (tests?.pid) {
+    // Kill the dedicated test process group, including its Next child servers.
+    try { if (process.platform !== "win32") process.kill(-tests.pid, "SIGTERM"); else tests.kill("SIGTERM"); } catch {}
+  }
   proxy.closeAllConnections();
   await new Promise<void>(resolve => proxy.close(() => resolve()));
   if (provider.exitCode === null) {
-    await requestProvider({ close: true }).catch(() => {});
+    await requestProvider({ close: true }, 5000).catch(() => {});
     provider.stdin.end();
+    if (provider.exitCode === null) provider.kill("SIGTERM");
   }
   reader.close();
 }
@@ -221,17 +256,22 @@ try {
         "The actual local gateway must allow the browser's public API-key header");
     }
   }
-  console.log("Real local Storage browser proxy ready; issuer and Auth keys unchanged.");
-  tests = spawn("corepack", ["pnpm", "exec", "playwright", "test", "--config=playwright.upload.config.ts"], {
-    stdio: "inherit", env: { ...process.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
-      INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
-  });
-  const code = await new Promise<number>(resolve => {
-    tests!.once("error", () => resolve(1)); tests!.once("exit", code => resolve(code ?? 1));
-  });
-  assert.equal(code, 0, "Positive upload browser suite failed");
-  assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
-  console.log(`PASS ${forwardedUploads} browser upload(s) reached the installed provider through the loopback proxy.`);
+  await verifyBrowserTransport(`http://127.0.0.1:${address.port}`, () => forwardedTransportProbes);
+  console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
+  if (!bootstrapOnly) {
+    tests = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
+      `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
+      detached: process.platform !== "win32",
+      stdio: "inherit", env: { ...process.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
+        INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
+    });
+    const code = await new Promise<number>(resolve => {
+      tests!.once("error", () => resolve(1)); tests!.once("exit", code => resolve(code ?? 1));
+    });
+    assert.equal(code, 0, "Browser suite or no-skip/no-retry gate failed");
+    assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
+    console.log(`PASS ${forwardedUploads} browser upload(s) reached the installed provider through the loopback proxy.`);
+  }
 } finally {
   await stop();
 }

@@ -76,7 +76,9 @@ jobs:
         run: pnpm test:invitation-locks
       - name: Seed local Supabase
         run: pnpm seed
-      - name: Full browser suite
+      - name: Full browser suite with the real local Storage provider
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
         run: pnpm e2e
       - name: Stop local Supabase
         if: always()

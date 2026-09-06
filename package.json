@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
-    "e2e": "tsx scripts/run-e2e.ts",
+    "e2e": "tsx scripts/run-upload-browser.mts --full",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
     "gate:names": "tsx scripts/name-gate.ts",
     "gate:readability": "tsx scripts/readability-gate.ts",
