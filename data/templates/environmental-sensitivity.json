@@ -70,7 +70,7 @@
     "slug": "skin-uv-sensitivity-slc45a2",
     "category": "environmental-sensitivity",
     "title": "Skin response to UV light · SLC45A2 L374F",
-    "summary": "SLC45A2 transports material in melanosomes, the parts of cells that make pigment. rs16891982 changes amino acid 374 of this protein. The C (Leu374) allele is almost universal in European populations. It is linked to lighter skin and more reported sun sensitivity. The G (Phe374) allele is most common in African and East Asian populations.",
+    "summary": "SLC45A2 helps cells make skin pigment. At rs16891982, C codes for Leu374, the darker-skin-associated form, while G codes for Phe374, the lighter-skin-associated form. Lab work found less pigment with Phe374 than with Leu374. Human studies also linked this site to skin color, tanning and reported sun sensitivity. These findings do not measure your skin color or how much sun your skin can tolerate.",
     "evidence": "emerging",
     "variants": [
       {
@@ -81,16 +81,47 @@
         "ref": "C",
         "alt": "G",
         "interpretations": {
-          "CC": "Two copies of the Leu374 (C) allele, the common European form. Associated on average with lighter constitutive skin pigmentation and greater reported photosensitivity than G-allele carriers.",
-          "CG": "One copy of each allele. Associated with intermediate constitutive pigmentation on average. This variant is strongly ancestry-informative, so a heterozygous result often reflects mixed ancestry rather than anything unusual.",
-          "GG": "Two copies of the Phe374 (G) allele, the predominant form in African and East Asian populations. Associated on average with more constitutive melanin and less reported sun sensitivity. Darker skin still sustains UV damage, so this is not a measure of how much sun any person can tolerate."
+          "CC": "Two copies of C, coding for Leu374, the form linked to darker skin. This is one part of skin pigment biology, not a skin-color result. It does not establish greater sun tolerance or protection from UV damage.",
+          "CG": "One C (Leu374) and one G (Phe374) copy. These forms differ in lab studies, but that does not place your skin color halfway between CC and GG. This result does not establish your ancestry or sun tolerance.",
+          "GG": "Two copies of G, coding for Phe374, the form linked to lighter skin. Lab cells with this form made less pigment than cells with Leu374. This does not measure your skin color, sun sensitivity or safe time in the sun."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "29974532", "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018" },
-      { "pmid": "18483556", "label": "Han et al., PLoS Genetics 2008" }
+      {
+        "pmid": "29974532",
+        "label": "Hernando et al., Photodermatology Photoimmunology & Photomedicine 2018",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "A questionnaire recorded skin and hair traits, sun sensitivity and sun exposure.", "locator": "Abstract, Methods" },
+          "population": { "text": "The study included 456 people from Spain.", "locator": "Abstract, Methods" },
+          "comparison": { "text": "The team tested links between this site and reported sun sensitivity. They also tested other pigment-related variants.", "locator": "Abstract, Methods and Results" },
+          "limitation": { "text": "The abstract reports a link at this site but does not give a C-versus-G contrast. It cannot set a personal sun limit.", "locator": "Abstract, Results; scope of the reported result" }
+        }
+      },
+      {
+        "pmid": "18483556",
+        "label": "Han et al., PLoS Genetics 2008",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "Researchers studied hair color, skin color and tanning ability.", "locator": "Results, SLC45A2/MATP paragraphs" },
+          "population": { "text": "The wider study used groups of European ancestry in the United States and Australia. This site's analysis used skin-cancer study controls.", "locator": "Abstract; Results, SLC45A2/MATP paragraphs; Materials and Methods, Study populations" },
+          "comparison": { "text": "This site remained linked to all three traits after accounting for three other sites in the same gene.", "locator": "Results, SLC45A2/MATP multivariable analysis" },
+          "limitation": { "text": "These group associations do not predict one person's skin color or safe UV exposure.", "locator": "Results, SLC45A2/MATP paragraphs; scope of the association study" }
+        }
+      },
+      {
+        "pmid": "32966160",
+        "label": "Le et al., Molecular Biology of the Cell 2020",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "Lab tests measured pigment and how long the two protein forms lasted.", "locator": "Results, Figures 7 and 8" },
+          "population": { "text": "The tests used mouse pigment cells given human SLC45A2 protein forms, not people exposed to sunlight.", "locator": "Results, Figures 7 and 8; Materials and Methods" },
+          "comparison": { "text": "Phe374 made less pigment and broke down faster than Leu374.", "locator": "Results, Figures 7 and 8" },
+          "limitation": { "text": "Testing each form in cells does not establish a halfway effect for people with one copy of each.", "locator": "Figures 7 and 8; scope of the cell experiment" }
+        }
+      }
     ]
   },
   {

@@ -1,5 +1,34 @@
 # Test diff register
 
+Rendered-claim infrastructure (2026-09-06): the supplied-corpus audit now has
+82 pure tests, the actual DOM collector has 28 Chromium tests, and the
+independent capture planner has 14 tests including the current canonical
+62-page register. No existing assertion is removed. Explicit region arrays
+are added to the earlier synthetic corpus fixtures; whole-surface wrapping
+and all numeric checks remain in force. New cases prove missing, empty,
+duplicate or undeclared prose regions fail, ordinary outside navigation needs
+no arbitrary scientific source, and outside numeric claims are still checked.
+Collector tests render synthetic HTML in real Chromium with requests blocked;
+they are not live product-flow evidence. Chromium installation already precedes
+the unit step in CI. The planner enumerates 288 registered page/state pairs,
+11 email entrypoints and four export contracts, not completed captures.
+Dynamic fixture expansion, real renderer receipts and the complete canonical
+claim registry remain required before claiming G1.11 or G4.7.
+
+Independent review found and reproduced two fail-open boundaries before merge:
+an unknown route-kind spelling could disappear from the capture plan, and an
+asynchronous citation resolver could be mistaken for a resolved source. The
+planner now rejects unknown route kinds; both citation lookup paths require
+a synchronous, matching-ID source record. Five new regressions cover the route
+kind and async-missing, async-found, wrong-ID and incomplete citation results.
+
+SLC45A2 correction (2026-09-06): new source-scope tests preserve the unique
+report identity, locus, three genotype keys, no-call behavior and evidence
+tier while pinning corrected pigmentation direction and three source contexts.
+They exercise the real source renderer and seed conversion. The exact object
+has a separate independent primary-source review; tests are not substituted
+for source verification. This introduces no access gate or personal prediction.
+
 Behavior-source corrections (2026-09-06): added real-resolver and rendered
 source-context tests for COMT, BDNF and FAAH, preserving their nine genotype
 keys, locus bindings, report identities, evidence tiers and existing category
