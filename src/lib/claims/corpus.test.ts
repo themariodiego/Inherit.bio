@@ -14,14 +14,15 @@ function fixture(): CorpusInput {
     net_impression_note: "Fixture only.", reviewed_on: "2026-09-06", reviewer: "Synthetic reviewer" };
   return {
     contentCommitSha: "a".repeat(40),
-    requiredSurfaces: CORPUS_CHANNELS.map((channel) => ({ channel, surface: `fixture/${channel}`, requiresClaimWrapping: true })),
+    requiredSurfaces: CORPUS_CHANNELS.map((channel) => ({ channel, surface: `fixture/${channel}`, requiresClaimWrapping: true, requiredClaimRegions: [] })),
     observations: CORPUS_CHANNELS.map((channel) => ({ channel, surface: `fixture/${channel}`,
       contentCommitSha: "a".repeat(40), payloadSha256: "b".repeat(64),
+      claimRegions: [],
       claims: [{ nodeId: "finding", claimId: claim.claim_id, text: claim.text_verbatim,
         citationIds: ["fixture.a", "fixture.b"], provenance: "citation:fixture.a" }],
       figures: [{ nodeId: "plot", provenance: "computed:fixture/results" }],
       texts: [{ nodeId: "finding", text: claim.text_verbatim, kind: "content", chromeKind: null,
-        claimId: claim.claim_id, provenance: "citation:fixture.a" }],
+        claimId: claim.claim_id, provenance: "citation:fixture.a", regionIds: [] }],
     })),
     registry: {
       resolveCitation: (id) => citations.find((c) => c.id === id),
@@ -33,7 +34,7 @@ function fixture(): CorpusInput {
 }
 const codes = (input: CorpusInput) => auditClaimCorpus(input).issues.map((issue) => issue.code);
 const plainText = (changes: Partial<ObservedText> = {}): ObservedText => ({ nodeId: "extra", text: "Synthetic plain text.",
-  kind: "content", chromeKind: null, claimId: null, provenance: null, ...changes });
+  kind: "content", chromeKind: null, claimId: null, provenance: null, regionIds: [], ...changes });
 
 describe("renderer-supplied claim corpus audit", () => {
   it("audits all four independently required channels and returns exact claim occurrences", () => {
@@ -54,7 +55,7 @@ describe("renderer-supplied claim corpus audit", () => {
   });
   it("checks every additional route/state surface, not only channel presence", () => {
     const input = fixture(); input.requiredSurfaces = [...input.requiredSurfaces,
-      { channel: "email", surface: "fixture/another-template", requiresClaimWrapping: true }];
+      { channel: "email", surface: "fixture/another-template", requiresClaimWrapping: true, requiredClaimRegions: [] }];
     expect(codes(input)).toEqual(["missing-surface"]);
   });
   it("refuses empty inventories and empty observations", () => {
@@ -202,5 +203,60 @@ describe("renderer-supplied claim corpus audit", () => {
     const input = fixture(); const before = JSON.stringify(input.observations);
     expect(auditClaimCorpus(input)).toEqual(auditClaimCorpus(input));
     expect(JSON.stringify(input.observations)).toBe(before);
+  });
+
+  function regionalFixture(): CorpusInput {
+    const input = fixture();
+    input.requiredSurfaces = input.requiredSurfaces.map((s) => ({ ...s, requiresClaimWrapping: false, requiredClaimRegions: ["report-body"] }));
+    for (const surface of input.observations) {
+      surface.claimRegions = [{ regionId: "report-body", nodeId: "body" }];
+      surface.texts[0].regionIds = ["report-body"];
+      surface.texts.push(plainText({ text: "Go to settings" }));
+    }
+    return input;
+  }
+  it("scopes prose wrapping to independently required bodies without citing ordinary navigation", () => {
+    expect(auditClaimCorpus(regionalFixture()).ok).toBe(true);
+  });
+  it("still rejects numeric claims in navigation outside designated regions", () => {
+    const input = regionalFixture(); input.observations[0].texts[1].text = "Synthetic 25% finding";
+    expect(codes(input)).toContain("unwrapped-number");
+  });
+  it("requires prose wrappers inside a required region even with no number", () => {
+    const input = regionalFixture(); input.observations[0].texts.push(plainText({ nodeId: "uncited", regionIds: ["report-body"] }));
+    expect(codes(input)).toContain("unwrapped-text");
+  });
+  it("refuses a missing required region instead of accepting an incomplete capture", () => {
+    const input = regionalFixture(); input.observations[0].claimRegions = [];
+    expect(codes(input)).toEqual(expect.arrayContaining(["missing-region", "unknown-region"]));
+  });
+  it("refuses an empty placeholder for the required region", () => {
+    const input = regionalFixture(); input.observations[0].texts[0].regionIds = [];
+    expect(codes(input)).toContain("empty-region");
+  });
+  it("refuses an undeclared region even if its prose is fully cited", () => {
+    const input = regionalFixture(); input.observations[0].claimRegions.push({ regionId: "extra", nodeId: "extra" });
+    input.observations[0].texts[0].regionIds.push("extra");
+    expect(codes(input)).toContain("unknown-region");
+  });
+  it("supports declared nested regions and validates every membership", () => {
+    const input = regionalFixture(); input.requiredSurfaces[0].requiredClaimRegions.push("nested");
+    input.observations[0].claimRegions.push({ regionId: "nested", nodeId: "inner" });
+    input.observations[0].texts[0].regionIds.push("nested");
+    expect(auditClaimCorpus(input).ok).toBe(true);
+    input.observations[0].texts[0].regionIds.push("absent");
+    expect(codes(input)).toContain("unknown-region");
+  });
+  it("refuses duplicate region definitions, node aliases and memberships", () => {
+    const input = regionalFixture(); input.requiredSurfaces[0].requiredClaimRegions.push("report-body");
+    input.observations[0].claimRegions.push({ regionId: "report-body", nodeId: "other" });
+    input.observations[0].claimRegions.push({ regionId: "alias", nodeId: "body" });
+    input.observations[0].texts[0].regionIds.push("report-body");
+    expect(codes(input).filter((c) => c === "duplicate-region")).toHaveLength(4);
+  });
+  it("requires explicit region arrays instead of treating omissions as out-of-scope", () => {
+    const input = regionalFixture(); Reflect.deleteProperty(input.requiredSurfaces[0], "requiredClaimRegions");
+    Reflect.deleteProperty(input.observations[1], "claimRegions"); Reflect.deleteProperty(input.observations[2].texts[0], "regionIds");
+    expect(codes(input).filter((c) => c === "invalid-shape")).toHaveLength(3);
   });
 });

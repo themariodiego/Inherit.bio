@@ -3,7 +3,11 @@ import type { ClaimOccurrence, ClaimRegistry } from "./registry";
 export const CORPUS_CHANNELS = ["static-build", "seeded-authenticated", "email", "export"] as const;
 export type CorpusChannel = (typeof CORPUS_CHANNELS)[number];
 export const CHROME_KINDS = ["item-count", "step", "pagination", "date", "file-size", "version"] as const;
-export interface RequiredSurface { surface: string; channel: CorpusChannel; requiresClaimWrapping: boolean }
+export interface RequiredSurface {
+  surface: string; channel: CorpusChannel; requiresClaimWrapping: boolean;
+  /** Independently named prose regions; ordinary navigation stays outside. */
+  requiredClaimRegions: string[];
+}
 export interface ObservedClaim { nodeId: string; claimId: string; text: string; citationIds: string[]; provenance: string }
 export interface ObservedFigure { nodeId: string; provenance: string }
 export interface ObservedText {
@@ -13,6 +17,7 @@ export interface ObservedText {
   chromeKind: (typeof CHROME_KINDS)[number] | null;
   claimId: string | null;
   provenance: string | null;
+  regionIds: string[];
 }
 export interface ObservedSurface {
   surface: string;
@@ -23,6 +28,7 @@ export interface ObservedSurface {
   claims: ObservedClaim[];
   figures: ObservedFigure[];
   texts: ObservedText[];
+  claimRegions: { regionId: string; nodeId: string }[];
 }
 export interface CorpusInput {
   contentCommitSha: string;
@@ -39,7 +45,8 @@ export type CorpusIssueCode = "invalid-shape" | "invalid-field" | "invalid-commi
   "unknown-surface" | "duplicate-node" | "missing-provenance" | "invalid-provenance" |
   "unknown-citation" | "unknown-seed" | "unknown-module" | "resolver-failed" | "unknown-claim" |
   "wrong-claim-text" | "wrong-claim-surface" | "zero-support" | "wrong-citation" |
-  "missing-claim-text" | "unwrapped-text" | "unwrapped-number" | "chrome-claim" | "wrong-text-binding";
+  "missing-claim-text" | "unwrapped-text" | "unwrapped-number" | "chrome-claim" | "wrong-text-binding" |
+  "invalid-region" | "duplicate-region" | "missing-region" | "unknown-region" | "empty-region";
 export interface CorpusIssue { code: CorpusIssueCode; path: string }
 export interface CorpusAudit { ok: boolean; issues: CorpusIssue[]; claimOccurrences: ClaimOccurrence[] }
 
@@ -93,9 +100,15 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
   const requiredChannels = new Set<string>();
   for (const [i, row] of array(input.requiredSurfaces, "requiredSurfaces").entries()) {
     const path = `requiredSurfaces[${i}]`;
-    if (!shape(row, ["surface", "channel", "requiresClaimWrapping"], path)) continue;
+    if (!shape(row, ["surface", "channel", "requiresClaimWrapping", "requiredClaimRegions"], path)) continue;
     if (!text(row.surface)) add("invalid-field", `${path}.surface`);
     if (typeof row.requiresClaimWrapping !== "boolean") add("invalid-field", `${path}.requiresClaimWrapping`);
+    const regionIds = new Set<string>();
+    for (const [ri, region] of array(row.requiredClaimRegions, `${path}.requiredClaimRegions`).entries()) {
+      if (!id(region)) add("invalid-region", `${path}.requiredClaimRegions[${ri}]`);
+      else if (regionIds.has(region)) add("duplicate-region", `${path}.requiredClaimRegions[${ri}]`);
+      else regionIds.add(region);
+    }
     if (!channel(row.channel, `${path}.channel`) || !text(row.surface)) continue;
     requiredChannels.add(row.channel as string);
     const key = surfaceKey(row);
@@ -130,7 +143,7 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
   let observedNodes = 0;
   for (const [i, row] of array(input.observations, "observations").entries()) {
     const path = `observations[${i}]`;
-    if (!shape(row, ["surface", "channel", "contentCommitSha", "payloadSha256", "claims", "figures", "texts"], path)) continue;
+    if (!shape(row, ["surface", "channel", "contentCommitSha", "payloadSha256", "claims", "figures", "texts", "claimRegions"], path)) continue;
     if (!text(row.surface)) add("invalid-field", `${path}.surface`);
     if (channel(row.channel, `${path}.channel`)) observedChannels.add(row.channel as string);
     if (!sha(row.contentCommitSha)) add("invalid-commit", `${path}.contentCommitSha`);
@@ -140,6 +153,19 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
     if (!expected) add("unknown-surface", path);
     if (seen.has(key)) add("duplicate-surface", path);
     seen.add(key);
+    const expectedRegions = new Set(Array.isArray(expected?.requiredClaimRegions) ? expected.requiredClaimRegions : []);
+    const regions = new Map<string, string>();
+    const regionNodes = new Set<string>();
+    for (const [ri, region] of array(row.claimRegions, `${path}.claimRegions`).entries()) {
+      const rp = `${path}.claimRegions[${ri}]`;
+      if (!shape(region, ["regionId", "nodeId"], rp)) continue;
+      if (!id(region.regionId) || !text(region.nodeId)) { add("invalid-region", rp); continue; }
+      if (regions.has(region.regionId) || regionNodes.has(region.nodeId)) add("duplicate-region", rp);
+      if (!expectedRegions.has(region.regionId)) add("unknown-region", rp);
+      regions.set(region.regionId, rp); regionNodes.add(region.nodeId);
+    }
+    for (const region of expectedRegions) if (!regions.has(region as string)) add("missing-region", `${path}.claimRegions.${region}`);
+    const populatedRegions = new Set<string>();
     const claims = new Map<string, Row>();
     const claimPaths = new Map<string, string>();
     for (const [ci, claim] of array(row.claims, `${path}.claims`).entries()) {
@@ -181,7 +207,17 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
     const texts = new Set<string>();
     for (const [ti, block] of array(row.texts, `${path}.texts`).entries()) {
       const tp = `${path}.texts[${ti}]`;
-      if (!shape(block, ["nodeId", "text", "kind", "chromeKind", "claimId", "provenance"], tp)) continue;
+      if (!shape(block, ["nodeId", "text", "kind", "chromeKind", "claimId", "provenance", "regionIds"], tp)) continue;
+      const memberships = new Set<string>();
+      for (const [ri, region] of array(block.regionIds, `${tp}.regionIds`).entries()) {
+        if (!id(region)) add("invalid-region", `${tp}.regionIds[${ri}]`);
+        else {
+          if (memberships.has(region)) add("duplicate-region", `${tp}.regionIds[${ri}]`);
+          if (!regions.has(region)) add("unknown-region", `${tp}.regionIds[${ri}]`);
+          memberships.add(region);
+          if (text(block.text)) populatedRegions.add(region);
+        }
+      }
       if (!text(block.nodeId) || !text(block.text)) add("invalid-field", tp);
       if (typeof block.nodeId === "string") { if (texts.has(block.nodeId)) add("duplicate-node", `${tp}.nodeId`); texts.add(block.nodeId); }
       if (!["content", "ui-chrome", "user-value"].includes(block.kind as string)) add("invalid-field", `${tp}.kind`);
@@ -195,10 +231,11 @@ export function auditClaimCorpus(input: CorpusInput): CorpusAudit {
         if (origin?.type === "citation") add("invalid-provenance", `${tp}.provenance`);
       } else {
         if (block.provenance !== null) provenance(block.provenance, `${tp}.provenance`);
-        if (block.kind === "content" && expected?.requiresClaimWrapping) add("unwrapped-text", tp);
+        if (block.kind === "content" && (expected?.requiresClaimWrapping || memberships.size > 0)) add("unwrapped-text", tp);
         if (block.kind === "content" && typeof block.text === "string" && numericClaim.test(block.text)) add("unwrapped-number", tp);
       }
     }
+    for (const [region, rp] of regions) if (!populatedRegions.has(region)) add("empty-region", rp);
     for (const node of claims.keys()) if (!texts.has(node)) add("missing-claim-text", `${claimPaths.get(node)}.nodeId`);
     observedNodes += texts.size + figures.size;
   }

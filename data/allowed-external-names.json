@@ -399,6 +399,27 @@
       "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
     },
     {
+      "name": "PLOS article host",
+      "category": "cited-organisation",
+      "aliases": ["journals.plos.org"],
+      "reason": "Primary publisher host for the Han pigmentation study read in the SLC45A2 source review.",
+      "evidence": ["docs/sources/reviews/batch-04/slc45a2-independent-review.md"]
+    },
+    {
+      "name": "Wiley article host",
+      "category": "cited-organisation",
+      "aliases": ["onlinelibrary.wiley.com"],
+      "reason": "Primary publisher summary used to verify the Spanish questionnaire study's limited claim scope.",
+      "evidence": ["docs/sources/reviews/batch-04/slc45a2-independent-review.md"]
+    },
+    {
+      "name": "NEJM article host",
+      "category": "cited-organisation",
+      "aliases": ["www.nejm.org"],
+      "reason": "Primary publisher host for the journal articles already cited in the autoimmune report seeds.",
+      "evidence": ["data/templates/autoimmune.json"]
+    },
+    {
       "name": "Contributor Covenant",
       "category": "cited-organisation",
       "aliases": ["contributor covenant", "contributor-covenant.org", "www.contributor-covenant.org"],
