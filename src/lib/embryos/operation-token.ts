@@ -94,6 +94,8 @@ interface PublicFormClaims {
   form: PublicForm;
   nonce: string;
   expiresAt: number;
+  /** Optional browser binding; required by rights-activation callers. */
+  candidateHash?: string;
 }
 
 /** A nonce the RPCs accept: 16-256 characters of base64url, no whitespace. */
@@ -198,13 +200,13 @@ export function verifyEmbryoOperation(
   return claims;
 }
 
-export function mintPublicFormToken(form: PublicForm, now = Date.now()): string {
-  const claims: PublicFormClaims = { form, nonce: newNonce(), expiresAt: now + OPERATION_LIFETIME_MS };
+export function mintPublicFormToken(form: PublicForm, now = Date.now(), candidateHash?: string): string {
+  const claims: PublicFormClaims = { form, nonce: newNonce(), expiresAt: now + OPERATION_LIFETIME_MS, candidateHash };
   return seal(claims, PUBLIC_FORM_DIGEST_CONTEXT);
 }
 
 /** The nonce of a public-form token served for this form and still fresh; null otherwise. */
-export function readPublicFormToken(token: string, form: PublicForm, now = Date.now()): { nonce: string } | null {
+export function readPublicFormToken(token: string, form: PublicForm, now = Date.now(), candidateHash?: string): { nonce: string } | null {
   const claims = unseal<PublicFormClaims>(token, PUBLIC_FORM_DIGEST_CONTEXT);
   if (!claims || typeof claims !== "object") return null;
   if (
@@ -216,5 +218,6 @@ export function readPublicFormToken(token: string, form: PublicForm, now = Date.
     return null;
   }
   if (claims.expiresAt <= now) return null;
+  if (candidateHash !== undefined && claims.candidateHash !== candidateHash) return null;
   return { nonce: claims.nonce };
 }
