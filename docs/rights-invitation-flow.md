@@ -134,6 +134,10 @@ The third-party fixture creates both real pending parent slots and proves
 that cancelling the other parent's invitation does not bar that address.
 A retired inviter also cannot prevent a recipient's refusal. Local security
 advisors report no warning/error findings for the current database.
+At implementation commit `4972215`, the complete unit suite also passes:
+**2,147 tests in 136 files** from the clean checkout (21.80 seconds).
+No application/browser code changed in this transaction checkpoint; the
+previous browser receipt belongs to `4c1e606`, not a new refusal UI run.
 The donor fixture seeds the declared pending-draft shape; it does not pretend
 the still-missing donor invitation UI or issuance path exists.
 
