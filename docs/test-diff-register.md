@@ -1,5 +1,16 @@
 # Test diff register
 
+Legacy upload pause (2026-09-06): adds 15 focused route/presentation units
+and one browser case, preserving every existing case and assertion. The
+browser case uses a third same-build app instance with pause enabled, actual
+authenticated refusal responses, no new leases/Storage transport when paused,
+and real UI-uploaded bytes completed and downloaded through the paused app.
+Its stale-page response relay models app-server routing only; its deliberate
+finalization abort simulates an interruption after real Storage completion.
+Discovery is 220 total cases: 217 Chromium and three jurisdiction-off, with
+no skip or retry exception. Browser execution remains pending; the local
+canonical database policy must not be reverted to make a legacy test pass.
+
 Copilot pre-merge usability review: four extra cases bring the completion
 corpus to 64 and new unit coverage to 69 tests. Three first failed on
 conditional symptoms, explicitly unknown diagnosis and report-reading

@@ -13,7 +13,7 @@ const fileId = "77000000-0000-4000-8000-000000000002";
 const declaration = { originalName: "synthetic.vcf", fileType: "vcf", sizeBytes: 8,
   sha256: "a".repeat(64), contentType: "application/octet-stream" };
 function request(body: unknown = declaration) {
-  return new Request("https://inherit.test/api/files/upload-session", { method: "POST",
+  return new Request("http://localhost/api/files/upload-session", { method: "POST",
     headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 }
 beforeEach(() => {
