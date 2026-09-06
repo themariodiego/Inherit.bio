@@ -212,6 +212,11 @@ Verified:
   exposed a second-boundary expiry refusal; minting now caps the JWT at the
   earlier of database expiry and issuance plus 30 minutes, never extending
   either ceiling. Expired leases still fail.
+- At source commit `39dc6b9760b7f6fea49c58a838303acc73ddfe78`, the
+  clean-checkout full unit run passes 2,309 tests in 144 files. The secret
+  gate passes over 975 tracked files and 248 authored commits. Application
+  typecheck, a separate strict typecheck of the HTTP harness and scoped lint
+  pass; the local database security advisor reports no findings.
 
 Run locally with:
 
