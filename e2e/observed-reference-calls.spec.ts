@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID, createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
 import { PERSONAL_PREVIEW_TRAITS } from "../src/copy/reports/personal-previews";
@@ -10,11 +11,22 @@ test("explicit VCF reference calls match array findings without entering variant
   const texts: string[][] = [];
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  const directory = mkdtempSync(path.join(tmpdir(), "inherit-observed-reference-"));
+  // Preserve all five baseline records and add literal reference observations
+  // for the three new takeaways. An absent position must not become a result.
+  const additions = {
+    vcf: "11\t6868417\trs72921001\tC\tA\t.\tPASS\t.\tGT\t0/0\n1\t248333561\trs4481887\tA\tG\t.\tPASS\t.\tGT\t0/0\n2\t145367955\trs10427255\tC\tT\t.\tPASS\t.\tGT\t0/0\n",
+    txt: "rs72921001\t11\t6868417\tCC\nrs4481887\t1\t248333561\tAA\nrs10427255\t2\t145367955\tCC\n",
+  };
+  try {
   for (const kind of ["vcf", "array_23andme"] as const) {
     const user = { email: `observed-${kind}-${randomUUID()}@e2e.local`, password: "e2e-observed-password" };
     await createConfirmedUser(user.email, user.password);
     await signIn(page, user.email, user.password);
-    const fixture = path.join(process.cwd(), `e2e/fixtures/observed-reference-grch38.${kind === "vcf" ? "vcf" : "txt"}`);
+    const extension = kind === "vcf" ? "vcf" : "txt";
+    const original = path.join(process.cwd(), `e2e/fixtures/observed-reference-grch38.${extension}`);
+    const fixture = path.join(directory, `observed-reference.${extension}`);
+    writeFileSync(fixture, readFileSync(original, "utf8").trimEnd() + "\n" + additions[extension]);
     const id = await ingestFileAs(page, user.email, user.password, fixture, kind);
     if (kind === "vcf") {
       const { data: file, error } = await admin.from("genome_files").select("observed_call_sha256,observed_call_version,variant_count").eq("id", id).single();
@@ -22,7 +34,7 @@ test("explicit VCF reference calls match array findings without entering variant
       expect(file).toMatchObject({ observed_call_sha256: createHash("sha256").update(readFileSync(fixture)).digest("hex"), observed_call_version: "vcf-literal-diploid-snp-v1", variant_count: 0 });
       const before = await admin.from("report_observed_calls").select("*").eq("file_id", id).order("source_line");
       expect(before.error).toBeNull();
-      expect(before.data).toHaveLength(5);
+      expect(before.data).toHaveLength(8);
       expect((await admin.from("user_variants").select("id").eq("file_id", id)).data).toEqual([]);
       expect((await page.request.post(`/api/files/${id}/process`)).ok()).toBe(true);
       expect((await admin.from("report_observed_calls").select("*").eq("file_id", id).order("source_line")).data).toEqual(before.data);
@@ -54,4 +66,11 @@ test("explicit VCF reference calls match array findings without entering variant
   }
   expect(texts[0]).toEqual(texts[1]);
   expect(errors).toEqual([]);
+  } finally {
+    for (const extension of ["vcf", "txt"]) {
+      const fixture = path.join(directory, `observed-reference.${extension}`);
+      if (existsSync(fixture)) unlinkSync(fixture);
+    }
+    rmdirSync(directory);
+  }
 });

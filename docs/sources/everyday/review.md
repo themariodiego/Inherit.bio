@@ -126,6 +126,11 @@ The initial run failed on citation selectors; the corrected run passed all
 seven. Navigation also emitted two server stream-close messages; this is not
 a claim of a warning-free runtime.
 
+After the two final scientific wording corrections, the combined local run
+passed all 16 reference-call, personal-preview and report-skeleton browser
+cases. The initial full PR CI failures and expanded fixtures are recorded in
+`docs/test-diff-register.md`; the failed run is not release approval.
+
 Unit DOM tests render all registered paragraphs for eight report components;
 the actual detail page renders the selected genotype only. Intended export
 and digest metadata is not proof of full rendered-channel capture.
