@@ -336,7 +336,7 @@ export default async function OverviewPage() {
         />
       ) : null}
 
-      {DOMAIN_SECTIONS.map((section) => (
+      {DOMAIN_SECTIONS.flatMap((section) => [
         <DomainSection
           key={section.id}
           id={section.id}
@@ -440,14 +440,13 @@ export default async function OverviewPage() {
               {ledeFor("embryos")}
             </p>
           )}
-        </DomainSection>
-      ))}
-
-      {hasReports ? (
-        // Starter reading list (§2 §7.2). "You’ve read the starter set" is
-        // not rendered: nothing records which reports were opened.
-        <StarterReports reports={starter} />
-      ) : null}
+        </DomainSection>,
+        // Keep useful own reports next to My genome, before secondary domains.
+        // Nothing records which reports were opened, so no read-state is shown.
+        section.id === "my-genome" && hasReports ? (
+          <StarterReports key="own-starter-reports" reports={starter} />
+        ) : null,
+      ])}
 
       <p
         data-density-required-accuracy
