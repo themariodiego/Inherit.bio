@@ -16,6 +16,8 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   auth: { getUser: async () => ({ data: { user: { id: "test-user", email: null } } }) },
   from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: {
     id: "test-file", user_id: state.fileOwner, subject_id: "test-subject", tier: 1, file_type: "vcf", bucket_path: "test-user/file.vcf",
+    // Real pre-cutover database rows have NULL, not an omitted property.
+    single_logical_sample_verified_at: null,
   } }) }) }) }),
 }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (table: string) => ({

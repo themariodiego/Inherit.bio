@@ -33,7 +33,9 @@ test("canonical browser upload stores exact source bytes and prepares them witho
   const storage = await stored;
   expect(storage.ok()).toBe(true);
   expect(storage.url()).toBe(`http://127.0.0.1:54321/storage/v1/object/genomes/${lease.stagingKey}`);
-  expect(storage.request().postDataBuffer()).toEqual(bytes);
+  // This File-backed XHR has no body in the browser debugging protocol.
+  // Verify exact bytes through the real, unproxied Storage download below.
+  expect(storage.request().headers()["content-type"]).toBe("application/octet-stream");
   const storageHeaders = await storage.request().allHeaders();
   // Compare locally without rendering the restricted bearer in assertion output.
   expect(storageHeaders.authorization === `Bearer ${lease.uploadToken}`).toBe(true);
