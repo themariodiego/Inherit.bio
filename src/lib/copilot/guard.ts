@@ -2,7 +2,7 @@
  * The Copilot guard (brief line 2262; §5.7 line 366, §6.4 line 402; register
  * `copilot-intent-gate-v1` and `copilot-output-guard-v1`).
  *
- * Three deterministic checks and no model call anywhere:
+ * Four deterministic checks and no model call anywhere:
  *
  * 1. `classifyIntent` reads the user's latest message against the fixed rule
  *    table `INTENT_RULES` (word lists and patterns, nothing learned) and
@@ -19,6 +19,8 @@
  *    the tools returned that turn (`report_templates.citations`,
  *    `prs_scores.citation`) and to the report and score names they carried,
  *    matching whole tokens only.
+ * 4. `checkResponsePolicy` checks model-authored assertions and directives,
+ *    separately from the user's intent, while retaining file explanations.
  *
  * Two helpers keep the route honest about what it checks: `foldStreamChunks`
  * turns the buffered model stream into the one string the checks read (text,
@@ -546,13 +548,34 @@ export interface FoldedStream {
  */
 export function foldStreamChunks(chunks: readonly UIMessageChunk[]): FoldedStream {
   const parts: string[] = [];
+  const streamingParts = new Map<string, number>();
+  const partIndex = (kind: string, id: string): number => {
+    const key = `${kind}:${id}`;
+    let index = streamingParts.get(key);
+    if (index === undefined) {
+      index = parts.length;
+      streamingParts.set(key, index);
+      parts.push("");
+    }
+    return index;
+  };
   const toolJson: unknown[] = [];
   for (const chunk of chunks) {
     switch (chunk.type) {
-      case "text-delta":
-      case "reasoning-delta":
-        parts.push(chunk.delta);
+      case "text-start":
+      case "reasoning-start":
+        // UIMessage parts are inserted on start, not on their first delta.
+        partIndex(chunk.type.replace("-start", ""), chunk.id);
         break;
+      case "text-delta":
+      case "reasoning-delta": {
+        // The client appends deltas within one part without adding whitespace.
+        // Inserting separators here splits words, citations and numeric tokens
+        // and makes the checked answer differ from the answer being replayed.
+        const index = partIndex(chunk.type.replace("-delta", ""), chunk.id);
+        parts[index] += chunk.delta;
+        break;
+      }
       case "tool-input-available":
       case "tool-input-error":
         parts.push(JSON.stringify(chunk.input) ?? "");
@@ -815,7 +838,64 @@ export function checkCitations(text: string, permitted: PermittedCitations): Cit
 // The output check the route runs on a finished model answer.
 // ---------------------------------------------------------------------------
 
-export type OutputViolation = "unsupported-number" | "unsupported-citation";
+export type OutputViolation = GatedIntent | "unsupported-number" | "unsupported-citation";
+
+/**
+ * Output assertions differ from input questions. A refusal may explain that
+ * the file cannot diagnose disease; an affirmative (including a negative
+ * diagnosis) or a directive is not made safe by appending that disclaimer.
+ * These deterministic rules are regression-tested defenses, not a claim to
+ * recognize every possible paraphrase of natural language.
+ */
+export function checkResponsePolicy(text: string, scope: CopilotScopeKind = "self"): IntentVerdict {
+  const normalized = text.normalize("NFKC").replace(/\p{Cf}/gu, "");
+  const embryoContext = scope === "cohort" || /\bembryos?\b/iu.test(normalized);
+  const outputProductWords = `${PRODUCT_WORDS}|results?|sources?|links?|filters?|pages?|sections?`;
+  const person = `(?:you|your (?:${RELATIVES}))`;
+  const action = "take|taking|start|starting|stop|stopping|try|use|using|add|increase|reduce|cut|quit|switch|avoid|eat|drink|supplement|adjust|change|double|skip|exercise|follow";
+  const factObject = new RegExp(`^(?:(?:${DETERMINERS}) )?(?:(?!(?:and|but|or|because|so|yet)\\b)${QUALIFIER}){0,2}(?:${FILE_FACT_WORDS})\\b`, "u");
+  const productObject = new RegExp(`^(?:by (?:reading|opening|reviewing|checking) )?(?:(?:to|from|a|an|the|this|that|your|my|our) )?(?:(?!(?:and|but|or|because|so|yet)\\b)\\w+ ){0,2}(?:${outputProductWords})\\b`, "u");
+  const clinicalConversation = /^(?:speaking|talking|asking|consulting|seeing|contacting|discussing|speak|talk|ask|consult|see|contact|discuss)\b(?:(?!\b(?:and|but|then)\b).)*\b(?:doctor|clinician|counsellor|counselor|clinical team)\b/u;
+  const productTreatmentPurpose = /\b(?:to|for) (?:choos(?:e|ing)|adjust(?:ing)?|chang(?:e|ing)|select(?:ing)?|start(?:ing)?|stop(?:ping)?) (?:your |a |the )?(?:treatment|medication|medicine|dose|dosage|diet|supplements?)\b/u;
+  const safeFrame = /\b(?:(?:cannot|can't|can not|does not|doesn't|do not|don't|will not|won't) (?:tell|say|show|prove|confirm|predict|establish|mean|determine|know)(?: you)?(?: that| whether| if)?|not (?:evidence|proof|a claim|a prediction) that|if|whether) $/u;
+  const rules: Array<{ id: string; intent: GatedIntent; pattern: RegExp; object?: "fact" | "product" }> = [
+    { id: "output.diagnosis.have", intent: "diagnosis", pattern: new RegExp(`\\b${person} (?:definitely |certainly |already |clearly )?(?:(?:do|does) not |don't |doesn't )?(?:have|has|have got|suffer from|are suffering from) `, "gu"), object: "fact" },
+    { id: "output.diagnosis.state", intent: "diagnosis", pattern: new RegExp(`\\b${person} (?:are|is|aren't|isn't|are not|is not) (?:definitely |certainly |clearly )?(?:a |an )?(?:${SELF_STATE_WORDS}|${CONDITION_WORDS})\\b`, "gu") },
+    { id: "output.diagnosis.confirmed", intent: "diagnosis", pattern: new RegExp(`\\b(?:${CONDITION_WORDS}) (?:is|has been) (?:confirmed|ruled out|present|absent)\\b|\\b(?:i|we) (?:diagnose|have diagnosed)\\b`, "gu") },
+    { id: "output.prognosis", intent: "prognosis", pattern: new RegExp(`\\b${person} (?:will|won't|will not|are going to|are not going to|is going to) (?:definitely |certainly |eventually |never )?(?:get|develop|have|die|survive|live|become|lose|suffer|need) `, "gu"), object: "fact" },
+    { id: "output.prognosis.assurance", intent: "prognosis", pattern: /\byou (?:are|will be) (?:protected|safe|immune) from\b|\byour life expectancy is\b/gu },
+    { id: "output.treatment.directive", intent: "treatment", pattern: new RegExp(`(?:^|\\b(?:then|and|so) )(?:(?:please|do not|don't) )?(?:${action}) |\\byou (?:should|shouldn't|must|mustn't|need to|ought to|can|could|would benefit from)(?: not)? (?:${action}|be taking|be eating|be drinking|be avoiding|be using) `, "gu"), object: "product" },
+    { id: "output.treatment.recommendation", intent: "treatment", pattern: /\b(?:i|we) (?:recommend|suggest|advise|prescribe) (?:that you )?/gu, object: "product" },
+    { id: "output.treatment.dose", intent: "treatment", pattern: /\byour (?:dose|dosage|treatment|diet) (?:is|should be|needs to be)\b/gu },
+  ];
+  if (embryoContext) rules.unshift(
+    { id: "output.selection.directive", intent: "selection-advice", pattern: new RegExp(`(?:^|\\b(?:then|and|so) )(?:please )?(?:${EMBRYO_VERBS}) (?:the |your |an? |this |that )?(?:(?:first|second|third|next) )?embryo\\b|\\b(?:i|we) (?:recommend|prefer|would choose|would pick)\\b|\\b(?:you|we) should (?:${EMBRYO_VERBS})\\b`, "gu") },
+    { id: "output.selection.comparative", intent: "selection-advice", pattern: new RegExp(`\\b(?:is|are|looks|seems|would be) (?:the )?(?:${COMPARATIVES})\\b|\\b(?:${COMPARATIVES}) (?:embryo|choice|option)\\b|\\b(?:i|we) (?:rank|ranked|have ranked)\\b`, "gu") },
+    { id: "output.sex", intent: "sex-disclosure", pattern: new RegExp(`\\b(?:embryo(?: \\w+){0,2}|it|this one|that one) (?:is|has|will be) (?:a |an )?(?:${SEX_WORDS})\\b|\\b(?:sex|gender) (?:of (?:this |the )?embryo(?: \\w+)? )?is (?:${SEX_WORDS})\\b`, "gu") },
+  );
+  rules.push({ id: "output.portrait", intent: "prohibited-portrait", pattern: new RegExp(`\\byour (?:${CHILD_WORDS}) (?:will|is going to) (?:be|have|become|look|grow)\\b`, "gu") });
+  if (scope === "self" || scope === "subject" || scope === "report") {
+    rules.push({ id: "output.cross-subject", intent: "cross-subject", pattern: new RegExp(`\\byour (?:${RELATIVES})(?:'s|s')? (?:${DATA_WORDS}) (?:is|are|shows?|says?|contains?|means?)\\b`, "gu") });
+  }
+  for (const sentence of normalized.split(/(?:[.!?;]\s+|\n+)/u)) {
+    const plain = normalizeMessage(sentence).replace(/\byou're\b/gu, "you are");
+    for (const rule of rules) {
+      for (const match of plain.matchAll(rule.pattern)) {
+        if (safeFrame.test(plain.slice(0, match.index))) continue;
+        const object = plain.slice(match.index + match[0].length);
+        if (rule.id === "output.selection.directive" && clinicalConversation.test(object.trim())) continue;
+        if (rule.object === "fact" && (factObject.test(object) || /^(?:(?:a|an|the|any|some|more|further) )?(?:questions?|options?|access|control|time|choice|choices|response|responses)\b/u.test(object))) continue;
+        if (rule.object === "product" && (
+          (productObject.test(object) && !productTreatmentPurpose.test(object))
+          || /^(?:a look|your time|note)\b/u.test(object)
+          || clinicalConversation.test(object)
+        )) continue;
+        return { intent: rule.intent, rule: rule.id };
+      }
+    }
+  }
+  return { intent: "allowed", rule: null };
+}
 
 export type OutputVerdict =
   | { ok: true }
@@ -825,8 +905,10 @@ export function checkResponse(
   text: string,
   toolJson: unknown,
   allowed: AllowedNumerals,
-  context: { cohortSize?: number } = {},
+  context: { cohortSize?: number; scope?: CopilotScopeKind } = {},
 ): OutputVerdict {
+  const policy = checkResponsePolicy(text, context.scope);
+  if (policy.intent !== "allowed") return { ok: false, violation: policy.intent, unsupported: [policy.rule!] };
   const numerals = checkResponseNumerals(text, toolJson, allowed, context);
   if (!numerals.ok) return { ok: false, violation: "unsupported-number", unsupported: numerals.unsupported };
   const citations = checkCitations(text, permittedCitationsFromToolJson(toolJson));

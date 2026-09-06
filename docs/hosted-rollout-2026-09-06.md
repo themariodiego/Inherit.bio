@@ -238,3 +238,69 @@ Full-plan acceptance remains **18/65**. Actual DOM collection and independent
 capture planning are merged, but canonical content population, production
 claim wrapping, complete renderer integration and the final claims gate
 remain unfinished. No acceptance credit is added by this release receipt.
+
+## PR69 — source-linked report explanations
+
+PR69 (`https://github.com/themariodiego/Inherit.bio/pull/69`) merged reviewed
+head `8cbece97a1a9a66fbc4953eafc60c180889b2677` as
+`bcfa35cb9be5691b7f7e99290dd91f6c4e3e86f8` on 2026-09-06.
+Complete CI `34007333353` passed 2,017 unit tests in 132 files, 812 database
+assertions in 22 suites, and 143 browser cases. The runner explicitly reported
+no browser skips or retries; browser execution took 6.7 minutes. No existing
+reveal/leak assertion was weakened.
+
+Production deployment `dpl_2oJGbPYJ5eXDjw91ErfPd9rEQBKU` is READY at that
+exact merge on both `inherit.bio` and `www.inherit.bio`. It built from epoch
+milliseconds `1788663514046` to `1788663542012` (about 28 seconds).
+The deployment URL is `inherit-f92hiwp8q-mariodiego.vercel.app`.
+
+The preview deployment was READY but its `/science` request returned HTTP 500.
+Its runtime logs identify missing Supabase URL/key configuration in middleware,
+before page rendering. Preview credentials were not populated or copied from
+production. Preview build success is therefore not claimed as a working preview
+flow. The full production-build browser suite and the separate live checks
+below provide the actual renderer verification.
+
+### Live report-to-source navigation
+
+Using the existing signed-in browser session, a read-only check of the four
+report detail routes inspected only public explanation registration and source
+links, never personal result text or genotypes:
+
+| Report | Registered paragraphs | Reference links |
+| --- | ---: | ---: |
+| COMT | 9 | 10 |
+| BDNF | 12 | 14 |
+| FAAH | 5 | 6 |
+| SLC45A2 | 13 | 16 |
+
+All four summaries were registered, all 46 reference links had exactly one
+target, and every page linked to `/science#sources`. The complete set of 39
+observed claim IDs matched the reviewed four-report scope. Exact-text matching
+in the production renderer prevents changed hosted prose from borrowing these
+canonical citations.
+
+Clicking SLC45A2's `Source 4` reached
+`#claim-source-dataset:ensembl-vep-rs16891982`; its source record appeared at
+163.25 pixels from the viewport top with the official Ensembl URL and source
+date `2026-09-06`. Clicking `About these sources` reached `/science#sources`.
+The actual Science page displayed all 11 canonical sources with their exact
+URLs and dates, and the explicit four-report/not-complete-catalog scope.
+A public-page screenshot was visually checked in the existing dark theme.
+
+The deployment-scoped error/fatal count check over
+`2026-09-06T02:59:02Z` through approximately `03:00:47Z` returned no entries.
+This is a short smoke-check interval, not sustained monitoring. No source
+catalog publication, schema change, real file deletion/reprocessing, consent
+change, credential export or email send was required by this release.
+
+The Next.js and deployment skills guided server-rendered integration,
+commit-bound CI/deployment checks and separate hosted verification. Browser
+verification used the connected browser because the browser CLI was absent.
+The investigation skill identified the preview configuration failure; it was
+not treated as a passed renderer check.
+
+Whole-plan acceptance remains **18/65**. The canonical four-report renderer and
+real email capture adapter are delivered; full catalog/source migration,
+all-channel claim coverage, validated polygenic risk results and the remaining
+Family/Embryo, legal, privacy and usability requirements are not complete.
