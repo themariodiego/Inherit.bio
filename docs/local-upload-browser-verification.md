@@ -5,6 +5,39 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At source `d782d1a`, `node --import tsx scripts/run-upload-browser.mts`
+exits zero: **4/4 cases pass, zero skips, retries or flaky cases**, in 48.1
+seconds. The run began at `2026-09-06T15:53:14.889Z`; **three actual browser
+uploads** reached the installed Storage provider through the loopback proxy.
+The earlier three journeys below still pass, with one migrated case added:
+
+- Partial-coverage library recovery now uses the actual picker, explicit
+  **Trait reports and estimates** signature, and Generate button. Read-only
+  metadata proves the exact uploaded bytes/revision and only the selected,
+  live polygenic grant's completed result; the file remains `stored`.
+- Every previous recovery assertion is retained: MCM6 result search,
+  browser Back preserving the search and results-only filter, 390px empty
+  search, 44px Clear filters target, Enter restoring search focus and the
+  original library, and no horizontal overflow. The case passes in 7.6s.
+- The real gateway preflight permits `apikey`; the browser upload sends the
+  exact existing local public API key and restricted upload bearer. Values
+  are compared as booleans, never printed. This does not establish hosted
+  JWT trust: only the isolated local provider trusts the ephemeral signer.
+
+The first expanded run at `8586d27` passed the new case and two existing
+cases, but failed the newly added API-key equality assertion: the test worker
+read an unset environment variable while the app received the configured
+local fallback. `d782d1a` aligns the expected value with that same fallback;
+no runtime change, policy relaxation or assertion removal was needed.
+
+Final teardown confirms no listeners on 3100/3101, zero isolated provider
+processes and normal runner/proxy exit. The generated report has no cookie,
+bearer or private-key markers; traces remain off. Scoped lint and typecheck
+passed before this run. This migrates **one** legacy result-dependent case,
+not the full 16-case candidate batch or the complete browser suite.
+
+## Earlier chosen-report checkpoint
+
 At source `53b630c`, `node --import tsx scripts/run-upload-browser.mts`
 exits zero: **3/3 cases pass, zero skips, retries or flaky cases**, in 42.7
 seconds. The run began at `2026-09-06T15:18:46.064Z`; **two actual browser
