@@ -54,6 +54,8 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "settings.copilot",
   "settings.people",
   "settings.consents",
+  "api.account-completion",
+  "api.consents",
   "marketing.providers",
   "science.index",
   "legal.future-person",
@@ -61,7 +63,7 @@ const EXPECTED_IDS: readonly RouteId[] = [
 ];
 
 describe("primary routes", () => {
-  it("builds exactly the brief's route ids, each once", () => {
+  it("builds exactly the registered runtime route ids, each once", () => {
     expect([...ROUTE_IDS].sort()).toEqual([...EXPECTED_IDS].sort());
     expect(new Set(ROUTE_IDS).size).toBe(ROUTE_IDS.length);
     for (const id of ROUTE_IDS) expect(typeof PRIMARY_ROUTES[id]).toBe("function");

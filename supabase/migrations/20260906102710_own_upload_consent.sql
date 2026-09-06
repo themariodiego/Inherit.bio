@@ -43,7 +43,7 @@ date '2026-09-06');
 create function private.sign_own_upload_artifact_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid,
   p_artifact_key text, p_artifact_version integer, p_artifact_body_sha256 text,
   p_statement_keys text[], p_account_revision bigint, p_auth_session_revision bigint,
-  p_jurisdiction_revision bigint, p_subject_binding_revision bigint, p_nonce_hash text)
+  p_jurisdiction_revision bigint, p_subject_binding_revision bigint, p_account_binding_revision bigint, p_nonce_hash text)
 returns jsonb language plpgsql security definer
 set search_path = pg_catalog, private
 as $function$
@@ -85,7 +85,7 @@ begin
   select sp.id into v_principal from public.subject_principals sp
     join public.subject_account_bindings b on b.subject_id=sp.subject_id
       and b.subject_principal_id=sp.id and b.account_id=p_account_id
-      and b.status='current' and b.binding_revision=p_subject_binding_revision
+      and b.status='current' and b.binding_revision=p_account_binding_revision
     where sp.subject_id=p_subject_id and sp.account_id=p_account_id
       and sp.principal_kind='account_subject' and sp.status='active'
     for share of sp,b;
@@ -147,18 +147,18 @@ begin
     'artifactKey',p_artifact_key,'artifactVersion',p_artifact_version,'signedAt',v_signed_at);
 end;
 $function$;
-revoke all on function private.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, text) from public, anon, authenticated;
-grant execute on function private.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, text) to service_role;
+revoke all on function private.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, bigint, text) from public, anon, authenticated;
+grant execute on function private.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, bigint, text) to service_role;
 
 create function public.sign_own_upload_artifact_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid,
   p_artifact_key text, p_artifact_version integer, p_artifact_body_sha256 text,
   p_statement_keys text[], p_account_revision bigint, p_auth_session_revision bigint,
-  p_jurisdiction_revision bigint, p_subject_binding_revision bigint, p_nonce_hash text)
+  p_jurisdiction_revision bigint, p_subject_binding_revision bigint, p_account_binding_revision bigint, p_nonce_hash text)
 returns jsonb language sql security invoker set search_path = pg_catalog
 as $function$
   select private.sign_own_upload_artifact_v1(p_account_id,p_session_id,p_subject_id,
     p_artifact_key,p_artifact_version,p_artifact_body_sha256,p_statement_keys,p_account_revision,
-    p_auth_session_revision,p_jurisdiction_revision,p_subject_binding_revision,p_nonce_hash);
+    p_auth_session_revision,p_jurisdiction_revision,p_subject_binding_revision,p_account_binding_revision,p_nonce_hash);
 $function$;
-revoke all on function public.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, text) from public, anon, authenticated;
-grant execute on function public.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, text) to service_role;
+revoke all on function public.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, bigint, text) from public, anon, authenticated;
+grant execute on function public.sign_own_upload_artifact_v1(uuid, uuid, uuid, text, integer, text, text[], bigint, bigint, bigint, bigint, bigint, text) to service_role;

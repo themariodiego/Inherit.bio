@@ -1,0 +1,17 @@
+export const OWN_UPLOAD_COPY = {
+  accountHeading: "Complete your account",
+  accountDetail: "Inherit is for adults. Add your birth date once before uploading your DNA. This is an age declaration, not an identity check.",
+  birthDateLabel: "Date of birth",
+  accountContinue: "Save and continue",
+  adultRequired: "Enter a valid birth date. You must be 18 or older.",
+  insuranceHeading: "Read this before you upload",
+  insuranceCheckbox: "I have read this disclosure and I understand it.",
+  insuranceContinue: "Continue",
+  ownHeading: "Your own DNA",
+  ownCheckbox: "I am 18 or older and this is my own DNA.",
+  saved: "Your permission is saved.",
+  saving: "Saving…",
+  failed: "We could not save this. Reload the page to try again with the current details.",
+  unavailable: "We cannot prepare this upload right now. Your existing files and results have not changed.",
+  underage: "Inherit is for adults aged 18 or older.",
+} as const;

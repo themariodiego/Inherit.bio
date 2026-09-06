@@ -47,6 +47,8 @@ const ROUTE_PATTERNS = {
   "settings.copilot": "/settings/copilot",
   "settings.people": "/settings/people",
   "settings.consents": "/settings/consents",
+  "api.account-completion": "/api/account/completion",
+  "api.consents": "/api/consents",
   "marketing.providers": "/providers",
   "science.index": "/science",
   "legal.future-person": "/legal/future-person",

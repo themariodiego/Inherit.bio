@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Uploader } from "@/components/uploads/uploader";
+import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 
 export const metadata: Metadata = { title: "Add a file" };
 
@@ -15,7 +15,7 @@ export default function FileUploadPage() {
           off until their separate consent and legal rules are met.
         </p>
       </header>
-      <Uploader />
+      <OwnUploadEntry />
       <p className="text-sm">
         <Link href="/files" className="underline underline-offset-2">← All files</Link>
       </p>

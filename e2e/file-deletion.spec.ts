@@ -27,6 +27,7 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect(observedBefore.error).toBeNull();
   expect(observedBefore.count).toBeGreaterThan(0);
   await page.goto("/files");
+  await expect(page.getByRole("heading", { name: "Complete your account", exact: true })).toBeVisible();
   page.on("dialog", (dialog) => dialog.accept());
   const row = page.locator("li").filter({ hasText: "tiny-grch38.vcf" });
   // Same response contract as an acknowledged Storage failure, without a

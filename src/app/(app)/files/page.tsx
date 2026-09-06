@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Uploader } from "@/components/uploads/uploader";
+import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ export default async function UploadsPage() {
         )}
       </div>
 
-      <Uploader />
+      <OwnUploadEntry />
 
       <div className="space-y-1 text-xs text-ink-muted">
         <p>

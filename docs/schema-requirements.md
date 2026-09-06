@@ -377,3 +377,22 @@ grant atomically. Stale or altered presentation, another person's subject,
 non-adult/missing birth date, deletion hold, revoked session, nonce replay or
 invalid statement keys must leave zero signature/grant changes. No genetic
 upload, processing, mail or model operation is part of this transaction.
+
+### Initial account completion and upload-screen presentation
+
+`api.account-completion` explicitly closes the legacy no-date gap. It writes
+only an unset `profiles.date_of_birth`, under the live originating session,
+account/auth revisions and one-use nonce, and increments `account_revision`.
+It cannot change an existing declaration, consent, jurisdiction or file. The
+date is validated as a real calendar date and at least 18 completed UTC years;
+the response contains only `status: completed`. A date declaration is not
+identity verification. Missing legacy dates are never guessed.
+
+Extend `account_operation_nonces.operation` with `own_account_completion`.
+Preparation for the upload screen checks exact live own-subject authority and
+returns only current revision numbers and whether the date is absent/adult.
+Nonce issuance repeats that authority and revision check, uses the existing
+ten-minute presentation lifetime, and removes only expired own-upload or
+account-completion nonce rows for the same account. Private implementations
+are service-role-only, with public invoker wrappers; no client table grant or
+new storage table, expiry clock, genetic or analytic write is introduced.

@@ -40,7 +40,7 @@ returns jsonb language sql as $$
  (select id from own_consent_target),p_key,1,
  coalesce(p_hash,(select body_sha256 from public.consent_artifacts where artifact_key=p_key and version=1)),
  coalesce(p_keys,case p_key when 'consent.upload-self' then array['own-adult-dna'] else array['understood'] end),
- p_rev,1,1,1,repeat(p_nonce,64));
+ p_rev,1,1,1,1,repeat(p_nonce,64));
 $$;
 select throws_ok($$select pg_temp.sign_own('disclosure.insurance-and-discrimination','a')$$,
  '55000','adult_account_required','missing birth date cannot be replaced with a checkbox assertion');
@@ -116,13 +116,13 @@ update public.account_operation_nonces set issued_at=clock_timestamp(),expires_a
 delete from auth.sessions where id='76000000-0000-4000-8000-000000000010';
 select throws_ok($$select pg_temp.sign_own('consent.upload-self','d')$$,'42501','not_found','removing the originating session immediately refuses the presentation');
 select ok(not has_function_privilege('authenticated',
- 'public.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,text)','execute'),
+ 'public.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,bigint,text)','execute'),
  'authenticated clients cannot bypass the signed route');
 select ok(not has_function_privilege('anon',
- 'private.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,text)','execute'),
+ 'private.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,bigint,text)','execute'),
  'the private implementation is not public');
 select ok(not (select prosecdef from pg_proc where oid=
- 'public.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,text)'::regprocedure),
+ 'public.sign_own_upload_artifact_v1(uuid,uuid,uuid,text,integer,text,text[],bigint,bigint,bigint,bigint,bigint,text)'::regprocedure),
  'the public wrapper is SECURITY INVOKER');
 select * from finish();
 rollback;

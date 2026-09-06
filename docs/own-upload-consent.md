@@ -70,15 +70,57 @@ local schema were not used to delete existing type definitions.
 
 ## Required before this branch can ship
 
-1. Connect stored adult-date capture at signup and existing-account completion;
-   do not invent dates, read user-editable metadata as authority, or turn the
-   own-DNA confirmation into a typed-date ceremony. The route register lacks
-   a legacy account-completion path; resolve that explicitly as an additive
-   contract, not an undocumented API.
-2. Mint and persist the one-use presentation from the real upload screen,
-   render the two independent decisions, and connect existing-current and
-   changed-document states. Expired nonce cleanup must remain bounded and
-   must not reset the token's original lifetime.
+### Account-completion and screen integration checkpoint (2026-09-06)
+
+The local branch now connects the actual upload pages to the account-context
+RPC, short-lived presentation issuance, initial date declaration and the two
+independent artifact decisions. The own-DNA checkbox saves with one click
+and enables the file chooser on the same screen only after server success.
+Returning with current signatures and an active class grant skips those
+decisions. Preparation exceptions render an unavailable upload block without
+taking down the existing file controls.
+
+The additive account-completion endpoint is registered with its exact
+request, authorization and closed response. It writes an unset birth date
+and advances the account revision; it does not grant storage or analysis.
+The signing snapshot now carries independent subject and account-binding
+revisions. The real adult-invitation acceptance transition produces subject
+revision two and account-binding revision one; its subsequent own-account
+disclosure signing is exercised in the new database suite.
+
+Verified on this branch:
+
+- Typecheck and scoped lint exit zero; 84 focused unit tests pass across
+  account date/request, account route, signing route/token and route builders.
+- Both own-upload database suites pass 72 rollback-only assertions. The
+  42 new assertions include the real adult acceptance transition using a
+  scoped synthetic delivery-token fixture. They do not claim mail delivery
+  or the full other-adult upload journey.
+- The production-build browser run passes all three focused cases: the
+  real account-details/disclosure/own-DNA sequence and both existing file
+  deletion cases. No retries or skips. The new sequence asserts zero
+  transport/processing requests and zero analytic grants, then reloads
+  without repeated decisions. It stops before file selection.
+- A first browser run passed both deletion cases but failed the new test's
+  database read: it selected a nonexistent purpose-grant column. The query
+  now selects the real target column while retaining the zero-grant assertion.
+- The synthetic ready-screen screenshot was visually checked: content and
+  file controls render, and the flow records no browser page errors.
+- Readability passes (2,475 blocks); static legal checks pass (25 files).
+  The local database security advisor reports no findings.
+
+This is not production evidence. No hosted changes or real account file
+operations were performed. No new PR is open for this branch. The full
+regression suite has not yet run against an isolated clean database.
+
+### Remaining release work
+
+1. Connect the original signup age/jurisdiction contract. Initial completion
+   before upload now covers missing account dates but does not replace that
+   signup requirement or provide identity verification.
+2. Extend browser coverage to changed artifacts, expired presentations and
+   revocation races. Current-signature reload is verified; not every stale
+   screen case has a browser proof yet.
 3. Enforce the identical live class consent at upload-session issuance,
    Storage insert, finalization and processing. Replace the normal browser
    session bearer with the registered upload-only role/JWT, and migrate the

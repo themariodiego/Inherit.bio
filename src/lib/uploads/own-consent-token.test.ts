@@ -12,7 +12,7 @@ const input = {
   accountId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   sessionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   subjectId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-  accountRevision: 1, authSessionRevision: 2, jurisdictionRevision: 3, subjectBindingRevision: 4,
+  accountRevision: 1, authSessionRevision: 2, jurisdictionRevision: 3, subjectBindingRevision: 4, accountBindingRevision: 1,
   artifactKey: "consent.upload-self" as const, artifactVersion: 1, artifactBodySha256: "a".repeat(64),
 };
 function seal(value: unknown, context = "own-upload-artifact-presentation-v1") {
@@ -43,7 +43,7 @@ describe("own upload artifact presentation", () => {
     ["sessionId", "not-a-session"], ["accountId", input.accountId.toUpperCase()],
     ["artifactKey", "consent.upload-other-adult"], ["artifactVersion", 0],
     ["accountRevision", -1], ["authSessionRevision", 1.5], ["jurisdictionRevision", Number.MAX_SAFE_INTEGER + 1],
-    ["subjectBindingRevision", null], ["artifactBodySha256", "short"], ["nonce", "short"],
+    ["subjectBindingRevision", null], ["accountBindingRevision", 0], ["artifactBodySha256", "short"], ["nonce", "short"],
     ["issuedAt", NOW + 1], ["expiresAt", NOW + 600_001], ["unexpected", true],
   ])("rejects even correctly signed malformed %s", (key, value) => {
     const { claims } = mintOwnConsentPresentation(input, NOW);

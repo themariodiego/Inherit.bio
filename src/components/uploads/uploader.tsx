@@ -58,12 +58,13 @@ async function sha256Of(
   return hasher.digest("hex");
 }
 
-export function Uploader() {
+export function Uploader({ disabled = false }: { disabled?: boolean }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
+    if (disabled) return;
     try {
       const supabase = createClient();
       const {
@@ -203,6 +204,7 @@ export function Uploader() {
       <input
         ref={inputRef}
         type="file"
+        disabled={disabled}
         className="sr-only"
         aria-hidden
         tabIndex={-1}
@@ -227,9 +229,9 @@ export function Uploader() {
         <Button
           onClick={() => inputRef.current?.click()}
           disabled={
-            phase.step !== "idle" &&
+            disabled || (phase.step !== "idle" &&
             phase.step !== "done" &&
-            phase.step !== "error"
+            phase.step !== "error")
           }
         >
           Choose file

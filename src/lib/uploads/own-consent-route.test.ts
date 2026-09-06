@@ -14,7 +14,7 @@ const subjectId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const receipt = { recordKind: "artifact_signature", recordId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
   artifactKey: "consent.upload-self", artifactVersion: 1, signedAt: "2026-09-06T10:00:00+00:00" };
 const input = { accountId, sessionId, subjectId, accountRevision: 2, authSessionRevision: 3,
-  jurisdictionRevision: 4, subjectBindingRevision: 5, artifactKey: "consent.upload-self" as const,
+  jurisdictionRevision: 4, subjectBindingRevision: 5, accountBindingRevision: 1, artifactKey: "consent.upload-self" as const,
   artifactVersion: 1, artifactBodySha256: "a".repeat(64) };
 function requestCase(claims = input) {
   const { token, nonceHash } = mintOwnConsentPresentation(claims);
@@ -44,7 +44,7 @@ describe("own-account consent signing route", () => {
       p_account_id: accountId, p_session_id: sessionId, p_subject_id: subjectId,
       p_artifact_key: input.artifactKey, p_artifact_version: 1, p_artifact_body_sha256: input.artifactBodySha256,
       p_statement_keys: ["own-adult-dna"], p_account_revision: 2, p_auth_session_revision: 3,
-      p_jurisdiction_revision: 4, p_subject_binding_revision: 5, p_nonce_hash: nonceHash,
+      p_jurisdiction_revision: 4, p_subject_binding_revision: 5, p_account_binding_revision: 1, p_nonce_hash: nonceHash,
     });
   });
   it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires the same-origin %s signal", async (name) => {

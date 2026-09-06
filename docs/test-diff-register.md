@@ -531,3 +531,33 @@ The combined local production-build rerun passed all 16 cases in
 `report-skeleton.spec.ts`, including the seven serial cases not run after
 the CI failure. Typecheck and scoped lint also passed. Full PR CI must still
 pass on the updated revision before publication.
+
+### Own-account upload screen integration (2026-09-06, unreleased)
+
+The runtime route inventory adds the registered `api.consents` and
+`api.account-completion` builders. Its exact-set and register-path equality
+assertions remain; the test title now describes that runtime inventory.
+The new account-completion API has a closed, independently registered contract.
+
+`e2e/own-upload-consent.spec.ts` is additive. A fresh synthetic account starts
+with no birth date or consents and performs each decision through the real
+browser/API/database. It proves current-signature reload and that none of
+these steps creates analysis permission or sends a genetic file. It explicitly
+does not substitute this pre-file-selection test for G2.6.
+
+`e2e/file-deletion.spec.ts` retains every existing assertion and adds a check
+that the missing-details screen is present while the file deletion controls
+still work. Both deletion cases and the new consent case pass in the local
+production-build run, without retries or skips. The first run's failure was
+the new test selecting nonexistent `purpose_grants.id`; selecting the real
+`target_id` preserves the exact empty-grant requirement.
+
+The signing RPC, token and tests now distinguish account-binding from subject
+revision. `supabase/tests/own_upload_account_completion.sql` uses the actual
+adult acceptance transition and a scoped synthetic delivery token; it never
+claims unrelated mail. Both own-upload database suites pass 72 assertions.
+The focused unit inventory passes 84 cases; no existing assertion is removed.
+
+The plain-word registry adds “birth”, “date”, “complete” and “own” for the
+literal account and DNA labels. No jargon entry, readability threshold,
+extractor or legal statement is removed or relaxed.

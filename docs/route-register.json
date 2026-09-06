@@ -6824,6 +6824,12 @@
       "endpoint": "resource-not-found-v1"
     },
     "routes": {
+      "api.account-completion": {
+        "targetSource": "acting-account-and-own-subject-from-signed-presentation",
+        "operation": "initial-birth-date-declaration",
+        "authorization": "verified-account-and-originating-live-session; exact-current-account-auth-jurisdiction-subject-and-account-binding-revisions; single-use-operation-bound-nonce; previously-unset-birth-date-only",
+        "projection": "closed-account-completion-v1-receipt-without-birth-date-or-genetic-data"
+      },
       "app.overview": {
         "targetSource": "acting-account",
         "operation": "overview-read",
@@ -10038,6 +10044,13 @@
       "unknownFieldsRecursively": "forbidden",
       "contract": "lifecycleDispositionContracts.account-deletion-v1"
     },
+    "account-completion-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": { "status": { "const": "completed" } },
+      "unknownFields": "forbidden",
+      "birthDateAccountOrSubjectDetails": "forbidden"
+    },
     "account-deletion-cancelled-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -12066,6 +12079,11 @@
       "api.account-delete": [
         "invalid-request-v1",
         "account-deletion-accepted-v1"
+      ],
+      "api.account-completion": [
+        "account-completion-v1",
+        "invalid-request-v1",
+        "resource-not-found-v1"
       ],
       "api.account-delete-cancel": [
         "account-deletion-cancelled-v1",
@@ -14387,6 +14405,50 @@
         ]
       },
       "successResponseContract": "account-deletion-accepted-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.account-completion",
+      "path": "/api/account/completion",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "dateOfBirth": "valid-ISO-calendar-date-proving-18-or-older-by-server-UTC-calculation",
+          "presentationToken": "short-lived-single-use-token-bound-to-the-current-account-session-and-account-authorization-revisions"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-header-matching-the-account-completion-presentation"
+        ],
+        "forbiddenFields": [
+          "accountId",
+          "subjectId",
+          "age",
+          "isAdult",
+          "jurisdiction",
+          "consent",
+          "grants"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "own-account-onboarding",
+        "operation": "initial-birth-date-declaration",
+        "transaction": "lock-and-recheck-the-live-account-session-current-account-and-auth-revisions-and-one-use-nonce; validate-the-calendar-date-and-completed-UTC-age; write-only-an-unset-profiles.date_of_birth-and-increment-account_revision-atomically; never-overwrite-a-stored-date-or-record-upload-consent-or-create-a-genetic-file",
+        "purpose": "one-time-completion-for-accounts-without-the-plan-required-stored-adult-date-including-legacy-accounts; not-a-Tier-1-consent-ritual-or-identity-verification",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "account-completion-v1",
       "disposition": "kept"
     },
     {

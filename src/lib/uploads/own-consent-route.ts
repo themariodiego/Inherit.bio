@@ -55,6 +55,7 @@ export async function ownUploadConsent(request: Request, payload: unknown): Prom
     p_account_revision: presentation.accountRevision, p_auth_session_revision: presentation.authSessionRevision,
     p_jurisdiction_revision: presentation.jurisdictionRevision,
     p_subject_binding_revision: presentation.subjectBindingRevision,
+    p_account_binding_revision: presentation.accountBindingRevision,
     p_nonce_hash: crypto.createHash("sha256").update(presentation.nonce).digest("hex"),
   });
   if (error) {
