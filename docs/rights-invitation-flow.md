@@ -32,9 +32,11 @@ Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
 ## Verification and discoveries
 
-- 68 focused unit tests across four files cover: candidate/operation envelopes,
+- 68 focused unit tests across four files pass: candidate/operation envelopes,
   actual entry/activation handlers, fragment lifetime and review authorization.
 - Typecheck and scoped warning-as-error lint pass.
+- At implementation commit `235a1aa`, the complete unit suite passes all
+  **2,139 tests in 136 files** from a clean checkout (21.43 seconds).
 - The production-build browser test uses real local Auth, PostgreSQL RPCs and
   the mail worker, with only Resend replaced by the existing loopback mock.
   Its fixture reserves a draft and the uploader's prerequisite signature by
@@ -42,6 +44,11 @@ Full-plan acceptance remains **18/65**. G5.4 is still NO.
 - The emailed link, scanner GET/HEAD, explicit activation, wrong-account denial,
   correct-account review, actual acceptance, replay denial and database receipts
   passed locally. Malformed and same-tab fragment navigation also passed.
+- The final two-case production-browser run passed in 15.7 seconds with no
+  retries/skips, including the actual sign-in return link and inline typed-name
+  correction. A full-page screenshot of the synthetic review was inspected;
+  the desktop layout has no horizontal overflow. This is not a dark/mobile
+  or complete accessibility acceptance claim.
 - Browser testing found and fixed same-document fragment handling. It also
   caught an incorrect principal assumption: the uploader's account principal
   and their draft genetic-parent principal differ. The signed name is now
