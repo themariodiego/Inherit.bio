@@ -282,6 +282,17 @@ Verified locally at this checkpoint:
   table after successful plain-file finalization. It was corrected to the
   actual `worker_jobs.file_id` schema; assertions were retained and the next
   run passed. Its synthetic objects were also removed and absence verified.
+- At source commit `7bf6d0b3a198f6fafc4c243ac70423e6bf54d8df`, the full
+  clean-checkout unit suite passes all 2,418 tests in 147 files with
+  `corepack pnpm test --maxWorkers=4`. The initial unrestricted run had 2,416
+  passes and two five-second timeouts in the existing large embryo-transport
+  and readability tests. Worker concurrency was reduced; neither assertions
+  nor timeouts were changed. The secret gate passes over 984 tracked files
+  and 250 authored commits. Only the regenerable ignored CLI cache was moved
+  before the strict clean-checkout checks; no test fixtures were purged.
+- The last real-provider run also uses a plain source larger than 4,000,000
+  bytes. Both staging validation and independent copy verification cross the
+  actual provider's range boundary, with complete physical cleanup afterward.
 
 No hosted schema, key, deployment or real account file was changed. The new
 migration was applied only to the shared local stack without a migration-history
