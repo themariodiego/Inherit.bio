@@ -81,8 +81,8 @@
   {
     "slug": "stress-anxiety-comt-rs4680",
     "category": "mental-health",
-    "title": "Stress & anxiety processing · COMT",
-    "summary": "COMT clears dopamine from the front of the brain. The Val158Met change, rs4680, alters enzyme activity by three to four times. The A/Met form clears dopamine more slowly. On average, it is linked to slightly better working memory and, in some studies, higher anxiety-related trait scores, especially in women. Both forms are common and involve trade-offs; neither is simply better.",
+    "title": "COMT types differ in how they work.",
+    "summary": "COMT helps break down dopamine, a brain signal. Its Val and Met forms differ in enzyme activity. A study of 497 college students linked this gene region to some personality scores in women. That does not show how well someone handles sudden stress or pain.",
     "evidence": "emerging",
     "variants": [
       {
@@ -93,16 +93,36 @@
         "ref": "G",
         "alt": "A",
         "interpretations": {
-          "GG": "Two G copies mark the Val form. This type has more COMT activity and clears dopamine faster in the front of the brain. Group scores are slightly lower on some working-memory tasks. Several studies also link it to lower anxiety-related trait scores and steadier performance during sudden stress. Effects are small, and many factors shape stress responses.",
-          "AG": "One Val and one Met copy are common and give a middle level of COMT activity. Group studies place this type between GG and AA on working-memory and anxiety-related measures. The groups overlap widely. Daily anxiety depends far more on life events, sleep, and many other genes.",
-          "AA": "Two A copies mark the Met form. This type has less COMT activity and more dopamine in the front of the brain. It is linked to slightly better working-memory scores on average. Some studies also link it to modestly higher anxiety-related traits and stress response, more often in women. These are small group shifts, not a measure of anxiety."
+          "GG": "Your file shows two G copies, which code for Val. Val is the higher-activity form of this enzyme compared with Met. This does not make GG a test of calmness or better performance under stress.",
+          "AG": "Your file shows one G (Val) and one A (Met) copy. These forms differ in enzyme activity. That does not place your anxiety halfway between GG and AA; a protein difference is not a personality score.",
+          "AA": "Your file shows two A copies, which code for Met. Met is the lower-activity form of this enzyme compared with Val. Lower enzyme activity does not by itself show your brain's dopamine level or mean you are more anxious."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "11381111", "label": "Egan et al., PNAS 2001" },
-      { "pmid": "15956988", "label": "Stein et al., Neuropsychopharmacology 2005" }
+      {
+        "pmid": "11381111",
+        "label": "Egan et al., PNAS 2001",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "People sorted cards and took a memory test. Researchers recorded errors and brain activity.", "locator": "Abstract: Wisconsin Card Sorting Test and fMRI tasks" },
+          "population": { "text": "The main sample had 175 people with schizophrenia, 219 siblings and 55 controls. Brain scans used smaller groups.", "locator": "Abstract: cognitive and fMRI sample sizes" },
+          "comparison": { "text": "More Met copies were linked to fewer repeat errors on the card-sorting test.", "locator": "Abstract: Met-allele dose and perseverative errors" },
+          "limitation": { "text": "A test result in this sample is not a measure of everyday anxiety, pain or coping with stress.", "locator": "Abstract: measured outcomes and study population; report scope limitation" }
+        }
+      },
+      {
+        "pmid": "15956988",
+        "label": "Stein et al., Neuropsychopharmacology 2005",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "A personality survey measured traits such as being outgoing and prone to negative feelings.", "locator": "Abstract: NEO-PI-R extraversion and neuroticism outcomes" },
+          "population": { "text": "The study included 497 college students. The reported links were found in women.", "locator": "Abstract: sample and sex-specific results" },
+          "comparison": { "text": "Researchers compared scores across three COMT sites and their combined patterns, not just this one site.", "locator": "Abstract: individual SNP and haplotype analyses" },
+          "limitation": { "text": "Other sites may contribute to the link. These personality scores are not a clinical test or a test of sudden stress.", "locator": "Abstract: other functional variants; distinction between measured traits and clinical/stress outcomes (report scope)" }
+        }
+      }
     ]
   },
   {
@@ -238,8 +258,8 @@
   {
     "slug": "mood-stress-resilience-bdnf-rs6265",
     "category": "mental-health",
-    "title": "Mood & stress resilience · BDNF",
-    "summary": "BDNF helps brain cells grow and adapt. The Val66Met change, rs6265, reduces BDNF release during brain activity in people with a Met/T copy. Some studies link Met to a little more low mood after stressful life events. Reviews of depression overall find mixed results, and any main effect is small. For mood, this is an early link that depends on context.",
+    "title": "Research on BDNF and stress has mixed results.",
+    "summary": "An older review linked the Met form of BDNF to depression after life stress. A much larger later study did not confirm this link. The difference matters: a finding about how a protein works does not establish how you cope with stress.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -250,15 +270,47 @@
         "ref": "C",
         "alt": "T",
         "interpretations": {
-          "CC": "Two C copies mark the common Val form. Studies find the usual release of BDNF during brain activity and no higher link to mood problems at this site. Mood and resilience still vary widely with life events, support, sleep, and many other genes.",
-          "CT": "One Val and one Met (T) allele. Some studies report that Met carriers show, on average, slightly greater mood sensitivity to stressful life events, but overall meta-analyses of depression find weak and inconsistent effects. This is one small, uncertain factor; how someone responds to stress depends far more on circumstances and support than on this variant.",
-          "TT": "Two T copies mark the uncommon Met form and are linked to a modest drop in BDNF release during brain activity. A few studies also link this type to more mood response during long-term stress. Other results are mixed, and effects are small. This is a minor group signal, not a resilience score."
+          "CC": "Your file shows two C copies, which code for Val. This was the comparison group for Met carriers in the older stress review. The later study did not confirm a mood-risk difference at this site. CC does not establish greater resilience or freedom from depression.",
+          "CT": "Your file shows one T copy, which codes for Met. The older review grouped people with one or two Met copies together. It found a link with depression after life stress, but the larger later study did not confirm it. This is not a personal stress score.",
+          "TT": "Your file shows two T copies, which code for Met. The older review pooled one-copy and two-copy Met carriers. It did not establish that TT has a stronger effect than CT. The larger later study did not confirm the stress link, so TT does not mean poor resilience."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12553913", "label": "Egan et al., Cell 2003" }
+      {
+        "pmid": "12553913",
+        "label": "Egan et al., Cell 2003",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "Memory tests and brain scans were studied in people. Protein release was tested separately in lab-grown nerve cells.", "locator": "Abstract: human memory/imaging and transfected-neuron experiments" },
+          "population": null,
+          "comparison": { "text": "Met was linked to lower release after the lab cells were stimulated. Release without stimulation was unchanged.", "locator": "Abstract: depolarization-induced versus constitutive secretion" },
+          "limitation": { "text": "The cell test did not measure protein release in these people's brains or their response to life stress.", "locator": "Abstract: separate human and cell endpoints; report scope limitation" }
+        }
+      },
+      {
+        "pmid": "24433458",
+        "label": "Hosang et al., BMC Medicine 2014",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "This review combined studies of life stress, depression and the Val66Met change.", "locator": "Methods: study selection and statistical analysis" },
+          "population": { "text": "It covered 22 studies with 14,233 people. Most samples had European ancestry.", "locator": "Results: study selection; Limitations: sample ancestry" },
+          "comparison": { "text": "One-copy and two-copy Met carriers were pooled. The stress link was stronger for life events than for childhood adversity.", "locator": "Discussion: Met-dominant model and stressor-stratified results" },
+          "limitation": { "text": "Stress measures varied, and many samples were small. The method did not give the size of a personal effect.", "locator": "Limitations: stress measurement, sample size and combined P-value method; personal-effect scope limit" }
+        }
+      },
+      {
+        "pmid": "30845820",
+        "label": "Border et al., American Journal of Psychiatry 2019",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "Researchers tested earlier gene claims across several measures of depression and stress. They set out the analyses in advance.", "locator": "Methods: preregistered analyses, depression outcomes and environmental moderators" },
+          "population": { "text": "The analyses used large population and case-control samples, with 62,138 to 443,264 people across subsets.", "locator": "Abstract: sample sizes across subsamples" },
+          "comparison": { "text": "The BDNF site in this report was tested. Its depression and gene-by-stress results did not pass the study's checks for many tests.", "locator": "Table 2: BDNF rs6265; Results: multiple-testing thresholds" },
+          "limitation": { "text": "The stress measures were not the same in every earlier study. These results do not prove that every possible BDNF effect is absent.", "locator": "Methods: environmental moderators; Discussion: scope and limitations; report inference limit" }
+        }
+      }
     ]
   }
 ]

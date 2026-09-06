@@ -212,8 +212,8 @@
   {
     "slug": "problem-substance-use-faah-rs324420",
     "category": "addiction",
-    "title": "Endocannabinoid breakdown · FAAH",
-    "summary": "FAAH breaks down anandamide, a cannabinoid made by the brain. The A copy at rs324420 changes Pro129 to Thr. It makes the enzyme less stable and raises anandamide levels. The first study linked AA to more problem street-drug use. Later work links A to small differences in stress response and cannabis effects. Other studies did not always agree, so this is an early link.",
+    "title": "FAAH research found a link with drug or alcohol problems.",
+    "summary": "FAAH breaks down anandamide, a signal made by the body. In a lab test, the A form broke down more readily when exposed to an enzyme that cuts proteins. A 2002 study found AA more often in people reporting drug or alcohol problems; one A copy did not show that link.",
     "evidence": "preliminary",
     "variants": [
       {
@@ -224,15 +224,25 @@
         "ref": "C",
         "alt": "A",
         "interpretations": {
-          "CC": "Two copies of the C (Pro129) allele, the most common genotype. FAAH enzyme stability is at the reference baseline, and this group serves as the comparison in association studies. No particular signal at this locus.",
-          "AC": "One A (Thr129) allele. FAAH activity is modestly reduced on average, which raises baseline anandamide signaling. Studies associate A carriers with subtle differences in stress and reward responses; links to substance-use problems are inconsistent across cohorts. A preliminary, small factor at most.",
-          "AA": "Two A copies make the uncommon Thr129 type. AA greatly lowers FAAH stability. A 2002 study found AA more often among people who reported problem street-drug use. Later studies did not always find the same result. This is an early, uncertain group link and cannot predict one person."
+          "CC": "Your file shows two C copies, which code for Pro129. CC was the comparison group in the study. This does not show your brain's signal levels or mean you cannot have drug or alcohol problems.",
+          "AC": "Your file shows one A copy, which codes for Thr129. AC was not more common among people reporting drug or alcohol problems than CC in this study. One A copy should not be treated as half of the AA result.",
+          "AA": "Your file shows two A copies, which code for Thr129. AA was more common among people reporting drug or alcohol problems in the 2002 study. This group link does not predict your behavior or show that the DNA change caused those problems."
         }
       }
     ],
     "pgs_id": null,
     "citations": [
-      { "pmid": "12060782", "label": "Sipe et al., PNAS 2002" }
+      {
+        "pmid": "12060782",
+        "label": "Sipe et al., PNAS 2002",
+        "accessedOn": "2026-09-06",
+        "studyContext": {
+          "measured": { "text": "A health survey asked about drug and alcohol use. A separate lab test measured how readily the protein broke down.", "locator": "Methods: Subjects; Results: protein stability experiment" },
+          "population": { "text": "The survey analysis used white participants from a medical screening clinic.", "locator": "Methods: Subjects, Study A selection" },
+          "comparison": { "text": "AA, but not AC, was more common in the group reporting drug or alcohol problems than in controls.", "locator": "Results: first subsection; Table 2, problem drug/alcohol group" },
+          "limitation": { "text": "Survey groups may differ in other ways. The lab test did not measure signal levels in these people's brains.", "locator": "Discussion: questionnaire grouping and linkage; distinction between human survey and laboratory endpoints (report scope)" }
+        }
+      }
     ]
   },
   {

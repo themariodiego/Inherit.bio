@@ -21,6 +21,27 @@
   ],
   "entries": [
     {
+      "name": "Stanford author article host",
+      "category": "cited-organisation",
+      "aliases": ["ai.stanford.edu"],
+      "reason": "Author-hosted published cilantro paper actually read in the source review; no hosted assets enter the application.",
+      "evidence": ["docs/sources/reviews/batch-01/indices-00-19.md"]
+    },
+    {
+      "name": "BiOutils article host",
+      "category": "cited-organisation",
+      "aliases": ["www.bioutils.ch", "bioutils.ch"],
+      "reason": "Published bitter-taste paper copy actually read in the source review; no hosted assets enter the application.",
+      "evidence": ["docs/sources/reviews/batch-01/indices-00-19.md"]
+    },
+    {
+      "name": "Springer publication platform",
+      "category": "cited-organisation",
+      "aliases": ["link.springer.com"],
+      "reason": "Publisher full text of the BDNF stress meta-analysis actually read for independent claim verification.",
+      "evidence": ["docs/sources/reviews/batch-02/independent-correction-review.md"]
+    },
+    {
       "name": "SAMtools format specifications",
       "category": "file-format-producer",
       "aliases": ["samtools.github.io"],

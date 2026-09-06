@@ -1,5 +1,23 @@
 # Test diff register
 
+Behavior-source corrections (2026-09-06): added real-resolver and rendered
+source-context tests for COMT, BDNF and FAAH, preserving their nine genotype
+keys, locus bindings, report identities, evidence tiers and existing category
+gates. Tests pin the distinction between biochemical experiments and human
+outcomes, historical BDNF carrier pooling and later counterevidence, and the
+absence of a made-up intermediate FAAH outcome. The three new browser cases
+use a documented synthetic VCF through upload, processing and report loading;
+they check actual letters, interpretations, source links/context/dates, six
+headings and the existing opt-in. They are added coverage, not completed
+browser evidence until the full CI run passes. No existing test was removed,
+weakened, skipped or given retries.
+
+Claim-source inventory and canonical metadata validation tests are separate
+from scientific approval and full-plan acceptance. They verify source aliases,
+exact claim slots, malformed-source preservation, metadata/identifier/date
+constraints, source reuse and supplied-corpus closure. Passing these pure
+modules does not establish a complete rendered claim corpus or G1.11/G4.7.
+
 PR65 full-suite integration correction (2026-09-06): CI `34000286737`
 passed build, unit, database and release-policy steps, but its browser suite
 finished with 129 passed, two failed and eight not run. The report-detail and
