@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { realpathSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import ts from "typescript";
@@ -12,11 +13,31 @@ import { assertEmailFixtureCoverage, readEmailInventory, readPublicDigestCatalog
 
 export const sha256 = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
 export interface EmailCaptureOptions {
-  /** Must not exist. Captures never replace a previous receipt or HTML artifact. */
+  /** Must not exist; its existing real parent must be outside the checkout. */
   outputDirectory: string;
   registry: CorpusInput["registry"];
   resolveSeed: CorpusInput["resolveSeed"];
   resolveComputed: CorpusInput["resolveComputed"];
+}
+
+/** No growing list of source paths: every tracked or untracked input is bound. */
+export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha: string, outputDirectory: string): void {
+  const root = realpathSync(projectRoot);
+  const outputParent = realpathSync(dirname(resolve(outputDirectory)));
+  const parentRelation = relative(root, outputParent);
+  if (!parentRelation || (!isAbsolute(parentRelation) && parentRelation !== ".." && !parentRelation.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`))) {
+    throw new Error("email-capture:output-inside-checkout");
+  }
+  const git = (args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
+  // Includes unstaged changes, the index, deletions and all nonignored new files.
+  if (git(["status", "--porcelain", "--untracked-files=all"]).trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
+  // Ignore only known installation/build/test outputs, never arbitrary ignored
+  // source or config files. In particular, ignored .env files are not attested.
+  const generated = ["node_modules/**", "worker/node_modules/**", ".next/**", "out/**", "build/**", "coverage/**", "test-results/**", "playwright-report/**", "next-env.d.ts", "tsconfig.tsbuildinfo"];
+  if (git(["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ".", ...generated.map((path) => `:(top,exclude)${path}`)])) {
+    throw new Error("email-capture:untracked-ignored-inputs");
+  }
+  if (git(["rev-parse", "HEAD"]).trim() !== contentCommitSha) throw new Error("email-capture:content-commit-changed");
 }
 export interface EmailCaptureReceipt {
   fixtureId: string;
@@ -52,11 +73,7 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
   const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const contentCommitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" }).trim();
   if (!/^[a-f0-9]{40}$/.test(contentCommitSha)) throw new Error("email-capture:invalid-content-commit");
-  const assertSourcesUnchanged = () => {
-    const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", "src/emails", "src/lib/email.ts", "src/lib/primary-routes.ts", "src/lib/claims/collect-dom.ts", "src/copy", "data/templates", "package.json", "pnpm-lock.yaml"], { cwd: projectRoot, encoding: "utf8" });
-    if (dirty.trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
-    if (execFileSync("git", ["rev-parse", "HEAD"], { cwd: projectRoot, encoding: "utf8" }).trim() !== contentCommitSha) throw new Error("email-capture:content-commit-changed");
-  };
+  const assertSourcesUnchanged = () => assertEmailCaptureCheckout(projectRoot, contentCommitSha, options.outputDirectory);
   assertSourcesUnchanged();
   // Compile the actual source function, not its host-runner serialization: tsx
   // may add external keepNames helpers that do not exist in the browser realm.
@@ -110,9 +127,9 @@ export async function captureEmailClaims(options: EmailCaptureOptions): Promise<
       observations.push(...pair);
       receipts.push({ fixtureId: fixture.id, entrypoint: fixture.entrypoint, exportName: fixture.exportName, input, html, subject, observations: observationArtifact });
     }
-    assertSourcesUnchanged();
     const audit = auditClaimCorpus({ contentCommitSha, requiredSurfaces, observations,
       registry: options.registry, resolveSeed: options.resolveSeed, resolveComputed: options.resolveComputed });
+    assertSourcesUnchanged();
     const result: EmailCaptureResult = { contract: "email-renderer-capture-v1", contentCommitSha, collector, requiredSurfaces, observations, receipts, audit };
     await artifact("capture.json", JSON.stringify(result, null, 2));
     return result;

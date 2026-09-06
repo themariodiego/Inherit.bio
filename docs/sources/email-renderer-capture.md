@@ -8,8 +8,14 @@ claims gate. It never sends mail, reads recipients, or calls a hosted service.
 `captureEmailClaims` in `src/lib/claims/capture-emails.ts` accepts a new output
 directory and the existing corpus registry, seed and computed-module resolvers.
 The caller must supply real resolvers; unresolved data is not silently approved.
-The implementation reads the checkout commit, refuses changed production render
-inputs, and checks the commit and inputs again before publishing its receipt.
+The implementation reads the checkout commit, requires the entire tracked
+checkout and index to be clean, and refuses all untracked files. Ignored files
+are also rejected except for explicitly listed dependency/build/test outputs;
+ignored environment or source inputs are not attested. This binds the fixture,
+collector, audit policy, source records, presentation and config together,
+without maintaining a partial list of source paths. It checks the commit and
+checkout again before publishing its receipt. The output directory's real
+parent must be outside the checkout, including when reached through a symlink.
 Run against a locked dependency installation and a frozen checkout. This local
 check does not attest the build environment or defend against concurrent edits
 that are changed and restored between checks.
@@ -75,3 +81,8 @@ rendering in Chromium, export discovery, missing/new entrypoints, explicit
 digest scope, retained-byte parity, subject capture, network isolation and
 immutable receipts. Test artifacts remain in an explicitly created temporary
 directory; they contain synthetic inputs and public catalog prose only.
+These capture tests intentionally require committed inputs. Separate disposable
+Git tests in `capture-checkout.test.ts` prove uncommitted fixture/audit changes,
+staged changes, new presentation files, ignored source/config inputs, changed
+HEAD and inside-checkout/symlink output paths are rejected. No test modifies the
+actual project checkout to manufacture these cases.

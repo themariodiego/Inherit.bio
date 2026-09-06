@@ -1,5 +1,13 @@
 # Test diff register
 
+Email receipt commit binding (2026-09-06): eight additional disposable-Git
+tests reject unstaged/staged fixture and audit-policy changes, untracked new
+presentation files, ignored source/config inputs, changed HEAD and output paths
+that resolve inside the checkout. Clean tracked inputs and known generated
+outputs remain valid. The capture now checks the complete checkout before
+rendering and receipt publication; its actual-render tests must run after
+committing inputs. No product source annotation or gate acceptance is implied.
+
 Production email capture (2026-09-06): ten new tests independently discover
 12 named exports across 11 mail files and render 27 explicit fixtures through
 the production mail renderer. All 54 body/subject observations have retained
