@@ -1,5 +1,15 @@
 # Test diff register
 
+Production email capture (2026-09-06): nine new tests independently discover
+12 named exports across 11 mail files and render 27 explicit fixtures through
+the production mail renderer. All 54 body/subject observations have retained
+HTML or plain-text bytes, fixture inputs and SHA-256 receipts. Tests preserve
+real public catalog prose, reject missing/new exports and output overwrite,
+block outbound requests, and require actual missing-channel/region/claim
+failures instead of a fabricated passing corpus. No existing assertions,
+production templates or canonical source records change. This adapter does
+not complete G1.11/G4.7; see `sources/email-renderer-capture.md`.
+
 Rendered-claim infrastructure (2026-09-06): the supplied-corpus audit now has
 82 pure tests, the actual DOM collector has 28 Chromium tests, and the
 independent capture planner has 14 tests including the current canonical
