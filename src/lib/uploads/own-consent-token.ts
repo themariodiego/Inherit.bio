@@ -6,7 +6,10 @@ import { hmacSecret } from "@/lib/crypto";
 import { OWN_UPLOAD_ARTIFACT_KEYS } from "./own-consent";
 
 const CONTEXT = "own-upload-artifact-presentation-v1";
-const LIFETIME_MS = 10 * 60 * 1000;
+// The database's hard ceiling is ten minutes on its own clock. Stay below
+// that ceiling so small application/database clock differences cannot make a
+// fresh presentation unavailable; never extend the database validity window.
+const LIFETIME_MS = 9 * 60 * 1000;
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const revision = z.number().int().positive().safe();
 const claimsSchema = z.object({

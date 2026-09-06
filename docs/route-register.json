@@ -9638,6 +9638,22 @@
       "success": [
         {
           "status": 200,
+          "when": "the-exact-source-revision-has-completed-ingest.normalize-under-current-store-authority-without-generating-analytic-results-in-this-operation; idempotent-replay-returns-the-same-closed-receipt-after-current-authority-recheck",
+          "contentType": "application/json",
+          "body": {
+            "fileId": "opaque-server-id",
+            "status": {
+              "const": "normalization_complete"
+            },
+            "analysisState": {
+              "const": "not_generated"
+            }
+          },
+          "unknownFields": "forbidden",
+          "effects": "normalization-does-not-create-purpose-grants-or-imply-reports-are-ready; current-independent-purpose-grants-are-evaluated-through-policyResolvers.analysis-eligibility-v1.normalizationOrdering"
+        },
+        {
+          "status": 200,
           "when": "new-synchronous-tier-1-completion",
           "contentType": "application/json",
           "body": {

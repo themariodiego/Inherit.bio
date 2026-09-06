@@ -15,6 +15,13 @@ export const directUploadReceipt = z.object({
   uploadToken: z.string().min(1), authorizationHeader: z.literal("Bearer {uploadToken}"),
   maximumBytes: z.number().int().positive().safe(), expiresAt: z.iso.datetime({ offset: true }),
 }).strict();
+export const subjectFinalizationReceipt = z.object({ fileId: uuid, status: z.literal("finalized_ready_for_processing"),
+  analysisState: z.literal("ready_for_processing"),
+  next: z.object({ routeId: z.literal("api.file-process"), operation: z.literal("process") }).strict(),
+}).strict();
+export const subjectNormalizationReceipt = z.object({ fileId: uuid,
+  status: z.literal("normalization_complete"), analysisState: z.literal("not_generated"),
+}).strict();
 
 /** Parser identities stay internal; neither filenames nor vendor labels select authority. */
 export function declaredSubjectFormat(kind: FileKind, compressed: boolean): SubjectUploadFormat | null {

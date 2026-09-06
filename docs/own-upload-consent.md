@@ -11,7 +11,7 @@ in the whole-plan upload audit, not a replacement for the four-path goal.
 `src/lib/uploads/own-consent-route.ts`. A versioned own-DNA artifact supplies
 the one checkbox. The insurance disclosure is separately signed first.
 The HMAC presentation is account/session/subject/version/hash bound and
-expires after ten minutes. It is also carried in the same-origin CSRF
+expires after nine minutes, below the database's ten-minute ceiling. It is also carried in the same-origin CSRF
 header. No name, typed date or criminal-liability warning is part of this
 Tier-1 signature. Body overrides, extra statements, token retargeting and
 open database responses are refused rather than silently discarded.
@@ -358,6 +358,57 @@ database regressions remain to be verified before shipping. The new migration
 was iterated on the local database without migration history; do not blindly
 reapply it. Acceptance remains **18/65**.
 
+### MVP browser cutover (2026-09-06; unreleased)
+
+The own uploader now sends the closed target/format/hash declaration to the
+canonical issuance route. Its one-use Storage bearer stays in memory; normal
+login bearers, original-name metadata and persisted resume fingerprints are
+not used for new uploads. Both legacy API aliases use the same strict issuer
+and complete-source finalizer. The legacy authenticated staging INSERT policy
+is removed by `20260906133807_cutover_subject_upload_transport.sql`, applied
+locally without a migration-history entry.
+
+After finalization, the browser requests basic preparation automatically.
+`ingest.normalize` is explicitly covered by store consent; it does not need a
+second checkbox or an analytic-purpose grant. Preparation has its own closed
+receipt and a retry action that targets the existing file without re-uploading.
+Stored/prepared states do not claim that reports exist. The normalizer and
+independent own-purpose choices are being integrated in parallel; generating
+and reading the chosen results remains unfinished.
+
+Verified at this checkpoint:
+
+- Twenty client boundary tests plus six route-builder tests pass. They cover
+  exact declarations, restricted transport, full finalization receipts,
+  bodyless preparation, wrong-file/open receipts and no implicit analysis.
+- Scoped uploader lint and application typecheck pass.
+- The real production-build own-consent browser case passes, including PDF
+  and multi-sample preflight refusals, a still-usable picker and no genetic
+  network requests for either refused source. The screenshot was inspected.
+- The report-library empty-filter keyboard-recovery case passes separately.
+  Its independently releasable UI change is PR73, not an upload release.
+
+The first combined browser run did not pass: deletion fixtures still called
+the old upload API and were refused before deletion. The new preflight test
+also selected Next.js's hidden route announcer; its locator now selects the
+actual visible message and the corrected case passes. No deletion assertion
+was weakened. Positive upload and deletion verification requires the real
+restricted-provider test setup and helper migration; no signed-in token or
+fake processed fixture may substitute for those boundaries.
+
+No hosted upload schema or real account file was changed. Full-plan acceptance
+remains **18/65**. The release requirements below remain open unless a later
+receipt explicitly closes them.
+
+The first positive-provider browser attempt found a real consent timing race:
+the app minted exactly ten minutes while the database clock could lag by a
+few milliseconds. The database logged an invalid expiry on the next consent
+nonce. A rollback-only probe with a 100ms simulated app-clock lead reproduced
+the rejection and verified that nine minutes succeeds. Account/upload and
+own-report presentations now use nine minutes; the database ceiling is not
+relaxed. Exact expiry and headroom tests cover the correction. The positive
+browser rerun is a separate receipt, not implied by this diagnosis.
+
 ### Remaining release work
 
 1. Connect the original signup age/jurisdiction contract. Initial completion
@@ -366,10 +417,9 @@ reapply it. Acceptance remains **18/65**.
 2. Extend browser coverage to changed artifacts, expired presentations and
    revocation races. Current-signature reload is verified; not every stale
    screen case has a browser proof yet.
-3. Enforce the identical live class consent at upload-session issuance,
-   Storage insert, finalization and processing. Replace the normal browser
-   session bearer with the registered upload-only role/JWT, and migrate the
-   request to the canonical target/format shape. No checkbox-only enforcement.
+3. Finish verifying the identical live class consent through processing. The
+   browser and API cutover is implemented locally; its real positive browser
+   journey and hosted signer/capacity configuration still need verification.
 4. Connect explicit per-purpose consent to normalization and analysis. Class
    storage permission must not silently enable analysis. Preserve earlier
    file/report rights that are independently still valid.

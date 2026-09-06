@@ -1690,6 +1690,7 @@ export type Database = {
           recipient_principal_id: string
           relationship_id: string | null
           relationship_or_pair_revision: number
+          self_principal_revision: number | null
           status: string
         }
         Insert: {
@@ -1703,6 +1704,7 @@ export type Database = {
           recipient_principal_id: string
           relationship_id?: string | null
           relationship_or_pair_revision: number
+          self_principal_revision?: number | null
           status?: string
         }
         Update: {
@@ -1716,6 +1718,7 @@ export type Database = {
           recipient_principal_id?: string
           relationship_id?: string | null
           relationship_or_pair_revision?: number
+          self_principal_revision?: number | null
           status?: string
         }
         Relationships: [
@@ -4072,6 +4075,8 @@ export type Database = {
           sample_count: number
           sha256: string | null
           single_logical_sample_verified_at: string | null
+          normalization_completed_at: string | null
+          normalization_source_revision: number | null
           size_bytes: number
           source_binding_fingerprint: string | null
           source_publication_revision: number
@@ -4113,6 +4118,8 @@ export type Database = {
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null
+          normalization_completed_at?: string | null
+          normalization_source_revision?: number | null
           size_bytes: number
           source_binding_fingerprint?: string | null
           source_publication_revision?: number
@@ -4154,6 +4161,8 @@ export type Database = {
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null
+          normalization_completed_at?: string | null
+          normalization_source_revision?: number | null
           size_bytes?: number
           source_binding_fingerprint?: string | null
           source_publication_revision?: number
@@ -8056,6 +8065,18 @@ export type Database = {
           p_account_id: string
           p_session_id: string
           p_subject_id: string
+        }
+        Returns: Json
+      }
+      own_report_context_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      grant_own_report_purpose_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string; p_snapshot: Json;
+          p_purpose: string; p_artifact_version: number; p_artifact_body_sha256: string;
+          p_nonce_hash: string; p_expires_at: string
         }
         Returns: Json
       }

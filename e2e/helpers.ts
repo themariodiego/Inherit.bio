@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
+import { subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 export const SUPABASE_URL = "http://127.0.0.1:54321";
 export const ANON_KEY =
@@ -97,66 +99,82 @@ export async function clearMailbox() {
   await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: "DELETE" });
 }
 
-/**
- * Upload a local file for the user signed into `page` (storage + row via
- * supabase-js with their credentials, processing trigger via the page's own
- * session cookies). The upload UI itself is covered by upload specs; this
- * exists for specs that need a processed file as a precondition.
+/** Complete current own-upload decisions through the real account screens.
+ * Repeated calls retain current signatures; no database consent fixture is
+ * manufactured to bypass a user action or the server's presentation nonce.
+ */
+export async function completeOwnUploadConsent(page: Page): Promise<void> {
+  await page.goto("/files/upload");
+  const account = page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true });
+  const insurance = page.getByRole("heading", { name: OWN_UPLOAD_COPY.insuranceHeading, exact: true });
+  const own = page.getByRole("heading", { name: OWN_UPLOAD_COPY.ownHeading, exact: true });
+  const choose = page.getByRole("button", { name: "Choose file", exact: true });
+  await expect(account.or(insurance).or(own).or(choose).first()).toBeVisible();
+  if (await account.isVisible()) {
+    await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1990-01-01");
+    const saved = page.waitForResponse(response => response.url().endsWith("/api/account/completion")
+      && response.request().method() === "POST");
+    await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await expect(insurance).toBeVisible();
+  }
+  if (await insurance.isVisible()) {
+    await page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.insuranceCheckbox, exact: true }).check();
+    const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
+      && response.request().method() === "POST");
+    await page.getByRole("button", { name: OWN_UPLOAD_COPY.insuranceContinue, exact: true }).click();
+    expect((await signed).status()).toBe(201);
+    await expect(own).toBeVisible();
+  }
+  const affirmation = page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.ownCheckbox, exact: true });
+  if (await affirmation.isVisible()) {
+    const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
+      && response.request().method() === "POST");
+    await affirmation.check();
+    expect((await signed).status()).toBe(201);
+  }
+  await expect(choose).toBeEnabled();
+}
+
+/** Real file picker → restricted Storage bearer → bodyless finalization.
+ * The app computes its own hash/format declaration. Browser fixtures never
+ * substitute the old ordinary login token or insert a genome_files row.
+ * Resolves at finalization; normalization/report completion is separate.
+ */
+export async function uploadOwnFileThroughUi(page: Page, filePath: string): Promise<string> {
+  await completeOwnUploadConsent(page);
+  const completed = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/finalize$/.test(response.url())
+    && response.request().method() === "POST");
+  const failure = page.getByRole("alert").filter({ hasText: /\S/ }).waitFor({ state: "visible", timeout: 30_000 })
+    .then(async () => { throw new Error(`Upload stopped before finalization: ${await page.getByRole("alert").filter({ hasText: /\S/ }).innerText()}`); });
+  await page.locator('input[type="file"]').setInputFiles(filePath);
+  const response = await Promise.race([completed, failure]);
+  expect(response.status(), "canonical file finalization").toBe(200);
+  return subjectFinalizationReceipt.parse(await response.json()).fileId;
+}
+
+/** Existing result suites require actual analytic readiness, not merely a
+ * stored or normalized source. The canonical uploader now handles transport.
+ * Purpose-specific report generation must be connected before these legacy
+ * result-precondition callers can pass again; never seed an annotated row.
  */
 export async function ingestFileAs(
   page: Page,
-  email: string,
-  password: string,
+  _email: string,
+  _password: string,
   filePath: string,
   fileType: string,
 ): Promise<string> {
-  const client = anonClient();
-  const { data: session, error } = await client.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error || !session.session) throw new Error(`sign-in: ${error?.message}`);
-  const fs = await import("node:fs");
-  const nodeCrypto = await import("node:crypto");
-  const path = await import("node:path");
-  const bytes = fs.readFileSync(filePath);
-  const sha256 = nodeCrypto.createHash("sha256").update(bytes).digest("hex");
-  const issue = await page.request.post("/api/files/upload-session", {
-    data: {
-      originalName: path.basename(filePath),
-      fileType,
-      sizeBytes: bytes.length,
-      sha256,
-      contentType: "application/octet-stream",
-    },
-  });
-  if (!issue.ok()) throw new Error(`issue: ${issue.status()} ${await issue.text()}`);
-  const issued = (await issue.json()) as {
-    uploadId: string;
-    bucketName: string;
-    objectName: string;
-    tier: 1 | 2;
-  };
-  const { error: upErr } = await client.storage
-    .from(issued.bucketName)
-    .upload(issued.objectName, bytes, { contentType: "application/octet-stream" });
-  if (upErr) throw new Error(`upload: ${upErr.message}`);
-
-  const complete = await page.request.post(`/api/files/${issued.uploadId}/finalize`, {
-    data: {
-      originalName: path.basename(filePath),
-      fileType,
-      tier: issued.tier,
-    },
-  });
-  if (!complete.ok()) {
-    throw new Error(`complete: ${complete.status()} ${await complete.text()}`);
-  }
-  const { fileId } = (await complete.json()) as { fileId: string };
-
-  const res = await page.request.post(`/api/files/${fileId}/process`);
-  if (!res.ok()) {
-    throw new Error(`process: ${res.status()} ${await res.text()}`);
+  const prepared = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
+    && response.request().method() === "POST");
+  const fileId = await uploadOwnFileThroughUi(page, filePath);
+  const response = await prepared;
+  expect(response.status(), "canonical source normalization").toBe(200);
+  expect(subjectNormalizationReceipt.parse(await response.json()).fileId).toBe(fileId);
+  const file = await adminClient().from("genome_files").select("status,file_type").eq("id", fileId).single();
+  expect(file.data?.file_type, "server inferred source format").toBe(fileType);
+  if (file.error || file.data?.status !== "annotated") {
+    throw new Error("The file is normalized, but this result fixture still needs explicit purposes and real report generation.");
   }
   return fileId;
 }

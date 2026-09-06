@@ -20,7 +20,7 @@ export function OwnUploadFlow({ view }: { view: OwnUploadView }) {
   if (view.kind === "unavailable" || view.kind === "underage") {
     return <p role="status">{view.kind === "underage" ? COPY.underage : COPY.unavailable}</p>;
   }
-  if (view.kind === "ready") return <Uploader />;
+  if (view.kind === "ready") return <Uploader subjectId={view.subjectId} />;
 
   async function submit(path: string, body: unknown, token: string, refresh: boolean) {
     setPending(true); setError(null);
@@ -69,7 +69,7 @@ export function OwnUploadFlow({ view }: { view: OwnUploadView }) {
       }} /><span>{own ? COPY.ownCheckbox : COPY.insuranceCheckbox}</span></label>
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
     {saved ? <p role="status" className="text-sm">{COPY.saved}</p> : null}
-    {own ? <Uploader disabled={!saved || pending} /> : <Button onClick={() => void sign()}
+    {own ? <Uploader subjectId={view.subjectId} disabled={!saved || pending} /> : <Button onClick={() => void sign()}
       disabled={!checked || pending || saved}>{pending ? COPY.saving : COPY.insuranceContinue}</Button>}
   </section>;
 }

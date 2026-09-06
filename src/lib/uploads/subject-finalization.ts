@@ -2,10 +2,11 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { hasEmptyRequestBody } from "../empty-request-body";
 import { createAdminClient } from "../supabase/admin";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
-import { SUBJECT_UPLOAD_FORMATS } from "./subject-upload-contract";
+import { SUBJECT_UPLOAD_FORMATS, subjectFinalizationReceipt as completed } from "./subject-upload-contract";
 import { SubjectStructureError, validateSubjectStructure } from "./subject-structure";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
@@ -16,10 +17,6 @@ const manifestSchema = z.object({ status: z.literal("authorized"), uploadId: uui
   expectedSha256: digest.nullable(), declaredFormat: z.enum(SUBJECT_UPLOAD_FORMATS), maximumDecodedBytes: positive,
 }).strict().refine(value => value.stagingKey !== value.finalKey);
 type Manifest = z.infer<typeof manifestSchema>;
-const completed = z.object({ fileId: uuid, status: z.literal("finalized_ready_for_processing"),
-  analysisState: z.literal("ready_for_processing"),
-  next: z.object({ routeId: z.literal("api.file-process"), operation: z.literal("process") }).strict(),
-}).strict();
 const alreadyComplete = z.object({ status: z.literal("complete"), fileId: uuid }).strict();
 const cleanupSchema = z.object({ bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid }).strict();
 class FinalizationUnavailable extends Error { constructor() { super("upload_unavailable"); } }
@@ -29,7 +26,7 @@ function fail(): never { throw new FinalizationUnavailable(); }
 export async function finalizeSubjectUpload(request: Request, uploadId: string) {
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
-  if (request.body !== null || new URL(request.url).search || !uuid.safeParse(uploadId).success) {
+  if (new URL(request.url).search || !uuid.safeParse(uploadId).success || !(await hasEmptyRequestBody(request))) {
     return ownUploadJson({ error: "invalid_request" }, 422);
   }
   let actor: Awaited<ReturnType<typeof currentOwnUploadAccount>>;

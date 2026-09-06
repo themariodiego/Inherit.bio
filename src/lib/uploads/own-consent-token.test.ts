@@ -3,7 +3,8 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import { hmacSecret } from "@/lib/crypto";
 import { ownConsentBody } from "./own-consent";
-import { mintOwnConsentPresentation, readOwnConsentPresentation } from "./own-consent-token";
+import { mintOwnAccountCompletionPresentation, readOwnAccountCompletionPresentation,
+  mintOwnConsentPresentation, readOwnConsentPresentation } from "./own-consent-token";
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 afterAll(() => vi.unstubAllEnvs());
@@ -21,14 +22,27 @@ function seal(value: unknown, context = "own-upload-artifact-presentation-v1") {
 }
 
 describe("own upload artifact presentation", () => {
-  it("binds the exact account, session, subject, artifact and revisions for ten minutes", () => {
+  it("binds the exact account, session, subject, artifact and revisions for nine minutes", () => {
     const { token, claims, nonceHash } = mintOwnConsentPresentation(input, NOW);
     expect(readOwnConsentPresentation(token, NOW)).toEqual(claims);
     expect(claims).toMatchObject(input);
     expect(nonceHash).toBe(crypto.createHash("sha256").update(claims.nonce).digest("hex"));
-    expect(readOwnConsentPresentation(token, NOW + 599_999)).toEqual(claims);
-    expect(readOwnConsentPresentation(token, NOW + 600_000)).toBeNull();
+    expect(claims.expiresAt - claims.issuedAt).toBe(540_000);
+    expect(readOwnConsentPresentation(token, NOW + 539_999)).toEqual(claims);
+    expect(readOwnConsentPresentation(token, NOW + 540_000)).toBeNull();
     expect(readOwnConsentPresentation(token, NOW - 1)).toBeNull();
+  });
+  it("keeps account-completion expiry below the unchanged database ceiling with a small clock lead", () => {
+    const snapshot = { accountId: input.accountId, sessionId: input.sessionId, subjectId: input.subjectId,
+      accountRevision: input.accountRevision, authSessionRevision: input.authSessionRevision,
+      jurisdictionRevision: input.jurisdictionRevision, subjectBindingRevision: input.subjectBindingRevision,
+      accountBindingRevision: input.accountBindingRevision };
+    const { token, claims } = mintOwnAccountCompletionPresentation(snapshot, NOW + 100);
+    expect(claims.expiresAt - claims.issuedAt).toBe(540_000);
+    expect(claims.expiresAt).toBeLessThan(NOW + 600_000);
+    expect(readOwnAccountCompletionPresentation(token, claims.expiresAt - 1)).toEqual(claims);
+    expect(readOwnAccountCompletionPresentation(token, claims.expiresAt)).toBeNull();
+    expect(mintOwnConsentPresentation(input, NOW + 100).claims.expiresAt).toBeLessThan(NOW + 600_000);
   });
   it("rejects tampering, foreign token contexts and malformed signatures without throwing", () => {
     const { token, claims } = mintOwnConsentPresentation(input, NOW);

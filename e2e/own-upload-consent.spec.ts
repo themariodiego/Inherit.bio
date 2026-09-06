@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { OWN_UPLOAD_COPY as COPY } from "../src/copy/upload/consent";
+import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "../src/copy/upload/errors";
 
 test("own upload records account details and separate decisions through the real screens", async ({ page }) => {
   const email = `own-flow-${randomUUID()}@e2e.local`;
@@ -63,6 +64,17 @@ test("own upload records account details and separate decisions through the real
   await expect(page.getByRole("heading", { name: COPY.accountHeading })).toHaveCount(0);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   expect((await signatures()).data).toHaveLength(2);
+  // Real browser preflight: these sources never obtain an upload capability
+  // and the same picker remains usable after each refusal. This is not a
+  // successful Storage/finalization/report-generation assertion.
+  await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n") });
+  await expect(page.getByRole("alert").filter({ hasText: INGEST_REFUSALS.pdf_not_data })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose file", exact: true })).toBeEnabled();
+  const multi = "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFIRST\tSECOND\n";
+  await page.locator('input[type="file"]').setInputFiles({ name: "synthetic.vcf", mimeType: "text/plain", buffer: Buffer.from(multi) });
+  await expect(page.getByRole("alert").filter({ hasText: SUBJECT_TARGET_REFUSALS.subject_source_not_single_sample })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose file", exact: true })).toBeEnabled();
+  expect(geneticRequests).toEqual([]);
   await page.screenshot({ path: test.info().outputPath("own-upload-ready.png"), fullPage: true });
   expect(errors).toEqual([]);
 });

@@ -97,7 +97,7 @@ describe("initial account completion route", () => {
   });
   it("refuses expired and consent-signing presentations", async () => {
     const c = requestCase();
-    vi.advanceTimersByTime(600_000);
+    vi.advanceTimersByTime(540_000);
     expect((await send(c.body, c.headers)).status).toBe(404);
     const consent = mintOwnConsentPresentation({ ...input, artifactKey: "consent.upload-self",
       artifactVersion: 1, artifactBodySha256: "a".repeat(64) });
