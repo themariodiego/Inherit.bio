@@ -1,7 +1,7 @@
 # Hosted own-upload rollout prerequisites
 
 Rollout preparation checkpoint, 6 September 2026. This is not a feature-release receipt.
-The new upload/report runtime remains local; compatible hosted schema is staged; production is the independently released
+The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
 ## Current checkpoint · 18:35 UTC, 6 September 2026
@@ -74,7 +74,111 @@ No user list, existing account update, consent seed or private signing-key
 retrieval occurred. A supported alternative credential path for the actual
 new-account operation is being checked; no hosted genetic upload has run.
 
-## Verified scope
+### First real hosted browser journey · 18:53 UTC
+
+The follow-up candidate `dpl_9W634MRCEadvBBvoB4tHg5KhEU5p` is READY at
+`9ffb68a1a9b79e093d986e1e054449fcf9095f9c`; its only changes from the locally
+verified `8166c3b` runtime are the two rollout documents. Public aliases and all
+three cron definitions independently remain on PR75. Both candidate URLs still
+require Vercel authentication. No second build was consumed by the earlier
+BLOCKED author-attribution attempt.
+
+A legitimate Auth Admin create operation made exactly one fresh, confirmed
+synthetic account, with no consent or result seeding. The fallback retrieved
+only the named existing Supabase service credential through Vercel's supported
+API for immediate server-side Auth Admin use, kept it in memory, and validated
+its project and role. The upload signing private key was never retrieved.
+The independent baseline found one profile/subject and zero files, leases,
+consents or signatures for the new account.
+
+A fresh browser used a temporary candidate-specific Vercel share URL to install
+a secure host-only cookie, then the app's normal password sign-in. It checked
+the actual confirmed account identity before making fictional adult declarations
+and signing disclosure/store consent through the UI. No trace, HAR, session
+export or injected credential headers were used. Independent review corrected
+a redirect-prone test-header approach before its first execution.
+
+The single run, 18:52:40–18:53:23 UTC, passed two real uploads totaling 972 bytes:
+exact browser hashes, restricted Storage bearers, provider HTTP 200, bodyless
+finalization, normalization, explicit trait-report permission and real personal
+findings with public sources and honest missing coverage. Grant alone exposed
+no findings. The two conflicting files produced the expected disagreement.
+Both downloaded byte-for-byte through native app/Storage redirects; deleting
+only the second source returned 204 and preserved the first download/report.
+PDF and multiple-sample files were refused before issuance/Storage. There were
+no browser errors or global-worker, invitation or outside-model requests.
+
+Desktop/mobile screenshots were inspected: controls fit, report coverage and
+source facts remain distinguishable. Generic file names and sub-kilobyte sizes
+rounded to 0 KB remain usability limitations. The active retained synthetic
+source was preserved for independent journal/Storage checks, which passed:
+correct 425-byte raw/decoded hash, revision 1, complete normalization, five
+source variants and five usable observed calls, current polygenic grant and
+completed source/grant-bound analysis. The deleted file and all checked derived
+rows/journals are absent; both staging objects and its final object are absent.
+The retained final object matches its canonical file/object bindings. No
+unchosen grants, ancestry results, workers or mail were created. Provider
+owner_id on the service-copied final is null; ownership comes from the checked
+canonical bindings. Authorization refusals and purpose withdrawal are next.
+This is a protected hosted canary, not a public cutover or a full acceptance gate.
+
+### Restricted-token refusals and withdrawal · 19:11 UTC
+
+A bounded follow-up used a genuine new token signed with public kid
+`d5e4e50d-7017-4c8f-9435-22c07b5234a9`. Eight actual Storage operations returned
+HTTP 400 envelopes containing explicit provider 403 authorization denials:
+wrong bucket/key creation, reading the existing retained synthetic object,
+listing its prefix, updating/deleting the new absent key, upsert at that key,
+and a real body one byte over the token's exact maximum. Independent SQL then
+confirmed the lease remained issued/unconsumed, all new target objects were
+absent, and the retained source/object/grant were unchanged. After this explicit
+checkpoint, the **same token** accepted the exact 547-byte source, which really
+finalized, prepared, downloaded and was deleted through the application.
+
+The first attempt's 60-second acknowledgement timeout is preserved as a setup
+failure, not a product failure or a complete token test. Its eight denials had
+no same-token positive control. The corrected run retained every assertion,
+used a 180-second explicit-ack deadline and promptly executed the lead's separate
+SQL verification before acknowledging. Neither timeout grants permission to
+continue. The second run passed from 19:10:43 to 19:11:20 UTC.
+
+The previously verified live trait-report permission was then withdrawn through
+the real UI. Direct authenticated Data API reads for the retained file changed
+from three PRS coverage rows to zero; ancestry remained empty. Fresh report
+responses omitted personal results. Exact original download and source A/G
+remained available under live store consent. A focused read-only browser check
+also waited for the regional API/IGV track to finish and inspected the rendered
+region, rather than treating the earlier loading screenshot as complete proof.
+
+Independent final checks confirmed the third file, its derivatives, journals,
+staging and final objects are absent. The retained 425-byte source, raw and
+normalization bindings, five variants and five observed calls remain intact.
+The report grant and direction are revoked, with no remaining PRS/analysis rows,
+no unchosen grants, no ancestry and no mail. Exactly one expected purpose-derived
+revocation purge job is queued/unstarted; this is not worker-execution evidence.
+Operational preflight found no supported executor for `worker_jobs.revoke_purge`:
+neither PR75 nor the canonical retention route handles it, and the standalone
+worker handles only `annotate_vcf`. No corresponding purpose retention phase or
+purge manifest exists. At 19:18 UTC every other checked due-work component was
+empty; the generic queue contained only this synthetic job. Its 60-second
+physical deadline was 19:12:12 UTC, and the checked derived stores are already
+empty through inline revocation. Do not claim manifest/worker completion from
+that emptiness or call unrelated retention endpoints. A real executor and its
+residual receipt are the next implementation prerequisite.
+
+The unused first-attempt lease `0c0c1188-2802-473e-9e8b-9539afbb53b7` has no
+object. It remains untouched, with token expiry 19:36:22 UTC and the ordinary
+two-hour cleanup deadline 21:06:22 UTC. No deadline or state was shortened to
+manufacture cleanup proof. In total, three successful synthetic uploads stored
+1,519 source bytes; two sources were deleted and one remains for verification.
+
+Absent-target UPDATE/DELETE and empty-key upsert are limited probes, not complete
+existing-object overwrite/deletion proofs. Expiry, validly signed excessive
+claims, store-consent revocation, cross-account boundaries and ordinary-session
+transport denial after the deferred legacy cutover remain open. This evidence
+supports the protected own-file milestone; full-plan acceptance remains 18/65.
+
+## Historical verified scope before schema staging
 
 - Inherit Supabase project: `zuvloczwgrayonqabnss`, reported ACTIVE_HEALTHY.
 - Vercel project: `prj_K7bVowhjFr0uIapXraH41hthJkgy`, team slug `mariodiego`.

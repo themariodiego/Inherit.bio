@@ -69,6 +69,39 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-06 · Protected hosted own-file canary verified
+
+Candidate `dpl_9W634MRCEadvBBvoB4tHg5KhEU5p` at `9ffb68a` runs the unchanged
+`8166c3b` runtime. Its custom preview environment uses selected production app
+configuration without worker/mail credentials; public aliases and active cron
+jobs remain on PR75. No private upload signing key was retrieved.
+
+One fresh synthetic account completed real UI declarations/consent, two native
+restricted Storage uploads (972 bytes total), finalization/preparation, explicit
+trait-report choice and source-backed personal findings. Both original downloads
+matched; selecting one file for deletion preserved the other and its useful
+report. Desktop/mobile visuals were inspected. Independent database/Storage
+checks confirmed source/revision/grant/analysis bindings and exact cleanup,
+with no unchosen analysis, ancestry, mail or workers.
+
+A second bounded run verified eight explicit restricted-token refusals with an
+independent unchanged-state SQL checkpoint, followed by the same-token successful
+upload and exact third-file deletion. Real report withdrawal changed direct
+owner PRS reads from three rows to zero while preserving the raw download and
+rendered source region. Final database checks confirmed cleanup and revoked
+analysis. One expected revoke-purge job remains queued/unstarted; one unused
+object-free lease retains its normal expiry/cleanup deadline. A first checkpoint
+timeout is recorded as setup failure, not hidden as a passing test.
+
+This closes the first real hosted signer/Storage and two-file journey checkpoint.
+It does not release the canonical app on the public domain or prove the complete
+restricted authorization matrix. Operational review found that no current worker handles the queued
+`revoke_purge` job, despite inline analytic cleanup succeeding. Next: implement
+its exact-purpose manifest/executor, canonical export content and the actual
+Storage setup for full standard regressions in separate worktrees. Required
+notices and broader product behaviors remain release blockers. Existing generic file labels and tiny-size rounding remain
+usability limitations. Whole-plan acceptance stays **18/65**.
+
 ### 2026-09-06 · Signing activation and compatible hosted schema verified
 
 The owner activated the replacement signing key and retained the older keys.
