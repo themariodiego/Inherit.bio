@@ -79,3 +79,27 @@ This is the sole authority for retention clocks, deletion clocks, notice clocks 
 ## Enforcement
 
 The retention job computes targets by immutable database identifiers and joins, covers both canonical and legacy Storage layouts, and is idempotent. Acceptance re-queries every named table and object with the service role after the job and requires zero prohibited rows or objects. Production release is blocked if any route, UI string, migration default, job schedule or legal artifact states a different clock.
+
+## Cron transport adapter
+
+`GET /api/cron/retention` is a separate transport for the existing bodyless
+`POST /api/jobs/retention`. It requires the exact `CRON_SECRET` bearer using a
+constant-time comparison; `JOBS_SECRET` alone does not authorize this adapter.
+Authentication precedes query, body and transfer-encoding refusal. Content
+length must be absent or exactly zero. Next.js automatically dispatches HEAD
+to GET, so the adapter explicitly refuses HEAD before any worker call.
+
+After these checks, the adapter creates one fresh bodyless POST request with
+only server-owned authorization and calls the existing handler directly.
+Incoming cookies, headers and selectors cannot choose work. The original
+worker retains every due-work predicate, purge check and fixed batch bound.
+Its response is preserved; an unexpected exception returns only the closed
+`retention_worker_unavailable` error with HTTP 503.
+
+This adapter does not install or enable a schedule. A hosted invocation is a
+composite retention run across all due accounts, not a selectable synthetic
+canary. Refresh the aggregate due-work inventory before a proposed hosted run,
+and verify scheduler cost, deployed prerequisites and actual cleanup before
+claiming recurring retention delivery. Focused adapter tests cover credential
+refusal, selector refusal, fresh POST delegation, HEAD refusal and failures;
+they do not establish hosted execution or scheduled cleanup.

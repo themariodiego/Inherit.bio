@@ -7803,6 +7803,7 @@
         "jobs.research-publish",
         "jobs.research-refresh",
         "jobs.retention",
+        "jobs.retention-cron",
         "jobs.mail"
       ],
       "contracts": [
@@ -9050,6 +9051,7 @@
     "jobs.research-publish": "machine-api-v1",
     "jobs.research-refresh": "machine-api-v1",
     "jobs.retention": "machine-api-v1",
+    "jobs.retention-cron": "machine-api-v1",
     "jobs.mail": "machine-api-v1"
   },
   "requestSchemas": {
@@ -12509,6 +12511,10 @@
         "machine-job-result-v1"
       ],
       "jobs.retention": [
+        "machine-job-result-v1"
+      ],
+      "jobs.retention-cron": [
+        "invalid-request-v1",
         "machine-job-result-v1"
       ],
       "jobs.mail": [
@@ -19180,6 +19186,61 @@
           "embryo-donor-attribution-v1",
           "embryo-autosomal-only-v1"
         ]
+      }
+    },
+    {
+      "id": "jobs.retention-cron",
+      "path": "/api/cron/retention",
+      "kind": "endpoint",
+      "domain": "jobs",
+      "auth": "method-specific",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden",
+        "transferEncoding": "forbidden",
+        "callerHeaders": "never-forwarded-to-worker",
+        "contentLength": "absent-or-exactly-zero"
+      },
+      "stateProfile": "endpoint",
+      "disposition": "kept",
+      "successResponseContract": "machine-job-result-v1",
+      "policy": {
+        "mode": "machine-due-row-only",
+        "operation": "retention-due-phase",
+        "contract": "retention-due-phase-v1",
+        "deleteContract": "retention-purge-v1",
+        "targetRegistry": "sensitive-purge-target-registry-v1",
+        "workerBinding": "workerExecutionBindings.jobs.retention",
+        "targetAuthority": "workerExecutionBindings.jobs.retention",
+        "requestTargetOrPrefix": "forbidden",
+        "contracts": [
+          "resource-authorization-v1",
+          "retention-due-phase-v1",
+          "retention-purge-v1",
+          "sensitive-purge-target-registry-v1",
+          "mail-token-delivery-v1",
+          "embryo-basis-authority-v1",
+          "embryo-donor-attribution-v1",
+          "embryo-autosomal-only-v1"
+        ],
+        "adapterFor": "jobs.retention",
+        "requestMaySelectSubjectTargetSourceOrRows": false,
+        "delegatedResponse": "preserve-status-headers-and-body; unexpected-exceptions-use-closed-retention_worker_unavailable-503"
+      },
+      "methodPolicies": {
+        "GET": {
+          "authAllOf": [
+            "cron-secret"
+          ],
+          "comparison": "constant-time-exact-bearer",
+          "delegation": "one-server-created-bodyless-POST-to-jobs.retention-after-authentication-and-selector-refusal"
+        },
+        "HEAD": {
+          "execution": "refuse-405-before-delegation"
+        }
       }
     },
     {
