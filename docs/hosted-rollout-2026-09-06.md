@@ -439,3 +439,52 @@ still disabled. Supabase and deployment guidance informed the role checks,
 schema-first rollout and exact-revision verification; browser verification
 used the installed repository Playwright setup because agent-browser was not
 installed. No credentials were copied or new telemetry integration added.
+
+## PR72 — everyday report follow-through
+
+Released 2026-09-06. Exact head
+`a24122ea4fce98ec05e97ca3a877ebd1cda0b7a6` passed complete CI
+[`34026356843`](https://github.com/themariodiego/Inherit.bio/actions/runs/34026356843):
+2,209 units in 139 files, 1,044 database assertions across 30 suites,
+30/30 independent-session lock checks and 216 browser cases, with no skips
+or retries. The earlier failed CI run is retained in the test-diff register;
+it was not used as release approval.
+
+The independently reviewed four-row publication SQL had SHA-256
+`d9d4b7c16b6c2646dc459b6875b490e2de760ed64373402fba327a52507807db`.
+It passed six rollback-only temporary-clone cases and a separate replay
+check before use. Fresh hosted full-row preimages, report-template triggers,
+the other-report fingerprint and all-file fingerprint matched the baseline.
+The transaction updated only title, summary, variants, citations and the
+update timestamp for cilantro, asparagus odor, bright-light sneezing and
+earwax at `2026-09-06T10:18:52.062962Z`. Full postimages (apart from the
+assigned timestamp) matched the reviewed package. All status, layer,
+evidence, publication and compliance metadata was preserved.
+
+The other 158 report rows retained fingerprint
+`0c00cf282c372acf7560e034b7a1f66c`; all three genome-file rows retained
+`7fe71092052ae3cd2a9c0de735f574db`. These fingerprints are MD5 of the
+concatenated full JSONB rows ordered by slug and file ID respectively;
+the report fingerprint excludes the four publication targets. No genome
+was reprocessed, deleted or read for this publication. No migration or
+new report row was added.
+
+PR72 merged at `2026-09-06T10:19:11Z` as
+`2450606187c2edd48afe31b5b0b006acfb272534`. Production deployment
+`dpl_4AAe6EsYZo2kZEVdwMCNJP7u31BT` is READY for that exact merge, with
+both `inherit.bio` and `www.inherit.bio` assigned and no alias error.
+The main integration run `34027087529` was still running at this receipt;
+it is not represented as a completed run.
+
+The real public science page rendered all 19 sources with read dates and
+the explicit selected-report scope. All four authenticated detail routes
+rendered the exact revised public summaries with canonical claim bindings
+and visible source dates; the cilantro DOI link resolved to its expected
+target. These checks read only public report prose and source metadata,
+not personal genotype output, and took no genetic screenshots. Synthetic
+CI covers the personal interpretations and reference/alternate/no-call
+boundaries. There was no real mail or model call for release verification.
+
+The source review remains bounded to the eight registered reports. Full
+catalog and four-channel provenance gates are incomplete. Whole-plan
+acceptance remains **18/65**; this release does not promote G1.11 or G4.7.
