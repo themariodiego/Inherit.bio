@@ -19,10 +19,14 @@ PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
 - Vercel environment-name/target inventory was not completed in this audit.
   No secret value was fetched, printed, rotated or changed.
 - Hosted Edge Functions `bootstrap`, `seed-reference` and `prs-backfill` are
-  ACTIVE with `verify_jwt: true`. No callers were found in current `src` or
-  `scripts`; this does not prove they have no external callers. Review their
-  authentication compatibility before rotation; do not disable verification
-  as a shortcut.
+  ACTIVE with `verify_jwt: true`. Their deployed versions 5, 4 and 2 are
+  unconditional HTTP 410 tombstones: no request processing, credentials or
+  database/storage access. No callers were found in current `src` or `scripts`;
+  this does not prove they have no external callers. Leave them unchanged.
+  The specific [function authentication guide](https://supabase.com/docs/guides/functions/auth-headers)
+  supports asymmetric keys, whereas the general signing-key guide retains a
+  compatibility warning. No live function invocation was performed or needed
+  to establish that these retired handlers contain no active workflow.
 
 ## Owner authorization and access checkpoint
 
@@ -32,11 +36,20 @@ uploads first. This is authorization, not evidence of execution. No key has
 been generated, imported, activated or revoked at this checkpoint.
 
 The connected Supabase tools expose database and Edge Function operations,
-but no signing-key management operation. The inspected Brave dashboard redirects
-to Supabase sign-in. Neither `SUPABASE_ACCESS_TOKEN` nor `VERCEL_TOKEN` is set
-in the current shell. Do not extract browser or connector session credentials;
-use an authenticated supported management interface or an owner-assisted
-dashboard handoff. Never ask the owner to paste private signing material in chat.
+but no signing-key management operation. The owner completed GitHub login in
+Brave. The authenticated Inherit JWT dashboard confirms current ES256 key
+`1591c25b-673c-45f3-b60d-f20bfd5c59bb`, previous legacy key
+`1cc85c83-b89b-437d-87ad-4cc1de0c9daf`, and no standby key. The import form was
+opened with ES256 selected; no private material was entered or submitted.
+Browser credential changes require owner completion of entry and submission.
+
+Neither `SUPABASE_ACCESS_TOKEN` nor `VERCEL_TOKEN` is set in the current shell.
+The existing Supabase CLI can list projects through its saved authentication,
+but its inspected commands expose no JWT signing-key import operation.
+Vercel's environment-settings dashboard is signed out. Do not extract browser
+or connector session credentials; use a supported management interface or an
+owner-assisted dashboard handoff. Never ask the owner to paste private signing
+material in chat. Establish production-only secret storage before creating a key.
 
 ## Hosted trust is not the local harness
 
