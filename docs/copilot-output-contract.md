@@ -43,8 +43,11 @@ claims. No model was trained or evaluated on a real user's genome.
   chunks on refusal. Positive cases keep their tool result and exact answer.
 - A fresh UUID synthetic account uses the tiny committed VCF and the local
   Supabase stack. No hosted data, real emails, database reset or catalog edits.
-- Typecheck and lint pass locally. Full-suite/PR/deployment verification
-  remains to be recorded; this document does not claim deployment.
+- Typecheck and lint pass locally. On clean code commit `3e184c7`, all
+  **2,082 unit tests in 133 files** passed in 23.46 seconds. Name, secret,
+  readability, template and static legal gates also passed. Complete PR CI
+  and deployment verification remain to be recorded; this document does
+  not claim deployment.
 
 The first test attempt exposed a harness encoding mismatch: Chromium's
 response-body inspection read charset-less SSE as Windows-1252 while the
