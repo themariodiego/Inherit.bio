@@ -1,5 +1,5 @@
 begin;
-select plan(25);
+select plan(31);
 \ir fixtures/rights_invitation_pending.inc
 insert into auth.users(id,email) values
  ('9a000000-0000-0000-0000-000000000003','rights-other-owner@example.invalid');
@@ -121,5 +121,24 @@ select is((select count(*) from private.invitation_terminal_notices
  where recipient_kind='account' and invitation_id in (
  select invitation_id from third_parent_a union all select invitation_id from third_parent_b)),
  1::bigint,'the draft owner receives only one cancellation notice intent');
+-- The actual cleanup worker must also finish the cross-account adult draft,
+-- while preserving the optional donor's still-active draft.
+create temporary table purges as select * from public.claim_refused_invitation_draft_purge_v1(repeat('a',64));
+select lives_ok($$select public.finish_refused_invitation_draft_purge_v1(
+ (select manifest_id from purges),repeat('a',64))$$,'first kind-aware queued draft is purged');
+delete from purges;
+insert into purges select * from public.claim_refused_invitation_draft_purge_v1(repeat('a',64));
+select lives_ok($$select public.finish_refused_invitation_draft_purge_v1(
+ (select manifest_id from purges),repeat('a',64))$$,'second kind-aware queued draft is purged');
+delete from purges;
+insert into purges select * from public.claim_refused_invitation_draft_purge_v1(repeat('a',64));
+select lives_ok($$select public.finish_refused_invitation_draft_purge_v1(
+ (select manifest_id from purges),repeat('a',64))$$,'third kind-aware queued draft is purged');
+select is((select count(*) from public.subjects where id=(select subject_id from adult)),0::bigint,
+ 'adult refusal removes the unconfirmed placeholder instead of leaving it as a hidden subject');
+select is((select state from public.embryo_cohort_drafts where id=(select draft_id from donor_draft)),
+ 'draft','cleanup preserves the optional donor draft');
+select is((select count(*) from public.claim_refused_invitation_draft_purge_v1(repeat('a',64))),0::bigint,
+ 'all three refused drafts finish without selecting the donor fallback');
 select * from finish();
 rollback;

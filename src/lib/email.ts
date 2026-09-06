@@ -50,6 +50,7 @@ import {
   EmbryoIngestAbandonedEmail,
   type EmbryoIngestAbandonedProps,
 } from "@/emails/embryo-ingest-abandoned";
+import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
@@ -65,6 +66,7 @@ interface MailPayloads {
   "cohort-restriction-notice": CohortRestrictionNoticeProps;
   "embryo-draft-expired": EmbryoDraftExpiredProps;
   "embryo-ingest-abandoned": EmbryoIngestAbandonedProps;
+  "invitation-terminal-notice": InvitationTerminalNoticeProps;
 }
 
 export type MailTemplateId = keyof MailPayloads;
@@ -100,6 +102,7 @@ const renderers: {
   // The expiry notice carries no data, so its payload is not read.
   "embryo-draft-expired": () => createElement(EmbryoDraftExpiredEmail),
   "embryo-ingest-abandoned": () => createElement(EmbryoIngestAbandonedEmail),
+  "invitation-terminal-notice": (payload) => createElement(InvitationTerminalNoticeEmail, payload),
 };
 
 // Subjects are fixed per template. The Record Key addendum is the one
@@ -116,6 +119,7 @@ const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string 
   "cohort-restriction-notice": "Embryo records were withdrawn and are being deleted",
   "embryo-draft-expired": "An embryo upload draft expired",
   "embryo-ingest-abandoned": "The embryo upload did not complete",
+  "invitation-terminal-notice": "An invitation on Inherit has ended",
 };
 
 const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {

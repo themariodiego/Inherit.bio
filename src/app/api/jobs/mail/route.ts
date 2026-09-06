@@ -4,6 +4,7 @@ import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
+import { drainInvitationTerminalMail } from "@/lib/embryos/invitation-terminal-mail";
 
 export const maxDuration = 300;
 
@@ -224,6 +225,14 @@ async function drainMail() {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  try {
+    const terminal = await drainInvitationTerminalMail(admin);
+    processed += terminal.processed;
+    failed += terminal.failed;
+  } catch {
+    failed++;
+  }
 
   try {
     const terminal = await drainEmbryoTerminalMail(admin);

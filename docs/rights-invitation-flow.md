@@ -141,13 +141,72 @@ previous browser receipt belongs to `4c1e606`, not a new refusal UI run.
 The donor fixture seeds the declared pending-draft shape; it does not pretend
 the still-missing donor invitation UI or issuance path exists.
 
-**Still not callable by API roles or connected to a UI.** The intent store is
-not a delivered email or a canonical `mail_outbox` row. Materialization into
-that outbox, recipient/provider rechecks, fixed-deadline intent/contact expiry
-and actual evidence/draft purge execution remain to be connected and tested.
-All invitation writers still need the shared transition lock; its private
-existence alone is not a concurrency proof. Existing expiry code must not be
-used unchanged for the cancelled-draft branch. No production action was taken.
+**The refusal operation is still not callable by API roles or connected to a
+UI.** The following local checkpoint connects mail and actual draft cleanup.
+
+### Canonical notices and physical cleanup (local follow-up)
+
+`20260906053451_invitation_terminal_mail.sql` now creates the canonical
+`mail_outbox` row in the refusal transaction itself. The private record is
+its independent recipient envelope, not a second outbox. A canonical-outbox
+failure rolls back refusal. Terminal notices have no draft/principal/contact
+FKs and carry only one registered notice kind. The original invitation's mail
+invalidation and ordinary mail claimer exclude these terminal rows.
+
+The mail worker checks the exact canonical envelope, deadline and recipient
+authority before reading the encrypted address or looking up the current
+verified owner. It uses canonical provider attempts/delivery receipts and the
+original idempotency key, releases recipient material on accepted submission,
+and never overwrites an uncertain accepted receipt with a failure ACK. A first
+submission older than the provider's 24-hour deduplication window is not
+automatically resent. The independent retention job deletes expired envelope,
+outbox and delivery copies at the original 30-day deadline.
+
+`20260906055142_refused_invitation_draft_cleanup.sql` connects the registered
+refusal phase to a storage-aware worker. Normal draft expiry now excludes
+refusals instead of cancelling their purge. The worker claims one due manifest
+with a five-minute lease and freezes exact Storage addresses for draft-bound
+fragments, documents, review copies and linked reviewed originals. It uses the
+Storage API, not SQL metadata deletion. Storage completion requires the object
+and frozen address to be absent. Wrong ordinals, stale leases and changed draft
+revisions cannot complete cleanup.
+
+After storage is gone, the exact draft evidence, invitation credentials,
+ordinary invitation mail, contacts, signatures and draft principals are
+removed. An unconfirmed adult placeholder is physically removed. Account
+principals, unrelated subjects/cohorts/genomes and optional-donor drafts are
+not selected; independent terminal notices survive. Shared evidence is rejected.
+The current adult reservation has no upload; a future quarantined upload graph
+still requires its exact upload-revision purge implementation, not an
+account-wide fallback.
+
+Verification so far:
+
+- Six related database suites pass **309 assertions**, including actual
+  kind-aware refusal followed by cleanup of two co-parent drafts and the adult
+  placeholder while preserving the optional donor draft.
+- The additional storage-guard suite passes **12 assertions**, covering all
+  four evidence-object forms, premature completion, invalid batches, expired
+  worker leases, exact-address retry and draft-revision changes.
+- **21 targeted unit tests** cover both new workers and the retention route.
+  Typecheck and scoped cleanup lint pass.
+- The production-build retention-route test passes in **11.7 seconds** without
+  skips or retries. It uploads real synthetic evidence to local Storage,
+  invokes `/api/jobs/retention`, verifies physical deletion and completed
+  manifests, and proves another draft/evidence object remains accessible.
+  This test seeds the cancelled-draft/queued-phase boundary; it does not claim
+  the still-missing refusal UI works.
+- That test first found a missing older `expire_embryo_terminal_mail_v1`
+  function in the shared development database. The already-committed,
+  self-contained terminal-mail definitions (lines 45–144 of
+  `20260905203457_embryo_ingest_unwind_runtime.sql`) were applied locally,
+  with no reset/history changes. The test was rerun without weakening its
+  zero-failure assertion. Full clean migration/CI verification is still due.
+
+All invitation writers still need the shared transition lock and provider
+submission ordering proof. Evidence upload/write fencing and shared/live
+authority cases need wider coverage before public refusal is enabled. No
+production action or real genome deletion was taken.
 
 1. Implement accountless refusal with its registered atomic invalidation,
    global contact refusal bar, exact draft/evidence cleanup and minimal notices.

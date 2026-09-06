@@ -83,7 +83,7 @@ select is((select status from public.token_hashes where token_hash=(select hash 
  'revoked','the original token remains unusable');
 select is((select state from public.token_candidates where target_id=(select invitation_id from inv)),
  'invalidated','the delivery candidate is invalidated');
-select is((select state from public.mail_outbox where target_id=(select invitation_id from inv)),
+select is((select state from public.mail_outbox where id=(select outbox_id from delivery)),
  'invalidated','the claimed invitation mail is cancelled');
 select is((select count(*) from public.invitation_refusal_hmacs where email_hmac in (repeat('b',64),repeat('e',64))),
  2::bigint,'both stored key versions are barred');
