@@ -222,6 +222,12 @@ export const PRIMARY = {
   compareEmbryos: ENTRY_BOXES.find((box) => box.id === "embryos.compare")!.label,
 } as const;
 
+export const PREPARED_REPORTS = {
+  title: "Choose your reports",
+  description: "Your file is prepared. Choose report types and generate your results.",
+  action: "Choose reports",
+} as const;
+
 export const STATE_B = {
   processing: (name: string) => `Processing ${name}`,
   notEnough:

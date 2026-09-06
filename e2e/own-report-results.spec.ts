@@ -54,6 +54,37 @@ async function expectNoPersonalReport(page: Page) {
   expect(document).not.toContain("One A copy marks lactase persistence");
 }
 
+/** Overview may link to an authorized completed report, but must never
+ * serialize its genotype or personal interpretation into the home page.
+ * Always inspect a new server response, not only the preceding cached DOM.
+ */
+async function expectOverview(page: Page, state: "prepared" | "results" | "withdrawn") {
+  const response = await page.goto("/overview");
+  expect(response?.ok()).toBe(true);
+  const document = await response!.text();
+  await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
+  for (const marker of ['data-figure-kind="genotype"', TAKEAWAY, "One A copy marks lactase persistence"]) {
+    expect(document.includes(marker), "Overview must not serialize personal report content").toBe(false);
+  }
+  // Inspect JSON/RSC field boundaries, not a bare allele substring that
+  // could also occur in an unrelated public word or build identifier.
+  expect(/(?:"|\\")genotype(?:"|\\")\s*:\s*(?:"|\\")/.test(document),
+    "Overview must not serialize genotype values").toBe(false);
+  const starter = page.locator(`[data-starter-layer] a[href="${DETAIL}"]`);
+  if (state === "results") {
+    await expect(starter).toBeVisible();
+    expect(document.includes(DETAIL), "completed starter link in fresh server document").toBe(true);
+  } else {
+    await expect(page.locator(`a[href="${DETAIL}"]`)).toHaveCount(0);
+    expect(document.includes(DETAIL), "no personal starter link without completed live report access").toBe(false);
+  }
+  if (state === "prepared") {
+    const choose = page.getByRole("link", { name: "Choose reports", exact: true });
+    await expect(choose).toBeVisible();
+    await expect(choose).toHaveAttribute("href", LIBRARY);
+  }
+}
+
 test("canonical chosen report gives a real milk-sugar finding and withdrawal removes only analytic access", async ({ page }) => {
   const user = { email: `canonical-report-${randomUUID()}@e2e.local`, password: "synthetic-report-password" };
   const accountId = await createConfirmedUser(user.email, user.password);
@@ -92,6 +123,7 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   expect(source.error).toBeNull();
   expect(source.data!.user_id).toBe(accountId);
   expect(source.data!.status).toBe("stored");
+  await expectOverview(page, "prepared");
   await expectNoPersonalReport(page);
   await page.goto("/genome/me/ancestry");
   await expect(page.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(0);
@@ -112,6 +144,7 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   // Saving permission is not evidence that computation completed. Verify the
   // fresh server response too, so a stale pre-grant DOM cannot satisfy this.
   await expectNoPersonalReport(page);
+  await expectOverview(page, "prepared");
   expect(await completedPurposes(fileId)).toEqual([]);
   await page.goto(LIBRARY);
   const generated = page.waitForResponse(response => response.url().endsWith(`/api/files/${fileId}/process`)
@@ -121,6 +154,16 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   expect(generation.status()).toBe(200);
   expect(await generation.json()).toEqual({ fileId, status: "processed", analysisState: "active" });
 
+  await expectOverview(page, "results");
+  await page.screenshot({ path: test.info().outputPath("overview-chosen-result-desktop.png"), fullPage: true });
+  const overviewViewport = page.viewportSize();
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: test.info().outputPath("overview-chosen-result-mobile.png"), fullPage: true });
+  } finally {
+    if (overviewViewport) await page.setViewportSize(overviewViewport);
+  }
+  await page.goto(LIBRARY);
   await page.getByLabel("Search reports by title, gene, or category").fill("MCM6");
   const preview = page.locator(`[data-personal-preview="${SLUG}"]`);
   await expect(preview).toContainText(TAKEAWAY);
@@ -184,6 +227,7 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
   expect(await withdrawal.json()).toMatchObject({ revoked: true });
   await expect(choices.getByRole("checkbox", { name: LABEL, exact: true })).not.toBeChecked();
   await expectNoPersonalReport(page);
+  await expectOverview(page, "withdrawn");
 
   // Query through a real authenticated owner session, not the admin client.
   // A still-owned source does not authorize withdrawn analytic rows.
