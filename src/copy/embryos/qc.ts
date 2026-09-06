@@ -43,6 +43,7 @@ export const NO_IMPUTATION_WORD = NONE_WORD;
 
 /** The twenty QC fields, in plain words, in register order. */
 export const QC_FIELD_LABELS: Record<keyof QcDto, string> = {
+  source_facts: "File source",
   sites_expected: "Positions this check needs",
   sites_called: "Positions the file could read",
   call_rate: "Share of positions read",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { QcTable } from "@/components/embryo/compare/qc-table";
@@ -67,7 +68,7 @@ export async function generateMetadata(props: PageProps<"/embryos/[embryoId]">):
 }
 
 async function loadDetail(input: {
-  embryo: { id: string; cohortId: string; sampleOrdinal: number; displayLabel: string; status: RscEmbryoDetail["status"] };
+  embryo: { id: string; subjectId: string; cohortId: string; sampleOrdinal: number; displayLabel: string; status: RscEmbryoDetail["status"] };
 }): Promise<RscEmbryoDetail | null> {
   const admin = createAdminClient();
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
@@ -94,7 +95,7 @@ async function loadDetail(input: {
       display_label: input.embryo.displayLabel,
       status: input.embryo.status,
     },
-    qc: qc as unknown as EmbryoQcRow,
+    qc: { ...qc, source_facts: await loadEmbryoInputFacts(admin, input.embryo.cohortId, input.embryo.subjectId) } as unknown as EmbryoQcRow,
     scores: scoreRows as unknown as EmbryoScoreRow[],
     registeredConditionIds: registered,
   });
@@ -171,6 +172,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
           embryo: {
             id: embryo.id,
             cohortId: cohort.id,
+            subjectId: embryo.subjectId,
             sampleOrdinal: embryo.sampleOrdinal,
             displayLabel: embryo.displayLabel,
             status: embryo.status,

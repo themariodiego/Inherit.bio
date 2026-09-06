@@ -55,7 +55,8 @@ describe("closed shapes", () => {
     expect([...SHAPES.EmbryoFinding.keys].sort()).toEqual([
       "citation_ids", "condition_id", "condition_name", "coverage_state", "embryo_label", "evidence_label", "finding", "not_covered_reason",
     ]);
-    expect(SHAPES.qc.keys).toHaveLength(20);
+    expect(SHAPES.qc.keys).toHaveLength(21);
+    expect(SHAPES.inputFacts.keys).toEqual(["coordinate_conversion", "source_origin", "source_imputation", "call_observation"]);
     expect(SHAPES.rscEmbryoComparison.keys).toEqual(["cohort_id", "context_counts", "embryos", "result_rows", "trade_offs", "standing_statement"]);
     expect(SHAPES.tradeOffs.keys).toEqual(["statement_copy_id", "conflicts"]);
   });

@@ -54,6 +54,8 @@ import {
   getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
+import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
+import { InputProvenance } from "@/components/reports/input-provenance";
 import {
   resolveTemplate,
   type ReportTemplate,
@@ -329,14 +331,20 @@ export default async function ReportDetailPage(
   let coveredPositions = 0;
   let callSummary: ReportCallSummary | null = null;
   let anyNotCovered = false;
+  let inputSources: InputSourceView[] = [];
+  let inputState: "recorded" | "noCall" | "conflict" | "absent" = "absent";
   if (showResults) {
-    const { genotypes, conflicts } = hasData
+    const { genotypes, conflicts, calls, checkedFileIds } = hasData
       ? await getSubjectReportCalls(
           createAdminClient(),
           dataSubjectId,
           [template],
         )
-      : { genotypes: new Map<number, string>(), conflicts: new Set<number>() };
+      : { genotypes: new Map<number, string>(), conflicts: new Set<number>(), calls: [], checkedFileIds: [] };
+    const recordedFiles = new Set(calls.map((call) => call.file_id));
+    inputSources = (await loadInputSources(createAdminClient(), dataSubjectId, checkedFileIds))
+      .map((source) => ({ ...source, hasResultRecord: recordedFiles.has(source.fileId) }));
+    inputState = conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
     const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
     callSummary = hasData && resolved.variants.length > 0 ? summarizeReportCalls(resolved, conflicts) : null;
     coveredPositions = callSummary?.interpreted ?? 0;
@@ -549,6 +557,8 @@ export default async function ReportDetailPage(
               ))}
             </ul>
             <p className="text-ink-muted">{PROVENANCE_LINE}</p>
+            {showResults ? <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }}
+              state={inputState} coverage={{ read: coveredPositions, needed: new Set(template.variants.map((variant) => variant.rsid)).size }} /> : null}
           </div>
         }
       />

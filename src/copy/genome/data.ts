@@ -38,6 +38,7 @@ export const MANAGE_FILES = "Manage your files";
 export const SCORE_COVERAGE_HEADING = "Score panel coverage";
 export const SCORE_COVERAGE_NO_FILE = "Add a file to see how much of each score panel it covers.";
 export const SCORE_COVERAGE_NONE = "No score panels have been checked against this file yet.";
+export function scoreInputLabel(index: number): string { return `File ${index}`; }
 
 // ---------------------------------------------------------------------------
 // The genome browser: heading, search and its states.
@@ -67,6 +68,9 @@ export const TABLE_HEADINGS = {
 
 /** Stated once above the table, never inside a header. */
 export const POSITIONS_BUILD = "Positions are on GRCh38.";
+export const TABLE_INPUT_NOTE = "These are the files checked for the results table.";
+export const TABLE_COVERAGE_NOTE = "This count is for the rows shown here. It is not a count of all positions in the gene or region.";
+export const TRACK_INPUT_NOTE = "The region track uses the newest processed file. It can differ from the files behind the results table.";
 
 /** Accessible name of the results claim block. */
 export function resultsLabel(query: string): string {

@@ -21,11 +21,12 @@ export interface RegionPanelProps {
   figure: ReactNode;
   /** `markersLine(k)` from the page copy, already worded. */
   markersLine: string;
+  knownPanel?: boolean;
   closeRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }
 
-export function RegionPanel({ row, figure, markersLine, closeRef, onClose }: RegionPanelProps) {
+export function RegionPanel({ row, figure, markersLine, closeRef, onClose, knownPanel = true }: RegionPanelProps) {
   return (
     <aside
       data-slot="region-panel"
@@ -45,12 +46,12 @@ export function RegionPanel({ row, figure, markersLine, closeRef, onClose }: Reg
         </span>
       </p>
       <p className="text-ink-muted">{markersLine}</p>
-      <ul data-slot="region-populations" className="space-y-1 text-ink-muted">
+      {knownPanel ? <ul data-slot="region-populations" className="space-y-1 text-ink-muted">
         {row.populations.map((population) => (
           <li key={population.code}>{sampledLine(population.code, population.place)}</li>
         ))}
-      </ul>
-      <p>{SIMILAR_NEIGHBOURS}</p>
+      </ul> : null}
+      {knownPanel ? <p>{SIMILAR_NEIGHBOURS}</p> : null}
       <p className="text-ink-muted">{IDENTITY}</p>
       <Button ref={closeRef} type="button" variant="outline" onClick={onClose} className="h-11 px-5">
         {CLOSE_BUTTON}

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { CarrierInputProvenance } from "@/components/family/carrier-input-provenance";
+import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DeletePortrait } from "@/components/family/portrait/delete-portrait";
@@ -82,6 +84,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: PORTRAIT_H1 };
 
 interface OutputRead {
+  inputSources: { a: InputSourceView[]; b: InputSourceView[] };
   summary: CarrierPairSummary;
   conditions: readonly CarrierCondition[];
   oneSided: readonly OneSidedReading[];
@@ -201,6 +204,10 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
         matches: summary.matches,
       });
       output = {
+        inputSources: {
+          a: await loadInputSources(admin, rows.a.id, [...(summary.checkedFileIds?.a ?? []), ...(summary.runsInputFileIds?.a ?? [])]),
+          b: await loadInputSources(admin, rows.b.id, [...(summary.checkedFileIds?.b ?? []), ...(summary.runsInputFileIds?.b ?? [])]),
+        },
         summary,
         conditions,
         oneSided,
@@ -334,6 +341,10 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             </div>
           </section>
 
+          {output ? <div data-slot="portrait-input-provenance" className="space-y-6">
+            <CarrierInputProvenance summary={output.summary} sources={output.inputSources}
+              subjects={{ a: { id: rows.a.id, label: labelOf(rows.a) }, b: { id: rows.b.id, label: labelOf(rows.b) } }} />
+          </div> : null}
           <RefusalsList limitsHref={route("science.index")} />
 
           {grantId ? <DeletePortrait grantId={grantId} /> : null}

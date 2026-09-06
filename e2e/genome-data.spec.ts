@@ -16,7 +16,7 @@ import {
 //   with every genotype as an observed `genotype` figure carrying the four
 //   contract attributes; rsIDs and coordinates are plain text; the
 //   four-level breadcrumb, the subject bar, no eyebrow, no `title` in the
-//   table, exactly three headings, the region range as text, the first-party
+//   table, three primary headings plus visible input provenance, the region range as text, the first-party
 //   sentence, one default button and ≤12 first-viewport interactives at
 //   1280×800 with the track in view;
 // - the gene, clinical-gene, trait and no-match states;
@@ -97,15 +97,15 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   await expect(page.locator("main .eyebrow")).toHaveCount(0);
 
   // Exactly one block, attributed to the subject, wrapping the one table.
-  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  await expect(page.locator("#results [data-claim-block][data-subject-id]")).toHaveCount(1);
   await expect(page.locator("[data-claim-block] table")).toHaveCount(1);
   await expect(page.locator("#results")).toHaveCount(1);
   await expect(page.locator("table th")).toHaveText(TABLE_HEADINGS);
   await expect(page.locator("table [title]")).toHaveCount(0);
 
-  // Exactly one figure on the page: the genotype, with the four contract
+  // Exactly one genotype figure in the results table, with the four contract
   // attributes, reading the fixture's heterozygous call.
-  const figures = page.locator("[data-figure-kind]");
+  const figures = page.locator("#results [data-figure-kind]");
   await expect(figures).toHaveCount(1);
   const genotype = figures.first();
   await expect(genotype).toHaveAttribute("data-figure-kind", "genotype");
@@ -123,12 +123,25 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   await expect(row).toContainText("chr15:74749576");
   await expect(row).toContainText("CYP1A2");
 
-  // Headings: the h1 and the two h2s, nothing deeper (§2.2).
+  // Provenance is below the region, never folded into a closed control.
   await expect(page.locator("main :is(h1, h2, h3, h4, h5, h6)")).toHaveText([
     "Genome browser",
     "Results",
     "Region",
+    "About the source files",
+    "About the source files",
   ]);
+  const inputs = page.locator('[data-slot="browser-input-provenance"]');
+  await expect(inputs.locator('[data-slot="input-provenance"]')).toHaveCount(2);
+  await expect(inputs.locator('details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
+  const tableInputs = inputs.locator('[data-slot="table-input-provenance"]');
+  await expect(tableInputs).toContainText("This count is for the rows shown here");
+  await expect(tableInputs).toContainText("cannot verify where they came from");
+  await expect(tableInputs).toContainText("No change of genome coordinates was needed");
+  await expect(tableInputs.locator('[data-provenance="computed:genome/browser"] [data-slot="figure-value"]')).toContainText("1 of the 1");
+  const trackInputs = inputs.locator('[data-slot="track-input-provenance"]');
+  await expect(trackInputs).toContainText("newest processed file");
+  await expect(trackInputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toContainText("4 of the 4");
 
   // The region: the coordinate range as text, the first-party sentence and
   // the track, whose canvas marks the library as initialised.
@@ -154,7 +167,7 @@ test("a gene search lists every reference position with the covered genotype as 
   await signIn(page, USER.email, USER.password);
   await page.goto(`${BROWSER}?q=CYP1A2`);
 
-  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  await expect(page.locator("#results [data-claim-block][data-subject-id]")).toHaveCount(1);
   const rows = page.locator("[data-claim-block] table tbody tr");
   expect(await rows.count()).toBeGreaterThanOrEqual(1);
 
@@ -172,7 +185,8 @@ test("a gene search lists every reference position with the covered genotype as 
     await expect(others.nth(index)).toContainText(NOT_COVERED);
     await expect(others.nth(index).locator("[data-figure-kind]")).toHaveCount(0);
   }
-  await expect(page.locator("[data-figure-kind]")).toHaveCount(1);
+  await expect(page.locator("#results [data-figure-kind]")).toHaveCount(1);
+  await expect(page.locator('[data-slot="table-input-provenance"]')).toContainText("not a count of all positions in the gene or region");
   await expect(page.locator("table [title]")).toHaveCount(0);
 });
 
@@ -232,8 +246,13 @@ test("the data page is titled Data and methods with one coverage figure per scor
   const items = page.locator('section[aria-labelledby="score-panel-coverage"] li');
   const count = await items.count();
   expect(count).toBeGreaterThan(0);
-  await expect(page.locator('[data-figure-kind="coverage"]')).toHaveCount(count);
-  await expect(items.locator("[data-claim-block][data-subject-id]")).toHaveCount(count);
+  await expect(items.locator(':scope > [data-claim-block] [data-figure-kind="coverage"]')).toHaveCount(count);
+  await expect(items.locator(':scope > [data-claim-block][data-subject-id]')).toHaveCount(count);
+  await expect(items.locator('[data-slot="score-input-label"]')).toHaveCount(count);
+  const scoreInputs = page.locator('[data-slot="score-input-provenance"]');
+  await expect(scoreInputs.locator('[data-slot="input-provenance"]')).toHaveCount(1);
+  await expect(scoreInputs).toContainText("cannot verify where they came from");
+  await expect(scoreInputs.locator('details, [hidden]')).toHaveCount(0);
   // Each score carries its seeded ancestry-portability statement (provenance
   // about the score's source cohort, which may quote the cohort's own
   // percentages); outside that note no percent text renders — the former
@@ -246,6 +265,13 @@ test("the data page is titled Data and methods with one coverage figure per scor
       return clone.textContent ?? "";
     });
     expect(outsideNote).not.toMatch(/\d%/);
+    const label = (await items.nth(index).locator('[data-slot="score-input-label"]').textContent())!.trim();
+    expect(label).toMatch(/^File [1-9]\d*$/);
+    const source = scoreInputs.locator('[data-slot="input-source"]').filter({ has: page.getByText(new RegExp(`^${label} ·`)) });
+    await expect(source).toHaveCount(1);
+    // The local suite can retain older synthetic files. They must explicitly
+    // report missing historical facts, not acquire the new file's snapshot.
+    await expect(source).toContainText(/No change of genome coordinates was needed|were not recorded for this input/);
   }
   await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
 });

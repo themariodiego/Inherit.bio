@@ -67,8 +67,8 @@ import { TRAIT_KEYS } from "@/lib/family/traits";
  * context, so every test that reads a result passes the gate itself.
  */
 
-const A = { email: "portrait-a@e2e.local", password: "e2e-portrait-pw" };
-const B = { email: "portrait-b@e2e.local", password: "e2e-portrait-pw" };
+const A = { email: `portrait-a-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
+const B = { email: `portrait-b-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
 
 /** Neither self subject carries a name, so each sees the other as an adult. */
 const OTHER = "Another adult";

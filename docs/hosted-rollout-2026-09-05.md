@@ -290,3 +290,57 @@ G4.3 is verified and the whole-plan ledger advances from **16/65 to 17/65**.
 The observed-call projection is report-only; it does not infer reference
 from absence or alter the carrier, ancestry or PRS input sets. Broader report
 science, complete quality provenance and embryo workflows remain incomplete.
+
+## PR 64 Medicines source correction and publication
+
+Full CI `33998093862` passed on reviewed head
+`d42ed69a1d4a0e2e99a2d58c4d5d854418de0c52`: 1,684 unit tests, 791 SQL
+assertions and 139 browser tests, with no browser failures, skips or retries.
+Merge `dd11caa5daa9625859682c23efdb53ac62eddc68` deployed READY as
+`dpl_HfbV4eWQx1evUaVrtt53R6iVLPAx`; the deployment's exact SHA and both
+public aliases were verified. The short deployment-scoped error/fatal scan
+returned no rows, not proof of long-run reliability.
+
+The correction distinguishes an additional defining position from an
+additional sequence change in the NUDT15 source. Primary-source receipts and
+regressions are committed in `docs/design/nudt15-source-correction-2026-09-06.md`
+and its adjacent JSON receipt. An independent review of all eleven reports
+checked CPIC position definitions against dbSNP GRCh38.p14 records. This
+supports the narrowly stated per-position copy, not a diplotype, phenotype,
+drug-response or dosing inference, and is not fabricated clinical sign-off.
+
+At `2026-09-05T23:26:58.201235+00:00`, one guarded transaction inserted
+exactly eleven published `variant_call` / `pharmacogenomics` templates and
+eleven matching public changelog entries. It checked exact reviewed content,
+refused conflicting or duplicate publication history, and preserved unrelated
+templates and history under table locks. Seven rollback-only tests covered
+the combined publication, including zero-write replay and drift refusal.
+The source JSON SHA-256, checked against merged main, was
+`ac35004f24f588e87be554de3bfae54e46f7eb2d1ea9a25b149b3916c88100f2`.
+
+Postflight compared every published template field and matching history
+title, body and slug with the reviewed expected values. All 151 existing
+estimate templates, including timestamps, remained unchanged; their before
+and after fingerprint was `bcfca45d87034e71da4de155fd046327`.
+The exact executed SQL and rollback verification receipt are retained in
+the task-local `/tmp/inherit-medicines-publication.tUI7SU/` package; SQL SHA-256
+is `d2a791cd37f8ef389b866be90aba0735b2bc9f3680645a27827b04b52a8b8c25`.
+That temporary package is operational evidence, not a required self-hosting
+dependency. The committed seed and source-correction receipts remain the
+reproducible catalog sources.
+
+An authenticated production-library reload showed eleven specific-variant
+reports, four covered by the existing account inputs, separately from the
+26 covered estimates out of 151. The Medicines filter returned four report
+links without an application error. The NUDT15 detail rendered the corrected
+source wording, six section headings, its primary publication link and the
+non-directive Medicines action text. These checks did not disclose genotypes
+in the rollout record or infer medication response.
+
+No genome was reprocessed, no observation or historical completion marker
+was backfilled, and all three pre-existing hosted files remained. No email
+was queued or sent: this was a manual catalog publication, not execution or
+acceptance evidence for the research-publish API or opt-in digest workflow.
+The whole-plan count remains **17/65**. Full input provenance, catalog-wide
+claim attribution, validated polygenic reporting and embryo lifecycles remain
+unfinished.

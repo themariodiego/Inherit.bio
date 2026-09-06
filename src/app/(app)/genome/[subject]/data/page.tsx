@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { InputProvenance } from "@/components/reports/input-provenance";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,12 @@ import {
   SCORE_COVERAGE_HEADING,
   SCORE_COVERAGE_NO_FILE,
   SCORE_COVERAGE_NONE,
+  scoreInputLabel,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
 import type { CoverageSpec } from "@/lib/figures/spec";
 import { getSubjectFileCount, getSubjectProcessedFiles } from "@/lib/genome/load";
+import { loadInputSources } from "@/lib/genome/input-sources";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,8 +57,9 @@ export default async function GenomeDataPage(
   const { data: prsRows } = files.length > 0
     ? await admin
         .from("user_prs")
-        .select("pgs_id, matched")
+        .select("pgs_id, matched, file_id")
         .eq("subject_id", subject.id)
+        .in("file_id", files.map((file) => file.id))
     : { data: [] };
   const pgsIds = (prsRows ?? []).map((row) => row.pgs_id);
   const { data: prsMeta } = pgsIds.length
@@ -71,6 +75,7 @@ export default async function GenomeDataPage(
       return meta ? [{ row, meta }] : [];
     })
     .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
+  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id));
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
@@ -115,7 +120,7 @@ export default async function GenomeDataPage(
                 needed: meta.n_variants,
               };
               return (
-                <li key={row.pgs_id}>
+                <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
                   <ClaimBlock subject={{ subjectId: subject.id }} figures={[coverage]}>
                     <p className="mt-2 max-w-prose text-sm text-ink">
                       <span className="font-medium">{meta.name}</span>{" "}
@@ -130,12 +135,19 @@ export default async function GenomeDataPage(
                       {meta.ancestry_note}
                     </p>
                   </ClaimBlock>
+                  {/* inherit-figure-exempt: a source-record label, not a genetic quantity */}
+                  <p data-slot="score-input-label" className="mt-2 text-sm text-ink-muted">
+                    {scoreInputLabel(inputSources.findIndex((source) => source.fileId === row.file_id) + 1)}
+                  </p>
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+      {scores.length ? <div data-slot="score-input-provenance">
+        <InputProvenance sources={inputSources} subject={{ subjectId: subject.id }} />
+      </div> : null}
     </div>
   );
 }

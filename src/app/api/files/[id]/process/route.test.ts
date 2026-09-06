@@ -19,12 +19,24 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
   } }) }) }) }),
 }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (table: string) => ({
-  update: (value: Record<string, unknown>) => ({ eq: async () => {
-    state.updates.push({ table, value });
-    if (value.status === state.updateError) return { error: { code: "unavailable", message: "private database detail" } };
-    if (table === "genome_files") Object.assign(state.persistedFile, value);
-    return { error: null };
-  } }),
+  update: (value: Record<string, unknown>) => {
+    const filters = new Map<string, unknown>();
+    let statuses: unknown[] | null = null;
+    const apply = () => {
+      state.updates.push({ table, value });
+      if (value.status === state.updateError) return { data: null, error: { code: "unavailable", message: "private database detail" } };
+      if ((statuses && !statuses.includes(state.persistedFile.status)) ||
+          ["status", "processing_run_id"].some((key) => filters.has(key) && filters.get(key) !== state.persistedFile[key])) return { data: null, error: null };
+      if (table === "genome_files") Object.assign(state.persistedFile, value);
+      return { data: { id: "test-file" }, error: null };
+    };
+    const q = { eq: (key: string, item: unknown) => { filters.set(key, item); return q; },
+      in: (_key: string, values: unknown[]) => { statuses = values; return q; },
+      select: () => q, maybeSingle: async () => apply(),
+      then: (resolve: (value: unknown) => void) => resolve(apply()),
+    };
+    return q;
+  },
   delete: () => ({ eq: async () => { state.deletes.push(table); return { error: state.deleteError === table ? { code: "unavailable" } : null }; } }),
   insert: async (rows: Record<string, unknown>[]) => { state.inserts.push({ table, rows }); return { error: state.insertError === table ? { code: "unavailable" } : null }; },
   select: () => ({ eq: async () => ({ count: 0, error: null }) }),
@@ -61,6 +73,11 @@ describe("observed reference processing", () => {
     expect(state.inserts.find((entry) => entry.table === "user_variants")).toBeUndefined();
     expect(state.updates[0].value).toMatchObject({ observed_call_sha256: null, observed_call_version: null });
     expect(state.updates.at(-1)?.value).toMatchObject({ status: "annotated", observed_call_sha256: digest, observed_call_version: "vcf-literal-diploid-snp-v1" });
+    expect(state.persistedFile).toMatchObject({ input_source_sha256: digest, input_provenance: {
+      version: "listed-calls-v1", sourceSha256: digest, sourceBuild: "GRCh38", targetBuild: "GRCh38", chainSha256: null,
+      buildBasis: "source-declared", counts: { called: 1, noCall: 0, singleSample: true },
+    } });
+    expect((state.persistedFile.input_provenance as Record<string, unknown>).completedAt).toBe(state.persistedFile.processing_finished_at);
   });
   it("replaces the exact file projection on rerun, retaining an identical extraction identity", async () => {
     expect((await processVcf("##reference=GRCh38", row)).status).toBe(200);
@@ -98,6 +115,30 @@ async function processVcf(header: string, row: string) {
 }
 
 describe("source build processing boundary", () => {
+  it("admits one concurrent request before source I/O and refuses the loser", async () => {
+    let release!: () => void;
+    const started = new Promise<void>((resolve) => { release = resolve; });
+    let read!: () => void;
+    const reading = new Promise<void>((resolve) => { read = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async () => { read(); await started; return new Response("##reference=GRCh38\n"); }));
+    const invoke = () => POST(new Request("https://example.test", { method: "POST" }), { params: Promise.resolve({ id: "test-file" }) });
+    const first = invoke();
+    await reading;
+    expect((await invoke()).status).toBe(409);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    release();
+    expect((await first).status).toBe(200);
+  });
+  it.each([false, true])("stale completion/failure cannot change a different run (source fails: %s)", async (fails) => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      Object.assign(state.persistedFile, { processing_run_id: "new-run", status: "parsing" });
+      if (fails) throw new Error("source unavailable");
+      return new Response("##reference=GRCh38\n");
+    }));
+    const response = await POST(new Request("https://example.test", { method: "POST" }), { params: Promise.resolve({ id: "test-file" }) });
+    expect(response.status).toBe(500);
+    expect(state.persistedFile).toMatchObject({ status: "parsing", processing_run_id: "new-run", input_provenance: null, input_source_sha256: null });
+  });
   it("stops before source fetch or derivative work when the parsing state cannot be persisted", async () => {
     state.updateError = "parsing";
     state.deleteError = "user_variants";

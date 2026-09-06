@@ -29,6 +29,8 @@ export const MIN_MARKERS = Math.ceil(RELIABLE_FRACTION * AIMS.length);
  * nowhere else.
  */
 export interface LineageTree {
+  /** Stable identity of this shipped subset, not a clinical validation claim. */
+  id: string;
   /** The published tree the topology and defining positions were taken from. */
   name: string;
   /** Its build, as the publisher names it. */
@@ -40,12 +42,14 @@ export interface LineageTree {
 
 export const LINEAGE_TREES: Readonly<Record<"mother" | "father", LineageTree>> = {
   mother: {
+    id: "inherit-mtdna-curated-subset",
     name: "PhyloTree",
     version: "Build 17, Forensic Update 1a",
     curated: "2026-08-28",
     provenance: "data/ref/haplogroups/PROVENANCE.md",
   },
   father: {
+    id: "inherit-ydna-curated-subset",
     name: "the ISOGG Y-SNP index",
     version: "2016 index (4 January 2016)",
     curated: "2026-08-28",

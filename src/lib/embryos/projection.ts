@@ -28,6 +28,7 @@ import {
   type RscEmbryoListItem,
 } from "./policy";
 import { deriveTradeOffs } from "./trade-offs";
+import { UNKNOWN_EMBRYO_INPUT, type EmbryoInputFacts } from "./input-facts";
 
 /** The `embryos` columns a projection reads. */
 export interface EmbryoRow {
@@ -39,8 +40,9 @@ export interface EmbryoRow {
 }
 
 /** The `embryo_qc` row, as stored (the twenty projected fields plus its key). */
-export interface EmbryoQcRow extends QcDto {
+export interface EmbryoQcRow extends Omit<QcDto, "source_facts"> {
   embryo_id: string;
+  source_facts?: EmbryoInputFacts;
 }
 
 /** The `embryo_scores` columns a projection reads, with the finding already parsed. */
@@ -85,6 +87,7 @@ export function projectQc(row: EmbryoQcRow): QcDto {
     const value = row[key];
     qc[key] = typeof value === "number" ? displayedFigure(value) : value;
   }
+  qc.source_facts = row.source_facts ?? { ...UNKNOWN_EMBRYO_INPUT };
   return assertEmbryoDto("qc", qc as unknown as QcDto);
 }
 

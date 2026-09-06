@@ -78,6 +78,7 @@ export async function loadPersonalPreviews(
   templates: readonly ReportTemplate[],
   files: readonly { id: string; build: string | null }[],
   conflicts: ReadonlySet<number>,
+  contributors?: Map<string, string[]>,
 ): Promise<Map<string, PersonalPreview>> {
   const previews = new Map<string, PersonalPreview>();
   if (!isOwnPreviewAudience(audience)) return previews;
@@ -90,7 +91,11 @@ export async function loadPersonalPreviews(
   for (const [rsid, genotype] of local.genotypes) if (genotype === "--") allConflicts.add(rsid);
   for (const template of templates) {
     const preview = resolvePersonalPreview(audience, template, calls, allConflicts);
-    if (preview) previews.set(template.slug, preview);
+    if (preview) {
+      previews.set(template.slug, preview);
+      const rsids = new Set(template.variants.map((variant) => variant.rsid));
+      contributors?.set(template.slug, [...new Set(calls.filter((call) => call.rsid !== null && rsids.has(call.rsid)).map((call) => call.file_id))].sort());
+    }
   }
   return previews;
 }

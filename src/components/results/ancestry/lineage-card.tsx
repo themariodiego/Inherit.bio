@@ -17,6 +17,7 @@ import { TermDefinition } from "@/components/figures/term-definition";
 import {
   FATHER_LINE_HEADING,
   LINEAGE_NO_RANGE,
+  UNKNOWN_REFERENCE_TREE,
   LINEAGE_RESOLUTION_LIMIT,
   MOTHER_LINE_HEADING,
   NOTHING_READ,
@@ -24,6 +25,7 @@ import {
   XX_GLOSS,
   lineageSentence,
   treeLine,
+  storedModelLine,
 } from "@/copy/ancestry";
 import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import type { CoverageSpec } from "@/lib/figures/spec";
@@ -46,6 +48,8 @@ export interface LineageCardProps {
   supportNote: string | null;
   /** Render the inline definition of "haplogroup": true on the first card only. */
   defineTerm: boolean;
+  knownTree?: boolean;
+  modelRecord?: { id: string | null; version: string | null };
 }
 
 const TEST_IDS = { mother: "mtdna", father: "ydna" } as const;
@@ -54,7 +58,7 @@ const HEADINGS = { mother: MOTHER_LINE_HEADING, father: FATHER_LINE_HEADING } as
 /** The stored "XX genomes" note is the one the gloss explains. */
 const XX_NOTE = "XX genomes";
 
-export function LineageCard({ parent, subjectId, call, supportNote, defineTerm }: LineageCardProps) {
+export function LineageCard({ parent, subjectId, call, supportNote, defineTerm, knownTree = true, modelRecord }: LineageCardProps) {
   const headingId = `${TEST_IDS[parent]}-heading`;
   const hasCall = call !== null && call.haplogroup !== null;
   // `classify()` always reports tested markers; the no-chromosome row has none.
@@ -99,9 +103,10 @@ export function LineageCard({ parent, subjectId, call, supportNote, defineTerm }
           ) : null}
           {coverage ? <ClaimBlock subject={{ subjectId }} figures={[coverage]} className="p-3" /> : null}
           <div data-slot="lineage-provenance" className="space-y-1 text-sm text-ink-muted">
-            <p>{treeLine(LINEAGE_TREES[parent])}</p>
+            <p>{knownTree ? treeLine(LINEAGE_TREES[parent]) : UNKNOWN_REFERENCE_TREE}</p>
+            {modelRecord ? <p>{storedModelLine(modelRecord.id, modelRecord.version)}</p> : null}
             <p>{LINEAGE_NO_RANGE}</p>
-            <p>{LINEAGE_RESOLUTION_LIMIT}</p>
+            {knownTree ? <p>{LINEAGE_RESOLUTION_LIMIT}</p> : null}
           </div>
           {supportNote ? <p className="text-sm text-ink-muted">{supportNote}</p> : null}
           <p className="text-sm text-ink">{lineageSentence(parent)}</p>

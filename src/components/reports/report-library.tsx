@@ -106,7 +106,7 @@ function EstimateCard({ card, subject }: { card: LibraryCard; subject: string })
         </Badge>
       </div>
       {card.preview ? (
-        <div data-personal-preview={card.slug} className="mt-2 space-y-2 text-sm">
+        <div data-personal-preview={card.slug} aria-describedby={`preview-input-${card.slug}`} className="mt-2 space-y-2 text-sm">
           <p className="font-medium text-ink">{PERSONAL_RESULT_LABEL}</p>
           <p className="leading-relaxed text-ink">{card.preview.text}</p>
           <p className="leading-relaxed text-ink-muted">{card.preview.qualifier}</p>

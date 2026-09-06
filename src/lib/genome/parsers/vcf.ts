@@ -8,7 +8,7 @@ import { observedVcfCall, type ObservedCall } from "../observed-calls";
 const CHR1_LEN_GRCH38 = 248956422;
 const CHR1_LEN_GRCH37 = 249250621;
 
-function buildFromHeader(line: string): Build | null {
+export function buildFromHeader(line: string): Build | null {
   if (line.startsWith("##reference=")) {
     const names = line.match(/(?:GRCh\d+|hg\d+|b37)(?!\d)/gi) ?? [];
     const builds = new Set(names.map((name) => /^(?:GRCh38|hg38)$/i.test(name) ? "GRCh38" :

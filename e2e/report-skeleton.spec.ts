@@ -226,12 +226,26 @@ test("a covered estimate report renders the six headings, one attributed genotyp
     "Food, drink and metabolism",
   );
 
-  // Exactly one claim block, attributed to the subject, named by its locus,
-  // and the page's primary claim for density measurement.
-  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  // Exactly one primary genotype block. X4/G4.6 also require separately
+  // attributed quality figures below it, not loose or hidden numbers.
+  const primary = page.locator('section[aria-labelledby="your-result"] [data-claim-block][data-subject-id]');
+  await expect(primary).toHaveCount(1);
   await expect(
     page.locator('[data-claim-block][aria-label="CYP1A2 rs762551"][data-density-primary-claim="true"]'),
   ).toHaveCount(1);
+  const inputs = page.locator('section[aria-labelledby="where-this-comes-from"] [data-slot="input-provenance"]');
+  await expect(inputs).toBeVisible();
+  await expect(inputs.locator('details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
+  await expect(inputs.locator('[data-claim-block][data-subject-id]')).toHaveCount(2);
+  await expect(page.locator('[data-claim-block][data-subject-id]')).toHaveCount(3);
+  for (const block of await inputs.locator('[data-claim-block]').all()) {
+    await expect(block).toHaveAttribute('data-subject-id', (await primary.getAttribute('data-subject-id'))!);
+    await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
+  }
+  await expect(inputs.locator('[data-provenance="computed:genome/reports"] [data-slot="figure-value"]')).toHaveText('read 1 of the 1 positions this needs');
+  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('read 4 of the 4 positions this needs');
+  await expect(inputs).toContainText('No change of genome coordinates was needed.');
+  await expect(inputs).toContainText('cannot verify where they came from');
   // A single-variant report has no per-variant locus line in "Your result".
   await expect(
     page.locator('section[aria-labelledby="your-result"] [data-slot="variant-locus"]'),
@@ -538,10 +552,22 @@ test("a covered Medicines report renders the variant-call genotype figure, the M
   await expect(page.getByText(VARIANT_CALL_EVIDENCE, { exact: false })).toHaveCount(2);
   await expect(page.getByText("Seen in more than one study")).toHaveCount(0);
 
-  // Exactly one claim block, attributed to the subject and named by its
+  // Exactly one primary claim block, attributed to the subject and named by its
   // locus, carrying one observed genotype figure of class variant-call that
   // reads the fixture's one changed copy as the sorted pair of letters.
-  await expect(page.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  const primary = page.locator('section[aria-labelledby="your-result"] [data-claim-block][data-subject-id]');
+  await expect(primary).toHaveCount(1);
+  const inputs = page.locator('section[aria-labelledby="where-this-comes-from"] [data-slot="input-provenance"]');
+  await expect(inputs).toBeVisible();
+  await expect(inputs.locator('details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
+  await expect(inputs.locator('[data-claim-block][data-subject-id]')).toHaveCount(2);
+  await expect(page.locator('[data-claim-block][data-subject-id]')).toHaveCount(3);
+  for (const block of await inputs.locator('[data-claim-block]').all()) {
+    await expect(block).toHaveAttribute('data-subject-id', (await primary.getAttribute('data-subject-id'))!);
+    await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
+  }
+  await expect(inputs.locator('[data-provenance="computed:genome/reports"] [data-slot="figure-value"]')).toHaveText('read 1 of the 1 positions this needs');
+  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('read 11 of the 11 positions this needs');
   await expect(
     page.locator(
       `[data-claim-block][aria-label="${variant.gene} rs${variant.rsid}"][data-density-primary-claim="true"]`,

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { OBSERVED_CALL_VERSION } from "@/lib/genome/observed-calls";
+import { countInputLines, emptyReadCounts, INPUT_PROVENANCE_VERSION } from "@/lib/genome/input-provenance";
+import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import { PANEL } from "@/lib/ancestry/panel";
 import { measureRunsOfHomozygosity, rohCallsFromParse, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
@@ -75,15 +77,19 @@ export async function POST(
   }
 
   const admin = createAdminClient();
+  const runId = randomUUID();
   // A re-run measures the file again at the end, so a stale measure never
   // outlives the calls it was taken from (the all-null shape is admitted).
-  const { error: parsingError } = await admin
+  const { data: claimed, error: parsingError } = await admin
     .from("genome_files")
     .update({
       status: "parsing",
+      processing_run_id: runId,
       build: null,
       observed_call_sha256: null,
       observed_call_version: null,
+      input_provenance: null,
+      input_source_sha256: null,
       processing_started_at: new Date().toISOString(),
       error: null,
       roh_status: null,
@@ -93,12 +99,15 @@ export async function POST(
       roh_fraction: null,
       roh_measured_at: null,
     })
-    .eq("id", id);
+    .eq("id", id).eq("user_id", user.id).eq("subject_id", file.subject_id)
+    .in("status", ["uploaded", "annotated", "failed"])
+    .select("id").maybeSingle();
   // This state excludes old derivatives from report reads during a rerun.
   // Do not fetch or change derivatives unless that boundary was persisted.
   if (parsingError) {
     return new Response("File processing could not start. Please try again.", { status: 503 });
   }
+  if (!claimed) return new Response("This file is not ready for another processing run.", { status: 409 });
 
   try {
     // Stream the object rather than buffering a Blob.
@@ -119,7 +128,8 @@ export async function POST(
         yield bytes;
       }
     }
-    const lines = toLines(hashedBytes());
+    const inputCounts = emptyReadCounts();
+    const lines = countInputLines(toLines(hashedBytes()), file.file_type, inputCounts);
     let parsed: ParseResult;
     if (ARRAY_KINDS.has(file.file_type)) {
       parsed = await parseArray(lines, file.file_type as ArrayKind);
@@ -151,11 +161,13 @@ export async function POST(
     let records = parsed.records;
     let observed = (parsed.observedCalls ?? []).map((source) => ({ source, normalized: { ...source } as VariantRecord }));
     let unmapped = 0;
+    let chainSha256: string | null = null;
     if (parsed.build === "GRCh37") {
       const chainGz = await fs.readFile(
         path.join(process.cwd(), "data/ref/chain/GRCh37_to_GRCh38.chain.gz"),
       );
       const lift = buildLiftover(new Uint8Array(chainGz));
+      chainSha256 = createHash("sha256").update(chainGz).digest("hex");
       observed = observed.flatMap(({ source }) => {
         // No-call evidence still needs a canonical locus. Lift its literal
         // REF/ALT without converting the missing genotype to a called result.
@@ -245,11 +257,11 @@ export async function POST(
     const ancestryRows: AncestryRow[] = [];
     // A lineage row's state: available when a haplogroup was called, partial
     // when markers were tested but no call was supported, not covered when
-    // the file has no positions on that chromosome. The haplogroup trees carry
-    // no registered model id yet, so those columns stay null (D-019).
-    const lineageColumns = (call: HaplogroupCall | null) => ({
-      model_id: null,
-      model_version: null,
+    // the file has no positions on that chromosome. Record the exact shipped
+    // tree identity; this does not register a clinically validated model.
+    const lineageColumns = (call: HaplogroupCall | null, parent: "mother" | "father") => ({
+      model_id: LINEAGE_TREES[parent].id,
+      model_version: LINEAGE_TREES[parent].version,
       coverage: call && call.tested > 0 ? call.matched / call.tested : null,
       result_state: call === null ? "not_covered" : call.haplogroup ? "available" : "partial",
     } as const);
@@ -287,7 +299,7 @@ export async function POST(
       support_note: mt
         ? mt.note
         : "Your file contains no mitochondrial positions, so an mtDNA haplogroup cannot be estimated from it.",
-      ...lineageColumns(mt),
+      ...lineageColumns(mt, "mother"),
     });
 
     const hasY = records.some((r) => r.chrom === 24);
@@ -301,7 +313,7 @@ export async function POST(
       support_note: y
         ? y.note
         : "Your file contains no Y-chromosome positions (expected for XX genomes and some file types), so no Y haplogroup is estimated.",
-      ...lineageColumns(y),
+      ...lineageColumns(y, "father"),
     });
 
     const { error: ancestryError } = await admin
@@ -342,7 +354,7 @@ export async function POST(
     }
 
     const finishedAt = new Date().toISOString();
-    const { error: fileError } = await admin
+    const { data: completed, error: fileError } = await admin
       .from("genome_files")
       .update({
         status: "annotated",
@@ -351,12 +363,21 @@ export async function POST(
         build: parsed.build,
         observed_call_sha256: parsed.observedCalls ? sourceSha256 : null,
         observed_call_version: parsed.observedCalls ? OBSERVED_CALL_VERSION : null,
+        input_source_sha256: sourceSha256,
+        input_provenance: {
+          version: INPUT_PROVENANCE_VERSION, sourceSha256, completedAt: finishedAt,
+          sourceBuild: parsed.build, buildBasis: inputCounts.buildClaim ? "source-declared" : "format-assumption",
+          targetBuild: "GRCh38", chainSha256, variantRowsMapped: records.length,
+          variantRowsUnmapped: unmapped, counts: { ...inputCounts },
+        },
         variant_count: records.length,
         processing_finished_at: finishedAt,
         ...rohColumns(runs, finishedAt),
       })
-      .eq("id", id);
+      .eq("id", id).eq("processing_run_id", runId).eq("status", "parsing")
+      .select("id").maybeSingle();
     if (fileError) throw new Error(`file update failed: ${fileError.code}`);
+    if (!completed) throw new Error("Processing run is no longer current");
 
     const { count: templateCount } = await admin
       .from("report_templates")
@@ -402,7 +423,7 @@ export async function POST(
         error: message.slice(0, 500),
         processing_finished_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id).eq("processing_run_id", runId).eq("status", "parsing");
     return new Response(`Processing failed: ${message}`, { status: 500 });
   }
 }

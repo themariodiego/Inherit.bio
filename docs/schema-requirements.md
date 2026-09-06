@@ -330,3 +330,13 @@ It is an explicit `variant-rows` purge store, selected by exact subject/file
 identity, with `(file_id,source_line)` identifying each row. Exact file deletion
 cascades all observations; there is no new clock or account-only/prefix target.
 See `docs/observed-reference-calls.md` for eligibility and rerun boundaries.
+
+## Completion-bound input facts
+
+`genome_files.input_provenance`, `input_source_sha256` and `processing_run_id`
+are nullable service-written columns on the existing file target. The snapshot
+requires a matching digest and completion instant on an annotated file; leaving
+annotated state clears both provenance values. A fresh UUID claims an eligible
+non-active processing run and binds completion/failure updates. No client grant,
+new store, retention clock or historical backfill is added. See
+`docs/result-input-provenance.md` for the per-result read and unknown-state rules.

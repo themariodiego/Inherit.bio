@@ -12,6 +12,8 @@
  * only the continental tier qualifies (design §4.3).
  */
 import type { Metadata } from "next";
+import { InputProvenance } from "@/components/reports/input-provenance";
+import { loadInputSources } from "@/lib/genome/input-sources";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -21,11 +23,11 @@ import { LineageCard, type LineageCall } from "@/components/results/ancestry/lin
 import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
-import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING } from "@/copy/ancestry";
+import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING, storedModelLine } from "@/copy/ancestry";
 import { NAV_LABELS } from "@/copy/navigation";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
 import { mapShapes } from "@/lib/ancestry/geometry";
-import { MIN_MARKERS, PANEL, SOURCES } from "@/lib/ancestry/panel";
+import { MIN_MARKERS, PANEL, SOURCES, LINEAGE_TREES } from "@/lib/ancestry/panel";
 import { presentShares } from "@/lib/ancestry/present";
 import { tierQualifies } from "@/lib/ancestry/regions";
 import { regionsView } from "@/lib/ancestry/view";
@@ -121,7 +123,7 @@ export default async function AncestryPage(
     getSubjectFileCount(admin, dataSubjectId),
     admin
       .from("ancestry_results")
-      .select("kind, result, support_note")
+      .select("kind, result, support_note, file_id, model_id, model_version")
       .eq("subject_id", dataSubjectId)
       .order("created_at", { ascending: false }),
   ]);
@@ -130,6 +132,9 @@ export default async function AncestryPage(
   const mt = results?.find((row) => row.kind === "mtdna");
   const y = results?.find((row) => row.kind === "ydna");
   const regions = admix ? admixtureView(admix.result, admix.support_note) : null;
+  const [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
+    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result ? [result.file_id] : [])),
+  );
 
   const subjectParams = { subject: subject.routeSegment };
 
@@ -157,10 +162,12 @@ export default async function AncestryPage(
         <AncestryRegions
           subjectId={dataSubjectId}
           shapes={mapShapes()}
-          panel={{ markers: PANEL.markers, version: PANEL.version }}
+          panel={{ markers: PANEL.markers, version: PANEL.version, known: admix?.model_id === PANEL.id && admix.model_version === PANEL.version }}
           minMarkers={MIN_MARKERS}
           result={regions}
         />
+        {admix ? <InputProvenance nested sources={regionInputs} subject={{ subjectId: dataSubjectId }} /> : null}
+        {admix ? <p className="text-sm text-ink-muted">{storedModelLine(admix.model_id, admix.model_version)}</p> : null}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -170,6 +177,8 @@ export default async function AncestryPage(
           call={mt ? lineageCall(mt.result) : null}
           supportNote={mt?.support_note ?? null}
           defineTerm
+          knownTree={mt?.model_id === LINEAGE_TREES.mother.id && mt.model_version === LINEAGE_TREES.mother.version}
+          modelRecord={mt ? { id: mt.model_id, version: mt.model_version } : undefined}
         />
         <LineageCard
           parent="father"
@@ -177,8 +186,13 @@ export default async function AncestryPage(
           call={y ? lineageCall(y.result) : null}
           supportNote={y?.support_note ?? null}
           defineTerm={false}
+          knownTree={y?.model_id === LINEAGE_TREES.father.id && y.model_version === LINEAGE_TREES.father.version}
+          modelRecord={y ? { id: y.model_id, version: y.model_version } : undefined}
         />
       </div>
+
+      {mt ? <div data-slot="maternal-input-provenance"><InputProvenance nested sources={maternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
+      {y ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
 
       <NeanderthalCard />
 

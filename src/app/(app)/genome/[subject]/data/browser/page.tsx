@@ -19,6 +19,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { InputProvenance } from "@/components/reports/input-provenance";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ import {
   SEARCH_LABEL,
   SEARCH_PLACEHOLDER,
   TABLE_HEADINGS,
+  TABLE_INPUT_NOTE,
+  TABLE_COVERAGE_NOTE,
+  TRACK_INPUT_NOTE,
   TRAIT_TOPICS,
   UNRECOGNIZED_CHROMOSOME,
   clinicalGeneStatus,
@@ -56,6 +60,7 @@ import {
   getSubjectProcessedFiles,
   type Db,
 } from "@/lib/genome/load";
+import { loadInputSources } from "@/lib/genome/input-sources";
 import {
   formatLocus,
   locusAround,
@@ -95,6 +100,9 @@ interface SuggestedReport {
 }
 
 interface Outcome {
+  inputFileIds: string[];
+  checkedFileIds: string[];
+  inputScope: "subject" | "active" | null;
   hits: Hit[];
   truncated: boolean;
   locus: Locus | null;
@@ -105,6 +113,9 @@ interface Outcome {
 }
 
 const EMPTY: Outcome = {
+  inputFileIds: [],
+  checkedFileIds: [],
+  inputScope: null,
   hits: [],
   truncated: false,
   locus: null,
@@ -125,7 +136,7 @@ function reportNameOf(title: string): string {
 
 /** One rsID: the subject's files must agree, or the row says they disagree. */
 async function searchRsid(admin: Db, subjectId: string, rsid: number): Promise<Outcome> {
-  const [{ genotypes, conflicts }, { data: mine }, { data: reference }] = await Promise.all([
+  const [{ genotypes, conflicts, inputFileIds, checkedFileIds }, { data: mine }, { data: reference }] = await Promise.all([
     getSubjectGenotypesByRsid(admin, subjectId, [rsid]),
     admin
       .from("user_variants")
@@ -145,6 +156,9 @@ async function searchRsid(admin: Db, subjectId: string, rsid: number): Promise<O
   if (observed && (genotype !== null || conflict)) {
     return {
       ...EMPTY,
+      inputFileIds,
+      checkedFileIds,
+      inputScope: "subject",
       hits: [
         {
           rsid,
@@ -163,11 +177,14 @@ async function searchRsid(admin: Db, subjectId: string, rsid: number): Promise<O
   if (reference?.pos38) {
     return {
       ...EMPTY,
+      inputFileIds,
+      checkedFileIds,
+      inputScope: "subject",
       message: rsidNotCovered(rsid, reference.gene_symbol),
       locus: locusAround(reference.chrom, reference.pos38),
     };
   }
-  return { ...EMPTY, message: rsidUnknown(rsid) };
+  return { ...EMPTY, inputFileIds, checkedFileIds, inputScope: "subject", message: rsidUnknown(rsid) };
 }
 
 /** A region of the active file, newest processed file first, capped at REGION_ROW_LIMIT rows. */
@@ -184,6 +201,9 @@ async function searchLocus(admin: Db, fileId: string, locus: Locus): Promise<Out
   const rows = data ?? [];
   return {
     ...EMPTY,
+    inputFileIds: rows.length ? [fileId] : [],
+    checkedFileIds: [fileId],
+    inputScope: "active",
     hits: rows.map((row) => ({ ...row, gene: null, conflict: false })),
     truncated: rows.length === REGION_ROW_LIMIT,
     locus,
@@ -199,7 +219,7 @@ async function searchGene(admin: Db, subjectId: string, query: string): Promise<
     .order("pos38")
     .limit(100);
   if (!refs || refs.length === 0) return null;
-  const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
+  const { genotypes, conflicts, inputFileIds, checkedFileIds } = await getSubjectGenotypesByRsid(
     admin,
     subjectId,
     refs.map((row) => row.rsid),
@@ -207,6 +227,9 @@ async function searchGene(admin: Db, subjectId: string, query: string): Promise<
   const positions = refs.flatMap((row) => (row.pos38 ? [row.pos38] : []));
   return {
     ...EMPTY,
+    inputFileIds,
+    checkedFileIds,
+    inputScope: "subject",
     hits: refs.map((row) => ({
       rsid: row.rsid,
       chrom: row.chrom,
@@ -297,6 +320,16 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
 
   const showResults = hits.length > 0;
   const showRegion = locus !== null && active !== null;
+  // The search owns its input snapshot. A file can finish processing after
+  // the outer read selected the track; never substitute that older set here.
+  const checkedIds = outcome.checkedFileIds;
+  const sourceFacts = await loadInputSources(admin, subject.id,
+    [...checkedIds, ...(showRegion ? [active.id] : [])]);
+  const tableInputs = sourceFacts.filter((source) => checkedIds.includes(source.fileId))
+    .map((source) => ({ ...source, hasResultRecord: outcome.inputFileIds.includes(source.fileId) }));
+  const inputState = hits.some((hit) => hit.conflict) ? "conflict"
+    : hits.some((hit) => hit.genotype === "--") ? "noCall"
+    : outcome.inputFileIds.length ? "recorded" : "absent";
 
   return (
     <div
@@ -474,6 +507,18 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
           ) : null}
         </div>
       ) : null}
+      {outcome.inputScope || showRegion ? <div data-slot="browser-input-provenance" className="space-y-8">
+        {outcome.inputScope ? <div data-slot="table-input-provenance" className="space-y-3">
+          <p className="text-sm text-ink-muted">{TABLE_INPUT_NOTE}</p>
+          {showResults ? <p className="text-sm text-ink-muted">{TABLE_COVERAGE_NOTE}</p> : null}
+          <InputProvenance sources={tableInputs} subject={{ subjectId: subject.id }} state={inputState}
+            coverage={showResults ? { read: hits.filter((hit) => hit.genotype !== null && hit.genotype !== "--" && !hit.conflict).length, needed: hits.length, module: "genome/browser" } : undefined} />
+        </div> : null}
+        {showRegion ? <div data-slot="track-input-provenance" className="space-y-3">
+          <p className="text-sm text-ink-muted">{TRACK_INPUT_NOTE}</p>
+          <InputProvenance sources={sourceFacts.filter((source) => source.fileId === active.id)} subject={{ subjectId: subject.id }} />
+        </div> : null}
+      </div> : null}
     </div>
   );
 }

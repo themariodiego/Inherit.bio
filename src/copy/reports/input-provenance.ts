@@ -1,0 +1,36 @@
+export const INPUT_PROVENANCE_COPY = {
+  mixedBuild: "Some input coordinates were changed between genome builds; others already used the target build.",
+  unknownEmbryoBuild: "The saved input does not say if genome coordinates were changed.",
+  unknownMeasurement: "The stored result does not record whether each source call was measured or filled in before upload.",
+  inheritNoImputation: "Inherit did not fill in missing calls.",
+  inheritNoPanel: "No panel was used by Inherit.",
+  failedFilters: "Some listed records carry a failed source-filter flag. The result states whether its own calls could be used.",
+  skippedRecords: "Some records could not be read as supported point calls. Those records are outside this read-rate count.",
+  intervalRecords: "The file also contains interval records. They are not counted as single DNA calls or expanded into missing genotypes.",
+  conversionLoss: "Some variant rows could not be converted to the target genome build. They were left out of the result inputs.",
+  heading: "About the source files",
+  external: "Inherit did not create these files and cannot verify where they came from or whose samples they describe.",
+  noImputation: "Inherit did not fill in missing DNA calls. Whether the source did so is not known.",
+  unknown: "The read rate and any change of genome coordinates were not recorded for this input.",
+  noFiles: "No file supplied a recorded call for this result. An absent call is not a negative result.",
+  callScope: "This is the share of listed, supported point records with a call, not the share of your genome tested.",
+  qualityScope: "A call in a file is not proof of a laboratory measurement or a passed quality check.",
+  unknownRate: "A read rate for one sample cannot be stated from this input.",
+  sameBuild: "No change of genome coordinates was needed.",
+  converted: "Inherit changed genome coordinates from GRCh37 to GRCh38 before reading the result.",
+  declared: "The source file supplied the genome build. Inherit has not independently verified that claim.",
+  assumed: "The source did not name a genome build. Processing used the format's usual build.",
+  recorded: "These files supplied records considered for this result. The result states which positions had a usable call.",
+  absent: "No record was available at the positions this result uses. An absent call is not a negative result.",
+  checkedAbsent: "This file was checked but supplied no record at this result's positions.",
+  noCall: "A listed position has no usable call. Missing letters are not filled in.",
+  conflict: "The input records disagree, so a single call cannot be stated for that position.",
+  noPosition: "no recorded position",
+  runsInputs: "Files checked for the stored long-run measure",
+  noRunsInputs: "No file supplied a stored long-run check.",
+  noRelatedness: "The two adults were not compared for relatedness.",
+} as const;
+
+export function inputLabel(type: string): string {
+  return type.startsWith("array_") ? "Array file" : type === "vcf" || type === "gvcf" ? "VCF file" : "Source file";
+}

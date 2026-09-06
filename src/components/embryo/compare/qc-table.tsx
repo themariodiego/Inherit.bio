@@ -8,6 +8,8 @@
  * its interval share one row, because one interval figure carries all three.
  */
 import { ClaimBlock } from "@/components/figures/claim-block";
+import { EmbryoInputProvenance } from "@/components/embryo/input-provenance";
+import { INPUT_PROVENANCE_COPY } from "@/copy/reports/input-provenance";
 import { coverageSpec, depthSpec, dropoutSpec, isZeroRate, rateSpec } from "@/components/embryo/qc-figures";
 import { formatDate } from "@/components/embryo/format";
 import {
@@ -49,6 +51,7 @@ export const QC_TABLE_ROWS = [
   "qc_verdict",
   "qc_reasons",
   "computed_at",
+  "source_facts",
 ] as const satisfies readonly (keyof QcDto)[];
 
 export type QcTableRow = (typeof QC_TABLE_ROWS)[number];
@@ -113,8 +116,11 @@ export function QcValue({
       // source column is never printed (R2).
       return <Words>{sourceLabelText(row, qc[row]) ?? NOT_STATED_BY_SOURCE}</Words>;
     case "imputation_performed":
+      return <Words>{INPUT_PROVENANCE_COPY.inheritNoImputation}</Words>;
     case "imputation_panel":
-      return <Words>{NONE_WORD}</Words>;
+      return <Words>{INPUT_PROVENANCE_COPY.inheritNoPanel}</Words>;
+    case "source_facts":
+      return <EmbryoInputProvenance facts={qc.source_facts} />;
     case "qc_verdict":
       return <Words>{verdictWord(qc.qc_verdict)}</Words>;
     case "qc_reasons":

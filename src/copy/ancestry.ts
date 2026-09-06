@@ -17,7 +17,9 @@
 import type { PANEL } from "@/lib/ancestry/panel";
 
 /** The panel facts a sentence names: how many markers, and when it was built. */
-export type PanelFacts = Pick<typeof PANEL, "markers" | "version">;
+export type PanelFacts = Pick<typeof PANEL, "markers" | "version"> & { known?: boolean };
+export const UNKNOWN_REFERENCE_PANEL = "The panel and version for this stored result were not recorded or are not recognised. Its required marker count is unknown.";
+export const UNKNOWN_REFERENCE_TREE = "The reference tree and version for this stored call were not recorded or are not recognised.";
 
 // ---------------------------------------------------------------------------
 // Headings (six on the page, the X9 cap; nothing else is a heading).
@@ -80,11 +82,13 @@ export const RANGE_UNAVAILABLE =
 
 /** Reference panel and version (G4.4), from the shipped constants. */
 export function panelLine(panel: PanelFacts): string {
+  if (panel.known === false) return UNKNOWN_REFERENCE_PANEL;
   return `Reference panel: ${panel.markers} ancestry markers from the Kidd and Seldin panels, with 1000 Genomes phase 3 frequencies. Panel built ${panel.version}.`;
 }
 
 /** Markers used of required (G4.4); the counts also render as a coverage figure beside it. */
 export function markersLine(markersUsed: number, panel: PanelFacts, minMarkers: number): string {
+  if (panel.known === false) return `The stored result used ${markersUsed} markers. The required number is unknown.`;
   return `Your file supplied ${markersUsed} of the ${panel.markers} markers this needs. A map needs at least ${minMarkers}.`;
 }
 
@@ -106,6 +110,7 @@ export const NO_SEGMENTED_CONTROL =
 
 /** Why nothing smaller than a continent is shown: the true statement, not a licence-audit claim. */
 export function subContinental(panel: PanelFacts): string {
+  if (panel.known === false) return "Only the stored broad-region result is shown. Its source panel's finer resolution is unknown.";
   return `The ${panel.markers}-marker panel your file was compared with can only tell five broad regions apart. The map shows those and nothing smaller.`;
 }
 
@@ -124,6 +129,7 @@ export function sampledLine(code: string, place: string): string {
 
 /** Brief §4.6, verbatim, with the em dash. */
 export function greyState(markersUsed: number, panel: PanelFacts): string {
+  if (panel.known === false) return `The stored result used ${markersUsed} markers. Its earlier read limit cannot be verified from the saved metadata.`;
   return `Your file covers only ${markersUsed} of ${panel.markers} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
 }
 
@@ -134,6 +140,10 @@ export const NOISE = "Treat these as statistical noise, not as an estimate of yo
 
 /** No stored result for this subject yet (no file has been processed): the map stays grey and each card says so. */
 export const NOTHING_READ = "Nothing to show until a file has been processed.";
+
+export function storedModelLine(id: string | null, version: string | null): string {
+  return `Stored source: ${id ?? "identity not recorded"}. Version: ${version ?? "not recorded"}.`;
+}
 
 // ---------------------------------------------------------------------------
 // The lineage cards (§4 §7.5) and the Neanderthal card (§4.6).

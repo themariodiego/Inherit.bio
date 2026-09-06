@@ -1,5 +1,64 @@
 # Test diff register
 
+PR65 full-suite integration correction (2026-09-06): CI `34000286737`
+passed build, unit, database and release-policy steps, but its browser suite
+finished with 129 passed, two failed and eight not run. The report-detail and
+VCF upload tests still assumed a single attributed block across the entire
+page. They now preserve the exact original result-block contract and separately
+assert every new quality block's count, subject, observed basis, source and
+visible placement. No assertion is replaced by an unbounded count or skip.
+
+The larger VCF fixture exposed a real counter defect: the report-specific rsID
+requirement excluded readable unnamed SNPs from file read quality. The shared
+literal point-call classifier now separates that matching requirement from
+quality counting. New named/unnamed call, no-call and failed-filter tests prove
+the parser outputs are unchanged. The benchmark browser test pins its 160,835
+supported called SNP records; 26,295 other records remain outside this stated
+scope. Fresh per-run synthetic upload identities preserve prior local fixtures.
+The first corrected local run reached a previously skipped Medicines test with
+the same obsolete global count; its original genotype and every safety assertion
+are retained alongside exact new quality assertions. Final production-build
+browser verification passes all 12 cases in both complete affected suites,
+without skips or retries. All 1,754 unit tests pass. The corrected release still
+requires full CI and hosted verification.
+
+G4.6 result input provenance (2026-09-06): new parser/snapshot, batched loader,
+multi-file contributor and actual expert-page composition tests pin known versus
+unknown metadata, missing rows, exact subject/file attribution and unchanged
+genotype semantics. Processing tests add a concurrent request barrier, stale
+completion/failure checks and actual compressed-byte digest assertions. The new
+rollback-only SQL suite proves malformed completion rejection (including NULL
+CHECK behavior), trigger denial after simulated client grants, atomic claim
+predicates and real deletion preparation clearing provenance.
+
+Existing embryo closed DTO assertions now include the explicitly bounded
+`source_facts` child; original QC keys remain unchanged. Existing ancestry
+global claim-block count is scoped to the original ancestry-share block because
+three newly visible source-rate blocks legitimately exist; the original share,
+range, sum, attribution, heading and geometry assertions remain. Family and
+Portrait test accounts use per-run unique synthetic addresses to preserve
+earlier local fixtures rather than deleting them. Expert browser assertions
+include provenance headings and per-result coverage while retaining original
+genotype, layer, viewport and withholding assertions. No skip/retry added.
+
+Preliminary production run: observed reference parity and expert Data tests
+passed; ancestry stopped on the old global claim count, Family/Portrait stopped
+on preexisting fixed-email collisions. The next run with these precise test
+setup/structure corrections passed all 28 cases, no skips/retries (ancestry 2,
+Family 10, expert Data 5, observed parity 1, Portrait 10). The shared carrier
+provenance renderer then received separate gene-versus-long-run source tests.
+Its final Family/Portrait production-browser rerun passed 20/20, with no skips
+or retries. Both runs retained all consent, revocation, unavailable-carrier,
+responsive-budget and accessibility assertions.
+
+Full units: 1,750 passed. Scoped database integration: 61 assertions passed
+(21 input provenance, existing exact-file deletion and observed-call projection),
+with zero security-advisor errors. Actual QcTable/QcBlock render tests verify
+per-embryo converted/unknown source facts outside disclosures; loader tests
+require complete published cohort+ordinal file sets. These are synthetic renderer
+and closed-DTO tests, not a claim that the unavailable embryo consent/ingest
+workflow is enabled or has passed end-to-end acceptance.
+
 NUDT15 source correction (2026-09-06): Medicines regressions read the compact
 live-CPIC receipt and bind *1/*3 to the two exact loci and record versions.
 They prove that the *3 allowed repeat states include the *1 reference state,

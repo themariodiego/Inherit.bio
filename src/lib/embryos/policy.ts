@@ -17,6 +17,7 @@
  */
 import { QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS } from "./qc-policy";
 import { SOURCE_LABEL_FIELDS, isRegisteredSourceLabel } from "./source-labels";
+import type { EmbryoInputFacts } from "./input-facts";
 
 /** Register `forbiddenShapeFields`, verbatim. */
 export const FORBIDDEN_SHAPE_FIELDS = [
@@ -95,6 +96,7 @@ export type ShapeName =
   | "tradeOffs"
   | "tradeOffConflict"
   | "qc"
+  | "inputFacts"
   | "EmbryoFinding"
   | "coverageFailureFinding"
   | "absoluteRiskFinding"
@@ -136,6 +138,7 @@ const QC_KEYS = [
   "qc_verdict",
   "qc_reasons",
   "computed_at",
+  "source_facts",
 ] as const;
 
 export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
@@ -176,7 +179,8 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
     keys: ["embryo_label", "lowest_condition_id", "highest_condition_id", "copy_id"],
     children: {},
   },
-  qc: { keys: QC_KEYS, children: {} },
+  qc: { keys: QC_KEYS, children: { source_facts: { shape: "inputFacts" } } },
+  inputFacts: { keys: ["coordinate_conversion", "source_origin", "source_imputation", "call_observation"], children: {} },
   EmbryoFinding: {
     keys: [
       "embryo_label",
@@ -257,6 +261,7 @@ export const SHAPES: Readonly<Record<ShapeName, ShapeDefinition>> = {
 // ---------------------------------------------------------------------------
 
 export interface QcDto {
+  source_facts: EmbryoInputFacts;
   sites_expected: number;
   sites_called: number;
   call_rate: number;
@@ -489,6 +494,13 @@ function findForbiddenKey(value: unknown, path: string): { path: string; key: st
 function scalarVerdict(shape: ShapeName, value: Record<string, unknown>, path: string): ShapeVerdict {
   const at = (key: string) => (path ? `${path}.${key}` : key);
   switch (shape) {
+    case "inputFacts": {
+      if (!["not-recorded", "converted", "not-needed", "mixed"].includes(String(value.coordinate_conversion)) ||
+        value.source_origin !== "external-unverified" || value.source_imputation !== "not-recorded" || value.call_observation !== "not-recorded") {
+        return fail(path, "must contain only bound source facts or explicit unknown states");
+      }
+      return { ok: true };
+    }
     case "rscEmbryoListItem":
     case "rscEmbryoDetail":
     case "comparisonEmbryo": {

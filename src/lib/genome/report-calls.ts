@@ -65,8 +65,9 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
     .eq("subject_id", subjectId).eq("status", "annotated")
     .in("build", ["GRCh37", "GRCh38"]).order("id").range(offset, offset + PAGE - 1));
   const calls: ReportCall[] = [];
-  if (!files) return { calls, fileCount: 0 };
-  if (!files.length || !rsids.length) return { calls, fileCount: files.length };
+  const checkedFileIds = files?.map((file) => file.id) ?? [];
+  if (!files) return { calls, fileCount: 0, checkedFileIds };
+  if (!files.length || !rsids.length) return { calls, fileCount: files.length, checkedFileIds };
   const byFile = new Map(files.map((file) => [file.id, file]));
   // Bound both IN lists, and exhaust each deterministic page before resolving.
   for (let fileOffset = 0; fileOffset < files.length; fileOffset += 100) {
@@ -90,7 +91,7 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
           return query;
         }),
       ]);
-      if (!variants || !observations) return { calls: [], fileCount: files.length };
+      if (!variants || !observations) return { calls: [], fileCount: files.length, checkedFileIds };
       const certified = observations.filter((row) => {
         const file = byFile.get(row.file_id);
         return file?.observed_call_version === OBSERVED_CALL_VERSION &&
@@ -101,11 +102,11 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
       calls.push(...variants, ...certified);
     }
   }
-  return { calls, fileCount: files.length };
+  return { calls, fileCount: files.length, checkedFileIds };
 }
 
 export async function getSubjectReportCalls(db: Db, subjectId: string, templates: readonly ReportTemplate[]) {
   const rsids = [...new Set(templates.flatMap((template) => template.variants.map((variant) => variant.rsid)))];
-  const { calls, fileCount } = await loadReportCallRows(db, subjectId, rsids);
-  return { ...resolveReportCalls(calls, templates), calls, fileCount };
+  const { calls, fileCount, checkedFileIds } = await loadReportCallRows(db, subjectId, rsids);
+  return { ...resolveReportCalls(calls, templates), calls, fileCount, checkedFileIds };
 }

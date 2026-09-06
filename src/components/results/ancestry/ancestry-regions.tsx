@@ -209,10 +209,10 @@ function ShownRegions({
     needed: panel.markers,
   };
   const panelSpecs = selectedRow ? [shareSpec(selectedRow.share, selectedRow.range)] : [];
-  const figures: StandaloneFigureSpec[] = [...rowSpecs, ...chipSpecs, coverageSpec, ...panelSpecs];
+  const figures: StandaloneFigureSpec[] = [...rowSpecs, ...chipSpecs, ...(panel.known === false ? [] : [coverageSpec]), ...panelSpecs];
   const chipIndex = rows.length;
   const coverageIndex = chipIndex + 2;
-  const panelIndex = coverageIndex + 1;
+  const panelIndex = coverageIndex + (panel.known === false ? 0 : 1);
 
   const pathRef = useCallback((code: string, element: SVGPathElement | null) => {
     if (element) pathRefs.current.set(code, element);
@@ -341,10 +341,10 @@ function ShownRegions({
             <p>{panelLine(panel)}</p>
             <p className="flex flex-wrap items-baseline gap-x-2">
               <span>{markersLine(result.markersUsed, panel, minMarkers)}</span>
-              {nodes[coverageIndex]}
+              {panel.known === false ? null : nodes[coverageIndex]}
             </p>
             <p>{MARKER_GLOSS}</p>
-            <p>{RESOLUTION_LIMIT}</p>
+            {panel.known === false ? null : <p>{RESOLUTION_LIMIT}</p>}
             <p>{subContinental(panel)}</p>
             <p>{NO_SEGMENTED_CONTROL}</p>
             <p className="text-ink">{IDENTITY}</p>
@@ -353,6 +353,7 @@ function ShownRegions({
         {selectedRow ? (
           <div ref={panelRef} className="min-w-0">
             <RegionPanel
+              knownPanel={panel.known !== false}
               row={selectedRow}
               figure={nodes[panelIndex]}
               markersLine={markersLine(result.markersUsed, panel, minMarkers)}

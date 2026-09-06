@@ -49,8 +49,8 @@ import { buildCarrierPairVcf, verify, type FixtureCheck } from "./fixtures/carri
  * (`passGate`); the second test pins the gate's own behaviour explicitly.
  */
 
-const A = { email: "family-hp-a@e2e.local", password: "e2e-family-hp-pw" };
-const B = { email: "family-hp-b@e2e.local", password: "e2e-family-hp-pw" };
+const A = { email: `family-hp-a-${randomUUID()}@e2e.local`, password: "e2e-family-hp-pw" };
+const B = { email: `family-hp-b-${randomUUID()}@e2e.local`, password: "e2e-family-hp-pw" };
 
 /** Neither self subject carries a name, so each sees the other as an adult. */
 

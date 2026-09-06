@@ -26,6 +26,11 @@ function stripQuotes(field: string): string {
     : field;
 }
 
+export function arrayFields(line: string, kind: ArrayKind): string[] {
+  return kind === "array_myheritage" || kind === "array_ftdna"
+    ? line.split(",").map(stripQuotes) : line.split("\t");
+}
+
 /**
  * Normalize a raw genotype string ("AG", "A", "CA") to sorted diploid "A/C"
  * or haploid "A" (homozygous pairs on Y/MT collapse to haploid).
@@ -38,6 +43,17 @@ function normalizeGenotype(raw: string, chrom: number): string | null {
   if (g.length === 1) return g;
   if ((chrom === 24 || chrom === 25) && g[0] === g[1]) return g.charAt(0);
   return g.split("").sort().join("/");
+}
+
+export function arrayRow(fields: string[], kind: ArrayKind): VariantRecord | "no-call" | "unsupported" {
+  if (fields.length < (kind === "array_ancestry" ? 5 : 4)) return "unsupported";
+  const chrom = kind === "array_ancestry" ? ancestryChrom(fields[1]) : chromToNumber(fields[1]);
+  const pos = Number(fields[2]);
+  if (chrom === null || !Number.isInteger(pos) || pos <= 0) return "unsupported";
+  const raw = kind === "array_ancestry" ? fields[3] + fields[4] : fields[3];
+  const genotype = normalizeGenotype(raw, chrom);
+  if (!genotype) return /^(?:--|00|0|-)$/i.test(raw) ? "no-call" : "unsupported";
+  return { rsid: parseRsid(fields[0]), chrom, pos, ref: null, alt: null, genotype };
 }
 
 /**
@@ -65,56 +81,17 @@ export async function parseArray(
       continue;
     }
 
-    const fields =
-      kind === "array_myheritage" || kind === "array_ftdna"
-        ? line.split(",").map(stripQuotes)
-        : line.split("\t");
+    const fields = arrayFields(line, kind);
 
     // Non-comment column-header row (AncestryDNA, MyHeritage, FTDNA).
     if (fields[0]?.toLowerCase() === "rsid") continue;
 
-    let rsidRaw: string, posRaw: string, genotypeRaw: string;
-    let chrom: number | null;
-    if (kind === "array_ancestry") {
-      if (fields.length < 5) {
-        skipped++;
-        continue;
-      }
-      const [r, c, p, a1, a2] = fields;
-      rsidRaw = r;
-      posRaw = p;
-      chrom = ancestryChrom(c);
-      genotypeRaw = a1 + a2;
-    } else {
-      if (fields.length < 4) {
-        skipped++;
-        continue;
-      }
-      const [r, c, p, g] = fields;
-      rsidRaw = r;
-      posRaw = p;
-      chrom = chromToNumber(c);
-      genotypeRaw = g;
-    }
-
-    const pos = Number(posRaw);
-    if (chrom === null || !Number.isInteger(pos) || pos <= 0) {
+    const record = arrayRow(fields, kind);
+    if (typeof record === "string") {
       skipped++;
       continue;
     }
-    const genotype = normalizeGenotype(genotypeRaw, chrom);
-    if (genotype === null) {
-      skipped++;
-      continue;
-    }
-    records.push({
-      rsid: parseRsid(rsidRaw),
-      chrom,
-      pos,
-      ref: null,
-      alt: null,
-      genotype,
-    });
+    records.push(record);
   }
 
   // Every probed position is a record, differing from the reference or not;
