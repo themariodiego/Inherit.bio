@@ -39,6 +39,7 @@ test("canonical browser upload stores exact source bytes and prepares them witho
   const storageHeaders = await storage.request().allHeaders();
   // Compare locally without rendering the restricted bearer in assertion output.
   expect(storageHeaders.authorization === `Bearer ${lease.uploadToken}`).toBe(true);
+  expect(Boolean(storageHeaders.apikey) && storageHeaders.apikey === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe(true);
   expect(storageHeaders.cookie).toBeUndefined();
   const preparation = await prepared;
   expect(preparation.status()).toBe(200);

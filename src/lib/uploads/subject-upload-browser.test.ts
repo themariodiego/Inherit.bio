@@ -31,6 +31,7 @@ beforeEach(() => {
   vi.restoreAllMocks(); requests = []; fetchMock.mockReset();
   vi.stubGlobal("XMLHttpRequest", FakeXHR); vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://storage.example.test");
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "synthetic-public-project-key");
   fetchMock.mockResolvedValueOnce(Response.json(receipt, { status: 201 })).mockResolvedValueOnce(Response.json(completed));
 });
 
@@ -81,7 +82,8 @@ describe("browser-to-Storage own-subject upload", () => {
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain(source.name);
     expect(requests).toHaveLength(1); expect(requests[0]).toMatchObject({ method: "POST", withCredentials: false,
       url: `https://storage.example.test/storage/v1/object/genomes/${key}`, body: source,
-      headers: { Authorization: `Bearer ${receipt.uploadToken}`, "Content-Type": "application/octet-stream", "x-upsert": "false" } });
+      headers: { Authorization: `Bearer ${receipt.uploadToken}`, apikey: "synthetic-public-project-key", "Content-Type": "application/octet-stream", "x-upsert": "false" } });
+    expect(Object.keys(requests[0].headers).sort()).toEqual(["Authorization", "Content-Type", "apikey", "x-upsert"]);
     expect(requests[0].timeout).toBeGreaterThan(0);
     expect(fetchMock.mock.calls[1]).toEqual([`/api/files/${uploadId}/finalize`, {
       method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error" }]);
@@ -94,6 +96,11 @@ describe("browser-to-Storage own-subject upload", () => {
     await uploadSubjectFile(source, "me", vi.fn());
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ declaredFormat: "VCF.GZ",
       sha256: createHash("sha256").update(gzip).digest("hex") });
+  });
+  it.each([undefined, "", "public\r\ninjected: header", " ", "a".repeat(4097)])("refuses missing or malformed gateway configuration before issuing a lease", async apiKey => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", apiKey);
+    await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "unavailable" });
+    expect(fetchMock).not.toHaveBeenCalled(); expect(requests).toHaveLength(0);
   });
   it.each([["%PDF-1.7\n", "pdf_not_data"], ["CRAMunsupported", "unrecognised_format"],
     ["unknown", "unrecognised_format"], [vcf.replace("SAMPLE", "SAMPLE\tSECOND"), "subject_source_not_single_sample"]])(

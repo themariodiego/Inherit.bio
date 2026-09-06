@@ -61,6 +61,10 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
   } finally { reader.releaseLock(); }
   const declaration = uploadSessionBody.safeParse({ subjectId, declaredFormat: format, sizeBytes: file.size, sha256: hasher.digest("hex") });
   if (!declaration.success || read !== file.size) throw new BrowserUploadError("unavailable");
+  // The public project key routes through Supabase's gateway; it is not the
+  // upload authorization. Never substitute a login or server-side credential.
+  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!apiKey || apiKey.length > 4096 || /\s/.test(apiKey)) throw new BrowserUploadError("unavailable");
   const response = await fetch(route("api.file-upload-session"), { method: "POST", credentials: "same-origin",
     headers: { "Content-Type": "application/json" }, body: JSON.stringify(declaration.data), cache: "no-store", redirect: "error" });
   if (response.status !== 201) await responseFailure(response);
@@ -81,6 +85,7 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
     xhr.withCredentials = false;
     xhr.timeout = Math.max(1, Date.parse(issued.expiresAt) - Date.now());
     xhr.setRequestHeader("Authorization", `Bearer ${issued.uploadToken}`);
+    xhr.setRequestHeader("apikey", apiKey);
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.setRequestHeader("x-upsert", "false");
     const refuse = () => reject(new BrowserUploadError("unavailable"));

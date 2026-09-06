@@ -1,6 +1,6 @@
 # Hosted own-upload rollout prerequisites
 
-Read-only checkpoint, 6 September 2026. This is not a rollout receipt. The
+Rollout preparation checkpoint, 6 September 2026. This is not a rollout receipt. The
 new upload/report work is local; production remains the independently released
 PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
 
@@ -16,8 +16,9 @@ PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
   bucket-specific size and MIME limits are null.
 - Public Auth JWKS advertises an ES256 key. Advertisement does not show that
   the application possesses its private key or can mint a trusted upload JWT.
-- Vercel environment-name/target inventory was not completed in this audit.
-  No secret value was fetched, printed, rotated or changed.
+- Vercel's signed-in list was subsequently inspected without revealing values.
+  The owner created the Production-only signing secret; its stored value is
+  write-only and has not been read back or verified by a deployment.
 - Hosted Edge Functions `bootstrap`, `seed-reference` and `prs-backfill` are
   ACTIVE with `verify_jwt: true`. Their deployed versions 5, 4 and 2 are
   unconditional HTTP 410 tombstones: no request processing, credentials or
@@ -32,8 +33,9 @@ PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
 
 On 6 September 2026 the owner explicitly approved controlled signing-key
 import and activation, retaining the existing key and testing synthetic
-uploads first. This is authorization, not evidence of execution. No key has
-been generated, imported, activated or revoked at this checkpoint.
+uploads first. The initial preparation below was followed by owner-executed
+replacement-key generation, Vercel saving and Supabase standby import. No
+activation, revocation or deployment has occurred in this setup sequence.
 
 The connected Supabase tools expose database and Edge Function operations,
 but no signing-key management operation. The owner completed GitHub login in
@@ -57,6 +59,31 @@ Secret type and Production only, with an empty value and no save submission.
 Existing values were not revealed. Both credential forms await owner entry;
 first import as standby and save the identical key securely, then verify the
 public key identifier before activation. Do not redeploy merely to save a key.
+
+### Latest verified owner-completed state
+
+The owner generated a replacement after the first new private key appeared
+in a chat screenshot. Never reuse that exposed key or reproduce its material.
+The owner reports saving the replacement in Vercel and creating its Supabase
+standby entry. The authenticated dashboard and public JWKS now show replacement
+`d5e4e50d-7017-4c8f-9435-22c07b5234a9` alongside the unchanged current ES256 key.
+The dashboard still labels the replacement **Standby** and retains the original
+legacy key. The exposed key is not among the dashboard's listed current,
+standby or previous entries, nor the fetched public JWKS.
+
+This verifies public registration, not possession of the same private key in
+Vercel or successful hosted upload authorization. Do not infer either from
+the write-only editor appearing blank: Vercel's save-success notification
+confirms the write, while stored secret contents cannot be revealed in Edit.
+
+The browser upload now sends the existing public project key in `apikey`,
+separately from its restricted upload bearer in `Authorization`. Missing or
+malformed public-key configuration is refused before lease issuance. No
+server credential or ordinary user-session token is substituted. This follows
+the signing-key guide's gateway requirement; a read-only unauthenticated GET
+to an invented object returned a bucket refusal and was **not** treated as
+proof that a real hosted upload works. Positive hosted authorization remains
+unverified until the ordered synthetic canary is possible.
 
 The owner explicitly requires no spending: no new paid resources, upgrades or
 paid add-ons. Prefer existing resources and free limits, including Cloudflare
