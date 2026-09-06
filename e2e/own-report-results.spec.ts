@@ -220,9 +220,16 @@ test("canonical chosen report gives a real milk-sugar finding and withdrawal rem
     await expect(sourceRow.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/G");
     // Existing ownership-scoped download route only. This proves original
     // bytes survive report withdrawal, not the future canonical download gate.
-    const original = await page.request.get(`/api/files/${fileId}/download`);
-    expect(original.status()).toBe(200);
-    expect(await original.body()).toEqual(readFileSync(fixture));
+    await page.goto("/files");
+    const transfer = page.waitForEvent("download");
+    void transfer.catch(() => {});
+    await page.locator(`a[href="/api/files/${fileId}/download"]`).click();
+    // Browser-native download uses the real visible link and HTTP proxy.
+    // Do not use page.request: its CONNECT transport differs and its error
+    // diagnostics include request cookies, even with tracing disabled.
+    const original = await transfer;
+    const originalPath = await original.path().catch(() => { throw new Error("Original browser download did not complete"); });
+    expect(readFileSync(originalPath)).toEqual(readFileSync(fixture));
   } finally {
     await owner.auth.signOut();
   }
