@@ -21,6 +21,20 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   existing route register, discovered email entrypoints and explicit code-owned
   prose policies. Missing policies and undeclared states fail; they never mean
   that a surface needs no checking. Capture labels are not application URLs.
+- The canonical files now contain 39 independently reviewed, exact statements
+  for COMT, BDNF, FAAH and SLC45A2: four summaries and 35 study-context
+  paragraphs, supported by nine publications and two Ensembl position records.
+  `src/components/claims/claim.tsx` renders those statements with numbered,
+  source-bound links on the actual report detail page. Changed hosted prose
+  remains unregistered rather than borrowing attribution from different text.
+  Existing source details remain available; `/science#sources` explicitly
+  describes this four-report scope, not a complete catalog review.
+- `src/lib/claims/capture-emails.ts` renders all 12 named production mail
+  exports in 11 files through 27 synthetic fixtures. It retains exact HTML,
+  subject, input and observation bytes with digests and the clean checkout
+  commit. Chromium collects body and subject separately with outbound requests
+  blocked. No mail is sent. See `docs/sources/email-renderer-capture.md` for
+  the checked boundaries and intentionally failing, incomplete corpus audit.
 
 The current register yields 62 pages and 288 page/state captures, plus 11 email
 entrypoints and four export contracts. These counts describe requirements,
@@ -44,9 +58,9 @@ links; a citation-looking attribute cannot exempt ordinary text.
 
 ## Not finished
 
-The complete canonical claim/source data, shared production Claim component,
-template citation-column replacement, collection across all four real
-renderers, actual source-byte digest binding, dynamic report/genotype and legal
+Catalog-wide canonical claim/source population, template citation-column
+replacement, collection across all four real renderers, complete source-byte
+digest binding, dynamic report/genotype and legal
 version fixture expansion, internal-link checks and the final `gate:claims`
 command/CI wiring remain unfinished. The capture planner is deliberately only
 the minimum route-level inventory; one generic report does not cover the full
@@ -55,5 +69,7 @@ catalog. A callback accepting every seed/module ID would not prove provenance.
 The DOM collector rejects unsupported frames, shadow roots and generated CSS
 text; those require explicit adapters, not dropped observations. Figures still
 need their registered text alternatives. Metadata receipts are checked by the
-audit, but only the future renderer adapter can prove that a digest belongs to
-the actual captured bytes. These limitations must not become silent exemptions.
+audit; the email adapter binds its own captured bytes, not the other three
+channels. The actual four-report DOM tests likewise do not constitute complete
+state, export or email coverage. These limitations must not become silent
+exemptions. Whole-plan acceptance remains 18/65.
