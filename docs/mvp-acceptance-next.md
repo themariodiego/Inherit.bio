@@ -114,6 +114,27 @@ recurring cleanup, source provenance and migrated regressions remain. The
 Overview ordering can be released separately on PR73 without importing the
 upload cutover. This does not close another broad gate: **18/65**.
 
+### 2026-09-06 · PR74 production and expanded local report proof
+
+PR74 is merged at `ed0bdc257ff5e515b0c182c966b1a7728a744e5b` and deployed as
+`dpl_DRBcMWz4mqNXNPjbhiBqSgpVkYZF`. Authenticated production Overview was
+read after deployment: My Genome → five starter reports → Family → Embryos.
+CI `34046637446` passed 219 browser cases without skips/retries and 2,221
+units plus the database/build/repository gates. This isolated ordering release
+does not include the canonical upload branch.
+
+Locally, `5d755c9` passes all 2,619 units and 23 actual-provider browser cases
+with 16 uploads, zero skips/retries. Source conversion and listed-call rates
+now use recorded canonical metadata under exact authority. Study scope,
+sensitive reveal/SSR denial, previews, two-file controls and withdrawal all
+pass; desktop/mobile source explanations were inspected. See the local
+receipt. This closes a local provenance prerequisite, not hosted reliability.
+
+Acceptance remains **18/65**. Next: a compatible upload pause/drain transition,
+hosted signing/capacity canary and recurring retention verification. Required
+report-ready mail, remaining legacy regression integrations, ancestry,
+other-adult and embryo positive paths still need their own complete evidence.
+
 Report: the user-visible outcome; merged/deployed/locally tested status;
 which milestone advanced; exact G gate IDs newly proved (if any); and the
 next user-visible blocker. Keep **18/65** until a complete gate has its actual

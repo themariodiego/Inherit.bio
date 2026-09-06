@@ -2,13 +2,13 @@
 
 Rollout preparation checkpoint, 6 September 2026. This is not a rollout receipt. The
 new upload/report work is local; production remains the independently released
-PR73 at `a6b68a9d79e2901d9665cc2a4b5a4bcb58c489bc`.
+PR74 at `ed0bdc257ff5e515b0c182c966b1a7728a744e5b`.
 
 ## Verified scope
 
 - Inherit Supabase project: `zuvloczwgrayonqabnss`, reported ACTIVE_HEALTHY.
 - Vercel project: `prj_K7bVowhjFr0uIapXraH41hthJkgy`, team slug `mariodiego`.
-- Production PR73 deployment: `dpl_8J7MvprofssBdKKqGJvdVcPjQ2cz`, READY,
+- Production PR74 deployment: `dpl_DRBcMWz4mqNXNPjbhiBqSgpVkYZF`, READY,
   with `www.inherit.bio` assigned.
 - The scoped hosted database audit found no `upload_authorization_config`,
   `own_normalization_runs` or `own_analysis_runs` yet. It found neither
@@ -151,6 +151,52 @@ embryo expiry/notices and account purges. Before any hosted canary invocation,
 read only the due-work counts and establish its full scope. Do not describe a
 call to this handler as synthetic-only merely because its intended fixture is
 synthetic. Existing working keys and real genomic records remain untouched.
+
+### Reviewed schema staging and recovery boundary
+
+Independent read-only review found the own-upload migrations can be staged
+in filename order while PR74 remains live, **except**
+`20260906133807_cutover_subject_upload_transport`. Keep that policy removal
+for the coordinated cutover. The reviewed range starts at `20260906102710`
+and ends at `20260906165130`; the language migration still requires its
+transaction lock and exact prerequisite hashes. This is a reviewed sequence,
+not evidence that any hosted migration has been applied.
+
+A protected production-environment candidate without production aliases could
+use the already saved Production-only signing secret. A non-aliased URL alone
+is not access protection; verify access controls and a fresh bounded cost plan
+before deployment. Retaining legacy Storage policy permits preliminary
+integration checks, **not** restricted-upload denial acceptance. Repeat the
+full authorization matrix after policy removal.
+
+The public transition requires a server-side pause on new legacy issuance,
+completion of existing uploads through their deadlines, actionable recovery
+for refreshed clients, and a canonical issuance stop switch. Original PR74
+tabs cannot receive new JavaScript without reloading. Before policy removal,
+PR74 remains the recovery deployment. After canonical uploads begin, recovery
+must retain a compatible canonical app, stop issuance and fix forward; bare
+PR74 cannot serve the complete new-source journey. Do not automatically
+restore broad Storage policy or revoke working keys.
+
+The replacement private key is already reported saved: do not ask for another
+copy or generation. Its public entry remains Standby; accepted hosted signing
+and matching deployed secret are unverified. Controlled activation is already
+authorized, but any owner-only dashboard submission remains an access handoff.
+
+### Aggregate retention preflight
+
+At `2026-09-06 17:16:01 UTC`, a SELECT-only hosted inventory returned zero
+candidates in all eleven installed retention selectors: account notice/resume,
+adult contact/pending expiry, embryo cohort/disposition/contact expiry,
+invitation refusal-receipt/terminal-notice expiry and refused adult/embryo
+cleanup. Predicates were checked against live function definitions. No IDs,
+contacts or genetic data were read and no worker was invoked.
+
+Canonical normalization and own-upload cleanup are **unavailable**, not zero:
+the canonical tables, cleanup functions and necessary source columns are
+absent. This snapshot does not authorize a later worker as synthetic-only;
+newly due work can enter its global selection. Refresh the aggregate inventory
+immediately before any proposed composite canary.
 
 ### Remaining ordered rollout
 

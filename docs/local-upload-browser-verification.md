@@ -5,6 +5,44 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At source `5d755c934d45ecbb09747a9f2b81668c13150900`, **23/23 cases** pass
+with zero skips, retries or flaky cases. Start `2026-09-06T17:12:31.941Z`,
+155.5 seconds, **16 actual provider uploads**. All **2,619 unit tests in 164
+files** pass on this source; typecheck and scoped lint pass. The new
+service-only source projection has **32 rollback-only SQL assertions** and
+no local security-advisor findings. The migration was applied transactionally
+to the existing local database; no stack reset or history fabrication.
+
+The eight selected specs cover preparation, chosen results, two-file controls,
+source provenance, report-library recovery, behavior study scope, report
+previews and sensitive report gates. Original positive, negative, source,
+conflicting-input, privacy and SSR assertions remain. Preparation is never
+promoted to legacy annotation. The standard suite still discovers 224 cases;
+this is a bounded 23-case receipt, not full-suite or hosted acceptance.
+
+Canonical source facts now read the existing private normalization journal
+through current store authority or exact completed report purpose. The closed
+DTO exposes build/conversion and recorded counts, never hashes, paths, claims
+or private manifests. Modern sources never fall back to a legacy snapshot.
+A synthetic GRCh37 file proves conversion, an observed call and an explicit
+no-call; withdrawal hides analytic facts while retained source browsing works.
+Report coverage stays distinct from the file-wide listed-call rate. Desktop
+and 390px mobile screenshots were inspected after the wording correction.
+
+The first 23-case attempt had 18 passes, two failures and three serial cases
+not run: local public templates were stale and a synthetic array lacked the
+recognized vendor header. The reference seed was refreshed locally without
+altering user fixtures; the synthetic header was corrected while detection
+stayed unchanged. Visual review separately caught the misleading source-rate
+label, which was fixed before this final run. The initial full-unit attempts
+also exposed an incomplete legacy embryo fixture and strict email checkout
+hygiene: the fixture now includes its actual null canonical marker, changes
+were committed, and a generated CLI cache was preserved outside the checkout.
+No test was skipped or weakened. Final runner teardown left ports 3100/3101
+closed and exited successfully; synthetic fixtures remain preserved.
+
+## Previous two-file checkpoint
+
 At source `784efbf`, the local runner passes **5/5 cases**, zero skips,
 retries or flaky cases, in 57.7 seconds (start `2026-09-06T16:44:59.902Z`).
 Five actual browser uploads crossed the installed Storage provider. The
