@@ -6,8 +6,9 @@ const mocks = vi.hoisted(() => ({ decrypt: vi.fn(), hmac: vi.fn(), submit: vi.fn
 vi.mock("@/lib/crypto", () => ({ decryptSecret: mocks.decrypt, hmacSecret: mocks.hmac }));
 vi.mock("@/lib/email", () => ({ submitMail: mocks.submit }));
 
-function fixture(overrides: Record<string, unknown> = {}, authorize = true, complete = true) {
+function fixture(overrides: Record<string, unknown> = {}, authorize: boolean | boolean[] = true, complete = true) {
   let claimed = false;
+  let authorizations = 0;
   const row = { outbox_id: "outbox", attempt_ordinal: 2, idempotency_key: "original-key",
     notice_kind: "invitation-refused", contact_ciphertext: "\\x0102", recipient_account_id: null, ...overrides };
   const rpc = vi.fn(async (name: string) => {
@@ -16,7 +17,9 @@ function fixture(overrides: Record<string, unknown> = {}, authorize = true, comp
       claimed = true;
       return { data: [row], error: null };
     }
-    if (name === "authorize_invitation_terminal_mail_v1") return { data: authorize, error: null };
+    if (name === "authorize_invitation_terminal_mail_v1") return {
+      data: Array.isArray(authorize) ? authorize[authorizations++] ?? false : authorize, error: null,
+    };
     return { data: complete, error: complete ? null : {} };
   });
   const getUserById = vi.fn().mockResolvedValue({ data: { user: { email: "owner@example.test", email_confirmed_at: "2026-09-06" } }, error: null });
@@ -51,7 +54,17 @@ describe("canonical invitation terminal delivery", () => {
     expect(getUserById).toHaveBeenCalledExactlyOnceWith("owner");
     expect(mocks.decrypt).not.toHaveBeenCalled();
     expect(rpc.mock.invocationCallOrder[1]).toBeLessThan(getUserById.mock.invocationCallOrder[0]);
+    expect(getUserById.mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[2]);
+    expect(rpc.mock.invocationCallOrder[2]).toBeLessThan(mocks.submit.mock.invocationCallOrder[0]);
     expect(mocks.submit.mock.calls[0][0]).toBe("owner@example.test");
+  });
+
+  it("does not send if account authority changes while the verified address is being resolved", async () => {
+    const { admin, rpc, getUserById } = fixture({ contact_ciphertext: null, recipient_account_id: "owner" }, [true, false]);
+    await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 0, failed: 1 });
+    expect(getUserById).toHaveBeenCalledTimes(1);
+    expect(mocks.submit).not.toHaveBeenCalled();
+    expect(rpc.mock.calls.some(([name]) => name === "complete_invitation_terminal_mail_v1")).toBe(false);
   });
 
   it("does not read any recipient or call the provider after authority is lost", async () => {

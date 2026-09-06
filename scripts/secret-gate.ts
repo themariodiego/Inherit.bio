@@ -38,7 +38,9 @@ interface AllowlistEntry {
   classification:
     | "supabase-local-jwt"
     | "deterministic-e2e-key"
-    | "deterministic-e2e-secret";
+    | "deterministic-e2e-secret"
+    | "non-secret-code-reference";
+  sourceDeclaration?: string;
   value: string;
   paths: string[];
   historyOnly?: boolean;
@@ -214,6 +216,18 @@ export function validateAllowlist(
       if (decoded.length !== 32 || decoded.toString("base64") !== entry.value) {
         failures.push(`${entry.id}: deterministic E2E key must be canonical 32-byte base64`);
       }
+    } else if (entry.classification === "non-secret-code-reference") {
+      // This does not exempt credentials: only one reviewed fixture identifier,
+      // with its exact declaration still present, is eligible. The scanner
+      // continues to report the assignment in all other paths.
+      if (entry.value !== "testKey" || entry.paths.length !== 1
+        || entry.paths[0] !== "e2e/co-parent-invitation.spec.ts"
+        || entry.sourceDeclaration !== "const testKey = servers[0]?.env?.BYOK_ENCRYPTION_KEY;"
+        || !fs.existsSync(path.join(repositoryRoot, entry.paths[0]))
+        || !fs.readFileSync(path.join(repositoryRoot, entry.paths[0]), "utf8")
+          .split(/\r?\n/u).includes(entry.sourceDeclaration)) {
+        failures.push(`${entry.id}: unverified non-secret fixture reference`);
+      }
     } else if (!/(?:e2e|mock|baseline)/i.test(entry.value)) {
       failures.push(`${entry.id}: deterministic E2E secret must visibly identify itself as test-only`);
     }
@@ -243,6 +257,9 @@ function scanExactAllowlistOccurrences(
   const findings: SecretFinding[] = [];
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     for (const entry of entries) {
+      // Source identifiers are not credential literals in prose or tests.
+      // scanText still detects secret assignments using the identifier.
+      if (entry.classification === "non-secret-code-reference") continue;
       if (line.includes(entry.value)) {
         findings.push({
           rule: "allowlisted-literal",

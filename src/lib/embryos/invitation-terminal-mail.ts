@@ -40,6 +40,15 @@ export async function drainInvitationTerminalMail(
       } else {
         recipient = decryptSecret(Buffer.from(row.contact_ciphertext!.replace(/^\\x/u, ""), "hex"));
       }
+      // Recipient resolution may await Auth. Recheck after that boundary so a
+      // deletion notice or authority change during lookup prevents submission.
+      const checkpoint = await admin.rpc("authorize_invitation_terminal_mail_v1", {
+        p_outbox_id: row.outbox_id, p_attempt_ordinal: row.attempt_ordinal,
+      });
+      if (checkpoint.error || checkpoint.data !== true) {
+        failed++;
+        continue;
+      }
       const providerId = await submitMail(
         recipient, { id: "invitation-terminal-notice", payload: { kind } }, row.idempotency_key,
       );

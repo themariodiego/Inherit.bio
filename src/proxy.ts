@@ -34,9 +34,11 @@ export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === "/withdraw/request") {
     return NextResponse.next({ request });
   }
-  // Activation is authorized solely by its candidate + one-time credential,
-  // not by whichever account happens to be signed in on this browser.
-  if (request.nextUrl.pathname === "/api/rights/activate") {
+  // These rights operations use their own browser-bound credentials, not the
+  // signed-in account. An unrelated account's deletion notice must not block
+  // the recipient from declining an invitation.
+  if (request.nextUrl.pathname === "/api/rights/activate"
+    || request.nextUrl.pathname === "/api/withdraw/session") {
     return withSensitiveHeaders(NextResponse.next({ request }));
   }
   let response = NextResponse.next({ request });

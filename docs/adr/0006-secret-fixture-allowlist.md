@@ -28,6 +28,19 @@ The following initial local fixtures are accepted:
 - Secret-Allowlist-ID: density-anon-fixture
 - Secret-Allowlist-ID: density-service-role-fixture
 
+### Reviewed non-secret source reference (2026-09-06)
+
+- Secret-Allowlist-ID: co-parent-local-fixture-reference
+
+The assignment scanner also reports the JavaScript identifier `testKey` in
+`e2e/co-parent-invitation.spec.ts`, including commit `235a1aa`. It is not a
+credential: its declaration reads the local fixture from `playwright.config.ts`.
+The narrow code-reference entry requires this exact identifier, path and
+declaration to remain present. It does not permit a new key literal, a changed
+source expression, a second assignment path or any hosted credential.
+Identifier mentions in prose are not treated as credential literals.
+Credential detectors and the history baseline remain unchanged.
+
 ## Consequences
 
 `pnpm gate:secrets` blocks production environment files, known provider-token

@@ -18,6 +18,7 @@ const recipient = { email: `rights-parent-${suffix}@e2e.local`, password: "synth
 const stranger = { email: `rights-other-${suffix}@e2e.local`, password: "synthetic-rights-test-password" };
 let ownerId: string;
 let recipientId: string;
+let strangerId: string;
 let authSessionId: string;
 let mailServer: http.Server;
 const messages: { to: string | string[]; html?: string; subject: string }[] = [];
@@ -37,7 +38,7 @@ test.beforeAll(async () => {
   await new Promise<void>(resolve => mailServer.listen(8124, "127.0.0.1", resolve));
   ownerId = await createConfirmedUser(owner.email, owner.password);
   recipientId = await createConfirmedUser(recipient.email, recipient.password);
-  await createConfirmedUser(stranger.email, stranger.password);
+  strangerId = await createConfirmedUser(stranger.email, stranger.password);
   const { data, error } = await anonClient().auth.signInWithPassword(owner);
   expect(error).toBeNull();
   authSessionId = JSON.parse(Buffer.from(data.session!.access_token.split(".")[1], "base64url").toString("utf8")).session_id;
@@ -164,7 +165,7 @@ test("/withdraw/request → session: real co-parent email, explicit activation, 
   expect(grants.count).toBe(0);
 });
 
-for (const mode of ["anonymous", "other-account"] as const) {
+for (const mode of ["anonymous", "other-account", "other-account-deleting"] as const) {
   test(`/withdraw/session: ${mode} refusal → cleanup → notices → safe retry`, async ({ page, request }, testInfo) => {
     const email = `refuse-${crypto.randomUUID()}@e2e.local`;
     const { draftId, invitationId } = await reserveInvitation(email);
@@ -176,7 +177,18 @@ for (const mode of ["anonymous", "other-account"] as const) {
       emailed = messages.find(m => [m.to].flat().includes(email))?.html?.match(/http:\/\/localhost:3100\/withdraw\/request#[A-Za-z0-9_-]{43}/u)?.[0];
     }
     expect(emailed).toBeTruthy();
-    if (mode === "other-account") await signIn(page, stranger.email, stranger.password);
+    if (mode !== "anonymous") {
+      await signIn(page, stranger.email, stranger.password);
+      if (mode === "other-account-deleting") {
+        // Seed only this synthetic account's proxy restriction boundary.
+        // No account-deletion request or real account cleanup is performed.
+        expect((await admin.from("profiles").update({ deletion_requested_at: new Date().toISOString() })
+          .eq("id", strangerId)).error).toBeNull();
+        const restricted = await page.request.post("/api/jobs/mail");
+        expect(restricted.status()).toBe(423);
+        expect(await restricted.json()).toEqual({ error: "account_deletion_notice_period" });
+      }
+    }
     else {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.addInitScript(() => localStorage.setItem("theme", "dark"));

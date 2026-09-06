@@ -3,6 +3,40 @@
 Branch: `codex/rights-invitation-flow`. **Not released.**
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
+## PR71 release review
+
+Draft PR71 is open. Its first clean CI run, `34017689226`, passed typecheck,
+lint, build, units and the content gates, then failed the secret gate on the
+non-secret source identifier `testKey`. The exact fixture reference is now
+documented in ADR 0006; its path and unchanged local-config declaration are
+validated. Literal replacements, another path or another declaration remain
+failures. Credential detection and the history baseline are unchanged.
+
+The review also found that the proxy could return 423 for accountless refusal
+when the browser happened to be signed into an unrelated account under deletion
+notice. The refusal API now bypasses account refresh/restriction checks and
+still enforces its rights cookie and sealed form at the handler. A real browser
+case proves ordinary APIs still return 423 while refusal succeeds and remains
+retryable after cleanup. Terminal notice mail now rechecks authority after an
+awaited Auth address lookup, immediately before submission.
+
+All six production-build browser cases pass in 25.9 seconds with no skips or
+retries. Focused source-reference, proxy and terminal-mail units pass; typecheck,
+scoped lint and the full repository/history secret gate pass.
+
+Read-only hosted transport review on the Inherit project
+(`zuvloczwgrayonqabnss`) found: Storage object RLS enabled, no
+`legal-evidence` bucket, no evidence-upload issuing database function, and only
+the authenticated genome-staging INSERT policy. Source inspection likewise
+finds no application evidence-upload issuer. Therefore an outstanding issued
+legal-evidence upload URL is not a current production release blocker. This
+does not implement evidence upload or waive its future transport requirements.
+No hosted schema, permission, object, user, credential or mail was changed.
+
+The hosted migration ledger ends at `20260906003053`; PR71 adds six ordered
+invitation/evidence migrations. They require verified application before
+production promotion. Clean CI and the final authority review remain pending.
+
 ## Latest: shared evidence and late-write protection
 
 Cleanup now checks every direct reviewed-evidence foreign-key path: live cohort

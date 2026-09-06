@@ -66,12 +66,24 @@ describe("mailed rights entry", () => {
     expect(HEAD().headers.get("set-cookie")).toBeNull();
   });
 
-  it("does not run account lookups in the proxy for entry or activation", async () => {
-    for (const path of ["/withdraw/request", "/api/rights/activate"]) {
+  it("does not run account lookups in the proxy for entry, activation or refusal", async () => {
+    for (const path of ["/withdraw/request", "/api/rights/activate", "/api/withdraw/session"]) {
       const response = await proxy(new NextRequest(`https://inherit.bio${path}`));
       expect(response.headers.get("x-middleware-next")).toBe("1");
     }
     expect(mocks.authClient).not.toHaveBeenCalled();
+  });
+
+  it("keeps refusal independent of stale account cookies and account deletion gates", async () => {
+    mocks.authClient.mockImplementationOnce(() => { throw new Error("account refresh must not run"); });
+    const response = await proxy(new NextRequest("https://inherit.bio/api/withdraw/session", {
+      method: "POST", headers: { cookie: "sb-unrelated-auth-token=expired" },
+    }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.authClient).not.toHaveBeenCalled();
+    mocks.authClient.mockReset();
   });
 
   it("reads the fragment once and clears it before deferred work; never auto-activates", async () => {
