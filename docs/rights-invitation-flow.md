@@ -1,9 +1,31 @@
 # Rights invitation flow — implementation checkpoint
 
-Branch: `codex/rights-invitation-flow`. **Not released.**
+PR71 merged as `e9778f8d5e5847deeb5b3d057f7c25ba67b418da` and is live
+on both public domains. The full main-branch integration run is still pending.
 Full-plan acceptance remains **18/65**. G5.4 is still NO.
 
-## PR71 release review
+## Release receipt (2026-09-06)
+
+Exact reviewed head `98ee24bd938b0a9475b529c1cea544008a7170a0` passed full CI
+`34018132773`: 2,202 unit tests, 1,044 database assertions in 30 suites,
+30 independent-session lock checks and 213 browser cases, with no browser
+skips or retries. All six migrations were applied and verified on Inherit.
+All 45 changed functions match the tested local bodies, arguments, security
+mode, search path and role privileges. File and published-report fingerprints
+are unchanged. Production `dpl_23r8rERkNjnPmUeaF9GZAzWgngc6` is READY at
+the exact merge, with both domains assigned.
+
+Signed-out production browser checks on both domains confirm the entry page,
+fragment clearing, disabled invalid-link action, private response headers,
+cookie-free HEAD, and opaque 404s for invalid refusal and missing rights
+sessions. The real acceptance/refusal/mail/Storage journey is proved by the
+synthetic production-build CI cases, not by sending real production mail.
+See `docs/hosted-rollout-2026-09-06.md` for migration versions and boundaries.
+
+The sections below preserve the earlier, dated implementation checkpoints;
+their not-released/pending statements are superseded by this receipt.
+
+## Earlier PR71 release review
 
 Draft PR71 is open. Its first clean CI run, `34017689226`, passed typecheck,
 lint, build, units and the content gates, then failed the secret gate on the

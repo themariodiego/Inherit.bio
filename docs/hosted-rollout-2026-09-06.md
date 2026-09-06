@@ -358,3 +358,83 @@ The AI SDK and Next.js guidance informed message assembly; deployment and
 observability guidance informed exact-revision and post-READY checks.
 No hosted schema/data mutation, real-user file operation, credential export,
 real email, new telemetry integration or genome-bearing model call occurred.
+
+## PR71 — invitation review, refusal, notices and cleanup
+
+PR71 merged at `2026-09-06T07:23:36Z` as
+`e9778f8d5e5847deeb5b3d057f7c25ba67b418da`. The exact reviewed head was
+`98ee24bd938b0a9475b529c1cea544008a7170a0`; full CI `34018132773` passed:
+2,202 unit tests in 139 files, 1,044 database assertions in 30 suites,
+30 independent-session lock checks, and 213 browser cases without skips or
+retries. Main integration run `34019023140` is still running at this checkpoint.
+
+### Hosted schema and preservation
+
+The six SQL files were read from that exact Git revision and applied in order
+to Inherit (`zuvloczwgrayonqabnss`). The hosted tool assigns its own versions:
+
+| Canonical migration | Hosted version |
+| --- | --- |
+| `20260906045637_rights_invitation_binding` | `20260906071746` |
+| `20260906051253_invitation_refusal_transaction` | `20260906071749` |
+| `20260906053451_invitation_terminal_mail` | `20260906071751` |
+| `20260906055142_refused_invitation_draft_cleanup` | `20260906071753` |
+| `20260906061029_invitation_transition_guards` | `20260906071755` |
+| `20260906064136_refused_evidence_write_fence` | `20260906071757` |
+
+Every migration returned success; the hosted ledger confirms all six.
+Read-only comparison found all 45 changed function bodies, identity arguments,
+security modes, search paths and role privileges equal to the tested local
+database. None is executable by anon or authenticated. The private refusal
+implementation remains unavailable to service_role; its public facade calls
+the bounded private authority wrapper.
+
+The terminal notice table has RLS and no direct read grant for anon,
+authenticated or service_role. All 13 statement locks and 13 row fences are
+enabled. The receipt shape constraint is validated. The notice store occupies
+slot 8 of its declared target; the complete store register has 113 entries.
+No terminal notice row was created by the rollout.
+
+Before and after: three genome files, two subjects, two accounts, and 162
+published templates. Full genome-file row fingerprint remains
+`7fe71092052ae3cd2a9c0de735f574db`; published-template full-row fingerprint
+remains `f7fa3f9ccbc9fd54c715fbadaef2f6a7`. These are sorted JSON-row MD5
+comparison receipts, not genetic file content hashes. No real genome was
+deleted or reprocessed, and no real invitation or mail fixture was created.
+
+Security advisors returned 133 informational RLS-without-policy notices and
+two warnings: the existing authenticated `job_time_stats` definer and disabled
+leaked-password protection. No changed function appears in that warning set.
+The new private notice table's no-policy entry is intentional: bounded
+privileged functions mediate access. This is not a claim that the whole project
+has no security warnings. References: [function execution advisory](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
+[password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection),
+[RLS without policies](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+
+### Production verification
+
+Deployment `dpl_23r8rERkNjnPmUeaF9GZAzWgngc6`,
+`inherit-4wwvjbf2m-mariodiego.vercel.app`, is production READY at the exact
+merge; `inherit.bio` and `www.inherit.bio` are both assigned, with no alias
+error. The build took about 46 seconds. It was built from main with production
+configuration, not promoted from the unverified preview environment.
+
+Fresh signed-out Chromium contexts checked both public domains at 390px:
+entry GET 200; invalid fragment cleared; Continue disabled; explanatory link
+status present; no horizontal overflow or page errors; no-store, no-referrer
+and restricted CSP headers; HEAD 200 without a cookie; malformed refusal 404;
+session without rights 404. There was no real token in these requests.
+
+The post-READY error/fatal runtime count query returned no rows for this exact
+production deployment. This is a short smoke-check interval, not sustained
+monitoring. Valid acceptance, refusal, notice delivery and physical cleanup
+are covered by synthetic production-build CI tests with a loopback mail
+provider; they were not repeated on real production invitations or genomes.
+
+Whole-plan acceptance stays **18/65**. G5.4 is still NO: active-key rotation,
+quotas, the adult URL-token migration, future-person routes and the complete
+rights-purpose contract remain unfinished. Real-jurisdiction acceptance is
+still disabled. Supabase and deployment guidance informed the role checks,
+schema-first rollout and exact-revision verification; browser verification
+used the installed repository Playwright setup because agent-browser was not
+installed. No credentials were copied or new telemetry integration added.
