@@ -22,10 +22,10 @@ that are changed and restored between checks.
 
 Discovery reads every runtime named export under `src/emails`, independently of
 the fixture list. Only the shared `base.tsx` layout and test files are excluded.
-The current inventory is 12 exports in 11 entry files, including both account
+The current inventory is 13 exports in 12 entry files, including both account
 deletion templates. New exports fail until explicitly classified and exercised.
 
-The 27 fixtures exercise current conditional branches with synthetic labels,
+The 30 fixtures exercise current conditional branches with synthetic labels,
 dates and links. No account or secret is needed. The nonempty full research
 digest uses all 162 public seed titles and summaries; the single-entry fixture
 uses the first slug in sorted order. Branch coverage is code-reviewed policy,
@@ -65,7 +65,7 @@ The subject appends `#envelope=subject`. Canonical claims must declare exact
 observed surfaces; a base-path wildcard is not accepted. The digest currently
 renders summaries, not study-context paragraphs.
 
-All 54 observations are fed to the existing full four-channel audit. This
+All 60 observations are fed to the existing full four-channel audit. This
 email-only adapter therefore reports missing static-build, seeded-authenticated
 and export channels. Current production emails lack the required regions and
 canonical claim wrappers, so those are real failures too. Tests use deliberately

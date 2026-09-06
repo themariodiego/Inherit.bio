@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 
 export const maxDuration = 300;
 
@@ -72,6 +73,23 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");
+  if (refusalReceiptExpiryError) failed++;
+
+  // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
+  // not prevent this already-due work from making progress.
+  try {
+    const cleanup = await drainRefusedInvitationCleanup(admin);
+    processed += cleanup.processed;
+    failed += cleanup.failed;
+  } catch {
+    failed++;
+  }
+
+  // Notice recipients expire independently of draft cleanup and delivery.
+  const { error: invitationNoticeExpiryError } = await admin.rpc("expire_invitation_terminal_notices_v1");
+  if (invitationNoticeExpiryError) failed++;
 
   // Independent contact expiry runs even when a mail provider is unavailable.
   const { error: terminalContactExpiryError } = await admin.rpc(

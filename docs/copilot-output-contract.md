@@ -60,6 +60,12 @@ existing refusal suite; it is not evidence of an error-free runtime log.
 
 ## Full-plan boundary
 
+Release: PR70 merged as `f8c43bb7ffac3dec1233ffc7f86c8ebf3c11381c`.
+Final-head CI `34009298500` passed 2,086 unit tests, 812 database assertions
+and all 207 browser cases, including the expanded 64-case output corpus.
+The exact merge is production READY on both domains. See the PR70 section
+of `docs/hosted-rollout-2026-09-06.md` for hosted checks and their limits.
+
 Pre-merge usability review added four more cases (64 completion cases total).
 Three first reproduced false refusals for conditional symptoms, explicitly
 unknown diagnosis and instructions to read a report. Local-prefix exceptions

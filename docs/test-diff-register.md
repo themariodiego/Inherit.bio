@@ -477,3 +477,30 @@ gates passed. A separate visual check of the production-built Science page
 returned HTTP 200, eleven sources and no page errors or framework overlays.
 The combined branch's final CI is still required before release. These checks
 do not advance whole-plan acceptance beyond 18/65.
+
+# Invitation terminal mail and draft cleanup — local 2026-09-06
+
+New database suites exercise canonical notice insertion rollback, delivery
+authority, retries/receipts, fixed expiry, draft cleanup leases, exact evidence
+addresses and physical-deletion prerequisites. The existing refusal-kind suite
+adds cleanup assertions for all three cancelled drafts and donor preservation.
+The original invitation-mail invalidation assertion now selects the actual
+fixture outbox ID: the target also has independent terminal notices which must
+remain queued. No original eligibility or rollback assertion was removed.
+
+New worker units cover bounded batches, closed storage manifests, failure
+ordering, recipient resolution and accepted-receipt uncertainty. A new
+production-route test uploads synthetic evidence to real local Storage and
+checks actual deletion plus preservation of another draft's evidence. It seeds
+the cancelled-draft boundary, not a fictitious completed refusal UI.
+
+The production email capture inventory grows from 12 exports/11 files and
+27 fixtures/54 observations to 13 exports/12 files and 30 fixtures/60
+observations. Each of the three fixed terminal-notice kinds has a fixture.
+The clean-checkout/network fences and expected audit failures remain intact.
+
+The full readability run identified five ordinary words in the existing local
+invitation form's short labels: `accepted`, `full`, `live`, `saving`,
+and `statements`. These exact words are explicitly registered in the plain
+vocabulary. No jargon entry, scorer, numeric threshold, legal statement,
+required caveat, scanned surface or gate assertion changes.

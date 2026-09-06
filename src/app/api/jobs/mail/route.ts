@@ -4,6 +4,7 @@ import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
+import { drainInvitationTerminalMail } from "@/lib/embryos/invitation-terminal-mail";
 
 export const maxDuration = 300;
 
@@ -226,6 +227,14 @@ async function drainMail() {
   let failed = 0;
 
   try {
+    const terminal = await drainInvitationTerminalMail(admin);
+    processed += terminal.processed;
+    failed += terminal.failed;
+  } catch {
+    failed++;
+  }
+
+  try {
     const terminal = await drainEmbryoTerminalMail(admin);
     processed += terminal.processed;
     failed += terminal.failed;
@@ -249,6 +258,7 @@ async function drainMail() {
     if (!row) break;
 
     let recipient = "";
+    let accepted = false;
     try {
       const ciphertextHex = row.contact_ciphertext.replace(/^\\x/, "");
       recipient = decryptSecret(Buffer.from(ciphertextHex, "hex"));
@@ -257,11 +267,22 @@ async function drainMail() {
         row.template_payload,
         row.delivery_token,
       );
+      // The claim can become stale while payloads are prepared. Recheck the
+      // exact recipient, source and invitation bar immediately before send.
+      const authorization = await admin.rpc("authorize_mail_submission_v1", {
+        p_outbox_id: row.outbox_id, p_attempt_ordinal: row.attempt_ordinal,
+      });
+      if (authorization.error || authorization.data !== true) {
+        recipient = "";
+        failed++;
+        continue;
+      }
       const providerMessageId = await submitMail(
         recipient,
         mail,
         row.idempotency_key,
       );
+      accepted = true;
       recipient = "";
 
       const { error: completionError } = await admin.rpc(
@@ -281,7 +302,7 @@ async function drainMail() {
       processed++;
     } catch {
       recipient = "";
-      await admin.rpc("complete_mail_attempt", {
+      if (!accepted) await admin.rpc("complete_mail_attempt", {
         p_outbox_id: row.outbox_id,
         p_attempt_ordinal: row.attempt_ordinal,
         p_success: false,

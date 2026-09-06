@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { scanText } from "./secret-gate";
+import fs from "node:fs";
+import { scanText, validateAllowlist } from "./secret-gate";
 
 describe("secret gate detector", () => {
   it("detects provider keys, JWTs, private keys, and contextual assignments", () => {
@@ -58,5 +59,24 @@ describe("secret gate detector", () => {
         value: "unsafe-value",
       },
     ]);
+  });
+
+  it("still detects fixture references and literal replacements before exact allowlist review", () => {
+    const prefix = ["BYOK", "_ENCRYPTION_KEY = "].join("");
+    expect(scanText(prefix + "testKey", "unapproved.ts")).toEqual([
+      { rule: "secret-assignment", path: "unapproved.ts", line: 1, value: "testKey" },
+    ]);
+    expect(scanText(prefix + '"new-unapproved-value"', "e2e/co-parent-invitation.spec.ts")[0])
+      .toMatchObject({ rule: "secret-assignment", value: "new-unapproved-value" });
+  });
+
+  it.each(["value", "path", "declaration"])("rejects a changed fixture-reference %s", (field) => {
+    const allowlist = JSON.parse(fs.readFileSync("scripts/secret-allowlist.json", "utf8")) as Parameters<typeof validateAllowlist>[0];
+    const entry = allowlist.entries.find(item => item.id === "co-parent-local-fixture-reference")!;
+    if (field === "value") entry.value = "differentReference";
+    if (field === "path") entry.paths = ["playwright.config.ts"];
+    if (field === "declaration") entry.sourceDeclaration = 'const testKey = "changed";';
+    expect(validateAllowlist(allowlist, process.cwd()))
+      .toContain("co-parent-local-fixture-reference: unverified non-secret fixture reference");
   });
 });

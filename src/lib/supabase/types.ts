@@ -2703,6 +2703,8 @@ export type Database = {
       }
       embryo_operation_nonces: {
         Row: {
+          rights_session_hash: string | null
+          rights_receipt_expires_at: string | null
           account_id: string | null
           consumed_at: string
           nonce_hash: string
@@ -2712,6 +2714,8 @@ export type Database = {
           target_kind: string
         }
         Insert: {
+          rights_session_hash?: string | null
+          rights_receipt_expires_at?: string | null
           account_id?: string | null
           consumed_at?: string
           nonce_hash: string
@@ -2721,6 +2725,8 @@ export type Database = {
           target_kind: string
         }
         Update: {
+          rights_session_hash?: string | null
+          rights_receipt_expires_at?: string | null
           account_id?: string | null
           consumed_at?: string
           nonce_hash?: string
@@ -4832,16 +4838,18 @@ export type Database = {
         Row: {
           attempt_count: number
           claimed_at: string | null
-          contact_reference_id: string
+          contact_reference_id: string | null
           created_at: string
           expires_at: string
           id: string
           idempotency_key: string
+          invitation_terminal_notice_id: string | null
+          invitation_submission_started_at: string | null
           last_outcome_code: string | null
           not_before: string
           purpose: string
           recipient_authority_revision: number
-          recipient_principal_id: string
+          recipient_principal_id: string | null
           semantic_revision: number
           state: string
           target_id: string
@@ -4854,16 +4862,18 @@ export type Database = {
         Insert: {
           attempt_count?: number
           claimed_at?: string | null
-          contact_reference_id: string
+          contact_reference_id?: string | null
           created_at?: string
           expires_at: string
           id?: string
           idempotency_key: string
+          invitation_terminal_notice_id?: string | null
+          invitation_submission_started_at?: string | null
           last_outcome_code?: string | null
           not_before?: string
           purpose: string
           recipient_authority_revision: number
-          recipient_principal_id: string
+          recipient_principal_id?: string | null
           semantic_revision: number
           state?: string
           target_id: string
@@ -4876,16 +4886,18 @@ export type Database = {
         Update: {
           attempt_count?: number
           claimed_at?: string | null
-          contact_reference_id?: string
+          contact_reference_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           idempotency_key?: string
+          invitation_terminal_notice_id?: string | null
+          invitation_submission_started_at?: string | null
           last_outcome_code?: string | null
           not_before?: string
           purpose?: string
           recipient_authority_revision?: number
-          recipient_principal_id?: string
+          recipient_principal_id?: string | null
           semantic_revision?: number
           state?: string
           target_id?: string
@@ -7562,6 +7574,65 @@ export type Database = {
           deletion_id: string
           storage_objects: Json
         }[]
+      }
+      read_co_parent_refusal_v1: {
+        Args: { p_session_hash: string }
+        Returns: string | null
+      }
+      refuse_co_parent_invitation_session_v1: {
+        Args: { p_session_hash: string; p_nonce: string }
+        Returns: undefined
+      }
+      expire_invitation_refusal_receipts_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      authorize_mail_submission_v1: {
+        Args: { p_outbox_id: string; p_attempt_ordinal: number }
+        Returns: boolean
+      }
+      authorize_refused_invitation_storage_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string; p_ordinals: number[] }
+        Returns: boolean
+      }
+      claim_refused_invitation_draft_purge_v1: {
+        Args: { p_claim_token_hash: string }
+        Returns: { manifest_id: string; storage_objects: Json }[]
+      }
+      complete_refused_invitation_storage_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string; p_ordinals: number[] }
+        Returns: undefined
+      }
+      finish_refused_invitation_draft_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: undefined
+      }
+      fail_refused_invitation_draft_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: undefined
+      }
+      claim_invitation_terminal_mail_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          outbox_id: string
+          attempt_ordinal: number
+          idempotency_key: string
+          notice_kind: string
+          contact_ciphertext: string | null
+          recipient_account_id: string | null
+        }[]
+      }
+      authorize_invitation_terminal_mail_v1: {
+        Args: { p_outbox_id: string; p_attempt_ordinal: number }
+        Returns: boolean
+      }
+      complete_invitation_terminal_mail_v1: {
+        Args: { p_outbox_id: string; p_attempt_ordinal: number; p_success: boolean; p_provider_message_hmac: string }
+        Returns: boolean
+      }
+      expire_invitation_terminal_notices_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       claim_embryo_terminal_mail_v1: {
         Args: never

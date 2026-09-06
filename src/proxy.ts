@@ -29,6 +29,18 @@ function withSensitiveHeaders<T extends NextResponse>(response: T): T {
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
 // fresh and gates the authenticated app shell.
 export async function proxy(request: NextRequest) {
+  // This generic document must not look up an account or an invitation.
+  // Its handler sets its own nonce CSP and non-authorizing candidate cookie.
+  if (request.nextUrl.pathname === "/withdraw/request") {
+    return NextResponse.next({ request });
+  }
+  // These rights operations use their own browser-bound credentials, not the
+  // signed-in account. An unrelated account's deletion notice must not block
+  // the recipient from declining an invitation.
+  if (request.nextUrl.pathname === "/api/rights/activate"
+    || request.nextUrl.pathname === "/api/withdraw/session") {
+    return withSensitiveHeaders(NextResponse.next({ request }));
+  }
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -74,7 +86,7 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
-  const sensitive = isProtected || path.startsWith("/api/");
+  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

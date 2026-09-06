@@ -15,6 +15,7 @@ export const EMAIL_RENDERERS = {
   "cohort-restriction-notice": ["cohort-restriction-notice.tsx", "CohortRestrictionNoticeEmail"],
   "embryo-draft-expired": ["embryo-draft-expired.tsx", "EmbryoDraftExpiredEmail"],
   "embryo-ingest-abandoned": ["embryo-ingest-abandoned.tsx", "EmbryoIngestAbandonedEmail"],
+  "invitation-terminal-notice": ["invitation-terminal-notice.tsx", "InvitationTerminalNoticeEmail"],
 } as const satisfies Record<MailTemplateId, readonly [string, string]>;
 
 export interface PublicDigestTemplate { slug: string; title: string; summary: string }
@@ -61,5 +62,8 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   for (const count of [1, 3]) add(`count-${count}`, { id: "cohort-restriction-notice", payload: { embryoCount: count } });
   add("expired", { id: "embryo-draft-expired", payload: {} });
   add("abandoned", { id: "embryo-ingest-abandoned", payload: {} });
+  for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended"] as const) {
+    add(kind, { id: "invitation-terminal-notice", payload: { kind } });
+  }
   return result;
 }

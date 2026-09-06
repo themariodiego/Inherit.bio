@@ -304,3 +304,57 @@ Whole-plan acceptance remains **18/65**. The canonical four-report renderer and
 real email capture adapter are delivered; full catalog/source migration,
 all-channel claim coverage, validated polygenic risk results and the remaining
 Family/Embryo, legal, privacy and usability requirements are not complete.
+
+## PR70 — Copilot output assertions and exact stream assembly
+
+PR70 merged reviewed head `bd830695e307f32a975cfa0733ff25878d5dbae1`
+as `f8c43bb7ffac3dec1233ffc7f86c8ebf3c11381c`.
+Complete CI `34009298500` finished successfully at 2026-09-06T03:48:17Z:
+**2,086 unit tests in 133 files, 812 database assertions in 22 suites,
+and 207 browser cases**. Browser time was 9.8 minutes; the runner explicitly
+confirmed no skips and no retries. This includes all 64 new completion cases,
+the final usability corrections, and the unchanged earlier refusal tests.
+The superseded-head CI run was cancelled, not counted as passing evidence.
+Post-merge main CI `34009931957` also completed successfully at the exact
+merge SHA (rechecked during the invitation-flow implementation).
+
+Production `dpl_HEGnV6PunNctYfGh7Voi9VMsT5VG`
+(`inherit-4w57kk9ap-mariodiego.vercel.app`) is READY at the exact merge.
+Both `inherit.bio` and `www.inherit.bio` are aliases of that deployment.
+Build start/ready milliseconds are `1788666534992` / `1788666562501`
+(27.5 seconds).
+
+Hosted smoke checks:
+
+- Both public domains return HTTP 200 for `/auth/sign-in`.
+- The existing authenticated browser session loads `/copilot/me`, showing
+  the subject-scoped heading and the no-provider setup instructions. No
+  provider was configured and no model request was made.
+- An unauthenticated `POST /api/chat` with an empty messages array returns
+  HTTP 401, the plain Unauthorized body, private/no-store caching,
+  no-sniff, no-framing and same-origin referrer protections.
+- The error/fatal count query after more than a minute from READY returned
+  no matching entries for 03:49:22–03:50:44 UTC. This is a short smoke window,
+  not long-running monitoring or proof of a live model conversation.
+
+Preview `dpl_DWe2zzrd35w6s3DDvNc9uKmLHp2T` builds READY but still returns
+500 on sign-in. Its middleware logs explicitly identify missing Supabase
+URL/key configuration. This repeats PR69's preview-environment gap, not a
+passed preview flow. Production credentials were not copied into preview.
+
+D-095 is repaired in the shipped self/adult chat path. The actual route now
+checks model-authored assertions, preserves legitimate conditional and
+uncertainty explanations, and reconstructs each streamed text part without
+inserting whitespace inside its tokens. Existing refusal strings replace
+the whole answer and all tool parts when a check fails. These deterministic
+regressions do not prove detection of every natural-language paraphrase.
+
+Whole-plan acceptance remains **18/65**. G4.8 remains NO: the complete A.9
+80-case evaluation, family/cohort tools and inherited scope flows, and live
+release evaluation are still required. The source-linked report and email
+work does not acquire further acceptance credit from this release.
+
+The AI SDK and Next.js guidance informed message assembly; deployment and
+observability guidance informed exact-revision and post-READY checks.
+No hosted schema/data mutation, real-user file operation, credential export,
+real email, new telemetry integration or genome-bearing model call occurred.
