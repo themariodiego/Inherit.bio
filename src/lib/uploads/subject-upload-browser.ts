@@ -7,7 +7,7 @@ import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt,
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
-  "too_large" | "upload_integrity_mismatch" | "unauthorized" | "unavailable";
+  "too_large" | "upload_integrity_mismatch" | "unauthorized" | "uploads_paused" | "unavailable";
 export class BrowserUploadError extends Error {
   constructor(readonly code: UploadFailureCode) { super(code); }
 }
@@ -34,6 +34,7 @@ export async function prepareSubjectFile(fileId: string) {
 async function responseFailure(response: Response): Promise<never> {
   const value: unknown = await response.json().catch(() => null);
   const code = value && typeof value === "object" && "error" in value ? value.error : null;
+  if (response.status === 503 && code === "uploads_paused") throw new BrowserUploadError("uploads_paused");
   if (["pdf_not_data", "subject_source_not_single_sample", "unrecognised_format", "too_large",
     "upload_integrity_mismatch", "unauthorized"].includes(String(code))) throw new BrowserUploadError(code as UploadFailureCode);
   throw new BrowserUploadError(response.status === 401 ? "unauthorized" : "unavailable");

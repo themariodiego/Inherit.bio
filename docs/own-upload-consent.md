@@ -432,3 +432,34 @@ case, not the Path-B per-file recipient reconfirmation ritual. Path-B and
 both embryo paths still need their complete separate integration, including
 physical source cleanup and honest result/unavailability states. Full-plan
 acceptance remains **18/65**.
+
+### Operator pause for new canonical uploads
+
+`INHERIT_CANONICAL_UPLOADS_PAUSED=true` stops new restricted upload leases and
+tokens in both canonical issuance aliases (`/api/files/upload-session` and
+`/api/uploads`). The flag is server-only and defaults off: only the exact
+string `true` pauses issuance. Set or remove it in the intended deployment's
+server environment and deploy that configuration through the normal release
+process; this is not a browser flag or a cross-deployment live toggle.
+
+Same-origin, declaration and verified account/session checks still run before
+a paused response. The pause then returns only HTTP 503 with
+`{"error":"uploads_paused"}`, before signer access or the atomic lease RPC.
+When unpaused, the existing consent, capacity, readiness and signing checks
+remain in force. A refreshed own-upload entry retains its preparation and
+identity checks, keeps unavailable/underage refusals, and shows a short pause
+message instead of upload controls. A stale uploader maps the closed 503 to
+the same recovery copy without starting Storage, finalization or retries.
+
+This flag is separate from `INHERIT_PAUSE_LEGACY_UPLOADS=true`, the legacy
+bridge's issuance pause. Neither flag substitutes for the other. Deployments
+can drain legacy issuance while canonical issuance is open on a protected
+candidate, or pause canonical issuance without changing the legacy bridge.
+No legacy transport or Storage policy is changed by the canonical switch.
+
+Already-issued canonical uploads may finish under their original deadlines
+and authority. Finalization, preparation/retry, chosen results, downloads,
+deletion and retention do not consult this flag. A pause is an issuance stop,
+not a revocation or deletion command. No hosted setting is enabled by this
+implementation; hosted configuration and actual paused/unpaused journey
+verification remain separate release evidence.

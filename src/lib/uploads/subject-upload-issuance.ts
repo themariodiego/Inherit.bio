@@ -4,6 +4,7 @@ import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { assertStorageUploadSignerAvailable, mintStorageUploadToken, storageUploadAuthorizationSchema } from "./storage-upload-token";
 import { directUploadReceipt, uploadSessionBody } from "./subject-upload-contract";
+import { canonicalUploadsPaused } from "./canonical-upload-pause";
 
 /** This endpoint accepts a small declaration, never the file or a filename. */
 async function readDeclaration(request: Request): Promise<unknown> {
@@ -38,6 +39,7 @@ export async function issueSubjectUpload(request: Request) {
     const actor = await currentOwnUploadAccount();
     if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
     if (!("subjectId" in body.data)) return ownUploadJson({ error: "unavailable" }, 503);
+    if (canonicalUploadsPaused()) return ownUploadJson({ error: "uploads_paused" }, 503);
     // No durable upload row when the deployment cannot mint its bearer.
     assertStorageUploadSignerAvailable();
     const { data, error } = await createAdminClient().rpc("issue_own_storage_upload_v1", {

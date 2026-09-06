@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
@@ -22,6 +23,7 @@ function request(input: unknown = body, headers: Record<string, string> = {}) {
 }
 beforeEach(() => {
   vi.resetAllMocks(); vi.useFakeTimers(); vi.setSystemTime(now);
+  vi.stubEnv("INHERIT_CANONICAL_UPLOADS_PAUSED", "");
   const pair = crypto.generateKeyPairSync("ec", { namedCurve: "prime256v1" }); publicKey = pair.publicKey;
   vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: jti }));
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://storage.example.test");
@@ -55,6 +57,42 @@ describe("closed subject upload declaration", () => {
 });
 
 describe("canonical upload issuance", () => {
+  it("registers the closed pause response for ordinary-subject issuance only", () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8"));
+    const endpoint = register.routes.find((entry: { id: string }) => entry.id === "api.file-upload-session");
+    expect(endpoint.policy.operationalPause).toMatchObject({ serverFlag: "INHERIT_CANONICAL_UPLOADS_PAUSED",
+      enabledValue: "true", responseContract: "canonical-uploads-paused-v1" });
+    expect(register.responseContracts[endpoint.policy.operationalPause.responseContract]).toMatchObject({
+      status: 503, body: { error: { const: "uploads_paused" } }, unknownFieldsRecursively: "forbidden",
+    });
+  });
+  it("refuses new leases while paused before signer or durable upload work", async () => {
+    vi.stubEnv("INHERIT_CANONICAL_UPLOADS_PAUSED", "true");
+    vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", "unavailable-signer");
+    const response = await issueSubjectUpload(request());
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "uploads_paused" });
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.getUser).toHaveBeenCalledOnce();
+    expect(mocks.getClaims).toHaveBeenCalledOnce();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("retains same-origin and authentication refusals while paused", async () => {
+    vi.stubEnv("INHERIT_CANONICAL_UPLOADS_PAUSED", "true");
+    expect((await issueSubjectUpload(request(body, { origin: "https://foreign.example" }))).status).toBe(403);
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    mocks.getClaims.mockResolvedValueOnce({ data: { claims: { sub: uploadId, session_id: sessionId } } });
+    const response = await issueSubjectUpload(request());
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "unauthorized" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it.each([undefined, "false", "1", "TRUE"])("keeps issuance enabled unless the canonical switch is exactly true (%s)", async flag => {
+    vi.stubEnv("INHERIT_CANONICAL_UPLOADS_PAUSED", flag);
+    vi.stubEnv("INHERIT_PAUSE_LEGACY_UPLOADS", "true");
+    expect((await issueSubjectUpload(request())).status).toBe(201);
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+  });
   it("uses verified account/session authority and returns the exact receipt with a real ES256 bearer", async () => {
     const response = await issueSubjectUpload(request());
     expect(response.status).toBe(201); const result = await response.json();

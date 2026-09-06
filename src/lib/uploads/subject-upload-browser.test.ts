@@ -119,6 +119,20 @@ describe("browser-to-Storage own-subject upload", () => {
     await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "too_large", message: "too_large" });
     expect(requests).toHaveLength(0);
   });
+  it("maps a stale uploader's paused issuance response without starting Storage or finalization", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "uploads_paused", detail: "private" }, { status: 503 }));
+    const progress = vi.fn();
+    await expect(uploadSubjectFile(file(), "me", progress)).rejects.toMatchObject({ code: "uploads_paused", message: "uploads_paused" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/files/upload-session");
+    expect(requests).toHaveLength(0);
+    expect(progress.mock.calls.some(([value]) => value.step === "uploading" || value.step === "validating")).toBe(false);
+  });
+  it("does not treat another failure status as an operational pause", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "uploads_paused" }, { status: 401 }));
+    await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "unauthorized" });
+    expect(requests).toHaveLength(0);
+  });
   it("does not retry or finalize a failed Storage transfer", async () => {
     vi.spyOn(FakeXHR.prototype, "send").mockImplementation(function(this: FakeXHR) { this.status = 403; this.onload?.(); });
     await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "unavailable" });

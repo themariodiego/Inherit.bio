@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { REQUEST_DATA_BUTTON } from "@/copy/embryos/index";
 import { UPLOAD_H1 } from "@/copy/embryos/upload";
 import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
+import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { route } from "@/lib/primary-routes";
 import { BrowserPreparationError, BrowserUploadError, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 
@@ -26,6 +27,7 @@ function uploadError(error: unknown): Extract<Phase, { step: "error" }> {
     too_large: "This file exceeds the current upload limit for your account.",
     upload_integrity_mismatch: "The uploaded copy did not match your file. Please choose the original file and try again.",
     unauthorized: "You are signed out. Sign in before uploading.",
+    uploads_paused: OWN_UPLOAD_COPY.uploadsPaused,
     unavailable: "The upload could not finish. Your existing files are unchanged. Please try again.",
   };
   return { step: "error", message: messages[code] };

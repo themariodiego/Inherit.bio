@@ -9831,6 +9831,18 @@
       },
       "failureEffects": "set-only-the-exact-safe-error-code-delete-every-upload-or-derived-object-and-write-no-genetic-row-result-or-analysis-job"
     },
+    "canonical-uploads-paused-v1": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "uploads_paused"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "effects": "after-same-origin-declaration-and-verified-account-session-checks-refuse-new-canonical-ordinary-subject-leases-before-signer-RPC-token-or-Storage; existing-uploads-and-file-controls-are-not-revoked"
+    },
     "file-too-large-v1": {
       "status": 413,
       "contentType": "application/json",
@@ -12154,6 +12166,7 @@
       ],
       "api.file-upload-session": [
         "upload-session-v1",
+        "canonical-uploads-paused-v1",
         "file-too-large-v1",
         "invalid-request-v1",
         "upload-refusal-v1",
@@ -14993,6 +15006,15 @@
         "prerequisiteCheckpoint": "before-first-durable-session-row-or-byte",
         "formatMatrix": "policyContracts.genetic-file-ingest-v1.targetFormatMatrix",
         "ordinarySubjectGate": "policyContracts.genetic-file-ingest-v1.ordinarySubjectSingleSample",
+        "operationalPause": {
+          "serverFlag": "INHERIT_CANONICAL_UPLOADS_PAUSED",
+          "enabledValue": "true",
+          "default": "off; unset-or-any-other-value",
+          "scope": "new-canonical-ordinary-subject-lease-and-token-issuance-only; not-cohort-transport",
+          "responseContract": "canonical-uploads-paused-v1",
+          "legacyFlag": "INHERIT_PAUSE_LEGACY_UPLOADS-is-separate-and-does-not-control-this-resolver",
+          "existingWork": "finalization-preparation-results-download-deletion-and-retention-keep-their-existing-authority-and-deadlines"
+        },
         "objectIdentity": "database-generated",
         "uploadClass": "server-set-once-and-immutable",
         "storageAccessContract": "genomes-server-mediated-v1",

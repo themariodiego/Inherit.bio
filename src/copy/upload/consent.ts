@@ -13,5 +13,6 @@ export const OWN_UPLOAD_COPY = {
   saving: "Saving…",
   failed: "We could not save this. Reload the page to try again with the current details.",
   unavailable: "We cannot prepare this upload right now. Your existing files and results have not changed.",
+  uploadsPaused: "New uploads are temporarily paused. Please try again later. Your existing files and reports are still available.",
   underage: "Inherit is for adults aged 18 or older.",
 } as const;
