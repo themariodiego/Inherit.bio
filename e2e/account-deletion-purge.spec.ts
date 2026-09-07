@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { uploadOwnFilePrepared } from "./own-report-helpers";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import {
   adminClient,
   createConfirmedUser,
@@ -10,7 +12,11 @@ import {
 } from "./helpers";
 
 // A13 — after the fixed notice period, the unattended worker deletes exact
-// storage handles, the complete supported self-account graph, and Auth last.
+// storage handles, generated own-report data, the supported self-account graph,
+// and Auth last. The composite worker selects multiple queues globally: this
+// case requires a clean disposable stack/CI and must not run on preserved
+// local sequence fixtures. The opt-in asserts that prerequisite; it creates
+// no isolation and must never be set merely to bypass a shared-stack refusal.
 
 const USER = { email: `purge-me-${randomUUID()}@e2e.local`, password: "e2e-purge-pw" };
 
@@ -18,12 +24,33 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   page,
   request,
 }) => {
+  expect(process.env.INHERIT_DISPOSABLE_LOCAL_E2E,
+    "Composite retention requires a clean disposable stack; never preserved local sequence fixtures").toBe("true");
   const userId = await createConfirmedUser(USER.email, USER.password);
   await signIn(page, USER.email, USER.password);
-  const fileId = await uploadOwnFilePrepared(page,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
+  const fileId = await uploadOwnFileWithChosenReports(page,
+    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
 
   const admin = adminClient();
+  // The shared UI helper proves exact source/grant completion. Independently
+  // count its private journals before and after the real account teardown;
+  // never print report payloads, genotypes or other accounts' rows.
+  expect(fileId).toMatch(/^[0-9a-f-]{36}$/);
+  expect(userId).toMatch(/^[0-9a-f-]{36}$/);
+  const privateCounts = async () => {
+    const { stdout } = await promisify(execFile)("docker", ["exec", "supabase_db_sequence", "psql", "-U", "postgres",
+      "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
+      select json_build_object(
+        'analysis', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid),
+        'completed', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid and state='complete'),
+        'normalization', (select count(*) from private.own_normalization_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid));
+    `], { timeout: 10_000, maxBuffer: 8192 });
+    return JSON.parse(stdout.trim());
+  };
+  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1 });
+  const prsBefore = await admin.from("user_prs").select("id", { count: "exact", head: true }).eq("file_id", fileId);
+  expect(prsBefore.error).toBeNull();
+  expect(prsBefore.count).toBeGreaterThan(0);
   const { data: file } = await admin
     .from("genome_files")
     .select("subject_id,storage_object_id")
@@ -69,6 +96,11 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     .single();
   expect(deletion?.id).toBeTruthy();
   expect(retention?.id).toBeTruthy();
+  // The cancellable notice has not physically purged these generated rows.
+  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1 });
+  const prsDuringNotice = await admin.from("user_prs").select("id", { count: "exact", head: true }).eq("file_id", fileId);
+  expect(prsDuringNotice.error).toBeNull();
+  expect(prsDuringNotice.count).toBe(prsBefore.count);
 
   // Advance the immutable deadline fields together to simulate the passage of
   // eight days without weakening the production worker's due checks.
@@ -151,6 +183,13 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     expect(result.error).toBeNull();
     expect(result.data).toEqual([]);
   }
+
+  for (const table of ["user_prs", "user_variants", "report_observed_calls"] as const) {
+    const residual = await admin.from(table).select("file_id", { count: "exact", head: true }).eq("file_id", fileId);
+    expect(residual.error).toBeNull();
+    expect(residual.count, table).toBe(0);
+  }
+  expect(await privateCounts()).toEqual({ analysis: 0, completed: 0, normalization: 0 });
 
   const missingObject = await admin.storage
     .from(storageObject!.bucket_id)
