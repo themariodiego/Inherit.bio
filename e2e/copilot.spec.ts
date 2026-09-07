@@ -107,6 +107,20 @@ test("cloud provider requires named disclosure before use; captured report backs
   expect(source.citations).toEqual(expect.arrayContaining([expect.objectContaining({ pmid: "10233211" })]));
   expect(report.unavailable_sources).toEqual([]);
   await expect(page.getByText("get_report", { exact: true })).toHaveCount(0);
+  // Reopen server-owned history through the actual user control.
+  await page.reload();
+  await page.getByText("Past conversations", { exact:true }).click();
+  const historyRead=page.waitForResponse(result => /^\/api\/chats\/[0-9a-f-]{36}$/.test(new URL(result.url()).pathname));
+  await page.getByRole("button", { name:/^Conversation from / }).click();
+  const historyResponse=await historyRead;
+  expect(historyResponse.status()).toBe(200);
+  const savedHistory=await historyResponse.json();
+  expect(savedHistory.messages).toHaveLength(2);
+  expect(savedHistory.messages[1]).toMatchObject({ content:CAFFEINE_ANSWER,citations:expectedCaffeineCitations(report) });
+  expect(savedHistory.messages[1].createdAt).toMatch(/Z$/);
+  await expect(page.getByText(CAFFEINE_ANSWER, { exact:true })).toBeVisible();
+  expect((await fixture.snapshot()).calls).toBe(2);
+
   // Actual rendered source-backed answer, at both supported review widths.
   for (const [name,width,height] of [["desktop",1280,900],["mobile",390,844]] as const) {
     await page.setViewportSize({ width,height });
