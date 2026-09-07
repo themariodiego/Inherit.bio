@@ -2,6 +2,14 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
+-- Independent bounded fixture configuration; the entire transaction rolls
+-- back, including any existing local singleton restored by ON CONFLICT.
+insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,
+ maximum_account_bytes,maximum_active_uploads)
+ values(true,'http://127.0.0.1:54321/auth/v1',65536,65536,262144,2)
+ on conflict(singleton) do update set auth_issuer=excluded.auth_issuer,
+ maximum_array_bytes=excluded.maximum_array_bytes,maximum_vcf_bytes=excluded.maximum_vcf_bytes,
+ maximum_account_bytes=excluded.maximum_account_bytes,maximum_active_uploads=excluded.maximum_active_uploads;
 -- Entirely synthetic, rollback-only identity and compressed-source metadata.
 insert into auth.users(id,email) values('76800000-0000-4000-8000-000000000001','generation@e2e.local');
 insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
