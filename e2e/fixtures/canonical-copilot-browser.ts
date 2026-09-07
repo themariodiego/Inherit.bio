@@ -44,11 +44,19 @@ export async function allowCopilot(page: Page) {
   await expect(permission.getByText("Copilot is allowed for this model configuration.", { exact: true })).toBeVisible();
 }
 export async function expectClosedCompletion(response: Response, expected: string) {
+  const request = response.request(), url = new URL(request.url());
+  expect(request.method()).toBe("POST"); expect(url.pathname).toBe("/api/chat"); expect(url.search).toBe("");
+  const submitted = request.postDataJSON();
+  expect(Object.keys(submitted).sort()).toEqual("chatId" in submitted ? ["chatId", "message"] : ["contextToken", "message"]);
+  expect(typeof submitted.message).toBe("string");
+  // Assert token shape only, so a failed assertion never dumps that capability.
+  if (!("chatId" in submitted)) expect(typeof submitted.contextToken === "string" && submitted.contextToken.length > 0).toBe(true);
   expect(response.headers()["content-type"]).toContain("application/json");
   const body = await response.json();
   expect(Object.keys(body).sort()).toEqual(["chatId", "message"]);
   expect(body.chatId).toMatch(/^[0-9a-f-]{36}$/);
   expect(response.headers()["x-inherit-chat-id"]).toBe(body.chatId);
+  if ("chatId" in submitted) expect(submitted.chatId).toBe(body.chatId);
   expect(body.message).toEqual({ role: "assistant", content: expected, citations: [], embryoFindings: [] });
   return body.chatId as string;
 }
