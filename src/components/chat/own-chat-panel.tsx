@@ -158,7 +158,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
         {busy ? <p className="text-sm text-ink-muted">Checking your question…</p> : null}
       </div>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
-      {awaitingContext && !busy ? <p role="status" className="text-sm text-ink-muted">Refreshing your permission check…</p> : null}
+      {awaitingContext && !busy ? <p role="status" className="text-sm text-ink-muted">Checking your permission…</p> : null}
       <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); void submit(); }}>
         <Textarea value={input} onChange={event => setInput(event.target.value)} maxLength={8000} disabled={busy || awaitingContext}
           onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {

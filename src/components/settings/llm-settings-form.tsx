@@ -91,7 +91,7 @@ export function LlmSettingsForm({
         </Select>
         {provider === "openai_compatible" ? (
           <p className="text-xs text-ink-muted">
-            {localAvailable ? "This self-hosted installation allows its configured local model addresses." : "This installation supports external HTTPS providers. A model on your computer is not reachable from the hosted site."}
+            {localAvailable ? "This server can use the local model addresses set by its owner." : "This server can use external HTTPS providers. It cannot reach a model on your computer."}
           </p>
         ) : null}
       </div>
@@ -146,7 +146,7 @@ export function LlmSettingsForm({
             </span>
           ) : provider === "openai_compatible" ? (
             <span className="font-normal text-ink-muted">
-              (optional if your provider does not require one)
+              (optional if your provider does not need one)
             </span>
           ) : null}
         </Label>

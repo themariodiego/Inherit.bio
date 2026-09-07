@@ -1,5 +1,14 @@
 # Readability audit
 
+## 2026-09-07 — personal Copilot controls
+
+Copilot now says "Checking your permission" and uses "need" in the optional
+key label. The local/external model explanation uses shorter sentences while
+retaining its network limit. The vocabulary registers three ordinary action
+and navigation words: `allow`, `conversation` and `withdraw`. These describe
+the existing explicit permission and history controls. Scoring, thresholds,
+sentence caps, jargon rules and fixtures are unchanged.
+
 ## 2026-09-06 — accountless invitation refusal
 
 The refusal UI uses ten newly registered ordinary words: `anything`,
