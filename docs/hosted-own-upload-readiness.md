@@ -1,5 +1,30 @@
 # Hosted own-upload rollout prerequisites
 
+
+## Protected current canary and test-mail readiness · 8 September 2026
+
+Current protected canary `f0ab225` is READY as
+`dpl_9nEofpr63YA2V7Ez4mDdNdPfYc1Q`, with stable alias
+`inherit-env-own-upload-canary-mariodiego.vercel.app`. All 1,170 deployment
+inputs match committed tracked files; only the two gitignore files are omitted.
+The five existing custom-environment application bindings are retained, SITE/APP
+URLs point to the stable protected alias at build and runtime, and candidate job
+secrets are empty. Fresh before/after project metadata confirms production cron
+ownership/definitions and protection are exactly unchanged. Production stays
+PR75; this is not a public release or proof of hosted findings/notice delivery.
+
+The owner reports Resend Pro usage of 3,169 / 50,000 (46,831 remaining), renewal
+September 16, and unlimited daily sending. The Resend plugin verifies inherit.bio
+sending is enabled. After the owner requested a dedicated test address,
+`inherit-test@plus.bio` was created and verified as a Zoho alias on the existing
+mailbox, without an additional license or primary-address change. This resolves
+the prior recipient/allowance prerequisite. A fresh Inherit account registration
+uses that alias; its verification email reached Zoho. Chosen report generation,
+actual application ready notice, withdrawal and source cleanup are still pending.
+No manual global worker or incompatible cutover migration has been run.
+Evidence remains under the parent task's `work/current-canary-refresh/` and
+`work/resend-plugin-readiness.json`. Full-plan acceptance remains **18/65**.
+
 Rollout preparation checkpoint, 7 September 2026. This is not a feature-release receipt.
 The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.

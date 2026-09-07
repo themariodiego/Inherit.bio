@@ -1,5 +1,24 @@
 # Local canonical upload browser boundary checks
 
+
+## Full CI browser checkpoint · 8 September 2026
+
+CI `34164082107` at `f0ab225` passed 3,122 unit tests, 52 SQL fixtures / 1,944
+assertions, static gates and the production build. The actual isolated Storage
+browser run passed **231/232** cases with one research-digest delivery failure.
+The namespace startup correction now reaches and completes the full suite.
+
+The research test assumed one global mail batch necessarily included its digest.
+A focused route regression proves 25 older ready notices occupy the first batch,
+leaving the digest for the next. The original CI queue count was not captured,
+so backlog remains an inferred cause pending rerun. Reviewed change `3504fc6`
+retains the positive recipient/content delivery assertion and permits at most ten
+successful batches, stopping on delivery failure, no progress or no remaining
+due work. It does not change the production worker, SQL, queue order or batch
+limit. Seventeen focused route/enqueue tests pass; all three research cases
+remain. Full CI rerun is pending. Failed log is preserved at
+`work/ci-34164082107-failed.log` in the parent task.
+
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. Browser evidence here uses only local synthetic
 or public reference files. Separate hosted schema staging is recorded in the
