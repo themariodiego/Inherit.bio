@@ -69,6 +69,24 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Canonical ancestry display integrated locally
+
+At `3677dfc`, ancestry and Overview read the checked completed journal, confirm
+the same captured result after other awaited reads, and show ancestry-only
+readiness without inventing report counts. Canonical lineage analysis remains
+explicitly uncomputed. Ninety-six focused units pass; scoped lint, TypeScript
+and diff checks pass, including the final Overview confirmation adjustment.
+The new ancestry generation and export/notice migrations have not run in a
+fresh database or been installed locally or hosted. Independent review found
+premature predecessor notices and cross-source export buffering; repair
+`abadca9` is preserved in its worktree and awaits rereview/integration.
+
+Next: integrate the reviewed repair, run a fresh isolated migration replay and
+affected rollback SQL fixtures, then verify ancestry/Overview through actual
+Storage in the production-build browser harness. Do not claim the new ancestry
+journey from focused unit checks. PR76 remains draft at remote `6fa1eaa` with
+failed CI; production remains PR75 and formal acceptance **18/65**.
+
 ### 2026-09-07 · PR76 CI reaches name classification gate
 
 CI `34115365058` at `6fa1eaa` passes typecheck, lint, the production build,
