@@ -49,11 +49,30 @@ fall inside the recorded fresh-build run, with `/app` bound to the frozen
 the correction records exact mounts, manifest hashes and timing separately.
 This is a provenance correction, not an additional passing browser run.
 
+At `c155a78`, the corrected reuse attempt discovered all 14 cases with the
+actual worker environment before starting servers. It passed the first
+two-upload/invitation case and the second case's actual grant status `201`,
+then timed out on Playwright's response-body read: **1 passed, 1 failed,
+12 not run**, zero retries. The application refreshed the Family row without
+consuming that response body. The product correction now consumes and validates
+the exact purpose/artifact/version grant receipt or timestamped revocation
+before refreshing, and handles transport errors visibly. Thirty focused
+receipt/API tests pass, including delayed and interrupted real response streams.
+The original browser receipt assertion remains intact; a new application build
+and browser run are required. The earlier two pretest setup failures (wrong
+host build pin and missing local worker environment) remain preserved as such.
+Latest actual attempt: `work/canonical-portrait-giab-verification-v4/`.
+
 GitHub CI `34137537643` at `001b72e` failed before browser execution because
 one negative-test URL used a non-reserved example hostname. The replacement
 uses `.invalid`; all 12 CI boundary tests and scoped lint pass with the same
 rejection assertion and unchanged name gate. Actual Linux execution of the
-new isolated runtime remains due. Earlier complete-suite failures are retained.
+new isolated runtime remains due. The subsequent `c155a78` run `34140491155`
+passes all preceding gates, database checks and production build, but stops
+before browser cases because namespace policy setup does not become ready.
+Its generic error lacks the underlying command/exit diagnostics; this is an
+infrastructure failure, not a passing browser run. Earlier complete-suite
+failures are retained.
 
 ## Search and report-count regression verified locally
 
