@@ -80,7 +80,7 @@ insert into claims values('reports.polygenic',pg_temp.generate('begin'));
 select is((select receipt->>'status' from claims),'authorized','one selected purpose starts its exact source run');
 select throws_ok($$select pg_temp.generate('begin')$$,'55000','analysis_in_progress','a live claim cannot be stolen by another begin');
 select is(pg_temp.generate('begin','reports.monogenic')->>'status','not_selected','polygenic does not authorize monogenic');
-select throws_ok($$select pg_temp.generate('begin','ancestry')$$,'22023','invalid_request','ancestry is not silently computed by this dispatcher');
+select is(pg_temp.generate('begin','ancestry')->>'status','not_selected','ancestry is not silently computed without its selected purpose');
 select is(pg_temp.generate('read-observed','reports.polygenic','{"loci":[{"chrom":2,"pos":135851076}],"offset":0}')->0->>'genotype','A/G',
  'GRCh37 source is selected by normalized GRCh38 locus with preserved allele call');
 select is(pg_temp.generate('read-observed','reports.polygenic','{"loci":[{"chrom":2,"pos":136608646}],"offset":0}'),'[]'::jsonb,
