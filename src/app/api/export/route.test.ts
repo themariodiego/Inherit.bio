@@ -22,7 +22,7 @@ vi.mock("@/lib/exports/own-subject-content", async importOriginal => {
     variants: async function* () { yield [{ rsid: 1, chrom: 1, pos: 100, ref: "A", alt: "G", genotype: "A/G" }]; if (mocks.fail) throw new Error("private source detail"); },
     observed: async function* () { yield [{ source_line: 9, genotype: "--", usable: false }]; },
     reports: async (s: { file: { id: string } }) => { mocks.reportReads++; return ({ file_id: s.file.id, original_name: "Genome file", source_revision: 1, source_sha256: "hash",
-      report_count: 1, reports: [{ slug: "saved-finding", purpose: "reports.polygenic", completed_at: "2026-09-06", provenance_note: "No catalog snapshot was captured.", conflictingRsids: [],
+      report_count: 1, reports: [{ slug: "saved-finding", purpose: "reports.polygenic", completed_at: "2026-09-06", provenance_note: "No catalog snapshot was captured.", covered: true, conflictingRsids: [],
         variants: [{ rsid: "rs1", status: "genotyped", genotype: "AG", interpretation: "Stored interpretation", strand_flipped: false }] }] }); },
     prs: async () => [],
   }) };

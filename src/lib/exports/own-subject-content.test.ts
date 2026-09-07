@@ -74,9 +74,28 @@ describe("own-subject export content", () => {
     expect(result.reports[0].conflictingRsids).toEqual([3]);
     expect(printed).toContain("rs3: conflicting source calls; no reliable genotype");
   });
+  it("exports completed all-conflict and uncovered evaluations without turning them into findings", async () => {
+    const conflict = { ...saved, report: { slug: "all-conflict", covered: false, conflictingRsids: [3],
+      variants: [{ rsid: 3, outcome: { status: "not-covered" } }] } };
+    const uncovered = { ...saved, report: { slug: "uncovered", covered: false, conflictingRsids: [],
+      variants: [{ rsid: 4, outcome: { status: "not-covered" } }, { rsid: 5, outcome: { status: "no-call" } }] } };
+    const reader = ownSubjectExportContent(db(a => a.p_operation === "check" ? source : a.p_offset ? [] : [conflict, uncovered]), actor);
+    const result = await reader.reports(source);
+    expect(result.report_count).toBe(2);
+    expect(result.reports.map(r => [r.slug, r.covered, r.conflictingRsids])).toEqual([
+      ["all-conflict", false, [3]], ["uncovered", false, []],
+    ]);
+    expect(renderOwnSubjectReport(result.reports[0])).toContain("rs3: conflicting source calls; no reliable genotype");
+    const printed = renderOwnSubjectReport(result.reports[1]);
+    expect(printed).toContain("Covered at generation: no");
+    expect(printed).toContain("rs4: not-covered");
+    expect(printed).toContain("rs5: no-call");
+    expect(result.reports.every(r => r.variants.every(v => v.genotype === null && v.interpretation === null))).toBe(true);
+    expect(result.reports.every(r => !("summary" in r) && !("evidence" in r) && !("citations" in r))).toBe(true);
+  });
   it("does not invent a result when no completed rows exist", async () => {
     const reader = ownSubjectExportContent(db(a => a.p_operation === "check" ? source : []), actor);
-    expect((await reader.reports(source)).reports).toEqual([]);
+    expect(await reader.reports(source)).toMatchObject({ report_count: 0, reports: [] });
     expect(await reader.prs(source)).toEqual([]);
   });
   it("serializes only PRS coverage and refuses unexpected numeric payload fields", async () => {

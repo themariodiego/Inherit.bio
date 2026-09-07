@@ -84,9 +84,8 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
       const reports = [];
       for await (const page of pages("reports", snapshot, resultSchema)) for (const row of page) {
         if (row.report.slug.startsWith("auto-e2e-")) continue;
-        if (!row.report.covered) continue;
         reports.push({ slug: row.report.slug, purpose: row.purpose, completed_at: row.completed_at,
-          conflictingRsids: row.report.conflictingRsids,
+          covered: row.report.covered, conflictingRsids: row.report.conflictingRsids,
           provenance_note: "These are the stored outcomes. Generation did not capture the catalog revision, report description, evidence level or citations.",
           variants: row.report.variants.map(({ rsid, outcome }) => ({ rsid: `rs${rsid}`,
             status: outcome.status,
@@ -134,6 +133,6 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
 
 /** Printable canonical content uses only the same captured data as JSON. */
 export function renderOwnSubjectReport(report: Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["reports"]>>["reports"][number]) {
-  return [report.slug, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, report.provenance_note,
+  return [report.slug, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, `Covered at generation: ${report.covered ? "yes" : "no"}`, report.provenance_note,
     ...report.variants.map(v => `${v.rsid}: ${report.conflictingRsids.includes(Number(v.rsid.slice(2))) ? "conflicting source calls; no reliable genotype" : (v.genotype ?? v.status)}${v.strand_flipped ? " [opposite strand]" : ""}${v.interpretation ? ` — ${v.interpretation}` : ""}`)].join("\n");
 }

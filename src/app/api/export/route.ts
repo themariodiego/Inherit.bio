@@ -258,7 +258,7 @@ function renderReportsTxt(
     out.push("-".repeat(Math.min(78, 6 + file.original_name.length)));
     if (file.reports.length === 0) {
       out.push("");
-      out.push("No covered reports for this file.");
+      out.push("source_revision" in file ? "No completed reports for this file." : "No covered reports for this file.");
       continue;
     }
 
