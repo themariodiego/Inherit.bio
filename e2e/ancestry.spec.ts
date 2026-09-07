@@ -37,6 +37,7 @@ const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
 
 test.afterEach(async ({ page }, info) => {
   if (info.status !== "passed") return;
+  await expect(page.locator('[data-slot="maternal-input-provenance"],[data-slot="paternal-input-provenance"]')).toHaveCount(0);
   for (const viewport of [{ name: "desktop", width: 1280, height: 800 }, { name: "phone", width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.screenshot({ path: info.outputPath(`ancestry-${viewport.name}.png`), fullPage: true });

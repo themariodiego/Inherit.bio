@@ -131,7 +131,7 @@ export default async function AncestryPage(
   let mt = captured.rows.find((row) => row.kind === "mtdna");
   let y = captured.rows.find((row) => row.kind === "ydna");
   const [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
-    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result ? [result.file_id] : [], { kind: "report", purpose: "ancestry" })),
+    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result?.result != null ? [result.file_id] : [], { kind: "report", purpose: "ancestry" })),
   );
 
   const current = new Set(await captured.confirm());
@@ -194,8 +194,8 @@ export default async function AncestryPage(
         />
       </div>
 
-      {mt ? <div data-slot="maternal-input-provenance"><InputProvenance nested sources={maternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
-      {y ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
+      {mt?.result != null ? <div data-slot="maternal-input-provenance"><InputProvenance nested sources={maternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
+      {y?.result != null ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
 
       <NeanderthalCard />
 
