@@ -39,7 +39,7 @@ beforeEach(() => {
   mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
   mocks.getUser.mockResolvedValue({ data: { user: { id: account, email: "ready@e2e.local", email_confirmed_at: "2026-09-06T12:00:00Z" } } });
   mocks.getClaims.mockResolvedValue({ data: { claims: { sub: account, session_id: session } } });
-  mocks.templates.mockResolvedValue([template, { ...template, slug: "synthetic-monogenic", layer: "variant_call" }]);
+  mocks.templates.mockResolvedValue([template, { ...template, slug: "synthetic-monogenic", layer: "variant_call", estimate_kind: null }]);
   mocks.rpc.mockImplementation(rpc);
 });
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); });
@@ -50,6 +50,8 @@ describe("independent synchronous own reports", () => {
     const completed = mocks.rpc.mock.calls.filter(call => call[1].p_operation === "complete");
     expect(completed).toHaveLength(1); expect(completed[0][1].p_purpose).toBe("reports.polygenic");
     const payload = completed[0][1].p_payload;
+    expect(payload.reports[0].catalogSnapshot).toEqual({ schemaVersion: 1, template });
+    expect(payload.reports[0].catalogSnapshot).not.toHaveProperty("templateSha256");
     expect(payload.reports).toHaveLength(1); expect(payload.reports[0].slug).toBe(template.slug);
     expect(payload.reports[0].variants[0].outcome).toMatchObject({ status: "genotyped", genotype: "AG",
       interpretation: template.variants[0].interpretations.AG });

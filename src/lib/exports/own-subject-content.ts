@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
 import { serializePrsCoverage } from "../genome/prs-output";
+import { reportCatalogSnapshotSchema } from "../genome/report-catalog-snapshot";
+import { isFixtureSlug } from "../../components/reports/library";
 
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
@@ -38,7 +40,9 @@ const outcomeSchema = z.discriminatedUnion("status", [
 const resultSchema = z.object({ purpose: z.enum(["reports.monogenic", "reports.polygenic"]), completed_at: z.string(),
   report: z.object({ slug: z.string(), covered: z.boolean(),
     variants: z.array(z.object({ rsid: z.number(), outcome: outcomeSchema }).strict()),
-    conflictingRsids: z.array(z.number()) }).strict() }).strict();
+    conflictingRsids: z.array(z.number()), catalogSnapshot: reportCatalogSnapshotSchema.optional() }).strict() }).strict()
+  .refine(row => !row.report.catalogSnapshot || (row.report.catalogSnapshot.template.slug === row.report.slug
+    && row.report.catalogSnapshot.template.layer === (row.purpose === "reports.monogenic" ? "variant_call" : "estimate")));
 const prsSchema = z.object({ pgs_id: z.string(), matched: z.number(), computed_at: z.string(), name: z.string().nullable(),
   trait: z.string().nullable(), ancestry_note: z.string().nullable(), n_variants: z.number().nullable() }).strict();
 
@@ -83,10 +87,13 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
     async reports(snapshot: OwnExportSnapshot) {
       const reports = [];
       for await (const page of pages("reports", snapshot, resultSchema)) for (const row of page) {
-        if (row.report.slug.startsWith("auto-e2e-")) continue;
+        if (isFixtureSlug(row.report.slug)) continue;
         reports.push({ slug: row.report.slug, purpose: row.purpose, completed_at: row.completed_at,
           covered: row.report.covered, conflictingRsids: row.report.conflictingRsids,
-          provenance_note: "These are the stored outcomes. Generation did not capture the catalog revision, report description, evidence level or citations.",
+          ...(row.report.catalogSnapshot ? { catalogSnapshot: row.report.catalogSnapshot } : {}),
+          provenance_note: row.report.catalogSnapshot
+            ? "These are the stored outcomes and the report reference captured when they were generated."
+            : "These are the stored outcomes. Generation did not capture the catalog revision, report description, evidence level or citations.",
           variants: row.report.variants.map(({ rsid, outcome }) => ({ rsid: `rs${rsid}`,
             status: outcome.status,
             genotype: outcome.status === "genotyped" || outcome.status === "unrecognized" ? outcome.genotype : null,
@@ -133,6 +140,10 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
 
 /** Printable canonical content uses only the same captured data as JSON. */
 export function renderOwnSubjectReport(report: Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["reports"]>>["reports"][number]) {
-  return [report.slug, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, `Covered at generation: ${report.covered ? "yes" : "no"}`, report.provenance_note,
+  const catalog = report.catalogSnapshot;
+  return [catalog?.template.title ?? report.slug, `Report: ${report.slug}`, `Purpose: ${report.purpose}`, `Completed: ${report.completed_at}`, `Covered at generation: ${report.covered ? "yes" : "no"}`, report.provenance_note,
+    ...(catalog ? [catalog.template.summary, `Evidence at generation: ${catalog.template.evidence}`,
+      `Catalog SHA-256: ${catalog.templateSha256}`,
+      ...catalog.template.citations.map(c => `Source: ${c.label}${c.pmid ? ` — https://pubmed.ncbi.nlm.nih.gov/${c.pmid}/` : ""}${c.doi ? ` — https://doi.org/${c.doi}` : ""}${c.accessedOn ? ` (read ${c.accessedOn})` : ""}`)] : []),
     ...report.variants.map(v => `${v.rsid}: ${report.conflictingRsids.includes(Number(v.rsid.slice(2))) ? "conflicting source calls; no reliable genotype" : (v.genotype ?? v.status)}${v.strand_flipped ? " [opposite strand]" : ""}${v.interpretation ? ` — ${v.interpretation}` : ""}`)].join("\n");
 }

@@ -11,6 +11,7 @@ import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
 import { ownReportSnapshot } from "./own-report-token";
 import { ownReportReadyEnvelope } from "./own-report-ready-envelope";
+import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
 
 const PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
 type Purpose = (typeof PURPOSES)[number];
@@ -94,6 +95,7 @@ export async function generateOwnReports(request: Request, fileId: string) {
         // Materialize the selected interpretation, not a false "all reports"
         // flag. Public readers still recheck purpose before any serialization.
         return { slug: template.slug, covered: report.covered,
+          catalogSnapshot: { schemaVersion: 1, template: reportCatalogTemplateSchema.parse(template) },
           variants: report.variants.map(row => ({ rsid: row.variant.rsid, outcome: row.outcome })),
           conflictingRsids: [...resolved.conflicts].filter(rsid => template.variants.some(v => v.rsid === rsid)) };
       });

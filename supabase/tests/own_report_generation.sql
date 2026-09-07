@@ -103,7 +103,56 @@ select throws_ok($$select pg_temp.generate('complete','reports.polygenic','{"rep
 create temporary table report_output as select jsonb_build_object('reports',jsonb_build_array(jsonb_build_object('slug',slug,'covered',1)),
  'prs','[{"pgs_id":"SYNTHETIC_OWN_GENERATION","raw_score":0.1,"coverage":0.2,"matched":1}]'::jsonb) payload
  from public.report_templates where slug='synthetic-own-generation-estimate' and status='published' and layer='estimate';
+-- Capture the exact reference input without rewriting the legacy fixture below.
+create temporary table captured_output as select jsonb_set(payload,'{reports,0,catalogSnapshot}',
+ jsonb_build_object('schemaVersion',1,'template',jsonb_build_object('slug',t.slug,'category',t.category,
+ 'title',t.title,'summary',t.summary,'evidence',t.evidence,'variants',t.variants,'pgs_id',t.pgs_id,
+ 'citations',t.citations,'layer',t.layer,'estimate_kind',t.estimate_kind))) payload
+ from report_output cross join public.report_templates t where t.slug='synthetic-own-generation-estimate';
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(
+ (select payload from captured_output),'{reports,0,catalogSnapshot,template,title}','"Different title"'))$$,
+ '22023','invalid_report_catalog','a description not used by the published template cannot be captured');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(
+ (select payload from captured_output),'{reports,0,catalogSnapshot,template,citations}','[{"label":"Invented"}]'))$$,
+ '22023','invalid_report_catalog','a substituted citation cannot be captured');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(
+ (select payload from captured_output),'{reports,0,catalogSnapshot,template,layer}','"variant_call"'))$$,
+ '22023','invalid_report_catalog','the other report purpose cannot supply captured metadata');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(
+ (select payload from captured_output),'{reports,0,catalogSnapshot,templateSha256}',to_jsonb(repeat('a',64))))$$,
+ '22023','invalid_report_catalog','the caller cannot choose the catalog digest');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(
+ (select payload from captured_output),'{reports,0,catalogSnapshot,schemaVersion}','null'))$$,
+ '22023','invalid_report_catalog','a null snapshot version fails closed');
+savepoint edited_catalog;
+update public.report_templates set title='Changed after generation read' where slug='synthetic-own-generation-estimate';
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',(select payload from captured_output))$$,
+ '22023','invalid_report_catalog','a catalog edit between read and completion cannot masquerade as the old reference');
+rollback to edited_catalog;
+savepoint unpublished_catalog;
+update public.report_templates set status='draft' where slug='synthetic-own-generation-estimate';
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',(select payload from captured_output))$$,
+ '22023','invalid_request','unpublished reference cannot complete a captured report');
+rollback to unpublished_catalog;
+savepoint captured_completion;
+select is(pg_temp.generate('complete','reports.polygenic',(select payload from captured_output))->>'status','complete',
+ 'an exact published reference completes with the real selected purpose');
+select is((select result#>>'{reports,0,catalogSnapshot,templateSha256}' from private.own_analysis_runs
+ where file_id='76800000-0000-4000-8000-000000000040' and purpose='reports.polygenic'),
+ (select encode(extensions.digest(convert_to((payload#>'{reports,0,catalogSnapshot,template}')::text,'UTF8'),'sha256'),'hex')
+ from captured_output),'the database digest binds all exact template fields');
+update public.report_templates set title='Later catalog title' where slug='synthetic-own-generation-estimate';
+select is((select result#>>'{reports,0,catalogSnapshot,template,title}' from private.own_analysis_runs
+ where file_id='76800000-0000-4000-8000-000000000040' and purpose='reports.polygenic'),'Synthetic generation estimate',
+ 'later catalog changes do not rewrite historical results');
+select throws_ok($$update private.own_analysis_runs set result=jsonb_set(result,'{reports,0,covered}','false')
+ where file_id='76800000-0000-4000-8000-000000000040' and purpose='reports.polygenic'$$,
+ '55000','completed_report_is_immutable','completed outcomes and their source reference cannot be rewritten');
+rollback to captured_completion;
 select is(pg_temp.generate('complete','reports.polygenic',(select payload from report_output))->>'status','complete','chosen report results publish atomically');
+select ok((select not(result#>'{reports,0}' ? 'catalogSnapshot') from private.own_analysis_runs
+ where file_id='76800000-0000-4000-8000-000000000040' and purpose='reports.polygenic'),
+ 'older application completion remains compatible and receives no invented historical metadata');
 select is(pg_temp.readable(),array['76800000-0000-4000-8000-000000000040'::uuid],'completed purpose now exposes this exact source');
 select is(pg_temp.readable('reports.monogenic'),'{}'::uuid[],'unchosen report family remains hidden');
 select is(pg_temp.generate('begin')->>'status','complete','repeat generation returns completed evidence without new work');

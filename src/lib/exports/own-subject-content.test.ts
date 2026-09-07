@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "./own-subject-content";
+import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 const id = (n: number) => `12345678-1234-4234-8234-${String(n).padStart(12, "0")}`;
 const actor = { accountId: id(1), sessionId: id(2) };
 const digest = (text: Uint8Array | string) => createHash("sha256").update(text).digest("hex");
@@ -92,6 +93,27 @@ describe("own-subject export content", () => {
     expect(printed).toContain("rs5: no-call");
     expect(result.reports.every(r => r.variants.every(v => v.genotype === null && v.interpretation === null))).toBe(true);
     expect(result.reports.every(r => !("summary" in r) && !("evidence" in r) && !("citations" in r))).toBe(true);
+  });
+  it("exports only the captured description and citations and rejects mismatched report authority", async () => {
+    const catalogSnapshot = { schemaVersion: 1, templateSha256: "a".repeat(64),
+      template: { ...gastrointestinal[0], layer: "estimate", estimate_kind: "single_locus" } };
+    const row = { ...saved, report: { ...saved.report, slug: catalogSnapshot.template.slug, catalogSnapshot } };
+    const reader = ownSubjectExportContent(db(a => a.p_operation === "check" ? source : a.p_offset ? [] : [row]), actor);
+    const result = (await reader.reports(source)).reports[0];
+    expect(result.catalogSnapshot).toEqual(catalogSnapshot);
+    const printed = renderOwnSubjectReport(result);
+    expect(printed).toContain(catalogSnapshot.template.title);
+    expect(printed).toContain(catalogSnapshot.template.summary);
+    expect(printed).toContain("https://pubmed.ncbi.nlm.nih.gov/11788828/");
+    expect(printed).toContain("read 2026-09-05");
+    expect(printed).not.toContain("did not capture");
+    for (const invalid of [
+      { ...row, purpose: "reports.monogenic" },
+      { ...row, report: { ...row.report, slug: "another-report" } },
+      { ...row, report: { ...row.report, catalogSnapshot: { ...catalogSnapshot, schemaVersion: 2 } } },
+    ]) {
+      await expect(ownSubjectExportContent(db(a => a.p_offset ? [] : [invalid]), actor).reports(source)).rejects.toThrow("export unavailable");
+    }
   });
   it("does not invent a result when no completed rows exist", async () => {
     const reader = ownSubjectExportContent(db(a => a.p_operation === "check" ? source : []), actor);

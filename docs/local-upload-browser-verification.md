@@ -3,6 +3,31 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## In-progress Copilot prerequisite: captured report references
+
+2026-09-07: new own-report generation now captures the exact selected public
+template (description, evidence, variants and citations). An additive completion
+trigger locks the published references, rejects changed/substituted inputs and
+adds a database-generated SHA-256 revision. Completed result content is immutable.
+Personal JSON and printable exports use that captured reference; historical
+results without it retain their explicit missing-metadata explanation. Nothing
+is backfilled from the current catalog.
+
+Focused application verification passes **33 tests in three files**, including
+every seed template's round trip and mismatched report/purpose rejection. The
+extended `supabase/tests/own_report_generation.sql` passes **46 assertions** with
+the new migration inside one rollback-only transaction on the local stack;
+post-rollback checks confirm both the migration and synthetic identity are absent.
+Scoped ESLint and diff checks pass. Independent SQL review found no blocking issue.
+Task evidence: `work/catalog-snapshot-verification/rollback-verification.log`.
+
+This is an implemented, focused-verified prerequisite, not an integrated Copilot
+browser receipt. No migration was persisted or hosted change made. Install the
+additive migration before enabling the new writer, and deploy snapshot-aware
+readers with it: an older strict canonical export reader cannot consume newly
+snapshotted results. Any rollback build must retain those readers. Production
+remains PR75 and full-plan acceptance **18/65**.
+
 ## Latest verified checkpoint
 
 At `6e9acd6`, one production-build run passes **69/69 cases in 20 specs**,
