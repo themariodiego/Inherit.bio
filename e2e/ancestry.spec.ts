@@ -312,7 +312,10 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
   }
   expect(await percentTextNodes(page, { visibleOnly: false, outside: '[data-figure-kind="ancestry-share"]' })).toEqual([]);
   await expect(page.locator('[data-testid="admixture"] [data-claim-block][data-subject-id]').filter({ has: page.locator('[data-figure-kind="ancestry-share"]') })).toHaveCount(1);
-  await expect(page.locator('[data-slot="input-provenance"]')).toHaveCount(3);
+  // One computed region result has source facts. Uncomputed parent lines
+  // must not imply that their markers were analyzed by repeating that block.
+  await expect(page.locator('[data-slot="input-provenance"]')).toHaveCount(1);
+  await expect(admixture.locator('[data-slot="input-provenance"]')).toHaveCount(1);
   await expect(page.locator('[data-slot="input-provenance"] details')).toHaveCount(0);
 
   // The toggle: a labelled switch, on by default; the sum rule holds in both states.
