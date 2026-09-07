@@ -30,7 +30,17 @@ design. No canonical activity or Family snapshot was created. The recorded
 zero ancestry journals, overlapping notices and active deletions were checked
 again immediately before their dependent steps. See `applied-receipt.json`
 and the preserved per-step preflight/apply/postflight artifacts in the bundle.
-Portrait migration `20260907142213` is local only and outside this installation.
+Portrait migration `20260907142213` was subsequently installed separately as
+hosted `20260907204441`, after all 14 local Portrait/GIAB browser cases passed.
+Bundle `work/portrait-hosted-staging-c155a78/` preserves fresh metadata checks,
+independent review, exact wrapper and applied receipt. All five new function
+bodies/owners/ACL/security settings, private table constraints and direct access
+match the verified local schema. The full stored wrapper SHA-256 is
+`3534d5e6d6393f075549693bc7f238573a5992903362b4744a4d2733756537eb`.
+All six existing dependencies are unchanged; zero new Portrait grant snapshots
+exist. This is additive schema staging only, without application RPC or worker
+invocation. Health Picture migration `20260907153506` remains local only (78
+local migrations; 46 original rollback SQL assertions pass after installation).
 
 Family adds a new strong directional-grant writer and preserves PR75's writer.
 Schema is installed before the application: old report tokens presented to the new

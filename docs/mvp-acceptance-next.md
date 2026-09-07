@@ -69,6 +69,27 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Portrait hosted prerequisite and Health Picture local integration
+
+Portrait's additive migration is now installed hosted as `20260907204441`.
+Its five function bodies, owners, execution privileges and security settings,
+private table constraints/access and full stored SQL SHA-256 match the locally
+verified source. All six dependency fingerprints remain unchanged; the new
+private grant table is empty. No application RPC, generation or worker ran.
+Production remains PR75; this is schema staging, not deployed Portrait proof.
+
+Health Picture's data migration is installed on the owned synthetic local
+stack (78 migrations). Its original 46 SQL assertions pass there and roll
+back. Page integration and actual browser verification remain open. Review
+caught own report detail ignoring the selected source; an exact captured-source
+reader is being implemented before that link is released.
+
+CI `34159990877` on `acb7c30` stopped at TypeScript: the new isolated shell
+regression environment omitted Next's required `NODE_ENV`. Correction
+`fe429bf` adds only `NODE_ENV: "test"`; its 16 focused tests, lint and full
+local type check pass. The earlier namespace startup failure remains
+unresolved until CI reaches its new diagnostics. Acceptance stays **18/65**.
+
 ### 2026-09-07 · Portrait permissions and public reference-file journey verified locally
 
 All 14 Portrait/GIAB browser cases pass together at `f0e1b5f`, with four real
