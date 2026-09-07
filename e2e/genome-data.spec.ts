@@ -122,7 +122,7 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   await expect(tableInputs.locator('[data-provenance="computed:genome/browser"] [data-slot="figure-value"]')).toContainText("1 of the 1");
   const trackInputs = inputs.locator('[data-slot="track-input-provenance"]');
   await expect(trackInputs).toContainText("newest processed file");
-  await expect(trackInputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toContainText("4 of the 4");
+  await expect(trackInputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText("calls in 4 of 4 listed, supported records");
 
   // The region: the coordinate range as text, the first-party sentence and
   // the track, whose canvas marks the library as initialised.

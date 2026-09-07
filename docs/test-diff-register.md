@@ -24,6 +24,14 @@ real provider/CORS/Chromium transport check pass. APIRequest and route.fetch
 now use direct HTTP; route.fetch does not invent the browser Sec-Fetch-Site
 header. Disposable CI cannot narrow test selectors or retain bearer traces.
 
+The first integrated 65-case run at `5ee7121` recorded four passes, one old
+listed-call wording failure and 60 cases not run. Exact canonical source-rate
+phrases now retain 4/4 and 11/11; report-specific coverage wording is unchanged.
+Preflight also found that the later two-layer count case needs an explicit
+monogenic choice: it now generates that second layer for the existing source
+at that case, while the earlier estimate-only case stays polygenic-only.
+No count, scientific meaning or authorization assertion is weakened.
+
 Own-upload MVP verification (2026-09-06): the two-file control case proves
 exact downloads, conflict refusal, visible deletion failure/retry, real
 selected-source Storage removal and preservation of the other source. The

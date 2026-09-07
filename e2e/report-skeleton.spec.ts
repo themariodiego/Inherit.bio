@@ -1,4 +1,4 @@
-import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { generateOwnFileWithChosenReports, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -28,6 +28,7 @@ import { readStudyContext } from "../src/lib/genome/study-context";
 // Fresh identities isolate this suite from files left by an earlier local run.
 const RUN_ID = randomUUID();
 const USER = { email: `skeleton-user-${RUN_ID}@e2e.local`, password: "e2e-skeleton-pw" };
+let reportFileId: string;
 /** A second account whose only file covers every Medicines position. */
 const MEDICINES_USER = {
   email: `skeleton-medicines-${RUN_ID}@e2e.local`,
@@ -206,7 +207,7 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
+  reportFileId = await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
 
   await page.goto(CAFFEINE);
 
@@ -245,7 +246,7 @@ test("a covered estimate report renders the six headings, one attributed genotyp
     await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
   }
   await expect(inputs.locator('[data-provenance="computed:genome/reports"] [data-slot="figure-value"]')).toHaveText('read 1 of the 1 positions this needs');
-  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('read 4 of the 4 positions this needs');
+  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('calls in 4 of 4 listed, supported records');
   await expect(inputs).toContainText('No change of genome coordinates was needed.');
   await expect(inputs).toContainText('cannot verify where they came from');
   // A single-variant report has no per-variant locus line in "Your result".
@@ -381,6 +382,9 @@ test("the reports list's estimate group renders its one layer definition, layer-
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
+  // This case asserts completed-file counts for both layers, so explicitly
+  // enable and generate the second layer only when that precondition is needed.
+  await generateOwnFileWithChosenReports(page, reportFileId, ["reports.monogenic", "reports.polygenic"]);
   await page.goto("/genome/me/reports?layer=estimate");
 
   await expect(page.locator("main h1")).toHaveText("Reports");
@@ -569,7 +573,7 @@ test("a covered Medicines report renders the variant-call genotype figure, the M
     await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
   }
   await expect(inputs.locator('[data-provenance="computed:genome/reports"] [data-slot="figure-value"]')).toHaveText('read 1 of the 1 positions this needs');
-  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('read 11 of the 11 positions this needs');
+  await expect(inputs.locator('[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]')).toHaveText('calls in 11 of 11 listed, supported records');
   await expect(
     page.locator(
       `[data-claim-block][aria-label="${variant.gene} rs${variant.rsid}"][data-density-primary-claim="true"]`,
