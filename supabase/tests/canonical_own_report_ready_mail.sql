@@ -135,7 +135,7 @@ select is((select template_payload from original_notice),'{"reportCount":0,"dash
 select is(pg_temp.generate('ready','reports.polygenic',pg_temp.envelope()),'true'::jsonb,'completed replay acknowledges the durable event');
 select throws_ok($$select pg_temp.generate('ready',null,pg_temp.envelope())$$,
  '22023','invalid_request','ready cannot select a null purpose');
-select throws_ok($$select pg_temp.generate('ready','ancestry',pg_temp.envelope())$$,
+select throws_ok($$select pg_temp.generate('ready','unsupported.fixture-purpose',pg_temp.envelope())$$,
  '22023','invalid_request','ready adapter cannot widen supported report operations');
 select ok((select (m.id,m.contact_reference_id,m.expires_at,m.idempotency_key,m.canonical_readiness)=(o.id,o.contact_reference_id,o.expires_at,o.idempotency_key,o.canonical_readiness)
  from public.mail_outbox m join original_notice o using(id)),'replay preserves event contact identity and deadline');
@@ -217,15 +217,26 @@ update auth.users set email_confirmed_at=null where id='78800000-0000-4000-8000-
 select ok(not private.authorize_mail_submission_v1((select id from original_notice),(select attempt_ordinal from ready_claim)),
  'loss of Auth email verification terminalizes current delivery authority');
 rollback to submission_fences;
--- Table-wide profile grants cannot bypass the new field guard.
-select set_config('request.jwt.claims','{"sub":"78800000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+-- Table-wide profile grants cannot bypass server-owned revision guards.
+-- The newer Copilot INSERT guard runs first alphabetically on profiles. Test
+-- that integrated refusal below, and exercise the unchanged mail guard's own
+-- INSERT branch on a rollback-local table without disabling either real guard.
+create temporary table mail_revision_guard_fixture(id uuid,mail_contact_revision bigint not null default 1);
+create trigger mail_revision_guard_fixture before insert on mail_revision_guard_fixture
+ for each row execute function private.guard_profile_mail_contact_revision_v1();
+grant insert on mail_revision_guard_fixture to authenticated;
+select set_config('request.jwt.claims','{"sub":"78800000-0000-4000-8000-000000000001","session_id":"78800000-0000-4000-8000-000000000010","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$update public.profiles set mail_contact_revision=9 where id='78800000-0000-4000-8000-000000000001'$$,
  '42501','mail_contact_revision_server_only','browser cannot manufacture a contact revision through table UPDATE');
 select throws_ok($$insert into public.profiles(id,mail_contact_revision) values('78800000-0000-4000-8000-000000000001',9)$$,
- '42501','mail_contact_revision_server_only','browser INSERT cannot seed its own revision');
+ '42501','not_found','integrated profile INSERT cannot seed a browser-owned revision');
 select throws_ok($$insert into public.profiles(id) values('78800000-0000-4000-8000-000000000001')$$,
- '42501','mail_contact_revision_server_only','browser recreation cannot reset the counter to its default');
+ '42501','not_found','integrated profile recreation cannot reset the counter to its default');
+select throws_ok($$insert into mail_revision_guard_fixture(id,mail_contact_revision) values('78800000-0000-4000-8000-000000000001',9)$$,
+ '42501','mail_contact_revision_server_only','mail guard itself rejects an explicit revision on INSERT');
+select throws_ok($$insert into mail_revision_guard_fixture(id) values('78800000-0000-4000-8000-000000000001')$$,
+ '42501','mail_contact_revision_server_only','mail guard itself rejects default revision recreation');
 reset role;
 rollback to submission_fences;
 update public.encrypted_contact_references set status='rotated',ended_at=clock_timestamp() where id=(select contact_reference_id from original_notice);
