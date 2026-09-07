@@ -2,6 +2,24 @@
 
 ## Latest integration · 2026-09-07
 
+At `6e9acd6`, **69/69 selected cases in 20 specs pass in one run**, with no
+skips/retries and 33 actual provider uploads. This combines the earlier 65
+cases with canonical mail expiry, pagination export, account notice/cancellation
+and the first self-file deletion case. The source fixture is now a bounded
+2,005-call synthetic gzip; the old compressed HG001 correctly exceeded the
+decoded-size limit. Account purge still requires an isolated disposable stack,
+and the other-adult deletion fixture still requires a genuine supported source
+or explicit legacy isolation setup. Full discovery remains 226, not 226 passes.
+
+The remaining nine `ingestFileAs` sites are not merely stale selectors:
+ancestry/Overview need canonical ancestry output, Copilot needs checked canonical
+source loaders, recipient/joint views need their actual authority and generation,
+and Health Picture needs ROH computation. Resumable BAM is an additional gap
+outside those nine calls. Preserve their substantive assertions; changing status
+flags or narrowing standard CI does not implement those missing behaviors.
+
+### Previous export-only integration
+
 The actual-provider bootstrap is integrated into the standard runner, with both
 projects and the paused server retained. Six report/source specs use explicit
 source-only or selected-report preconditions. Runtime `5ee7121` has passing

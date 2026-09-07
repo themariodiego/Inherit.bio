@@ -8,16 +8,19 @@ PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
 The protected hosted canary remains `9ffb68a` (unchanged `8166c3b` runtime),
 with the successful hosted source/report/withdrawal evidence recorded below.
-The new export and revocation-executor runtime is still local. Selected browser
-evidence now covers all 65 cases across documented test-only corrections; see
-[the local receipt](local-upload-browser-verification.md). Required ready
-notices and remaining full-suite regressions are still being completed.
+The new export, revocation executor and ready-notice runtime is still local.
+At `6e9acd6`, all **69 selected browser cases pass together**, with no
+skips/retries and 33 actual provider uploads; see
+[the local receipt](local-upload-browser-verification.md). Runtime `6c25379`
+passes 2,702 units and typecheck. Full CI remains incomplete.
 
-A new isolated cluster replayed all **67 migrations** at `a2ae65a`, with
-exact lexical history and file hashes verified. Four rollback-only SQL files
-at test revision `48b28ac` pass **124/124 assertions**: revocation executor 41,
-export 29, generation 34 and registry 20. The disposable cluster was removed;
-shared local fixtures and hosted state were untouched.
+A fresh isolated cluster replayed all **68 migrations** at `6c25379`, with
+exact lexical history and file hashes verified. Eleven rollback-only fixtures
+pass **299/299 assertions**, including 67 canonical notice checks and the
+existing export, generation, revocation, mail and deletion contracts. Successful
+isolated projects were removed; earlier failures remain retained. This supersedes
+the previous 67-migration / 124-assertion checkpoint. The corrected new notice
+migration SHA-256 is `875c9e94b549783d72658905cc92b95ec90d16b51f06ac358e051741d7a4cbfa`.
 
 Fresh replay exposed a packaging defect in
 `20260906135854_own_report_layer_language.sql`: its table lock depended on
@@ -30,10 +33,33 @@ configuration and synthetic template/PGS references inside rollback transactions
 instead of depending on the older local database's seed. All initial failures
 are retained in the task receipts.
 
-The two new executor/export migrations have not been applied hosted. A
-replacement canary still needs current cost checks, compatible migration
-staging, reviewed notices, and bounded synthetic verification. Public aliases
-and scheduled jobs remain PR75; acceptance stays **18/65**.
+The three executor/export/notice migrations have not been applied hosted.
+Current Vercel cycle usage at `2026-09-07T07:10:26Z` is about $1.72 against
+$20 included credit, with billed usage rounding to $0.00. This establishes
+headroom for one bounded candidate build, not an enforced spending cap.
+The stable alias `inherit-env-own-upload-canary-mariodiego.vercel.app` still
+targets `dpl_9W634MRCEadvBBvoB4tHg5KhEU5p` at the 07:20 UTC read. A replacement
+must set `NEXT_PUBLIC_SITE_URL` to that protected alias at build and runtime.
+Public aliases and scheduled jobs remain PR75; acceptance stays **18/65**.
+
+### Shared mail-worker transition
+
+PR75 and this candidate have identical mail-worker, sender, crypto and
+report-ready template code. The new migration retains claim/pre-submit RPC
+signatures and legacy eligibility while adding canonical checks. The live
+minute cron can therefore consume and decrypt newly queued canonical notices.
+Excluding mail credentials from preview does **not** isolate that shared outbox.
+Successful chosen-report completion or completed-work replay may trigger mail;
+source-only preparation does not.
+
+Before hosted generation, obtain explicit delivery authorization for a designated
+owner-controlled synthetic recipient, or establish a separately reviewed hold on
+all mail invocations including in-flight work. A post-enqueue cleanup races the
+worker and is insufficient. No hold, provider call or delivery has been performed.
+On application rollback retain the additive database migration and its contact,
+readiness and submission guards; application rollback alone does not stop queued
+delivery. Compatible staging and source-only canary checks can proceed without
+claiming notification delivery or changing production scheduling.
 
 ## Previous staging checkpoint · 18:35 UTC, 6 September 2026
 

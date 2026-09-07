@@ -69,6 +69,24 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Own ready notices and control regressions verified locally
+
+At `6e9acd6`, one actual-provider run passes all **69 selected browser cases**
+with no skips/retries and 33 real Storage uploads. It combines the earlier
+65-case scope with durable chosen-report notices, immutable expiry/replay,
+three-page exact export, account notice/cancellation, and self-file deletion
+that preserves a second source. Runtime `6c25379` passes 2,702 units and
+typecheck; all 68 migrations install fresh and eleven SQL fixtures pass 299
+assertions. See [the local receipt](local-upload-browser-verification.md).
+
+No PR was merged. Production and the protected hosted canary remain unchanged;
+acceptance stays **18/65**. The production mail worker can consume canonical
+notices queued by a replacement candidate, so missing preview mail credentials
+do not isolate delivery. Next: compatible hosted staging and a protected build,
+then an explicitly authorized synthetic delivery check and operational cleanup.
+Full CI also needs canonical ancestry, Copilot, recipient/joint workflows and
+resumable BAM support; replacing their helpers cannot close those product gaps.
+
 ### 2026-09-07 · Canonical export and fresh-install prerequisites verified locally
 
 The actual ZIP journey now preserves both originals and all prepared calls,

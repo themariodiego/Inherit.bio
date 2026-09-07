@@ -1,5 +1,24 @@
 # Test diff register
 
+Canonical notice/source-control verification (`6e9acd6`, 2026-09-07): all
+69 selected cases pass together with zero skips/retries and 33 actual provider
+uploads. This supersedes the pending notice, expiry, export and first self-file
+deletion statuses below. The account purge and other-adult deletion cases remain
+unrun on preserved local fixtures. The initial five-case attempt passed three,
+failed oversized HG001 finalization with a correct 413 and left one serial case
+unrun. Its 99.7 MB decoded source exceeded the 50 MiB configured ceiling.
+The replacement is a wholly synthetic 2,005-call gzip within that ceiling;
+existing byte/count/privacy assertions remain and exact CSV rows plus raw and
+decoded hashes are added. No runtime limit or existing fixture was changed.
+
+Ready-notice SQL review found and corrected an unsupported PostgreSQL regex
+bound and NULL predicate propagation. Source identity remains immutable; the
+rollback-only negative test changes its normalization manifest instead of the
+file hash. Releasing the final teardown savepoint preserves pgTAP bookkeeping
+while the outer transaction still restores data. Final exact fresh migration
+and eleven-fixture verification passes 68 migrations and 299 assertions at
+`6c25379`; previous failed receipts remain retained.
+
 Canonical notice/source-control fixture migration (2026-09-07, unverified
 browser batch at `1043838`): mail expiry first proves preparation queues no
 ready notice, then chooses polygenic generation and retains exact immutable

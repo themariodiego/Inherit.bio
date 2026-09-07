@@ -5,6 +5,36 @@ Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
 
+At `6e9acd6`, one production-build run passes **69/69 cases in 20 specs**,
+with zero skips, retries or flaky cases and **33 actual provider uploads**.
+Start: `2026-09-07T07:14:29.933Z`; duration: 388.6 seconds. The earlier
+65-case scope now passes together with canonical ready-mail expiry/replay,
+three-page export, account deletion notice/cancellation and first self-file
+deletion. Account purge and the unsupported other-adult deletion case were
+outside this selected run; the full standard discovery remains 226 cases.
+
+The canonical notice runtime at `6c25379` also passes **2,702 units in 171
+files**, typecheck, and a fresh **68-migration / 299-assertion** SQL gate.
+Only the pagination test input changed between those commits. The new local
+migration preserved existing fixture counts and migration history. One older
+local guard had a different owner; its temporary transaction-local ownership
+transfer was restored with the original ACL before commit. New functions
+remain owned by `postgres`. Hosted schema and public deployment are unchanged.
+
+The first five-case browser attempt passed mail expiry, own export and file
+deletion, but the old compressed HG001 input expanded to 99,744,915 bytes,
+above the configured 52,428,800-byte decoded limit. Its 413 was correct;
+the following serial cancellation case did not run. A deterministic synthetic
+gzip now supplies 2,005 distinct calls across three pages (5,460 compressed /
+92,573 decoded bytes). Exact CSV rows, original bytes, decoded bytes and both
+source hashes are verified. Existing files, runtime limits and other assertions
+were preserved. Failed and successful JSON receipts remain in task evidence.
+
+This closes the local own-notice/export/control checkpoint. It does not prove
+provider delivery, scheduled hosted cleanup, full CI or whole-plan acceptance.
+
+## Previous export checkpoint
+
 The integrated runtime at `5ee7121` now has passing evidence for every case
 in the selected 65-case, 17-spec set, across documented runs after test-only
 corrections. This is not a single passing 65-case run or the full 226-case gate:
