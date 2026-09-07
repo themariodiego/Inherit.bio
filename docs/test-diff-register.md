@@ -1,5 +1,64 @@
 # Test diff register
 
+## BAM/CRAM historical proof and current refusal contract · 2026-09-07
+
+`e2e/tier2-upload.spec.ts` now has two current-contract cases, one each for BAM
+and CRAM. This explicitly retires its earlier positive storage/TUS expectation;
+it does not implement resumable BAM/CRAM, count their rejection as A10 success,
+or claim that the current full browser suite passes.
+
+The historical A10 statement, verdict and evidence remain intact in
+[acceptance-matrix.md](./acceptance-matrix.md). Its positive test was introduced
+at `f1b148c` and last adjusted at `ffa7099`; inspect the preserved implementation
+with `git show ffa7099:e2e/tier2-upload.spec.ts`. That proof exercised an
+approximately 14 MB BAM-magic fixture, interrupted/resumed TUS, stored/hash/size
+presentation and byte-identical download. Existing `e2e/fixtures/tiny.bam` is
+not changed or removed by this reconciliation.
+
+The reason is an accepted contract change, not a changed UI or failing test:
+[ADR0016](./adr/0016-supersede-large-file-transport-and-compute.md), introduced
+with the closed route register at `c078de4`, supersedes ADR0001 in full and
+explicitly excludes BAM/CRAM storage and mandatory TUS/6 MiB behavior. The
+original brief permits superseding ADRs (§A.1, C1), requires an explicit test
+disposition (G8.1), and preserves historical acceptance evidence. Restoring
+these formats would need another accepted ADR and coherent route-register
+change, not ordinary-login Storage credentials or a fixture bypass.
+
+The replacement assertions exercise the real boundary more directly:
+
+- Actual file selection refuses both binary formats, including misleading VCF
+  filenames, with the exact error and reusable picker, zero issuance/Storage/
+  processing requests, zero leases and zero genetic/output rows.
+- Native authenticated requests to both upload-session aliases reject explicit
+  BAM/CRAM declarations with exact `422 {error: "invalid_request"}` and no lease.
+- A deliberately misdeclared supported declaration receives a real restricted
+  one-object capability and uploads the exact tiny signature fixture to actual
+  Storage. An independent Storage read verifies its bytes. Actual bodyless
+  server finalization must return exact `415 {error: "unrecognised_format"}`,
+  consume/reject the lease, acknowledge cleanup, and leave zero staging/final
+  objects, file rows, variants, observations, PRS/ancestry/journals, jobs or ready
+  notices. No processing request or downloadable file may appear.
+
+Supported transport and recovery positives remain in
+`e2e/own-upload-positive.spec.ts` and `e2e/own-upload-pause.spec.ts`, with their
+existing actual-provider receipts recorded in
+[local-upload-browser-verification.md](./local-upload-browser-verification.md).
+These prove current direct Storage/finalization recovery, not legacy TUS resume.
+
+Verification for this test-only change (both commands exit 0):
+
+- `pnpm exec eslint e2e/tier2-upload.spec.ts --max-warnings=0`
+- `pnpm exec playwright test e2e/tier2-upload.spec.ts --list --project=chromium`
+  discovers exactly the BAM and CRAM cases above.
+
+Two executable cases are retained without skips/retries. Browser execution is
+pending root integration: local focused command
+`node --import tsx scripts/run-upload-browser.mts -- e2e/tier2-upload.spec.ts`.
+Standard CI remains `pnpm e2e`, with no narrowed selectors. Required execution is the existing actual-provider
+bootstrap with the exact local synthetic stack (`supabase_db_sequence` for
+read-only private-table proof), current migrations and test build. The signature
+fixtures contain no real genetic data and make no alignment-validity claim.
+
 PR74/PR75 integration (2026-09-07): the canonical replacement retains the
 released My genome → starter reports → Family → Embryos layout, including
 PR74's desktop/mobile DOM-order and non-overlap assertions in `overview.spec.ts`.

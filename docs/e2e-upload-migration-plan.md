@@ -37,9 +37,15 @@ Full CI and hosted delivery remain open.
 
 The remaining six sites are not merely stale selectors: ancestry/Overview need
 canonical ancestry output, recipient/joint views need their actual authority and
-generation, and Health Picture needs ROH computation. Resumable BAM is an additional gap
-outside those nine calls. Preserve their substantive assertions; changing status
-flags or narrowing standard CI does not implement those missing behaviors.
+generation, and Health Picture needs ROH computation. The old positive resumable
+BAM case has a separate contract disposition: accepted ADR0016 excludes BAM/CRAM
+and supersedes that earlier requirement. Its historical A10 evidence remains;
+`tier2-upload.spec.ts` now checks browser refusal, declaration refusal and actual
+Storage/finalization rejection cleanup for both formats. See the explicit
+[test diff entry](./test-diff-register.md#bamcram-historical-proof-and-current-refusal-contract--2026-09-07).
+These two cases have passed lint/discovery only; actual-provider execution is
+pending. Preserve all other substantive assertions; changing status flags or
+narrowing standard CI does not implement their missing behaviors.
 
 ### Previous export-only integration
 
@@ -116,10 +122,13 @@ paused app server on 3102. That integrated CI run has not passed yet.
    polygenic only. Ancestry/lineage, adult shared/joint results and Health
    Picture ROH computation need real authorized generation. A saved purpose
    is not a computed result. Modern own reads do not authorize recipients.
-5. **Embryos and Tier-2:** existing empty/denied embryo surface cases do not
-   prove either positive uploader path, QC, publication or comparisons. BAM's
-   old resumable path is unsupported by canonical own declaration; do not
-   restore ordinary-login Storage access to pass that test.
+5. **Embryos and closed formats:** existing empty/denied embryo surface cases
+   do not prove either positive uploader path, QC, publication or comparisons.
+   BAM/CRAM storage is excluded by accepted ADR0016, not an unimplemented
+   current format. The historical positive proof is explicitly retired in the
+   test diff register; its two replacement actual-provider refusal/cleanup
+   cases await browser execution. Do not restore ordinary-login Storage access
+   or call rejection a successful storage/analysis journey.
 
 For same-origin transport prefer browser-native requests or navigation response
 bodies. The reviewed standard runner now keeps APIRequest/`route.fetch` direct
