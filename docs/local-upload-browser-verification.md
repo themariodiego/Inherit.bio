@@ -3,6 +3,64 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## Canonical ancestry and Overview verified locally
+
+At `0e0d99e`, **5/5 ancestry and Overview browser cases pass in one isolated
+production-build run**, with no skips/retries and **three actual Storage
+uploads**. A one-marker VCF keeps the honest insufficient-coverage map; a
+168-marker synthetic file produces the existing broad-region estimate. The
+result is selected, generated and read from its checked canonical journal.
+Ancestry-only readiness appears on Overview without inventing report counts.
+Empty and populated Overview and phone navigation also pass. Desktop 1280×800
+and phone 390×844 full-page captures were inspected in both ancestry states.
+Only computed results display input-analysis provenance; both canonical parent
+lineages explicitly remain uncomputed. No hosted ancestry was generated.
+
+The final run is `work/ancestry-local-install-c4718e9/browser-v3.log` with
+`browser-v3-evidence/results.json`, screenshots and `verified-commit.json` in
+the same task evidence directory. V1 passed all five cases at `e3ebdb6`, but
+visual review found three repeated provenance blocks implying uncomputed
+lineages had been analyzed. Runtime `6f27d07` removes those two blocks. V2 then
+passed the low-coverage case and failed the old expectation of three blocks;
+three cases were not run. The corrected assertion requires exactly one block
+inside the computed result and none under either uncomputed lineage. Typecheck
+caught an undefined locator before V3; `0e0d99e` corrects it. All failed receipts
+are preserved. No runtime code changed during V3.
+
+### Database and application evidence
+
+- **All 73 migrations replayed successfully** on a fresh isolated Postgres 17
+  database, without seed dependencies. A first replay exposed two PL/pgSQL CASE
+  expressions needing parentheses; `3e55025` fixes syntax only. Its failed replay
+  logs and exact input snapshot remain preserved.
+- **All 47 rollback SQL fixtures pass: 1,746 assertions** at `e3ebdb6`.
+  The 15 affected fixtures also pass independently (583 assertions), including
+  the two new ancestry fixtures (113 assertions). Fixtures now declare their
+  bounded upload/catalog state and keep source revisions coherent when testing
+  stale authority. No production trigger was disabled to pass an assertion.
+  Evidence: `work/fresh-ancestry-replay-syntax-fixed/complete-suite-e3ebdb6`.
+- The two ancestry migrations were installed only in the existing local browser
+  database in one transaction. All 363 existing files, 362 Storage objects and
+  120 analysis journals, their row fingerprints, migration history and existing
+  function owners/privileges were preserved. Fifteen changed/new function
+  definitions, owners and privileges independently match the fresh database.
+  No shared database reset or history repair occurred. Evidence:
+  `work/ancestry-local-install-c4718e9/install.stdout.log` and
+  `function-parity.json`.
+- **2,921 unit tests in 183 files pass**, with zero skips, at `e3ebdb6`, using
+  two workers to avoid resource contention. Full ESLint, generated Next route
+  types and TypeScript pass. The final provenance adjustment also passes full
+  TypeScript and scoped lint at `0e0d99e`. Earlier failures (missing Overview
+  mock, a generated CLI cache caught by the capture guard and contended fixture
+  timeouts) are preserved; no timeout threshold or detector was weakened.
+
+Independent review confirmed permanent predecessor-notice cancellation,
+source-by-source export authority checks and literal VCF call orientation.
+This is separate from the older 73-case Copilot and 69-case report/control
+runs; it is not a combined full-suite pass. The standard suite, hosted rollout,
+scientific validation and complete route coverage remain open. Production is
+PR75; formal acceptance remains **18/65**.
+
 ## Canonical personal Copilot verified locally
 
 At `763fbf1`, **73/73 browser cases in four specs pass in one production-build

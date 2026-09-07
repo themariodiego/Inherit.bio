@@ -1,5 +1,18 @@
 # Browser-suite migration after the own-upload cutover
 
+## Ancestry integration · 2026-09-07
+
+At `0e0d99e`, **5/5 ancestry and Overview cases pass together**, no skips/retries,
+with three actual Storage uploads through the isolated production-build harness.
+This closes the ancestry/Overview prerequisite described in older checkpoints.
+Both marker-coverage states, canonical result generation, ancestry-only Overview
+readiness and mobile navigation are exercised; desktop/mobile captures were
+inspected. Four legacy helper call sites remain in four specs: `portrait`,
+`family-health-picture`, `family` and `file-deletion` (other-adult case).
+The older six-call count below is historical. The BAM/CRAM refusal replacement
+is independently under verification; accepted ADR0016 excludes positive support.
+These receipts are not one combined full-suite pass; acceptance stays **18/65**.
+
 ## Latest integration · 2026-09-07
 
 At `763fbf1`, **73/73 Copilot cases in four specs pass in one run** with no

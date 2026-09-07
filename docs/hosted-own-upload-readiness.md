@@ -4,6 +4,43 @@ Rollout preparation checkpoint, 7 September 2026. This is not a feature-release 
 The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
+## Latest ancestry release prerequisites · 7 September 2026
+
+Local ancestry now has a fresh 73-migration replay, 1,746 passing SQL assertions,
+2,921 units at `e3ebdb6`, and five actual-provider browser cases at `0e0d99e`
+(three uploads). The final source-provenance correction is included in that
+browser receipt. See the local verification record for exact snapshots and
+preserved failed attempts. This supersedes the older 68-migration local proof;
+it does not mean the additional five migrations are staged hosted.
+
+Independent release review requires these checks before staging:
+
+1. Apply the missing `20260907081757`, `20260907081759` and `20260907083251`
+   Copilot/catalog prerequisites before `20260907111757` ancestry generation
+   and `20260907111835` ancestry export/notices.
+2. Confirm no existing canonical ancestry journal predates the new required
+   metadata constraint. Confirm no pending/claimed v1 report-ready notice
+   already overlaps active ancestry; prospective triggers do not repair those
+   rows. If present, review a permanent cancellation before proceeding. Both
+   counts were zero locally; hosted prechecks remain required.
+3. Keep incompatible `20260906133807` deferred until the documented PR75 upload
+   pause, in-flight completion and coordinated application transition.
+4. Retain additive schema, snapshot readers and authorization/notice guards
+   on rollback. Reverting the application alone cannot restore removed content,
+   read new canonical files safely or stop already queued delivery.
+
+The shared PR75 mail worker can claim newly queued ancestry-ready notices.
+Hosted generation remains gated by the previously requested authorized
+synthetic recipient and verified Resend allowance, or a separately reviewed
+hold covering all mail invocations and in-flight work. No hold is in place.
+
+Read-only Vercel Usage at `2026-09-07T12:31Z` shows **$1.73 / $20.00 included
+credit**, with $1.73 infrastructure charges fully covered by credits; the
+$20 total is the existing Pro subscription. Usage may lag by one hour. This
+establishes headroom for one bounded automatic PR preview build, not an
+enforced spending cap or permission for upgrades/overages. No setting changed.
+Production remains PR75; full-plan acceptance remains **18/65**.
+
 ## Current local prerequisites · 7 September 2026
 
 The replacement protected candidate is READY at `85fe7c4`, deployment

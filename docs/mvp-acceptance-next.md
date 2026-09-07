@@ -69,6 +69,28 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Canonical ancestry journey verified locally
+
+The canonical ancestry journey now passes five production-build browser cases
+at `0e0d99e`, including three actual Storage uploads, honest low-coverage output,
+the existing broad-region estimate, ancestry-only Overview readiness and mobile
+navigation. Inspected desktop/mobile results show source facts once beneath
+the computed result; parent lineages remain explicitly uncomputed. The new
+migrations replay with all 73 migrations on a fresh database; all 47 SQL fixtures
+pass 1,746 assertions. Local installation preserves existing data, history and
+function privileges, and all 15 changed/new function definitions match the
+fresh database. Full application verification passes 2,921 units at `e3ebdb6`;
+the final display correction passes browser, TypeScript and scoped lint.
+
+This closes the local ancestry prerequisite recorded below. It does not close
+whole ancestry/scientific acceptance or the complete browser suite. Four legacy
+`ingestFileAs` call sites remain in portrait, Health Picture, Family and
+other-adult deletion. Accepted ADR0016 excludes BAM/CRAM; the historical success
+test is explicitly retired with its evidence preserved, and two current refusal
+cases are under actual-provider verification. Hosted ancestry migrations,
+notification allowance/recipient authorization, complete CI and coordinated
+cutover remain open. Production stays PR75; acceptance stays **18/65**.
+
 ### 2026-09-07 · Canonical ancestry display integrated locally
 
 At `3677dfc`, ancestry and Overview read the checked completed journal, confirm
