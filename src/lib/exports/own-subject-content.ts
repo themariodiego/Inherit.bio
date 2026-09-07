@@ -6,6 +6,7 @@ import { createGunzip } from "node:zlib";
 import { serializePrsCoverage } from "../genome/prs-output";
 import { reportCatalogSnapshotSchema } from "../genome/report-catalog-snapshot";
 import { isFixtureSlug } from "../../components/reports/library";
+import { ownAncestryContentSchema } from "../uploads/own-ancestry-content";
 
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
@@ -21,7 +22,7 @@ export const ownExportSnapshotSchema = z.object({
   normalized: z.boolean(),
 }).strict();
 export type OwnExportSnapshot = z.infer<typeof ownExportSnapshotSchema>;
-type Operation = "list" | "check" | "variants" | "observed" | "reports" | "prs";
+type Operation = "list" | "check" | "variants" | "observed" | "reports" | "prs" | "ancestry";
 export type OwnExportRpc = (name: "own_subject_export_content_v1", args: {
   p_operation: Operation; p_account_id: string; p_session_id: string; p_file_id: string | null;
   p_snapshot: OwnExportSnapshot | null; p_offset: number;
@@ -45,6 +46,8 @@ const resultSchema = z.object({ purpose: z.enum(["reports.monogenic", "reports.p
     && row.report.catalogSnapshot.template.layer === (row.purpose === "reports.monogenic" ? "variant_call" : "estimate")));
 const prsSchema = z.object({ pgs_id: z.string(), matched: z.number(), computed_at: z.string(), name: z.string().nullable(),
   trait: z.string().nullable(), ancestry_note: z.string().nullable(), n_variants: z.number().nullable() }).strict();
+const ancestrySchema = z.array(z.object({ purpose: z.literal("ancestry"), completed_at: z.string(),
+  grant_id: uuid, grant_revision: revision, result: ownAncestryContentSchema }).strict()).max(1);
 
 /** A content reader for the own-subject slice. This neither creates an export
  * capability nor implements the nonce/worker/chunk delivery contract. Every
@@ -82,6 +85,30 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
       }
       return files;
     }, check,
+    async ancestry(snapshot: OwnExportSnapshot) {
+      const read = async () => {
+        const parsed = ancestrySchema.safeParse(await call("ancestry", snapshot));
+        if (!parsed.success) throw unavailable();
+        for (const row of parsed.data) {
+          const source = row.result.source;
+          const encoding = ["vcf", "gvcf"].includes(snapshot.file.file_type) ? "vcf-literal"
+            : ["array_23andme", "array_ancestry", "array_myheritage", "array_ftdna"].includes(snapshot.file.file_type) ? "array-genotype" : null;
+          if (!snapshot.normalized || source.fileId !== snapshot.file.id || source.subjectId !== snapshot.file.subject_id
+            || source.sourceRevision !== snapshot.file.upload_revision || source.sourceSha256 !== snapshot.file.sha256
+            || !snapshot.binding.normalizedAt || Date.parse(source.normalizedAt) !== Date.parse(snapshot.binding.normalizedAt)
+            || source.callEncoding !== encoding) throw unavailable();
+        }
+        return parsed.data;
+      };
+      const rows = await read();
+      await check(snapshot);
+      // Unlike raw export permission, ancestry permission may disappear while
+      // the source remains. Do not release a buffered result after withdrawal,
+      // replacement generation or a different grant, including an empty page.
+      if (JSON.stringify(await read()) !== JSON.stringify(rows)) throw unavailable();
+      return rows.map(row => ({ file_id: snapshot.file.id, subject_id: snapshot.file.subject_id,
+        purpose: row.purpose, completed_at: row.completed_at, result: row.result }));
+    },
     variants: (snapshot: OwnExportSnapshot) => pages("variants", snapshot, variantSchema),
     observed: (snapshot: OwnExportSnapshot) => pages("observed", snapshot, observationSchema),
     async reports(snapshot: OwnExportSnapshot) {

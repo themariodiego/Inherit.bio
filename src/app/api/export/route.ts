@@ -384,7 +384,7 @@ export async function GET() {
   let canonical: OwnExportSnapshot[];
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
-  const [legacyFiles, { data: ancestry }, { data: consents }] =
+  const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents }] =
     await Promise.all([
       fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
         .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
@@ -394,6 +394,7 @@ export async function GET() {
         .select("provider_key, data_classes, granted_at, revoked_at")
         .eq("user_id", user.id),
     ]);
+  if (ancestryError) return new Response("Export unavailable", { status: 503 });
 
   const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
   const legacyIds = new Set(legacyFiles.map(file => file.id));
@@ -430,15 +431,6 @@ export async function GET() {
             "This inventory: every file in the export, with row/record counts.",
         },
       ];
-
-      archive.append(JSON.stringify(ancestry ?? [], null, 2), {
-        name: "ancestry.json",
-      });
-      contents.push({
-        path: "ancestry.json",
-        description: "Your derived ancestry composition results.",
-        count: (ancestry ?? []).length,
-      });
 
       archive.append(JSON.stringify(consents ?? [], null, 2), {
         name: "consents.json",
@@ -492,6 +484,16 @@ export async function GET() {
         await finished(original); assertActive();
         contents.push({ path: `originals/${f.id}`, description: "Your original upload, byte-for-byte." });
       }
+
+      // Legacy rows never supply canonical ancestry. The checked reader uses
+      // the exact live ancestry grant and completed source journal, not this
+      // account-wide table read, and does not generate during export.
+      const ancestry: unknown[] = (legacyAncestry ?? []).filter(row => legacyIds.has(row.file_id));
+      for (const snapshot of canonical) {
+        ancestry.push(...await ownContent.ancestry(snapshot)); assertActive();
+      }
+      archive.append(JSON.stringify(ancestry, null, 2), { name: "ancestry.json" });
+      contents.push({ path: "ancestry.json", description: "Completed source-bound ancestry estimates and legacy ancestry results.", count: ancestry.length });
 
       // Stored canonical outcomes and the unchanged legacy report resolver.
       const reportFiles: ExportReportFile[] = [...await buildReports(supabase, legacyIds), ...canonicalReports];

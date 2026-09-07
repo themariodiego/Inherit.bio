@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "./own-subject-content";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
+import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
 const id = (n: number) => `12345678-1234-4234-8234-${String(n).padStart(12, "0")}`;
 const actor = { accountId: id(1), sessionId: id(2) };
 const digest = (text: Uint8Array | string) => createHash("sha256").update(text).digest("hex");
@@ -21,7 +22,50 @@ const saved = { purpose: "reports.polygenic", completed_at: "2026-09-06T00:00:00
 function db(handler: (args: Parameters<OwnExportRpc>[1]) => unknown) {
   return vi.fn<OwnExportRpc>(async (_, args) => ({ data: handler(args), error: null }));
 }
+function ancestryResult() {
+  return { purpose: "ancestry", completed_at: "2026-09-06T00:01:00Z", grant_id: id(20), grant_revision: 1,
+    result: computeOwnAncestryContent({ source: { fileId: source.file.id, subjectId: source.file.subject_id,
+      sourceRevision: source.file.upload_revision, sourceSha256: source.file.sha256, normalizedAt: source.binding.normalizedAt!,
+      normalizedBuild: "GRCh38", callEncoding: "vcf-literal" }, calls: [], panel: CURRENT_OWN_ANCESTRY_PANEL }) };
+}
 describe("own-subject export content", () => {
+  it("exports exact stored ancestry with source binding and preserves the unavailable coverage state", async () => {
+    const row = ancestryResult();
+    const rpc = db(a => a.p_operation === "check" ? source : [row]);
+    expect(await ownSubjectExportContent(rpc, actor).ancestry(source)).toEqual([
+      { file_id: source.file.id, subject_id: source.file.subject_id, purpose: "ancestry", completed_at: row.completed_at, result: row.result },
+    ]);
+    expect(rpc.mock.calls.map(([, a]) => a.p_operation)).toEqual(["ancestry", "check", "ancestry"]);
+    expect(row.result.admixture.result_state).toBe("not_covered");
+  });
+  it.each(["fileId", "subjectId", "sourceRevision", "sourceSha256", "normalizedAt", "callEncoding"])(
+    "refuses an ancestry result with a mismatched source %s", async field => {
+      const row = ancestryResult();
+      const changed = { ...row, result: { ...row.result, source: { ...row.result.source,
+        [field]: field === "sourceRevision" ? 2 : field === "sourceSha256" ? "b".repeat(64)
+          : field === "normalizedAt" ? "2026-09-07T00:00:00Z" : field === "callEncoding" ? "array-genotype" : id(99) } } };
+      await expect(ownSubjectExportContent(db(() => [changed]), actor).ancestry(source)).rejects.toThrow("export unavailable");
+    },
+  );
+  it.each(["withdrawal", "regrant", "replacement"])("does not release buffered ancestry after %s", async transition => {
+    const row = ancestryResult(); let reads = 0;
+    const rpc = db(a => a.p_operation === "check" ? source : ++reads === 1 ? [row]
+      : transition === "withdrawal" ? [] : [{ ...row, ...(transition === "regrant" ? { grant_id: id(99), grant_revision: 2 }
+        : { completed_at: "2026-09-07T00:00:00Z" }) }]);
+    await expect(ownSubjectExportContent(rpc, actor).ancestry(source)).rejects.toThrow("export unavailable");
+  });
+  it("returns no ancestry before completion or after withdrawal without falling back to another reader", async () => {
+    const rpc = db(a => a.p_operation === "check" ? source : []);
+    expect(await ownSubjectExportContent(rpc, actor).ancestry(source)).toEqual([]);
+    expect(rpc.mock.calls.every(([, a]) => ["ancestry", "check"].includes(a.p_operation))).toBe(true);
+  });
+  it("rejects unexpected ancestry fields, extra rows and inconsistent coverage", async () => {
+    const row = ancestryResult();
+    for (const response of [[{ ...row, private_field: "no" }], [row, row],
+      [{ ...row, result: { ...row.result, admixture: { ...row.result.admixture, coverage: 1 } } }]]) {
+      await expect(ownSubjectExportContent(db(() => response), actor).ancestry(source)).rejects.toThrow("export unavailable");
+    }
+  });
   it("exhausts short pages and more than 1000 rows using actual returned offsets", async () => {
     const all = Array.from({ length: 1207 }, (_, index) => ({ rsid: index + 1, chrom: 1, pos: index + 1, ref: "A", alt: "G", genotype: "A/G" }));
     const rpc = db(a => all.slice(a.p_offset, a.p_offset + 500));

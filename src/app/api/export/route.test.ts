@@ -1,14 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdmZip from "adm-zip";
-const mocks = vi.hoisted(() => ({ fail: false, count: 2, pauseOriginal: null as Promise<void> | null, reportReads: 0 }));
+const mocks = vi.hoisted(() => ({ fail: false, count: 2, pauseOriginal: null as Promise<void> | null, reportReads: 0,
+  ancestryFailure: false, legacyRows: [] as Array<{ file_id: string; result: string }> }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
   getUser: async () => ({ data: { user: { id: "12345678-1234-4234-8234-000000000001", email: "synthetic@e2e.local" } } }),
   getClaims: async () => ({ data: { claims: { sub: "12345678-1234-4234-8234-000000000001", session_id: "12345678-1234-4234-8234-000000000002" } } }),
 } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
-  const builder = { select: () => builder, eq: () => builder, is: () => builder, order: () => builder, range: () => builder,
-    then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(resolve) };
-  return { from: () => builder, rpc: () => {}, storage: { from: () => ({ download: () => {} }) } };
+  const from = (table: string) => {
+    const builder = { select: () => builder, eq: () => builder, is: () => builder, order: () => builder, range: () => builder,
+      then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: table === "ancestry_results" ? mocks.legacyRows : [], error: null }).then(resolve) };
+    return builder;
+  };
+  return { from, rpc: () => {}, storage: { from: () => ({ download: () => {} }) } };
 } }));
 vi.mock("@/lib/genome/load", () => ({ getProcessedFiles: async () => [], getPublishedTemplates: async () => [],
   getGenotypesByRsid: vi.fn(), templateRsids: vi.fn() }));
@@ -25,10 +29,14 @@ vi.mock("@/lib/exports/own-subject-content", async importOriginal => {
       report_count: 1, reports: [{ slug: "saved-finding", purpose: "reports.polygenic", completed_at: "2026-09-06", provenance_note: "No catalog snapshot was captured.", covered: true, conflictingRsids: [],
         variants: [{ rsid: "rs1", status: "genotyped", genotype: "AG", interpretation: "Stored interpretation", strand_flipped: false }] }] }); },
     prs: async () => [],
+    ancestry: async (s: { file: { id: string } }) => {
+      if (mocks.ancestryFailure) throw new Error("export unavailable");
+      return s.file.id === "file-0" ? [{ file_id: s.file.id, purpose: "ancestry", result: { support_note: "Checked stored content" } }] : [];
+    },
   }) };
 });
 import { GET } from "./route";
-beforeEach(() => { mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; });
+beforeEach(() => { mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -52,6 +60,18 @@ describe("canonical export ZIP integration", () => {
     const response = await GET();
     await expect(response.arrayBuffer()).rejects.toThrow("export unavailable");
   }, 1500);
+  it("uses checked canonical ancestry only and excludes canonical or unattributed legacy-table rows", async () => {
+    mocks.legacyRows = [{ file_id: "file-0", result: "Unchecked canonical row" }, { file_id: "unknown", result: "Unattributed row" }];
+    const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+    expect(JSON.parse(zip.readAsText("ancestry.json"))).toEqual([
+      { file_id: "file-0", purpose: "ancestry", result: { support_note: "Checked stored content" } },
+    ]);
+    expect(JSON.parse(zip.readAsText("manifest.json")).contents.find((entry: { path: string }) => entry.path === "ancestry.json").count).toBe(1);
+  });
+  it("terminates the ZIP when ancestry authority fails after originals were read", async () => {
+    mocks.ancestryFailure = true;
+    await expect((await GET()).arrayBuffer()).rejects.toThrow("export unavailable");
+  });
   it("does not resume report/page work after cancellation during an awaited original", async () => {
     let release!: () => void;
     mocks.pauseOriginal = new Promise<void>(resolve => { release = resolve; });
