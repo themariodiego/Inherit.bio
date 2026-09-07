@@ -1,12 +1,15 @@
 import AdmZip from "adm-zip";
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { adminClient, anonClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
+import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
 
 // A13 — export contains originals + normalized variants; account deletion is
 // held for the fixed notice period and remains cancellable before purge starts.
 
-const USER = { email: "delete-me@e2e.local", password: "e2e-delete-pw" };
+const USER = { email: `delete-me-${randomUUID()}@e2e.local`, password: "e2e-delete-pw" };
 
 test.describe.configure({ mode: "serial" });
 
@@ -20,26 +23,25 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  const vcfFileId = await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
-    path.join(process.cwd(), "data/samples/HG001_GRCh38_chr20-22.vcf.gz"),
-    "vcf",
-  );
-  // The HG001 fixture's ID column is all "." (no rs IDs), so rsid-keyed
-  // report resolution covers nothing against it. Ingest the tiny rsid-bearing
-  // VCF too (rs762551 het — the report-gate control case) so the export
-  // contains at least one covered report for the reports.txt assertions.
-  await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
+  const vcfPath = path.join(process.cwd(), "data/samples/HG001_GRCh38_chr20-22.vcf.gz");
+  const tinyPath = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
+  const vcfFileId = await uploadOwnFilePrepared(page, vcfPath, { fileType: "vcf" });
+  const tinyFileId = await uploadOwnFilePrepared(page, tinyPath, { fileType: "vcf" });
+  // Both originals and prepared calls are exportable before any report grant.
+  const raw = await page.request.get("/api/export");
+  expect(raw.status()).toBe(200);
+  const rawZip = new AdmZip(Buffer.from(await raw.body()));
+  for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
+    expect(rawZip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
+  }
+  expect(JSON.parse(rawZip.readAsText("reports.json")).every((file: { report_count: number }) => file.report_count === 0)).toBe(true);
+  expect(JSON.parse(rawZip.readAsText("prs.json"))).toEqual([]);
+  // Coverage rows and the caffeine interpretation require genuine explicit
+  // generation. The large fixture still proves row pagination independently.
+  await generateOwnFileWithChosenReports(page, vcfFileId, ["reports.polygenic"]);
+  await generateOwnFileWithChosenReports(page, tinyFileId, ["reports.polygenic"]);
 
-  // Seed unmistakable legacy analytic quantities. They must not become
+  // Inject unmistakable invalid numeric sentinels into genuinely generated rows. They must not become
   // personal score numbers merely because an export reads a stored row.
   const { data: legacyScores, error: scoreError } = await adminClient()
     .from("user_prs")
@@ -121,26 +123,32 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   const manifestFile = manifest.files.find((f) => f.id === fileId)!;
   expect(manifestFile.row_count).toBe(variantCount);
 
-  // reports.json resolves the report library against the processed file.
+  // Canonical reports.json contains captured, completed outcomes for each source.
   const reports = JSON.parse(zip.readAsText("reports.json")) as {
     file_id: string;
-    reports: { slug: string; title: string }[];
+    reports: { slug: string; provenance_note: string; variants: { interpretation: string | null }[] }[];
   }[];
   expect(reports.some((f) => f.file_id === fileId)).toBe(true);
   for (const f of reports) {
     expect(f.reports.every((r) => !r.slug.startsWith("auto-e2e-"))).toBe(true);
   }
 
-  // reports.txt is the human-readable rendering of the same data: it must
-  // exist and carry every covered report's title (at least one — the tiny
-  // VCF's rs762551 het resolves the seeded caffeine-metabolism report).
+  // Canonical generation did not capture catalog titles; JSON and text must
+  // preserve the same stored report identifiers and actual interpretations.
   expect(names).toContain("reports.txt");
   expect(manifest.contents.some((c) => c.path === "reports.txt")).toBe(true);
   const reportsTxt = zip.readAsText("reports.txt");
-  const coveredTitles = reports.flatMap((f) => f.reports.map((r) => r.title));
-  expect(coveredTitles.length).toBeGreaterThan(0);
-  for (const title of coveredTitles) {
-    expect(reportsTxt).toContain(title);
+  const covered = reports.flatMap((file) => file.reports);
+  expect(covered.length).toBeGreaterThan(0);
+  for (const report of covered) {
+    expect(reportsTxt).toContain(report.slug);
+    expect(reportsTxt).toContain(report.provenance_note);
+    for (const variant of report.variants) if (variant.interpretation) expect(reportsTxt).toContain(variant.interpretation);
+  }
+  expect(covered.some(report => report.slug === "caffeine-metabolism-cyp1a2-rs762551"
+    && report.variants.some(variant => Boolean(variant.interpretation)))).toBe(true);
+  for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
+    expect(zip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
   }
 
   const prsText = zip.readAsText("prs.json");
@@ -167,8 +175,9 @@ test("account deletion schedules a seven-day hold and can be cancelled", async (
 
   const admin = adminClient();
 
-  const { data: users } = await admin.auth.admin.listUsers();
-  expect(users?.users.find((user) => user.id === userId)).toBeDefined();
+  const authLookup = await admin.auth.admin.getUserById(userId);
+  expect(authLookup.error).toBeNull();
+  expect(authLookup.data.user?.id).toBe(userId);
 
   const { data: deletion } = await admin
     .from("account_deletion_requests")
@@ -245,8 +254,10 @@ test("account deletion schedules a seven-day hold and can be cancelled", async (
   }
 
   // During notice, non-allowlisted application operations are locked.
-  const blocked = await page.request.post("/api/chat", { data: {} });
-  expect(blocked.status()).toBe(423);
+  const blocked = await page.evaluate(async () => (await fetch("/api/chat", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  })).status);
+  expect(blocked).toBe(423);
   await page.goto("/overview");
   await page.waitForURL((url) => url.pathname === "/settings/data");
 

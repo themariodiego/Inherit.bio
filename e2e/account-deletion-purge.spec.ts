@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { uploadOwnFilePrepared } from "./own-report-helpers";
 import {
   adminClient,
   createConfirmedUser,
-  ingestFileAs,
   JOBS_SECRET,
   signIn,
 } from "./helpers";
@@ -11,7 +12,7 @@ import {
 // A13 — after the fixed notice period, the unattended worker deletes exact
 // storage handles, the complete supported self-account graph, and Auth last.
 
-const USER = { email: "purge-me@e2e.local", password: "e2e-purge-pw" };
+const USER = { email: `purge-me-${randomUUID()}@e2e.local`, password: "e2e-purge-pw" };
 
 test("due account deletion reaches a zero-residual terminal state", async ({
   page,
@@ -19,13 +20,8 @@ test("due account deletion reaches a zero-residual terminal state", async ({
 }) => {
   const userId = await createConfirmedUser(USER.email, USER.password);
   await signIn(page, USER.email, USER.password);
-  const fileId = await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
+  const fileId = await uploadOwnFilePrepared(page,
+    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
 
   const admin = adminClient();
   const { data: file } = await admin
