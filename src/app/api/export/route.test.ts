@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdmZip from "adm-zip";
 const mocks = vi.hoisted(() => ({ fail: false, count: 2, pauseOriginal: null as Promise<void> | null, reportReads: 0,
-  ancestryFailure: false, legacyRows: [] as Array<{ file_id: string; result: string }> }));
+  pauseSecondAncestry: null as Promise<void> | null, secondAncestryStarted: false, ancestryFailure: false, legacyRows: [] as Array<{ file_id: string; result: string }> }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
   getUser: async () => ({ data: { user: { id: "12345678-1234-4234-8234-000000000001", email: "synthetic@e2e.local" } } }),
   getClaims: async () => ({ data: { claims: { sub: "12345678-1234-4234-8234-000000000001", session_id: "12345678-1234-4234-8234-000000000002" } } }),
@@ -31,12 +31,13 @@ vi.mock("@/lib/exports/own-subject-content", async importOriginal => {
     prs: async () => [],
     ancestry: async (s: { file: { id: string } }) => {
       if (mocks.ancestryFailure) throw new Error("export unavailable");
+      if (s.file.id === "file-1") { mocks.secondAncestryStarted = true; await mocks.pauseSecondAncestry; }
       return s.file.id === "file-0" ? [{ file_id: s.file.id, purpose: "ancestry", result: { support_note: "Checked stored content" } }] : [];
     },
   }) };
 });
 import { GET } from "./route";
-beforeEach(() => { mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; });
+beforeEach(() => { mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -67,6 +68,30 @@ describe("canonical export ZIP integration", () => {
       { file_id: "file-0", purpose: "ancestry", result: { support_note: "Checked stored content" } },
     ]);
     expect(JSON.parse(zip.readAsText("manifest.json")).contents.find((entry: { path: string }) => entry.path === "ancestry.json").count).toBe(1);
+  });
+  it("emits a checked ancestry source before awaiting the next source", async () => {
+    let release!: () => void;
+    mocks.pauseSecondAncestry = new Promise<void>(resolve => { release = resolve; });
+    const response = await GET();
+    const reader = response.body!.getReader();
+    const chunks: Uint8Array[] = [];
+    let streamed = "";
+    const reading = (async () => {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); streamed += Buffer.from(value).toString();
+      }
+    })();
+    try {
+      await vi.waitFor(() => expect(mocks.secondAncestryStarted).toBe(true));
+      // Native ZIP uses store mode: this proves A's bytes were emitted while
+      // B is still pending, before a withdrawal during B could stale cached A.
+      await vi.waitFor(() => expect(streamed).toContain("Checked stored content"));
+    } finally { release(); }
+    await reading;
+    expect(JSON.parse(new AdmZip(Buffer.concat(chunks)).readAsText("ancestry.json")))
+      .toEqual([{ file_id: "file-0", purpose: "ancestry", result: { support_note: "Checked stored content" } }]);
   });
   it("terminates the ZIP when ancestry authority fails after originals were read", async () => {
     mocks.ancestryFailure = true;

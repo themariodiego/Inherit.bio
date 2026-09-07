@@ -488,12 +488,25 @@ export async function GET() {
       // Legacy rows never supply canonical ancestry. The checked reader uses
       // the exact live ancestry grant and completed source journal, not this
       // account-wide table read, and does not generate during export.
-      const ancestry: unknown[] = (legacyAncestry ?? []).filter(row => legacyIds.has(row.file_id));
+      const ancestry = member();
+      archive.append(ancestry, { name: "ancestry.json" });
+      await writeChunk(ancestry, "[");
+      let ancestryCount = 0;
+      const writeAncestry = (rows: unknown[]) => {
+        if (!rows.length) return Promise.resolve();
+        const chunk = `${ancestryCount ? "," : ""}${rows.map(row => JSON.stringify(row)).join(",")}`;
+        ancestryCount += rows.length;
+        return writeChunk(ancestry, chunk);
+      };
+      await writeAncestry((legacyAncestry ?? []).filter(row => legacyIds.has(row.file_id)));
       for (const snapshot of canonical) {
-        ancestry.push(...await ownContent.ancestry(snapshot)); assertActive();
+        const rows = await ownContent.ancestry(snapshot); assertActive();
+        // Write synchronously after the final authority check. Do not hold a
+        // checked source while awaiting another source or stream backpressure.
+        await writeAncestry(rows);
       }
-      archive.append(JSON.stringify(ancestry, null, 2), { name: "ancestry.json" });
-      contents.push({ path: "ancestry.json", description: "Completed source-bound ancestry estimates and legacy ancestry results.", count: ancestry.length });
+      await writeChunk(ancestry, "]"); ancestry.end();
+      contents.push({ path: "ancestry.json", description: "Completed source-bound ancestry estimates and legacy ancestry results.", count: ancestryCount });
 
       // Stored canonical outcomes and the unchanged legacy report resolver.
       const reportFiles: ExportReportFile[] = [...await buildReports(supabase, legacyIds), ...canonicalReports];

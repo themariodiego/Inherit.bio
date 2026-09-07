@@ -94,6 +94,19 @@ select pg_temp.generate('complete','reports.polygenic',pg_temp.output('reports.p
 create temporary table v1_notice as select id,canonical_readiness,idempotency_key,expires_at from public.mail_outbox
  where target_id='79100000-0000-4000-8000-000000000040';
 select is((select canonical_readiness->>'version' from v1_notice),'own-report-ready-v1','report-only completion preserves v1 event identity');
+-- Scope the transport-state fixture to this exact synthetic event; never run
+-- the account-wide worker/claim operation against unrelated local fixtures.
+savepoint claimed_predecessor;
+update public.mail_outbox set state='claimed',claimed_at=clock_timestamp(),attempt_count=1
+ where id=(select id from v1_notice);
+select ok(private.authorize_mail_submission_v1((select id from v1_notice),1::smallint),
+ 'claimed v1 is eligible before ancestry is selected');
+select pg_temp.grant_report('ancestry',repeat('d',64));
+select is((select state from public.mail_outbox where id=(select id from v1_notice)),'invalidated',
+ 'new ancestry selection permanently cancels an already claimed v1 predecessor');
+select ok(not private.authorize_mail_submission_v1((select id from v1_notice),1::smallint),
+ 'pre-submit refuses the cancelled predecessor');
+rollback to claimed_predecessor;
 select pg_temp.grant_report('ancestry',repeat('d',64));
 select is(private.own_report_ready_state_v2('79100000-0000-4000-8000-000000000001','79100000-0000-4000-8000-000000000040'),null::jsonb,
  'selected unfinished ancestry prevents v2 readiness');
@@ -101,8 +114,10 @@ select throws_ok($$select pg_temp.generate('ready','ancestry',pg_temp.envelope()
  'ready operation cannot ignore selected unfinished ancestry');
 select is((select count(*) from public.mail_outbox where target_id='79100000-0000-4000-8000-000000000040'),1::bigint,
  'no premature successor event');
-select ok((select private.file_ready_mail_current_v1(m) from public.mail_outbox m join v1_notice v using(id)),
- 'existing v1 event retains its original report-only eligibility semantics');
+select ok((select not private.file_ready_mail_current_v1(m) from public.mail_outbox m join v1_notice v using(id)),
+ 'historical v1 cannot claim readiness for an unfinished current ancestry selection');
+select is((select state from public.mail_outbox where id=(select id from v1_notice)),'invalidated',
+ 'new ancestry selection permanently cancels the queued v1 predecessor');
 insert into claims values('ancestry',pg_temp.generate('begin','ancestry'));
 create temporary table ancestry_output as select jsonb_build_object('ancestry',jsonb_build_object(
  'schemaVersion',1,'computationRevision','own-ancestry-content-v1',
@@ -139,6 +154,9 @@ select ok((select expires_at between clock_timestamp()+interval '29 days 23 hour
  'new v2 event retains database-owned thirty-day expiry');
 select is((select canonical_readiness from public.mail_outbox where id=(select id from v1_notice)),
  (select canonical_readiness from v1_notice),'existing v1 snapshot is unchanged');
+select ok((select m.idempotency_key=v.idempotency_key and m.expires_at=v.expires_at
+ from public.mail_outbox m join v1_notice v using(id)),
+ 'cancellation preserves the original v1 event hash and immutable expiry');
 select lives_ok($$select pg_temp.generate('ready','ancestry',pg_temp.envelope())$$,'explicit ready replay accepts completed ancestry');
 select is((select count(*) from public.mail_outbox where target_id='79100000-0000-4000-8000-000000000040'),2::bigint,'replay creates no duplicate or renewed expiry');
 select is((select expires_at from public.mail_outbox where id=(select id from v2_notice)),(select expires_at from v2_notice),'replay preserves original expiry');
@@ -187,6 +205,10 @@ rollback to source_changed;
 select public.revoke_directional_purpose_v1('79100000-0000-4000-8000-000000000001',
  (select grant_id from public.purpose_grants where target_id=(select id from generation_subject) and purpose='ancestry'));
 select is(pg_temp.export_ancestry(),'[]'::jsonb,'revoked ancestry is absent from export');
+select is((select state from public.mail_outbox where id=(select id from v1_notice)),'invalidated',
+ 'ancestry withdrawal cannot revive the cancelled v1 predecessor');
+select ok(not private.authorize_mail_submission_v1((select id from v1_notice),1::smallint),
+ 'pre-submit still refuses the predecessor after ancestry withdrawal');
 select ok((select not private.file_ready_mail_current_v1(m) from public.mail_outbox m join v2_notice v using(id)),
  'v2 no longer matches a changed selected grant set');
 select is((select state from public.mail_outbox where id=(select id from v2_notice)),'invalidated','ancestry purge invalidates its pending ready event');

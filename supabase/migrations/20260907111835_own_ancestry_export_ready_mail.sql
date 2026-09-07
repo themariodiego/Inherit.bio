@@ -1,5 +1,5 @@
 -- Depends on canonical own ancestry generation. No backfill, sends or workers.
--- Preserve queued own-report-ready-v1 events and their immutable 30-day expiry.
+-- Preserve v1 event identity and expiry; a new ancestry selection cancels its predecessors.
 -- The existing insert/claim/pre-submit hooks share the version-aware resolver.
 
 create function private.own_report_ready_state_v2(p_account_id uuid,p_file_id uuid)
@@ -35,6 +35,30 @@ end; $$;
 revoke all on function private.own_report_ready_state_v2(uuid,uuid) from public,anon,authenticated,inherit_upload_only;
 grant execute on function private.own_report_ready_state_v2(uuid,uuid) to service_role;
 
+-- The directional row is inserted after its purpose grant in the registered
+-- grant transaction. Also cover updates to an existing purpose/direction pair.
+-- Cancellation is permanent; withdrawal cannot revive an earlier v1 event.
+create function private.invalidate_ancestry_ready_predecessors_v1()
+returns trigger language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ update public.mail_outbox m set state='invalidated',claimed_at=null,last_outcome_code='file_target_unavailable'
+ from public.genome_files f,public.purpose_grants pg,public.directional_grants dg
+ where pg.grant_id=new.grant_id and pg.grant_revision=new.grant_revision
+  and dg.grant_id=pg.grant_id and dg.grant_revision=pg.grant_revision
+  and pg.target_kind='subject' and pg.purpose='ancestry' and pg.revoked_at is null
+  and (pg.expires_at is null or pg.expires_at>clock_timestamp())
+  and dg.direction='self' and dg.status='current' and dg.recipient_account_id=f.user_id
+  and f.subject_id=pg.target_id and f.single_logical_sample_verified_at is not null
+  and m.target_kind='genome_file' and m.target_id=f.id and m.template_id='report-ready'
+  and m.canonical_readiness->>'version'='own-report-ready-v1' and m.state in('queued','claimed');
+ return null;
+end; $$;
+revoke all on function private.invalidate_ancestry_ready_predecessors_v1() from public,anon,authenticated,inherit_upload_only;
+create trigger invalidate_ancestry_ready_direction after insert or update on public.directional_grants
+ for each row when (new.direction='self' and new.status='current') execute function private.invalidate_ancestry_ready_predecessors_v1();
+create trigger invalidate_ancestry_ready_purpose after update on public.purpose_grants
+ for each row when (new.purpose='ancestry' and new.revoked_at is null) execute function private.invalidate_ancestry_ready_predecessors_v1();
+
 create or replace function private.file_ready_mail_current_v1(m public.mail_outbox)
 returns boolean language plpgsql security definer set search_path=pg_catalog,private as $$
 declare f public.genome_files%rowtype; sp public.subject_principals%rowtype; ready jsonb;
@@ -51,6 +75,14 @@ begin
  if f.single_logical_sample_verified_at is null then
   return (m.canonical_readiness is null and f.status='annotated') is true;
  end if;
+ -- Stored identity stays v1, but it cannot claim readiness after ancestry
+ -- becomes part of the currently selected set, even before generation starts.
+ if m.canonical_readiness->>'version'='own-report-ready-v1' and exists(
+  select 1 from public.purpose_grants pg join public.directional_grants dg
+   on dg.grant_id=pg.grant_id and dg.grant_revision=pg.grant_revision
+  where pg.target_kind='subject' and pg.target_id=f.subject_id and pg.purpose='ancestry'
+   and pg.revoked_at is null and (pg.expires_at is null or pg.expires_at>clock_timestamp())
+   and dg.status='current' and dg.direction='self' and dg.recipient_account_id=sp.account_id) then return false; end if;
  ready:=case m.canonical_readiness->>'version'
   when 'own-report-ready-v1' then private.own_report_ready_state_v1(sp.account_id,f.id)
   when 'own-report-ready-v2' then private.own_report_ready_state_v2(sp.account_id,f.id)
