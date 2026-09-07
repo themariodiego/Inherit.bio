@@ -1,5 +1,19 @@
 # Browser-suite migration after the own-upload cutover
 
+## Latest integration · 2026-09-07
+
+At `9aee8e9`, the real-provider bootstrap is integrated into the standard runner,
+with both projects and the paused server retained. Its four boundary tests and
+actual provider/CORS/browser transport preflight pass. Six existing report/source
+specs now use explicit source-only or selected-report preconditions; an additive
+canonical export case checks two originals and post-withdrawal raw access.
+Lint, TypeScript and independent diff review passed for these test changes.
+The integrated product-browser run is still pending the export/cleanup runtime
+lanes. Discovery is **226 cases in 43 files**, not 226 passes. Remaining legacy
+`ingestFileAs` invocations are **14 in 12 spec files**. The older checkpoint and
+callsite list below describe their dated revision. Whole-plan acceptance remains
+**18/65**.
+
 2026-09-06 checkpoint at `9b45b75`. The local actual-provider runner passes
 **24/24 cases in nine specs**, with 18 uploads and zero skips/retries. See
 [the receipt](local-upload-browser-verification.md). Standard discovery finds

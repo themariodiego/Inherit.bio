@@ -1,5 +1,29 @@
 # Test diff register
 
+Canonical report/export regression migration (2026-09-07, unreleased):
+`own-report-helpers` now separates actual source preparation from explicit
+report choice/generation while retaining exact hash, revision, single-sample
+and private completed-purpose journal checks. Six existing spec files keep
+their presentation, scientific, source, count and network assertions. The
+reference-call test checks canonical normalization plus each stored source
+hash/extraction version instead of legacy file snapshot columns; native
+browser processing replay retains the eight observations and zero variant-only
+rows. The synthetic array declares its recognized vendor format. Raw Browser
+uses no analytic grant; only the later Data score case chooses polygenic.
+
+An additive export browser case downloads actual ZIPs before any report choice,
+after generating one of two prepared sources, and after withdrawal. It checks
+both original byte arrays, full normalized rows, observed calls, captured
+interpretations in JSON/text, purpose isolation and coverage-only PRS. This
+case is implemented and typechecked, but has not run against the integrated
+runtime. Standard discovery is 226 cases/43 files; it is not a passing suite.
+
+The full runner uses the actual local Storage provider and keeps both standard
+projects plus the independent paused server. Four guard/report tests and a
+real provider/CORS/Chromium transport check pass. APIRequest and route.fetch
+now use direct HTTP; route.fetch does not invent the browser Sec-Fetch-Site
+header. Disposable CI cannot narrow test selectors or retain bearer traces.
+
 Own-upload MVP verification (2026-09-06): the two-file control case proves
 exact downloads, conflict refusal, visible deletion failure/retry, real
 selected-source Storage removal and preservation of the other source. The

@@ -43,11 +43,17 @@ test("own export keeps both originals, includes only generated findings and pres
     expect(zip.getEntries().filter(entry => entry.entryName.startsWith("originals/"))).toHaveLength(2);
     for (const source of sources) {
       expect(zip.readFile(`originals/${source.id}`)).toEqual(source.bytes);
-      const variants = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", source.id);
+      const variants = await admin.from("user_variants").select("rsid,chrom,pos,ref,alt,genotype", { count: "exact" })
+        .eq("file_id", source.id).order("id");
       expect(variants.error).toBeNull();
       const csv = zip.readAsText(`variants/${source.id}.csv`).trimEnd().split("\n");
       expect(csv[0]).toBe("rsid,chrom,pos_grch38,ref,alt,genotype");
       expect(csv.length - 1).toBe(variants.count);
+      expect(csv.slice(1).map(line => {
+        const [rsid, chrom, pos, ref, alt, genotype] = line.split(",");
+        return { rsid: rsid ? Number(rsid.slice(2)) : null, chrom: Number(chrom), pos: Number(pos),
+          ref: ref || null, alt: alt || null, genotype };
+      })).toEqual(variants.data);
       expect(manifest.files.find(file => file.id === source.id)).toMatchObject({ row_count: variants.count,
         sha256: createHash("sha256").update(source.bytes).digest("hex") });
       const observed = await admin.from("report_observed_calls").select("source_line,genotype,source_sha256")
@@ -81,6 +87,9 @@ test("own export keeps both originals, includes only generated findings and pres
   for (const key of ["citations", "evidence", "summary"]) expect(caffeine).not.toHaveProperty(key);
   expect(generated.readAsText("reports.txt")).toContain(caffeine.slug);
   expect(generated.readAsText("reports.txt")).toContain(caffeine.provenance_note);
+  const interpretation = caffeine.variants.find(variant => variant.rsid === "rs762551")!.interpretation;
+  expect(interpretation).toBeTruthy();
+  expect(generated.readAsText("reports.txt")).toContain(interpretation!);
   const prsText = generated.readAsText("prs.json");
   const scores = JSON.parse(prsText) as { file_id: string; status: string; reason: string }[];
   expect(scores.length).toBeGreaterThan(0);
