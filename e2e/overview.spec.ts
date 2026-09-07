@@ -24,6 +24,14 @@ const VIEWPORTS = [
   { name: "phone", width: 390, height: 844 },
 ] as const;
 
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== "passed") return;
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({ path: info.outputPath(`overview-${viewport.name}.png`), fullPage: true });
+  }
+});
+
 const HEADINGS = ["Overview", "My Genome", "Family", "Embryos"];
 
 const BOX_LABELS = [

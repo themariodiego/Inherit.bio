@@ -151,7 +151,7 @@ export default async function OverviewPage() {
     (file) => self != null && file.subject_id === self.id,
   );
   const [ownReports, ancestry] = self ? await Promise.all([
-    loadOwnOverviewReports(admin, self.id), loadAncestryResultSnapshot(admin, supabase, self.id),
+    loadOwnOverviewReports(admin, self.id), selfFiles.length ? loadAncestryResultSnapshot(admin, supabase, self.id) : Promise.resolve(null),
   ]) : [null, null];
   let ownAncestry = ancestry?.rows.find(row => row.kind === "admixture");
   let hasAncestry = Boolean(ownAncestry);

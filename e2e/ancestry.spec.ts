@@ -35,6 +35,14 @@ const ANCESTRY = "/genome/me/ancestry";
 const TINY_FIXTURE = "e2e/fixtures/tiny-grch38.vcf";
 const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
 
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== "passed") return;
+  for (const viewport of [{ name: "desktop", width: 1280, height: 800 }, { name: "phone", width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({ path: info.outputPath(`ancestry-${viewport.name}.png`), fullPage: true });
+  }
+});
+
 /** The shipped marker panel's size, read from the panel file. */
 const PANEL_SIZE = (
   JSON.parse(fs.readFileSync(path.join(process.cwd(), "data/ref/aims.json"), "utf8")) as unknown[]
