@@ -193,6 +193,14 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
   await signIn(page, GREY_USER.email, GREY_USER.password);
   await ingestAndWait(page, TINY_FIXTURE);
 
+  // An ancestry-only completion is useful on Overview without claiming either
+  // report layer was generated or displaying a starter list for those layers.
+  await page.goto("/overview");
+  await expect(page.getByRole("heading", { name: "Your ancestry result is ready", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "View ancestry", exact: true })).toHaveAttribute("href", ANCESTRY);
+  await expect(page.getByText(/\d+ statistical estimates|\d+ specific-variant reports?/)).toHaveCount(0);
+  await expect(page.locator('section[aria-labelledby="starter-title"]')).toHaveCount(0);
+
   await page.goto(ANCESTRY);
   const admixture = page.getByTestId("admixture");
   await expect(admixture.locator('[data-slot="grey-state"]')).toHaveText(GREY_SENTENCE);
@@ -223,7 +231,7 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
   for (const kind of ["mtdna", "ydna"]) {
     const lineage = page.getByTestId(kind);
     await expect(lineage).toContainText("Lineage has not been computed from this file.");
-    await expect(lineage).not.toContainText(/no (?:mitochondrial|Y-chromosome) positions|without a Y chromosome/i);
+    await expect(lineage).not.toContainText(/no (?:mitochondrial|Y-chromosome) positions|no Y-chromosome data|without a Y chromosome/i);
     await expect(lineage.locator('[data-slot="haplogroup"],[data-slot="haplogroup-path"]')).toHaveCount(0);
   }
 
