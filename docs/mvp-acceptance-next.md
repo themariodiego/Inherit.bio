@@ -69,6 +69,26 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Draft PR76 and released-main integration
+
+The replacement branch is pushed and tracked by draft PR76. Its first automatic
+Vercel preview is READY at `65bcc12` (`dpl_G2K7NpmHQVPiob7k1DPKEMdfpmpD`);
+that build status is not hosted journey verification. Public production remains
+PR75. Initial GitHub Actions absence coincided with merge conflicts against the
+released PR74/PR75 commits; these are resolved without changing the verified
+application runtime. The stronger released Overview layout assertions remain,
+and the test register maps retired legacy pause checks to canonical coverage.
+
+At `8787a4c`, the repository/history secret gate passes: 1,116 tracked files,
+343 authored commits, nine genome fixtures. Five reviewed synthetic fixtures
+are bound to exact values, paths and complete source-line hashes, including
+historical occurrences; detectors and the history baseline remain unchanged.
+The merge resolution passes 114 focused units, scoped lint and full TypeScript,
+and standard discovery remains 231 cases/44 files. It does not establish a new
+full browser pass. The PR remains draft pending complete CI and coordinated
+hosted verification/cutover; no merge or production promotion occurred.
+Formal acceptance stays **18/65**.
+
 ### 2026-09-07 · Personal Copilot journey verified locally
 
 At `763fbf1`, one isolated production-build run passes **73/73 Copilot browser

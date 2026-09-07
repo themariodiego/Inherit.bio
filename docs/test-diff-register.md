@@ -1,5 +1,50 @@
 # Test diff register
 
+PR74/PR75 integration (2026-09-07): the canonical replacement retains the
+released My genome → starter reports → Family → Embryos layout, including
+PR74's desktop/mobile DOM-order and non-overlap assertions in `overview.spec.ts`.
+The six conflicted runtime/config files retain the already verified canonical
+implementation; no legacy issuer or mixed upload contract is restored.
+
+PR75's retired pause browser case and 15 legacy-specific units are superseded
+by the existing canonical cases, not skipped: `subject-upload-issuance.test.ts`
+checks the exact flag, auth-first refusal, no signer/lease work and normal
+issuance; `own-upload-entry.test.ts` checks both normal and withheld picker
+states; `subject-upload-browser.test.ts` checks live stale-page refusal and
+zero Storage/finalization work. `own-upload-pause.spec.ts` checks both aliases,
+both entry pages, unchanged file/lease counts and zero writes on refusal,
+actual stored bytes, interrupted finalization, successful completion and
+preparation through the paused app, exact downloads and retained controls.
+Its existing 24-case and later 69-case production-build receipts are retained.
+The unused legacy pause helper/copy/error-mapper and legacy environment example
+are removed with those old-contract tests. PR75's operational record remains
+explicitly historical in `legacy-upload-pause.md`. The additional Overview
+assertions await the separately recorded canonical ancestry prerequisite;
+this merge does not claim a new full browser pass.
+
+Historical released PR75 verification (legacy runtime; canonical replacement receipts follow):
+
+Legacy upload pause (2026-09-06): adds 15 focused route/presentation units
+and one browser case, preserving every existing case and assertion. The
+browser case uses a third same-build app instance with pause enabled, actual
+authenticated refusal responses, no new leases/Storage transport when paused,
+and real UI-uploaded bytes completed and downloaded through the paused app.
+Its stale-page response relay models app-server routing only; its deliberate
+finalization abort simulates an interruption after real Storage completion.
+Discovery is 220 total cases: 217 Chromium and three jurisdiction-off, with
+no skip or retry exception. CI `34049028691` at `703c88d` passed 219 browser
+cases and failed this new case before its positive transfer: the stale-page
+alert locator also matched the Next route announcer. Both new-case alerts now
+select their actual message and retain exact-text assertions (pause copy and
+Chromium's deliberately aborted fetch error). No production code, provider,
+lease-state, byte, cleanup or download assertion changes. The remaining flow
+was reviewed against this release's legacy runtime: Storage leaves a lease
+`issued`, completion requires that state and promotes it, and Tier-1 processing
+sets the file to `annotated`. The canonical branch has different lease semantics.
+Scoped lint, typecheck and unchanged 220-case discovery pass; corrected CI is
+still required. The local canonical database policy must not be reverted to
+make a legacy test pass.
+
 Canonical notice/source-control verification (`6e9acd6`, 2026-09-07): all
 69 selected cases pass together with zero skips/retries and 33 actual provider
 uploads. This supersedes the pending notice, expiry, export and first self-file
