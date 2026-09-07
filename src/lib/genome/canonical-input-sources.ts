@@ -5,7 +5,7 @@ import type { Db } from "./load";
 import type { InputSourceView } from "./input-sources";
 
 export type InputSourceContext = { kind: "prepared" } | {
-  kind: "report"; purpose: "reports.monogenic" | "reports.polygenic";
+  kind: "report"; purpose: "reports.monogenic" | "reports.polygenic" | "ancestry";
 };
 
 const count = z.number().int().nonnegative().safe();

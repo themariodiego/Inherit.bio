@@ -90,7 +90,7 @@ export function LineageCard({ parent, subjectId, call, supportNote, defineTerm, 
         </p>
       ) : null}
       {call === null ? (
-        <p className="text-sm text-ink-muted">{NOTHING_READ}</p>
+        <p className="text-sm text-ink-muted">{supportNote ?? NOTHING_READ}</p>
       ) : hasCall ? (
         <>
           <p data-slot="haplogroup" className="font-display text-3xl text-forest">

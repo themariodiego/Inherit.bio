@@ -45,6 +45,7 @@ import { acknowledged } from "@/lib/family/tier2";
 import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
 import { subjectAttributes } from "@/lib/figures/contract";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
+import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
 import { loadOwnOverviewReports } from "@/components/overview/own-report-summary";
 import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
@@ -149,9 +150,12 @@ export default async function OverviewPage() {
   const selfFiles = ((fileRows ?? []) as FileRow[]).filter(
     (file) => self != null && file.subject_id === self.id,
   );
-  const ownReports = self ? await loadOwnOverviewReports(admin, self.id) : null;
+  const [ownReports, ancestry] = self ? await Promise.all([
+    loadOwnOverviewReports(admin, self.id), loadAncestryResultSnapshot(admin, supabase, self.id),
+  ]) : [null, null];
+  let ownAncestry = ancestry?.rows.find(row => row.kind === "admixture");
+  let hasAncestry = Boolean(ownAncestry);
   const hasReports = ownReports?.hasReports ?? false;
-  const needsReportChoice = !hasReports && (ownReports?.hasPreparedSource ?? false);
   const inFlight = selfFiles.find((file) => STEP_FOR_STATUS[file.status] != null);
   // The people the viewer shares a Family relationship with, from either
   // side, each shown under the name the graph resolved rather than the label
@@ -164,16 +168,17 @@ export default async function OverviewPage() {
 
   // E, then B, then D/C, then A: a second upload in flight is never hidden
   // behind the processed file's State C.
-  const state: OverviewState =
+  const resolveState = (): OverviewState =>
     embryoSubjects.length > 0
       ? "E"
       : inFlight
         ? "B"
-        : hasReports
+        : hasReports || hasAncestry
           ? familyRows.length > 0
             ? "D"
             : "C"
           : "A";
+  let state = resolveState();
 
   // ---- State B: measured timing for the in-flight file's tier -------------
   let timing: ProcessingTiming | null = null;
@@ -196,21 +201,6 @@ export default async function OverviewPage() {
   // Public catalog counts retain their existing meaning; starter links alone
   // are personalized from exact live completed-purpose inputs.
   const { estimateCount = 0, variantCallCount = 0, starter = [], showStarter = false } = ownReports ?? {};
-  let ancestryTooFew = false;
-  if (hasReports && self) {
-    const { data: admixRow } = await supabase
-      .from("ancestry_results")
-      .select("result")
-      .eq("subject_id", self.id)
-      .eq("kind", "admixture")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (admixRow) {
-      const admix = admixRow.result as unknown as StoredAdmixture;
-      ancestryTooFew = (admix.markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION;
-    }
-  }
 
   // ---- State E counts -----------------------------------------------------
   let embryoCounts: { files: number; passed: number; notMeasured: number } | null =
@@ -270,6 +260,16 @@ export default async function OverviewPage() {
       if (count > 0) carrierLines.push({ pair: [self.id, person.dataSubjectId], count });
     }
   }
+
+  // Confirm the same saved result after all other awaited page reads, before
+  // presenting ancestry readiness or coverage from the captured content.
+  ownAncestry = (await ancestry?.confirm())?.find(row => row.kind === "admixture");
+  hasAncestry = Boolean(ownAncestry);
+  state = resolveState();
+  const needsReportChoice = !hasReports && !hasAncestry && (ownReports?.hasPreparedSource ?? false);
+  const ancestryTooFew = ownAncestry
+    ? ((ownAncestry.result as StoredAdmixture).markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION
+    : false;
 
   const firstAdultSegment = family[0]?.handle.routeSegment ?? null;
   const boxesFor = (domain: DomainId): EntryBox[] =>
@@ -361,6 +361,15 @@ export default async function OverviewPage() {
                   </Button>
                 ) : null}
               </>
+            ) : hasAncestry ? (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Your ancestry result is ready</h3>
+                <p className="text-sm text-ink-muted">See the covered markers, broad regions and what remains unknown.</p>
+                {ancestryTooFew ? <p className="text-base leading-relaxed text-ink">{STATE_C.ancestryTooFew}</p> : null}
+                <Button asChild size="lg" className="min-h-11">
+                  <Link href={route("genome.ancestry", { subject: "me" })}>View ancestry</Link>
+                </Button>
+              </div>
             ) : (
               <p className="text-base leading-relaxed text-ink-muted">
                 {ledeFor("my-genome")}

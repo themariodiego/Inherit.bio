@@ -345,6 +345,18 @@ describe("LineageCard", () => {
     expect(html).toContain(NOTHING_READ);
     expect(html).not.toContain("data-claim-block");
   });
+
+  it("distinguishes uncomputed lineage from a file without Y positions", () => {
+    const note = "Lineage has not been computed from this file.";
+    const html = renderToStaticMarkup(h(LineageCard, {
+      parent: "father", subjectId: SUBJECT, call: null, supportNote: note, defineTerm: false,
+    }));
+    expect(html).toContain(note);
+    expect(html).not.toContain(NO_Y_LEAD);
+    expect(html).not.toContain(XX_GLOSS);
+    expect(html).not.toContain('data-slot="haplogroup"');
+    expect(html).not.toContain("data-claim-block");
+  });
 });
 
 describe("NeanderthalCard", () => {

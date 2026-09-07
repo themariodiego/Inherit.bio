@@ -38,7 +38,7 @@ import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
+import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
 
 /**
  * One resolver for both domains (design §2.2): this account's own records,
@@ -120,31 +120,25 @@ export default async function AncestryPage(
   if (person && !viewerMaySee(person, "ancestry")) notFound();
 
   const admin = createAdminClient();
-  const candidates = await loadOwnAnalysisCandidateFiles(admin, dataSubjectId);
-  const allowed = await filterOwnAnalysisFiles(admin, dataSubjectId, "ancestry", candidates);
-  // Own reads use RLS too, keeping the live-grant lock and result SELECT in
-  // one database statement. Family keeps its established legacy authorization.
+  // Canonical results come from the checked private journal. Legacy own rows
+  // retain RLS; Family keeps its separately authorized legacy reader.
   const resultClient = person ? admin : await createClient();
-  const [fileCount, { data: results }] = await Promise.all([
-    // The subject bar counts every file in the record, whatever its status.
+  const [fileCount, captured] = await Promise.all([
     getSubjectFileCount(admin, dataSubjectId),
-    allowed.length ? resultClient
-      .from("ancestry_results")
-      .select("kind, result, support_note, file_id, model_id, model_version")
-      .eq("subject_id", dataSubjectId)
-      .in("file_id", allowed.map(f => f.id))
-      .order("created_at", { ascending: false }) : { data: [] },
+    loadAncestryResultSnapshot(admin, resultClient, dataSubjectId),
   ]);
-  const current = new Set((await filterOwnAnalysisFiles(admin, dataSubjectId, "ancestry", allowed)).map(f => f.id));
-  const readable = results?.filter(row => current.has(row.file_id));
-  const admix = readable?.find((row) => row.kind === "admixture");
-  const mt = readable?.find((row) => row.kind === "mtdna");
-  const y = readable?.find((row) => row.kind === "ydna");
-  const regions = admix ? admixtureView(admix.result, admix.support_note) : null;
+  let admix = captured.rows.find((row) => row.kind === "admixture");
+  let mt = captured.rows.find((row) => row.kind === "mtdna");
+  let y = captured.rows.find((row) => row.kind === "ydna");
   const [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
-    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result ? [result.file_id] : [])),
+    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result ? [result.file_id] : [], { kind: "report", purpose: "ancestry" })),
   );
 
+  const current = new Set(await captured.confirm());
+  if (admix && !current.has(admix)) admix = undefined;
+  if (mt && !current.has(mt)) mt = undefined;
+  if (y && !current.has(y)) y = undefined;
+  const regions = admix ? admixtureView(admix.result, admix.support_note ?? "") : null;
   const subjectParams = { subject: subject.routeSegment };
 
   return (
