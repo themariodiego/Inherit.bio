@@ -3,6 +3,25 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## Search and report-count regression verified locally
+
+At test commit `dd70229`, both complete `report-counts` and `search` specs pass:
+**7/7 cases, no skips/retries, one actual Storage upload**. The pinned production
+build from `fb43083` was reused only after checking that application source and
+build inputs were unchanged; subsequent differences are docs, plain-vocabulary
+registration, test fixtures and local bootstrap variable naming. The build ID
+and exact diff are recorded in `count-search-v1-commit.json`.
+
+All six adversarial count mutations remain asserted. Cleanup holds the exact
+injected DOM node even if React detaches it, then asserts no fixture remains
+and the real page audit is clean. Keyboard opening is tested after an actual
+button/Escape/focus-return cycle confirms the client has mounted; the shortcut
+still starts from the page body and must focus the real search dialog. No
+sleep, retry, timeout relaxation or substitute shortcut result was added.
+Evidence: `work/canonical-family-runtime-adapter/count-search-v1.log`,
+`count-search-v1-receipt.json` and `count-search-v1-results/`. This closes the two
+local regressions found by the earlier full CI, not a complete CI pass.
+
 ## Family sharing and account deletion verified locally
 
 At `fb43083`, **7/7 production-build browser cases pass together**, with no

@@ -15,9 +15,10 @@ without breaking consent foreign keys, while retaining Storage/lease guards.
 The exact earlier failures and actual-worker recovery are preserved in the
 local verification record. Three legacy helper sites remain: Health Picture,
 Portrait and other-adult deletion. The isolated Copilot daemon setup still
-needs standard-CI integration. Mutation-cleanup and post-login search readiness
-need focused inspection; the old GIAB upload test never reaches the current
-file chooser. Do not narrow the suite or classify separate local receipts as
+needs standard-CI integration. Mutation-cleanup and post-login search readiness now pass both complete specs
+at `dd70229`: seven cases, one actual upload, no skips/retries, using the
+unchanged pinned `fb43083` production build. The old GIAB upload test still
+never reaches the current file chooser. Do not narrow the suite or classify separate local receipts as
 a combined pass. Safe CI logs and diagnosis:
 `work/ancestry-local-install-c4718e9/ci-34123004524-*`. PR76 remains draft.
 
