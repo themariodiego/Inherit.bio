@@ -6,6 +6,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ALLOWLIST_PATH = "scripts/secret-allowlist.json";
 const GENOME_FIXTURE_ROOTS = ["data/samples", "e2e/fixtures"];
+// ADR 0006 pins [classification, detector value, paths, full source-line SHA].
+// JSON/ADR edits alone cannot approve a different credential or expression.
+const REVIEWED_FIXTURE_BINDINGS: Readonly<Record<string, string>> = {
+  "browser-origin-credential-refusal": "70081558a9f9b8cba245e7a7b0b71d4f313c76351970e0b60f592d6e6acf1ff7",
+  "storage-proxy-credential-refusal": "b22bdf8a20b2ffeb40358291980b624ed57e23c78eded1f9d83c04d4691e3a68",
+  "model-endpoint-credential-refusal": "994f05d31bc43286df7f5c4eed3641b6faca7b2031f707dccf56fb0dc30d4f1c",
+  "ready-origin-credential-refusal": "5e101230c7e1273a680a95bbf182a376562392c5e388fddce3eeb9688b9a647d",
+  "chat-token-deterministic-expression": "dae93d83c4d1f13d1ab49e478a5ac8bf9bc641753719c1e4bc03ba2bf3e1ff2b",
+};
 const SECRET_NAME_PATTERN =
   "(?:DATABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|[A-Z][A-Z0-9_]*(?:API_KEY|ENCRYPTION_KEY|PRIVATE_KEY|SERVICE_ROLE_KEY|SECRET|TOKEN|PASSWORD))";
 
@@ -39,8 +48,11 @@ interface AllowlistEntry {
     | "supabase-local-jwt"
     | "deterministic-e2e-key"
     | "deterministic-e2e-secret"
-    | "non-secret-code-reference";
+    | "non-secret-code-reference"
+    | "reviewed-negative-url"
+    | "non-secret-code-expression";
   sourceDeclaration?: string;
+  sourceLineSha256?: string;
   value: string;
   paths: string[];
   historyOnly?: boolean;
@@ -52,6 +64,24 @@ interface SecretAllowlist {
   schemaVersion: number;
   historyBaseline: string;
   entries: AllowlistEntry[];
+}
+
+function isReviewedFixture(entry: AllowlistEntry): boolean {
+  return entry.classification === "reviewed-negative-url"
+    || entry.classification === "non-secret-code-expression";
+}
+
+function sha256(text: string): string {
+  return crypto.createHash("sha256").update(text).digest("hex");
+}
+
+function hasReviewedBinding(entry: AllowlistEntry): boolean {
+  return entry.historyOnly !== true && entry.paths.length === 1
+    && /^[0-9a-f]{64}$/.test(entry.sourceLineSha256 ?? "")
+    && Object.hasOwn(REVIEWED_FIXTURE_BINDINGS, entry.id)
+    && REVIEWED_FIXTURE_BINDINGS[entry.id] === sha256(JSON.stringify([
+      entry.classification, entry.value, entry.paths, entry.sourceLineSha256,
+    ]));
 }
 
 function isPlaceholder(value: string): boolean {
@@ -216,6 +246,16 @@ export function validateAllowlist(
       if (decoded.length !== 32 || decoded.toString("base64") !== entry.value) {
         failures.push(`${entry.id}: deterministic E2E key must be canonical 32-byte base64`);
       }
+    } else if (isReviewedFixture(entry)) {
+      if (!hasReviewedBinding(entry)) {
+        failures.push(`${entry.id}: unverified reviewed fixture binding`);
+      } else {
+        const sourcePath = path.join(repositoryRoot, entry.paths[0]);
+        if (!fs.existsSync(sourcePath) || !fs.readFileSync(sourcePath, "utf8")
+          .split(/\r?\n/u).some(line => sha256(line) === entry.sourceLineSha256)) {
+          failures.push(`${entry.id}: reviewed source line is absent`);
+        }
+      }
     } else if (entry.classification === "non-secret-code-reference") {
       // This does not exempt credentials: only one reviewed fixture identifier,
       // with its exact declaration still present, is eligible. The scanner
@@ -259,7 +299,8 @@ function scanExactAllowlistOccurrences(
     for (const entry of entries) {
       // Source identifiers are not credential literals in prose or tests.
       // scanText still detects secret assignments using the identifier.
-      if (entry.classification === "non-secret-code-reference") continue;
+      if (entry.classification === "non-secret-code-reference"
+        || entry.classification === "non-secret-code-expression") continue;
       if (line.includes(entry.value)) {
         findings.push({
           rule: "allowlisted-literal",
@@ -421,11 +462,26 @@ function verifyGenomeFixtures(repositoryRoot: string): string[] {
   return failures;
 }
 
-function isAllowedFinding(
+export function isAllowedFinding(
   finding: SecretFinding,
   entries: AllowlistEntry[],
+  repositoryRoot: string,
 ): boolean {
   const entry = entries.find((candidate) => candidate.value === finding.value);
+  if (entry && isReviewedFixture(entry)) {
+    if (!hasReviewedBinding(entry)) return false;
+    if (finding.path === ALLOWLIST_PATH) return true;
+    if (!entry.paths.includes(finding.path)) return false;
+    // Check the line that produced THIS finding. A valid declaration elsewhere
+    // in today's file cannot approve a changed assignment in its history.
+    try {
+      const text = finding.commit
+        ? git(repositoryRoot, "show", `${finding.commit}:${finding.path}`)
+        : fs.readFileSync(path.join(repositoryRoot, finding.path), "utf8");
+      const line = text.split(/\r?\n/u)[finding.line - 1];
+      return line !== undefined && sha256(line) === entry.sourceLineSha256;
+    } catch { return false; }
+  }
   return Boolean(
     entry &&
       (finding.path === ALLOWLIST_PATH ||
@@ -496,7 +552,7 @@ export function runSecretGate(repositoryRoot: string): {
     ...history.findings,
   ];
   for (const finding of allFindings) {
-    if (!isAllowedFinding(finding, allowlist.entries)) {
+    if (!isAllowedFinding(finding, allowlist.entries, repositoryRoot)) {
       const location = `${finding.path}:${finding.line}`;
       const commit = finding.commit ? ` in ${finding.commit.slice(0, 12)}` : "";
       failures.push(`${location}${commit}: ${finding.rule} (${finding.value.slice(0, 12)}…)`);
