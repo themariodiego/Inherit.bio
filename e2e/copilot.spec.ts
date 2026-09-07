@@ -56,7 +56,7 @@ test("with no provider configured, setup explains reusable permission and the re
   ).toBeVisible();
 });
 
-test("cloud provider requires named disclosure before use; captured report backs the complete answer; withdrawal stops a stale composer", async ({ page }) => {
+test("cloud provider requires named disclosure before use; captured report backs the complete answer; withdrawal stops a stale composer", async ({ page }, testInfo) => {
   await signIn(page, USER.email, USER.password);
   const fileId = await uploadOwnFileWithChosenReports(page,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
@@ -107,6 +107,14 @@ test("cloud provider requires named disclosure before use; captured report backs
   expect(source.citations).toEqual(expect.arrayContaining([expect.objectContaining({ pmid: "10233211" })]));
   expect(report.unavailable_sources).toEqual([]);
   await expect(page.getByText("get_report", { exact: true })).toHaveCount(0);
+  // Actual rendered source-backed answer, at both supported review widths.
+  for (const [name,width,height] of [["desktop",1280,900],["mobile",390,844]] as const) {
+    await page.setViewportSize({ width,height });
+    await expect(page.getByLabel("Message the copilot")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path:testInfo.outputPath(`copilot-${name}.png`),fullPage:true });
+  }
+  await page.setViewportSize({ width:1280,height:900 });
 
   // Withdraw in another real tab, then exercise the old composer/context. Its
   // request must fail before any provider request, not merely hide the UI.
