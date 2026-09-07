@@ -451,3 +451,39 @@ are never members. Regrant residual protection requires a live exact new grant
 and complete current source/normalization/Storage binding. A changed frozen
 target lifecycle revision or unsupported attributed chat output fails closed;
 this is not a generic family, cohort, lifecycle or source cleanup executor.
+
+
+## Canonical own-report ready notices
+
+`mail_outbox.canonical_readiness` is an immutable, non-genetic source/authority
+snapshot for canonical `report-ready` rows. It names the account, subject, file,
+computation and recipient-contact revisions and each currently selected supported purpose's exact
+source, normalization, grant, legal artifact and principal/binding authority.
+Session revisions are excluded from durable identity; delivery does not require
+the originating browser session to survive. Current account, recipient, contact,
+source, consent and deletion authority still fence every claim and submission.
+
+The service-only `own_report_generation_with_mail_v1` adapter preserves the core
+operation checks and requires a verified-account encrypted contact envelope for
+completion. It commits the last selected-purpose completion and notice together,
+or rolls both back when enqueue rejects. Preparation and partial/failed selected
+work have no ready notice. The existing core RPC remains available to the old
+application during rollout; it does not gain notices without application replacement.
+
+The idempotency key is SHA256 of the canonical JSONB readiness snapshot text.
+Replay cannot replace its recipient, renew its database-issued 30-day deadline
+or rewrite its snapshot. Withdrawal invalidates queued/claimed affected events
+in the same transaction. Insert, claim and immediate pre-submit share
+`private.file_ready_mail_current_v1`; only actual legacy sources retain the
+annotated-file branch. No failure-email window is introduced by this adapter.
+
+The DB-owned `profiles.mail_contact_revision` starts at one and advances only for
+actual Auth email/confirmation changes. A field guard covers browser INSERT and
+UPDATE despite existing table grants. The server reads this counter before
+verified `getUser`; enqueue locks Auth then profile in the existing account order
+and refuses an obsolete envelope. The Auth transition follows Auth → profile →
+outbox order, invalidates old canonical rows and rotates their captured contacts.
+Claim/pre-submit re-resolve the current counter without taking Auth/profile locks
+while holding an outbox lock. No analysis revision changes for an email-only edit.
+An explicit processing retry can create one event at the new contact revision;
+the prior event's recipient, source snapshot and deadline remain unchanged.

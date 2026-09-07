@@ -10,6 +10,7 @@ import { ALL_PRS_SCORES } from "../genome/prs-data";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
 import { ownReportSnapshot } from "./own-report-token";
+import { ownReportReadyEnvelope } from "./own-report-ready-envelope";
 
 const PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
 type Purpose = (typeof PURPOSES)[number];
@@ -23,8 +24,8 @@ const absentSchema = z.object({ status: z.literal("not_selected") }).strict();
 const callSchema = z.object({ file_id: uuid, rsid: z.number().int().positive().nullable(), chrom: z.number().int().min(1).max(25),
   pos: z.number().int().positive(), ref: z.string().nullable(), alt: z.string().nullable(), genotype: z.string(), usable: z.boolean().optional(),
 }).strict();
-type Operation = "begin" | "check" | "read-variants" | "read-observed" | "complete" | "fail";
-type Rpc = (name: "own_report_generation_v1", args: { p_operation: Operation; p_account_id: string;
+type Operation = "begin" | "check" | "read-variants" | "read-observed" | "complete" | "fail" | "ready";
+type Rpc = (name: "own_report_generation_with_mail_v1", args: { p_operation: Operation; p_account_id: string;
   p_session_id: string; p_file_id: string; p_purpose: Purpose; p_claim: string | null; p_payload: unknown }) =>
   PromiseLike<{ data: unknown; error: { code?: string } | null }>;
 const unavailable = () => ownUploadJson({ error: "unavailable" }, 503);
@@ -45,9 +46,11 @@ export async function generateOwnReports(request: Request, fileId: string) {
   const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_file_id: fileId };
   let generated = 0, existing = 0;
   const completedPurposes: Purpose[] = [];
+  let readyMail: Awaited<ReturnType<typeof ownReportReadyEnvelope>> | null = null;
+  const envelope = async () => readyMail ??= await ownReportReadyEnvelope(actor.accountId);
   for (const purpose of PURPOSES) {
     let claim: z.infer<typeof claimSchema> | null = null;
-    const call = (operation: Operation, payload: unknown = null) => rpc("own_report_generation_v1", {
+    const call = (operation: Operation, payload: unknown = null) => rpc("own_report_generation_with_mail_v1", {
       ...args, p_operation: operation, p_purpose: purpose, p_claim: claim?.claim ?? null, p_payload: payload });
     try {
       const start = await call("begin"); if (start.error) return unavailable();
@@ -107,7 +110,7 @@ export async function generateOwnReports(request: Request, fileId: string) {
         const result = computePrs(lookup, score);
         return { pgs_id: score.pgs_id, raw_score: result.raw, coverage: result.coverage, matched: result.matched };
       }) : [];
-      const finished = await call("complete", { reports, prs });
+      const finished = await call("complete", { reports, prs, readyMail: await envelope() });
       const done = doneSchema.safeParse(finished.data);
       if (finished.error || !done.success || done.data.purpose !== purpose) throw new Error("unavailable");
       generated++; completedPurposes.push(purpose);
@@ -119,9 +122,16 @@ export async function generateOwnReports(request: Request, fileId: string) {
   // A concurrently withdrawn purpose cannot leave a fresh success receipt.
   for (const purpose of completedPurposes) {
     try {
-      const result = await rpc("own_report_generation_v1", { ...args, p_operation: "check", p_purpose: purpose, p_claim: null, p_payload: null });
+      const result = await rpc("own_report_generation_with_mail_v1", { ...args, p_operation: "check", p_purpose: purpose, p_claim: null, p_payload: null });
       const checked = doneSchema.safeParse(result.data);
       if (result.error || !checked.success || checked.data.purpose !== purpose) return unavailable();
+    } catch { return unavailable(); }
+  }
+  if (completedPurposes.length) {
+    try {
+      const notice = await rpc("own_report_generation_with_mail_v1", { ...args, p_operation: "ready",
+        p_purpose: completedPurposes[0], p_claim: null, p_payload: await envelope() });
+      if (notice.error || notice.data !== true) return unavailable();
     } catch { return unavailable(); }
   }
   return generated || existing

@@ -5146,6 +5146,7 @@ export type Database = {
           id: string
           jurisdiction_code: string | null
           jurisdiction_revision: number
+          mail_contact_revision: number
           non_self_upload_suspended_at: string | null
         }
         Insert: {
@@ -5159,6 +5160,7 @@ export type Database = {
           id: string
           jurisdiction_code?: string | null
           jurisdiction_revision?: number
+          mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
         Update: {
@@ -5172,6 +5174,7 @@ export type Database = {
           id?: string
           jurisdiction_code?: string | null
           jurisdiction_revision?: number
+          mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
         Relationships: []

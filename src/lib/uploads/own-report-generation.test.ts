@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 import type { ReportTemplate } from "../genome/reports";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn() }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn(), profile: vi.fn() }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: () => ({ select: () => ({ eq: () => ({ single: mocks.profile }) }) }) }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: mocks.templates }));
 import { generateOwnReports } from "./own-report-generation";
@@ -34,13 +34,15 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
   return { data: true, error: null };
 }
 beforeEach(() => {
+  vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
   vi.resetAllMocks(); selected = new Set(["reports.polygenic"]); finished = new Set();
-  mocks.getUser.mockResolvedValue({ data: { user: { id: account } } });
+  mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
+  mocks.getUser.mockResolvedValue({ data: { user: { id: account, email: "ready@e2e.local", email_confirmed_at: "2026-09-06T12:00:00Z" } } });
   mocks.getClaims.mockResolvedValue({ data: { claims: { sub: account, session_id: session } } });
   mocks.templates.mockResolvedValue([template, { ...template, slug: "synthetic-monogenic", layer: "variant_call" }]);
   mocks.rpc.mockImplementation(rpc);
 });
-afterEach(() => vi.clearAllMocks());
+afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); });
 describe("independent synchronous own reports", () => {
   it("generates the real MCM6 AG interpretation for only the chosen estimate purpose", async () => {
     const response = await generateOwnReports(request(), fileId);
@@ -118,4 +120,45 @@ describe("independent synchronous own reports", () => {
     expect((await generateOwnReports(request(), fileId)).status).toBe(503);
     expect(mocks.rpc.mock.calls.some(call => call[1].p_operation === "complete")).toBe(false);
   });
+  it("uses only the service mail adapter and binds an encrypted verified recipient to atomic completion", async () => {
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(mocks.rpc.mock.calls.every(([name]) => name === "own_report_generation_with_mail_v1")).toBe(true);
+    const complete = mocks.rpc.mock.calls.find(([, args]) => args.p_operation === "complete")![1];
+    expect(complete.p_payload.readyMail).toEqual({ contactRevision: 1, contactCiphertext: expect.stringMatching(/^[0-9a-f]+$/),
+      contactHmac: expect.stringMatching(/^[0-9a-f]{64}$/), dashboardUrl: expect.stringMatching(/\/genome\/me\/reports$/) });
+    expect(JSON.stringify(complete.p_payload.readyMail)).not.toContain("ready@e2e.local");
+    expect(mocks.rpc.mock.calls.filter(([, args]) => args.p_operation === "ready")).toHaveLength(1);
+  });
+  it("fails closed before completion when the current recipient cannot be resolved", async () => {
+    mocks.getUser.mockResolvedValueOnce({ data: { user: { id: account } } })
+      .mockResolvedValue({ data: { user: { id: account, email: "unconfirmed@e2e.local" } } });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, args]) => ["complete", "ready"].includes(args.p_operation))).toBe(false);
+  });
+  it("does not report success when the atomic completion rejects its notice envelope", async () => {
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "complete"
+      ? { data: null, error: { code: "22023", message: "invalid_ready_envelope" } } : rpc(name, args));
+    const response = await generateOwnReports(request(), fileId);
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain("invalid_ready_envelope");
+    expect(mocks.rpc.mock.calls.some(([, args]) => args.p_operation === "ready")).toBe(false);
+  });
+  it("does not request blanket readiness after one selected purpose fails", async () => {
+    selected.add("reports.monogenic");
+    mocks.rpc.mockImplementation(async (name, args) => args.p_purpose === "reports.polygenic" && args.p_operation === "read-variants"
+      ? { data: null, error: { code: "42501" } } : rpc(name, args));
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.filter(([, args]) => args.p_operation === "complete")).toHaveLength(1);
+    expect(mocks.rpc.mock.calls.some(([, args]) => args.p_operation === "ready")).toBe(false);
+  });
+  it("replays a durable notice for already completed work without regenerating results", async () => {
+    finished.add("reports.polygenic");
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(mocks.rpc.mock.calls.filter(([, args]) => args.p_operation === "ready")).toHaveLength(1);
+    expect(mocks.rpc.mock.calls.some(([, args]) => args.p_operation === "complete")).toBe(false);
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "ready"
+      ? { data: null, error: { code: "55000" } } : rpc(name, args));
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+  });
+
 });
