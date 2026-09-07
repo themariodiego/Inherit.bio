@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
@@ -26,8 +27,9 @@ import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAnc
 // Nothing numeric is retyped: the panel size comes from `data/ref/aims.json`
 // and the forbidden words from `data/ref/regions/label-denylist.json`.
 
-const GREY_USER = { email: "ancestry-grey@e2e.local", password: "e2e-ancestry-grey-pw" };
-const SHOWN_USER = { email: "ancestry-shown@e2e.local", password: "e2e-ancestry-shown-pw" };
+const RUN_ID = randomUUID();
+const GREY_USER = { email: `ancestry-grey-${RUN_ID}@e2e.local`, password: "e2e-ancestry-grey-pw" };
+const SHOWN_USER = { email: `ancestry-shown-${RUN_ID}@e2e.local`, password: "e2e-ancestry-shown-pw" };
 
 const ANCESTRY = "/genome/me/ancestry";
 const TINY_FIXTURE = "e2e/fixtures/tiny-grch38.vcf";
