@@ -81,9 +81,13 @@ The final consolidated batch passes 2,981 units, secret and readability gates; e
 are recorded in the local verification ledger. This closes useful local
 journeys, not the full adult or deletion acceptance gates.
 
-Full CI on pushed `3651a46` remains 126 passed, 12 failed and 94 not run.
-The Family fixture and account-purge failures now have local passing evidence;
-Copilot setup, three legacy helper sites and other browser regressions remain.
+Full CI on pushed `6679ad2` is 131 passed, 9 failed and 92 not run.
+Family sharing and account purge also pass there. Copilot setup, three legacy
+helper sites, search readiness and the old GIAB uploader remain. Search/count
+has complete local proof; reviewed CI/GIAB changes await actual full-suite
+execution. The file-deletion first case exposed an intermittent report-choice
+refresh delay; its negative guard is still unverified, and the one successful
+off/on timing diagnostic does not establish a fix.
 Eight compatible hosted migrations are prepared but not applied. PR76 stays
 draft, production stays PR75, and acceptance stays **18/65**.
 

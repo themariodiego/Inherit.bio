@@ -2,6 +2,29 @@
 
 ## Full CI checkpoint · 2026-09-07
 
+[CI run 34131989592](https://github.com/themariodiego/Inherit.bio/actions/runs/34131989592)
+on pushed `6679ad2` passed every pre-browser check. Of 232 scheduled browser
+cases, **131 passed, 9 failed and 92 did not run**. Family sharing and account
+deletion now pass in CI. Remaining failures are four missing isolated Copilot
+daemon setups, three legacy helper refusals (Health Picture, Portrait and the
+other-adult deletion guard), search readiness and the old GIAB uploader.
+The reviewed isolated CI runtime and reproducible GIAB-window test are now
+integrated locally; actual Linux/full-suite and GIAB browser proof remain due.
+Search/count local proof remains seven cases at `dd70229`.
+
+The migrated file-deletion guard has not yet been reached locally: the first
+case failed on report-choice replacement in V1/V3. V2 showed the control On
+but hung waiting for the streamed response to finish. A single metadata-only
+off/on diagnostic on the existing synthetic account showed On 2.617 seconds
+after click, with an aborted RSC fetch after application; it did not reproduce
+or explain the earlier delay. No timeout or assertion has been relaxed. Keep
+all three failed receipts and the zero-upload diagnostic distinct from journey
+proof. Safe artifacts: `work/ci-34131989592-failed.log`,
+`work/canonical-family-runtime-adapter/file-deletion-v1-*` through `v3-*`,
+and `work/report-choice-refresh-probe/`. PR76 remains draft.
+
+### Previous full CI checkpoint
+
 [CI run 34123004524](https://github.com/themariodiego/Inherit.bio/actions/runs/34123004524)
 on pushed `3651a46` passed build, unit, private name, legal, template,
 readability, secret, database and invitation-lock checks. The full browser run
