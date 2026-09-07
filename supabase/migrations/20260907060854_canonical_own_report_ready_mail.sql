@@ -277,7 +277,8 @@ begin
  if jsonb_typeof(p_envelope) is distinct from 'object' or not(p_envelope ?& array['contactCiphertext','contactHmac','dashboardUrl','contactRevision'])
   or p_envelope-array['contactCiphertext','contactHmac','dashboardUrl','contactRevision']<>'{}'::jsonb
   or coalesce(p_envelope->>'contactRevision','')!~'^[1-9][0-9]{0,15}$'
-  or coalesce(p_envelope->>'contactCiphertext','')!~'^[0-9a-f]{60,4096}$'
+  or length(p_envelope->>'contactCiphertext') not between 60 and 4096
+  or coalesce(p_envelope->>'contactCiphertext','')!~'^[0-9a-f]+$'
   or length(p_envelope->>'contactCiphertext')%2<>0
   or coalesce(p_envelope->>'contactHmac','')!~'^[0-9a-f]{64}$'
   or coalesce(p_envelope->>'dashboardUrl','')!~'^https?://[^/@?#]+/genome/me/reports$' then
