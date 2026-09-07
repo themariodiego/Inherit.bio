@@ -315,7 +315,7 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
   // One computed region result has source facts. Uncomputed parent lines
   // must not imply that their markers were analyzed by repeating that block.
   await expect(page.locator('[data-slot="input-provenance"]')).toHaveCount(1);
-  await expect(admixture.locator('[data-slot="input-provenance"]')).toHaveCount(1);
+  await expect(page.getByTestId("admixture").locator('[data-slot="input-provenance"]')).toHaveCount(1);
   await expect(page.locator('[data-slot="input-provenance"] details')).toHaveCount(0);
 
   // The toggle: a labelled switch, on by default; the sum rule holds in both states.
