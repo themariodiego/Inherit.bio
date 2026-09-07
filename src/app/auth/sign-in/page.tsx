@@ -6,11 +6,12 @@ import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { localAuthDestination } from "@/lib/auth/local-destination";
 
 function SignInInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") ?? "/overview";
+  const next = localAuthDestination(params.get("next"));
 
   return (
     <div className="space-y-5">
