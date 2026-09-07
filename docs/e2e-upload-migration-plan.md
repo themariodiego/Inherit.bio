@@ -1,6 +1,38 @@
 # Browser-suite migration after the own-upload cutover
 
-## Full CI checkpoint · 2026-09-07
+## Health Picture migration verified locally · 2026-09-07
+
+At `7ebabc5`, the complete ten-case Health Picture spec and six-case Family
+spec pass together: **16/16**, no skips/retries, **three actual provider
+uploads**, fresh build `ZtFdEBSPtsfwjGkWXRtjE`. This closes their local canonical
+journey migration. Actual UI uploads, chosen generation, invitation acceptance,
+explicit reciprocal sharing, source-specific own/shared report navigation and
+withdrawal replace the former legacy ingest and direct-grant setup. Captured
+catalogs and calls remain per source; no completion or clinical result is seeded.
+
+The original deterministic ROH fixture calculation is still checked, but the
+canonical file's ROH columns remain uncomputed. Clinical refusal and unbound
+reference-label tests preserve that boundary; they do not close the original
+ROH/carrier or Portrait trait/lineage acceptance. All ten cases remain, including
+Tier-2, attribution, no ranking, budgets/accessibility, Overview withholding,
+per-layer and joint withdrawal. Five desktop/phone captures were reviewed after
+the final column-width and visible-owner correction.
+
+V2's repeated-session-gate failure (8 passed, 1 failed, 7 not run) and V3's
+16-case functional pass before visual correction are preserved separately in
+`work/canonical-health-picture-verification-v2/` and
+`work/canonical-health-picture-verification-v3/`; V4 evidence is in
+`work/canonical-health-picture-verification-v4/`. No timeout, retry, skip or
+original substantive gate assertion was relaxed. Earlier CI/helper counts below
+are historical checkpoints, not the current local migration status.
+
+PR76 full CI still awaits the corrected test environment and concrete Linux
+runtime diagnostics. Separate local passing batches are not one full CI pass.
+Hosted Health Picture/own-detail schema is metadata-verified; no hosted app,
+worker or mail journey is claimed. Production PR75 and acceptance **18/65**
+remain unchanged.
+
+## Historical full CI checkpoint · 2026-09-07
 
 [CI run 34131989592](https://github.com/themariodiego/Inherit.bio/actions/runs/34131989592)
 on pushed `6679ad2` passed every pre-browser check. Of 232 scheduled browser
@@ -60,7 +92,7 @@ accepted ADR0016 excludes positive support.
 Standard static discovery passes **232 cases in 44 files**. These receipts are
 not one combined full-suite pass; acceptance stays **18/65**.
 
-## Latest integration · 2026-09-07
+## Earlier Copilot integration · 2026-09-07
 
 At `763fbf1`, **73/73 Copilot cases in four specs pass in one run** with no
 skips/retries and 10 actual Storage uploads. This closes local Copilot migration

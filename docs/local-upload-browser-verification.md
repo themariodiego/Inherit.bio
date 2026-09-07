@@ -5,6 +5,43 @@ Full-plan acceptance stays 18/65. Browser evidence here uses only local syntheti
 or public reference files. Separate hosted schema staging is recorded in the
 hosted-readiness ledger; no real user file was used for these checks.
 
+## Health Picture and Family checkpoint · 7 September 2026
+
+**Latest complete receipt (V4):** `7ebabc5`, fresh build
+`ZtFdEBSPtsfwjGkWXRtjE`, **16/16 cases passed**, zero skips/retries and
+**three actual provider uploads**; the aggregate upload gate passed. The ten
+Health Picture and six Family cases run together on the owned synthetic local
+stack. The journey includes independent uploads and chosen report generation,
+actual invitation acceptance, freshly signed sharing, the session gate,
+source-attributed saved calls, actual own/shared exact-source detail navigation,
+input provenance, per-layer withdrawal and joint withdrawal. Own sources and
+independently live purposes survive withdrawal. It does not prove third-party
+upload/quarantine or clinical computation.
+
+All five desktop/phone captures were inspected. The final presentation keeps
+320-pixel result columns, visible You/Invited adult labels and a keyboard-focusable
+horizontal region. Broad accessibility acceptance is still open. Evidence:
+`work/canonical-health-picture-verification-v4/{run-once.log,run-once-receipt.json,run-once-results/}`
+and the five `health-picture-*.png` files alongside them.
+
+Preserved earlier boundaries: V2 at `40147f7` had **8 passed, 1 failed,
+7 not run** after successful own-source URL, A/C and provenance assertions.
+It incorrectly requested Tier-2 acknowledgment again on return in the same
+session. The test-only correction navigates back and waits for the table;
+initial gate assertions and timeouts remain unchanged. V3 at `1288dc9` then
+passed all 16 using the unchanged `40147f7` build
+`9wfpsXopRKhpGPvS0rk9B`, with three uploads and no skips/retries. Its visual
+review exposed narrow columns and missing visible source-owner labels; V4
+verifies their correction in a fresh build. Keep the V2 and V3 directories;
+do not relabel the failed run as a pass.
+
+The installed local schema has 79 migrations; Health Picture contributes
+46 passing SQL assertions and own captured detail 29. Full units pass 3,121
+at `085dc9b`; latest focused checks pass 53 and 39 tests, and full typecheck
+and readability pass at `7ebabc5`. Hosted metadata-only staging is recorded
+separately. Clinical carrier/ROH, Portrait trait tables and parent lineages
+remain unsupported; production stays PR75 and acceptance **18/65**.
+
 ## File deletion, Portrait and GIAB checkpoint
 
 **Latest complete Portrait/GIAB receipt:** at `f0e1b5f`, all **14/14 cases

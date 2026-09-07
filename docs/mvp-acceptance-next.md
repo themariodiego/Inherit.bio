@@ -69,7 +69,32 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
-### 2026-09-07 · Portrait hosted prerequisite and Health Picture local integration
+### 2026-09-07 · Health Picture and exact saved-source reports verified locally
+
+At `7ebabc5`, a fresh production build (`ZtFdEBSPtsfwjGkWXRtjE`) passes all
+**16 Health Picture/Family cases**, with **three actual Storage uploads**, no
+skips or retries. Both adults upload and generate their own chosen reports,
+accept the invitation and explicitly share. Health Picture shows separately
+attributed saved calls; actual links open the selected own and shared source
+with A/C and input provenance. Per-layer and joint withdrawal preserve the
+independent sources and own permissions. Five desktop/phone captures were
+inspected after fixing narrow columns and making You/Invited adult visible.
+
+Local schema has 79 migrations; Health Picture's 46 and own-detail's 29 SQL
+assertions pass. Full units pass **3,121** at `085dc9b`; the latest focused
+53- and 39-test checks, full typecheck and readability pass at `7ebabc5`.
+The two additive schemas are also hosted and metadata-verified as
+`20260907211300` and `20260907211345`: all eight new functions match, with all
+11 dependencies unchanged. This is schema staging, not a hosted app journey.
+
+The earlier return-to-gate fixture failure and passing pre-visual run remain
+in the local verification ledger. Clinical carrier/ROH computation, Portrait
+trait tables and parent lineages remain unsupported. Production stays PR75,
+PR76 CI awaits the environment correction and detailed runtime diagnostics,
+and acceptance stays **18/65**. Hosted application, required notification and
+worker proof, and the coordinated upload cutover remain separate release work.
+
+### 2026-09-07 · Earlier Portrait hosted prerequisite and Health Picture local integration
 
 Portrait's additive migration is now installed hosted as `20260907204441`.
 Its five function bodies, owners, execution privileges and security settings,

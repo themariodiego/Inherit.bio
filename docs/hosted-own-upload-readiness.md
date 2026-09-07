@@ -4,6 +4,34 @@ Rollout preparation checkpoint, 7 September 2026. This is not a feature-release 
 The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
+## Health Picture and own captured detail staged · 7 September 2026
+
+After the complete local 16-case journey passed, two additive migrations were
+applied in order and metadata-verified at 21:14 UTC:
+
+| Canonical migration | Actual hosted version | Canonical SHA-256 |
+| --- | --- | --- |
+| `20260907153506_health_picture_canonical_results.sql` | `20260907211300` | `8760c3a946d9cdb5af9bb74081a4bd0eb5eb71decd580bc5c0e41e74c1fc5bf6` |
+| `20260907204454_own_captured_report_detail.sql` | `20260907211345` | `ff9f40df1ae74f8122e85d7ef336a3956c0a3ac4901ed15d9a938c60c99ef051` |
+
+All eight new function bodies, owners, execution privileges and security
+settings match; all 11 existing dependencies remain unchanged. Complete
+stored wrapper hashes match the reviewed source. The new private grant table
+has no direct client or service-role access; public entrypoints remain
+service-only. Neither migration replaces an existing function. Evidence:
+`work/health-own-report-hosted-staging-085dc9b/applied-receipt.json`.
+No application RPC, generation, worker or provider operation ran during staging.
+
+Final local V4 at `7ebabc5` passes all 16 Health Picture/Family cases, three
+actual uploads and five inspected desktop/phone captures using fresh build
+`ZtFdEBSPtsfwjGkWXRtjE`. Local schema is 79 migrations; focused SQL passes
+46 Health Picture and 29 own-detail assertions. These do not establish hosted
+application behavior. PR75 remains production; retain its legacy Storage
+policy until the separate pause/drain and `20260906133807` cutover. Additive
+schema can remain during application rollback. Full PR76 CI, notification
+recipient/allowance, hosted app/worker/mail proof and coordinated cutover remain
+open. Clinical/ROH and Portrait trait/lineage gaps remain explicit; **18/65**.
+
 ## Family and account-deletion release prerequisites · 7 September 2026
 
 Local `fb43083` passes seven production-build Family/account-deletion browser
@@ -39,8 +67,8 @@ match the verified local schema. The full stored wrapper SHA-256 is
 `3534d5e6d6393f075549693bc7f238573a5992903362b4744a4d2733756537eb`.
 All six existing dependencies are unchanged; zero new Portrait grant snapshots
 exist. This is additive schema staging only, without application RPC or worker
-invocation. Health Picture migration `20260907153506` remains local only (78
-local migrations; 46 original rollback SQL assertions pass after installation).
+invocation. Health Picture and own captured detail were subsequently staged
+as recorded above; their latest local baseline contains 79 migrations.
 
 Family adds a new strong directional-grant writer and preserves PR75's writer.
 Schema is installed before the application: old report tokens presented to the new

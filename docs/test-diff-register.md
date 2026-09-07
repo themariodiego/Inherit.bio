@@ -1,5 +1,42 @@
 # Test diff register
 
+## Health Picture canonical journey and exact-source navigation · 2026-09-07
+
+`e2e/family-health-picture.spec.ts` retains ten serial cases. Actual browser
+upload/preparation and explicit own report generation replace `ingestFileAs`;
+actual invitation acceptance binds A's invited representative to B's own
+subject. Fresh Permissions actions record both directional Health Picture
+permissions and each separately chosen report layer. No grant, completed
+analysis, independent-login marker or source identity is fabricated. Mail uses
+the existing required worker configuration and owned disposable capture queue.
+
+The ten assertions remain: (1) real sources/generation/invitation, (2) Tier-2
+before any result, (3) attributed two-layer tables/no ranking and exact own/shared
+source links, (4) unavailable clinical output, (5) interaction budgets and both
+themes' axe checks, (6) no unsupported Overview match, (7) one layer's withdrawal,
+(8) fewer unbound legacy labels, (9) no classified labels, (10) joint withdrawal.
+Case 3 follows actual caffeine links for both adults, checks the exact source
+URL, A/C and a single source's input provenance, then returns in the same
+acknowledged session. Case 7 retains B's independent monogenic permission and
+non-withheld status without inventing a covered monogenic result. Exact source
+and own-permission records must survive both sharing withdrawals.
+
+Footer counts now reflect two people in each of two separate layer tables;
+there is no mixed count or duplicate source. The deterministic synthetic ROH
+calculation remains checked, while canonical ROH columns must be uncomputed.
+Earlier persisted-ROH/clinical and Portrait trait/lineage acceptance stays open;
+unavailable output does not replace the missing positive scientific proof.
+
+V2 failed only on asking the already-acknowledged session to pass Tier-2 again
+on return; the minimal fix keeps the first gate and timeout unchanged. V3
+passed all 16 Health Picture/Family cases; visual review then prompted 320-pixel
+columns and visible owner labels. V4 at `7ebabc5`, fresh build
+`ZtFdEBSPtsfwjGkWXRtjE`, passes **16/16**, three actual uploads, no skips/retries;
+all five desktop/phone captures were inspected. Full units pass 3,121 at
+`085dc9b`; latest focused tests pass 53 and 39, plus full typecheck/readability.
+See the local verification ledger for separate V2/V3/V4 receipts. The historical
+entries below retain their original scope; no full-plan acceptance changes.
+
 ## Portrait names from each adult’s actual Family graph · 2026-09-07
 
 The real invitation creates an “Invited adult” handle in A’s graph; B sees
