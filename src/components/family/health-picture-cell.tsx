@@ -116,7 +116,7 @@ export function HealthPictureCell({
   href,
   captionId,
 }: HealthPictureCellProps) {
-  if (state.kind === "sources") return <td data-slot="health-picture-cell" className="align-top p-2">
+  if (state.kind === "sources") return <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
     {state.entries.map(entry => <div key={entry.fileId} data-source-file-id={entry.fileId} className="space-y-2 py-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2 p-3">
         {absenceWord(entry.state, personName) ? <p data-slot="cell-absence">{absenceWord(entry.state, personName)}</p> : null}
@@ -131,7 +131,7 @@ export function HealthPictureCell({
   const figures = figuresFor(state, layer, personName);
   const absent = absenceWord(state, personName);
   return (
-    <td data-slot="health-picture-cell" className="align-top p-2">
+    <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figures} className="space-y-2 p-3">
         {absent ? (
           <p data-slot="cell-absence" className="text-sm leading-relaxed text-ink">

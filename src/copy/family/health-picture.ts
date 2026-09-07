@@ -273,3 +273,5 @@ export const CELL_NO_REPORT = "No saved report is available for this report purp
 export const CELL_CONFLICTING_CALLS = "Some saved calls disagree; those letters are not shown";
 
 export const SAVED_REPORTS_LABEL = "Saved reports";
+
+export const TABLE_SCROLL_CUE = "Scroll sideways to see each person’s results.";
