@@ -1,12 +1,19 @@
 # Acceptance matrix
 
-## Current interpretation (2026-09-06)
+## Current interpretation (2026-09-08)
 
-The full-resolution G1–G8 ledger below is the completion measure: **18/65
+The full-resolution G1–G8 ledger below is the completion measure: **19/65
 verified**, not a development percentage. The A1–A18 table and its dated
 57-test run are historical baseline evidence, not current production claims.
 Later work can supersede that behavior without completing the stricter gates.
 
+- G1.14 closes on local production build `xB2bE6fs2ZV80Ri_IVt9S` at
+  `60c122e`: three cold-cache runs each on `/`, authenticated `/overview` and
+  an actual exact-source report yield performance medians 96/98/97 and
+  accessibility 100 throughout. One real synthetic Storage upload, exact
+  document/status/content checks, no skips/retries. The independent review
+  confirms the complete gate; see `docs/local-upload-browser-verification.md`.
+  G1.16 and hosted release conditions remain open; production stays PR75.
 - PR65 closes G4.6 after complete CI and hosted verification. Exact merge
   `16c01b71fdda862d9a1fd23153a6f618e2a255a7` is live on both public domains;
   the additive metadata migration preserves all files and historical unknowns.
@@ -100,7 +107,7 @@ importing `igv/dist/igv.esm.js` directly.
 
 ## Full-resolution gates (G1–G8)
 
-Current audited state: **18/65 YES**. `NO` means the exact gate is not yet
+Current audited state: **19/65 YES**. `NO` means the exact gate is not yet
 proved; partial implementations are intentionally not rounded up. The adult
 subject invitation work adds a safe TEST-LOCAL reservation and acceptance
 boundary, but it does not claim the class-(b) upload, quarantine, purpose,
@@ -122,9 +129,9 @@ revocation, notification, or ownership-transfer contract is complete.
 | G1.12 | Route/state register gate and titled tests pass. | NO | `docs/route-register.json` exists; required `gate:routes` and complete route/state E2E coverage do not. |
 | G1.13a | Full axe tag matrix passes on every registered route. | NO | `e2e/a11y.spec.ts` does not yet cover the complete tag/route/auth/viewport matrix. |
 | G1.13b | Reflow, target size, keyboard order, and alternatives pass. | NO | Named Playwright coverage for the complete non-axe matrix is absent from `e2e/a11y.spec.ts`. |
-| G1.14 | Lighthouse passes exact route and threshold contract. | NO | `scripts/lighthouse-check.ts` does not yet implement per-category thresholds and authenticated exact-final-URL checks. |
+| G1.14 | Lighthouse passes exact route and threshold contract. | YES | `scripts/lighthouse-check.ts` runs Node-native Lighthouse with real session cookies, per-category thresholds, exact request/final URLs, Document 200 and same-page authenticated content. At `60c122e`, fresh local production build `xB2bE6fs2ZV80Ri_IVt9S`: nine cold-cache audits, performance medians landing 96 / Overview 98 / exact-source caffeine report 97, accessibility 100 in every run, one actual provider upload, zero skips/retries. Independent receipt review passes; see `docs/local-upload-browser-verification.md`. This is local evidence; required integration CI belongs to G1.16. |
 | G1.15 | Template integrity gate passes without baseline loss. | YES | `pnpm gate:templates`; `scripts/validate-templates.ts` validates 162 templates (151 estimates, 11 Medicines variant calls) and genotype/citation structure, the Medicines-only rows of ADR 0021 (phenotype, function, dose, drug-choice and should-take language over every prose field; a 25-word sentence cap; `source` provenance with access dates) and, as of 2026-09-03, the two prose rules in `src/lib/genome/template-prose.ts`: the first-glance title (≤12 words, no term from `data/jargon.json`, no bare figure) and the naked relative figure (§4 §2.4 adjacency plus any numeric multiplier) over every summary and interpretation; unit tests in `src/lib/genome/template-prose.test.ts`. |
-| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs typecheck, lint, build, unit, legal, names, templates, readability, secrets, local Supabase, pgTAP (`supabase test db`), seed and the full browser suite, and every run on pull request #41 is green; the row stays NO because `gate:claims` (G1.11) and `gate:routes` (G1.12) do not exist yet. |
+| G1.16 | Pull-request CI runs every mandated gate and E2E; integration CI is green. | NO | `.github/workflows/ci.yml` runs typecheck, lint, build, unit, legal, names, templates, readability, secrets, local Supabase, pgTAP (`supabase test db`), seed and the full browser suite, and every run on pull request #41 is green; the row stays NO because `gate:claims` (G1.11) and `gate:routes` (G1.12) do not exist yet, and the required integration-branch Lighthouse job/green execution are not established by the local G1.14 receipt. |
 | G1.17 | Repository/history secret gate passes with explicit fixture allowlist. | YES | `pnpm gate:secrets`; `scripts/secret-gate.ts`; exact local-only values and paths in `scripts/secret-allowlist.json`; accepted ADR 0006; the current tree, all authored non-merge commits after the baseline, `.env.production` paths, and three tracked genome fixtures are checked. CI uses a full-history checkout. |
 | G2.1 | Route register exactly represents the required product hierarchy. | NO | `docs/route-register.json` exists and `/overview`, the five-item navigation and the My Genome routes now match it (`e2e/overview.spec.ts`, `e2e/report-skeleton.spec.ts`); several Family and Embryo routes still render `src/components/capability-unavailable.tsx`. |
 | G2.2 | Every route declares and tests every required state. | NO | `e2e/overview.spec.ts` covers Overview states A and C and `e2e/report-skeleton.spec.ts` the covered, not-covered and no-file report states; `docs/route-register.json` is not yet backed by one substantive E2E per required route/state pair. |

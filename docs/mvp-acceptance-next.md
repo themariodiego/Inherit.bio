@@ -1,6 +1,9 @@
 # MVP-first acceptance sequence
 
-Read-only plan audit, 2026-09-06. Full-plan acceptance remains **18/65**.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
+Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
+Its fresh local production-build evidence is recorded in
+`docs/local-upload-browser-verification.md`; production remains PR75.
 This is a delivery order, not a replacement specification or launch approval.
 The parent task is integrating parallel work on upload, normalization and
 separate report choices. Unmerged code is not a production capability.
@@ -54,11 +57,15 @@ not the intended MVP.
 - **UX lane:** report-library filter recovery and browser-back regression,
   scoped to existing authorized cards. No new data permission, purpose or
   report meaning. This is independently reviewable, but not a new G gate.
-- **Next bounded acceptance gate:** G1.14 has a finite three-route scope:
-  extend Lighthouse to per-category thresholds, authenticated Overview and
-  covered report detail, and assert final URLs. Record performance ≥90 and
-  accessibility 100 on `/`, Overview and one report. Do not run this against
-  a login redirect or treat it as full accessibility acceptance.
+- **Completed bounded gate:** G1.14 passes at `60c122e` with three runs each
+  on the landing page, authenticated Overview and an actual uploaded-source
+  report. Performance medians are 96/98/97; all accessibility scores are 100.
+  This closes one exact gate, not full accessibility or required CI wiring.
+- **Current release prerequisite:** complete exact-head CI and the protected
+  hosted findings/ready-notice/withdrawal/cleanup journey. The synthetic Zoho
+  alias is registered and email-confirmed; browser file-URL permission is
+  still needed before its first upload. Keep incompatible schema cutover
+  deferred until the documented pause/drain/application transition.
 - **After the core flow stabilizes:** finish complete route/state coverage and
   route dispositions for G1.12/G2.2/G2.3, then their required CI integration.
   Repeatedly rerunning incomplete full suites does not close those gates.

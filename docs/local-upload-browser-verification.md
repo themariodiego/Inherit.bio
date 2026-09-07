@@ -1,5 +1,62 @@
 # Local canonical upload browser boundary checks
 
+## Exact-route performance gate · 8 September 2026
+
+**G1.14 passes at `60c122ecaeec712583c2abd338a23b9629162999`.** Fresh isolated
+Linux production build `xB2bE6fs2ZV80Ri_IVt9S`, installed local schema 79,
+one actual synthetic provider upload and UI-selected report generation.
+Node-native Lighthouse uses the real signed-in session and audits exactly
+three pages, with three cold-cache navigations per page:
+
+| Page | Performance runs | Performance median | Accessibility, every run |
+| --- | --- | --- | --- |
+| `/` | 98, 96, 96 | 96 | 100 |
+| `/overview` | 98, 98, 98 | 98 | 100 |
+| Caffeine report, exact uploaded source | 97, 97, 97 | 97 | 100 |
+
+Every navigation verifies the exact requested/final URL, actual Document 200
+and content on the measured tab. The report contains the uploaded A/C call
+and its source provenance. The wrapper passes with zero skips/retries; the
+actual Storage transport gate records one upload. Independent receipt review
+confirms the original route, category and three-run contract. Whole-plan
+acceptance increases **18/65 → 19/65** for G1.14 only. This does not establish
+full-route accessibility, G1.16 integration CI or public-hosted performance.
+
+The landing page, privacy page and provider directory also now describe the
+actual accepted array/VCF/gVCF inputs. BAM/CRAM/FASTQ are refused, and supported
+files do not promise that every report has coverage. Scoped lint, readability
+and six actual rendered-format checks pass before the frozen build.
+
+Evidence in the parent task:
+`work/lighthouse-runtime-adapter/run-2026-09-07T22-49-57-291Z/`
+contains the source/runtime hash preflight, sanitized nine-run scores,
+completion/build ID, Playwright result and real-provider receipt. Existing
+font bytes are served locally during the offline build. Mail/job credentials
+are blank; no global worker, external model or hosted mutation ran. Preparation
+corrected the firewall binary path and Docker Desktop port-proxy preflight
+before the single successful build/audit; setup checks are not score samples.
+
+
+
+Before publication, the unpushed test fixture was corrected to construct its
+synthetic credential-bearing proxy URL through URL fields. Its rejection
+assertion and all 13 Lighthouse unit checks remain. Rewritten code commit
+`2623709` differs from audited `60c122e` only in that test file; all application
+and audit runtime bytes are identical. The post-audit equivalence receipt is
+saved beside the scores. Original audit IDs/build evidence are preserved.
+
+## Complete CI checkpoint · 8 September 2026
+
+CI `34167007160` is **SUCCESS** at `fcfcb3908c839dc516a65bfa812983c49b5ec069`,
+completed 2026-09-07T22:52:36Z. It passes **3,177 units / 201 files**,
+**52 pgTAP fixtures / 1,944 assertions**, **30 independent-session lock
+checks**, all static gates, the production build and **232/232 browser
+cases** with **57 actual Storage uploads**, zero skips/retries. Both owned
+cleanup steps succeed. This verifies the research-digest correction and
+local authentication-return protection in the full suite. The subsequent
+Lighthouse/copy commits require their own CI run; this result belongs only
+to `fcfcb390`. Parent-task evidence: `work/ci-34167007160-terminal/`.
+No public merge or hosted application cutover is implied.
 
 ## Full CI browser checkpoint · 8 September 2026
 

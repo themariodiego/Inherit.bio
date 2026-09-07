@@ -30,8 +30,9 @@ Review also found that login/callback `next` values could navigate off-site.
 Reviewed code `8926563` now validates local destinations for password sign-in,
 OAuth and callbacks, preserving local queries/fragments and independent-login
 sequencing. All 53 focused tests, scoped lint, generated types and full TypeScript
-checks pass; it is not yet deployed in this canary. Fresh complete CI is required
-for the resulting PR head. Evidence: parent task
+checks pass; it is not yet deployed in this canary. CI `34167007160` passes on `fcfcb390` with 3,177 units and all 232 browser
+cases, zero skips/retries. Later Lighthouse/copy changes require another
+exact-head run. Evidence: parent task
 `work/current-canary-refresh/auth-url-correction.json`.
 
 
