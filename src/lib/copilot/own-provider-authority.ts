@@ -74,7 +74,11 @@ export async function prepareOwnCopilotProvider(subjectId: string) {
     if (!(await assertOwnCopilotAuthority(actor, subjectId, authority))) return null;
     return { actor, authority, settings: { provider: stored.provider, base_url: endpoint.baseUrl, model: stored.model,
       providerLabel: stored.copilot_recipient.providerLabel, origin: endpoint.origin }, apiKey,
-      fetch: createPinnedModelFetch(endpoint, () => assertOwnCopilotAuthority(actor, subjectId, authority)) };
+      fetch: createPinnedModelFetch(endpoint, () => assertOwnCopilotAuthority(actor, subjectId, authority)),
+      // The caller owns its exact source/purpose projection. Recheck it in the
+      // same pinned connection boundary as provider permission, after DNS.
+      createFetch: (authorizeData: () => Promise<boolean>) => createPinnedModelFetch(endpoint, async () =>
+        await assertOwnCopilotAuthority(actor, subjectId, authority) && await authorizeData()) };
   } catch { return null; }
 }
 

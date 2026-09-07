@@ -159,9 +159,10 @@ create function private.own_copilot_configuration_v1(p_account_id uuid,p_session
 language plpgsql security definer set search_path=pg_catalog,private as $function$
 declare c jsonb; s public.llm_settings%rowtype; v_revision bigint; r jsonb;
 begin
+ -- The existing context locks and requires a self subject with active lifecycle.
+ -- Other lifecycle states cannot restart through this own-only path; the
+ -- authority resolver separately requires the exact unrevoked purpose grant.
  c:=public.own_report_context_v1(p_account_id,p_session_id,p_subject_id);
- perform 1 from public.subjects where id=p_subject_id and analysis_stopped_at is null for share;
- if not found then raise exception using errcode='42501',message='not_found'; end if;
  select copilot_settings_revision into v_revision from public.profiles where id=p_account_id;
  select * into s from public.llm_settings where user_id=p_account_id for share;
  r:=s.copilot_recipient;

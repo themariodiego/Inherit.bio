@@ -65,10 +65,20 @@ select is((select value->>'providerClass' from old_authority),'cloud','explicit 
 select is((select value->>'runtimeAttestationRevision' from old_authority),'1','policy revision is numeric version one');
 select is((select value->>'runtimeAttestationFingerprint' from old_authority),repeat('a',64),'actual runtime fingerprint remains separate');
 select ok(pg_temp.authority((select value from old_authority)) is not null,'same exact authority rechecks');
-savepoint stopped_analysis;
-update public.subjects set analysis_stopped_at=clock_timestamp() where id=(select id from copilot_subject);
-select ok(pg_temp.authority() is null,'permanent analysis stop also denies Copilot');
-rollback to stopped_analysis;
+-- Exercise actual canonical lifecycle transitions, not a planned schema field.
+savepoint restricted_subject;
+update public.subjects set lifecycle='restricted',lifecycle_revision=lifecycle_revision+1 where id=(select id from copilot_subject);
+select ok(pg_temp.authority() is null,'restricted subject denies Copilot despite an otherwise current purpose grant');
+rollback to restricted_subject;
+savepoint revoked_subject;
+update public.subjects set lifecycle='revoked',lifecycle_revision=lifecycle_revision+1 where id=(select id from copilot_subject);
+select ok(pg_temp.authority() is null,'revoked subject cannot restart through own Copilot');
+rollback to revoked_subject;
+savepoint purge_queued_subject;
+update public.subjects set lifecycle='purge_queued',lifecycle_revision=lifecycle_revision+1 where id=(select id from copilot_subject);
+select ok(pg_temp.authority() is null,'pending subject purge denies Copilot');
+rollback to purge_queued_subject;
+select ok(pg_temp.authority((select value from old_authority)) is not null,'rollback restores the unchanged live authority');
 select ok((select value->>'providerGrantId' is not null from old_authority),'cloud disclosure has a separate signed consent');
 select is((select count(*) from public.purpose_grants where target_id=(select id from copilot_subject) and purpose='reports.monogenic'),0::bigint,'Copilot permission never creates report permission');
 select throws_ok($$select pg_temp.grant_model((select value from old_presentation),repeat('c',64))$$,'23505',null,'single-use presentation nonce cannot replay');
@@ -100,5 +110,14 @@ select is((select count(*) from public.llm_settings where user_id='77800000-0000
 select ok(not has_function_privilege('authenticated','public.grant_own_copilot_v1(uuid,uuid,uuid,jsonb,jsonb,text,timestamptz)','EXECUTE'),'browser cannot call authority writer');
 select ok(not has_function_privilege('authenticated','public.own_copilot_authority_v1(uuid,uuid,uuid,jsonb)','EXECUTE'),'browser cannot invoke service authority resolver');
 select ok(has_function_privilege('service_role','public.own_copilot_authority_v1(uuid,uuid,uuid,jsonb)','EXECUTE'),'server can invoke checked authority resolver');
+-- Exercise the public SECURITY INVOKER chain as the actual server role, not
+-- only as postgres. Only our temporary subject lookup needs an explicit grant.
+grant select on copilot_subject to service_role;
+set local role service_role;
+select is(pg_temp.save_model()->>'saved','true','service role can save through the actual public RPC');
+select lives_ok($$select pg_temp.grant_model(pg_temp.presentation(),repeat('8',64))$$,'service role can present and grant exact own Copilot permission');
+select ok(pg_temp.authority() is not null,'service role can resolve its current signed permission');
+select is(public.remove_own_copilot_settings_v1('77800000-0000-4000-8000-000000000001','77800000-0000-4000-8000-000000000010'),true,'service role can remove settings atomically');
+reset role;
 select * from finish();
 rollback;
