@@ -1,6 +1,40 @@
 # Hosted own-upload rollout prerequisites
 
 
+## Authentication return correction · 8 September 2026
+
+Normal signup for the new synthetic alias exposed an outdated hosted Auth Site
+URL, `http://sequence.plus.bio`, and an allowlist containing only three historical
+Sequence URLs. The first confirmation email reached Zoho, but its fallback link
+was not followed. The default is now `https://www.inherit.bio`. Existing entries
+are preserved; exact callback paths and query patterns were added for the two
+current production hosts, the stable protected canary and its exact current
+immutable deployment. There is no general preview-host wildcard.
+
+A single repeat of the ordinary signup form with the same pending credentials
+issued a fresh PKCE confirmation. Its destination was inspected without logging
+the token, followed in the same browser, and reached authenticated Overview on
+`inherit-8i84xla1x-mariodiego.vercel.app`. Read-only Auth metadata confirms the same
+synthetic account is email-confirmed. This is actual signup/email/callback proof,
+not a report-ready Resend delivery receipt. No key retrieval, admin confirmation,
+account overwrite or old-token rewrite was used.
+
+The browser account completed the ordinary adult/disclosure/storage choices.
+The extension rejected setting the 425-byte fixture in its file chooser; no
+native chooser appeared on fallback. The owner has been asked to enable the
+extension's documented file-URL access. An independent read confirms zero genome
+files for the new synthetic account. No report was generated or queued. Preserve
+the pending authenticated upload tab and private synthetic credentials.
+
+Review also found that login/callback `next` values could navigate off-site.
+Reviewed code `8926563` now validates local destinations for password sign-in,
+OAuth and callbacks, preserving local queries/fragments and independent-login
+sequencing. All 53 focused tests, scoped lint, generated types and full TypeScript
+checks pass; it is not yet deployed in this canary. Fresh complete CI is required
+for the resulting PR head. Evidence: parent task
+`work/current-canary-refresh/auth-url-correction.json`.
+
+
 ## Protected current canary and test-mail readiness · 8 September 2026
 
 Current protected canary `f0ab225` is READY as
