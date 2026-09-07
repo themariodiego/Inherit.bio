@@ -1,5 +1,24 @@
 # Browser-suite migration after the own-upload cutover
 
+## CI read-only startup correction · 2026-09-07
+
+Run `34163349760` at `75c92cd` passed types, lint, 3,122 units, all content/security
+gates, 52 database fixtures / 1,944 assertions, invitation locks and production build. It stopped before
+browser cases: namespace diagnostics prove `/etc/hosts` was read-only (exit 2,
+`hosts-file`). The same failure was reproduced in a fresh credential-free local
+container built from the committed Dockerfile.
+
+Correction `4d20972` supplies the fixed hostname and loopback DNS settings at
+Docker creation and removes post-start `/etc` writes. Read-only root, the two
+existing tmpfs mounts, capability limits, DNS/egress drops and readiness deadline
+are unchanged. Fifteen focused tests and independent review pass. The actual
+patched ARM64 namespace and unchanged model/TLS/permission/egress probe pass,
+with positive DNS-drop counters and ownership-checked container cleanup. This
+uses native Node 22 for the same probe, without host dependencies or app secrets;
+it is not a complete standard-CI browser run. Evidence is preserved in
+`work/ci-namespace-readonly-34163349760/{baseline,fixed}.json`. Full CI remains due.
+Production remains PR75 and acceptance **18/65**.
+
 ## Health Picture migration verified locally · 2026-09-07
 
 At `7ebabc5`, the complete ten-case Health Picture spec and six-case Family
