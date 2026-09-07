@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { LLM_DATA_CLASSES } from "@/lib/llm";
 import type { OwnCopilotPermissionView } from "@/lib/copilot/own-consent";
@@ -43,8 +44,12 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
             body: JSON.stringify({ action: "grant-purpose", subjectId: view.subjectId, purposeKey: view.purposeKey,
               artifactVersion: purposeArtifact.version, artifactPresentationToken: view.token, affirmed: true,
               statementKeys: ["model-named", "data-classes-named", "raw-file-excluded", "revocable"] }) });
-        setMessage(response.ok ? view.granted ? "Permission withdrawn." : "Copilot permission saved." : "Permission could not be updated. Refresh this page and try again.");
-        if (response.ok) { setAffirmed(false); router.refresh(); }
+        const receipt: unknown = await response.json().catch(() => null);
+        const confirmed = view.granted
+          ? response.status === 200 && z.object({ revoked: z.literal(true) }).strict().safeParse(receipt).success
+          : response.status === 201 && z.object({ granted: z.literal(true) }).strict().safeParse(receipt).success;
+        setMessage(confirmed ? view.granted ? "Permission withdrawn." : "Copilot permission saved." : "Permission could not be updated. Refresh this page and try again.");
+        if (confirmed) { setAffirmed(false); router.refresh(); }
       } catch { setMessage("Could not connect. Try again."); }
       finally { setBusy(false); }
     }}>{view.granted ? "Withdraw Copilot permission" : "Allow Copilot for this model"}</Button>
