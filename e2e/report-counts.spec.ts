@@ -89,7 +89,7 @@ test("count detector fails injected missing-class, mixed-headline, mixed-token a
     ["dangling-definition", "missing-or-wrong-count-definition"],
     ["legacy-attribute", "legacy-count-attribute"],
   ]) {
-    await page.evaluate((kind) => {
+    const fixture = await page.evaluateHandle((kind) => {
       const fixture = document.createElement("section");
       fixture.id = "count-audit-mutation";
       const first = document.querySelector('[data-slot="count"][data-figure-class="estimate"]')!.cloneNode(true) as HTMLElement;
@@ -111,9 +111,17 @@ test("count detector fails injected missing-class, mixed-headline, mixed-token a
         fixture.append(bare);
       }
       document.querySelector("main")!.append(fixture);
+      return fixture;
     }, mutation);
-    expect(await page.evaluate(inspectReportCounts, DEFINITIONS)).toContain(expected);
-    await page.locator("#count-audit-mutation").evaluate((node) => node.remove());
-    await assertCounts(page);
+    try {
+      expect(await page.evaluate(inspectReportCounts, DEFINITIONS)).toContain(expected);
+    } finally {
+      // Retain the exact injected node: React may detach it after the audit.
+      // A locator would wait for a replacement instead of cleaning this node.
+      try { await fixture.evaluate((node) => node.remove()); }
+      finally { await fixture.dispose(); }
+      await expect(page.locator("#count-audit-mutation")).toHaveCount(0);
+      await assertCounts(page);
+    }
   }
 });
