@@ -1,9 +1,37 @@
 # Local canonical upload browser boundary checks
 
-2026-09-06. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
+2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
 ## Latest verified checkpoint
+
+The integrated runtime at `5ee7121` now has passing evidence for every case
+in the selected 65-case, 17-spec set, across documented runs after test-only
+corrections. This is not a single passing 65-case run or the full 226-case gate:
+
+| Test revision | Result | Scope / correction |
+| --- | --- | --- |
+| `f3e21cc` | 57 pass, 3 fail, 5 not run | Actual-provider integration; reused synthetic accounts and older-source selection helper failed. |
+| `c76a4bf` | 6 pass, 1 fail | Fresh accounts and semantic combobox selection; export and five network cases pass. Legal card lookup still used an obsolete name. |
+| `5c2c194` | 2 pass, no skips/retries | Exact disclaimer on the actual personal report and the remaining legal-page network case pass; one native upload crossed actual Storage. |
+
+The retained JSON reports were compared by file, test title and project:
+65 unique cases each have a latest passing result with no retry. The helper
+now checks the selected UUID before generating, alongside its exact process
+response and private source/grant journal checks. Scoped reproduction showed
+the old label lookup skipped the dropdown; no product selection defect or
+arbitrary timing workaround was found. Earlier failed receipts remain recorded.
+
+The new export case downloads real ZIPs before report choice, after generating
+only the older of two sources, and after withdrawal. Both original byte arrays,
+normalized rows and observed calls match throughout; generated JSON/text retain
+captured interpretations without borrowing current catalog metadata. Only the
+selected source has findings; withdrawn reports and PRS disappear while raw
+access remains. Synchronous content verification does not close the registered
+large-export delivery lifecycle. Production remains PR75 and the older protected
+canary; these export/cleanup changes are not hosted yet.
+
+## Previous pause checkpoint
 
 At `9b45b75027e5201ef6d2653b34876ac62e0af805`, the expanded **24/24 cases**
 pass with zero skips, retries or flaky cases: start `2026-09-06T17:57:03.042Z`,
