@@ -2,6 +2,7 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
 // A15 — legal pages complete; placeholder-grep gate passes (run separately as
 // pnpm gate:legal); disclaimers verified present on report SURFACES by E2E
@@ -204,7 +205,7 @@ test("the creation attribution renders in the site chrome", async ({
 test("disclaimers appear on the report SURFACE, not only in ToS", async ({
   page,
 }) => {
-  const user = { email: "legal-report@e2e.local", password: "e2e-legal-pw" };
+  const user = { email: `legal-report-${randomUUID()}@e2e.local`, password: "e2e-legal-pw" };
   await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
   await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });

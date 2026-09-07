@@ -15,8 +15,10 @@ An additive export browser case downloads actual ZIPs before any report choice,
 after generating one of two prepared sources, and after withdrawal. It checks
 both original byte arrays, full normalized rows, observed calls, captured
 interpretations in JSON/text, purpose isolation and coverage-only PRS. This
-case is implemented and typechecked, but has not run against the integrated
-runtime. Standard discovery is 226 cases/43 files; it is not a passing suite.
+case is implemented and typechecked. Its first integrated attempt passed the
+initial raw ZIP checks but stopped at generation of the selected older source;
+the complete export journey is not yet verified. Standard discovery is 226
+cases/43 files; it is not a passing suite.
 
 The full runner uses the actual local Storage provider and keeps both standard
 projects plus the independent paused server. Four guard/report tests and a
@@ -31,6 +33,14 @@ Preflight also found that the later two-layer count case needs an explicit
 monogenic choice: it now generates that second layer for the existing source
 at that case, while the earlier estimate-only case stays polygenic-only.
 No count, scientific meaning or authorization assertion is weakened.
+
+The second integrated attempt at `f3e21cc` passed 57 cases, failed three and
+left five not run, with no retries. Legal and network setup collided with
+preserved local synthetic accounts; those specs now use fresh UUID addresses
+without deleting fixtures or changing account helpers. The export case
+observed generation for the newer source while waiting for the selected older
+source. This discrepancy is under scoped investigation; no source assertion
+has been relaxed and this failed run is not a passing gate.
 
 Own-upload MVP verification (2026-09-06): the two-file control case proves
 exact downloads, conflict refusal, visible deletion failure/retry, real
