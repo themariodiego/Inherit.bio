@@ -91,7 +91,7 @@ export async function prepareOwnCopilotChat(subjectId: string): Promise<OwnCopil
         return { kind: 'ready', contextToken: mintOwnChatToken({ authority: provider.authority, projectionHash: snapshotHash(projection) }),
             providerInfo: { configured: true, provider: provider.settings.provider, providerKey: providerKeyFor(provider.settings.provider, provider.settings.base_url),
                 model: provider.settings.model, local: provider.authority.providerClass === 'local', hasConsent: true },
-            chats: chats.map(c => ({ id: c.id, createdAt: c.created_at })) };
+            chats: chats.map(c => ({ id: c.id, createdAt: new Date(c.created_at).toISOString() })) };
     }
     catch {
         return { kind: 'unavailable', reason: 'scope_unavailable' };
@@ -117,5 +117,5 @@ export async function readOwnChatHistory(chatId: string) {
     const history = ownChatHistorySchema.parse(await ownChatRpc('history', provider.authority, null, chatId));
     await checkOwnChat(provider.authority, history.projection);
     return { chatId, scope: { kind: 'self' as const, displayLabel: subject.displayLabel }, messages: history.messages.map(m => ({ id: m.id, role: m.role,
-            content: m.content[0].text, citations: m.citations, embryoFindings: [], createdAt: m.created_at })) };
+            content: m.content[0].text, citations: m.citations, embryoFindings: [], createdAt: new Date(m.created_at).toISOString() })) };
 }
