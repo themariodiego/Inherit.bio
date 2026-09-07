@@ -7,6 +7,27 @@ hosted-readiness ledger; no real user file was used for these checks.
 
 ## File deletion, Portrait and GIAB checkpoint
 
+**Latest complete Portrait/GIAB receipt:** at `f0e1b5f`, all **14/14 cases
+pass together**, zero skips/retries, **four actual provider uploads** and the
+original aggregate-upload gate passing. Build `0dfBySAfzCr-qXXTXv8A7` from
+`c894915` was reused after checking the actual container mount/build ID and
+unchanged application inputs. All ten Portrait cases cover real independent
+uploads/invitation, each adult's signed permission and acknowledgment, the
+session gate, explicit unavailable clinical output, budgets/accessibility,
+equal finding text and withdrawal with source preservation. All four GIAB
+cases cover the byte-verbatim benchmark window, separate synthetic rsID/gene
+positives, actual source attribution and genuinely computed zero-marker
+ancestry with explicitly uncomputed lineages. The preceding six Family cases
+passed against the same app build in their separate run.
+
+Desktop 1280×800 and phone 390×844 full-page Portrait captures were inspected;
+the available controls and unavailable scientific states remain readable.
+These are permissions/refusal and source-journey proofs, not computed clinical,
+registered trait-table or lineage acceptance. Evidence:
+`work/canonical-portrait-giab-receipts-v2/{run-once.log,run-once-receipt.json,run-once-results/}`.
+The earlier failures below remain historical evidence. Production remains PR75
+and full-plan acceptance stays **18/65**.
+
 At `001b72e`, the unchanged application build from `fb43083` ran both
 file-deletion cases followed by four GIAB cases: **2 passed, 1 failed,
 3 not run**, zero retries. Both deletion cases pass, including a freshly chosen

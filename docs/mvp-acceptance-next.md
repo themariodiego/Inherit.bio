@@ -69,6 +69,29 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Portrait permissions and public reference-file journey verified locally
+
+All 14 Portrait/GIAB browser cases pass together at `f0e1b5f`, with four real
+provider uploads and no skips/retries. The same application build at `c894915`
+separately passes all six Family cases. Family controls now consume and check
+the complete signed-operation receipt before refreshing; actual browser proof
+retains the response-body assertion. Desktop/phone Portrait captures and its
+budget/accessibility case pass. Canonical clinical/ROH computations, five
+Portrait trait tables and parent lineages remain unavailable; these results
+do not close their scientific gates. Exact failed and passing scopes are in
+the local verification ledger.
+
+CI at published `c155a78` passes preceding gates, database checks and build,
+but fails before browser cases in namespace setup. Bounded phase/exit
+diagnostics are integrated; network policy and the ten-second setup deadline
+are unchanged. The underlying Linux command failure remains unproved.
+Health Picture's separate data layer passes 86 units and 46 rollback SQL
+assertions; page integration is underway and its migration is not installed.
+Portrait's migration is local only. Production remains PR75; acceptance is
+still **18/65**. Compatible hosted staging is complete for the preceding eight
+migrations; full CI, coordinated cutover and notification authorization/allowance
+remain open.
+
 ### 2026-09-07 · Family sharing and account deletion verified locally
 
 At `fb43083`, seven production-build cases pass together with two real Storage
