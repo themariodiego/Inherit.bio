@@ -69,6 +69,22 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Replacement protected source-control journey verified
+
+Candidate `85fe7c4` is READY on the dedicated protected canary alias. Actual
+browser upload through restricted hosted Storage, preparation, original download,
+canonical ZIP content and selected-file deletion pass. Independent database
+checks confirm exact source hashes, no generated analysis or ready notices,
+complete scoped source cleanup and preservation of the other file. Export proof
+uses the actual API from the browser; the hosted export button was not exercised.
+See [the hosted receipt](hosted-own-upload-readiness.md).
+
+Production remains PR75, schedules and legacy Storage policy are unchanged,
+and acceptance remains **18/65**. No PR merged. Hosted report generation needs
+explicit test-delivery authorization and a verified email allowance first;
+Resend currently requires owner sign-in. Operational cleanup, remaining canonical
+runtime prerequisites for full CI and coordinated public cutover remain open.
+
 ### 2026-09-07 · Compatible notice/export/cleanup schema staged hosted
 
 The three reviewed additive migrations are staged and independently match

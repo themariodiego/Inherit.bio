@@ -6,9 +6,10 @@ PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
 ## Current local prerequisites · 7 September 2026
 
-The protected hosted canary remains `9ffb68a` (unchanged `8166c3b` runtime),
-with the successful hosted source/report/withdrawal evidence recorded below.
-The new export, revocation executor and ready-notice runtime is still local.
+The replacement protected candidate is READY at `85fe7c4`, deployment
+`dpl_5mGS9PoQyCYYhm8dM7SQBwGm6MWT`, with the dedicated `own-upload-canary`
+alias. Its runtime matches the locally verified code below. Production remains
+PR75; the prior `9ffb68a` report/withdrawal receipt remains historical evidence.
 At `6e9acd6`, all **69 selected browser cases pass together**, with no
 skips/retries and 33 actual provider uploads; see
 [the local receipt](local-upload-browser-verification.md). Runtime `6c25379`
@@ -46,10 +47,41 @@ No report generation, retention worker or provider call was performed.
 Current Vercel cycle usage at `2026-09-07T07:10:26Z` is about $1.72 against
 $20 included credit, with billed usage rounding to $0.00. This establishes
 headroom for one bounded candidate build, not an enforced spending cap.
-The stable alias `inherit-env-own-upload-canary-mariodiego.vercel.app` still
-targets `dpl_9W634MRCEadvBBvoB4tHg5KhEU5p` at the 07:20 UTC read. A replacement
-must set `NEXT_PUBLIC_SITE_URL` to that protected alias at build and runtime.
+One bounded build completed using that headroom. The stable protected alias
+`inherit-env-own-upload-canary-mariodiego.vercel.app` now targets the replacement;
+`NEXT_PUBLIC_SITE_URL` names that alias at build and runtime. The 07:20 UTC
+alias receipt refers to the previous candidate and is historical.
 Public aliases and scheduled jobs remain PR75; acceptance stays **18/65**.
+
+### Replacement source-only hosted verification · 7 September 2026
+
+The 08:01–08:03 UTC browser run completed actual restricted Storage upload,
+finalization and preparation, original download, canonical ZIP content and
+selected-file deletion. Independent before/prepared/after SQL checks prove
+exact source hashes and bindings, no analytic grants/results/ready notices,
+zero new-source derivatives or Storage bindings after deletion, and an unchanged
+retained source. The new 547-byte source contributed three variant rows and
+four observed calls. Its normal consumed upload receipt and cancelled retention
+phase remain valid historical records. Existing fixtures were preserved.
+
+Export was a native browser request to the actual export API, with exact ZIP
+content checked; this does not claim hosted export-button verification. Earlier
+harness attempts were retained: optional hosting feedback remained blocked,
+the settings page was avoided because its status GET prunes account nonces
+globally, and a local HTTP reproduction established that Playwright cannot
+observe File XHR bodies although the server receives exact bytes. Strict upload
+headers remained required; finalization, independent hashes and downloaded
+original bytes establish actual content. The successful run had no denied
+application request or page error. Receipt: task evidence
+`source-only-3add608c-709a-4776-ba4e-9ec840495064`.
+
+The earlier object-free lease `47817a0f-13b5-463c-9395-4c72a748be9c` remains
+issued until its normal 08:22:45 UTC expiry, with fixed cleanup at 09:52:45 UTC;
+no expiry, quota or cleanup ledger was altered. No report generation, mail or
+retention worker ran. Resend's billing page requires owner sign-in, so current
+email allowance and overage settings remain unverified. Actual notification
+delivery, operational cleanup, complete CI and the coordinated public cutover
+remain separate release prerequisites.
 
 ### Shared mail-worker transition
 

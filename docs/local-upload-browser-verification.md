@@ -19,7 +19,9 @@ Only the pagination test input changed between those commits. The new local
 migration preserved existing fixture counts and migration history. One older
 local guard had a different owner; its temporary transaction-local ownership
 transfer was restored with the original ACL before commit. New functions
-remain owned by `postgres`. Hosted schema and public deployment are unchanged.
+remain owned by `postgres`. Hosted schema and public deployment were unchanged
+during this local run; the later additive hosted staging and protected candidate
+verification are recorded in `hosted-own-upload-readiness.md`.
 
 The first five-case browser attempt passed mail expiry, own export and file
 deletion, but the old compressed HG001 input expanded to 99,744,915 bytes,
