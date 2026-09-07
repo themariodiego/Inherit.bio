@@ -196,7 +196,10 @@ select ok((select not private.file_ready_mail_current_v1(m) from public.mail_out
 select is((select state from public.mail_outbox where id=(select id from v2_notice)),'invalidated','contact trigger invalidates queued v2');
 rollback to contact_changed;
 savepoint source_changed;
-update public.genome_files set upload_revision=2 where id='79100000-0000-4000-8000-000000000040';
+-- Keep the file's completion metadata internally consistent while changing
+-- its source revision; the previously checked journal/manifest stays stale.
+update public.genome_files set upload_revision=2,normalization_source_revision=2
+ where id='79100000-0000-4000-8000-000000000040';
 select throws_ok($$select pg_temp.export_ancestry()$$,'42501','not_found','changed raw source cannot reuse export snapshot');
 select ok((select not private.file_ready_mail_current_v1(m) from public.mail_outbox m join v2_notice v using(id)),
  'source transition invalidates v2 eligibility');
