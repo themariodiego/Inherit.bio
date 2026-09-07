@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { MIN_MARKERS, PANEL } from "../ancestry/panel";
-import { AIMS, POPS, estimateAdmixture, type AimMarker, type AdmixtureResult } from "../genome/admixture";
+import { AIMS, POPS, estimateAdmixture, type AimMarker } from "../genome/admixture";
 
 const sourceSchema = z.object({
   fileId: z.uuid(), subjectId: z.uuid(), normalizedBuild: z.literal("GRCh38"), sourceRevision: z.number().int().positive().safe(),
@@ -36,27 +36,41 @@ export const CURRENT_OWN_ANCESTRY_PANEL: OwnAncestryReferencePanel = Object.free
 });
 
 type PositionState = "called" | "missing" | "noCall" | "filtered" | "conflicting" | "unsupported";
-export interface OwnAncestryContent {
-  schemaVersion: 1;
-  computationRevision: "own-ancestry-content-v1";
-  source: OwnAncestrySource;
-  panel: { id: string; version: string; provenance: string; markerSha256: string; markerCount: number; minimumMarkers: number };
-  admixture: {
-    kind: "admixture"; result: AdmixtureResult; support_note: string;
-    model_id: string; model_version: string; coverage: number;
-    result_state: "available" | "partial" | "not_covered";
-    basis: "modelled"; range: { unavailable: true }; resolution: "five-broad-regions";
-  };
-  /** Mutually exclusive counts of panel positions, not file-wide call rates.
-   * Conflict takes priority; then no-call, filtered and unsupported input. */
-  panelPositions: Record<PositionState, number>;
-  lineages: Array<{
-    kind: "mtdna" | "ydna"; state: "unavailable";
-    reason: "no_supplied_positions" | "lineage_interpretation_not_supported";
-    /** Unique positions in supplied rows only; not a whole-file chromosome census. */
-    observedPositions: number;
-  }>;
-}
+const countSchema = z.number().int().min(0).max(AIMS.length);
+const shareSchema = z.number().min(0).max(1);
+/** Closed captured content; validates provenance and coverage without consulting
+ * later scientific metadata or interpreting omitted source positions. */
+export const ownAncestryContentSchema = z.object({
+  schemaVersion: z.literal(1), computationRevision: z.literal("own-ancestry-content-v1"), source: sourceSchema,
+  panel: z.object({ id: z.literal(PANEL.id), version: z.literal(PANEL.version), provenance: z.literal(PANEL.provenance),
+    markerSha256: z.literal(MARKER_SHA256), markerCount: z.literal(AIMS.length), minimumMarkers: z.literal(MIN_MARKERS) }).strict(),
+  admixture: z.object({
+    kind: z.literal("admixture"), result: z.object({
+      proportions: z.object({ AFR: shareSchema, AMR: shareSchema, EAS: shareSchema, EUR: shareSchema, SAS: shareSchema }).strict(),
+      markersUsed: countSchema, note: z.string().min(1).max(4096),
+    }).strict(), support_note: z.string().min(1).max(4096), model_id: z.literal(PANEL.id), model_version: z.literal(PANEL.version),
+    coverage: shareSchema, result_state: z.enum(["available", "partial", "not_covered"]),
+    basis: z.literal("modelled"), range: z.object({ unavailable: z.literal(true) }).strict(), resolution: z.literal("five-broad-regions"),
+  }).strict(),
+  panelPositions: z.object({ called: countSchema, missing: countSchema, noCall: countSchema,
+    filtered: countSchema, conflicting: countSchema, unsupported: countSchema }).strict(),
+  lineages: z.array(z.object({ kind: z.enum(["mtdna", "ydna"]), state: z.literal("unavailable"),
+    reason: z.enum(["no_supplied_positions", "lineage_interpretation_not_supported"]),
+    observedPositions: z.number().int().nonnegative().safe(),
+  }).strict()).length(2),
+}).strict().superRefine((value, ctx) => {
+  const used = value.admixture.result.markersUsed;
+  if (Object.values(value.panelPositions).reduce((a, b) => a + b, 0) !== AIMS.length
+    || value.panelPositions.called !== used || value.admixture.coverage !== used / AIMS.length
+    || value.admixture.result_state !== (used === 0 ? "not_covered" : used < MIN_MARKERS ? "partial" : "available")
+    || value.admixture.support_note !== value.admixture.result.note
+    || Math.abs(Object.values(value.admixture.result.proportions).reduce((a, b) => a + b, 0) - 1) > 0.000001
+    || value.lineages[0].kind !== "mtdna" || value.lineages[1].kind !== "ydna"
+    || value.lineages.some(lineage => (lineage.observedPositions === 0) !== (lineage.reason === "no_supplied_positions"))) {
+    ctx.addIssue({ code: "custom", message: "Inconsistent ancestry content" });
+  }
+});
+export type OwnAncestryContent = z.infer<typeof ownAncestryContentSchema>;
 
 function normalizedDiploid(value: string): string | null {
   if (!/^[ACGT](?:[/|]?[ACGT])$/.test(value)) return null;

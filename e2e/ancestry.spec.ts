@@ -2,13 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
 // Ancestry surface (`/genome/[subject]/ancestry`; brief §4.6, A.8, G4.4,
 // X16.5; acceptance 30–34) over the REAL processing route and the local
 // Supabase stack, on two users:
 //
-// - the tiny GRCh38 fixture covers none of the marker panel, so the page
+// - the tiny GRCh38 fixture has one explicit reference call in the marker panel, so the page
 //   renders the grey state: the exact mandated sentence with the counts,
 //   no chips, no toggle, no visible percent sign outside the disclosure,
 //   the lineage empty states, `#neanderthal`, no `archaic-hominin`, and
@@ -42,14 +43,12 @@ const DENYLIST = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "data/ref/regions/label-denylist.json"), "utf8"),
 ) as { words: string[] };
 
-const GREY_SENTENCE = `Your file covers only 0 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
+const GREY_SENTENCE = `Your file covers only 1 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
 const RAW_NUMBERS_SUMMARY = "Show the unreliable raw numbers anyway";
 const TOGGLE_LABEL = "Show only what’s well supported";
 const CHIP_UNASSIGNABLE = "Not assignable to any region:";
 const CHIP_HIDDEN = "Hidden as not well supported:";
 const NO_RANGE_YET = "no range yet";
-const NO_Y_LEAD =
-  "Your file has no Y-chromosome data, so no father’s line can be read from it. This says nothing about who your father was.";
 const CLOSE = "Close";
 
 const SHARE_VALUE = /^\d+\.\d%$/;
@@ -70,19 +69,12 @@ test.beforeAll(async () => {
   await createConfirmedUser(SHOWN_USER.email, SHOWN_USER.password);
 });
 
-/** Upload and process a fixture, then wait for the row to be annotated (the pattern of overview.spec.ts). */
-async function ingestAndWait(page: Page, user: { email: string; password: string }, fixture: string) {
-  const fileId = await ingestFileAs(page, user.email, user.password, path.join(process.cwd(), fixture), "vcf");
-  const admin = adminClient();
-  await expect
-    .poll(
-      async () => {
-        const { data } = await admin.from("genome_files").select("status").eq("id", fileId).single();
-        return (data as { status: string } | null)?.status;
-      },
-      { timeout: 60_000 },
-    )
-    .toBe("annotated");
+/** Real preparation precedes a separate explicit ancestry choice; no annotated
+ * flag or fabricated grant stands in for the exact completion journal. */
+async function ingestAndWait(page: Page, fixture: string) {
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), fixture), { fileType: "vcf" });
+  await expectNoOwnAncestryResult(fileId);
+  await generateOwnFileWithChosenReports(page, fileId, ["ancestry"]);
   return fileId;
 }
 
@@ -199,7 +191,7 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
 }) => {
   test.setTimeout(240_000);
   await signIn(page, GREY_USER.email, GREY_USER.password);
-  await ingestAndWait(page, GREY_USER, TINY_FIXTURE);
+  await ingestAndWait(page, TINY_FIXTURE);
 
   await page.goto(ANCESTRY);
   const admixture = page.getByTestId("admixture");
@@ -226,11 +218,14 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
   await expect(rawList.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(5);
   expect(await percentTextNodes(page, { visibleOnly: true, outside: "details" })).toEqual([]);
 
-  // The lineage cards keep their empty states.
-  await expect(page.getByTestId("mtdna")).toContainText(/no mitochondrial positions/i);
-  await expect(page.getByTestId("ydna")).toContainText(NO_Y_LEAD);
-  await expect(page.getByTestId("ydna")).toContainText(/no Y-chromosome positions/i);
-  await expect(page.getByTestId("ydna")).toContainText(/without a Y chromosome/i);
+  // AIMS-only reads do not prove whole-file Y/MT absence or support a
+  // haplogroup. Retain empty lineage cards with the explicit computation limit.
+  for (const kind of ["mtdna", "ydna"]) {
+    const lineage = page.getByTestId(kind);
+    await expect(lineage).toContainText("Lineage has not been computed from this file.");
+    await expect(lineage).not.toContainText(/no (?:mitochondrial|Y-chromosome) positions|without a Y chromosome/i);
+    await expect(lineage.locator('[data-slot="haplogroup"],[data-slot="haplogroup-path"]')).toHaveCount(0);
+  }
 
   await expect(page.locator("#neanderthal")).toBeVisible();
   await expect(page.locator("#neanderthal")).toContainText("How much of your DNA came from Neanderthals");
@@ -255,7 +250,7 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 800 });
   await signIn(page, SHOWN_USER.email, SHOWN_USER.password);
-  await ingestAndWait(page, SHOWN_USER, MIXED_FIXTURE);
+  await ingestAndWait(page, MIXED_FIXTURE);
 
   // Only first-party origins, and no request for the geometry file: the
   // server decodes the committed TopoJSON and hands the client path data.

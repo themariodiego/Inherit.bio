@@ -6,6 +6,8 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: mocks.templates }));
 import { generateOwnReports } from "./own-report-generation";
+import { AIMS } from "../genome/admixture";
+import { ownAncestryContentSchema } from "./own-ancestry-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
 
 const account = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", session = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -20,7 +22,10 @@ const authorization = { context, grantId: grant, grantRevision: 1, sourceRevisio
 const template = { ...gastrointestinal[0], layer: "estimate", estimate_kind: "single_locus" } as ReportTemplate;
 let selected: Set<string>, finished: Set<string>;
 const done = (purpose: string) => ({ status: "complete", purpose });
-const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization });
+let ancestryFileType: string;
+const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization,
+  ...(purpose === "ancestry" ? { source: { fileId, fileType: ancestryFileType, normalizedBuild: "GRCh38",
+    callEncoding: ancestryFileType.startsWith("array_") ? "array-genotype" : "vcf-literal" } } : {}) });
 const sourceCall = { file_id: fileId, rsid: 4988235, chrom: 2, pos: 135851076, ref: "G", alt: "A", genotype: "A/G" };
 const request = (body?: string) => new Request(`https://inherit.bio/api/files/${fileId}/process`, { method: "POST", body,
   headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin" } });
@@ -35,6 +40,7 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
 }
 beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
+  ancestryFileType = "vcf";
   vi.resetAllMocks(); selected = new Set(["reports.polygenic"]); finished = new Set();
   mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
   mocks.getUser.mockResolvedValue({ data: { user: { id: account, email: "ready@e2e.local", email_confirmed_at: "2026-09-06T12:00:00Z" } } });
@@ -57,10 +63,10 @@ describe("independent synchronous own reports", () => {
       interpretation: template.variants[0].interpretations.AG });
     expect(payload.prs).toHaveLength(3);
     expect(JSON.stringify(payload)).not.toMatch(/"(?:zscore|percentile)"/);
-    expect(mocks.rpc.mock.calls.some(call => call[1].p_purpose === "ancestry")).toBe(false);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_purpose === "ancestry").map(call => call[1].p_operation)).toEqual(["begin"]);
   });
-  it("keeps prepared status with no selected purpose, including ancestry-only", async () => {
-    selected = new Set(["ancestry"]);
+  it("keeps prepared status with no selected purpose", async () => {
+    selected = new Set();
     expect(await (await generateOwnReports(request(), fileId)).json())
       .toEqual({ fileId, status: "normalization_complete", analysisState: "not_generated" });
     expect(mocks.templates).not.toHaveBeenCalled();
@@ -163,4 +169,105 @@ describe("independent synchronous own reports", () => {
     expect((await generateOwnReports(request(), fileId)).status).toBe(503);
   });
 
+});
+
+const marker = AIMS[0];
+const ancestryObservation = { file_id: fileId, rsid: Number(marker.rsid.slice(2)), chrom: marker.chrom, pos: marker.pos38,
+  ref: marker.ref, alt: marker.alt, genotype: `${marker.ref}/${marker.ref}`, usable: true };
+function withAncestryRows(rows: unknown[]) {
+  mocks.rpc.mockImplementation(async (name, args) => args.p_purpose === "ancestry" && args.p_operation.startsWith("read-")
+    ? { data: args.p_payload.offset === 0 ? rows : [], error: null } : rpc(name, args));
+}
+function ancestryPayload() {
+  return mocks.rpc.mock.calls.find(call => call[1].p_purpose === "ancestry" && call[1].p_operation === "complete")?.[1].p_payload;
+}
+describe("explicit canonical ancestry generation", () => {
+  beforeEach(() => { selected = new Set(["ancestry"]); });
+  it("uses checked literal reference observations, exact source provenance and one final durable ready check", async () => {
+    withAncestryRows([ancestryObservation]);
+    expect(await (await generateOwnReports(request(), fileId)).json()).toEqual({ fileId, status: "processed", analysisState: "active" });
+    expect(mocks.templates).not.toHaveBeenCalled();
+    const payload = ancestryPayload();
+    expect(Object.keys(payload).sort()).toEqual(["ancestry", "readyMail"]);
+    expect(ownAncestryContentSchema.parse(payload.ancestry)).toMatchObject({ source: { fileId, subjectId: subject,
+      sourceSha256: authorization.sourceSha256, sourceRevision: 1, normalizedAt: authorization.normalizedAt, callEncoding: "vcf-literal" },
+      admixture: { result_state: "partial", result: { markersUsed: 1 }, coverage: 1 / 168 } });
+    const reads = mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-"));
+    expect(reads).toHaveLength(1); expect(reads[0][1].p_operation).toBe("read-observed");
+    expect(reads[0][1].p_payload.loci).toEqual(AIMS.map(m => ({ chrom: m.chrom, pos: m.pos38 })));
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "ready")).toHaveLength(1);
+  });
+  it("completes honest zero coverage without inferring reference or lineage", async () => {
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(ancestryPayload().ancestry).toMatchObject({ admixture: { result: { markersUsed: 0 }, result_state: "not_covered" },
+      panelPositions: { called: 0, missing: 168 }, lineages: [{ state: "unavailable" }, { state: "unavailable" }] });
+  });
+  it.each(["array_23andme", "array_ancestry", "array_myheritage", "array_ftdna"])("uses only variant observations for checked %s encoding", async fileType => {
+    ancestryFileType = fileType;
+    withAncestryRows([{ ...ancestryObservation, ref: null, alt: null }]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(ancestryPayload().ancestry.source.callEncoding).toBe("array-genotype");
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation)).toEqual(["read-variants"]);
+  });
+  it("uses literal observed calls for a checked gVCF source", async () => {
+    ancestryFileType = "gvcf"; withAncestryRows([ancestryObservation]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(ancestryPayload().ancestry.source.callEncoding).toBe("vcf-literal");
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation)).toEqual(["read-observed"]);
+  });
+  it.each([
+    { fileType: "unknown" }, { fileId: subject }, { normalizedBuild: "GRCh37" },
+    { callEncoding: "array-genotype" }, { callEncoding: undefined },
+  ])("refuses unsupported or mismatched checked source metadata before reads", async patch => {
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "begin" && args.p_purpose === "ancestry"
+      ? { data: { ...claim("ancestry"), source: { ...claim("ancestry").source, ...patch } }, error: null } : rpc(name, args));
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(call => call[1].p_operation.startsWith("read-"))).toBe(false);
+    expect(ancestryPayload()).toBeUndefined();
+  });
+  it("retains no-call, filtered and conflicting evidence without panel signal", async () => {
+    const second = { ...ancestryObservation, chrom: AIMS[1].chrom, pos: AIMS[1].pos38, ref: AIMS[1].ref, alt: AIMS[1].alt };
+    withAncestryRows([{ ...ancestryObservation, genotype: "--" }, { ...second, usable: false },
+      { ...ancestryObservation, chrom: AIMS[2].chrom, pos: AIMS[2].pos38, ref: AIMS[2].ref, alt: AIMS[2].alt, genotype: `${AIMS[2].ref}/${AIMS[2].ref}` },
+      { ...ancestryObservation, chrom: AIMS[2].chrom, pos: AIMS[2].pos38, ref: AIMS[2].ref, alt: AIMS[2].alt, genotype: `${AIMS[2].alt}/${AIMS[2].alt}` }]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(ancestryPayload().ancestry.panelPositions).toEqual({ called: 0, missing: 165, noCall: 1, filtered: 1, conflicting: 1, unsupported: 0 });
+  });
+  it.each([
+    { ...ancestryObservation, file_id: subject }, { ...ancestryObservation, usable: undefined },
+    { ...ancestryObservation, pos: 1 }, { ...ancestryObservation, ref: null, alt: null },
+  ])("refuses malformed or out-of-source literal rows before completion", async row => {
+    withAncestryRows([row]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(ancestryPayload()).toBeUndefined();
+    expect(mocks.rpc.mock.calls.some(call => call[1].p_operation === "ready")).toBe(false);
+  });
+  it("exhausts paged observations before computing one call per position", async () => {
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "read-observed"
+      ? { data: args.p_payload.offset === 0 ? Array(1000).fill(ancestryObservation) : [{ ...ancestryObservation, genotype: `${marker.alt}/${marker.alt}` }], error: null }
+      : rpc(name, args));
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(ancestryPayload().ancestry.panelPositions.conflicting).toBe(1);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "read-observed").map(call => call[1].p_payload.offset)).toEqual([0, 1000]);
+  });
+  it("refuses source encoding or normalization changes between claim and completion", async () => {
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "check" && args.p_purpose === "ancestry"
+      ? { data: { ...claim("ancestry"), source: { ...claim("ancestry").source, fileType: "array_23andme", callEncoding: "array-genotype" } }, error: null }
+      : rpc(name, args));
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503); expect(ancestryPayload()).toBeUndefined();
+  });
+  it("replays completed ancestry without reading or recomputing", async () => {
+    finished.add("ancestry");
+    expect(await (await generateOwnReports(request(), fileId)).json()).toEqual({ fileId, status: "already_processed", analysisState: "active" });
+    expect(mocks.rpc.mock.calls.some(call => call[1].p_operation.startsWith("read-"))).toBe(false);
+    expect(ancestryPayload()).toBeUndefined(); expect(mocks.templates).not.toHaveBeenCalled();
+  });
+  it("retains independent report purposes and checks all three before ready", async () => {
+    selected = new Set(["reports.monogenic", "reports.polygenic", "ancestry"]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "complete").map(call => call[1].p_purpose))
+      .toEqual(["reports.monogenic", "reports.polygenic", "ancestry"]);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "check" && call[1].p_claim === null).map(call => call[1].p_purpose))
+      .toEqual(["reports.monogenic", "reports.polygenic", "ancestry"]);
+  });
 });

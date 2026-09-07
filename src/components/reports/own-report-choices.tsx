@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
+import { route } from "@/lib/primary-routes";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import type { OwnReportChoicesView } from "@/lib/uploads/own-report-purpose";
@@ -23,7 +25,6 @@ function ReportChoice({ choice, subjectId, onSaved }: {
       if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId);
       else await enableOwnReportChoice(subjectId, choice);
       onSaved(choice.granted ? `${choice.label} turned off. Your original file is kept.`
-        : choice.purposeKey === "ancestry" ? "Ancestry choice saved. Ancestry generation for new uploads is not available yet."
         : `${choice.label} enabled. You can now generate your selected reports.`);
       // The refreshed presentation has a new token/key. Keep this consumed
       // presentation disabled until its authoritative replacement arrives.
@@ -32,7 +33,7 @@ function ReportChoice({ choice, subjectId, onSaved }: {
   return <div className="space-y-3 rounded-xl border border-line p-4">
     <h3 className="font-medium">{choice.label} <span className="text-sm text-ink-muted">· {choice.granted ? "On" : "Off"}</span></h3>
     <p className="text-sm text-ink-muted">{choice.description}</p>
-    {choice.purposeKey === "ancestry" ? <p className="text-sm text-ink-muted">Ancestry generation for new uploads is not available yet. This choice does not generate an ancestry result.</p> : null}
+    {choice.purposeKey === "ancestry" ? <p className="text-sm text-ink-muted">Uses the positions your file covers to estimate five broad regions. Parent lines are not computed yet.</p> : null}
     <details className="text-sm">
       <summary className="min-h-11 cursor-pointer py-3 underline underline-offset-2">Permission details · version {choice.artifact.version}</summary>
       <div className="whitespace-pre-wrap leading-relaxed">{choice.artifact.body}</div>
@@ -57,7 +58,8 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
   const [error, setError] = useState("");
   const inFlight = useRef(false);
   const selectedFile = files.some(file => file.id === fileId) ? fileId : files[0]?.id;
-  const canGenerate = view.choices.some(choice => choice.granted && choice.purposeKey !== "ancestry");
+  const canGenerate = view.choices.some(choice => choice.granted);
+  const ancestrySelected = view.choices.some(choice => choice.granted && choice.purposeKey === "ancestry");
   const orderedChoices = [...view.choices].sort((a, b) =>
     Number(b.purposeKey === "reports.polygenic") - Number(a.purposeKey === "reports.polygenic"));
   async function generate() {
@@ -65,7 +67,9 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
     inFlight.current = true; setPending(true); setMessage(""); setError("");
     try {
       const state = await generateOwnReports(selectedFile);
-      setMessage(state === "ready" ? "Your selected reports are ready. Explore your results below."
+      setMessage(state === "ready" ? ancestrySelected
+        ? "Your selected results are ready. Your ancestry result is on the ancestry page."
+        : "Your selected reports are ready. Explore your results below."
         : "Your file is prepared, but no selected reports were generated. Check your report choices and try again.");
       router.refresh();
     } catch { setError("Report generation did not finish. Your file is still stored. You can retry without uploading it again."); }
@@ -82,6 +86,7 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
         onChange={event => setFileId(event.target.value)}>{files.map(file => <option key={file.id} value={file.id}>{file.label}</option>)}</select>
     </label> : null}
     <Button disabled={!canGenerate || !selectedFile || pending} onClick={() => void generate()}>{pending ? "Generating your selected reports…" : "Generate selected reports"}</Button>
+    {ancestrySelected ? <p className="text-sm"><Link className="inline-flex min-h-11 items-center underline underline-offset-2" href={route("genome.ancestry", { subject: "me" })}>View ancestry</Link></p> : null}
     {!canGenerate ? <p className="text-sm text-ink-muted">Enable a report type above to get started. Your file stays stored even if every choice is off.</p> : null}
     {message ? <p role="status" className="text-sm">{message}</p> : null}
     {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}

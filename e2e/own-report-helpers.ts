@@ -7,7 +7,7 @@ import { adminClient, uploadOwnFileThroughUi } from "./helpers";
 import { OWN_REPORT_CHOICES, OWN_REPORT_PURPOSES, type OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { subjectProcessingReceipt, subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 
-type SupportedPurpose = Exclude<OwnReportPurpose, "ancestry">;
+type SupportedPurpose = OwnReportPurpose;
 type ChosenPurposes = readonly [SupportedPurpose, ...SupportedPurpose[]];
 
 /** Upload and prepare a real source without creating any report permission.
@@ -55,7 +55,7 @@ export async function uploadOwnFileWithChosenReports(
 
 function validatePurposes(purposes: ChosenPurposes) {
   if (!purposes.length || new Set(purposes).size !== purposes.length
-    || purposes.some(purpose => purpose !== "reports.monogenic" && purpose !== "reports.polygenic")) {
+    || purposes.some(purpose => !OWN_REPORT_PURPOSES.includes(purpose))) {
     throw new Error("Choose unique, currently supported report purposes explicitly");
   }
 }
@@ -122,4 +122,17 @@ export async function generateOwnFileWithChosenReports(
   expect(JSON.parse(stdout.trim())).toEqual([...purposes].sort().map(purpose => ({
     purpose, state: "complete", completed: true, same_source: true, live_exact_purpose: true,
   })));
+}
+
+/** A first prepared source has no generated ancestry before explicit choice.
+ * Aggregate-only, exact synthetic source proof; no result payload is read. */
+export async function expectNoOwnAncestryResult(fileId: string): Promise<void> {
+  if (!/^[0-9a-f-]{36}$/.test(fileId)) throw new Error("Expected a canonical fixture identifier");
+  const { stdout } = await promisify(execFile)("docker", ["exec", "supabase_db_sequence", "psql", "-U", "postgres",
+    "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
+      select json_build_object(
+        'journal', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and purpose='ancestry'),
+        'legacy', (select count(*) from public.ancestry_results where file_id='${fileId}'::uuid));
+    `], { timeout: 10_000, maxBuffer: 8192 });
+  expect(JSON.parse(stdout.trim())).toEqual({ journal: 0, legacy: 0 });
 }

@@ -33,9 +33,11 @@ describe("independent report choice panel", () => {
     expect(html).not.toContain("checked=");
     expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Generate selected reports<\/button>/);
   });
-  it("does not advertise ancestry generation when only ancestry is selected", () => {
+  it("enables ancestry independently and links its results while describing the lineage limit", () => {
     const html = render(["ancestry"]);
-    expect(html).toContain("Ancestry generation for new uploads is not available yet.");
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Generate selected reports<\/button>/);
+    expect(html).toContain("Parent lines are not computed yet.");
+    expect(html).toContain('href="/genome/me/ancestry"');
+    expect(html.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Generate selected reports<\/button>/);
   });
 });

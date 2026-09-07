@@ -12,14 +12,23 @@ import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./
 import { ownReportSnapshot } from "./own-report-token";
 import { ownReportReadyEnvelope } from "./own-report-ready-envelope";
 import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
+import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall } from "./own-ancestry-content";
 
-const PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
+const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
+const PURPOSES = [...REPORT_PURPOSES, "ancestry"] as const;
 type Purpose = (typeof PURPOSES)[number];
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/), revision = z.number().int().positive().safe();
 const authorization = z.object({ context: ownReportSnapshot, grantId: uuid, grantRevision: revision,
   sourceRevision: revision, sourceSha256: z.string().regex(/^[0-9a-f]{64}$/), normalizedAt: z.iso.datetime({ offset: true }), subjectId: uuid,
 }).strict();
-const claimSchema = z.object({ status: z.literal("authorized"), claim: uuid, purpose: z.enum(PURPOSES), authorization }).strict();
+const ancestrySourceSchema = z.object({ fileId: uuid,
+  fileType: z.enum(["vcf", "gvcf", "array_23andme", "array_ancestry", "array_myheritage", "array_ftdna"]),
+  normalizedBuild: z.literal("GRCh38"), callEncoding: z.enum(["vcf-literal", "array-genotype"]),
+}).strict();
+const claimSchema = z.union([
+  z.object({ status: z.literal("authorized"), claim: uuid, purpose: z.enum(REPORT_PURPOSES), authorization }).strict(),
+  z.object({ status: z.literal("authorized"), claim: uuid, purpose: z.literal("ancestry"), authorization, source: ancestrySourceSchema }).strict(),
+]);
 const doneSchema = z.object({ status: z.literal("complete"), purpose: z.enum(PURPOSES) }).strict();
 const absentSchema = z.object({ status: z.literal("not_selected") }).strict();
 const callSchema = z.object({ file_id: uuid, rsid: z.number().int().positive().nullable(), chrom: z.number().int().min(1).max(25),
@@ -61,6 +70,39 @@ export async function generateOwnReports(request: Request, fileId: string) {
       const parsed = claimSchema.safeParse(start.data);
       if (!parsed.success || parsed.data.purpose !== purpose) return unavailable();
       claim = parsed.data;
+      if (claim.purpose === "ancestry") {
+        const source = claim.source;
+        const encoding = source.fileType === "vcf" || source.fileType === "gvcf" ? "vcf-literal" : "array-genotype";
+        if (source.fileId !== fileId || source.callEncoding !== encoding) throw new Error("unavailable");
+        const points = CURRENT_OWN_ANCESTRY_PANEL.markers.map(marker => ({ chrom: marker.chrom, pos: marker.pos38 }));
+        const calls: OwnAncestryCall[] = [];
+        const operation = encoding === "vcf-literal" ? "read-observed" : "read-variants";
+        for (let index = 0; index < points.length; index += 200) {
+          const loci = points.slice(index, index + 200);
+          const requested = new Set(loci.map(point => `${point.chrom}:${point.pos}`));
+          for (let offset = 0; ; offset += 1000) {
+            const response = await call(operation, { loci, offset });
+            const rows = z.array(callSchema).max(1000).safeParse(response.data);
+            if (response.error || !rows.success || rows.data.some(row => row.file_id !== fileId
+              || !requested.has(`${row.chrom}:${row.pos}`) || (encoding === "vcf-literal" && typeof row.usable !== "boolean")))
+              throw new Error("unavailable");
+            calls.push(...rows.data.map(row => ({ file_id: row.file_id, chrom: row.chrom, pos: row.pos,
+              ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable ?? true })));
+            if (rows.data.length < 1000) break;
+          }
+        }
+        const checked = await call("check"), same = claimSchema.safeParse(checked.data);
+        if (checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim)) throw new Error("unavailable");
+        const ancestry = computeOwnAncestryContent({ source: { fileId, subjectId: claim.authorization.subjectId,
+          normalizedBuild: source.normalizedBuild, callEncoding: encoding, sourceRevision: claim.authorization.sourceRevision,
+          sourceSha256: claim.authorization.sourceSha256, normalizedAt: claim.authorization.normalizedAt },
+          calls, panel: CURRENT_OWN_ANCESTRY_PANEL });
+        const finished = await call("complete", { ancestry, readyMail: await envelope() });
+        const done = doneSchema.safeParse(finished.data);
+        if (finished.error || !done.success || done.data.purpose !== purpose) throw new Error("unavailable");
+        generated++; completedPurposes.push(purpose);
+        continue;
+      }
       // Published templates are public reference material; actual genetic reads
       // happen exclusively through the checked, file-bound RPC below.
       const templates = (await getPublishedTemplates(admin)).filter(template => purpose === "reports.monogenic"

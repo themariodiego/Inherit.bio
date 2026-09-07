@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { MIN_MARKERS, PANEL } from "../ancestry/panel";
 import { AIMS, estimateAdmixture } from "../genome/admixture";
 import { parseVcf } from "../genome/parsers/vcf";
-import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall, type OwnAncestrySource } from "./own-ancestry-content";
+import { computeOwnAncestryContent, ownAncestryContentSchema, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall, type OwnAncestrySource } from "./own-ancestry-content";
 
 const fileId = "77900000-0000-4000-8000-000000000040";
 const source: OwnAncestrySource = { fileId, subjectId: "77900000-0000-4000-8000-000000000041",
@@ -181,5 +181,25 @@ describe("canonical own ancestry content prerequisite", () => {
       { ...panel, minimumMarkers: 1 }, { ...panel, markers: changedMarkers }, { ...panel, markers: [...panel.markers].reverse() }]) {
       expect(() => computeOwnAncestryContent({ source, panel: changed, calls: [] })).toThrow("ancestry_panel_mismatch");
     }
+  });
+});
+
+describe("closed captured ancestry schema", () => {
+  it("round trips zero, partial and full fixture results", async () => {
+    const input = await fixture("aims-mixed-grch38.vcf");
+    for (const content of [compute([]), compute([call()]), compute(input.calls)])
+      expect(ownAncestryContentSchema.parse(content)).toEqual(content);
+  });
+  it("rejects panel drift, invented resolution and inconsistent coverage or lineage claims", () => {
+    const content = compute([call()]);
+    const mutations = [
+      { ...content, panel: { ...content.panel, markerSha256: "b".repeat(64) } },
+      { ...content, admixture: { ...content.admixture, resolution: "fine-regions" } },
+      { ...content, admixture: { ...content.admixture, coverage: 1 } },
+      { ...content, panelPositions: { ...content.panelPositions, called: 2 } },
+      { ...content, lineages: [{ ...content.lineages[0], observedPositions: 1 }, content.lineages[1]] },
+      { ...content, lineages: [{ ...content.lineages[0], haplogroup: "H" }, content.lineages[1]] },
+    ];
+    for (const mutation of mutations) expect(ownAncestryContentSchema.safeParse(mutation).success).toBe(false);
   });
 });
