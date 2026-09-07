@@ -78,10 +78,13 @@ unattributed history while exact canonical dependencies are removed. The three
 affected rollback fixtures pass 126 assertions, and local installation preserves
 existing data and deletion-function ownership/permissions.
 
-The production-build browser run now passes permission granting and answers the
-conflicting-source and missing-position questions. It then exposes a false refusal
-for an accurate explanation that no report has been generated. That guard repair
-and the rest of the 73-case integration remain open; see the local verification
+The production-build browser run now passes permission granting and all three
+conflicting-source, missing-position and ungenerated-report questions. Missing
+report lookup acknowledges a verified catalog identity without permitting an
+invented identifier or borrowing scientific metadata. All 2,808 unit tests and
+full lint pass at `0003d87`. The next browser case reaches the expected withdrawal
+refusal, but needs native response capture before its exact body can be checked;
+the rest of the 73-case integration remains open. See the local verification
 record. No release or new whole-plan gate is claimed: production remains PR75 and
 acceptance **18/65**. Hosted notices still require the previously requested
 recipient authorization and verified allowance.

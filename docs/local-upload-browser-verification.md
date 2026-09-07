@@ -21,10 +21,10 @@ objects, catalog, users, chats, messages, migration history and deletion-functio
 owners/ACLs exactly. An initial rollback fixture needed the same temporary owner
 normalization as the previous local SQL harness; that ownership change rolled back.
 
-The earlier integrated runtime `f71270d` passed **2,787 units in 180 files**.
-The later consent-dispatch correction passed 21 focused tests; the receipt UI
-change passed typecheck and scoped lint. This is not a full-suite claim at the
-current head.
+The integrated runtime `0003d87` passes **2,808 units in 181 files**, full lint,
+and the focused missing-report correction passes typecheck. The receipt UI
+also passed typecheck. Readability passes 2,518 blocks after simplifying setup
+copy and registering three ordinary control words; its thresholds are unchanged.
 
 The isolated production build succeeds with cached, hash-checked original font
 assets. The synthetic HTTPS model is inside an egress-restricted container;
@@ -33,9 +33,19 @@ hosted service is called. Browser attempt v4 proved the actual 201 grant and
 success UI but stalled while inspecting its unread response body. After the UI
 receipt correction, v5 completed the conflict and missing-position answers;
 the third question exposed a false refusal for an accurate ungenerated-report
-explanation. The unchanged assertion still fails, so **73-case browser acceptance
-is not claimed**. Failure receipts are preserved under task evidence
-`work/canonical-copilot-sql-verification/browser-v4-evidence` and `browser-v5-evidence`.
+explanation. The guard was correctly checking the number in the model's lookup
+slug, but the unavailable-result tool had omitted that identity. `0003d87`
+acknowledges only an exact published catalog slug, without borrowing scientific
+metadata; unknown and fixture slugs remain unacknowledged. Guard rules and all
+64 output fixtures are unchanged.
+
+Attempt v6 passes that complete three-question case. The withdrawal case reaches
+the actual 403 response, but the client cancels its body before refreshing, so
+the browser inspector loses the body needed by the exact assertion. Native
+response capture needs correction before another integrated run. **73-case
+browser acceptance is not claimed**. Failure receipts are preserved under task
+evidence `work/canonical-copilot-sql-verification/browser-v4-evidence`,
+`browser-v5-evidence` and `browser-v6-evidence`.
 
 No PR merged or public deployment changed. Hosted permission/cleanup rollout,
 required notice delivery, full regression integration and complete Copilot
