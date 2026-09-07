@@ -77,7 +77,7 @@ explicit sharing, recipient reading, withdrawal and zero-residual account
 purge. Desktop/mobile Family views were inspected. Account-purge corrections
 remove owned grant nonces and upload sessions in the required dependency order
 while preserving Storage acknowledgement and foreign-owner refusals.
-The application has a 2,975-unit checkpoint; exact SQL, race and browser scopes
+The final consolidated batch passes 2,981 units, secret and readability gates; exact SQL, race and browser scopes
 are recorded in the local verification ledger. This closes useful local
 journeys, not the full adult or deletion acceptance gates.
 

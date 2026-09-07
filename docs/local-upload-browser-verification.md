@@ -60,6 +60,17 @@ no hosted outbox, external provider, real account or paid model was used.
   own signed purpose-grant nonces. It preserves foreign-owner refusals and
   requires Storage acknowledgement before removing the owned graph.
 
+The final consolidated batch `7261259` passes **2,981 units in 187 files**,
+zero skips, plus the unchanged repository/authored-history secret gate and
+readability gate. The two new plain words are explicitly registered. Synthetic
+negative credential URLs are constructed within tests; bootstrap references use
+recognized environment-member syntax without changing validation. Only the
+unpublished range after `3651a46` was consolidated. Its prior head `2226404`
+and exact browser commits remain under `codex/evidence-family-pre-squash-2226404`;
+the final tree is byte-identical to that preserved head. Remote history was
+not rewritten. Receipts: `work/family-shared-ui-verification/full-units-final.log`,
+`secret-gate-final.log`, `readability-final.log`, `unpublished-squash-receipt.json`.
+
 These are local receipts, separate from the earlier ancestry, Copilot and
 report/control runs. Complete CI and hosted delivery remain open. Production
 stays PR75 and whole-plan acceptance stays **18/65**.
