@@ -6,7 +6,7 @@ import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { OWN_REPORT_CHOICES } from "../src/lib/uploads/own-report-purpose";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
-  expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
+  expectedCaffeineCitations, lastToolResult, observeNextChatResponse, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 import type { CanonicalProviderPlan } from "./fixtures/canonical-copilot-provider";
 
 const original = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
@@ -72,20 +72,25 @@ async function interruptAnswer(page: Page, pauseBefore: "tool" | "answer", mutat
   await fixture.configure({ prompt, tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: withheld, pauseBefore });
   const before = (await fixture.snapshot()).calls;
   // Keep this promise pending while a second real browser tab changes authority.
-  const answered = send(page, prompt);
-  // If the barrier itself fails, the test still fails there; observe the
-  // pending response rejection while afterEach releases/stops the fixture.
-  void answered.catch(() => undefined);
-  await fixture.waitUntilPaused();
-  await expect(page.getByLabel("Message the copilot")).toBeDisabled();
-  const settings = await page.context().newPage();
-  try { await mutate(settings); }
-  finally { await fixture.release(); await settings.close(); }
-  const response = await answered;
-  expect(response.status()).toBe(403);
-  expect(await response.json()).toEqual({ error: "copilot_unavailable" });
-  expect((await fixture.snapshot()).calls - before).toBe(pauseBefore === "tool" ? 1 : 2);
-  expect(await page.content()).not.toContain(withheld);
+  const observed = await observeNextChatResponse(page);
+  try {
+    const answered = send(page, prompt);
+    // If the barrier itself fails, the test still fails there; observe the
+    // pending response rejection while afterEach releases/stops the fixture.
+    void answered.catch(() => undefined);
+    await fixture.waitUntilPaused();
+    await expect(page.getByLabel("Message the copilot")).toBeDisabled();
+    const settings = await page.context().newPage();
+    try { await mutate(settings); }
+    finally { await fixture.release(); await settings.close(); }
+    const response = await answered;
+    expect(response.status()).toBe(403);
+    const native = await observed.read();
+    expect(native.status).toBe(403);
+    expect(JSON.parse(native.text)).toEqual({ error: "copilot_unavailable" });
+    expect((await fixture.snapshot()).calls - before).toBe(pauseBefore === "tool" ? 1 : 2);
+    expect(await page.content()).not.toContain(withheld);
+  } finally { await observed.dispose(); }
 }
 
 // These are two genuine current sources, not fabricated legacy-normalization rows.

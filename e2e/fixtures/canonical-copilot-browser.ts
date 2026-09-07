@@ -27,6 +27,76 @@ export async function startCopilotFixture(port: 8123 | 8125 | 8126) {
 }
 export type CopilotFixture = Awaited<ReturnType<typeof startCopilotFixture>>;
 
+type NativeChatObservation = { status: number; text: string };
+type ChatObserverWindow = Window & { __inheritChatObserver?: {
+  nativeFetch: typeof fetch; observedFetch: typeof fetch; body: Promise<NativeChatObservation>; cancel: () => void;
+} };
+/** Observe the one real response before the UI cancels its error-body branch.
+ * The original request and response reach the browser/app unchanged. */
+export async function observeNextChatResponse(page: Page) {
+  await page.evaluate(() => {
+    const target = window as ChatObserverWindow;
+    if (target.__inheritChatObserver) throw new Error("Chat response observer already installed");
+    const nativeFetch = window.fetch;
+    let resolve!: (value: NativeChatObservation) => void;
+    let reject!: (reason: Error) => void;
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let disposed = false;
+    const body = new Promise<NativeChatObservation>((yes, no) => { resolve = yes; reject = no; });
+    void body.catch(() => {});
+    const observedFetch: typeof fetch = async (...args) => {
+      const [input, init] = args;
+      const url = new URL(input instanceof Request ? input.url : String(input), location.href);
+      const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+      if (url.origin !== location.origin || url.pathname !== "/api/chat" || url.search || method.toUpperCase() !== "POST")
+        return nativeFetch.apply(window, args);
+      window.fetch = nativeFetch;
+      try {
+        const response = await nativeFetch.apply(window, args);
+        if (disposed) return response;
+        const clone = response.clone();
+        void (async () => {
+          const deadline = setTimeout(() => {
+            reject(new Error("Native chat body observation timed out"));
+            if (reader) void reader.cancel().catch(() => {});
+          }, 10000);
+          try {
+            if (!clone.body) throw new Error("Missing native chat response body");
+            reader = clone.body.getReader();
+            const decoder = new TextDecoder("utf-8", { fatal: true });
+            let bytes = 0, text = "";
+            for (;;) {
+              const next = await reader.read();
+              if (next.done) break;
+              bytes += next.value.byteLength;
+              if (bytes > 4096) throw new Error("Observed chat denial exceeded its body limit");
+              text += decoder.decode(next.value, { stream: true });
+            }
+            resolve({ status: response.status, text: text + decoder.decode() });
+          } catch { reject(new Error("Could not observe bounded native chat response body")); }
+          finally { clearTimeout(deadline); if (reader) { void reader.cancel().catch(() => {}); reader.releaseLock(); reader = undefined; } }
+        })();
+        return response;
+      } catch (error) { reject(new Error("Native chat request failed")); throw error; }
+    };
+    target.__inheritChatObserver = { nativeFetch, observedFetch, body, cancel: () => {
+      disposed = true;
+      reject(new Error("Native chat response observer disposed"));
+      if (reader) void reader.cancel().catch(() => {});
+    } };
+    window.fetch = observedFetch;
+  });
+  return {
+    read: () => page.evaluate(() => (window as ChatObserverWindow).__inheritChatObserver!.body),
+    dispose: () => page.evaluate(() => {
+      const target = window as ChatObserverWindow, observer = target.__inheritChatObserver;
+      if (observer && window.fetch === observer.observedFetch) window.fetch = observer.nativeFetch;
+      observer?.cancel();
+      delete target.__inheritChatObserver;
+    }),
+  };
+}
+
 export async function saveCopilotProvider(page: Page, baseUrl: string) {
   await page.goto("/settings/copilot");
   await page.getByLabel("Provider", { exact: true }).click();

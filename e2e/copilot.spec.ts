@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, COPILOT_MODEL_HOST,
-  expectClosedCompletion, expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
+  expectClosedCompletion, expectedCaffeineCitations, lastToolResult, observeNextChatResponse, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 
 // A9: real canonical source/report, distinct named cloud disclosure, complete
 // source-backed answer and live withdrawal. The HTTPS fake provider lives in
@@ -138,13 +138,18 @@ test("cloud provider requires named disclosure before use; captured report backs
     await settings.getByRole("button", { name: "Withdraw Copilot permission", exact: true }).click();
     await expect(settings.getByRole("button", { name: "Allow Copilot for this model", exact: true })).toBeVisible();
     const before = (await fixture.snapshot()).calls;
-    const refused = page.waitForResponse(result => new URL(result.url()).pathname === "/api/chat");
-    await page.getByLabel("Message the copilot").fill("And my alcohol flush?");
-    await page.getByRole("button", { name: "Send", exact: true }).click();
-    const denied = await refused;
-    expect(denied.status()).toBe(403);
-    expect(await denied.json()).toEqual({ error: "copilot_unavailable" });
-    expect((await fixture.snapshot()).calls).toBe(before);
+    const observed = await observeNextChatResponse(page);
+    try {
+      const refused = page.waitForResponse(result => new URL(result.url()).pathname === "/api/chat");
+      await page.getByLabel("Message the copilot").fill("And my alcohol flush?");
+      await page.getByRole("button", { name: "Send", exact: true }).click();
+      const denied = await refused;
+      expect(denied.status()).toBe(403);
+      const native = await observed.read();
+      expect(native.status).toBe(403);
+      expect(JSON.parse(native.text)).toEqual({ error: "copilot_unavailable" });
+      expect((await fixture.snapshot()).calls).toBe(before);
+    } finally { await observed.dispose(); }
     await page.goto("/copilot/me");
     await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Review Copilot settings", exact: true })).toBeVisible();
