@@ -562,7 +562,9 @@ test("the side-by-side table compares nothing and offers no way to order it", as
     await expect(provenance).toBeVisible();
     await expect(provenance.locator('[data-slot="input-source"]')).toHaveCount(1);
     await expect(provenance).toContainText("No change of genome coordinates was needed.");
-    await passGate(page);
+    // The same session already acknowledged Tier-2 before opening the report.
+    await page.goto("/family/health-picture");
+    await expect(page.locator('[data-compare-surface][data-layer="estimate"]')).toBeVisible();
   }
 });
 
