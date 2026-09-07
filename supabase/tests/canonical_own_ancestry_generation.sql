@@ -98,7 +98,10 @@ select throws_ok($$select pg_temp.generate('check')$$,'42501','not_found','file 
 select throws_ok($$select pg_temp.generate('begin')$$,'42501','not_found','new claim cannot reinterpret a type different from the verified normalization manifest');
 rollback to encoding_changed;
 savepoint source_changed;
-update public.genome_files set upload_revision=2 where id='78700000-0000-4000-8000-000000000040';
+-- Keep the source completion pair coherent; its old certified manifest and
+-- ancestry claim must still fail the exact revision check. Rollback restores both.
+update public.genome_files set upload_revision=2,normalization_source_revision=2
+ where id='78700000-0000-4000-8000-000000000040';
 select throws_ok($$select pg_temp.generate('read-observed','ancestry','{"loci":[{"chrom":2,"pos":135851076}],"offset":0}')$$,
  '42501','not_found','changed source cannot be read under old ancestry claim');
 rollback to source_changed;
@@ -155,7 +158,10 @@ select throws_ok($$select public.own_ancestry_content_v1('78700000-0000-4000-800
  '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000040')$$,
  '42501','not_found','foreign account cannot use another account session or ancestry source');
 savepoint read_source_changed;
-update public.genome_files set upload_revision=2 where id='78700000-0000-4000-8000-000000000040';
+-- Keep the source completion pair coherent; its old certified manifest and
+-- ancestry claim must still fail the exact revision check. Rollback restores both.
+update public.genome_files set upload_revision=2,normalization_source_revision=2
+ where id='78700000-0000-4000-8000-000000000040';
 select throws_ok($$select pg_temp.read_ancestry()$$,'42501','not_found','reader rejects stale source revision');
 rollback to read_source_changed;
 select ok(has_function_privilege('service_role','public.own_ancestry_content_v1(uuid,uuid,uuid)','EXECUTE')
