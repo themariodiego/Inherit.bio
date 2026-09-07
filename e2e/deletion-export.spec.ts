@@ -1,10 +1,12 @@
 import AdmZip from "adm-zip";
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { createHash, randomUUID } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
+import { exportPaginationFixture } from "./fixtures/export-pagination";
 
 // A13 — export contains originals + normalized variants; account deletion is
 // held for the fixed notice period and remains cancellable before purge starts.
@@ -21,9 +23,11 @@ test.beforeAll(async () => {
 
 test("export ZIP contains manifest, original upload, and variant CSV — free, no fee path", async ({
   page,
-}) => {
+}, testInfo) => {
   await signIn(page, USER.email, USER.password);
-  const vcfPath = path.join(process.cwd(), "data/samples/HG001_GRCh38_chr20-22.vcf.gz");
+  const pagination = exportPaginationFixture();
+  const vcfPath = testInfo.outputPath("synthetic-export-pagination.vcf.gz");
+  writeFileSync(vcfPath, pagination.compressed);
   const tinyPath = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
   const vcfFileId = await uploadOwnFilePrepared(page, vcfPath, { fileType: "vcf" });
   const tinyFileId = await uploadOwnFilePrepared(page, tinyPath, { fileType: "vcf" });
@@ -34,10 +38,11 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
     expect(rawZip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
   }
+  expect(gunzipSync(rawZip.readFile(`originals/${vcfFileId}`)!)).toEqual(pagination.decoded);
   expect(JSON.parse(rawZip.readAsText("reports.json")).every((file: { report_count: number }) => file.report_count === 0)).toBe(true);
   expect(JSON.parse(rawZip.readAsText("prs.json"))).toEqual([]);
   // Coverage rows and the caffeine interpretation require genuine explicit
-  // generation. The large fixture still proves row pagination independently.
+  // generation. The synthetic gzip proves three-page pagination independently.
   await generateOwnFileWithChosenReports(page, vcfFileId, ["reports.polygenic"]);
   await generateOwnFileWithChosenReports(page, tinyFileId, ["reports.polygenic"]);
 
@@ -100,7 +105,7 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   );
   expect(manifest.warnings ?? []).toHaveLength(0);
 
-  // The big fixture's CSV, targeted by id (the tiny rsid VCF adds a second
+  // The pagination fixture's CSV, targeted by id (the tiny rsid VCF adds a second
   // variants/ entry, so find()-by-prefix would be ambiguous).
   const csvName = `variants/${vcfFileId}.csv`;
   expect(names).toContain(csvName);
@@ -111,17 +116,24 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   // The CSV must contain every variant row — a PostgREST page cap (1,000
   // rows by default) must never silently truncate the export again.
   const fileId = vcfFileId;
-  const { data: gf } = await adminClient()
+  const { data: gf, error: fileError } = await adminClient()
     .from("genome_files")
-    .select("variant_count")
+    .select("variant_count,sha256,source_sha256")
     .eq("id", fileId)
     .single();
+  expect(fileError).toBeNull();
+  expect(gf!.sha256).toBe(createHash("sha256").update(pagination.compressed).digest("hex"));
+  expect(gf!.source_sha256).toBe(createHash("sha256").update(pagination.decoded).digest("hex"));
   const variantCount = (gf as { variant_count: number | null }).variant_count;
   expect(variantCount).toBeGreaterThan(1000);
+  expect(variantCount).toBe(pagination.variantCount);
   const dataRows = csv.trimEnd().split("\n").length - 1; // minus header
   expect(dataRows).toBe(variantCount);
+  expect(csv.trimEnd().split("\n").slice(1).sort()).toEqual(Array.from({ length: pagination.variantCount }, (_, index) =>
+    `,20,${1_000_000 + index},A,C,A/C`).sort());
   const manifestFile = manifest.files.find((f) => f.id === fileId)!;
   expect(manifestFile.row_count).toBe(variantCount);
+  expect(manifestFile.sha256).toBe(gf!.sha256);
 
   // Canonical reports.json contains captured, completed outcomes for each source.
   const reports = JSON.parse(zip.readAsText("reports.json")) as {
@@ -150,6 +162,7 @@ test("export ZIP contains manifest, original upload, and variant CSV — free, n
   for (const [id, fixture] of [[vcfFileId, vcfPath], [tinyFileId, tinyPath]]) {
     expect(zip.readFile(`originals/${id}`)).toEqual(readFileSync(fixture));
   }
+  expect(gunzipSync(zip.readFile(`originals/${vcfFileId}`)!)).toEqual(pagination.decoded);
 
   const prsText = zip.readAsText("prs.json");
   const prs = JSON.parse(prsText) as { file_id: string; status: string; reason: string; coverage: { matched: number; required: number } | null }[];
