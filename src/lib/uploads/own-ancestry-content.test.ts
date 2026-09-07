@@ -8,7 +8,7 @@ import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestry
 
 const fileId = "77900000-0000-4000-8000-000000000040";
 const source: OwnAncestrySource = { fileId, subjectId: "77900000-0000-4000-8000-000000000041",
-  normalizedBuild: "GRCh38", sourceRevision: 1, sourceSha256: "a".repeat(64), normalizedAt: "2026-09-07T12:00:00.000Z" };
+  normalizedBuild: "GRCh38", callEncoding: "vcf-literal", sourceRevision: 1, sourceSha256: "a".repeat(64), normalizedAt: "2026-09-07T12:00:00.000Z" };
 const panel = CURRENT_OWN_ANCESTRY_PANEL;
 const compute = (calls: readonly OwnAncestryCall[]) => computeOwnAncestryContent({ source, panel, calls });
 function call(index = 0, genotype = `${AIMS[index].ref}/${AIMS[index].alt}`): OwnAncestryCall {
@@ -118,7 +118,42 @@ describe("canonical own ancestry content prerequisite", () => {
     expect(compute([{ ...call(), alt: "<NON_REF>" }]).panelPositions.unsupported).toBe(1);
     expect(compute([{ ...call(), genotype: "A/A" }]).panelPositions.unsupported).toBe(1); // first marker T/C
     const row = { ...call(), ref: null, alt: null, genotype: "A/C" };
-    expect(compute([row]).panelPositions.unsupported).toBe(1); // neither direct nor complemented T/C pair
+    expect(computeOwnAncestryContent({ source: { ...source, callEncoding: "array-genotype" }, panel, calls: [row] })
+      .panelPositions.unsupported).toBe(1); // neither direct nor complemented T/C pair
+  });
+
+  it("rejects a forward-reference third allele instead of complementing it into a panel signal", () => {
+    expect(AIMS[0]).toMatchObject({ rsid: "rs2986742", chrom: 1, pos38: 6490316, ref: "T", alt: "C" });
+    const result = compute([{ ...call(), ref: "T", alt: "G", genotype: "G/G" }]);
+    expect(result.panelPositions).toMatchObject({ called: 0, unsupported: 1, missing: 167 });
+    expect(result.admixture).toMatchObject({ result_state: "not_covered", coverage: 0, result: { markersUsed: 0 } });
+  });
+
+  it.each(["T/T", "T/C", "C/C"])("retains literal T/C-panel positive control %s", genotype => {
+    const result = compute([call(0, genotype)]);
+    expect(result.panelPositions).toMatchObject({ called: 1, unsupported: 0 });
+    expect(result.admixture.result.markersUsed).toBe(1);
+    expect(result.admixture.result).toEqual(estimateAdmixture((chrom, pos) => chrom === 1 && pos === 6490316 ? genotype : null));
+  });
+
+  it("refuses unknown or absent source encodings rather than guessing orientation", () => {
+    for (const callEncoding of [undefined, "unknown"]) {
+      const invalidSource = { ...source, callEncoding } as OwnAncestrySource;
+      expect(() => computeOwnAncestryContent({ source: invalidSource, panel, calls: [call()] })).toThrow("ancestry_input_invalid");
+    }
+    expect(() => compute([{ ...call(), ref: null }])).toThrow("ancestry_call_encoding_mismatch");
+    expect(() => compute([{ ...call(), alt: null }])).toThrow("ancestry_call_encoding_mismatch");
+    expect(compute([{ ...call(), ref: "TT" }]).panelPositions.unsupported).toBe(1);
+  });
+
+  it("retains the old complement behavior only for explicitly identified array calls", () => {
+    const array = computeOwnAncestryContent({ source: { ...source, callEncoding: "array-genotype" }, panel,
+      calls: [{ ...call(), ref: null, alt: null, genotype: "G/G" }] });
+    expect(array.admixture.result).toEqual(compute([call(0, "C/C")]).admixture.result);
+    expect(array.panelPositions.called).toBe(1);
+    expect(() => compute([{ ...call(), ref: null, alt: null, genotype: "G/G" }])).toThrow("ancestry_call_encoding_mismatch");
+    expect(() => computeOwnAncestryContent({ source: { ...source, callEncoding: "array-genotype" }, panel,
+      calls: [call()] })).toThrow("ancestry_call_encoding_mismatch");
   });
 
   it.each([24, 25])("does not take the first allele or invent a lineage for chromosome %i", chrom => {

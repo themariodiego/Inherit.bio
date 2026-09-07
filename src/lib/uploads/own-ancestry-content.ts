@@ -5,6 +5,7 @@ import { AIMS, POPS, estimateAdmixture, type AimMarker, type AdmixtureResult } f
 
 const sourceSchema = z.object({
   fileId: z.uuid(), subjectId: z.uuid(), normalizedBuild: z.literal("GRCh38"), sourceRevision: z.number().int().positive().safe(),
+  callEncoding: z.enum(["vcf-literal", "array-genotype"]),
   sourceSha256: z.string().regex(/^[0-9a-f]{64}$/), normalizedAt: z.iso.datetime({ offset: true }),
 }).strict();
 const callSchema = z.object({
@@ -61,7 +62,7 @@ function normalizedDiploid(value: string): string | null {
   if (!/^[ACGT](?:[/|]?[ACGT])$/.test(value)) return null;
   return value.replace(/[/|]/g, "").split("").sort().join("/");
 }
-function positionCall(rows: readonly OwnAncestryCall[]): { state: PositionState; genotype: string | null } {
+function positionCall(rows: readonly OwnAncestryCall[], marker: AimMarker, encoding: OwnAncestrySource["callEncoding"]): { state: PositionState; genotype: string | null } {
   if (!rows.length) return { state: "missing", genotype: null };
   const calls = new Set(rows.map(row => normalizedDiploid(row.genotype)).filter(value => value !== null));
   if (calls.size > 1) return { state: "conflicting", genotype: null };
@@ -74,7 +75,12 @@ function positionCall(rows: readonly OwnAncestryCall[]): { state: PositionState;
     // Array observations can lack REF/ALT. When present, literal SNP alleles
     // must agree with the observed genotype; symbolic/range rows are not calls.
     if ((row.ref !== null && !/^[ACGT]$/.test(row.ref)) || (row.alt !== null && !/^[ACGT]$/.test(row.alt))) return true;
-    return row.ref !== null && row.alt !== null && genotype.split("/").some(a => a !== row.ref && a !== row.alt);
+    if (row.ref !== null && row.alt !== null && genotype.split("/").some(a => a !== row.ref && a !== row.alt)) return true;
+    // Literal VCF alleles are already on the normalized forward reference.
+    // A third allele must not enter the estimator's legacy array complement
+    // fallback and be mistaken for a panel allele at this same position.
+    return encoding === "vcf-literal" && (row.ref !== marker.ref
+      || genotype.split("/").some(a => a !== marker.ref && a !== marker.alt));
   })) return { state: "unsupported", genotype: null };
   return { state: "called", genotype: [...calls][0] ?? null };
 }
@@ -83,7 +89,8 @@ function positionCall(rows: readonly OwnAncestryCall[]): { state: PositionState;
  * The caller must supply the complete checked source-call set, resolve live
  * ancestry consent, and recheck exact source/grant authority before publication.
  * This function never infers omitted reference calls, merges files, or grants
- * lineage authority. GRCh38 normalization is a prerequisite of its input. */
+ * lineage authority. GRCh38 normalization is a prerequisite of its input;
+ * callEncoding must derive from the same checked source file type. */
 export function computeOwnAncestryContent(input: {
   source: OwnAncestrySource; calls: readonly OwnAncestryCall[]; panel: OwnAncestryReferencePanel;
 }): OwnAncestryContent {
@@ -92,6 +99,11 @@ export function computeOwnAncestryContent(input: {
   if (!parsedSource.success || !parsedCalls.success) throw new Error("ancestry_input_invalid");
   const source = parsedSource.data;
   if (parsedCalls.data.some(row => row.file_id !== source.fileId)) throw new Error("ancestry_source_mismatch");
+  // Encoding comes from the checked source file type, never guessed from a
+  // genotype. Array parsers intentionally retain NULL REF/ALT; VCF does not.
+  if (parsedCalls.data.some(row => source.callEncoding === "vcf-literal"
+    ? row.ref === null || row.alt === null : row.ref !== null || row.alt !== null))
+    throw new Error("ancestry_call_encoding_mismatch");
   const panel = input.panel;
   try {
     if (!panel || panel.id !== PANEL.id || panel.version !== PANEL.version || panel.provenance !== PANEL.provenance
@@ -108,7 +120,7 @@ export function computeOwnAncestryContent(input: {
   const genotypes = new Map<string, string>();
   for (const marker of panel.markers) {
     const key = `${marker.chrom}:${marker.pos38}`;
-    const call = positionCall(byPosition.get(key) ?? []);
+    const call = positionCall(byPosition.get(key) ?? [], marker, source.callEncoding);
     panelPositions[call.state]++;
     if (call.genotype !== null) genotypes.set(key, call.genotype);
   }
