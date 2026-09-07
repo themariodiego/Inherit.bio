@@ -1,16 +1,19 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import http from "node:http";
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   JOBS_SECRET,
   adminClient,
   createConfirmedUser,
   firstViewportInteractives,
-  ingestFileAs,
   signIn,
 } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
+import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 
 /**
  * Family surfaces (design docs/design/w9-family-surfaces.md §6.2): the hub,
@@ -24,10 +27,16 @@ import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
  * the Tier-2 gate withholds every result server-side; a shared report is
  * attributed to the counterpart's own subject; and pause and stop take
  * effect on the very next request.
+ *
+ * Execution needs an isolated disposable mail queue (the real worker is global)
+ * and a local Resend capture reachable from the app. Do not run its mail drain
+ * against a preserved shared stack without reviewing every eligible queue item.
  */
 
-const A = { email: "family-a@e2e.local", password: "e2e-family-pw" };
-const B = { email: "family-b@e2e.local", password: "e2e-family-pw" };
+const runId = randomUUID();
+const A = { email: `family-a-${runId}@e2e.local`, password: "e2e-family-pw" };
+const B = { email: `family-b-${runId}@e2e.local`, password: "e2e-family-pw" };
+const SOURCE_PATH = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
 
 /** B's self subject carries the default label, so A sees the invited record's name. */
 const B_AS_SEEN_BY_A = "Invited adult";
@@ -68,6 +77,13 @@ let resendMock: http.Server;
 let invitedSubjectId = "";
 let selfSubjectA = "";
 let selfSubjectB = "";
+let accountA = "";
+let accountB = "";
+let sourceFileId = "";
+let selfReportGrantId = "";
+let sourceBefore: Record<string, unknown>;
+
+test.use({ trace: "off" }); // Restricted upload/presentation bearers stay out of traces.
 
 test.describe.configure({ mode: "serial" });
 
@@ -87,27 +103,50 @@ test.beforeAll(async () => {
     });
   });
   await new Promise<void>((resolve) => resendMock.listen(8124, "127.0.0.1", resolve));
-  await createConfirmedUser(A.email, A.password);
-  await createConfirmedUser(B.email, B.password);
+  accountA = await createConfirmedUser(A.email, A.password);
+  accountB = await createConfirmedUser(B.email, B.password);
 });
 
 test.afterAll(async () => {
   await new Promise<void>((resolve) => resendMock.close(() => resolve()));
 });
 
-async function selfSubjectOf(email: string): Promise<string> {
+async function selfSubjectOf(accountId: string): Promise<string> {
+  const { data, error } = await adminClient().from("subjects").select("id")
+    .eq("subject_account_id", accountId).eq("subject_class", "self").eq("lifecycle", "active").single();
+  expect(error).toBeNull();
+  return data!.id;
+}
+
+/** One live, revision-matched direction; self analysis never counts as sharing. */
+async function liveGrants(subjectId: string, recipientId: string, direction: "self" | "subject_to_recipient") {
   const admin = adminClient();
-  const account = (await admin.auth.admin.listUsers()).data.users.find(
-    (user) => user.email === email,
-  )!;
-  const { data } = await admin
-    .from("subjects")
-    .select("id")
-    .eq("subject_account_id", account.id)
-    .eq("subject_class", "self")
-    .eq("lifecycle", "active")
-    .single();
-  return (data as { id: string }).id;
+  const bases = await admin.from("purpose_grants").select("grant_id,grant_revision,purpose,target_id,revoked_at")
+    .eq("target_id", subjectId).is("revoked_at", null)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+  expect(bases.error).toBeNull();
+  if (!bases.data!.length) return [];
+  const directions = await admin.from("directional_grants").select("grant_id,grant_revision")
+    .in("grant_id", bases.data!.map(row => row.grant_id)).eq("recipient_account_id", recipientId)
+    .eq("direction", direction).eq("status", "current");
+  expect(directions.error).toBeNull();
+  return bases.data!.filter(base => directions.data!.some(row => row.grant_id === base.grant_id
+    && row.grant_revision === base.grant_revision)).sort((a, b) => a.purpose.localeCompare(b.purpose));
+}
+
+async function sourceReceipt() {
+  const result = await adminClient().from("genome_files")
+    .select("id,user_id,subject_id,status,file_type,bucket_path,sha256,upload_revision,normalization_source_revision,normalization_completed_at")
+    .eq("id", sourceFileId).eq("user_id", accountB).single();
+  expect(result.error).toBeNull();
+  return result.data!;
+}
+
+async function expectOwnSourceAndGrantPreserved() {
+  expect(await sourceReceipt()).toEqual(sourceBefore);
+  const own = await liveGrants(selfSubjectB, accountB, "self");
+  expect(own).toHaveLength(1);
+  expect(own[0]).toMatchObject({ grant_id: selfReportGrantId, purpose: "reports.polygenic" });
 }
 
 async function expectNoResults(page: Page) {
@@ -231,6 +270,17 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   request,
 }) => {
   await signIn(page, A.email, A.password);
+  // Recipient adulthood is a real account declaration, separate from any DNA
+  // upload or report permission. Stop at the next disclosure without signing it.
+  await page.goto("/files/upload");
+  await expect(page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true })).toBeVisible();
+  await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1990-01-01");
+  const completedAccount = page.waitForResponse(response => response.url().endsWith("/api/account/completion")
+    && response.request().method() === "POST");
+  await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
+  expect((await completedAccount).status()).toBe(200);
+  await expect(page.getByRole("heading", { name: OWN_UPLOAD_COPY.insuranceHeading, exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.insuranceCheckbox, exact: true })).not.toBeChecked();
   await page.goto("/family/invite");
   await page.getByLabel("Their email address").fill(B.email);
   await page.getByLabel("A note for them").fill("This is my note.");
@@ -270,40 +320,39 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
 
   const admin = adminClient();
-  const { data: invitation } = await admin
+  selfSubjectA = await selfSubjectOf(accountA);
+  selfSubjectB = await selfSubjectOf(accountB);
+  const principal = await admin.from("subject_principals").select("id")
+    .eq("account_id", accountA).eq("subject_id", selfSubjectA).eq("principal_kind", "account_subject")
+    .eq("status", "active").single();
+  expect(principal.error).toBeNull();
+  const { data: invitation, error: invitationError } = await admin
     .from("subject_invitations")
     .select("target_id")
     .eq("invitation_kind", "adult_subject")
+    .eq("inviter_principal_id", principal.data!.id)
     .eq("status", "accepted")
-    .order("accepted_at", { ascending: false })
-    .limit(1)
     .single();
-  invitedSubjectId = (invitation as { target_id: string }).target_id;
-  selfSubjectA = await selfSubjectOf(A.email);
-  selfSubjectB = await selfSubjectOf(B.email);
+  expect(invitationError).toBeNull();
+  invitedSubjectId = invitation!.target_id;
   expect(invitedSubjectId).not.toBe(selfSubjectB);
 
-  // B adds their own file: the invited record never holds one.
-  const fileId = await ingestFileAs(
-    page,
-    B.email,
-    B.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
-  await expect
-    .poll(
-      async () => {
-        const { data } = await admin
-          .from("genome_files")
-          .select("status, subject_id")
-          .eq("id", fileId)
-          .single();
-        return data as { status: string; subject_id: string } | null;
-      },
-      { timeout: 60_000 },
-    )
-    .toMatchObject({ status: "annotated", subject_id: selfSubjectB });
+  // Stay in B's acceptance session. Preparation and self report generation
+  // are real UI actions, separate from B's later permission for A to read them.
+  sourceFileId = await uploadOwnFileWithChosenReports(page, SOURCE_PATH, {
+    fileType: "vcf", purposes: ["reports.polygenic"],
+  });
+  sourceBefore = await sourceReceipt();
+  expect(sourceBefore).toMatchObject({ status: "stored", subject_id: selfSubjectB, user_id: accountB });
+  const invitedFiles = await admin.from("genome_files").select("id").eq("subject_id", invitedSubjectId);
+  expect(invitedFiles.error).toBeNull();
+  expect(invitedFiles.data).toEqual([]);
+  const selfGrants = await liveGrants(selfSubjectB, accountB, "self");
+  expect(selfGrants).toHaveLength(1);
+  expect(selfGrants[0]).toMatchObject({ purpose: "reports.polygenic" });
+  selfReportGrantId = selfGrants[0].grant_id;
+  expect(await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).toEqual([]);
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
 
   // B's own view of A, and the two independent columns.
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
@@ -326,14 +375,12 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await estimates.getByRole("button", { name: "Turn on" }).click();
   await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("On");
 
-  // Exactly one live grant, in one direction, for one purpose.
-  const { data: grants } = await admin
-    .from("purpose_grants")
-    .select("purpose, target_id, revoked_at")
-    .eq("target_id", selfSubjectB)
-    .is("revoked_at", null);
+  // Exactly one live sharing grant in B→A, separate from B's self grant.
+  const grants = await liveGrants(selfSubjectB, accountA, "subject_to_recipient");
   expect(grants).toHaveLength(1);
-  expect(grants![0]).toMatchObject({ purpose: "reports.polygenic" });
+  expect(grants[0]).toMatchObject({ purpose: "reports.polygenic" });
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+  await expectOwnSourceAndGrantPreserved();
 
   // Portrait cannot be turned on from the session the invitation was
   // accepted in: the row is locked with its reason, not a dead control.
@@ -369,16 +416,10 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
     .eq("id", selfSubjectB)
     .single();
   expect((afterMarker as { independent_login_at: string | null }).independent_login_at).not.toBeNull();
-  const { data: grantsAfter } = await admin
-    .from("purpose_grants")
-    .select("purpose")
-    .eq("target_id", selfSubjectB)
-    .is("revoked_at", null)
-    .order("purpose");
-  expect((grantsAfter ?? []).map((row) => row.purpose)).toEqual([
-    "family.portrait",
-    "reports.polygenic",
-  ]);
+  const grantsAfter = await liveGrants(selfSubjectB, accountA, "subject_to_recipient");
+  expect(grantsAfter.map(row => row.purpose)).toEqual(["family.portrait", "reports.polygenic"]);
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+  await expectOwnSourceAndGrantPreserved();
 });
 
 test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's own subject", async ({
@@ -393,7 +434,17 @@ test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's ow
   await expect(card.locator('[data-slot="subject-kind"]')).toHaveText("Shared with you");
   await expect(card.locator('[data-slot="person-state"]')).toHaveText("Reports ready");
 
-  await page.goto(`/family/s-${invitedSubjectId}`);
+  // A direct detail URL must return to the gate before any personal content.
+  const beforeGateRequests: string[] = [];
+  const observeBeforeGate = (request: import("@playwright/test").Request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (/^\/rest\/v1\/(?:user_variants|report_observed_calls|user_prs|genome_files|ancestry_results)(?:\/|$)/.test(pathname)
+      || /^\/rest\/v1\/rpc\/(?:own_|recipient_|family_).*report/.test(pathname)
+      || /^\/api\/files\//.test(pathname)) beforeGateRequests.push(`${request.method()} ${pathname}`);
+  };
+  page.on("request", observeBeforeGate);
+  await page.goto(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`);
+  await expect(page).toHaveURL(`/family/s-${invitedSubjectId}`);
   await expect(page.getByRole("heading", { level: 1, name: "Individual risks" })).toBeVisible();
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(
     `Family / ${B_AS_SEEN_BY_A}`,
@@ -416,6 +467,8 @@ test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's ow
   }));
   expect(stored.local).not.toMatch(/tier2|family/i);
   expect(stored.session).not.toMatch(/tier2|family/i);
+  expect(beforeGateRequests, "no browser-side personal data request before the Tier-2 gate").toEqual([]);
+  page.off("request", observeBeforeGate);
 
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Show what’s shared" }).click();
@@ -429,19 +482,41 @@ test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's ow
   await expect(page.getByText(`${B_AS_SEEN_BY_A} has not shared Specific variants with you.`)).toBeVisible();
   await expect(page.getByText(BASELINE_ABSENT, { exact: true })).toHaveCount(1);
 
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.screenshot({ path: test.info().outputPath(`shared-person-${viewport.name}.png`), fullPage: true });
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.locator(`a[href="/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}"]`).click();
   await expect(page).toHaveURL(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`);
   // X4: the block is attributed to the subject the computation used — B's own
   // record, never the handle the route names.
   const block = page.locator("[data-claim-block]").first();
   await expect(block).toHaveAttribute("data-subject-id", selfSubjectB);
+  await expect(block.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
   await expect(page.locator(`[data-claim-block][data-subject-id="${invitedSubjectId}"]`)).toHaveCount(0);
   await expect(page.locator('nav[aria-label="Breadcrumb"]')).toContainText("Family /");
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`shared-report-${viewport.name}.png`), fullPage: true });
+  }
 });
 
 test("pause, resume and stop take effect on the next request", async ({ page }) => {
   await signIn(page, A.email, A.password);
+  // The prior test's acknowledgement cannot survive this new login/session.
+  await page.goto(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`);
+  await expect(page).toHaveURL(`/family/s-${invitedSubjectId}`);
+  await expect(page.getByText(GATE_CHECKBOX, { exact: true })).toBeVisible();
+  await expectNoResults(page);
+  const freshSessionHtml = await page.content();
+  for (const slug of COVERED_SLUGS) expect(freshSessionHtml).not.toContain(slug);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Show what’s shared" }).click();
+  await expect(page.locator(`a[href="/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}"]`)).toHaveCount(1);
   await page.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const grantsBeforePause = await liveGrants(selfSubjectB, accountA, "subject_to_recipient");
   await page.getByRole("button", { name: "Pause sharing" }).click();
   await expect(page.getByRole("button", { name: "Resume sharing" })).toBeVisible();
 
@@ -450,6 +525,8 @@ test("pause, resume and stop take effect on the next request", async ({ page }) 
   await page.goto(`/family/s-${invitedSubjectId}`);
   await expect(page.getByText(PAUSED_BODY, { exact: true })).toBeVisible();
   await expectNoResults(page);
+  expect(await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).toEqual(grantsBeforePause);
+  await expectOwnSourceAndGrantPreserved();
   // Every derived surface denies on the next query, with no row deleted.
   expect((await page.request.get(`/genome/s-${invitedSubjectId}/reports`)).status()).toBe(404);
 
@@ -458,6 +535,11 @@ test("pause, resume and stop take effect on the next request", async ({ page }) 
   await expect(page.getByRole("button", { name: "Pause sharing" })).toBeVisible();
   await page.goto(`/family/s-${invitedSubjectId}`);
   await expect(page.getByText(PAUSED_BODY)).toHaveCount(0);
+  for (const slug of COVERED_SLUGS) {
+    await expect(page.locator(`a[href="/genome/s-${invitedSubjectId}/reports/${slug}"]`)).toHaveCount(1);
+  }
+  expect(await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).toEqual(grantsBeforePause);
+  await expectOwnSourceAndGrantPreserved();
 
   await page.goto(`/family/s-${invitedSubjectId}/permissions`);
   await page.getByRole("button", { name: "Stop sharing" }).click();
@@ -483,11 +565,19 @@ test("pause, resume and stop take effect on the next request", async ({ page }) 
     (await page.request.get(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`)).status(),
   ).toBe(404);
 
-  const admin = adminClient();
-  const { data: live } = await admin
-    .from("purpose_grants")
-    .select("grant_id")
-    .eq("target_id", selfSubjectB)
-    .is("revoked_at", null);
-  expect(live).toHaveLength(0);
+  expect(await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).toEqual([]);
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+  await expectOwnSourceAndGrantPreserved();
+  const original = await adminClient().storage.from("genomes").download(sourceBefore.bucket_path as string);
+  expect(original.error).toBeNull();
+  expect(Buffer.from(await original.data!.arrayBuffer())).toEqual(readFileSync(SOURCE_PATH));
+
+  // Stopping recipient sharing does not withdraw B's own generation permission
+  // or remove B's original and stored findings.
+  await page.request.post("/auth/sign-out");
+  await signIn(page, B.email, B.password);
+  await page.goto(`/genome/me/reports/${COVERED_SLUGS[2]}`);
+  const ownBlock = page.locator("[data-claim-block]").first();
+  await expect(ownBlock).toHaveAttribute("data-subject-id", selfSubjectB);
+  await expect(ownBlock.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText("A/C");
 });

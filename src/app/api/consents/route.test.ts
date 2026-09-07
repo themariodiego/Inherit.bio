@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
+const mocks = vi.hoisted(() => ({ actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser }, from: mocks.from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
 // Keep the actual signed-token discriminators. Only the delegated handlers are
@@ -9,6 +9,8 @@ vi.mock("@/lib/uploads/own-report-consent-route", async importOriginal => ({ ...
 vi.mock("@/lib/uploads/own-consent-route", () => ({ ownUploadConsent: mocks.upload }));
 vi.mock("@/lib/embryos/consents", () => ({ embryoConsent: mocks.embryo }));
 vi.mock("@/lib/account-deletion", () => ({ isSameOrigin: () => true }));
+vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
+vi.mock("@/lib/family/access", () => ({ familyCapability: mocks.capability }));
 import { POST } from "./route";
 import { POST as revoke } from "./[id]/revoke/route";
 import { mintOwnCopilotConsent } from "@/lib/copilot/own-consent";
@@ -22,6 +24,8 @@ function row(data: unknown) { const q = { select: () => q, eq: () => q, is: () =
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 31).toString("base64"));
+  mocks.actor.mockResolvedValue({ accountId, sessionId: subjectId });
+  mocks.capability.mockResolvedValue({ status: "permitted" });
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
   mocks.from.mockImplementation((table: string) => row(table === "consent_artifacts" ? artifact : null));
   mocks.rpc.mockResolvedValue({ data: grantId, error: null });
@@ -52,6 +56,32 @@ describe("actual consent POST dispatcher", () => {
     const payload = { action: "grant-purpose", subjectId, purposeKey: "copilot.local", artifactVersion: 1, artifactPresentationToken: token, affirmed: true, statementKeys: [...SHARE_WITH_ADULT_STATEMENT_KEYS] };
     expect((await POST(request(payload))).status).toBe(201); expect(mocks.copilot).not.toHaveBeenCalled(); expect(mocks.report).not.toHaveBeenCalled();
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("grant_directional_purpose_v1", expect.objectContaining({ p_account_id: accountId, p_data_subject_id: subjectId, p_purpose: "copilot.local" }));
+  });
+  it.each(["reports.monogenic", "reports.polygenic"] as const)("dispatches %s only through exact endpoint/session commit", async purpose => {
+    const token = mintGrantPresentation({ accountId, dataSubjectId: subjectId, subjectBindingRevision: 1,
+      recipientPrincipalId: grantId, recipientAccountId: grantId, purpose, artifactKey: artifact.artifact_key,
+      artifactVersion: 1, artifactBodySha256: artifact.body_sha256, jurisdictionRevision: 1, reportEndpointReceipt: "e".repeat(64) });
+    expect((await POST(request({ action: "grant-purpose", subjectId, purposeKey: purpose, artifactVersion: 1,
+      artifactPresentationToken: token, affirmed: true, statementKeys: [...SHARE_WITH_ADULT_STATEMENT_KEYS] }))).status).toBe(201);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("grant_family_report_purpose_v1", {
+      p_account_id: accountId, p_session_id: subjectId, p_data_subject_id: subjectId, p_recipient_principal_id: grantId,
+      p_recipient_account_id: grantId, p_purpose: purpose, p_artifact_version: 1, p_artifact_body_sha256: artifact.body_sha256,
+      p_endpoint_receipt: "e".repeat(64), p_token_nonce: expect.any(String),
+    });
+    expect(mocks.report).not.toHaveBeenCalled(); expect(mocks.copilot).not.toHaveBeenCalled();
+  });
+  it.each(["proof", "session", "jurisdiction", "stale"])("refuses report grant %s without legacy fallback", async reason => {
+    const token = mintGrantPresentation({ accountId, dataSubjectId: subjectId, subjectBindingRevision: 1,
+      recipientPrincipalId: grantId, recipientAccountId: grantId, purpose: "reports.polygenic", artifactKey: artifact.artifact_key,
+      artifactVersion: 1, artifactBodySha256: artifact.body_sha256, jurisdictionRevision: 1,
+      ...(reason === "proof" ? {} : { reportEndpointReceipt: "e".repeat(64) }) });
+    if (reason === "session") mocks.actor.mockResolvedValue(null);
+    if (reason === "jurisdiction") mocks.capability.mockResolvedValue({ status: "unreviewed" });
+    if (reason === "stale") mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501" } });
+    expect((await POST(request({ action: "grant-purpose", subjectId, purposeKey: "reports.polygenic", artifactVersion: 1,
+      artifactPresentationToken: token, affirmed: true, statementKeys: [...SHARE_WITH_ADULT_STATEMENT_KEYS] }))).status).toBe(409);
+    if (reason !== "stale") expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.rpc.mock.calls.every(([name]) => name === "grant_family_report_purpose_v1")).toBe(true);
   });
   it.each([{ signatureClass: "tier1-self" }, { action: "grant-purpose", cohortId: subjectId }])("retains the existing target-specific dispatch", async payload => {
     const req = request(payload); expect((await POST(req)).status).toBe(201);

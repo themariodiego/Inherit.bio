@@ -12,10 +12,11 @@ export interface AnalysisFileBoundary {
 }
 
 /** Metadata only. Do not widen the legacy generic loader used by Copilot/family computations. */
-export async function loadOwnAnalysisCandidateFiles(db: Db, subjectId: string) {
-  const { data, error } = await db.from("genome_files")
+export async function loadOwnAnalysisCandidateFiles(db: Db, subjectId: string, { legacyOnly = false }: { legacyOnly?: boolean } = {}) {
+  const query = db.from("genome_files")
     .select("id,original_name,file_type,status,variant_count,created_at,subject_id,build,observed_call_sha256,observed_call_version,single_logical_sample_verified_at,normalization_completed_at,normalization_source_revision,upload_revision")
     .eq("subject_id", subjectId).in("status", ["annotated", "stored"]).order("created_at", { ascending: false });
+  const { data, error } = await (legacyOnly ? query.is("single_logical_sample_verified_at", null) : query);
   if (error) return [];
   return (data ?? []).filter(f => f.single_logical_sample_verified_at === null ? f.status === "annotated"
     : f.normalization_completed_at !== null && f.normalization_source_revision === f.upload_revision);

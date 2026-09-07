@@ -1,3 +1,4 @@
+import { prepareSharedReportGrant } from "@/lib/family/shared-report-results";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -175,17 +176,21 @@ export default async function FamilyPermissionsPage(
     }
   }
 
+  const reportEndpointReceipt = mayGrant && mySelf ? await prepareSharedReportGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const canMint = Boolean(mySelf && myPrincipal && theirPrincipal && artifact && profile);
   function actionFor(purpose: Purpose): RowAction | undefined {
     const held = outbound.get(purpose);
     if (held && held.state === "on") return { kind: "revoke", grantId: held.grantId };
     if (!mayGrant || !canMint) return undefined;
+    const isReport = purpose === "reports.monogenic" || purpose === "reports.polygenic";
+    if (isReport && !reportEndpointReceipt) return undefined;
     const request: GrantPurposeRequest = {
       action: "grant-purpose",
       subjectId: mySelf!.id,
       purposeKey: purpose,
       artifactVersion: artifact!.version,
       artifactPresentationToken: mintGrantPresentation({
+        ...(isReport ? { reportEndpointReceipt: reportEndpointReceipt! } : {}),
         accountId: user.id,
         dataSubjectId: mySelf!.id,
         subjectBindingRevision: mySelf!.subject_binding_revision,

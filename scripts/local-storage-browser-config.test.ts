@@ -25,6 +25,23 @@ describe("local provider runner safety boundaries", () => {
       expect(() => localBrowserTarget(target)).toThrow();
     }
   });
+  it("routes only the selected disposable API and refuses the preserved sequence gateway", () => {
+    const family = { INHERIT_LOCAL_E2E_PROJECT: "inherit-family-20260907",
+      INHERIT_LOCAL_E2E_WORKDIR: "/synthetic/work/family-disposable-stack" };
+    expect(() => assertLocalProviderEnvironment(family, true, ["--config=family.config.ts"])).not.toThrow();
+    expect(localBrowserTarget("http://127.0.0.1:55321/storage/v1/object/genomes/source", family).origin)
+      .toBe("http://127.0.0.1:55321");
+    expect(localBrowserTarget("http://localhost:3100/api/uploads", family).origin).toBe("http://localhost:3100");
+    const withSyntheticCredentials = new URL("http://127.0.0.1:55321/storage/v1/");
+    withSyntheticCredentials.username = "synthetic-user";
+    withSyntheticCredentials.password = "synthetic-password";
+    for (const target of ["http://127.0.0.1:54321/auth/v1/token", "http://localhost:55321/storage/v1/",
+      "https://example.supabase.co/storage/v1/", withSyntheticCredentials.href]) {
+      expect(() => localBrowserTarget(target, family)).toThrow();
+    }
+    expect(() => localBrowserTarget("http://127.0.0.1:55321/storage/v1/", {})).toThrow();
+    expect(() => assertLocalProviderEnvironment({ ...family, ...disposable }, true, [])).toThrow();
+  });
   it("configures only Chromium CLI proxy flags, with forced loopback and no APIRequest proxy option", () => {
     expect(chromiumStorageProxyArgs("http://127.0.0.1:45678")).toEqual([
       "--proxy-server=http://127.0.0.1:45678", "--proxy-bypass-list=<-loopback>",

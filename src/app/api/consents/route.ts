@@ -1,3 +1,5 @@
+import { currentOwnUploadAccount } from "@/lib/uploads/own-upload-context";
+import { familyCapability } from "@/lib/family/access";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isSameOrigin } from "@/lib/account-deletion";
@@ -152,16 +154,25 @@ async function grantPurpose(
     return NextResponse.json({ error: "consent_artifact_changed" }, { status: 409 });
   }
 
-  const { data: grantId, error } = await admin.rpc("grant_directional_purpose_v1", {
+  const isReport = claims.purpose === "reports.monogenic" || claims.purpose === "reports.polygenic";
+  const actor = isReport ? await currentOwnUploadAccount() : null;
+  if (isReport && (!claims.reportEndpointReceipt || !actor || actor.accountId !== accountId
+    || (await familyCapability(accountId, [claims.recipientAccountId], "third_party_adult_analysis")).status !== "permitted")) {
+    return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
+  }
+  const rpc = admin.rpc.bind(admin) as unknown as (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
+  const { data: grantId, error } = await rpc(isReport ? "grant_family_report_purpose_v1" : "grant_directional_purpose_v1", {
+    ...(isReport ? { p_session_id: actor!.sessionId, p_recipient_account_id: claims.recipientAccountId,
+      p_endpoint_receipt: claims.reportEndpointReceipt!, p_artifact_body_sha256: claims.artifactBodySha256 }
+      : { p_artifact_key: claims.artifactKey }),
     p_account_id: accountId,
     p_data_subject_id: claims.dataSubjectId,
     p_recipient_principal_id: claims.recipientPrincipalId,
     p_purpose: claims.purpose,
-    p_artifact_key: claims.artifactKey,
     p_artifact_version: claims.artifactVersion,
     p_token_nonce: claims.nonce,
   });
-  if (error || !grantId) {
+  if (error || !z.uuid().safeParse(grantId).success) {
     return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
   }
 

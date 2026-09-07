@@ -213,3 +213,13 @@ describe("cohort grant presentation token", () => {
     }
   });
 });
+
+describe("report endpoint receipt in signed presentation", () => {
+  it("preserves the exact DB receipt and rejects malformed receipt values", () => {
+    expect(readGrantPresentation(mintGrantPresentation({ ...CLAIMS, reportEndpointReceipt: "e".repeat(64) }))?.reportEndpointReceipt).toBe("e".repeat(64));
+    for (const receipt of [null, 1, {}, "", "E".repeat(64)]) {
+      const payload = { ...CLAIMS, direction: "subject_to_recipient", nonce: "synthetic-nonce", expiresAt: Date.now() + 10000, reportEndpointReceipt: receipt };
+      expect(readGrantPresentation(sealAs(payload, "family-grant-presentation-v1"))).toBeNull();
+    }
+  });
+});

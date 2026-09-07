@@ -4,6 +4,35 @@ Rollout preparation checkpoint, 7 September 2026. This is not a feature-release 
 The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
+## Family and account-deletion release prerequisites · 7 September 2026
+
+Local `fb43083` passes seven production-build Family/account-deletion browser
+cases, including two actual Storage uploads and actual worker completion.
+Prepared bundle `work/hosted-eight-migration-staging-fb43083/` contains eight
+exact committed migrations, **not applied hosted**: Copilot authority
+`081757`, chat content `081759`, report catalog snapshots `083251`, ancestry
+`111757`, ancestry export/notices `111835`, Family saved results `124212`,
+account grant-nonce cleanup `132302`, and upload-session ordering `134656`.
+All identifiers above have date prefix `20260907`. The final function manifest
+covers 55 functions (59 definitions across the ordered bundle). Each wrapper
+uses one transaction, a 5-second lock timeout and a 60-second statement timeout.
+
+Family adds a new strong directional-grant writer and preserves PR75's writer.
+Install schema before the application: old report tokens presented to the new
+application refuse with 409 before nonce consumption and require refreshed
+consent. Earlier grants retain their independently valid legacy access; they
+need an explicit new grant for canonical saved results. Roll back the app while
+retaining additive schema. Keep incompatible `20260906133807` separate until
+its documented upload pause/drain and coordinated transition.
+
+Fresh read-only allowance check at `2026-09-07T13:43:13Z`: Vercel shows
+**$1.73 / $20 included credit**, **$0 on-demand**. This supports one bounded
+preview build, not overage authorization. GitHub repository visibility is
+PUBLIC and CI uses standard `ubuntu-latest`. Full CI remains unresolved.
+Hosted report generation/mail still requires the authorized synthetic recipient
+and verified Resend allowance already requested; the shared production worker
+can consume notices queued by preview. No hosted generation or mail was run.
+
 ## Latest ancestry release prerequisites · 7 September 2026
 
 Local ancestry now has a fresh 73-migration replay, 1,746 passing SQL assertions,

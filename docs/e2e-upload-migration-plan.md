@@ -1,5 +1,26 @@
 # Browser-suite migration after the own-upload cutover
 
+## Full CI checkpoint · 2026-09-07
+
+[CI run 34123004524](https://github.com/themariodiego/Inherit.bio/actions/runs/34123004524)
+on pushed `3651a46` passed build, unit, private name, legal, template,
+readability, secret, database and invitation-lock checks. The full browser run
+scheduled 232 cases: **126 passed, 12 failed, 94 did not run**. Four failures
+require the isolated Copilot daemon; four reach the remaining legacy upload
+helper refusals (Family, Health Picture, Portrait, other-adult deletion).
+The Family fixture and account-purge failures now have passing local proof:
+at `fb43083`, seven cases pass together with two actual uploads and no
+skips/retries. Purge now removes exact owned grant nonces and upload sessions
+without breaking consent foreign keys, while retaining Storage/lease guards.
+The exact earlier failures and actual-worker recovery are preserved in the
+local verification record. Three legacy helper sites remain: Health Picture,
+Portrait and other-adult deletion. The isolated Copilot daemon setup still
+needs standard-CI integration. Mutation-cleanup and post-login search readiness
+need focused inspection; the old GIAB upload test never reaches the current
+file chooser. Do not narrow the suite or classify separate local receipts as
+a combined pass. Safe CI logs and diagnosis:
+`work/ancestry-local-install-c4718e9/ci-34123004524-*`. PR76 remains draft.
+
 ## Ancestry integration · 2026-09-07
 
 At `0e0d99e`, **5/5 ancestry and Overview cases pass together**, no skips/retries,

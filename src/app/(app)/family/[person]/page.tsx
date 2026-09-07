@@ -27,14 +27,11 @@ import { LAYER_LABELS } from "@/copy/reports/strings";
 import { grantedLayers, permits, personCapability, viewerMaySee } from "@/lib/family/access";
 import { resolveFamilyPerson } from "@/lib/family/graph";
 import { acknowledged } from "@/lib/family/tier2";
-import {
-  getPublishedTemplates,
-  getSubjectFileCount,
-  getSubjectGenotypesByRsid,
-  getSubjectProcessedFiles,
-  templateRsids,
-} from "@/lib/genome/load";
+import { getPublishedTemplates } from "@/lib/genome/load";
 import { resolveTemplate } from "@/lib/genome/reports";
+import { getSubjectReportCalls } from "@/lib/genome/report-calls";
+import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
+import { resolveStoredSharedReport } from "@/lib/family/shared-report-display";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -96,33 +93,53 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
   // layer: no file count, template or genotype is fetched otherwise.
   let fileCount: number | null = null;
   let hasFile = false;
+  let hasCanonicalAccess = false;
+  const completedLayers = new Set<FindingLayer>();
+  const unavailableLayers = new Set<FindingLayer>();
   const covered = new Map<FindingLayer, CoveredReport[]>();
   if (allowed && !gated && layers.length > 0) {
     const admin = createAdminClient();
-    const [count, files, allTemplates] = await Promise.all([
-      getSubjectFileCount(admin, person.dataSubjectId),
-      getSubjectProcessedFiles(admin, person.dataSubjectId),
+    const shared = await loadSharedReportSnapshot(admin, {
+      subjectId: person.dataSubjectId, counterpartAccountId: person.counterpartAccountId,
+      purposes: layers.map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
+    });
+    if (!shared.authorized) notFound();
+    const [legacyFiles, allTemplates] = await Promise.all([
+      admin.from("genome_files").select("id", { count: "exact", head: true })
+        .eq("subject_id", person.dataSubjectId).is("single_logical_sample_verified_at", null),
       getPublishedTemplates(admin),
     ]);
-    fileCount = count;
-    hasFile = files.length > 0;
-    const templates = allTemplates.filter(
-      (template) => !isFixtureSlug(template.slug) && layers.includes(template.layer ?? "estimate"),
-    );
-    if (hasFile && templates.length > 0) {
-      const { genotypes } = await getSubjectGenotypesByRsid(
-        admin,
-        person.dataSubjectId,
-        templateRsids(templates),
-      );
+    fileCount = legacyFiles.count ?? 0;
+    // This existing loader reads independently authorized legacy sources only
+    // for a recipient. It cannot borrow an owner's canonical self permission.
+    for (const layer of layers) {
+      const templates = allTemplates.filter(template => !isFixtureSlug(template.slug)
+        && (template.layer ?? "estimate") === layer);
+      const { genotypes, fileCount: legacyCount } = await getSubjectReportCalls(admin, person.dataSubjectId, templates);
+      hasFile ||= legacyCount > 0;
+      if (legacyCount > 0) completedLayers.add(layer);
       for (const template of templates) {
-        const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
-        if (!resolved.covered) continue;
-        const layer: FindingLayer = template.layer ?? "estimate";
-        covered.set(layer, [
-          ...(covered.get(layer) ?? []),
-          { slug: template.slug, title: template.title },
-        ]);
+        if (!resolveTemplate(template, rsid => genotypes.get(rsid)).covered) continue;
+        covered.set(layer, [...(covered.get(layer) ?? []), { slug: template.slug, title: template.title }]);
+      }
+    }
+    // Confirm after all other reads. A withdrawal cannot turn a captured
+    // canonical result into a legacy fallback or a stale ready link.
+    const current = await shared.confirm();
+    if (!current.authorized) notFound();
+    hasCanonicalAccess = current.access.some(access => access.kind === "canonical");
+    for (const row of current.unavailableReports) unavailableLayers.add(row.purpose === "reports.monogenic" ? "variant_call" : "estimate");
+    fileCount += new Set(current.sources.map(source => source.fileId)).size;
+    hasFile ||= current.sources.length > 0;
+    for (const row of current.reports) {
+      completedLayers.add(row.purpose === "reports.monogenic" ? "variant_call" : "estimate");
+      const resolved = resolveStoredSharedReport(row);
+      if (!resolved || !resolved.covered || isFixtureSlug(resolved.template.slug)) continue;
+      const layer = resolved.template.layer ?? "estimate";
+      if (!layers.includes(layer)) continue;
+      const previous = covered.get(layer) ?? [];
+      if (!previous.some(report => report.slug === resolved.template.slug)) {
+        covered.set(layer, [...previous, { slug: resolved.template.slug, title: resolved.template.title }]);
       }
     }
   }
@@ -172,7 +189,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
             </p>
             {!hasFile ? (
               <p className="text-base leading-relaxed text-ink">
-                {noFileYet(person.displayLabel)}
+                {hasCanonicalAccess ? "No completed result is shared yet." : noFileYet(person.displayLabel)}
               </p>
             ) : (
               (["variant_call", "estimate"] as const).map((layer) =>
@@ -181,7 +198,10 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
                     <p className="text-base font-medium text-ink">{LAYER_LABELS[layer]}</p>
                     {(covered.get(layer) ?? []).length === 0 ? (
                       <p className="text-sm leading-relaxed text-ink">
-                        {noneCovered(person.displayLabel, layer)}
+                        {unavailableLayers.has(layer)
+                          ? "A saved result is missing the source details needed to show it."
+                          : !completedLayers.has(layer) ? "No completed result is shared for this result type yet."
+                          : noneCovered(person.displayLabel, layer)}
                       </p>
                     ) : null}
                     <ul className="space-y-1">

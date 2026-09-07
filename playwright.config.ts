@@ -1,3 +1,4 @@
+import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
 
@@ -23,16 +24,17 @@ if (!process.argv.includes("--list") && (!providerProxy || !signer)) {
 }
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
 
+const localProject = localE2eProject(process.env);
 const SERVER_ENV = {
   INHERIT_UPLOAD_SIGNING_JWK: signer ?? "",
   INHERIT_CANONICAL_UPLOADS_PAUSED: "false",
-  NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
+  NEXT_PUBLIC_SUPABASE_URL: localProject.apiOrigin,
   NEXT_PUBLIC_SUPABASE_ANON_KEY:
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? (localProject.projectId === "sequence" ?
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" : ""),
   SUPABASE_SERVICE_ROLE_KEY:
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU",
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? (localProject.projectId === "sequence" ?
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU" : ""),
   BYOK_ENCRYPTION_KEY: "5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=",
   JOBS_SECRET: "e2e-jobs-secret",
   CRON_SECRET: "e2e-cron-secret",

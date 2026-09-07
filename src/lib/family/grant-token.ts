@@ -63,6 +63,8 @@ const COHORT_GRANT_DIGEST_CONTEXT = "cohort-grant-presentation-v1";
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
 
 export interface GrantPresentation {
+  /** DB-owned endpoint revisions, captured before the report permission prompt. */
+  reportEndpointReceipt?: string;
   /** The account that signs: the data subject's own account, never the recipient's. */
   accountId: string;
   dataSubjectId: string;
@@ -158,6 +160,8 @@ export function readGrantPresentation(
     return null;
   }
   if (claims.expiresAt <= now) return null;
+  if (claims.reportEndpointReceipt !== undefined && (typeof claims.reportEndpointReceipt !== "string"
+    || !HEX_DIGEST.test(claims.reportEndpointReceipt))) return null;
   return claims;
 }
 

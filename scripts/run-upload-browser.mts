@@ -8,7 +8,10 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { localE2eProject, disposableProjectWorkdir, validateDisposableProjectConfig, disposableBootstrapKeys } from "./local-e2e-project";
 import http, { type IncomingMessage } from "node:http";
 import { createInterface } from "node:readline";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
@@ -21,9 +24,18 @@ if (fullSuite || bootstrapOnly) arguments_.shift();
 assert(arguments_.length === 0 || arguments_[0] === "--", "Pass local Playwright selectors after --");
 const selectors = arguments_.slice(1);
 assertLocalProviderEnvironment(process.env, fullSuite, selectors);
-const project = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
+const configuredProject = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
-assert(project, "Exact local project ID required");
+assert(configuredProject === "sequence", "Expected the unchanged canonical repository project");
+const selectedProject = localE2eProject(process.env);
+const project = selectedProject.projectId;
+let bootstrapEnvironment: Record<string, string> = {};
+let disposableWorkdir: string | undefined;
+if (project !== "sequence") {
+  disposableWorkdir = disposableProjectWorkdir(process.env);
+  assert(realpathSync(disposableWorkdir) === disposableWorkdir, "Disposable workdir must not be a symlink");
+  validateDisposableProjectConfig(readFileSync(path.join(disposableWorkdir, "supabase/config.toml"), "utf8"), selectedProject);
+}
 for (const service of ["db", "storage"]) {
   // Inspect only identity/liveness, never Config.Env (provider credentials).
   const identity = JSON.parse(execFileSync("docker", ["inspect", "--format",
@@ -31,6 +43,16 @@ for (const service of ["db", "storage"]) {
     `supabase_${service}_${project}`], { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 15_000 })
     .trim().replace(/^("[^"]*") ("[^"]*") (true|false)$/, "[$1,$2,$3]"));
   assert.deepEqual(identity, [`/supabase_${service}_${project}`, project, true], "Exact running local Docker identity required");
+}
+if (disposableWorkdir) {
+  // CLI output stays in memory. Never let exec/JSON exceptions print status
+  // keys, a DB URL or provider diagnostics, and never fall back to sequence.
+  try {
+    const status = execFileSync(fileURLToPath(new URL("../node_modules/.bin/supabase", import.meta.url)),
+      ["status", "--workdir", disposableWorkdir, "-o", "json"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 15_000, maxBuffer: 65_536 });
+    bootstrapEnvironment = disposableBootstrapKeys(JSON.parse(status), selectedProject);
+  } catch { throw new Error("Selected disposable project bootstrap unavailable; no status diagnostics retained"); }
 }
 const sql = (query: string) => execFileSync("docker", ["exec", "-i", `supabase_db_${project}`,
   "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"], {
@@ -47,7 +69,7 @@ if (process.env.CI) {
 }
 const policy = sql("select json_build_object('issuer',auth_issuer,'array',maximum_array_bytes,'vcf',maximum_vcf_bytes,'account',maximum_account_bytes,'active',maximum_active_uploads) from private.upload_authorization_config where singleton;");
 const limits = JSON.parse(policy);
-assert.equal(limits.issuer, "http://127.0.0.1:54321/auth/v1", "Existing local issuer must match; never changed here");
+assert.equal(limits.issuer, `${selectedProject.apiOrigin}/auth/v1`, "Existing local issuer must match; never changed here");
 for (const key of ["array", "vcf", "account", "active"]) {
   assert(Number.isSafeInteger(limits[key]) && limits[key] > 0, "Existing server capacity policy required");
 }
@@ -236,7 +258,7 @@ try {
   for (const method of ["OPTIONS", "POST"]) {
     const boundary = await new Promise<{ status: number; origin?: string; allowedHeaders?: string }>((resolve, reject) => {
       const request = http.request({ hostname: "127.0.0.1", port: address.port, method,
-        path: "http://127.0.0.1:54321/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001",
+        path: `${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`,
         headers: { Origin: "http://localhost:3100", "Content-Length": "0",
           "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "apikey,authorization,content-type,x-upsert" } }, response => {
         response.resume(); response.on("end", () => resolve({ status: response.statusCode ?? 0,
@@ -247,7 +269,7 @@ try {
     });
     assert(method === "OPTIONS" ? boundary.status === 200 : boundary.status >= 400 && boundary.status < 500,
       "Proxy must preserve actual gateway/provider HTTP decisions");
-    const policy = await gatewayCors(new URL("http://127.0.0.1:54321/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001"),
+    const policy = await gatewayCors(new URL(`${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`),
       "http://localhost:3100", "POST", {});
     assert.equal(boundary.origin, policy["access-control-allow-origin"], "Proxy must preserve gateway CORS policy");
     if (method === "OPTIONS") {
@@ -262,7 +284,7 @@ try {
     tests = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
       `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
       detached: process.platform !== "win32",
-      stdio: "inherit", env: { ...process.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
+      stdio: "inherit", env: { ...process.env, ...bootstrapEnvironment, INHERIT_UPLOAD_SIGNING_JWK: signer,
         INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
     });
     const code = await new Promise<number>(resolve => {

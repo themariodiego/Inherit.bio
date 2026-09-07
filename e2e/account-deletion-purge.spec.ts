@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { localE2eProject } from "../scripts/local-e2e-project";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import {
   adminClient,
@@ -35,19 +36,22 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   // The shared UI helper proves exact source/grant completion. Independently
   // count its private journals before and after the real account teardown;
   // never print report payloads, genotypes or other accounts' rows.
+  // The genuine selected-purpose signature leaves one replay nonce, which
+  // must survive the notice and be removed only by final account teardown.
   expect(fileId).toMatch(/^[0-9a-f-]{36}$/);
   expect(userId).toMatch(/^[0-9a-f-]{36}$/);
   const privateCounts = async () => {
-    const { stdout } = await promisify(execFile)("docker", ["exec", "supabase_db_sequence", "psql", "-U", "postgres",
+    const { stdout } = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer, "psql", "-U", "postgres",
       "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
       select json_build_object(
         'analysis', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid),
         'completed', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid and state='complete'),
-        'normalization', (select count(*) from private.own_normalization_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid));
+        'normalization', (select count(*) from private.own_normalization_runs where file_id='${fileId}'::uuid and account_id='${userId}'::uuid),
+        'purposeGrantNonces', (select count(*) from public.purpose_grant_nonces where account_id='${userId}'::uuid));
     `], { timeout: 10_000, maxBuffer: 8192 });
     return JSON.parse(stdout.trim());
   };
-  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1 });
+  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1, purposeGrantNonces: 1 });
   const prsBefore = await admin.from("user_prs").select("id", { count: "exact", head: true }).eq("file_id", fileId);
   expect(prsBefore.error).toBeNull();
   expect(prsBefore.count).toBeGreaterThan(0);
@@ -97,7 +101,7 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   expect(deletion?.id).toBeTruthy();
   expect(retention?.id).toBeTruthy();
   // The cancellable notice has not physically purged these generated rows.
-  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1 });
+  expect(await privateCounts()).toEqual({ analysis: 1, completed: 1, normalization: 1, purposeGrantNonces: 1 });
   const prsDuringNotice = await admin.from("user_prs").select("id", { count: "exact", head: true }).eq("file_id", fileId);
   expect(prsDuringNotice.error).toBeNull();
   expect(prsDuringNotice.count).toBe(prsBefore.count);
@@ -189,7 +193,7 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     expect(residual.error).toBeNull();
     expect(residual.count, table).toBe(0);
   }
-  expect(await privateCounts()).toEqual({ analysis: 0, completed: 0, normalization: 0 });
+  expect(await privateCounts()).toEqual({ analysis: 0, completed: 0, normalization: 0, purposeGrantNonces: 0 });
 
   const missingObject = await admin.storage
     .from(storageObject!.bucket_id)

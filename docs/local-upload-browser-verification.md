@@ -3,6 +3,67 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## Family sharing and account deletion verified locally
+
+At `fb43083`, **7/7 production-build browser cases pass together**, with no
+skips/retries and **two actual Storage uploads** on the disposable
+`inherit-family-20260907` local stack. The Family journey creates independent
+A/B accounts, completes DOB and invitation acceptance through captured local
+mail, uploads B's file, generates B's chosen report, and shares that layer
+with A. A passes the Family gate and reads B's exact saved A/C finding.
+Pause, resume and stop take effect on the next request; B retains their own
+source, download and report. The account-deletion case runs the actual worker
+and reaches zero residual Auth, file and grant-nonce rows.
+
+Desktop (1280×800) and phone (390×844) Family-person and shared-report full-page
+captures were inspected. Source and counterpart labels remain visible; the
+phone layout has no horizontal overflow. These captures exercise the saved
+result, not every Family state. Evidence: task
+`work/canonical-family-runtime-adapter/run-v3-commit.json`, `run-v3-receipt.json`,
+`run-v3.log` and `run-v3-results/`. Runtime code was frozen during the run.
+The loopback mail relay forwards only the capture server's fixed email endpoint;
+no hosted outbox, external provider, real account or paid model was used.
+
+### Authority, regression and recovery evidence
+
+- `9f3b4b6` adds exact directional endpoint receipts and dedicated recipient
+  readers. `a892fdd` wires Family readiness, person, library and detail views.
+  **40 UI/source tests**, **55 authority units**, and **48 rollback SQL
+  assertions** cover captured catalogs, exact source selection, malformed and
+  duplicate queries, independent legacy files, sensitive gates, unfinished
+  layers and terminal withdrawal.
+- Two physical-connection race probes establish that owner-purpose withdrawal
+  and recipient-binding changes wait for reader locks, then invalidate the
+  original captured receipt. The independent purpose remains valid. The
+  temporary logical clone excludes scheduler extensions and one embryo DDL
+  event trigger; application constraints, owners, ACLs and RLS are retained.
+  See `work/family-shared-report-verification/concurrency-receipt.json`.
+- **2,975 units in 186 files pass at `abfe326`**, zero skips, two workers.
+  The earlier `a892fdd` run passed 2,970 but its five mail-capture cases stopped
+  on an ignored generated CLI cache. That cache was preserved outside the
+  checkout; the capture guard was unchanged. Full TypeScript and ESLint pass
+  at `00944a1`; ten added disposable-project infrastructure tests pass separately.
+- The fresh stack replays 74 migrations, then installs the two account-deletion
+  corrections (76 total). **All 49 SQL fixtures / 1,826 assertions pass at
+  `00944a1`**, before synthetic browser data. The last session-order migration
+  additionally passes **43 canonical + 19 legacy assertions** and an exact
+  rollback probe; this is not a claim that all 49 fixtures ran at `fb43083`.
+- V1 passed all six Family cases at `00944a1`. Combined V2 at `a8f4494` failed
+  account deletion and did not run the six Family cases. The worker had already
+  acknowledged physical Storage removal, but an upload-session consent foreign
+  key blocked database purge. `fb43083` orders owned session children before
+  consents and retains Storage/lease safeguards. Its actual worker recovery
+  passes: processed 1, failed 0, pending 0; only the exact failed synthetic
+  account was removed, with other file fingerprints unchanged. V2 and recovery
+  evidence remain in the same adapter directory.
+- The preceding `3c73e3a` correction narrowly admits and purges the account's
+  own signed purpose-grant nonces. It preserves foreign-owner refusals and
+  requires Storage acknowledgement before removing the owned graph.
+
+These are local receipts, separate from the earlier ancestry, Copilot and
+report/control runs. Complete CI and hosted delivery remain open. Production
+stays PR75 and whole-plan acceptance stays **18/65**.
+
 ## Canonical ancestry and Overview verified locally
 
 At `0e0d99e`, **5/5 ancestry and Overview browser cases pass in one isolated

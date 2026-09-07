@@ -69,6 +69,24 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Family sharing and account deletion verified locally
+
+At `fb43083`, seven production-build cases pass together with two real Storage
+uploads and no skips/retries: independent-adult invitation, chosen own report,
+explicit sharing, recipient reading, withdrawal and zero-residual account
+purge. Desktop/mobile Family views were inspected. Account-purge corrections
+remove owned grant nonces and upload sessions in the required dependency order
+while preserving Storage acknowledgement and foreign-owner refusals.
+The application has a 2,975-unit checkpoint; exact SQL, race and browser scopes
+are recorded in the local verification ledger. This closes useful local
+journeys, not the full adult or deletion acceptance gates.
+
+Full CI on pushed `3651a46` remains 126 passed, 12 failed and 94 not run.
+The Family fixture and account-purge failures now have local passing evidence;
+Copilot setup, three legacy helper sites and other browser regressions remain.
+Eight compatible hosted migrations are prepared but not applied. PR76 stays
+draft, production stays PR75, and acceptance stays **18/65**.
+
 ### 2026-09-07 · Canonical ancestry journey verified locally
 
 The canonical ancestry journey now passes five production-build browser cases

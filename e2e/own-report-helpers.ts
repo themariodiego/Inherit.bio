@@ -1,3 +1,4 @@
+import { localE2eProject } from "../scripts/local-e2e-project";
 import { expect, type Page } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -109,7 +110,7 @@ export async function generateOwnFileWithChosenReports(
   // purpose/state/source/grant flags in the exact local Docker database; no
   // result payload, genotype, credential or unrelated account is returned.
   if (!/^[0-9a-f-]{36}$/.test(fileId)) throw new Error("Expected a canonical fixture identifier");
-  const { stdout } = await promisify(execFile)("docker", ["exec", "supabase_db_sequence", "psql", "-U", "postgres",
+  const { stdout } = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer, "psql", "-U", "postgres",
     "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
       select coalesce(json_agg(proof order by purpose),'[]'::json) from (
         select r.purpose,r.state,r.completed_at is not null as completed,
@@ -128,7 +129,7 @@ export async function generateOwnFileWithChosenReports(
  * Aggregate-only, exact synthetic source proof; no result payload is read. */
 export async function expectNoOwnAncestryResult(fileId: string): Promise<void> {
   if (!/^[0-9a-f-]{36}$/.test(fileId)) throw new Error("Expected a canonical fixture identifier");
-  const { stdout } = await promisify(execFile)("docker", ["exec", "supabase_db_sequence", "psql", "-U", "postgres",
+  const { stdout } = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer, "psql", "-U", "postgres",
     "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", `
       select json_build_object(
         'journal', (select count(*) from private.own_analysis_runs where file_id='${fileId}'::uuid and purpose='ancestry'),
