@@ -69,6 +69,23 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Personal Copilot integration and compatibility repair
+
+The local canonical chat path now binds provider permission, exact sources,
+captured reports and saved history. SQL verification also repaired a deletion
+regression for accounts with historical conversations: file deletion preserves
+unattributed history while exact canonical dependencies are removed. The three
+affected rollback fixtures pass 126 assertions, and local installation preserves
+existing data and deletion-function ownership/permissions.
+
+The production-build browser run now passes permission granting and answers the
+conflicting-source and missing-position questions. It then exposes a false refusal
+for an accurate explanation that no report has been generated. That guard repair
+and the rest of the 73-case integration remain open; see the local verification
+record. No release or new whole-plan gate is claimed: production remains PR75 and
+acceptance **18/65**. Hosted notices still require the previously requested
+recipient authorization and verified allowance.
+
 ### 2026-09-07 · Replacement protected source-control journey verified
 
 Candidate `85fe7c4` is READY on the dedicated protected canary alias. Actual

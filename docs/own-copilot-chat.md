@@ -46,12 +46,25 @@ current-lifecycle check for report/PRS output dispositions.
 Selected-file deletion freezes dependent message IDs in the existing retryable
 Storage-ACK record. Finish removes those pairs after Storage acknowledgement
 and before source deletion. Separate chats with no dependency on that file and
-other files survive. Historical unverified contexts cannot be inferred into a
-file-scoped deletion.
+other files survive. Historical subject-only conversations without canonical,
+retrieval, grant or lifecycle dependency markers are preserved, as the existing
+selected-file contract requires. Turn IDs alone do not prove file attribution:
+the earlier scope migration backfilled them on historical messages. Mixed or
+incomplete canonical provenance still blocks deletion; text is never used to
+guess membership.
 
-The migration is additive for old applications. Old deployments do not create
-canonical contexts or inherit these model permissions. The new application
-must be installed before claiming the canonical journey. Account/session
+The schema additions do not upgrade old contexts or model permissions. Install
+the authority migration before the chat/cleanup migration, and do not enable
+new grants between those two steps. Old Settings writes remain callable but
+invalidate canonical authority; users must save and explicitly authorize the
+new configuration. The current public release cannot drain the new exact-grant
+cleanup jobs, so a compatible worker and verified execution are prerequisites
+to hosted use. An existing minute schedule does not establish the cleanup
+deadline. The catalog snapshot migration must precede new report writes, with
+snapshot-aware export readers deployed together. After canonical use, rollback
+must retain those readers and the compatible chat/cleanup application.
+
+Account/session
 teardown cascades the private nonce hashes; nine-minute expiry is enforced on
 use, with expired-row housekeeping on later redemption. This is not a claim
 that every broader retention scheduler or whole-plan Copilot scope is complete.
@@ -62,4 +75,5 @@ unchanged output guards. `canonical_own_copilot_chat.sql` is a synthetic,
 rollback-only fixture using actual signed consent, Settings, report-purpose and
 normalization operations. It targets only its exact cleanup jobs, never a global
 worker sweep. This lane does not run hosted calls, models, builds or browser
-suites; integration must apply/replay SQL and verify the actual browser journey.
+suites; the integrated local receipts and remaining browser work are recorded
+in `docs/local-upload-browser-verification.md`.

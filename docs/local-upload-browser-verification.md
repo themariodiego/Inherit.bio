@@ -3,6 +3,45 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
+## Canonical personal Copilot integration in progress
+
+At `5d2afc7`, personal chat uses the actual current provider permission, prepared
+source snapshot, selected completed reports, captured citations and server-owned
+history. Permission dispatch now reaches the canonical handler; the interface
+consumes and validates the exact grant/withdrawal receipt before reporting success.
+
+The three Copilot-authority, chat-content and catalog-snapshot migrations were
+installed locally after **212 rollback-only SQL assertions** passed. Subsequent
+review found that the chat migration could block the public application's
+selected-file deletion merely because historical chats existed. The correction
+preserves truly unattributed historical content and still rejects partial
+canonical provenance. Its affected chat, report-purge and file-deletion fixtures
+pass **64 + 41 + 21 assertions**. The local correction preserved files, Storage
+objects, catalog, users, chats, messages, migration history and deletion-function
+owners/ACLs exactly. An initial rollback fixture needed the same temporary owner
+normalization as the previous local SQL harness; that ownership change rolled back.
+
+The earlier integrated runtime `f71270d` passed **2,787 units in 180 files**.
+The later consent-dispatch correction passed 21 focused tests; the receipt UI
+change passed typecheck and scoped lint. This is not a full-suite claim at the
+current head.
+
+The isolated production build succeeds with cached, hash-checked original font
+assets. The synthetic HTTPS model is inside an egress-restricted container;
+actual local Auth/PostgREST/Storage remain in the flow. No external model or
+hosted service is called. Browser attempt v4 proved the actual 201 grant and
+success UI but stalled while inspecting its unread response body. After the UI
+receipt correction, v5 completed the conflict and missing-position answers;
+the third question exposed a false refusal for an accurate ungenerated-report
+explanation. The unchanged assertion still fails, so **73-case browser acceptance
+is not claimed**. Failure receipts are preserved under task evidence
+`work/canonical-copilot-sql-verification/browser-v4-evidence` and `browser-v5-evidence`.
+
+No PR merged or public deployment changed. Hosted permission/cleanup rollout,
+required notice delivery, full regression integration and complete Copilot
+evaluation remain open. The older snapshot-only checkpoint below is historical;
+its "not persisted" statement describes that earlier run.
+
 ## In-progress Copilot prerequisite: captured report references
 
 2026-09-07: new own-report generation now captures the exact selected public
