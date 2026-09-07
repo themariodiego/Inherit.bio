@@ -1,5 +1,37 @@
 # Hosted own-upload rollout prerequisites
 
+## Current production baseline · 8 September 2026
+
+**PR77 is live**, merge `3c59ac17bd3805e912068b76d12d1f64142f9397`, deployment
+`dpl_39taDzWRuVgWbaDEQrRhARWUPz73`, READY on both public domains. This is the
+six-file authentication-return correction extracted from PR76 onto PR75.
+Its merged tree equals tested head `a90b756`: CI `34168717416` passes 2,289
+units, 1,044 SQL assertions, 30 lock checks and 220 browser tests, zero
+skips/retries, including cleanup. No migration or production binding changed.
+
+Actual production password sign-in for `inherit-test@plus.bio` preserves
+`/settings?check=auth-return#local` and renders Settings with that identity.
+A scheme-relative external destination instead reaches a fully rendered
+`https://www.inherit.bio/overview`. Verification uses an isolated in-app
+session. Both public sign-in pages return 200, and the scoped production
+error/fatal log scan after deployment returns no matching entries. The cron
+UI remains enabled with the same three schedules; no manual job ran.
+
+The first automatic auth preview lacked all environment variables. Only its
+branch received the existing public Supabase URL/anon key; no service-role or
+private key was retrieved. That preview proved routing and Settings, but its
+Overview lacked server configuration. The production check above closes that
+preview limitation. The original own-upload canary remains `f0ab225` with its
+stable alias unchanged. Its browser upload permission is still pending.
+
+Use **PR77 as the current legacy runtime and rollback baseline** for PR76's
+future cutover. It retains PR75's pause/drain behavior, mail worker and data
+compatibility. The incompatible `20260906133807` migration stays deferred.
+Historical PR75/count snapshots below describe their dates. Full-plan
+acceptance is **19/65** from the separate local G1.14 proof. Evidence:
+parent task `work/auth-return-release/{ci/,production-proof.json,preview-routing-proof.json}`.
+
+
 
 ## Authentication return correction · 8 September 2026
 

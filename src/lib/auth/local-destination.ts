@@ -1,5 +1,5 @@
 const FALLBACK = "/overview";
-const BASE = "https://auth-destination.invalid";
+const BASE = "https://auth-destination.example.invalid";
 
 function unsafeCharacters(value: string): boolean {
   return [...value].some((character) => {

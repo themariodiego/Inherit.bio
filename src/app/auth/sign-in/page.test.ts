@@ -28,17 +28,17 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.password.mockResolvedValue({ error: null });
   mocks.oauth.mockResolvedValue({ error: null });
-  vi.stubGlobal("window", { location: { origin: "https://inherit.test" } });
+  vi.stubGlobal("window", { location: { origin: "https://inherit.example.test" } });
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("sign-in destination handling", () => {
   it.each([
     ["javascript:alert(1)", "/overview"],
-    ["https://external.test/", "/overview"],
-    ["//external.test", "/overview"],
-    ["/\\external.test", "/overview"],
-    ["/%252fexternal.test", "/overview"],
+    ["https://external.example.test/", "/overview"],
+    ["//external.example.test", "/overview"],
+    ["/\\external.example.test", "/overview"],
+    ["/%252fexternal.example.test", "/overview"],
     ["/files?filter=a%26b#original", "/files?filter=a%26b#original"],
   ])("uses the same safe destination for password and OAuth login: %s", async (next, expected) => {
     mocks.next = next;
@@ -51,7 +51,7 @@ describe("sign-in destination handling", () => {
     await mocks.click!();
     expect(mocks.oauth).toHaveBeenCalledExactlyOnceWith({
       provider: "github",
-      options: { redirectTo: `https://inherit.test/auth/callback?next=${encodeURIComponent(expected)}` },
+      options: { redirectTo: `https://inherit.example.test/auth/callback?next=${encodeURIComponent(expected)}` },
     });
   });
   it("does not navigate or refresh after rejected password authentication", async () => {

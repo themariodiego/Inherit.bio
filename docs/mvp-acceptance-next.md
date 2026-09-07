@@ -3,7 +3,7 @@
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 Its fresh local production-build evidence is recorded in
-`docs/local-upload-browser-verification.md`; production remains PR75.
+`docs/local-upload-browser-verification.md`; production is PR77 (`3c59ac1`).
 This is a delivery order, not a replacement specification or launch approval.
 The parent task is integrating parallel work on upload, normalization and
 separate report choices. Unmerged code is not a production capability.
@@ -75,6 +75,20 @@ grading under G3.1–G3.3. A written protocol or invented transcripts cannot
 close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
+
+### 2026-09-08 · Authentication return protection released separately
+
+PR77 ships the six auth files onto the existing production runtime. Exact-head
+CI passes 2,289 units, 1,044 SQL assertions, 30 locks and 220 browser tests.
+The merged tree matches that head. Both public domains serve merge `3c59ac1`;
+actual synthetic sign-in preserves a valid Settings query/fragment and sends
+an off-site return to fully rendered Overview. Cron schedules remain enabled
+and unchanged. No migration, private-key handoff or genome mutation was needed.
+Acceptance remains **19/65**. PR76's exact `e97fa21` CI also passes all 232
+browser cases with 57 real Storage uploads; integrating PR77 needs its own
+head check. The hosted canonical notice/upload step still waits for the
+extension file-URL permission. Use PR77 as its legacy rollback baseline.
+
 
 ### 2026-09-07 · Health Picture and exact saved-source reports verified locally
 

@@ -45,6 +45,17 @@ assertion and all 13 Lighthouse unit checks remain. Rewritten code commit
 and audit runtime bytes are identical. The post-audit equivalence receipt is
 saved beside the scores. Original audit IDs/build evidence are preserved.
 
+## Latest complete PR76 CI · 8 September 2026
+
+CI `34168400683` passes at `e97fa21aafc2e862061f9f95aaec4319bd154869`,
+completed 2026-09-07T23:18:32Z: **3,190 units / 202 files**, **1,944 SQL
+assertions / 52 fixtures**, **30 lock checks**, all static gates and the
+production build, **232/232 browser cases**, **57 actual Storage uploads**,
+zero skips/retries, all cleanup successful. Evidence in the parent task:
+`work/ci-34168400683-terminal/`. The subsequent integration of separately
+released PR77 changes only reserved dummy hosts in the already-tested auth
+helper/tests; 53 focused checks pass again. A new exact-head CI is required.
+
 ## Complete CI checkpoint · 8 September 2026
 
 CI `34167007160` is **SUCCESS** at `fcfcb3908c839dc516a65bfa812983c49b5ec069`,

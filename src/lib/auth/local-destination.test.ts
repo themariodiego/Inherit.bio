@@ -12,16 +12,16 @@ describe("local authentication destinations", () => {
   });
 
   it.each([
-    null, undefined, "", "overview", "https://external.test/path",
-    "javascript:alert(1)", "//external.test", "///external.test",
-    "/\\external.test", "\\\\external.test", "/safe\\path",
-    "/%2fexternal.test", "/%2F%2Fexternal.test", "/%5cexternal.test",
-    "/%252fexternal.test", "/%255cexternal.test", "%2f%2fexternal.test",
-    "/safe/..//external.test", "/safe/%2e%2e//external.test",
-    "/\n/external.test", "/\t/external.test", "/\rexternal.test",
-    "/%00external.test", "/%0aexternal.test", "/%7fexternal.test",
+    null, undefined, "", "overview", "https://external.example.test/path",
+    "javascript:alert(1)", "//external.example.test", "///external.example.test",
+    "/\\external.example.test", "\\\\external.example.test", "/safe\\path",
+    "/%2fexternal.example.test", "/%2F%2Fexternal.example.test", "/%5cexternal.example.test",
+    "/%252fexternal.example.test", "/%255cexternal.example.test", "%2f%2fexternal.example.test",
+    "/safe/..//external.example.test", "/safe/%2e%2e//external.example.test",
+    "/\n/external.example.test", "/\t/external.example.test", "/\rexternal.example.test",
+    "/%00external.example.test", "/%0aexternal.example.test", "/%7fexternal.example.test",
     "/safe?x=\nvalue", "/safe#\\value", "/bad%", "/bad%E0%A4",
-    "/%25252525252fexternal.test",
+    "/%25252525252fexternal.example.test",
   ])("refuses unsafe or ambiguous destination %s", (value) => {
     expect(localAuthDestination(value)).toBe("/overview");
   });

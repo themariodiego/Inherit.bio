@@ -9,7 +9,7 @@ vi.mock("@/lib/family/independent-login", () => ({ markIndependentLogin: mocks.m
 import { GET } from "./route";
 
 function request(next: string, otp = false) {
-  const url = new URL("https://inherit.test/auth/callback");
+  const url = new URL("https://inherit.example.test/auth/callback");
   url.searchParams.set("next", next);
   if (otp) {
     url.searchParams.set("token_hash", "synthetic-verification");
@@ -27,11 +27,11 @@ beforeEach(() => {
 });
 
 describe("authentication callback redirects", () => {
-  it.each(["//external.test", "/\\external.test", "/%2fexternal.test", "/%255cexternal.test", "/%0a/external.test"])(
+  it.each(["//external.example.test", "/\\external.example.test", "/%2fexternal.example.test", "/%255cexternal.example.test", "/%0a/external.example.test"])(
     "keeps a completed login local for %s", async (next) => {
       const response = await GET(request(next));
       expect(response.status).toBe(307);
-      expect(response.headers.get("location")).toBe("https://inherit.test/overview");
+      expect(response.headers.get("location")).toBe("https://inherit.example.test/overview");
       expect(mocks.exchange).toHaveBeenCalledExactlyOnceWith("synthetic-code");
       expect(mocks.mark).toHaveBeenCalledExactlyOnceWith("synthetic-account");
     },
@@ -47,7 +47,7 @@ describe("authentication callback redirects", () => {
     await vi.waitFor(() => expect(mocks.mark).toHaveBeenCalledOnce());
     expect(completed).toBe(false);
     finish();
-    expect((await result).headers.get("location")).toBe("https://inherit.test/files?filter=a%26b#original");
+    expect((await result).headers.get("location")).toBe("https://inherit.example.test/files?filter=a%26b#original");
     if (otp) {
       expect(mocks.verify).toHaveBeenCalledExactlyOnceWith({ type: "email", token_hash: "synthetic-verification" });
       expect(mocks.exchange).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe("authentication callback redirects", () => {
   it("preserves failed verification and does not stamp independent login", async () => {
     mocks.exchange.mockResolvedValue({ error: { message: "invalid" } });
     const response = await GET(request("/files"));
-    expect(response.headers.get("location")).toBe("https://inherit.test/auth/sign-in?error=verification_failed");
+    expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed");
     expect(mocks.user).not.toHaveBeenCalled();
     expect(mocks.mark).not.toHaveBeenCalled();
   });

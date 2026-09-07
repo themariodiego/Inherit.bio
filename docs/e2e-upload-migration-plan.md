@@ -1,5 +1,19 @@
 # Browser-suite migration after the own-upload cutover
 
+## Current full-suite and release checkpoint · 8 September 2026
+
+PR76 CI `34168400683` is SUCCESS at `e97fa21`: all **232 browser cases**,
+zero skips/retries, **57 actual provider uploads**, 3,190 units and 1,944 SQL
+assertions. This completes the full-suite rerun after the historical startup
+and research-digest corrections below. It does not close missing whole-plan
+route/claims/accessibility gates or replace hosted notification verification.
+Production is now the independent authentication-only PR77 (`3c59ac1`),
+which retains the legacy upload runtime and PR75 pause/drain contract.
+Use PR77 for the future canonical cutover/rollback baseline. Integrating that
+release into PR76 requires a fresh head check; the canonical canary remains
+protected and the incompatible cutover migration remains deferred.
+
+
 ## CI read-only startup correction · 2026-09-07
 
 Run `34163349760` at `75c92cd` passed types, lint, 3,122 units, all content/security

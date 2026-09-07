@@ -13,7 +13,9 @@ Later work can supersede that behavior without completing the stricter gates.
   accessibility 100 throughout. One real synthetic Storage upload, exact
   document/status/content checks, no skips/retries. The independent review
   confirms the complete gate; see `docs/local-upload-browser-verification.md`.
-  G1.16 and hosted release conditions remain open; production stays PR75.
+  G1.16 and hosted upload release conditions remain open. Production is PR77
+  (`3c59ac1`), an independently verified authentication-only release; see
+  `docs/hosted-own-upload-readiness.md`.
 - PR65 closes G4.6 after complete CI and hosted verification. Exact merge
   `16c01b71fdda862d9a1fd23153a6f618e2a255a7` is live on both public domains;
   the additive metadata migration preserves all files and historical unknowns.
