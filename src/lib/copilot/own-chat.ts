@@ -48,7 +48,7 @@ export async function hasCanonicalCopilotScope(subjectId: string) {
 export const ownChatMessageSchema = z.object({ id: z.uuid(), role: z.enum(['user', 'assistant']), content: z.array(z.object({ type: z.literal('text'), text: z.string().max(64000) }).strict()).length(1),
     citations: z.array(ownChatCitationSchema).max(100),
     turn_ordinal: z.number().int().positive(), created_at: z.string() }).strict();
-export const ownChatHistorySchema = z.object({ chatId: z.uuid(), messages: z.array(ownChatMessageSchema).max(100), projection: ownChatProjectionSchema, lastOrdinal: z.number().int().nonnegative() }).strict().refine(h => h.messages.length % 2 === 0 && h.messages.every((m, i) => i % 2 === 0 ? m.role === 'user' && h.messages[i + 1]?.role === 'assistant' && h.messages[i + 1].turn_ordinal === m.turn_ordinal
+export const ownChatHistorySchema = z.object({ chatId: z.uuid(), messages: z.array(ownChatMessageSchema).min(2).max(100), projection: ownChatProjectionSchema, lastOrdinal: z.number().int().positive() }).strict().refine(h => h.messages.length % 2 === 0 && h.messages.every((m, i) => i % 2 === 0 ? m.role === 'user' && h.messages[i + 1]?.role === 'assistant' && h.messages[i + 1].turn_ordinal === m.turn_ordinal
     && (i === 0 || h.messages[i - 1].turn_ordinal < m.turn_ordinal) : true), { message: 'chat history is unavailable' });
 export type OwnChatOperation = 'prepare' | 'begin' | 'check' | 'calls' | 'reports' | 'prs' | 'history' | 'list' | 'commit';
 export async function ownChatRpc(operation: OwnChatOperation, authority: OwnCopilotAuthority, projection: OwnChatProjection | null = null, chatId: string | null = null, payload: Record<string, unknown> = {}) {

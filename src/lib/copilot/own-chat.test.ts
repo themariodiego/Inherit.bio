@@ -37,5 +37,13 @@ describe("own Copilot preparation and durable history", () => {
     it("serializes only public provider information and a server context", async () => { expect(await prepareOwnCopilotChat(subjectId)).toMatchObject({ kind: "ready", contextToken: "context-token", providerInfo: { configured: true, local: true, hasConsent: true }, chats: [] }); });
     it("replays exact citations and normalizes PostgreSQL timestamps to the canonical Z wire format", async () => { expect(await readOwnChatHistory(chatId)).toMatchObject({ chatId, messages: [{ role: "user", citations: [], createdAt: "2026-09-07T10:00:00.000Z" }, { role: "assistant", citations, createdAt: "2026-09-07T10:00:01.000Z" }] }); expect(mocks.from).toHaveBeenCalledTimes(1); });
     it("refuses incomplete or reversed history pairs", () => { expect(ownChatHistorySchema.safeParse({ chatId, projection, lastOrdinal: 1, messages: [messages[1]] }).success).toBe(false); expect(ownChatHistorySchema.safeParse({ chatId, projection, lastOrdinal: 1, messages: [messages[1], messages[0]] }).success).toBe(false); });
+    it.each([0, 1])("refuses a purged history even when its authority and last ordinal match: %s", lastOrdinal => {
+        expect(ownChatHistorySchema.safeParse({ chatId, projection, lastOrdinal, messages: [] }).success).toBe(false);
+    });
+    it("never renders an empty database history as an available conversation", async () => {
+        mocks.rpc.mockResolvedValue({ error: null, data: { chatId, projection, lastOrdinal: 0, messages: [] } });
+        await expect(readOwnChatHistory(chatId)).rejects.toThrow();
+        expect(mocks.rpc).toHaveBeenCalledOnce();
+    });
     it("cannot restore persisted content after a current authority failure", async () => { mocks.assert.mockResolvedValue(false); await expect(readOwnChatHistory(chatId)).rejects.toThrow("copilot_unavailable"); });
 });

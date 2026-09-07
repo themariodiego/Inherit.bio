@@ -147,6 +147,7 @@ begin
     and canonical_authority is not null and not legacy_unverified
     and ((canonical_authority-'sessionId') #- '{context,originatingSessionRevision}' #- '{context,authSessionRevision}')
       = ((a-'sessionId') #- '{context,originatingSessionRevision}' #- '{context,authSessionRevision}')
+    and exists(select 1 from public.chat_messages lm where lm.chat_id=lc.id)
     and not exists(select 1 from public.chat_messages lm where lm.chat_id=lc.id
      and (lm.canonical_projection is distinct from projection or lm.legacy_unverified is not false))
    order by created_at desc,id limit 50) x;
@@ -158,7 +159,10 @@ begin
    or ((c.canonical_authority-'sessionId') #- '{context,originatingSessionRevision}' #- '{context,authSessionRevision}')
       is distinct from ((a-'sessionId') #- '{context,originatingSessionRevision}' #- '{context,authSessionRevision}') then
    raise exception using errcode='42501',message='not_found'; end if;
-  if exists(select 1 from public.chat_messages cm where cm.chat_id=c.id
+  -- Empty shells can remain after exact message retention. Their former
+  -- authority cannot revive a purged conversation or authorize a new turn.
+  if not exists(select 1 from public.chat_messages cm where cm.chat_id=c.id)
+   or exists(select 1 from public.chat_messages cm where cm.chat_id=c.id
    and (cm.canonical_projection is distinct from projection or cm.legacy_unverified is not false)) then
    raise exception using errcode='42501',message='not_found'; end if;
  end if;

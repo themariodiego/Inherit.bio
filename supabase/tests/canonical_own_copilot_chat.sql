@@ -87,6 +87,22 @@ select throws_ok($$select public.own_copilot_chat_v1('history','77900000-0000-40
  '77900000-0000-4000-8000-000000000010',(select id from copilot_subject),(select value from chat_authority),null,(select id from first_chat),'{}')$$,
  '42501','not_found','service role dispatcher still rejects a mismatched account');
 set local role postgres;
+savepoint empty_canonical_chat;
+create temporary table empty_chat as with inserted as (
+ insert into public.chats(user_id,scope_kind,subject_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
+  model_recipient_revision,authorization_fingerprint,legacy_unverified,canonical_authority)
+ select user_id,scope_kind,subject_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
+  model_recipient_revision,authorization_fingerprint,false,canonical_authority from public.chats where id=(select id from first_chat)
+ returning id
+) select id from inserted;
+select throws_ok($$select pg_temp.chat('history','{}',(select id from empty_chat))$$,'42501','not_found','empty canonical shell cannot supply history under valid current authority');
+select throws_ok($$select pg_temp.turn(null,(select id from empty_chat),0)$$,'42501','not_found','empty canonical shell cannot accept an initial-looking append');
+select is((select count(*) from jsonb_array_elements(pg_temp.chat('list')) c where c->>'id'=(select id::text from empty_chat)),0::bigint,'empty canonical shell is absent from conversation list');
+select is((select count(*) from jsonb_array_elements(pg_temp.chat('list')) c where c->>'id'=(select id::text from first_chat)),1::bigint,'valid independent paired history remains listed');
+select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from first_chat))->'messages'),4,'empty-shell refusal leaves valid paired history readable');
+select is((select count(*) from public.chats where id=(select id from empty_chat)),1::bigint,'read and append refusal do not delete the retained shell');
+select is((select count(*) from public.chat_messages where chat_id=(select id from empty_chat)),0::bigint,'refused append cannot recreate purged messages');
+rollback to empty_canonical_chat;
 savepoint unverified_pair;
 update public.chat_messages set legacy_unverified=true where chat_id=(select id from first_chat) and turn_ordinal=1;
 select throws_ok($$select pg_temp.chat('history','{}',(select id from first_chat))$$,'42501','not_found','unverified earlier pair cannot be omitted to revive a dependent suffix');
@@ -295,6 +311,17 @@ select is((select count(*) from private.own_analysis_runs where file_id='7790000
 select public.revoke_directional_purpose_v1('77900000-0000-4000-8000-000000000001',
  (select grant_id from public.purpose_grants where target_id=(select id from copilot_subject) and purpose='reports.polygenic' and revoked_at is null));
 select is((select count(*) from public.chat_messages where chat_id=(select id from successor_chat)),0::bigint,'report withdrawal synchronously removes dependent canonical pair through manifest');
+-- Prepare the current post-withdrawal source projection so a failed append
+-- proves the empty-conversation boundary rather than stale-context rejection.
+update chat_projection set value=pg_temp.chat('prepare');
+select throws_ok($$select pg_temp.chat('history','{}',(select id from successor_chat))$$,'42501','not_found','synchronously purged report conversation has no readable history');
+select throws_ok($$select pg_temp.turn(null,(select id from successor_chat),0)$$,'42501','not_found','fresh authority and source projection cannot restart a purged conversation');
+select is((select count(*) from jsonb_array_elements(pg_temp.chat('list')) c where c->>'id'=(select id::text from successor_chat)),0::bigint,'synchronously purged report conversation is not listed');
+select is((select count(*) from public.chats where id=(select id from successor_chat)),1::bigint,'purged shell remains retained without deleting unrelated chat identities');
+create temporary table recovery_chat as select (pg_temp.turn(repeat('0',64))->>'chatId')::uuid id;
+select pg_temp.turn(null,(select id from recovery_chat),1);
+select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from recovery_chat))->'messages'),4,'a new authorized conversation can commit and append both complete turns after report withdrawal');
+select is((select count(*) from jsonb_array_elements(pg_temp.chat('list')) c where c->>'id'=(select id::text from recovery_chat)),1::bigint,'new valid paired conversation remains listed after purge');
 select is((select count(*) from public.report_observed_calls where file_id='77900000-0000-4000-8000-000000000040'),1::bigint,'report withdrawal preserves source observations');
 select ok(not has_function_privilege('authenticated','public.own_copilot_chat_v1(text,uuid,uuid,uuid,jsonb,jsonb,uuid,jsonb)','EXECUTE'),'browser cannot bypass the server context/provenance dispatcher');
 select ok(not has_table_privilege('authenticated','private.own_copilot_nonces','SELECT'),'browser cannot read context nonce bindings');
