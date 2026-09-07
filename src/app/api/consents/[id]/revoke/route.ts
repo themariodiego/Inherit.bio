@@ -1,3 +1,4 @@
+import { revokeOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -16,7 +17,7 @@ import { createClient } from "@/lib/supabase/server";
  * subject principal may revoke; every other actor is answered as not found.
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
@@ -31,13 +32,18 @@ export async function POST(
 
   const admin = createAdminClient();
   const [{ data: purposeGrant }, { data: cloudGrant }] = await Promise.all([
-    admin.from("purpose_grants").select("grant_id").eq("grant_id", id).maybeSingle(),
+    admin.from("purpose_grants").select("grant_id,target_id,copilot_recipient_revision").eq("grant_id", id).maybeSingle(),
     admin.from("consent_grants").select("id").eq("id", id).maybeSingle(),
   ]);
   // One id, one consent kind: an id that names both, or neither, is refused
   // rather than resolved by order.
   if (Boolean(purposeGrant) === Boolean(cloudGrant)) {
     return new Response("Not found", { status: 404 });
+  }
+
+  if (purposeGrant && "copilot_recipient_revision" in purposeGrant && purposeGrant.copilot_recipient_revision != null
+    && "target_id" in purposeGrant && typeof purposeGrant.target_id === "string") {
+    return revokeOwnCopilotConsent(request, id, purposeGrant.target_id);
   }
 
   if (purposeGrant) {

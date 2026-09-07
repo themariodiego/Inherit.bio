@@ -12,11 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ANTHROPIC_MODELS, isLocalBaseUrl } from "@/lib/llm";
+import { ANTHROPIC_MODELS } from "@/lib/llm";
 
 export function LlmSettingsForm({
   current,
+  localAvailable = false,
 }: {
+  localAvailable?: boolean;
   current: {
     provider: "anthropic" | "openai_compatible";
     base_url: string | null;
@@ -29,7 +31,7 @@ export function LlmSettingsForm({
     current?.provider ?? "anthropic",
   );
   const [baseUrl, setBaseUrl] = useState(
-    current?.base_url ?? "http://localhost:11434/v1",
+    current?.base_url ?? (localAvailable ? "http://localhost:11434/v1" : ""),
   );
   const [model, setModel] = useState(
     current?.model ??
@@ -46,23 +48,25 @@ export function LlmSettingsForm({
         e.preventDefault();
         setBusy(true);
         setMessage(null);
-        const res = await fetch("/api/llm/settings", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            provider,
-            base_url: provider === "openai_compatible" ? baseUrl : null,
-            model:
-              provider === "anthropic" && !ANTHROPIC_MODELS.includes(model as never)
-                ? "claude-sonnet-5"
-                : model,
-            api_key: apiKey || null,
-          }),
-        });
-        setBusy(false);
-        setMessage(res.ok ? "Saved." : `Error: ${await res.text()}`);
-        setApiKey("");
-        router.refresh();
+        try {
+          const res = await fetch("/api/llm/settings", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              provider,
+              base_url: provider === "openai_compatible" ? baseUrl : null,
+              model:
+                provider === "anthropic" && !ANTHROPIC_MODELS.includes(model as never)
+                  ? "claude-sonnet-5"
+                  : model,
+              api_key: apiKey || null,
+            }),
+          });
+          const result = await res.json().catch(() => ({}));
+          setMessage(res.ok ? "Provider saved. Review the separate Copilot permission below." : result.error === "key_required" ? "Enter the API key for this provider before saving." : "Provider could not be saved. Check the address and deployment availability, then try again.");
+          router.refresh();
+        } catch { setMessage("Could not connect. Try again."); }
+        finally { setBusy(false); setApiKey(""); }
       }}
     >
       <div className="space-y-1.5">
@@ -80,17 +84,14 @@ export function LlmSettingsForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="openai_compatible">
-              OpenAI-compatible endpoint — local Ollama / LM Studio / vLLM, or
-              any cloud
+              OpenAI-compatible endpoint
             </SelectItem>
             <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
           </SelectContent>
         </Select>
         {provider === "openai_compatible" ? (
           <p className="text-xs text-ink-muted">
-            Use a local or private address to keep data on systems you control.
-            For the most private setup, run Inherit yourself where it can reach
-            that address.
+            {localAvailable ? "This self-hosted installation allows its configured local model addresses." : "This installation supports external HTTPS providers. A model on your computer is not reachable from the hosted site."}
           </p>
         ) : null}
       </div>
@@ -102,12 +103,10 @@ export function LlmSettingsForm({
             id="llm-base-url"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="http://localhost:11434/v1"
+            placeholder={localAvailable ? "http://localhost:11434/v1" : "https://your-provider.example/v1"}
           />
           <p className="text-xs text-ink-muted">
-            {isLocalBaseUrl(baseUrl)
-              ? "Local service found. You do not need a consent screen. We always show where your data goes."
-              : "Cloud service found. You must give consent that names this host before we send genome data."}
+            The server verifies the destination. Saving does not grant permission to send your information.
           </p>
         </div>
       ) : null}
@@ -147,7 +146,7 @@ export function LlmSettingsForm({
             </span>
           ) : provider === "openai_compatible" ? (
             <span className="font-normal text-ink-muted">
-              (optional for local endpoints)
+              (optional if your provider does not require one)
             </span>
           ) : null}
         </Label>
@@ -177,10 +176,12 @@ export function LlmSettingsForm({
             disabled={busy}
             onClick={async () => {
               setBusy(true);
-              await fetch("/api/llm/settings", { method: "DELETE" });
-              setBusy(false);
-              setMessage("Provider and key removed.");
-              router.refresh();
+              try {
+                const response = await fetch("/api/llm/settings", { method: "DELETE" });
+                setMessage(response.ok ? "Provider and key removed; Copilot permission ended." : "Could not remove the provider. Try again.");
+                router.refresh();
+              } catch { setMessage("Could not connect. Try again."); }
+              finally { setBusy(false); }
             }}
           >
             Remove provider & key
