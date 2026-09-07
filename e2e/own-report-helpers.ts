@@ -93,8 +93,11 @@ export async function generateOwnFileWithChosenReports(
       await expect(enabled).toBeVisible();
     }
   }
-  const selectedFile = choices.getByLabel("File to use", { exact: true });
-  if (await selectedFile.count()) await selectedFile.selectOption(fileId);
+  const selectedFile = choices.getByRole("combobox", { name: /^File to use\b/ });
+  if (await selectedFile.count()) {
+    await selectedFile.selectOption(fileId);
+    await expect(selectedFile, "the chosen source must be selected before generation").toHaveValue(fileId);
+  }
   const generated = page.waitForResponse(response => response.url().endsWith(`/api/files/${fileId}/process`)
     && response.request().method() === "POST");
   await choices.getByRole("button", { name: "Generate selected reports", exact: true }).click();

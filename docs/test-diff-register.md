@@ -39,8 +39,13 @@ left five not run, with no retries. Legal and network setup collided with
 preserved local synthetic accounts; those specs now use fresh UUID addresses
 without deleting fixtures or changing account helpers. The export case
 observed generation for the newer source while waiting for the selected older
-source. This discrepancy is under scoped investigation; no source assertion
-has been relaxed and this failed run is not a passing gate.
+source. A scoped reproduction identified the exact label lookup returning zero
+while the native select existed, so the helper skipped selection. The combobox
+role lookup selected the older source and its real process request returned
+200. The helper now uses that lookup and asserts the selected UUID before
+generation, preserving the exact response and private source journal checks.
+No product change or arbitrary delay was needed; the complete export case
+still requires a passing rerun.
 
 Own-upload MVP verification (2026-09-06): the two-file control case proves
 exact downloads, conflict refusal, visible deletion failure/retry, real
