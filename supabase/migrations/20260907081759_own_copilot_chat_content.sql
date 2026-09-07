@@ -36,10 +36,11 @@ revoke all on private.own_copilot_nonces from public,anon,authenticated,inherit_
 -- standalone public wrapper; every caller first requires Copilot authority.
 create function private.own_copilot_projection_v1(a jsonb)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private as $$
-declare f public.genome_files%rowtype; sources jsonb:='[]'; legacy_sources jsonb:='[]'; completed jsonb; g jsonb; purpose text;
+declare f public.genome_files%rowtype; sources jsonb:='[]'; legacy_sources jsonb:='[]'; completed jsonb; g jsonb; v_purpose text;
 begin
- for f in select * from public.genome_files where subject_id=(a->>'subjectId')::uuid
+ for f in select * from public.genome_files cf where subject_id=(a->>'subjectId')::uuid
   and user_id=(a->>'accountId')::uuid and single_logical_sample_verified_at is not null
+  and not exists(select 1 from private.genome_file_deletions d where d.file_id=cf.id)
   order by id for share loop
   if f.tier is distinct from 1 or f.status is null or f.status not in ('stored','annotated')
    or f.structural_validator_version is distinct from 'single-logical-sample-v1'
@@ -56,14 +57,14 @@ begin
    and (s.metadata->>'size')::numeric=f.size_bytes;
   if not found then continue; end if;
   completed:='[]';
-  foreach purpose in array array['reports.monogenic','reports.polygenic'] loop
+  foreach v_purpose in array array['reports.monogenic','reports.polygenic'] loop
    begin
-    g:=private.current_own_report_grant_read_v1((a->>'accountId')::uuid,(a->>'sessionId')::uuid,f.id,purpose);
-    if private.own_analysis_completion_matches_v1(f.id,purpose,g) is true then
-     select completed||jsonb_build_array(jsonb_build_object('purpose',purpose,
+    g:=private.current_own_report_grant_read_v1((a->>'accountId')::uuid,(a->>'sessionId')::uuid,f.id,v_purpose);
+    if private.own_analysis_completion_matches_v1(f.id,v_purpose,g) is true then
+     select completed||jsonb_build_array(jsonb_build_object('purpose',v_purpose,
       'authority',g #- '{context,authSessionRevision}' #- '{context,originatingSessionRevision}',
       'runId',r.id,'completedAt',r.completed_at,'resultHash',encode(extensions.digest(convert_to(r.result::text,'UTF8'),'sha256'),'hex')))
-      into completed from private.own_analysis_runs r where r.file_id=f.id and r.purpose=purpose and r.state='complete';
+      into completed from private.own_analysis_runs r where r.file_id=f.id and r.purpose=v_purpose and r.state='complete';
     end if;
    exception when insufficient_privilege or object_not_in_prerequisite_state then null;
    end;
@@ -80,6 +81,7 @@ begin
   and single_logical_sample_verified_at is null and structural_validator_version is null
   and storage_object_id is null and source_sha256 is null and normalization_completed_at is null
   and sha256 ~ '^[0-9a-f]{64}$' and build in('GRCh37','GRCh38')
+  and not exists(select 1 from private.genome_file_deletions d where d.file_id=lf.id)
   and not exists(select 1 from public.upload_sessions u where u.finalized_file_id=lf.id)
   and not exists(select 1 from private.own_normalization_runs n where n.file_id=lf.id)
   and not exists(select 1 from public.genome_storage_objects o where o.genome_file_id=lf.id)
@@ -89,6 +91,9 @@ begin
  return jsonb_build_object('sources',sources,'legacySources',legacy_sources,'unavailableSources',coalesce((
   select jsonb_agg(jsonb_build_object('id',uf.id,'reason','source_unavailable') order by uf.id)
   from public.genome_files uf where uf.subject_id=(a->>'subjectId')::uuid
+   -- Membership is already frozen at deletion prepare. A fresh context must
+   -- not acquire a dependency on that target while Storage ACK is pending.
+   and not exists(select 1 from private.genome_file_deletions d where d.file_id=uf.id)
    and not exists(select 1 from jsonb_array_elements(sources||legacy_sources) s where s->>'id'=uf.id::text)
  ),'[]'::jsonb));
 end; $$;
@@ -122,7 +127,8 @@ begin
    or (p_payload->>'expiresAt')::timestamptz<=clock_timestamp()
    or (p_payload->>'expiresAt')::timestamptz>clock_timestamp()+interval '10 minutes' then
    raise exception using errcode='22023',message='invalid_request'; end if;
-  delete from private.own_copilot_nonces where expires_at<clock_timestamp();
+  delete from private.own_copilot_nonces where account_id=p_account_id and session_id=p_session_id
+   and expires_at<clock_timestamp();
   insert into private.own_copilot_nonces values(p_payload->>'nonceHash',p_account_id,p_session_id,
    encode(extensions.digest(convert_to(a::text,'UTF8'),'sha256'),'hex'),
    encode(extensions.digest(convert_to(projection::text,'UTF8'),'sha256'),'hex'),

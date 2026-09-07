@@ -76,12 +76,20 @@ select is((select value->'sources' from chat_projection),'[]'::jsonb,'no source 
 select is(pg_temp.chat('reports','{"offset":0}',null,(select value from chat_projection)),'[]'::jsonb,'no source cannot generate reports on read');
 create temporary table first_chat as select (pg_temp.turn(repeat('d',64))->>'chatId')::uuid id;
 select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),2::bigint,'validated first turn writes an atomic pair');
-select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from first_chat))->'messages'),2,'authorized server history returns both paired roles');
+select pg_temp.turn(null,(select id from first_chat),1);
+select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from first_chat))->'messages'),4,'authorized server history returns both complete turns');
 savepoint unverified_pair;
-update public.chat_messages set legacy_unverified=true where chat_id=(select id from first_chat);
+update public.chat_messages set legacy_unverified=true where chat_id=(select id from first_chat) and turn_ordinal=1;
 select throws_ok($$select pg_temp.chat('history','{}',(select id from first_chat))$$,'42501','not_found','unverified earlier pair cannot be omitted to revive a dependent suffix');
-select throws_ok($$select pg_temp.turn(null,(select id from first_chat),1)$$,'42501','not_found','cannot append after an unverified pair');
+select throws_ok($$select pg_temp.turn(null,(select id from first_chat),2)$$,'42501','not_found','cannot append after an unverified pair');
 rollback to unverified_pair;
+savepoint stale_earlier_pair;
+update public.chat_messages set canonical_projection=jsonb_set(canonical_projection,'{unavailableSources}',
+ '[{"id":"77900000-0000-4000-8000-000000000099","reason":"source_unavailable"}]')
+ where chat_id=(select id from first_chat) and turn_ordinal=1;
+select throws_ok($$select pg_temp.chat('history','{}',(select id from first_chat))$$,'42501','not_found','one stale earlier pair invalidates the otherwise matching later pair');
+select throws_ok($$select pg_temp.turn(null,(select id from first_chat),2)$$,'42501','not_found','fresh current projection cannot append after a stale earlier pair');
+rollback to stale_earlier_pair;
 select throws_ok($$select pg_temp.turn(repeat('d',64))$$,'23505',null,'new conversation nonce is single-use');
 select throws_ok($$select pg_temp.chat('begin','{"nonceHash":null,"expiresAt":null}',null,(select value from chat_projection))$$,'22023','invalid_request','null context members fail closed');
 select throws_ok($$select pg_temp.chat('calls','{"rsids":[4988235],"offset":null}',null,(select value from chat_projection))$$,'22023','invalid_request','null paging selector fails closed');
@@ -166,22 +174,36 @@ delete from auth.sessions where id='77900000-0000-4000-8000-000000000010';
 select throws_ok($$select pg_temp.chat('check','{}',null,(select value from chat_projection))$$,'42501','not_found','ended originating session refuses source reads');
 rollback to session_ended;
 create temporary table report_chat as select (pg_temp.turn(repeat('6',64))->>'chatId')::uuid id;
+select pg_temp.turn(null,(select id from report_chat),1);
 savepoint selected_file_deletion;
 create temporary table delete_receipt as select public.prepare_genome_file_deletion_v1(
  '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040') value;
 select is((select jsonb_array_length(canonical_chat_manifest) from private.genome_file_deletions
- where file_id='77900000-0000-4000-8000-000000000040'),2,'selected-file prepare freezes both dependent message IDs');
+ where file_id='77900000-0000-4000-8000-000000000040'),4,'selected-file prepare freezes both turns including the dependent later pair');
 select throws_ok($$update private.genome_file_deletions set canonical_chat_manifest='[]'
  where file_id='77900000-0000-4000-8000-000000000040'$$,'55000','file_deletion_manifest_immutable','frozen selected-file membership cannot be narrowed');
 select throws_ok($$select public.finish_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
  '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select (value->>'token')::uuid from delete_receipt))$$,
  '55000','file_delete_storage_incomplete','premature finish cannot bypass Storage acknowledgement');
+update chat_projection set value=pg_temp.chat('prepare');
+select is((select value->'unavailableSources' from chat_projection),'[]'::jsonb,
+ 'pending deletion is absent from fresh unavailable-source dependencies');
+create temporary table during_delete_chat as select (pg_temp.turn(repeat('9',64))->>'chatId')::uuid id;
+select is((select jsonb_array_length(canonical_chat_manifest) from private.genome_file_deletions
+ where file_id='77900000-0000-4000-8000-000000000040'),4,
+ 'a new independent chat does not change the frozen deletion manifest');
 delete from storage.objects where id='77900000-0000-4000-8000-000000000020';
 select public.finish_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
  '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select (value->>'token')::uuid from delete_receipt));
 select is((select count(*) from public.chat_messages where chat_id=(select id from report_chat)),0::bigint,'selected source and its quoted dependent pair are removed together');
-select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),2::bigint,'independent conversation outside frozen source membership survives');
+select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),4::bigint,'independent complete conversation outside frozen source membership survives');
 select is((select count(*) from public.user_variants where file_id='77900000-0000-4000-8000-000000000050'),1::bigint,'other file observation survives selected deletion');
+select is((select count(*) from public.chat_messages m where exists(
+ select 1 from jsonb_array_elements((m.canonical_projection->'sources')||(m.canonical_projection->'legacySources')||(m.canonical_projection->'unavailableSources')) s
+ where s->>'id'='77900000-0000-4000-8000-000000000040')),0::bigint,
+ 'no surviving old or newly committed message references the deleted file');
+select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from during_delete_chat))->'messages'),2,
+ 'chat created during Storage ACK retains only the other source and remains readable after finish');
 rollback to selected_file_deletion;
 -- Canonical Copilot withdrawal freezes exact pair membership first. Actual
 -- execution below is selected by this synthetic grant only, never a worker sweep.
@@ -193,8 +215,8 @@ create temporary table copilot_job as select j.id from public.worker_jobs j join
 select is((select count(*) from copilot_job),1::bigint,'one exact durable cleanup job exists');
 select is((select count(*) from public.purge_manifest_entries e join public.purge_manifests m on m.id=e.manifest_id
  join public.retention_due_phases d on d.retention_row_id=m.retention_row_id
- where d.immutable_envelope->>'grantId'=(select id::text from old_copilot_grant) and e.store_name='public.chat_messages'),4::bigint,
- 'frozen manifest contains both complete old pairs before deletion');
+ where d.immutable_envelope->>'grantId'=(select id::text from old_copilot_grant) and e.store_name='public.chat_messages'),8::bigint,
+ 'frozen manifest contains both old conversations and their dependent second pairs before deletion');
 update chat_authority set value=pg_temp.grant_model(pg_temp.presentation(),repeat('7',64));
 update chat_projection set value=pg_temp.chat('prepare');
 create temporary table successor_chat as select (pg_temp.turn(repeat('8',64))->>'chatId')::uuid id;
