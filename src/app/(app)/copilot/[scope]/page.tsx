@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChatPanel, type ChatProviderInfo } from "@/components/chat/chat-panel";
+import { OwnChatPanel } from "@/components/chat/own-chat-panel";
+import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +27,31 @@ export default async function ChatPage(
   if (!user) notFound();
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();
-  const { data: settings } = await supabase
+  const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;
+  if (ownChat?.kind === "ready") {
+    return (
+      <div className="mx-auto flex min-h-[32rem] max-w-3xl flex-col gap-4">
+        <header><p className="eyebrow mb-2">Copilot</p><h1 className="display text-3xl">Ask about {subject.displayLabel}</h1></header>
+        <OwnChatPanel contextToken={ownChat.contextToken} info={ownChat.providerInfo}
+          chats={ownChat.chats} displayLabel={subject.displayLabel} />
+      </div>
+    );
+  }
+  if (ownChat?.kind === "unavailable" && ownChat.reason !== "provider_unavailable") {
+    if (ownChat.reason === "account_required" || ownChat.reason === "scope_unavailable") notFound();
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <header><p className="eyebrow mb-2">Copilot</p><h1 className="display text-3xl">Ask about {subject.displayLabel}</h1></header>
+        <p>{ownChat.reason === "consent_required"
+          ? "Choose what Copilot may use before asking about your file. Saving a provider does not grant that permission."
+          : "This deployment cannot use the selected model endpoint. Review the available options in Copilot settings."}</p>
+        <Link href="/settings/copilot" className="underline underline-offset-2">Review Copilot settings</Link>
+      </div>
+    );
+  }
+  // Only an explicitly legacy scope may use the compatibility UI. A missing
+  // canonical provider never falls back to the old provider-key consent path.
+  const { data: settings } = ownChat?.kind === "unavailable" ? { data: null } : await supabase
     .from("llm_settings")
     .select("provider, base_url, model")
     .maybeSingle();
@@ -120,25 +146,26 @@ export default async function ChatPage(
                   >
                     Settings → Copilot provider
                   </Link>{" "}
-                  and save. (Claude Sonnet 5 by default, Opus 5 selectable.)
+                  and save. Then review and allow the information Copilot may use.
                 </li>
               </ol>
               <p className="text-ink-muted">
                 An API key is like a password. It lets Inherit send{" "}
                 <strong>your</strong> questions to the AI service you chose. We
-                ask for your explicit consent each time. A question typically
-                costs pennies. Before Inherit sends any genome-derived data, a
-                consent dialog names the provider and exact data classes. You
-                can revoke the grant at any time.
+                ask for your explicit permission before using your data. The
+                permission names the provider and the information it may receive.
+                It remains in effect until it ends or you withdraw it. Changing
+                the provider, model or key requires a new permission. Your AI
+                provider sets its own charges.
               </p>
             </div>
 
             <details className="rounded-xl border border-line p-4">
               <summary className="cursor-pointer font-medium">
-                Advanced: run a private AI on your own computer (most private)
+                Advanced: run an AI beside your own Inherit server
               </summary>
               <p className="mt-3 leading-relaxed text-ink-muted">
-                For the privacy-preferred option, run{" "}
+                On a configured self-hosted development installation, run{" "}
                 <a
                   href="https://ollama.com"
                   target="_blank"
@@ -147,7 +174,7 @@ export default async function ChatPage(
                 >
                   Ollama
                 </a>{" "}
-                or LM Studio on your machine. Then choose
+                or LM Studio on the same machine as Inherit. Then choose
                 &ldquo;OpenAI-compatible&rdquo; in Settings. Use the base URL{" "}
                 <code className="rounded bg-tint px-1.5 py-0.5 font-mono text-xs">
                   http://localhost:11434/v1
@@ -156,10 +183,10 @@ export default async function ChatPage(
                 <code className="rounded bg-tint px-1.5 py-0.5 font-mono text-xs">
                   llama3.1
                 </code>
-                . Nothing about your genome ever leaves your infrastructure.
-                Local endpoints require Inherit to run locally or be
-                self-hosted on the same network. The hosted demo cannot reach
-                your localhost.
+                . Local mode requires a configured same-host endpoint and a
+                network that blocks outside connections. The public Inherit
+                service cannot connect to a model on your computer. Saving a
+                local endpoint does not itself create that network protection.
               </p>
             </details>
           </div>
