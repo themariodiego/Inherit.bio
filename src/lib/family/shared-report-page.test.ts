@@ -2,10 +2,11 @@ import { isValidElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StoredSharedReport } from "./shared-report-display";
 
-const mocks = vi.hoisted(() => ({ context: vi.fn(), snapshot: vi.fn(), confirm: vi.fn(),
+const mocks = vi.hoisted(() => ({ context: vi.fn(), ownSnapshot: vi.fn(), snapshot: vi.fn(), confirm: vi.fn(),
   candidates: vi.fn(), calls: vi.fn(), inputs: vi.fn(), admin: vi.fn(), template: null as unknown, gate: vi.fn(), legacyCount: 0 }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("404"); }, redirect: () => { throw new Error("redirect"); } }));
 vi.mock("@/lib/family/subject-route", () => ({ resolveSubjectRoute: mocks.context }));
+vi.mock("@/lib/genome/own-stored-report", () => ({ loadOwnStoredReportSnapshot: mocks.ownSnapshot }));
 vi.mock("@/lib/family/shared-report-results", () => ({ loadSharedReportSnapshot: mocks.snapshot }));
 vi.mock("@/lib/family/access", () => ({ grantedLayers: () => ["variant_call", "estimate"], viewerMaySee: () => true,
   permits: () => true, personCapability: async () => ({}),
@@ -155,5 +156,53 @@ describe("Family report library completion states", () => {
   it("rejects a captured library when the final authority check fails", async () => {
     mocks.confirm.mockResolvedValue({ authorized: false });
     await expect(ReportsPage(libraryProps())).rejects.toThrow("404");
+  });
+});
+
+
+describe("Own exact-source report detail", () => {
+  const ownProps = (source?: string | string[]) => ({ params: Promise.resolve({ subject: "me", slug: "shared-trait" }),
+    searchParams: Promise.resolve(source === undefined ? {} : { source }) });
+  function ownCapture() {
+    const row = { ...saved("79410000-0000-4000-8000-000000000004"), purpose: "reports.polygenic" };
+    const state = { authorized: true, reports: [row], access: [{ purpose: "reports.polygenic", kind: "canonical" }],
+      sources: [{ fileId: row.fileId, fileType: "vcf", processedAt: row.completedAt }], unavailableReports: [] };
+    mocks.context.mockResolvedValue({ kind: "ok", user: { id: "owner" }, subject: { id: "source", routeSegment: "me", displayLabel: "My genome" },
+      dataSubjectId: "source", person: null, domain: { label: "My Genome", href: "/genome/me" }, displayLabel: "My genome" });
+    mocks.ownSnapshot.mockResolvedValue({ ...state, confirm: mocks.confirm }); mocks.confirm.mockResolvedValue(state);
+    return row;
+  }
+  it("renders exact captured own source and catalog, never current-template or genotype recomputation", async () => {
+    const row = ownCapture(); mocks.template = { ...row.report.catalogSnapshot.template, summary: "Changed current science" };
+    const tree = await ReportPage(ownProps(row.fileId));
+    expect(elements(tree).some(n => n.props.text === "Captured summary.")).toBe(true);
+    expect(elements(tree).some(n => n.props.text === "Changed current science")).toBe(false);
+    expect(mocks.ownSnapshot).toHaveBeenCalledExactlyOnceWith(expect.anything(), { subjectId: "source", fileId: row.fileId, slug: "shared-trait" });
+    expect(mocks.snapshot).not.toHaveBeenCalled(); expect(mocks.calls).not.toHaveBeenCalled(); expect(mocks.inputs).not.toHaveBeenCalled();
+    expect(mocks.candidates).not.toHaveBeenCalled();
+  });
+  it("keeps an unrecognized saved observation recorded without inventing interpretation", async () => {
+    const row = ownCapture(); row.report.variants[0].outcome = { status: "unrecognized", genotype: "TT" };
+    const tree = await ReportPage(ownProps(row.fileId));
+    expect(elements(tree).some(n => n.props.state === "recorded")).toBe(true);
+    expect(elements(tree).some(n => n.props.text === "Captured explanation.")).toBe(false);
+  });
+  it("withholds missing explicit own source without current-template fallback", async () => {
+    ownCapture(); mocks.ownSnapshot.mockResolvedValue({ authorized: false, reports: [] });
+    await expect(ReportPage(ownProps("79410000-0000-4000-8000-000000000099"))).rejects.toThrow("404");
+    expect(mocks.calls).not.toHaveBeenCalled(); expect(mocks.candidates).not.toHaveBeenCalled();
+  });
+  it("rejects duplicate source query parameters before own result loading", async () => {
+    ownCapture(); await expect(ReportPage(ownProps(["first", "second"]))).rejects.toThrow("404");
+    expect(mocks.ownSnapshot).not.toHaveBeenCalled();
+  });
+  it("checks exact authority at the final render and metadata boundary", async () => {
+    const row = ownCapture(); mocks.confirm.mockResolvedValue({ authorized: false });
+    await expect(ReportPage(ownProps(row.fileId))).rejects.toThrow("404");
+    expect(await generateMetadata(ownProps(row.fileId))).toEqual({ title: "Report" });
+  });
+  it("keeps no-query own compatibility on its existing loader", async () => {
+    ownCapture(); await ReportPage(ownProps()); expect(mocks.ownSnapshot).not.toHaveBeenCalled();
+    expect(mocks.candidates).toHaveBeenCalled();
   });
 });

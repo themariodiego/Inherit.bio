@@ -1,3 +1,4 @@
+import { loadOwnStoredReportSnapshot } from "@/lib/genome/own-stored-report";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -126,6 +127,14 @@ const loadReport = cache(async (segment: string, slug: string, source?: string |
   });
   if (context.kind !== "ok") return context;
   const admin = createAdminClient();
+  if (!context.person && source !== undefined) {
+    const own = await loadOwnStoredReportSnapshot(admin, { subjectId: context.dataSubjectId, fileId: source, slug });
+    const stored = own.reports[0];
+    if (!own.authorized || !stored) return { kind: "not-found" } as const;
+    return { ...context, shared: own, sharedReport: stored, sharedChoices: [stored], sharedLegacyAvailable: false,
+      template: stored.report.catalogSnapshot.template,
+      files: [{ id: stored.fileId, file_type: own.sources[0].fileType }], fileCount: await getSubjectFileCount(admin, context.dataSubjectId) };
+  }
   const shared = context.person ? await loadSharedReportSnapshot(admin, {
     subjectId: context.dataSubjectId, counterpartAccountId: context.person.counterpartAccountId,
     purposes: grantedLayers(context.person).map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
@@ -401,7 +410,7 @@ export default async function ReportDetailPage(
     const conflicts = sharedReport ? new Set(sharedReport.report.conflictingRsids) : legacyConflicts;
     inputState = sharedReport ? (conflicts.size ? "conflict"
       : sharedReport.report.variants.some(item => item.outcome.status === "no-call") ? "noCall"
-      : sharedReport.report.variants.some(item => item.outcome.status === "genotyped") ? "recorded" : "absent") : conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
+      : sharedReport.report.variants.some(item => item.outcome.status === "genotyped" || item.outcome.status === "unrecognized") ? "recorded" : "absent") : conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
     const resolved = sharedReport ? resolveStoredSharedReport(sharedReport) : resolveTemplate(template, (rsid) => genotypes.get(rsid));
     if (!resolved) notFound();
     callSummary = hasData && resolved.variants.length > 0 ? summarizeReportCalls(resolved, conflicts) : null;
