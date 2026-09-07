@@ -17,7 +17,10 @@ purposes. Canonical source loaders, provider permission, saved history and exact
 cleanup are implemented locally; their 73-case browser integration remains open.
 Attempt v7 passes the first source-distinction case and the next exact withdrawal
 response, then exposes empty-history success after purge (1 passed, 1 failed,
-71 not run). See the current local receipt; no full-CI or hosted claim follows.
+71 not run). Repair `c4e414d` passes 77 rollback SQL assertions; v8 verifies
+history refusal, exact message removal and preserved raw data, then finds the
+stale raw-genotype expectation corrected in both affected specs (`A/C`). See the
+current local receipt; no complete 73-case, full-CI or hosted claim follows.
 
 The remaining six sites are not merely stale selectors: ancestry/Overview need
 canonical ancestry output, recipient/joint views need their actual authority and
@@ -88,8 +91,8 @@ paused app server on 3102. That integrated CI run has not passed yet.
 2. **Connected surfaces:** the old Overview case still needs its ancestry
    computation prerequisite. Canonical Copilot loaders, separate provider
    permission and source-bound tool authorization are implemented locally.
-   Complete saved-history/invalidation browser proof remains open after v7's
-   empty-history finding. Its 64 output cases use an isolated synthetic HTTPS
+   Complete saved-history/invalidation browser proof remains open after the
+   empty-history repair and raw-genotype fixture correction. Its 64 output cases use an isolated synthetic HTTPS
    provider; they do not prove a real external model's behavior.
 3. **Required notifications:** the durable canonical report-ready contract,
    expiry/replay and deletion invalidation are implemented and passed in the

@@ -58,6 +58,26 @@ with **1 passed, 1 failed and 71 not run**. Its failed assertion is retained.
 under task evidence `work/canonical-copilot-sql-verification/browser-v4-evidence`,
 `browser-v5-evidence`, `browser-v6-evidence` and `browser-v7-evidence`.
 
+Repair `c4e414d` requires surviving canonical messages for list/history/append
+and rejects empty histories at the application boundary. The new SQL fixture
+reproduces seven failures with the prior function (70 passing assertions), then
+passes all **77 assertions** with the correction, including a new two-turn
+conversation after purge. Both runs roll back. Only the reviewed private
+chat-dispatcher function was subsequently replaced locally; before/after data,
+migration-history and owner/ACL fingerprints match. Focused application tests
+pass 30 cases with lint/typecheck; no full-unit rerun is claimed for this repair.
+
+Attempt v8 at `c4e414d` passes exact refusal, history denial, physical message
+removal, immutable purge membership and retained raw-source checks. Its late raw
+lookup assertion expects the legacy `AC` spelling while the canonical reader
+correctly returns `A/C`, as its existing unit contract requires. The two raw
+lookup assertions in invalidation/output specs are corrected to that exact
+value; the separate captured report outcome remains `AC`. The 64 model-output
+fixtures and all meaningful source/refusal assertions stay unchanged. V8 ends
+with **1 passed, 1 failed and 71 not run**; evidence is retained in
+`work/canonical-copilot-sql-verification/browser-v8-evidence`. The next complete
+browser run remains required.
+
 No PR merged or public deployment changed. Hosted permission/cleanup rollout,
 required notice delivery, full regression integration and complete Copilot
 evaluation remain open. The older snapshot-only checkpoint below is historical;

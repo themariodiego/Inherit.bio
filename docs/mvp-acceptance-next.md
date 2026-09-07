@@ -87,8 +87,11 @@ refusal, but needs native response capture before its exact body can be checked;
 the rest of the 73-case integration remains open. The observer is now integrated
 at `6f066f1` and independently reviewed. Attempt v7 verifies the exact withdrawal
 response, then exposes a product defect: a fully purged canonical conversation
-returns empty history instead of refusing access. List/history/append protection
-is the next bounded repair; browser assertions remain unchanged. See the local
+returns empty history instead of refusing access. Repair `c4e414d` now passes
+77 rollback SQL assertions and focused application checks. V8 confirms history
+denial, exact message cleanup and preserved raw data, then finds a stale raw-call
+format expectation (`AC` versus canonical `A/C`). Both affected test assertions
+are corrected; the 73-case run still needs to complete. See the local
 verification record. No release or new whole-plan gate is claimed: production remains PR75 and
 acceptance **18/65**. Hosted notices still require the previously requested
 recipient authorization and verified allowance.

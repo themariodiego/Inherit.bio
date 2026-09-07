@@ -32,6 +32,12 @@ a completed canonical purpose journal remain unavailable per source. Canonical
 reports use captured `catalogSnapshot` title/evidence/citations; older journals
 retain the explicit missing-reference note. PRS returns coverage only.
 
+A canonical chat shell with no surviving messages is not a usable conversation.
+List, history and existing-chat commit refuse it, including after exact retention
+removes all pairs. No empty history can reset its turn ordinal or revive old
+permission. New conversations still start through the independently signed nonce
+and atomic first pair; unrelated history and retained chat identities survive.
+
 A withdrawn Copilot grant freezes complete pairs and their dependent suffix in
 the existing exact-grant purpose-derived disposition before queueing cleanup.
 The existing executor checks frozen message, chat, turn and projection-hash

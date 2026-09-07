@@ -159,7 +159,7 @@ test("report withdrawal before the tool response blocks the turn and both stored
   await page.goto("/copilot/me");
   const raw = await ask(page, { prompt: "Read the observed caffeine call.", tool: { name: "get_genotype", arguments: { rsid: "rs762551" } },
     answer: "The observed genotype is A/C." });
-  expect(raw.result).toMatchObject({ status: "called", genotype: "AC" });
+  expect(raw.result).toMatchObject({ status: "called", genotype: "A/C" });
 });
 
 test("deleting a source after the tool result removes its pairs and preserves an independent source and conversation", async ({ page }) => {

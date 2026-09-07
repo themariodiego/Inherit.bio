@@ -63,7 +63,7 @@ for (const entry of cases) {
     // this exercised the output gate, not an input refusal or consent error.
     const provider = await fixture.snapshot();
     expect(provider.calls - before).toBe(2);
-    expect(lastToolResult(provider)).toMatchObject({ rsid: "rs762551", covered: true, status: "called", genotype: "AC" });
+    expect(lastToolResult(provider)).toMatchObject({ rsid: "rs762551", covered: true, status: "called", genotype: "A/C" });
     expect(response.headers()["x-copilot-refusal"]).toBe(entry.refusal);
 
     // Canonical chat-completion-v1 is closed JSON. Provider character deltas
