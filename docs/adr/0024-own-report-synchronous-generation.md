@@ -77,7 +77,7 @@ missing event through the same current-authority checks.
 
 Its identity is SHA256 of canonical PostgreSQL JSONB containing
 `own-report-ready-v1`, account/file/subject IDs, `own-reports-v1` computation
-revision the DB-owned recipient contact revision and the supported-purpose authority
+revision, the DB-owned recipient contact revision and supported-purpose authority
 snapshots without browser-session revisions. The event, recipient and original database-issued 30-day expiry are
 immutable on replay. Insert, claim and pre-submit share the same source/readiness
 predicate and current recipient authority. Withdrawal invalidates unsent affected
@@ -89,6 +89,12 @@ Applying the additive migration alone does not make an old candidate queue
 notices; that starts with application replacement. Actual legacy sources retain
 the existing annotated-file notice branch. This follow-up does not invent an
 ordinary own-upload failure email or widen the embryo-only failure-notice window.
+
+Hosted replacements must set `NEXT_PUBLIC_SITE_URL` to their intended report
+origin before building: the protected canary uses its stable protected alias,
+while production uses the public site. The local fallback is not a hosted
+notification-link configuration. Queueing is separately verified from provider
+submission; the protected canary still has no worker/mail credentials.
 
 Focused evidence lives in `own-report-generation.test.ts` and rollback-only
 `canonical_own_report_ready_mail.sql`. SQL replay and real-browser notice/expiry
