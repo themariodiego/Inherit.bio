@@ -94,7 +94,7 @@ describe("owned isolated CI runtime lifecycle", () => {
     try {
       fs.writeFileSync(path.join(directory, "ip"), "#!/bin/sh\nprintf 'synthetic ip refusal\n' >&2\nexit 17\n", { mode: 0o700 });
       const result = child.spawnSync("/bin/sh", ["scripts/ci-browser/namespace.sh", "172.19.0.3"], {
-        env: { PATH: directory }, encoding: "utf8",
+        env: { PATH: directory, NODE_ENV: "test" }, encoding: "utf8",
       });
       expect(result.status).toBe(17);
       expect(result.stderr).toBe("");
