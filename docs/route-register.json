@@ -1471,7 +1471,17 @@
         "immutableProvenance": "every-cohort-context-and-each-persisted-turn-pair-binds-the-exact-current-basis-case-basis-revision-all-five-requiredUploadPrincipals-dispositionAuthorities-attributionPrincipals-noticeRecipients-and-recordKeyRecipients-memberships-and-set-revisions-plus-the-current-donor-feature-classification-donor-slot-donor-artifact-and-attribution-revision-or-an-explicit-donor-neutral-no-donor-classification",
         "recheck": "re-resolve-and-compare-the-complete-binding-before-every-context-selector-every-retrieved-row-every-citation-read-every-model-call-and-immediately-before-the-paired-turn-commit; any-mismatch-returns-no-context-or-model-bytes-and-invalidates-the-complete-paired-turn-plus-every-dependent-later-message"
       },
-      "closedProjections": {
+      "canonicalOwnImplementation": {
+      "module": "src/lib/copilot/own-chat-route.ts",
+      "authority": "private.own_copilot_authority_v1 plus private.own_copilot_chat_v1; exact current account/session/store/Copilot purpose/recipient snapshot before every tool, pinned connection, commit and response",
+      "readers": "canonical prepared observations and exact completed report-purpose/source journals; explicit legacy processed-file observations remain separately snapshot-bound; historical report/PRS authority is unavailable per source",
+      "scientificMetadata": "only immutable catalogSnapshot captured at completion; no current-template decoration of historical outcomes",
+      "history": "server-owned single-use context or immutable chat ID; no client history; atomic paired messages with captured citations; stale or unverified pairs invalidate the whole dependent chain",
+      "cleanup": "exact-grant frozen purpose-derived manifest before message deletion; selected-file deletion freezes exact dependent message IDs in its Storage-ACK record; successor grants and independent chats excluded",
+      "scopeLimit": "this implementation is self only; legacy ABI remains isolated behind absence of canonical consent/source/chat markers; no canonical RPC error may fall back",
+      "nonceStore": "private.own_copilot_nonces stores only hashes/IDs, is service-only, expires logically after nine minutes, cleans expired rows at next redemption, and cascades on account/session deletion"
+    },
+    "closedProjections": {
         "self": [
           "resolved-reports",
           "prs",
@@ -9975,6 +9985,18 @@
       "unknownFieldsRecursively": "forbidden",
       "subjectContactObjectPathUploadTokenPurposeOrJobInternalsExceptOpaqueJobId": "forbidden"
     },
+    "own-copilot-unavailable-v1": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "copilot_unavailable"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "use": "canonical self stale source/purpose/provider configuration, transport or guarded generation failure; no provider details or partial model response"
+    },
     "copilot-denial-v1": {
       "stillReadableScopeMissingCloudConsent": {
         "status": 403,
@@ -12159,7 +12181,8 @@
         "copilot-denial-v1",
         "copilot-refusal-v1",
         "embryo-closed-schema-v1",
-        "chat-completion-v1"
+        "chat-completion-v1",
+        "own-copilot-unavailable-v1"
       ],
       "api.chat-history": [
         "chat-history-v1",
