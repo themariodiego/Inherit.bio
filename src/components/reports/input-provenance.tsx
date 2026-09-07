@@ -3,8 +3,10 @@ import { INPUT_PROVENANCE_COPY as COPY, inputLabel } from "@/copy/reports/input-
 import type { InputSourceView } from "@/lib/genome/input-sources";
 import type { SubjectAttribution } from "@/lib/figures/contract";
 
-export function InputProvenance({ sources, subject, coverage, state = "recorded", nested = false }: {
+export function InputProvenance({ sources, sourceLabels, subject, coverage, state = "recorded", nested = false }: {
   sources: readonly InputSourceView[];
+  /** Display identities for only the supplied authorized sources; omitted labels retain local numbering. */
+  sourceLabels?: Readonly<Record<string, string>>;
   subject: SubjectAttribution;
   coverage?: { read: number; needed: number; module?: string };
   state?: "recorded" | "noCall" | "conflict" | "absent";
@@ -21,7 +23,7 @@ export function InputProvenance({ sources, subject, coverage, state = "recorded"
     }]} /> : null}
     {sources.map((source, index) => <div key={source.fileId} data-slot="input-source" className="space-y-2">
       {/* inherit-figure-exempt: a local source-record label and processing date are identity, not a result */}
-      <p className="font-medium text-ink">{`File ${index + 1} · ${inputLabel(source.fileType)}`}{source.processedAt ? ` · ${new Date(source.processedAt).toISOString().slice(0, 10)}` : ""}</p>
+      <p className="font-medium text-ink">{`${sourceLabels?.[source.fileId] || `File ${index + 1}`} · ${inputLabel(source.fileType)}`}{source.processedAt ? ` · ${new Date(source.processedAt).toISOString().slice(0, 10)}` : ""}</p>
       {source.hasResultRecord === false ? <p>{COPY.checkedAbsent}</p> : null}
       {source.snapshot ? <>
         <p>{source.snapshot.sourceBuild === "GRCh37" ? COPY.converted : COPY.sameBuild}</p>

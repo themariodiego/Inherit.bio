@@ -17,6 +17,7 @@
 import { subjectKind, type SubjectBarSubject } from "@/components/subjects/subject-bar";
 import {
   BASELINE_ABSENT,
+  SAVED_REPORTS_LABEL,
   tableCaption,
 } from "@/copy/family/health-picture";
 import { KIND_CHIPS, fileCount } from "@/copy/reports/strings";
@@ -47,9 +48,10 @@ export interface HealthPictureColumn {
 }
 
 export interface HealthPictureRow {
+  key?: string;
   slug: string;
   title: string;
-  category: CategoryId;
+  category: CategoryId | null;
   /** One state per column, in column order. */
   cells: readonly HealthPictureCellState[];
   /** One report link per column, in column order; null where none may render. */
@@ -61,6 +63,7 @@ export interface HealthPictureTableProps {
   columns: readonly HealthPictureColumn[];
   rows: readonly HealthPictureRow[];
   viewerAccountId: string;
+  states?: readonly HealthPictureCellState[];
 }
 
 export function SubjectChip({
@@ -106,6 +109,7 @@ export function HealthPictureTable({
   columns,
   rows,
   viewerAccountId,
+  states,
 }: HealthPictureTableProps) {
   const captionId = `health-picture-caption-${layer}`;
   const categories = [...new Set(rows.map((row) => row.category))];
@@ -135,21 +139,27 @@ export function HealthPictureTable({
             ))}
           </tr>
         </thead>
+        {states ? <tbody><tr data-slot="health-picture-column-status">
+          <th scope="row" className="border-b border-line p-2 align-top text-base font-normal">{SAVED_REPORTS_LABEL}</th>
+          {columns.map((column, index) => <HealthPictureCell key={column.dataSubjectId}
+            dataSubjectId={column.dataSubjectId} personName={column.displayLabel} reportTitle={SAVED_REPORTS_LABEL}
+            layer={layer} state={states[index]} href={null} captionId={captionId} />)}
+        </tr></tbody> : null}
         {categories.map((category) => (
-          <tbody key={category}>
+          <tbody key={category ?? "saved-reports"}>
             <tr>
               <th
                 scope="rowgroup"
                 colSpan={columns.length + 1}
                 className="border-b border-line pt-6 pb-2 text-sm font-medium text-ink-muted"
               >
-                {categoryLabel(category)}
+                {category === null ? SAVED_REPORTS_LABEL : categoryLabel(category)}
               </th>
             </tr>
             {rows
               .filter((row) => row.category === category)
               .map((row) => (
-                <tr key={row.slug} data-slot="health-picture-row" data-report-slug={row.slug}>
+                <tr key={row.key ?? row.slug} data-slot="health-picture-row" data-report-slug={row.slug}>
                   <th
                     scope="row"
                     className="border-b border-line p-2 align-top text-base font-normal text-ink"
