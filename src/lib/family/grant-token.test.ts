@@ -44,6 +44,15 @@ const CLAIMS = {
 };
 
 describe("directional grant presentation token", () => {
+  it.each([null, 5, "bad", "A".repeat(64)])("rejects malformed Health Picture endpoint proof %s", healthPictureEndpointReceipt => {
+    const claims = readGrantPresentation(mintGrantPresentation(CLAIMS))!;
+    expect(readGrantPresentation(sealAs({ ...claims, purpose: "family.heritability", healthPictureEndpointReceipt }, "family-grant-presentation-v1"))).toBeNull();
+  });
+  it("preserves the signed Health Picture endpoint receipt", () => {
+    const claims = { ...CLAIMS, purpose: "family.heritability" as const, healthPictureEndpointReceipt: "d".repeat(64) };
+    expect(readGrantPresentation(mintGrantPresentation(claims))).toMatchObject(claims);
+  });
+
   it("round-trips exactly the endpoints it was minted for", () => {
     const claims = readGrantPresentation(mintGrantPresentation(CLAIMS));
     expect(claims).toMatchObject({ ...CLAIMS, direction: "subject_to_recipient" });

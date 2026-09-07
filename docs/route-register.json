@@ -13624,6 +13624,15 @@
     {
       "id": "family.health-picture",
       "path": "/family/health-picture",
+      "canonicalSavedReportImplementation": {
+        "module": "src/lib/family/health-picture-results.ts",
+        "presentationAndCommit": "health_picture_grant_presentation_v1 and grant_health_picture_purpose_v1 capture and recheck exact endpoint and directional relationship revisions; family.heritability remains two directional relationships, never a Portrait pair; older unproven grants stay legacy-only until explicit new consent",
+        "content": "health_picture_results_v1 reads only completed source-bound own journals with captured catalog metadata; each shared column additionally requires both strong joint directions and its own strong report-layer sharing grant; no canonical raw, clinical, ROH or new score computation",
+        "terminalConfirmation": "confirm_health_picture_results_v1 is one final transaction for every own/shared column, purpose, source page and empty capture, with stable NOWAIT locks and an expiry fence after the final authority pass; receipts remain server-only",
+        "legacy": "exact subject-bound annotated file IDs with all canonical markers absent; per-purpose not-shared state forbids legacy computation even when another purpose permits those IDs; hard denial never falls back",
+        "migration": "20260907153506_health_picture_canonical_results.sql",
+        "scopeLimit": "authority/data prerequisite only; Health Picture page integration and actual browser acceptance are separate gates; no clinical or ROH output is added"
+      },
       "kind": "page",
       "domain": "family",
       "auth": "authenticated",

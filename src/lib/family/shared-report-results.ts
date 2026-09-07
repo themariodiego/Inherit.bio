@@ -38,14 +38,14 @@ const storedReport = z.object({ slug: z.string(), covered: z.boolean(),
     || report.conflictingRsids.some(id => !template.variants.some(v => v.rsid === id))))
     ctx.addIssue({ code: "custom", message: "Captured report mismatch" });
 });
-const capturedSource = z.object({ fileId: z.uuid(), subjectId: z.uuid(), purpose,
+export const capturedSharedReportSourceSchema = z.object({ fileId: z.uuid(), subjectId: z.uuid(), purpose,
   completedAt: z.iso.datetime({ offset: true }), source: sourceSchema,
   reports: z.array(storedReport).max(10000), receipt: hash,
 }).strict().refine(s => s.source.fileId === s.fileId && s.reports.every(r => !r.catalogSnapshot
   || r.catalogSnapshot.template.layer === (s.purpose === "reports.monogenic" ? "variant_call" : "estimate")));
 const basePage = z.object({ pageReceipt: hash, authority: hash, ownerAccountId: z.uuid(), subjectId: z.uuid(), purpose,
   legacyOnly: z.boolean(), nextAfter: z.uuid().nullable() });
-const contentPage = basePage.extend({ sources: z.array(capturedSource).max(100) }).strict();
+const contentPage = basePage.extend({ sources: z.array(capturedSharedReportSourceSchema).max(100) }).strict();
 const readinessPage = basePage.extend({ sources: z.array(z.object({ fileId: z.uuid(), receipt: hash,
   hasReports: z.boolean() }).strict()).max(100) }).strict();
 

@@ -156,18 +156,22 @@ async function grantPurpose(
 
   const isReport = claims.purpose === "reports.monogenic" || claims.purpose === "reports.polygenic";
   const isPortrait = claims.purpose === "family.portrait";
-  const endpointReceipt = isPortrait ? claims.portraitEndpointReceipt : claims.reportEndpointReceipt;
-  const actor = isReport || isPortrait ? await currentOwnUploadAccount() : null;
-  if ((isReport || isPortrait) && (!endpointReceipt || !actor || actor.accountId !== accountId
+  const isHealthPicture = claims.purpose === "family.heritability";
+  const endpointReceipt = isHealthPicture ? claims.healthPictureEndpointReceipt : isPortrait ? claims.portraitEndpointReceipt : claims.reportEndpointReceipt;
+  const actor = isReport || isPortrait || isHealthPicture ? await currentOwnUploadAccount() : null;
+  if ((isReport || isPortrait || isHealthPicture) && (!endpointReceipt || !actor || actor.accountId !== accountId
     || (await familyCapability(accountId, [claims.recipientAccountId], "third_party_adult_analysis")).status !== "permitted")) {
     return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
   }
   if (isPortrait && (await familyCapability(accountId, [claims.recipientAccountId], "family_portrait")).status !== "permitted") {
     return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
   }
+  if (isHealthPicture && (await familyCapability(accountId, [claims.recipientAccountId], "family_heritability")).status !== "permitted") {
+    return NextResponse.json({ error: "consent_unavailable" }, { status: 409 });
+  }
   const rpc = admin.rpc.bind(admin) as unknown as (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
-  const { data: grantId, error } = await rpc(isPortrait ? "grant_family_portrait_purpose_v1" : isReport ? "grant_family_report_purpose_v1" : "grant_directional_purpose_v1", {
-    ...(isReport || isPortrait ? { p_session_id: actor!.sessionId, p_recipient_account_id: claims.recipientAccountId,
+  const { data: grantId, error } = await rpc(isHealthPicture ? "grant_health_picture_purpose_v1" : isPortrait ? "grant_family_portrait_purpose_v1" : isReport ? "grant_family_report_purpose_v1" : "grant_directional_purpose_v1", {
+    ...(isReport || isPortrait || isHealthPicture ? { p_session_id: actor!.sessionId, p_recipient_account_id: claims.recipientAccountId,
       p_endpoint_receipt: endpointReceipt!, p_artifact_body_sha256: claims.artifactBodySha256 }
       : { p_artifact_key: claims.artifactKey }),
     p_account_id: accountId,
