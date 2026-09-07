@@ -9,7 +9,7 @@ describe("isolated standard CI runtime boundaries", () => {
   it("requires a disposable Linux GitHub runner and closed fixture control", () => {
     expect(() => assertCiRuntime(ci, "linux")).not.toThrow();
     for (const env of [{}, { ...ci, RUNNER_ENVIRONMENT: "self-hosted" }, { ...ci, INHERIT_DISPOSABLE_LOCAL_E2E: "" },
-      { ...ci, VERCEL: "1" }, { ...ci, CANONICAL_COPILOT_CONTROL_URL: "https://example.org" },
+      { ...ci, VERCEL: "1" }, { ...ci, CANONICAL_COPILOT_CONTROL_URL: "https://example.invalid" },
       { ...ci, INHERIT_LOCAL_E2E_PROJECT: "inherit-family-20260907" }]) expect(() => assertCiRuntime(env, "linux")).toThrow();
     expect(() => assertCiRuntime(ci, "darwin")).toThrow();
   });

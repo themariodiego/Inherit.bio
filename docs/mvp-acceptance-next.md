@@ -81,15 +81,30 @@ The final consolidated batch passes 2,981 units, secret and readability gates; e
 are recorded in the local verification ledger. This closes useful local
 journeys, not the full adult or deletion acceptance gates.
 
-Full CI on pushed `6679ad2` is 131 passed, 9 failed and 92 not run.
-Family sharing and account purge also pass there. Copilot setup, three legacy
-helper sites, search readiness and the old GIAB uploader remain. Search/count
-has complete local proof; reviewed CI/GIAB changes await actual full-suite
-execution. The file-deletion first case exposed an intermittent report-choice
-refresh delay; its negative guard is still unverified, and the one successful
-off/on timing diagnostic does not establish a fix.
-Eight compatible hosted migrations are prepared but not applied. PR76 stays
-draft, production stays PR75, and acceptance stays **18/65**.
+Earlier full CI on `6679ad2` is 131 passed, 9 failed and 92 not run, including
+passing Family/account purge. The newer `001b72e` run `34137537643` stopped
+at the name gate on a negative-test hostname, before browser execution; its
+reserved-domain correction preserves the assertion. Search/count has complete
+local proof. Both file-deletion cases now pass inside a six-case run that then
+failed on a GIAB selector (2 passed, 1 failed, 3 not run). This includes the
+foreign-account, processing, canonical-file and legacy-other-adult guards;
+the failed suite did not emit its aggregate upload-counter receipt.
+
+Portrait now has canonical source readiness and preserves independently valid
+legacy inputs. Its local migration is installed (77 total); 198 focused units,
+32 rollback SQL assertions and typecheck pass. A fresh-build 14-case
+Portrait/GIAB run passed the first actual-upload/invitation case, then failed
+because A's test route used B's self ID instead of the accepted invitation
+handle. The fixture correction is integrated; remaining cases need rerunning.
+Canonical clinical and lineage computation remain unavailable.
+
+All eight compatible hosted migrations are installed and verified against
+their complete SQL hashes and 55 final function bodies/privileges. Existing
+grant API, retention registry and legacy upload policy are preserved. This
+closes the compatible schema prerequisite, not deployed user-journey proof.
+Portrait's new migration remains local only. PR76 stays draft, production
+stays PR75, and acceptance stays **18/65**. Full CI, the coordinated upload
+cutover and the existing notification recipient/allowance question remain.
 
 ### 2026-09-07 · Canonical ancestry journey verified locally
 

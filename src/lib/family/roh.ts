@@ -399,12 +399,17 @@ export async function readSubjectRuns(
   supabase: Db,
   subjectId: string,
   inputFileIds?: Set<string>,
+  legacyFileIds?: readonly string[],
 ): Promise<StoredRohMeasure[]> {
-  const { data } = await supabase
+  if (legacyFileIds?.length === 0) return [];
+  let query = supabase
     .from("genome_files")
     .select("id, roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction")
     .eq("subject_id", subjectId)
     .eq("status", "annotated")
     .order("created_at", { ascending: false });
+  if (legacyFileIds !== undefined) query = query.in("id", [...legacyFileIds])
+    .is("single_logical_sample_verified_at", null).is("structural_validator_version", null).is("source_sha256", null);
+  const { data } = await query;
   return (data ?? []).map((row) => { inputFileIds?.add(row.id); return storedRohMeasure(row); });
 }

@@ -1,3 +1,4 @@
+import { preparePortraitGrant } from "@/lib/family/portrait-source-readiness";
 import { prepareSharedReportGrant } from "@/lib/family/shared-report-results";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -177,6 +178,7 @@ export default async function FamilyPermissionsPage(
   }
 
   const reportEndpointReceipt = mayGrant && mySelf ? await prepareSharedReportGrant(admin, mySelf.id, person.counterpartAccountId) : null;
+  const portraitEndpointReceipt = mayGrant && mySelf ? await preparePortraitGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const canMint = Boolean(mySelf && myPrincipal && theirPrincipal && artifact && profile);
   function actionFor(purpose: Purpose): RowAction | undefined {
     const held = outbound.get(purpose);
@@ -184,6 +186,7 @@ export default async function FamilyPermissionsPage(
     if (!mayGrant || !canMint) return undefined;
     const isReport = purpose === "reports.monogenic" || purpose === "reports.polygenic";
     if (isReport && !reportEndpointReceipt) return undefined;
+    if (purpose === "family.portrait" && !portraitEndpointReceipt) return undefined;
     const request: GrantPurposeRequest = {
       action: "grant-purpose",
       subjectId: mySelf!.id,
@@ -191,6 +194,7 @@ export default async function FamilyPermissionsPage(
       artifactVersion: artifact!.version,
       artifactPresentationToken: mintGrantPresentation({
         ...(isReport ? { reportEndpointReceipt: reportEndpointReceipt! } : {}),
+        ...(purpose === "family.portrait" ? { portraitEndpointReceipt: portraitEndpointReceipt! } : {}),
         accountId: user.id,
         dataSubjectId: mySelf!.id,
         subjectBindingRevision: mySelf!.subject_binding_revision,

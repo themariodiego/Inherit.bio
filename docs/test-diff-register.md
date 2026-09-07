@@ -33,6 +33,17 @@ Historical acceptance evidence and the formal 18/65 total are unchanged.
 Fixture reproduction, scoped lint/typecheck and four-case discovery are the
 pre-browser checks; actual browser success must be recorded separately.
 
+## Portrait invitation route identity · 2026-09-07
+
+`e2e/portrait.spec.ts` now derives A’s Family handle from the actual accepted
+adult invitation, scoped to A’s exact self principal. It verifies the invitee
+principal and current adult-claim binding belong to B and point to B’s own
+self principal. Only A’s permission route and breadcrumb use that distinct
+representative ID; uploads, grants, acknowledgments and the pair still use
+the real self-subject IDs. This repairs the second case’s pre-POST 404 caused
+by treating a data-subject ID as the inviter’s route handle. All ten cases
+and their permission assertions remain; no application or schema changed.
+
 ## BAM/CRAM historical proof and current refusal contract · 2026-09-07
 
 `e2e/tier2-upload.spec.ts` now has two current-contract cases, one each for BAM

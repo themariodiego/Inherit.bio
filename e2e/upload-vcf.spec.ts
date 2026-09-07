@@ -34,7 +34,13 @@ test("GIAB window: real hashed upload → preparation → explicit ancestry gene
   expect((await declared).postDataJSON()).toMatchObject({
     declaredFormat: "VCF.GZ", sizeBytes: receipt.fixture.compressedBytes, sha256: receipt.fixture.sha256,
   });
-  await expect(page.getByText("Your file is stored and prepared. Reports have not been generated yet.", { exact: true })).toBeVisible();
+  // The sentence and both navigation links share one paragraph. Match its
+  // complete sentence without requiring the links to disappear from its text.
+  const prepared = page.locator("p").filter({ has: page.getByRole("link", { name: "Choose your reports", exact: true }) });
+  await expect(prepared).toHaveCount(1);
+  await expect(prepared).toContainText("Your file is stored and prepared. Reports have not been generated yet.");
+  await expect(prepared.getByRole("link", { name: "Choose your reports", exact: true })).toBeVisible();
+  await expect(prepared.getByRole("link", { name: "View your file", exact: true })).toBeVisible();
   await page.goto("/files");
   const file = page.getByRole("listitem").filter({ hasText: receipt.fixture.sha256.slice(0, 32) });
   await expect(file).toHaveCount(1);
@@ -86,7 +92,7 @@ test("GIAB locus and first-party track preserve benchmark calls; rsID search use
       await expect(block.locator('[data-figure-kind="coverage"][data-figure-class="quality"][data-figure-basis="observed"]')).toHaveCount(1);
     }
   }
-  await expect(page.locator('[data-provenance="computed:genome/browser"] [data-slot="figure-value"]')).toHaveText("read 144 of the 144 positions this needs");
+  await expect(page.locator('[data-slot="table-input-provenance"] [data-figure-kind="coverage"][data-provenance="computed:genome/browser"] [data-slot="figure-value"]')).toHaveText("read 144 of the 144 positions this needs");
   const name = (await page.locator('[data-slot="subject-name"]').textContent())?.trim();
   expect(name).toBeTruthy();
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(`My Genome / ${name} / Data / Genome browser`);
@@ -134,7 +140,7 @@ test("GIAB ancestry has computed zero-marker coverage and explicitly uncomputed 
   for (const kind of ["mtdna", "ydna"]) {
     const lineage = page.getByTestId(kind);
     await expect(lineage).toContainText("Lineage has not been computed from this file.");
-    await expect(lineage.locator('[data-figure-kind="haplogroup"], [data-figure-kind="coverage"], [data-slot="haplogroup-tree"]')).toHaveCount(0);
+    await expect(lineage.locator('[data-slot="haplogroup"], [data-slot="haplogroup-path"], [data-slot="lineage-provenance"], [data-figure-kind="coverage"]')).toHaveCount(0);
   }
   await expect(page.locator('[data-slot="maternal-input-provenance"], [data-slot="paternal-input-provenance"]')).toHaveCount(0);
   const admixture = page.getByTestId("admixture");

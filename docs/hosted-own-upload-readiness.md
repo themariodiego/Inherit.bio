@@ -8,8 +8,8 @@ PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
 Local `fb43083` passes seven production-build Family/account-deletion browser
 cases, including two actual Storage uploads and actual worker completion.
-Prepared bundle `work/hosted-eight-migration-staging-fb43083/` contains eight
-exact committed migrations, **not applied hosted**: Copilot authority
+Bundle `work/hosted-eight-migration-staging-fb43083/` contains eight
+exact committed migrations, **applied and metadata-verified hosted**: Copilot authority
 `081757`, chat content `081759`, report catalog snapshots `083251`, ancestry
 `111757`, ancestry export/notices `111835`, Family saved results `124212`,
 account grant-nonce cleanup `132302`, and upload-session ordering `134656`.
@@ -17,23 +17,46 @@ All identifiers above have date prefix `20260907`. The final function manifest
 covers 55 functions (59 definitions across the ordered bundle). Each wrapper
 uses one transaction, a 5-second lock timeout and a 60-second statement timeout.
 
+Actual hosted history versions, in that order, are `20260907152533`,
+`20260907152756`, `20260907152800`, `20260907152805`, `20260907152810`,
+`20260907152814`, `20260907152819` and `20260907152824`. Each stored SQL
+wrapper matches its complete reviewed SHA-256. Final checks match all 55
+function bodies, owners, security settings and effective execution privileges,
+nine columns, ten enabled triggers and two published consent artifacts.
+Seven additional function definitions, the original public grant API, the
+53-row retention registry and legacy Storage policy are unchanged. The new
+Family snapshot table has no direct role access; its RLS flag is false by
+design. No canonical activity or Family snapshot was created. The recorded
+zero ancestry journals, overlapping notices and active deletions were checked
+again immediately before their dependent steps. See `applied-receipt.json`
+and the preserved per-step preflight/apply/postflight artifacts in the bundle.
+Portrait migration `20260907142213` is local only and outside this installation.
+
 Family adds a new strong directional-grant writer and preserves PR75's writer.
-Install schema before the application: old report tokens presented to the new
+Schema is installed before the application: old report tokens presented to the new
 application refuse with 409 before nonce consumption and require refreshed
 consent. Earlier grants retain their independently valid legacy access; they
 need an explicit new grant for canonical saved results. Roll back the app while
 retaining additive schema. Keep incompatible `20260906133807` separate until
 its documented upload pause/drain and coordinated transition.
 
-Fresh read-only allowance check at `2026-09-07T13:43:13Z`: Vercel shows
+Read-only allowance check at `2026-09-07T15:16:30Z`: Vercel shows
 **$1.73 / $20 included credit**, **$0 on-demand**. This supports one bounded
 preview build, not overage authorization. GitHub repository visibility is
-PUBLIC and CI uses standard `ubuntu-latest`. Full CI remains unresolved.
+PUBLIC and CI uses a standard hosted runner. That bounded preview push was
+used for `001b72e`; another push requires a fresh allowance read. Its CI run
+`34137537643` stopped at the name gate on a negative-test example hostname,
+before browser execution. The input is corrected to a reserved `.invalid`
+hostname without changing the assertion or gate. Full CI remains unresolved.
 Hosted report generation/mail still requires the authorized synthetic recipient
 and verified Resend allowance already requested; the shared production worker
 can consume notices queued by preview. No hosted generation or mail was run.
 
-## Latest ancestry release prerequisites · 7 September 2026
+## Historical ancestry staging review · 7 September 2026
+
+The eight-migration installation above supersedes the not-yet-staged status
+and missing-function precheck below. These are the retained review conditions
+used for that installation; notification and coordinated-cutover gaps remain.
 
 Local ancestry now has a fresh 73-migration replay, 1,746 passing SQL assertions,
 2,921 units at `e3ebdb6`, and five actual-provider browser cases at `0e0d99e`

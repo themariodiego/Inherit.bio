@@ -16,13 +16,19 @@ export async function getProcessedFiles(supabase: Db) {
   return data ?? [];
 }
 
-export async function getSubjectProcessedFiles(supabase: Db, subjectId: string) {
-  const { data } = await supabase
+/** When supplied, even an empty legacy selection is restrictive. The marker
+ * filters are re-applied at read time; saved IDs alone never make a file legacy. */
+export async function getSubjectProcessedFiles(supabase: Db, subjectId: string, legacyFileIds?: readonly string[]) {
+  if (legacyFileIds?.length === 0) return [];
+  let query = supabase
     .from("genome_files")
     .select("id, original_name, file_type, status, variant_count, created_at, subject_id, build, observed_call_sha256, observed_call_version")
     .eq("subject_id", subjectId)
     .eq("status", "annotated")
     .order("created_at", { ascending: false });
+  if (legacyFileIds !== undefined) query = query.in("id", [...legacyFileIds])
+    .is("single_logical_sample_verified_at", null).is("structural_validator_version", null).is("source_sha256", null);
+  const { data } = await query;
   return data ?? [];
 }
 
@@ -90,6 +96,7 @@ export async function getSubjectGenotypesByRsid(
   supabase: Db,
   subjectId: string,
   rsids: number[],
+  legacyFileIds?: readonly string[],
 ): Promise<{
   genotypes: Map<number, string>;
   conflicts: Set<number>;
@@ -98,7 +105,7 @@ export async function getSubjectGenotypesByRsid(
   checkedFileIds: string[];
   inputFilesByRsid: Map<number, Set<string>>;
 }> {
-  const files = await getSubjectProcessedFiles(supabase, subjectId);
+  const files = await getSubjectProcessedFiles(supabase, subjectId, legacyFileIds);
   const genotypes = new Map<number, string>();
   const conflicts = new Set<number>();
   const inputFileIds = new Set<string>();

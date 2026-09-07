@@ -1,7 +1,59 @@
 # Local canonical upload browser boundary checks
 
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
-Full-plan acceptance stays 18/65. No hosted change or real user file was used.
+Full-plan acceptance stays 18/65. Browser evidence here uses only local synthetic
+or public reference files. Separate hosted schema staging is recorded in the
+hosted-readiness ledger; no real user file was used for these checks.
+
+## File deletion, Portrait and GIAB checkpoint
+
+At `001b72e`, the unchanged application build from `fb43083` ran both
+file-deletion cases followed by four GIAB cases: **2 passed, 1 failed,
+3 not run**, zero retries. Both deletion cases pass, including a freshly chosen
+report, exact-file retention, foreign-account and active-processing refusal,
+immutable canonical data and the isolated legacy other-adult guard. Five real
+upload/preparation helpers completed. The failed suite exits before printing
+its aggregate upload counter, so that aggregate gate is not claimed passed.
+The first report toggle reached On in 787 ms; this isolated observation does
+not prove the cause of the preceding intermittent refresh failures.
+The GIAB failure was an exact-text selector spanning a paragraph with links;
+the repaired selector, coverage scope and absent-lineage assertions are
+integrated at `466f569`. Evidence: `work/canonical-file-giab-verification/`.
+
+Portrait source readiness is integrated at `24fd51a`, with 198 focused units
+across ten files, 32 SQL assertions on the installed 77-migration local stack
+and complete TypeScript checks. It requires current independent endpoint
+permissions and actual prepared canonical sources, while preserving exact
+eligible legacy input IDs. It does not compute canonical clinical or ROH
+results. Migration `20260907142213` remains local only.
+
+Fresh container build `_tf6ylLNWorB59ER4UVmV` at `466f569` ran the ten
+Portrait cases followed by four GIAB cases: **1 passed, 1 failed, 12 not run**,
+zero retries. The first case proves two actual canonical uploads, invitation
+delivery to local capture, B's acceptance and independent sign-in, and no
+implicit report permissions. The second case failed before a grant POST:
+A's test route used B's self ID instead of the invitation representative.
+Read-only synthetic metadata confirmed the distinct accepted handle. Test
+commit `48e41eb` derives that handle and verifies its exact A/B principal and
+current binding; source, grant and pair assertions retain actual self IDs.
+The ten cases remain intact. A rerun and visual budget case are pending.
+Evidence: `work/canonical-portrait-giab-verification/`, including the preserved
+failed run and `identity-route-diagnosis.json`.
+
+The initial receipt incorrectly read `XBFRsLbVEhUlDTr1i22Oh` from the host's
+older `.next` directory. A reuse attempt correctly rejected that ID before
+starting Next or any test. The actual container mounts `.next` from the
+separate writable runtime directory: its build ID and manifest timestamps
+fall inside the recorded fresh-build run, with `/app` bound to the frozen
+`466f569` source. The original receipt and failed reuse attempt are preserved;
+the correction records exact mounts, manifest hashes and timing separately.
+This is a provenance correction, not an additional passing browser run.
+
+GitHub CI `34137537643` at `001b72e` failed before browser execution because
+one negative-test URL used a non-reserved example hostname. The replacement
+uses `.invalid`; all 12 CI boundary tests and scoped lint pass with the same
+rejection assertion and unchanged name gate. Actual Linux execution of the
+new isolated runtime remains due. Earlier complete-suite failures are retained.
 
 ## Search and report-count regression verified locally
 
