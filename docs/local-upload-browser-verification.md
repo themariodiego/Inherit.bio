@@ -42,10 +42,21 @@ metadata; unknown and fixture slugs remain unacknowledged. Guard rules and all
 Attempt v6 passes that complete three-question case. The withdrawal case reaches
 the actual 403 response, but the client cancels its body before refreshing, so
 the browser inspector loses the body needed by the exact assertion. Native
-response capture needs correction before another integrated run. **73-case
-browser acceptance is not claimed**. Failure receipts are preserved under task
-evidence `work/canonical-copilot-sql-verification/browser-v4-evidence`,
-`browser-v5-evidence` and `browser-v6-evidence`.
+response capture was corrected by test-only `6f066f1`: a one-shot observer reads
+only a bounded clone while returning the original native Response to the app.
+An isolated native Playwright proof and independent review confirm one unchanged
+request, exact response bytes and cleanup without substituted responses.
+
+Attempt v7 at `6f066f1` passes the production build, the complete three-question
+case and the withdrawal response's exact 403/body/provider-call assertions. It
+then finds a runtime defect: after synchronous report cleanup removes both
+messages, history returns 200 with an empty list rather than refusing the purged
+conversation. The canonical SQL reader's mismatch check accepts an empty set;
+list/history/append must reject that empty canonical conversation. The run stops
+with **1 passed, 1 failed and 71 not run**. Its failed assertion is retained.
+**73-case browser acceptance is not claimed**. Failure receipts are preserved
+under task evidence `work/canonical-copilot-sql-verification/browser-v4-evidence`,
+`browser-v5-evidence`, `browser-v6-evidence` and `browser-v7-evidence`.
 
 No PR merged or public deployment changed. Hosted permission/cleanup rollout,
 required notice delivery, full regression integration and complete Copilot

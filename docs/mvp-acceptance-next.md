@@ -84,8 +84,12 @@ report lookup acknowledges a verified catalog identity without permitting an
 invented identifier or borrowing scientific metadata. All 2,808 unit tests and
 full lint pass at `0003d87`. The next browser case reaches the expected withdrawal
 refusal, but needs native response capture before its exact body can be checked;
-the rest of the 73-case integration remains open. See the local verification
-record. No release or new whole-plan gate is claimed: production remains PR75 and
+the rest of the 73-case integration remains open. The observer is now integrated
+at `6f066f1` and independently reviewed. Attempt v7 verifies the exact withdrawal
+response, then exposes a product defect: a fully purged canonical conversation
+returns empty history instead of refusing access. List/history/append protection
+is the next bounded repair; browser assertions remain unchanged. See the local
+verification record. No release or new whole-plan gate is claimed: production remains PR75 and
 acceptance **18/65**. Hosted notices still require the previously requested
 recipient authorization and verified allowance.
 

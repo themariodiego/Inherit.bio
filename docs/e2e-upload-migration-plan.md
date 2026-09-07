@@ -11,10 +11,17 @@ decoded-size limit. Account purge still requires an isolated disposable stack,
 and the other-adult deletion fixture still requires a genuine supported source
 or explicit legacy isolation setup. Full discovery remains 226, not 226 passes.
 
-The remaining nine `ingestFileAs` sites are not merely stale selectors:
-ancestry/Overview need canonical ancestry output, Copilot needs checked canonical
-source loaders, recipient/joint views need their actual authority and generation,
-and Health Picture needs ROH computation. Resumable BAM is an additional gap
+Current `6f066f1` has six remaining `ingestFileAs` calls in six spec files.
+The three Copilot specs now use actual canonical upload/preparation and explicit
+purposes. Canonical source loaders, provider permission, saved history and exact
+cleanup are implemented locally; their 73-case browser integration remains open.
+Attempt v7 passes the first source-distinction case and the next exact withdrawal
+response, then exposes empty-history success after purge (1 passed, 1 failed,
+71 not run). See the current local receipt; no full-CI or hosted claim follows.
+
+The remaining six sites are not merely stale selectors: ancestry/Overview need
+canonical ancestry output, recipient/joint views need their actual authority and
+generation, and Health Picture needs ROH computation. Resumable BAM is an additional gap
 outside those nine calls. Preserve their substantive assertions; changing status
 flags or narrowing standard CI does not implement those missing behaviors.
 
@@ -79,14 +86,15 @@ paused app server on 3102. That integrated CI run has not passed yet.
    generated-derivative and physical removal assertions; browser proof is pending.
    The separate other-adult deletion fixture remains unsupported and unchanged.
 2. **Connected surfaces:** the old Overview case still needs its ancestry
-   computation prerequisite. Copilot's legacy file/genotype loaders,
-   independent cloud-model consent and source-bound tool authorization remain
-   runtime work. Its 64 shared-output cases use scoped provider mocks, not
-   proof of a real external model.
-3. **Required notifications:** canonical synchronous generation still lacks
-   the durable report-ready mail contract. Retain mail-expiry and deletion
-   invalidation assertions until implemented; generation success alone does
-   not prove a notice was queued or expired correctly.
+   computation prerequisite. Canonical Copilot loaders, separate provider
+   permission and source-bound tool authorization are implemented locally.
+   Complete saved-history/invalidation browser proof remains open after v7's
+   empty-history finding. Its 64 output cases use an isolated synthetic HTTPS
+   provider; they do not prove a real external model's behavior.
+3. **Required notifications:** the durable canonical report-ready contract,
+   expiry/replay and deletion invalidation are implemented and passed in the
+   earlier 69-case local run. Hosted delivery, verified allowance and recipient
+   authorization remain open; generation success alone does not prove delivery.
 4. **Ancestry and shared results:** the dispatcher supports monogenic and
    polygenic only. Ancestry/lineage, adult shared/joint results and Health
    Picture ROH computation need real authorized generation. A saved purpose
@@ -109,8 +117,6 @@ All paths below are under `e2e/`; these are invocation lines, not imports.
 
 ```text
 ancestry:75
-copilot-output:50           copilot-refusal:136
-copilot:85
 family-health-picture:402   family:287
 file-deletion:105
 overview:233                portrait:339
