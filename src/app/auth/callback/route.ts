@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { localAuthDestination } from "@/lib/auth/local-destination";
 import { markIndependentLogin } from "@/lib/family/independent-login";
 import { createClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
@@ -10,8 +11,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
-  const next = url.searchParams.get("next") ?? "/overview";
-  const safeNext = next.startsWith("/") ? next : "/overview";
+  const safeNext = localAuthDestination(url.searchParams.get("next"));
 
   const supabase = await createClient();
 
