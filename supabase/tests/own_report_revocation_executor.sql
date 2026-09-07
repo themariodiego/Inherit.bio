@@ -2,14 +2,22 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
--- Independent bounded fixture configuration; the entire transaction rolls
--- back, including any existing local singleton restored by ON CONFLICT.
+-- Independent bounded fixture configuration. Every change, including an
+-- update to an existing local singleton, is restored by transaction rollback.
 insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,
  maximum_account_bytes,maximum_active_uploads)
  values(true,'http://127.0.0.1:54321/auth/v1',65536,65536,262144,2)
  on conflict(singleton) do update set auth_issuer=excluded.auth_issuer,
  maximum_array_bytes=excluded.maximum_array_bytes,maximum_vcf_bytes=excluded.maximum_vcf_bytes,
  maximum_account_bytes=excluded.maximum_account_bytes,maximum_active_uploads=excluded.maximum_active_uploads;
+-- Reference fixtures are synthetic and roll back; no application seed or
+-- completed analysis row is imported. The coverage output has a real PGS FK.
+insert into public.prs_scores(pgs_id,name,trait,n_variants,citation,source_url,ancestry_note)
+ values('SYNTHETIC_OWN_REVOCATION','Synthetic revocation reference','Synthetic test trait',1,
+ '{"label":"Synthetic test reference"}','http://localhost/synthetic-pgs','Synthetic fixture; no population inference.');
+insert into public.report_templates(slug,category,title,summary,status,evidence,layer,estimate_kind,pgs_id)
+ values('synthetic-own-revocation-estimate','synthetic','Synthetic revocation estimate','Synthetic database test fixture.',
+ 'published','emerging','estimate','polygenic_score','SYNTHETIC_OWN_REVOCATION');
 -- Entirely synthetic, rollback-only identity and compressed-source metadata.
 insert into auth.users(id,email) values('76900000-0000-4000-8000-000000000001','revocation-executor@e2e.local');
 insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
@@ -67,8 +75,8 @@ $$;
 create temporary table old_grant as select (pg_temp.grant_report('reports.polygenic',repeat('c',64))->>'recordId')::uuid id;
 insert into claims values('reports.polygenic',pg_temp.generate('begin'));
 create temporary table report_output as select jsonb_build_object('reports',jsonb_build_array(jsonb_build_object('slug',slug,'covered',1)),
- 'prs','[{"pgs_id":"PGS000011","raw_score":0.1,"coverage":0.2,"matched":1}]'::jsonb) payload
- from public.report_templates where status='published' and layer='estimate' order by slug limit 1;
+ 'prs','[{"pgs_id":"SYNTHETIC_OWN_REVOCATION","raw_score":0.1,"coverage":0.2,"matched":1}]'::jsonb) payload
+ from public.report_templates where slug='synthetic-own-revocation-estimate' and status='published' and layer='estimate';
 select is(pg_temp.generate('complete','reports.polygenic',(select payload from report_output))->>'status','complete','real selected generation completes before revocation');
 create function pg_temp.interrupt_own_purge() returns trigger language plpgsql as $$
 begin
