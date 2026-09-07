@@ -260,7 +260,8 @@ select lives_ok($$delete from public.mail_outbox where id=(select id from origin
  'immutable replay bindings do not prevent authorized outbox teardown');
 select lives_ok($$delete from public.encrypted_contact_references where id=(select contact_reference_id from original_notice)$$,
  'existing outbox-before-contact purge order remains valid');
-rollback to teardown;
+-- Preserve pgTAP's final assertion bookkeeping; the outer rollback restores data.
+release savepoint teardown;
 set constraints all immediate;
 select * from finish();
 rollback;
