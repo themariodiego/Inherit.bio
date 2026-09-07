@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isOwnConsentPayload } from "@/lib/uploads/own-consent";
 import { ownUploadConsent } from "@/lib/uploads/own-consent-route";
 import { isOwnReportConsentPayload, ownReportConsent } from "@/lib/uploads/own-report-consent-route";
+import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own-consent";
 
 /**
  * `POST /api/consents` (register api.consents).
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
 
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);
   if (isOwnReportConsentPayload(payload)) return ownReportConsent(request, payload);
+  if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
   if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
 
   const grant = grantPurposeBody.safeParse(payload);
