@@ -85,6 +85,10 @@ select pg_temp.grant_report('reports.monogenic',repeat('d',64));
 insert into claims values('reports.polygenic',pg_temp.generate('begin')),('reports.monogenic',pg_temp.generate('begin','reports.monogenic'));
 select throws_ok($$select pg_temp.generate('complete','reports.polygenic',pg_temp.output('reports.polygenic')-'readyMail')$$,
  '22023','invalid_ready_envelope','new application completion cannot omit recipient envelope');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',null)$$,
+ '22023','invalid_ready_envelope','SQL-null completion payload is refused before delegation');
+select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(pg_temp.output('reports.polygenic'),'{readyMail}','null'))$$,
+ '22023','invalid_ready_envelope','JSON-null envelope rolls back delegated completion');
 select throws_ok($$select pg_temp.generate('complete','reports.polygenic',jsonb_set(pg_temp.output('reports.polygenic'),'{readyMail}','{}'))$$,
  '22023','invalid_ready_envelope','enqueue rejection rolls back delegated completion');
 select is((select state from private.own_analysis_runs where file_id='78800000-0000-4000-8000-000000000040' and purpose='reports.polygenic'),
@@ -113,6 +117,13 @@ select is(pg_temp.generate('complete','reports.monogenic',pg_temp.output('report
 create temporary table original_notice as select * from public.mail_outbox where target_id='78800000-0000-4000-8000-000000000040';
 select is((select count(*) from original_notice),1::bigint,'one notice for the exact selected source/grant set');
 select ok(pg_temp.current_mail(),'same shared source predicate accepts inserted notice');
+select is(private.file_ready_mail_current_v1(null::public.mail_outbox),false,'a null candidate is false, never unknown');
+select is((select private.file_ready_mail_current_v1(jsonb_populate_record(null::public.mail_outbox,
+ to_jsonb(o)||'{"canonical_readiness":null}'::jsonb)) from original_notice o),false,
+ 'missing canonical snapshot is a total false even while exact source is ready');
+select is((select private.file_ready_mail_current_v1(jsonb_populate_record(null::public.mail_outbox,
+ to_jsonb(o)||'{"target_kind":null}'::jsonb)) from original_notice o),false,
+ 'missing target kind cannot inherit source readiness');
 select ok((select canonical_readiness=pg_temp.ready_state() and canonical_readiness->'purposes' ?& array['reports.monogenic','reports.polygenic'] from original_notice),
  'event captures both exact completed authorities');
 select ok((select idempotency_key=encode(extensions.digest(convert_to(canonical_readiness::text,'UTF8'),'sha256'),'hex') from original_notice),
@@ -122,6 +133,10 @@ select ok((select expires_at<=clock_timestamp()+interval '30 days' and expires_a
 select is((select template_payload from original_notice),'{"reportCount":0,"dashboardUrl":"https://example.invalid/genome/me/reports"}'::jsonb,
  'mail payload contains no findings, variants, filenames or source data');
 select is(pg_temp.generate('ready','reports.polygenic',pg_temp.envelope()),'true'::jsonb,'completed replay acknowledges the durable event');
+select throws_ok($$select pg_temp.generate('ready',null,pg_temp.envelope())$$,
+ '22023','invalid_request','ready cannot select a null purpose');
+select throws_ok($$select pg_temp.generate('ready','ancestry',pg_temp.envelope())$$,
+ '22023','invalid_request','ready adapter cannot widen supported report operations');
 select ok((select (m.id,m.contact_reference_id,m.expires_at,m.idempotency_key,m.canonical_readiness)=(o.id,o.contact_reference_id,o.expires_at,o.idempotency_key,o.canonical_readiness)
  from public.mail_outbox m join original_notice o using(id)),'replay preserves event contact identity and deadline');
 select throws_ok($$update public.mail_outbox set expires_at=expires_at+interval '1 day' where id=(select id from original_notice)$$,
@@ -153,8 +168,13 @@ savepoint candidate_fences;
 delete from auth.sessions where id='78800000-0000-4000-8000-000000000010';
 select ok(pg_temp.current_mail(),'durable current recipient does not depend on an expired browser login');
 rollback to candidate_fences;
-update public.genome_files set source_sha256=repeat('f',64) where id='78800000-0000-4000-8000-000000000040';
-select ok(not pg_temp.current_mail(),'changed decoded-source hash blocks delivery');
+select throws_ok($$update public.genome_files set source_sha256=repeat('f',64) where id='78800000-0000-4000-8000-000000000040'$$,
+ '55000','immutable_file_identity','canonical source hash remains immutable');
+-- The journal manifest is service-owned and has no identity-update trigger.
+-- Change only this rollback-local fixture's source revision, never the file identity.
+update private.own_normalization_runs set manifest=jsonb_set(manifest,'{sourceRevision}','99')
+ where file_id='78800000-0000-4000-8000-000000000040';
+select ok(not pg_temp.current_mail(),'mismatched normalization source revision blocks delivery');
 rollback to candidate_fences;
 update private.own_analysis_runs set source_sha256=repeat('f',64) where file_id='78800000-0000-4000-8000-000000000040' and purpose='reports.polygenic';
 select ok(not pg_temp.current_mail(),'stale captured completion source blocks delivery');
@@ -212,9 +232,14 @@ update public.encrypted_contact_references set status='rotated',ended_at=clock_t
 select ok(not private.authorize_mail_submission_v1((select id from original_notice),(select attempt_ordinal from ready_claim)),
  'rotated current contact is denied immediately before provider');
 rollback to submission_fences;
-update public.genome_files set source_sha256=repeat('f',64) where id='78800000-0000-4000-8000-000000000040';
+select throws_ok($$update public.genome_files set source_sha256=repeat('f',64) where id='78800000-0000-4000-8000-000000000040'$$,
+ '55000','immutable_file_identity','canonical source hash remains immutable');
+-- The journal manifest is service-owned and has no identity-update trigger.
+-- Change only this rollback-local fixture's source revision, never the file identity.
+update private.own_normalization_runs set manifest=jsonb_set(manifest,'{sourceRevision}','99')
+ where file_id='78800000-0000-4000-8000-000000000040';
 select ok(not private.authorize_mail_submission_v1((select id from original_notice),(select attempt_ordinal from ready_claim)),
- 'source replacement between claim and submit is denied');
+ 'normalization source revision mismatch between claim and submit is denied');
 rollback to submission_fences;
 select public.revoke_directional_purpose_v1('78800000-0000-4000-8000-000000000001',
  (select grant_id from public.purpose_grants where target_id=(select id from generation_subject) and purpose='reports.polygenic'));

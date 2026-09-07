@@ -34,7 +34,7 @@ begin
   raise exception using errcode='42501',message='not_found'; end if;
  select * into s from public.subjects where id=p_subject_id;
  if s.id is null or s.subject_account_id is distinct from p_account_id
-  or s.subject_class not in ('self','other_adult') or s.lifecycle not in ('active','claimed_bound') then
+  or (s.subject_class in ('self','other_adult')) is not true or (s.lifecycle in ('active','claimed_bound')) is not true then
   raise exception using errcode='42501',message='not_found'; end if;
  select sab.* into b from public.subject_account_bindings sab
   join public.subject_principals sp on sp.id=sab.subject_principal_id
@@ -62,7 +62,7 @@ begin
  c:=private.own_upload_context_mail_v1(p_account_id,p_subject_id);
  perform 1 from auth.users where id=p_account_id and (banned_until is null or banned_until<=clock_timestamp());
  if not found then raise exception using errcode='42501',message='not_found'; end if;
- if c->>'birthDateState'<>'adult' then raise exception using errcode='55000',message='adult_account_required'; end if;
+ if c->>'birthDateState' is distinct from 'adult' then raise exception using errcode='55000',message='adult_account_required'; end if;
  select lifecycle_revision into v_lifecycle from public.subjects where id=p_subject_id;
  v_session:=null;
  select subject_principal_id into v_principal from public.subject_account_bindings
@@ -203,7 +203,7 @@ begin
    and dg.status='current' and dg.direction='self' and dg.recipient_account_id=p_account_id
   order by pg.purpose loop
   a:=private.current_own_report_grant_mail_v1(p_account_id,p_file_id,v_purpose);
-  if not private.own_analysis_completion_matches_v1(p_file_id,v_purpose,a) or not exists(
+  if private.own_analysis_completion_matches_v1(p_file_id,v_purpose,a) is not true or not exists(
    select 1 from private.own_analysis_runs r where r.file_id=f.id and r.subject_id=f.subject_id and r.account_id=p_account_id
     and r.purpose=v_purpose and r.state='complete' and r.source_revision=f.upload_revision
     and r.source_sha256=f.sha256 and r.normalization_completed_at=f.normalization_completed_at) then return null; end if;
@@ -225,19 +225,20 @@ create function private.file_ready_mail_current_v1(m public.mail_outbox)
 returns boolean language plpgsql security definer set search_path=pg_catalog,private as $$
 declare f public.genome_files%rowtype; sp public.subject_principals%rowtype; ready jsonb;
 begin
+ if m.template_id is null then return false; end if;
  if m.template_id<>'report-ready' then return true; end if;
- if m.target_kind<>'genome_file' then return false; end if;
+ if m.target_kind is distinct from 'genome_file' then return false; end if;
  select * into f from public.genome_files where id=m.target_id;
  select * into sp from public.subject_principals where id=m.recipient_principal_id;
- if f.id is null or sp.id is null or sp.status<>'active' or sp.principal_kind<>'account_subject'
+ if f.id is null or sp.id is null or sp.status is distinct from 'active' or sp.principal_kind is distinct from 'account_subject'
   or sp.principal_revision is distinct from m.recipient_authority_revision
   or f.user_id is distinct from sp.account_id or f.subject_id is distinct from sp.subject_id
   or exists(select 1 from private.genome_file_deletions where file_id=f.id) then return false; end if;
  if f.single_logical_sample_verified_at is null then
-  return m.canonical_readiness is null and f.status='annotated';
+  return (m.canonical_readiness is null and f.status='annotated') is true;
  end if;
  ready:=private.own_report_ready_state_v1(sp.account_id,f.id);
- return ready is not null and ready=m.canonical_readiness;
+ return (ready is not null and ready=m.canonical_readiness) is true;
 end; $$;
 revoke all on function private.file_ready_mail_current_v1(public.mail_outbox) from public,anon,authenticated,inherit_upload_only;
 grant execute on function private.file_ready_mail_current_v1(public.mail_outbox) to service_role;
@@ -247,7 +248,7 @@ returns trigger language plpgsql security definer set search_path=pg_catalog,pri
 begin
  if new.template_id='report-ready' then
   perform 1 from public.genome_files where id=new.target_id for share;
-  if not private.file_ready_mail_current_v1(new) then
+  if private.file_ready_mail_current_v1(new) is not true then
    raise exception using errcode='55000',message='file_target_unavailable'; end if;
  end if;
  return new;
@@ -331,6 +332,8 @@ returns jsonb language plpgsql security invoker set search_path=pg_catalog as $$
 declare result jsonb; outbox uuid;
 begin
  if p_operation='ready' then
+  if (p_purpose in ('reports.monogenic','reports.polygenic')) is not true then
+   raise exception using errcode='22023',message='invalid_request'; end if;
   perform private.current_own_report_grant_v1(p_account_id,p_session_id,p_file_id,p_purpose);
   if p_claim is not null then raise exception using errcode='22023',message='invalid_request'; end if;
   outbox:=private.enqueue_own_report_ready_v1(p_account_id,p_file_id,p_payload);
@@ -421,7 +424,7 @@ begin
   set state = 'invalidated', claimed_at = null,
       last_outcome_code = 'file_target_unavailable'
   where m.template_id = 'report-ready' and m.state in ('queued', 'claimed')
-    and not private.file_ready_mail_current_v1(m);
+    and private.file_ready_mail_current_v1(m) is not true;
 
   -- Recheck the exact invitation and all stored contact-key aliases before
   -- token creation, under the same transition lock as refusal/acceptance.
@@ -442,7 +445,7 @@ begin
     )
     and m.expires_at > clock_timestamp()
     and m.attempt_count < 10
-    and (m.template_id <> 'report-ready' or private.file_ready_mail_current_v1(m))
+    and (m.template_id <> 'report-ready' or private.file_ready_mail_current_v1(m) is true)
   order by m.not_before, m.created_at
   for update skip locked
   limit 1;
@@ -533,7 +536,7 @@ begin
    where tc.outbox_id=m.id and tc.state='issued' and th.status='current'
   ) then return false; end if;
  end if;
- if m.template_id='report-ready' and not private.file_ready_mail_current_v1(m) then return false; end if;
+ if m.template_id='report-ready' and private.file_ready_mail_current_v1(m) is not true then return false; end if;
  return true;
 end;
 $$;
