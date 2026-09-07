@@ -1,10 +1,41 @@
 # Hosted own-upload rollout prerequisites
 
-Rollout preparation checkpoint, 6 September 2026. This is not a feature-release receipt.
+Rollout preparation checkpoint, 7 September 2026. This is not a feature-release receipt.
 The new upload/report runtime is verified in a protected hosted canary; production is the independently released
 PR75 at `a7d5a8e6ac827beb2db464e4dbe34b2bfed8507b`, with its pause off.
 
-## Current checkpoint · 18:35 UTC, 6 September 2026
+## Current local prerequisites · 7 September 2026
+
+The protected hosted canary remains `9ffb68a` (unchanged `8166c3b` runtime),
+with the successful hosted source/report/withdrawal evidence recorded below.
+The new export and revocation-executor runtime is still local. Selected browser
+evidence now covers all 65 cases across documented test-only corrections; see
+[the local receipt](local-upload-browser-verification.md). Required ready
+notices and remaining full-suite regressions are still being completed.
+
+A new isolated cluster replayed all **67 migrations** at `a2ae65a`, with
+exact lexical history and file hashes verified. Four rollback-only SQL files
+at test revision `48b28ac` pass **124/124 assertions**: revocation executor 41,
+export 29, generation 34 and registry 20. The disposable cluster was removed;
+shared local fixtures and hosted state were untouched.
+
+Fresh replay exposed a packaging defect in
+`20260906135854_own_report_layer_language.sql`: its table lock depended on
+an outer transaction. One DO statement now wraps the same SQL operations and
+unchanged consent bodies/hashes. Hosted staging already applied those operations
+transactionally; **do not reapply that migration** to the existing hosted
+project or rewrite its history. Earlier staged-body comparisons remain dated
+evidence for the original file. Test fixtures now declare their bounded upload
+configuration and synthetic template/PGS references inside rollback transactions
+instead of depending on the older local database's seed. All initial failures
+are retained in the task receipts.
+
+The two new executor/export migrations have not been applied hosted. A
+replacement canary still needs current cost checks, compatible migration
+staging, reviewed notices, and bounded synthetic verification. Public aliases
+and scheduled jobs remain PR75; acceptance stays **18/65**.
+
+## Previous staging checkpoint · 18:35 UTC, 6 September 2026
 
 The owner completed signing-key activation. The authenticated dashboard labels
 replacement `d5e4e50d-7017-4c8f-9435-22c07b5234a9` Current and both older keys

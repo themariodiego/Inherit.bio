@@ -69,6 +69,27 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Canonical export and fresh-install prerequisites verified locally
+
+The actual ZIP journey now preserves both originals and all prepared calls,
+includes completed findings only for the selected source, and removes findings
+after withdrawal while keeping raw access. Runtime `5ee7121` has passing
+evidence for each of 65 selected browser cases across documented test-only
+corrections; this is neither one clean 65-case run nor the full 226-case gate.
+The revocation executor has synchronous manifest-before-delete and truthful
+historical-job handling, with no claim of deadline compliance from delayed work.
+
+An isolated fresh database replayed all 67 migrations at `a2ae65a`; four
+corrected, self-contained SQL fixtures at `48b28ac` pass 124 assertions.
+The consent-language migration now keeps its unchanged operations atomic
+without relying on an installer's outer transaction. This does not require
+reapplying the already staged hosted migration. Existing fixtures are preserved.
+
+These close export-content and fresh-install prerequisites locally. No PR was
+merged or candidate replaced in this batch. Next: durable chosen-report ready
+notices, retained expiry/deletion regressions, then compatible hosted staging
+and synthetic verification. Whole-plan acceptance remains **18/65**.
+
 ### 2026-09-06 · Protected hosted own-file canary verified
 
 Candidate `dpl_9W634MRCEadvBBvoB4tHg5KhEU5p` at `9ffb68a` runs the unchanged
