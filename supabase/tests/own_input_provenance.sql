@@ -2,6 +2,17 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
+-- Own the bounded configuration and catalog fixture; a fresh database has no
+-- application seed. These changes roll back with the synthetic source.
+insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,
+ maximum_account_bytes,maximum_active_uploads)
+ values(true,'http://127.0.0.1:54321/auth/v1',65536,65536,262144,2)
+ on conflict(singleton) do update set maximum_array_bytes=excluded.maximum_array_bytes,
+ maximum_vcf_bytes=excluded.maximum_vcf_bytes;
+insert into public.report_templates(slug,category,title,summary,status,evidence,layer,estimate_kind,variants,citations)
+ values('source-facts-fixture','basic-traits','Fixture','Rollback-only source facts.','published','emerging','estimate','single_locus',
+ '[{"rsid":4988235,"gene":"X","chrom":2,"pos38":135851076,"ref":"G","alt":"A","interpretations":{"AG":"saved"}}]',
+ '[{"pmid":"12345678","label":"fixture"}]');
 -- Entirely synthetic, rollback-only identity and compressed-source metadata.
 insert into auth.users(id,email) values('76900000-0000-4000-8000-000000000001','source-facts@e2e.local');
 insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
@@ -75,7 +86,8 @@ select pg_temp.grant_report('reports.polygenic',repeat('c',64));
 select is(pg_temp.source_facts('reports.polygenic'),'[]'::jsonb,'grant without generation does not expose report facts');
 insert into claims values('reports.polygenic',pg_temp.generate('begin'));
 select pg_temp.generate('complete','reports.polygenic',jsonb_build_object('reports',jsonb_build_array(jsonb_build_object(
- 'slug',(select slug from public.report_templates where status='published' and layer='estimate' order by slug limit 1))), 'prs','[]'::jsonb));
+ 'slug','source-facts-fixture','covered',true,'conflictingRsids','[]'::jsonb,
+ 'variants','[{"rsid":4988235,"outcome":{"status":"genotyped","genotype":"AG","interpretation":"saved"}}]'::jsonb)), 'prs','[]'::jsonb));
 select is(jsonb_array_length(pg_temp.source_facts('reports.polygenic')),1,'completed exact purpose exposes its source facts');
 select is(pg_temp.source_facts('reports.monogenic'),'[]'::jsonb,'different purpose cannot borrow completion');
 
@@ -112,7 +124,8 @@ select is(public.read_own_input_sources_v1('76900000-0000-4000-8000-000000000099
 select is(public.read_own_input_sources_v1('76900000-0000-4000-8000-000000000001',
  '76900000-0000-4000-8000-000000000010','76900000-0000-4000-8000-000000000099',
  array['76900000-0000-4000-8000-000000000040'::uuid],null),'[]'::jsonb,'foreign subject is denied');
-select throws_ok($$select pg_temp.source_facts('ancestry')$$,'22023','invalid_request','closed optional purpose cannot widen to ancestry');
+select is(pg_temp.source_facts('ancestry'),'[]'::jsonb,'unselected ancestry cannot borrow report provenance');
+select throws_ok($$select pg_temp.source_facts('reports.unsupported')$$,'22023','invalid_request','closed optional purpose rejects unsupported analysis');
 select throws_ok($$select public.read_own_input_sources_v1(null,null,null,array_fill(gen_random_uuid(),array[101]),null)$$,
  '22023','invalid_request','more than 100 file IDs is refused');
 select public.revoke_directional_purpose_v1('76900000-0000-4000-8000-000000000001',
