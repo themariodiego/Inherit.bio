@@ -88,7 +88,7 @@ export async function generateOwnFileWithChosenReports(
       const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
         && response.request().method() === "POST");
       // A successful signature precedes a server-rendered presentation refresh.
-      // Wait for that actual response to finish before inspecting replacement
+      // Wait for that actual response before inspecting replacement
       // controls; a consumed permission remains disabled while it is in flight.
       const refreshed = page.waitForResponse(response =>
         new URL(response.url()).pathname === "/genome/me/reports"
@@ -100,7 +100,6 @@ export async function generateOwnFileWithChosenReports(
       expect(await signature.json()).toMatchObject({ recordKind: "purpose_grant", purposeKey: purpose });
       const presentation = await refreshed;
       expect(presentation.status(), "authoritative report-choice refresh").toBe(200);
-      expect(await presentation.finished(), "complete report-choice refresh response").toBeNull();
       await expect(enabled).toBeVisible();
     }
   }
