@@ -69,6 +69,15 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Compatible notice/export/cleanup schema staged hosted
+
+The three reviewed additive migrations are staged and independently match
+their committed SQL, function bodies, owners/ACLs, columns and triggers.
+Legacy Storage remains intact; no generation, worker or provider call ran.
+Production is still PR75 and acceptance **18/65**. Next: one protected
+candidate build and source-only preparation/export checks, followed by the
+separately authorized synthetic notification and operational cleanup checks.
+
 ### 2026-09-07 · Own ready notices and control regressions verified locally
 
 At `6e9acd6`, one actual-provider run passes all **69 selected browser cases**

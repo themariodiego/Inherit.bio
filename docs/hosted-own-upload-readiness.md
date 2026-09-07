@@ -33,7 +33,16 @@ configuration and synthetic template/PGS references inside rollback transactions
 instead of depending on the older local database's seed. All initial failures
 are retained in the task receipts.
 
-The three executor/export/notice migrations have not been applied hosted.
+The three executor/export/notice migrations are now staged and independently
+verified hosted. Assigned history versions are `20260907072516`,
+`20260907072527` and `20260907072542`, respectively. Exact canonical file
+bytes match after removing the recorded BEGIN / 5-second lock timeout /
+60-second statement timeout / COMMIT wrapper. All 30 function bodies, owners
+and execution privileges, five columns, seven enabled triggers and the phase
+registry match. Client roles retain no new execution or table access. The
+legacy staging policy remains and the incompatible cutover is still absent.
+No report generation, retention worker or provider call was performed.
+
 Current Vercel cycle usage at `2026-09-07T07:10:26Z` is about $1.72 against
 $20 included credit, with billed usage rounding to $0.00. This establishes
 headroom for one bounded candidate build, not an enforced spending cap.
