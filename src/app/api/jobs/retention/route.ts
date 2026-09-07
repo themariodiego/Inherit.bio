@@ -6,6 +6,7 @@ import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
+import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-cleanup";
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 
 export const maxDuration = 300;
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  const reportRevocations = await drainOwnReportRevocations(admin);
+  processed += reportRevocations.processed; failed += reportRevocations.failed;
 
   // Expired preparation batches are private genetic working data. Their
   // database-selected cleanup is independent of source and mail providers.

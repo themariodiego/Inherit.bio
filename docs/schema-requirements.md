@@ -421,3 +421,33 @@ ten-minute presentation lifetime, and removes only expired own-upload or
 account-completion nonce rows for the same account. Private implementations
 are service-role-only, with public invoker wrappers; no client table grant or
 new storage table, expiry clock, genetic or analytic write is introduced.
+
+## Canonical own-report purpose revocation executor
+
+The `own-report-purpose-purge` worker phase belongs to the existing
+`purpose.derived-60s` retention ID and `purpose-derived-only` manifest class.
+It adds no scheduled phase or new sensitive store. `purge_manifests` gains
+`physical_purge_started_at`, a monotone `batch_cursor`, and an immutable
+`frozen_manifest_hash`. Exact grant-bound manifest membership and the phase
+envelope become immutable before enqueue; progress fields stay separate.
+
+Future canonical self monogenic/polygenic revocations freeze the disposition,
+phase and manifest before withdrawal, then execute their database-only members
+synchronously after logical withdrawal. A failed physical subtransaction leaves
+revocation and a durable pending job. The original deadline is never renewed;
+worker fallback alone is not evidence of meeting sixty seconds.
+
+Validated historical jobs retain their original dispatch binding and receive a
+visible `cancelled`/`superseded` receipt with `cleanupComplete: false` only after
+creating or reusing the compliant replacement. Only that replacement's actual
+residual proof establishes cleanup completion. Transient failures use bounded
+attempts/backoff; unsupported or exhausted work has a coded failed receipt.
+The service-only, zero-argument `run_own_report_purge_v1` returns only a closed
+outcome and deleted-row count. Exact-job helpers remain private and ungranted.
+
+This executor handles only grant-attributed `public.user_prs` coverage and
+`private.own_analysis_runs` journals. Source observations and Storage objects
+are never members. Regrant residual protection requires a live exact new grant
+and complete current source/normalization/Storage binding. A changed frozen
+target lifecycle revision or unsupported attributed chat output fails closed;
+this is not a generic family, cohort, lifecycle or source cleanup executor.

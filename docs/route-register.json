@@ -5929,6 +5929,17 @@
       ]
     },
     "revocation-disposition-purge-v1": {
+      "canonicalOwnReportExecutor": {
+        "phaseId": "own-report-purpose-purge",
+        "retentionId": "purpose.derived-60s",
+        "computationRevision": "own-report-revocation-v1",
+        "scope": "exact self reports.monogenic or reports.polygenic grant only; registered public.user_prs and private.own_analysis_runs members; raw source and newer authorized current-source generations are excluded",
+        "bindingEncoding": "SHA256 of UTF-8 PostgreSQL jsonb text for the frozen disposition/phase/manifest envelope, including exact subject-principal-purpose-grant revision and lifecycle/claim/hold revisions",
+        "execution": "freeze before logical withdrawal; execute the exact database-only manifest synchronously after withdrawal in the same transaction; a failed physical subtransaction leaves withdrawal and pending work durable; jobs.retention may retry at most five database-selected steps per invocation",
+        "compatibility": "validate the historical family-revoke-purge-v1 immutable binding and exact self report tuple; create or reuse the compliant replacement before cancelling the original as superseded with cleanupComplete false; never relabel the original binding",
+        "failure": "transient contention retries with bounded attempts/backoff without renewing the original deadline; blocked and retry-exhausted jobs retain explicit noncompletion receipts; pending fallback does not itself establish the 60-second guarantee",
+        "limitations": "no generic family/cohort/source purge; unsupported attributed chat outputs and changed frozen lifecycle revisions fail closed; completion requires exact old-grant residual proof"
+      },
       "claim": "one-SECURITY-DEFINER-RPC-may-claim-only-one-current-revocation-disposition-whose-canonical-retention-ID-deadline-is-due-using-FOR-UPDATE-SKIP-LOCKED-under-the-common-target-subject-or-cohort-then-disposition-then-lifecycle-then-hold-or-claim-then-manifest-then-worker-lock-order-and-returns-only-an-immutable-disposition-target-lifecycle-hold-claim-class-and-purge-manifest-revision-envelope",
       "scope": "the-claimed-disposition-is-prepartitioned-to-one-exact-subject-or-cohort-and-its-manifest-enumerates-only-row-primary-keys-and-random-storage-object-handles-reachable-by-current-explicit-foreign-key-joins; account-IDs-object-prefixes-historical-relations-client-targets-and-analysis-source-bytes-are-never-returned",
       "phaseRows": {

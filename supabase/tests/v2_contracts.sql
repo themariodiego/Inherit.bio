@@ -3,8 +3,8 @@ select plan(20);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
-select is((select count(*) from public.retention_phase_registry), 52::bigint,
-  'all 52 scheduled phase IDs are registered');
+select is((select count(*) from public.retention_phase_registry), 53::bigint,
+  '52 scheduled phases plus the canonical own-report revocation phase are registered');
 select is((select count(*) from public.purge_manifest_classes), 25::bigint,
   'all 25 purge manifest classes are registered');
 select is((select count(*) from public.purge_targets), 33::bigint,
