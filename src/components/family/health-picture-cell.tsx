@@ -119,6 +119,7 @@ export function HealthPictureCell({
   if (state.kind === "sources") return <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
     {state.entries.map(entry => <div key={entry.fileId} data-source-file-id={entry.fileId} className="space-y-2 py-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2 p-3">
+        <p data-slot="saved-result-person" className="text-sm font-medium text-ink">{personName}</p>
         {absenceWord(entry.state, personName) ? <p data-slot="cell-absence">{absenceWord(entry.state, personName)}</p> : null}
         {entry.conflictingCalls && entry.state.kind !== "conflicting-calls" ? <p>{CELL_CONFLICTING_CALLS}</p> : null}
         {entry.state.kind === "letters" ? <p data-chip="layer" aria-describedby={captionId} className="text-sm text-ink-muted">{LAYER_CHIP_LABELS[layer]}</p> : null}

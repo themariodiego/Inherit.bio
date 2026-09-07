@@ -70,6 +70,7 @@ describe('Health Picture captured projection', () => {
     const cell = rows([a, column('B')]).rows[0].cells[0];
     const html = renderToStaticMarkup(createElement(HealthPictureCell, { state: cell, dataSubjectId: 'A', personName: 'You', reportTitle: 'Captured a', layer: 'estimate', href: null, captionId: 'caption' }));
     expect(html).toContain('Saved source 1 ·'); expect(html).toContain('Saved source 2 ·');
+    expect(html.match(/data-slot="saved-result-person"[^>]*>You<\/p>/g)).toHaveLength(2);
     expect(html).toMatch(/aria-label="[^"]+Saved source 1"/); expect(html).toMatch(/aria-label="[^"]+Saved source 2"/);
     expect(html).not.toContain('File 1'); expect(html).not.toContain('File 0');
     const fallback = renderToStaticMarkup(createElement(InputProvenance, { sources: [source('one')], sourceLabels: { unrelated: 'Do not render' }, subject: { subjectId: 'A' } }));
