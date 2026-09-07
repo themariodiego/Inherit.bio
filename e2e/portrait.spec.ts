@@ -70,8 +70,9 @@ import { TRAIT_KEYS } from "@/lib/family/traits";
 const A = { email: `portrait-a-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
 const B = { email: `portrait-b-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
 
-/** Neither self subject carries a name, so each sees the other as an adult. */
-const OTHER = "Another adult";
+/** The inviter sees the invitation handle; its recipient sees the unnamed self. */
+const INVITEE_LABEL = "Invited adult";
+const INVITER_LABEL = "Another adult";
 
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
 const GATE_BUTTON = "Show what’s shared";
@@ -387,7 +388,7 @@ test("with only A's grant, the page is the blocking screen: it names B's steps, 
   await signIn(page, A.email, A.password);
   await page.goto(url());
   await expect(page.getByRole("heading", { level: 1, name: PORTRAIT_H1 })).toBeVisible();
-  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${OTHER} / ${PORTRAIT_H1}`);
+  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${INVITEE_LABEL} / ${PORTRAIT_H1}`);
   await expect(page.locator('nav[aria-label="Breadcrumb"] a').nth(1)).toHaveAttribute(
     "href",
     `/family/s-${invitedSubjectB}`,
@@ -408,13 +409,13 @@ test("with only A's grant, the page is the blocking screen: it names B's steps, 
   // the server-derived list, the action to the consents page.
   const blocking = page.locator('[data-slot="portrait-blocking"]');
   await expect(blocking).toHaveAttribute("data-state", "consent-required");
-  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(`you and ${OTHER}`));
+  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(`you and ${INVITEE_LABEL}`));
   await expect(blocking).toContainText(BLOCKING_BODY);
   const steps = blocking.locator('[data-slot="portrait-missing-step"]');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0)).toHaveText(viewerMissingStep(VIEWER_PORTRAIT_STEPS.acknowledged));
-  await expect(steps.nth(1)).toHaveText(missingStep(OTHER, PORTRAIT_STEPS.grant));
-  await expect(steps.nth(2)).toHaveText(missingStep(OTHER, PORTRAIT_STEPS.acknowledged));
+  await expect(steps.nth(1)).toHaveText(missingStep(INVITEE_LABEL, PORTRAIT_STEPS.grant));
+  await expect(steps.nth(2)).toHaveText(missingStep(INVITEE_LABEL, PORTRAIT_STEPS.acknowledged));
   await expect(page.getByRole("link", { name: OPEN_CONSENTS_BUTTON })).toHaveAttribute("href", "/settings/consents");
 
   // Nothing derived, no image, no result (acceptance 16, G5.9(a)).
@@ -454,7 +455,7 @@ test("A acknowledges through the real checkbox, for A's own subject only", async
   // A's own step is gone on the refreshed page; B's two remain; no checkbox is offered.
   const blocking = page.locator('[data-slot="portrait-blocking"]');
   await expect(blocking.locator('[data-slot="portrait-missing-step"]')).toHaveCount(2);
-  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(OTHER));
+  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(INVITEE_LABEL));
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByRole("link", { name: OPEN_CONSENTS_BUTTON })).toHaveAttribute("href", "/settings/consents");
   expect(await acknowledgedAt(selfSubjectA)).not.toBeNull();
@@ -602,9 +603,9 @@ test("A's session and B's session render byte-equal finding text (brief line 133
   const fromB = await findingTexts(page);
   expect(fromB).toEqual(fromA);
   await expect(page.locator('[data-slot="portrait-empty"]')).toHaveText(unavailableA!);
-  // B sees A as the other adult and themself as "You"; the findings name nobody.
-  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${OTHER} / ${PORTRAIT_H1}`);
-  for (const text of fromB) expect(text).not.toContain(OTHER);
+  // B sees A through the unnamed-self fallback, not A’s invitation label for B.
+  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${INVITER_LABEL} / ${PORTRAIT_H1}`);
+  for (const text of fromB) for (const label of [INVITEE_LABEL, INVITER_LABEL]) expect(text).not.toContain(label);
 });
 
 test("the page keeps its budgets and is clean in both themes", async ({ page }) => {
@@ -692,9 +693,9 @@ test("B deletes it: the page closes for both on the next request, and B's own gr
   await signIn(page, A.email, A.password);
   await page.goto(url());
   const blockingForA = page.locator('[data-slot="portrait-blocking"]');
-  await expect(blockingForA.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(OTHER));
+  await expect(blockingForA.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(INVITEE_LABEL));
   await expect(blockingForA.locator('[data-slot="portrait-missing-step"]')).toHaveText([
-    missingStep(OTHER, PORTRAIT_STEPS.grant),
+    missingStep(INVITEE_LABEL, PORTRAIT_STEPS.grant),
   ]);
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);

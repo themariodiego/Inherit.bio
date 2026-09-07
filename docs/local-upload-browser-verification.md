@@ -63,6 +63,18 @@ and browser run are required. The earlier two pretest setup failures (wrong
 host build pin and missing local worker environment) remain preserved as such.
 Latest actual attempt: `work/canonical-portrait-giab-verification-v4/`.
 
+Fresh build `0dfBySAfzCr-qXXTXv8A7` at `c894915` ran all six Family cases,
+ten Portrait cases and four GIAB cases: **7 passed, 1 failed, 12 not run**,
+zero retries. All Family cases and Portrait's first upload/invitation case
+pass. The next Portrait case now receives the complete grant receipt and
+reaches On, then finds the naming mismatch: A sees its actual “Invited adult”
+handle, while the old fixture expected B's “Another adult” fallback. The
+fixture now distinguishes each viewer's graph label throughout its remaining
+assertions. No product naming or permission assertion changes. The three
+original specs, failed result, actual container build ID and setup correction
+are preserved in `work/canonical-family-portrait-giab-receipts/`. The combined
+suite's aggregate upload-counter gate remains unproved because the suite fails.
+
 GitHub CI `34137537643` at `001b72e` failed before browser execution because
 one negative-test URL used a non-reserved example hostname. The replacement
 uses `.invalid`; all 12 CI boundary tests and scoped lint pass with the same

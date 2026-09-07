@@ -1,5 +1,13 @@
 # Test diff register
 
+## Portrait names from each adult’s actual Family graph · 2026-09-07
+
+The real invitation creates an “Invited adult” handle in A’s graph; B sees
+A’s unnamed self as “Another adult.” The browser fixture now asserts these
+two distinct labels in their correct sessions, including missing steps and
+withdrawal. It does not rename either record or change product copy. All ten
+cases, receipt-body assertions, source preservation and result gates remain.
+
 ## Bounded GIAB browser fixture and separate synthetic search positives · 2026-09-07
 
 `e2e/upload-vcf.spec.ts` retains four serial browser cases. The original
