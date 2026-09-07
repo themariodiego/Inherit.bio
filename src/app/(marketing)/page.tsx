@@ -10,7 +10,7 @@ const steps = [
   {
     n: "02",
     title: "Upload your raw data",
-    body: "23andMe, AncestryDNA, MyHeritage, FamilyTreeDNA text files and VCFs are fully processed. BAM/CRAM files are stored and hashed for you. Files go straight to your private storage — never through our page servers.",
+    body: "Upload 23andMe, AncestryDNA, MyHeritage or FamilyTreeDNA text files, or VCF/gVCF files. Choose which reports to generate after your file is prepared. BAM, CRAM and FASTQ files are not accepted. Uploads go straight from your browser to private storage.",
   },
   {
     n: "03",

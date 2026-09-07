@@ -58,9 +58,10 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Uploaded genome files.</strong> The raw files you
                   upload: microarray exports (23andMe, AncestryDNA, MyHeritage,
-                  FamilyTreeDNA), VCF/gVCF files, and BAM/CRAM files. Uploads
-                  go directly from your browser to your private storage bucket
-                  and never pass through our page servers.
+                  FamilyTreeDNA) and VCF/gVCF files. BAM, CRAM and FASTQ files
+                  are not accepted. These uploads go directly from your browser
+                  to private storage, where server checks verify them before
+                  preparation.
                 </li>
                 <li>
                   <strong>Derived data.</strong> Variants parsed from your

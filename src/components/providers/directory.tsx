@@ -34,14 +34,14 @@ const DEPTH_FILTERS = [
 
 // "Works with Inherit" per product row — derived mechanically from the raw
 // file formats the product returns (formats_returned), never hand-labeled.
-// Rules: array-txt/VCF/gVCF → full reports; BAM/CRAM/FASTQ only → stored
-// only; nothing usable returned → not usable.
+// Rules: array-txt/VCF/gVCF → supported; BAM/CRAM/FASTQ only or no
+// compatible raw file → not usable under the current upload contract.
 const NO_FILE_RE = /app\/portal|reports only|not stated|unverified/i;
 const FULL_RE = /array|gvcf|\bvcf\b/i;
-const STORED_RE = /\b(bam|cram|fastq)\b/i;
+const UNSUPPORTED_RE = /\b(bam|cram|fastq)\b/i;
 
 type Compat = {
-  kind: "full" | "stored" | "none";
+  kind: "full" | "none";
   label: string;
   detail: string;
 };
@@ -61,17 +61,17 @@ function compatFor(prod: ProviderProduct): Compat {
   if (formats.some((f) => FULL_RE.test(f))) {
     return {
       kind: "full",
-      label: "Full reports",
+      label: "Supported raw file",
       detail:
-        "Returns an array/VCF raw file Inherit analyzes directly — most reports resolve.",
+        "Returns an array or VCF file that Inherit can prepare. Choose reports separately; findings depend on what your file covers.",
     };
   }
-  if (formats.some((f) => STORED_RE.test(f))) {
+  if (formats.some((f) => UNSUPPORTED_RE.test(f))) {
     return {
-      kind: "stored",
-      label: "Stored only (analysis needs self-hosting)",
+      kind: "none",
+      label: "Not usable — needs a VCF",
       detail:
-        "Returns BAM/CRAM/FASTQ only — Inherit stores these, but analysis requires a self-hosted variant-calling step.",
+        "Returns BAM/CRAM/FASTQ only. Inherit does not accept these files. Ask the lab for a VCF, or create one with your own variant-calling tools.",
     };
   }
   return {
@@ -198,14 +198,15 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             <strong className="font-medium text-ink">
               Genotyping array (~$30–120):
             </strong>{" "}
-            tests ~700k common variants — works fully with Inherit, most
-            reports resolve.
+            tests a set of common variants. Inherit can prepare supported
+            array text files; each report depends on the positions covered.
           </li>
           <li>
             <strong className="font-medium text-ink">
               Whole genome 30x (~$200–1,000):
             </strong>{" "}
-            reads everything — fullest report coverage, biggest files.
+            aims to read across the genome. Some positions may be missing or
+            unclear; a VCF/gVCF file is needed for upload.
           </li>
           <li>
             <strong className="font-medium text-ink">Exome/other:</strong>{" "}
@@ -213,8 +214,8 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
           </li>
         </ul>
         <p className="mt-2 text-sm">
-          If you&apos;re new and just want reports: an array kit is the
-          cheapest way in; whole genome is the most complete.
+          Check which raw files the lab provides before you buy. Choose
+          reports after your file is prepared; no test type covers every finding.
         </p>
       </section>
 
