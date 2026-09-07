@@ -87,10 +87,20 @@ export async function generateOwnFileWithChosenReports(
       await choices.getByRole("checkbox", { name: label, exact: true }).check();
       const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
         && response.request().method() === "POST");
+      // A successful signature precedes a server-rendered presentation refresh.
+      // Wait for that actual response to finish before inspecting replacement
+      // controls; a consumed permission remains disabled while it is in flight.
+      const refreshed = page.waitForResponse(response =>
+        new URL(response.url()).pathname === "/genome/me/reports"
+        && response.request().method() === "GET" && response.request().headers().rsc === "1");
+      void refreshed.catch(() => {});
       await choices.getByRole("button", { name: `Enable ${label}`, exact: true }).click();
       const signature = await signed;
       expect(signature.status()).toBe(201);
       expect(await signature.json()).toMatchObject({ recordKind: "purpose_grant", purposeKey: purpose });
+      const presentation = await refreshed;
+      expect(presentation.status(), "authoritative report-choice refresh").toBe(200);
+      expect(await presentation.finished(), "complete report-choice refresh response").toBeNull();
       await expect(enabled).toBeVisible();
     }
   }
