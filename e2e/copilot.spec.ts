@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, COPILOT_MODEL_HOST,
-  expectClosedCompletion, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
+  expectClosedCompletion, expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 
 // A9: real canonical source/report, distinct named cloud disclosure, complete
 // source-backed answer and live withdrawal. The HTTPS fake provider lives in
@@ -88,11 +88,11 @@ test("cloud provider requires named disclosure before use; captured report backs
   await page.getByRole("button", { name: "Send", exact: true }).click();
   const response = await answered;
   expect(response.status()).toBe(200);
-  await expectClosedCompletion(response, CAFFEINE_ANSWER);
   await expect(page.getByText(CAFFEINE_ANSWER, { exact: true })).toBeVisible();
   const receipt = await fixture.snapshot();
   expect(receipt.calls).toBe(2);
   const report = lastToolResult(receipt);
+  await expectClosedCompletion(response, CAFFEINE_ANSWER, expectedCaffeineCitations(report));
   expect(report).toMatchObject({ slug: CAFFEINE_SLUG,
     sources: [expect.objectContaining({ file_id: fileId, purpose: "reports.polygenic", covered: true,
       variants: expect.arrayContaining([expect.objectContaining({ rsid: "rs762551", outcome: expect.objectContaining({ genotype: "AC" }) })]) })] });

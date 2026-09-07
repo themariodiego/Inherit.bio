@@ -43,7 +43,38 @@ export async function allowCopilot(page: Page) {
   await permission.getByRole("button", { name: "Allow Copilot for this model", exact: true }).click();
   await expect(permission.getByText("Copilot is allowed for this model configuration.", { exact: true })).toBeVisible();
 }
-export async function expectClosedCompletion(response: Response, expected: string) {
+type ExpectedCitation = { id: string; label: string; href: string };
+// Read the provider's actual captured report receipt, never today's catalog or
+// the response under assertion. These cases deliberately use the caffeine report.
+export function expectedCaffeineCitations(report: Record<string, unknown>): ExpectedCitation[] {
+  expect(report.slug).toBe(CAFFEINE_SLUG);
+  expect(Array.isArray(report.sources)).toBe(true);
+  const sources = report.sources as Array<{ title: string; citations: unknown[]; catalogSnapshot: {
+    schemaVersion: number; templateSha256: string; template: { slug: string; title: string;
+      citations: Array<{ pmid: string; label: string }> } } }>;
+  expect(sources.length).toBeGreaterThan(0);
+  const expected = new Map<string, ExpectedCitation>();
+  for (const source of sources) {
+    const snapshot = source.catalogSnapshot;
+    expect(snapshot.schemaVersion).toBe(1);
+    expect(snapshot.templateSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(snapshot.template.slug).toBe(CAFFEINE_SLUG);
+    expect(snapshot.template.title).toBe("Caffeine metabolism · CYP1A2");
+    expect(source.title).toBe(snapshot.template.title);
+    expect(source.citations).toEqual(snapshot.template.citations);
+    expect(snapshot.template.citations).toHaveLength(1);
+    const publication = snapshot.template.citations[0];
+    expect(publication).toMatchObject({ pmid: "10233211", label: "Sachse et al., Br J Clin Pharmacol 1999" });
+    const reportId = `report:${snapshot.template.slug}:${snapshot.templateSha256}`;
+    expected.set(reportId, { id: reportId, label: snapshot.template.title,
+      href: `/genome/me/reports/${snapshot.template.slug}` });
+    const publicationId = `pmid:${publication.pmid}`;
+    expected.set(publicationId, { id: publicationId, label: publication.label,
+      href: `https://pubmed.ncbi.nlm.nih.gov/${publication.pmid}/` });
+  }
+  return [...expected.values()];
+}
+export async function expectClosedCompletion(response: Response, expected: string, citations: ExpectedCitation[] = []) {
   const request = response.request(), url = new URL(request.url());
   expect(request.method()).toBe("POST"); expect(url.pathname).toBe("/api/chat"); expect(url.search).toBe("");
   const submitted = request.postDataJSON();
@@ -57,7 +88,7 @@ export async function expectClosedCompletion(response: Response, expected: strin
   expect(body.chatId).toMatch(/^[0-9a-f-]{36}$/);
   expect(response.headers()["x-inherit-chat-id"]).toBe(body.chatId);
   if ("chatId" in submitted) expect(submitted.chatId).toBe(body.chatId);
-  expect(body.message).toEqual({ role: "assistant", content: expected, citations: [], embryoFindings: [] });
+  expect(body.message).toEqual({ role: "assistant", content: expected, citations, embryoFindings: [] });
   return body.chatId as string;
 }
 export function lastToolResult(snapshot: FixtureSnapshot): Record<string, unknown> {

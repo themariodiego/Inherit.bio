@@ -6,7 +6,7 @@ import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { OWN_REPORT_CHOICES } from "../src/lib/uploads/own-report-purpose";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
-  lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
+  expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 import type { CanonicalProviderPlan } from "./fixtures/canonical-copilot-provider";
 
 const original = path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf");
@@ -33,15 +33,16 @@ async function send(page: Page, prompt: string) {
   await page.getByRole("button", { name: "Send", exact: true }).click();
   return response;
 }
-async function ask(page: Page, plan: CanonicalProviderPlan) {
+async function ask(page: Page, plan: CanonicalProviderPlan, capturedReport = false) {
   await fixture.configure(plan);
   const before = (await fixture.snapshot()).calls;
   const response = await send(page, plan.prompt);
   expect(response.status()).toBe(200);
-  const chatId = await expectClosedCompletion(response, plan.answer);
   await expect(page.getByText(plan.answer, { exact: true })).toBeVisible();
   const receipt = await fixture.snapshot(); expect(receipt.calls - before).toBe(2);
-  return { chatId, result: lastToolResult(receipt) };
+  const result = lastToolResult(receipt);
+  const chatId = await expectClosedCompletion(response, plan.answer, capturedReport ? expectedCaffeineCitations(result) : []);
+  return { chatId, result };
 }
 async function storedPair(userId: string, chatId: string) {
   const { data, error } = await adminClient().from("chat_messages").select("id,role,content,turn_id,turn_ordinal")
@@ -61,7 +62,7 @@ async function denyHistory(page: Page, chatId: string) {
 }
 async function initialPair(page: Page, userId: string) {
   const { chatId } = await ask(page, { prompt: CAFFEINE_PROMPT,
-    tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER });
+    tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER }, true);
   const pair = await storedPair(userId, chatId);
   return { chatId, pair };
 }
@@ -211,7 +212,7 @@ test("Copilot permission withdrawal after the tool result blocks persistence and
   await page.goto("/settings/copilot"); await allowCopilot(page);
   await denyHistory(page, chatId);
   await page.goto("/copilot/me");
-  const fresh = await ask(page, { prompt: CAFFEINE_PROMPT, tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER });
+  const fresh = await ask(page, { prompt: CAFFEINE_PROMPT, tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER }, true);
   expect(fresh.chatId).not.toBe(chatId); await storedPair(userId, fresh.chatId);
 });
 

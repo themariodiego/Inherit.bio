@@ -6,7 +6,7 @@ import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { ADVERSARIAL_NUMBER } from "./mock-llm";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
-  lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
+  expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 import {
   crossSubjectRefusal,
   REFUSAL_DIAGNOSIS,
@@ -140,9 +140,9 @@ test("each gated prompt gets its exact refusal as the whole turn and the provide
   const allowed = await ask(page, CAFFEINE_PROMPT);
   expect(allowed.status()).toBe(200);
   expect(allowed.headers()["x-copilot-refusal"]).toBeUndefined();
-  const chatId = await expectClosedCompletion(allowed, CAFFEINE_ANSWER);
   await expect(page.getByText(CAFFEINE_ANSWER, { exact: true })).toBeVisible();
   const allowedReceipt = await fixture.snapshot();
+  const chatId = await expectClosedCompletion(allowed, CAFFEINE_ANSWER, expectedCaffeineCitations(lastToolResult(allowedReceipt)));
   expect(allowedReceipt.calls - beforeAllowed).toBe(2);
   expect(lastToolResult(allowedReceipt)).toMatchObject({ slug: CAFFEINE_SLUG });
   await expect(page.getByText("get_report", { exact: true })).toHaveCount(0);
@@ -182,9 +182,9 @@ test("each gated prompt gets its exact refusal as the whole turn and the provide
   const resend = await ask(page, CAFFEINE_PROMPT);
   expect(resend.status()).toBe(200);
   expect(resend.headers()["x-copilot-refusal"]).toBeUndefined();
-  expect(await expectClosedCompletion(resend, CAFFEINE_ANSWER)).toBe(chatId);
   await expect(page.getByText(CAFFEINE_ANSWER, { exact: true })).toHaveCount(2);
   const history = await fixture.snapshot();
+  expect(await expectClosedCompletion(resend, CAFFEINE_ANSWER, expectedCaffeineCitations(lastToolResult(history)))).toBe(chatId);
   expect(history.calls - beforeResend).toBe(2);
   expect(lastToolResult(history)).toMatchObject({ slug: CAFFEINE_SLUG });
   const userTurns = history.requests.at(-1)!.messages
