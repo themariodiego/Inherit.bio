@@ -78,6 +78,15 @@ create temporary table first_chat as select (pg_temp.turn(repeat('d',64))->>'cha
 select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),2::bigint,'validated first turn writes an atomic pair');
 select pg_temp.turn(null,(select id from first_chat),1);
 select is(jsonb_array_length(pg_temp.chat('history','{}',(select id from first_chat))->'messages'),4,'authorized server history returns both complete turns');
+grant select on copilot_subject,chat_authority,first_chat to service_role;
+set local role service_role;
+select lives_ok($$select public.own_copilot_chat_v1('history','77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010',(select id from copilot_subject),(select value from chat_authority),null,(select id from first_chat),'{}')$$,
+ 'actual application service role can read authorized paired history');
+select throws_ok($$select public.own_copilot_chat_v1('history','77900000-0000-4000-8000-000000000099',
+ '77900000-0000-4000-8000-000000000010',(select id from copilot_subject),(select value from chat_authority),null,(select id from first_chat),'{}')$$,
+ '42501','not_found','service role dispatcher still rejects a mismatched account');
+set local role postgres;
 savepoint unverified_pair;
 update public.chat_messages set legacy_unverified=true where chat_id=(select id from first_chat) and turn_ordinal=1;
 select throws_ok($$select pg_temp.chat('history','{}',(select id from first_chat))$$,'42501','not_found','unverified earlier pair cannot be omitted to revive a dependent suffix');
@@ -192,7 +201,10 @@ create temporary table during_delete_chat as select (pg_temp.turn(repeat('9',64)
 select is((select jsonb_array_length(canonical_chat_manifest) from private.genome_file_deletions
  where file_id='77900000-0000-4000-8000-000000000040'),4,
  'a new independent chat does not change the frozen deletion manifest');
+-- SQL fixture simulates only its synthetic Storage acknowledgement; no object API is called.
+set local storage.allow_delete_query='true';
 delete from storage.objects where id='77900000-0000-4000-8000-000000000020';
+set local storage.allow_delete_query='false';
 select public.finish_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
  '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select (value->>'token')::uuid from delete_receipt));
 select is((select count(*) from public.chat_messages where chat_id=(select id from report_chat)),0::bigint,'selected source and its quoted dependent pair are removed together');
