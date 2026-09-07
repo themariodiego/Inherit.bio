@@ -22,7 +22,9 @@ Independent release review requires these checks before staging:
    metadata constraint. Confirm no pending/claimed v1 report-ready notice
    already overlaps active ancestry; prospective triggers do not repair those
    rows. If present, review a permanent cancellation before proceeding. Both
-   counts were zero locally; hosted prechecks remain required.
+   hosted counts are zero in the read-only `2026-09-07T12:35:29Z` precheck; the
+   ancestry reader is absent and latest history remains `072516/072527/072542`.
+   Recheck transactionally immediately before installation.
 3. Keep incompatible `20260906133807` deferred until the documented PR75 upload
    pause, in-flight completion and coordinated application transition.
 4. Retain additive schema, snapshot readers and authorization/notice guards

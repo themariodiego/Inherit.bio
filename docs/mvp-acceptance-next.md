@@ -86,8 +86,8 @@ This closes the local ancestry prerequisite recorded below. It does not close
 whole ancestry/scientific acceptance or the complete browser suite. Four legacy
 `ingestFileAs` call sites remain in portrait, Health Picture, Family and
 other-adult deletion. Accepted ADR0016 excludes BAM/CRAM; the historical success
-test is explicitly retired with its evidence preserved, and two current refusal
-cases are under actual-provider verification. Hosted ancestry migrations,
+test is explicitly retired with its evidence preserved, and both current refusal
+cases pass at `b72c1e4` with two actual Storage uploads and exact cleanup proof. Hosted ancestry migrations,
 notification allowance/recipient authorization, complete CI and coordinated
 cutover remain open. Production stays PR75; acceptance stays **18/65**.
 

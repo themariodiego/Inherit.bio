@@ -10,8 +10,10 @@ readiness and mobile navigation are exercised; desktop/mobile captures were
 inspected. Four legacy helper call sites remain in four specs: `portrait`,
 `family-health-picture`, `family` and `file-deletion` (other-adult case).
 The older six-call count below is historical. The BAM/CRAM refusal replacement
-is independently under verification; accepted ADR0016 excludes positive support.
-These receipts are not one combined full-suite pass; acceptance stays **18/65**.
+passes both cases at `b72c1e4` with two actual Storage uploads, no skips/retries;
+accepted ADR0016 excludes positive support.
+Standard static discovery passes **232 cases in 44 files**. These receipts are
+not one combined full-suite pass; acceptance stays **18/65**.
 
 ## Latest integration · 2026-09-07
 
@@ -56,8 +58,8 @@ and supersedes that earlier requirement. Its historical A10 evidence remains;
 `tier2-upload.spec.ts` now checks browser refusal, declaration refusal and actual
 Storage/finalization rejection cleanup for both formats. See the explicit
 [test diff entry](./test-diff-register.md#bamcram-historical-proof-and-current-refusal-contract--2026-09-07).
-These two cases have passed lint/discovery only; actual-provider execution is
-pending. Preserve all other substantive assertions; changing status flags or
+These two cases now pass actual-provider execution at `b72c1e4`, with two
+real uploads and exact finalization rejection/cleanup proof. Preserve all other substantive assertions; changing status flags or
 narrowing standard CI does not implement their missing behaviors.
 
 ### Previous export-only integration

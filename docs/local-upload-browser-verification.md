@@ -61,6 +61,27 @@ runs; it is not a combined full-suite pass. The standard suite, hosted rollout,
 scientific validation and complete route coverage remain open. Production is
 PR75; formal acceptance remains **18/65**.
 
+## Current BAM/CRAM refusal contract verified locally
+
+At `b72c1e4` (runtime/tests `e90fb69`), **2/2 browser cases pass**, with two
+actual Storage uploads, no skips/retries and one isolated production build.
+The browser refuses both genuine and misleading extensions without issuing a
+lease. Both declaration aliases return exact 422 refusals. Deliberately declaring
+a supported format obtains a real restricted upload, whose stored bytes are
+independently checked; finalization returns 415 and consumes a rejected lease
+with acknowledged cleanup. Both cases end with zero source objects, files,
+variants, ancestry/PRS results, journals, jobs or report-ready notices.
+This verifies accepted ADR0016's exclusion, not positive BAM/CRAM support.
+Historical A10 success evidence and its explicit retirement remain in the test
+diff register. Evidence: task `work/canonical-unsupported-reads-runtime-adapter/`
+`receipt.json`, `run.log` and `gate-test-results/results.json`.
+
+The same batch passes legal, 162-template integrity and readability gates
+(2,522 blocks). The repository/history secret gate passes at `b72c1e4`:
+1,125 tracked files and 368 authored commits. The public name scan has zero
+findings; the full name gate correctly fails only because the private denylist
+is absent locally. Existing CI must verify that private gate; it is not waived.
+
 ## Canonical personal Copilot verified locally
 
 At `763fbf1`, **73/73 browser cases in four specs pass in one production-build
