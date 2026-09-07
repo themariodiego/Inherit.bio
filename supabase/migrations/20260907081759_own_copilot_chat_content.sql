@@ -595,6 +595,28 @@ revoke all on function private.freeze_file_copilot_manifest_v1() from public,ano
 create trigger freeze_file_copilot_manifest before insert or update on private.genome_file_deletions
  for each row execute function private.freeze_file_copilot_manifest_v1();
 
+-- Historical chats have only a subject binding, not a file attribution. The
+-- selected-file contract preserves them; never invent file membership from text
+-- or from legacy_unverified alone. The scope migration backfilled turn IDs and
+-- ordinals even for historical rows, so those fields do not establish provenance.
+create function private.is_unattributed_legacy_file_chat_v1(p_chat_id uuid,p_account_id uuid,p_subject_id uuid)
+returns boolean language sql stable security definer set search_path=pg_catalog as $fn$
+ select exists(select 1 from public.chats c where c.id=p_chat_id and c.user_id=p_account_id
+  and c.subject_id=p_subject_id and c.scope_kind='self' and c.canonical_authority is null
+  and c.grant_revision is null and c.relationship_revision is null
+  and not exists(select 1 from public.chat_messages m where m.chat_id=c.id and (
+   m.user_id is distinct from p_account_id or m.canonical_projection is not null
+   or m.canonical_citations is distinct from '[]'::jsonb
+   or m.retrieved_subject_ids is distinct from '{}'::uuid[]
+   or m.retrieved_purpose_keys is distinct from '{}'::text[]
+   or m.contributor_ids is distinct from '{}'::uuid[]
+   or m.grant_revisions is distinct from '{}'::bigint[]
+   or m.lifecycle_revisions is distinct from '{}'::bigint[]
+   or m.cohort_authority_fingerprint is not null or m.embryo_findings is distinct from '[]'::jsonb)));
+$fn$;
+revoke all on function private.is_unattributed_legacy_file_chat_v1(uuid,uuid,uuid)
+ from public,anon,authenticated,inherit_upload_only;
+
 create or replace function public.prepare_genome_file_deletion_v1(
   p_account_id uuid, p_session_id uuid, p_file_id uuid
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
@@ -628,10 +650,12 @@ begin
     or exists (select 1 from public.report_artifacts where subject_id=s.id)
     or exists (select 1 from public.embryo_variants where source_file_id=f.id)
     or exists (select 1 from public.chats c where c.user_id=p_account_id and c.subject_id=s.id
-      and (c.canonical_authority is null or c.legacy_unverified is not false))
+      and (c.canonical_authority is null or c.legacy_unverified is not false)
+      and private.is_unattributed_legacy_file_chat_v1(c.id,p_account_id,s.id) is not true)
     or exists (select 1 from public.chat_messages cm join public.chats c on c.id=cm.chat_id
       where cm.user_id=p_account_id and c.subject_id=s.id
-      and (cm.canonical_projection is null or cm.legacy_unverified is not false)) then
+      and (cm.canonical_projection is null or cm.legacy_unverified is not false)
+      and private.is_unattributed_legacy_file_chat_v1(c.id,p_account_id,s.id) is not true) then
     raise exception using errcode='55000', message='file_delete_shared_graph';
   end if;
   if f.status in ('uploading','parsing','parsed') or exists (

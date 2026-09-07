@@ -185,10 +185,49 @@ rollback to session_ended;
 create temporary table report_chat as select (pg_temp.turn(repeat('6',64))->>'chatId')::uuid id;
 select pg_temp.turn(null,(select id from report_chat),1);
 savepoint selected_file_deletion;
+-- Historical subject-only content has no file provenance. Both old backfill
+-- (legacy_unverified=true) and old paired-writer (false) shapes are preserved.
+create temporary table legacy_file_chat as
+ with inserted as (insert into public.chats(user_id,scope_kind,subject_id,lifecycle_revision,
+  provider_classification,runtime_attestation_revision,model_recipient_revision,authorization_fingerprint,legacy_unverified)
+ select user_id,scope_kind,subject_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
+  model_recipient_revision,authorization_fingerprint,true from public.chats where id=(select id from first_chat)
+ returning id) select id from inserted;
+insert into public.chat_messages(chat_id,user_id,role,content,turn_id,turn_ordinal,paired_role,scope_revision,
+ authorization_fingerprint,provider_classification,runtime_attestation_revision,model_recipient_revision,legacy_unverified)
+ select (select id from legacy_file_chat),user_id,role,content,gen_random_uuid(),turn_ordinal,paired_role,scope_revision,
+ authorization_fingerprint,provider_classification,runtime_attestation_revision,model_recipient_revision,role='user'
+ from public.chat_messages where chat_id=(select id from first_chat) and turn_ordinal=1;
+create temporary table legacy_file_history as select id,content,turn_id,legacy_unverified
+ from public.chat_messages where chat_id=(select id from legacy_file_chat);
+savepoint mixed_legacy_projection;
+update public.chat_messages set canonical_projection='{}' where chat_id=(select id from legacy_file_chat) and role='assistant';
+select throws_ok($$select public.prepare_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040')$$,
+ '55000','file_delete_shared_graph','legacy container with a partial canonical projection remains blocked');
+rollback to mixed_legacy_projection;
+savepoint mixed_legacy_citations;
+update public.chat_messages set canonical_citations='[{"id":"historical-test","label":"Synthetic source","href":"/genome/me/reports/synthetic"}]'
+ where chat_id=(select id from legacy_file_chat) and role='assistant';
+select throws_ok($$select public.prepare_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040')$$,
+ '55000','file_delete_shared_graph','canonical citations alone cannot masquerade as unattributed legacy content');
+rollback to mixed_legacy_citations;
+savepoint stripped_canonical_markers;
+update public.chats set canonical_authority=null where id=(select id from first_chat);
+update public.chat_messages set canonical_projection=null where chat_id=(select id from first_chat);
+select throws_ok($$select public.prepare_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040')$$,
+ '55000','file_delete_shared_graph','remaining retrieval and grant provenance blocks a stripped canonical history');
+rollback to stripped_canonical_markers;
 create temporary table delete_receipt as select public.prepare_genome_file_deletion_v1(
  '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040') value;
 select is((select jsonb_array_length(canonical_chat_manifest) from private.genome_file_deletions
  where file_id='77900000-0000-4000-8000-000000000040'),4,'selected-file prepare freezes both turns including the dependent later pair');
+select is(public.prepare_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040'),
+ (select value from delete_receipt),'retry with historical chats retains the exact Storage deletion receipt');
+
 select throws_ok($$update private.genome_file_deletions set canonical_chat_manifest='[]'
  where file_id='77900000-0000-4000-8000-000000000040'$$,'55000','file_deletion_manifest_immutable','frozen selected-file membership cannot be narrowed');
 select throws_ok($$select public.finish_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
@@ -209,6 +248,11 @@ select public.finish_genome_file_deletion_v1('77900000-0000-4000-8000-0000000000
  '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000040',(select (value->>'token')::uuid from delete_receipt));
 select is((select count(*) from public.chat_messages where chat_id=(select id from report_chat)),0::bigint,'selected source and its quoted dependent pair are removed together');
 select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),4::bigint,'independent complete conversation outside frozen source membership survives');
+select results_eq($$select id,content,turn_id,legacy_unverified from public.chat_messages
+ where chat_id=(select id from legacy_file_chat) order by id$$,
+ $$select id,content,turn_id,legacy_unverified from legacy_file_history order by id$$,
+ 'successful file deletion preserves exact historical rows and text without inventing file attribution');
+
 select is((select count(*) from public.user_variants where file_id='77900000-0000-4000-8000-000000000050'),1::bigint,'other file observation survives selected deletion');
 select is((select count(*) from public.chat_messages m where exists(
  select 1 from jsonb_array_elements((m.canonical_projection->'sources')||(m.canonical_projection->'legacySources')||(m.canonical_projection->'unavailableSources')) s
