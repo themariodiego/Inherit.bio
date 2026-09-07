@@ -38,8 +38,10 @@ The existing executor checks frozen message, chat, turn and projection-hash
 membership; later grants are not swept into the old manifest. Report-purpose
 withdrawal keeps its synchronous attempt and durable fallback. Empty canonical
 chat metadata is not an unsupported-output blocker; unverified legacy contexts
-remain blockers. Cleanup uses the disposition's frozen lifecycle revision,
-without needing current analysis eligibility.
+remain blockers. Queued Copilot-only cleanup uses the disposition's frozen
+lifecycle revision for its immutable message IDs/hashes, without needing current
+analysis eligibility. Report-purpose cleanup retains its existing additional
+current-lifecycle check for report/PRS output dispositions.
 
 Selected-file deletion freezes dependent message IDs in the existing retryable
 Storage-ACK record. Finish removes those pairs after Storage acknowledgement

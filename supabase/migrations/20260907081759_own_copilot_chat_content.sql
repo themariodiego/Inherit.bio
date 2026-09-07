@@ -445,6 +445,10 @@ begin
   or d.immutable_envelope->>'principalId' is distinct from c->>'principalId'
   or d.immutable_envelope->>'purpose' is distinct from c->>'purpose'
   or d.immutable_envelope->>'lifecycleRevision' is distinct from d.target_lifecycle_revision::text
+  -- Preserve the existing report-output disposition contract. Copilot-only
+  -- jobs remove immutable message IDs/hashes, not reusable report/PRS rows.
+  or (c->>'purpose' in('reports.monogenic','reports.polygenic')
+   and d.immutable_envelope->>'lifecycleRevision' is distinct from c->>'lifecycleRevision')
   or d.phase_deadline is distinct from (c->>'revokedAt')::timestamptz+interval '60 seconds'
   or d.immutable_envelope->>'manifestId' is distinct from m.id::text
   or m.state<>'frozen' or m.manifest_class<>'purpose-derived-only' or not private.own_report_purge_hash_matches_v1(m.source_binding_fingerprint,fp)
