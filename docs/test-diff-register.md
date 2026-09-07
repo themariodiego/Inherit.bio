@@ -1,5 +1,38 @@
 # Test diff register
 
+## Bounded GIAB browser fixture and separate synthetic search positives · 2026-09-07
+
+`e2e/upload-vcf.spec.ts` retains four serial browser cases. The original
+99,744,915-byte decoded HG001 chr20–22 sample exceeds the approved 50 MiB
+canonical decoder limit. Its replacement retains all parent header bytes and
+all 144 records in the inclusive chr20:1,000,000–1,100,000 window verbatim.
+`scripts/generate-giab-browser-window.mts --check` verifies the pinned parent
+SHA, exact decoded and compressed bytes, 127 supported calls, 17 unsupported
+records and zero shipped ancestry-marker positions. The adjacent fixture
+receipt preserves upstream/source hashes and the existing public GIAB license
+and provenance records. No rsID, allele, genotype or header is annotated.
+
+The first case now exercises actual consent, browser SHA declaration, Storage,
+finalization, prepared-file UI and a separate explicit ancestry choice. It
+first uploads the existing synthetic `tiny-grch38.vcf`, then the GIAB window;
+both sources are genuinely prepared and only the GIAB source is generated.
+The second and third cases replace the old conditional rsID branch and
+success-or-empty gene check with mandatory rs762551 A/C and CYP1A2 positives
+from that separate synthetic source. They retain the GIAB locus, exact point,
+first-party track, source attribution, call-rate and coordinate provenance
+checks. Table and track are distinct provenance contexts: each locus context
+has one GIAB source; rsID/gene tables check both real uploads. Repeated display
+of one source is not counted as a second uploaded file.
+
+The fourth case asserts genuinely computed zero-AIM grey ancestry, hidden
+unreliable numbers and their explicit disclosure. It replaces the old inferred
+MT/Y-absence/XX labels with the current explicit uncomputed-lineage state.
+This records a current product limitation; it does **not** close the original
+A8 MT/Y coverage requirement or convert refusal into lineage acceptance.
+Historical acceptance evidence and the formal 18/65 total are unchanged.
+Fixture reproduction, scoped lint/typecheck and four-case discovery are the
+pre-browser checks; actual browser success must be recorded separately.
+
 ## BAM/CRAM historical proof and current refusal contract · 2026-09-07
 
 `e2e/tier2-upload.spec.ts` now has two current-contract cases, one each for BAM
