@@ -6,6 +6,7 @@
  * the app continues using the normal local stack and its identical DB/backend.
  */
 import assert from "node:assert/strict";
+import { startCiBrowserRuntime } from "./ci-browser-runtime";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { readFileSync, realpathSync } from "node:fs";
@@ -225,6 +226,7 @@ const proxy = http.createServer(async (request, response) => {
 });
 proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, including external TLS. APIRequest stays direct.
 let tests: ChildProcess | undefined;
+let ciRuntime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
 let stopping = false;
 async function stop() {
   if (stopping) return;
@@ -241,6 +243,7 @@ async function stop() {
     if (provider.exitCode === null) provider.kill("SIGTERM");
   }
   reader.close();
+  ciRuntime?.stop();
 }
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => { void stop().finally(() => process.exit(1)); });
@@ -281,10 +284,11 @@ try {
   await verifyBrowserTransport(`http://127.0.0.1:${address.port}`, () => forwardedTransportProbes);
   console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
   if (!bootstrapOnly) {
+    if (process.env.CI) ciRuntime = await startCiBrowserRuntime();
     tests = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
       `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
       detached: process.platform !== "win32",
-      stdio: "inherit", env: { ...process.env, ...bootstrapEnvironment, INHERIT_UPLOAD_SIGNING_JWK: signer,
+      stdio: "inherit", env: { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
         INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
     });
     const code = await new Promise<number>(resolve => {

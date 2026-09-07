@@ -16,6 +16,11 @@ import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config
 const PORT = 3100;
 const OFF_PORT = 3101;
 const PAUSE_PORT = 3102;
+const isolatedCi = process.env.CI && process.env.INHERIT_CI_BROWSER_RUNTIME === "ready";
+if (process.env.CI && !process.argv.includes("--list") && !isolatedCi) {
+  throw new Error("Standard CI must pass isolated runtime preflight through pnpm e2e");
+}
+const ciServer = (port: number) => `corepack pnpm exec tsx scripts/ci-browser/server.mts host ${port}`;
 const providerProxy = process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY;
 const signer = process.env.INHERIT_UPLOAD_SIGNING_JWK;
 // Discovery does not start a provider or build. Executing tests must use pnpm e2e.
@@ -70,8 +75,8 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `corepack pnpm build && corepack pnpm start --port ${PORT}`,
-      port: PORT,
+      command: isolatedCi ? ciServer(PORT) : `corepack pnpm build && corepack pnpm start --port ${PORT}`,
+      ...(isolatedCi ? { url: `http://localhost:${PORT}/auth/sign-in` } : { port: PORT }),
       reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 300_000,
       env: {
@@ -84,8 +89,8 @@ export default defineConfig({
     {
       // The same build, the flag unset: an empty value is not "1", so the
       // resolver reads every account's real (unset) jurisdiction.
-      command: `corepack pnpm start --port ${OFF_PORT}`,
-      port: OFF_PORT,
+      command: isolatedCi ? ciServer(OFF_PORT) : `corepack pnpm start --port ${OFF_PORT}`,
+      ...(isolatedCi ? { url: `http://localhost:${OFF_PORT}/auth/sign-in` } : { port: OFF_PORT }),
       reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 120_000,
       env: {
@@ -96,8 +101,8 @@ export default defineConfig({
       },
     },
     {
-      command: `corepack pnpm start --port ${PAUSE_PORT}`,
-      port: PAUSE_PORT,
+      command: isolatedCi ? ciServer(PAUSE_PORT) : `corepack pnpm start --port ${PAUSE_PORT}`,
+      ...(isolatedCi ? { url: `http://localhost:${PAUSE_PORT}/auth/sign-in` } : { port: PAUSE_PORT }),
       reuseExistingServer: false,
       timeout: 120_000,
       env: {
