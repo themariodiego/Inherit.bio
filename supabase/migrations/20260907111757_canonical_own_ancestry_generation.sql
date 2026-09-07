@@ -45,7 +45,7 @@ begin
   or c#>>'{admixture,model_version}' is distinct from '2026-08-28'
   or c#>>'{admixture,basis}' is distinct from 'modelled' or c#>'{admixture,range}' is distinct from '{"unavailable":true}'::jsonb
   or c#>>'{admixture,resolution}' is distinct from 'five-broad-regions'
-  or c#>>'{admixture,result_state}' is distinct from case when used=0 then 'not_covered' when used<42 then 'partial' else 'available' end
+  or c#>>'{admixture,result_state}' is distinct from (case when used=0 then 'not_covered' when used<42 then 'partial' else 'available' end)
   or jsonb_typeof(c#>'{admixture,coverage}') is distinct from 'number'
   or abs((c#>>'{admixture,coverage}')::numeric-used::numeric/168)>0.000000000001
   or jsonb_typeof(c#>'{admixture,result}') is distinct from 'object'
@@ -71,7 +71,7 @@ begin
    or x-array['kind','state','reason','observedPositions']<>'{}' or x->>'state' is distinct from 'unavailable'
    or jsonb_typeof(x->'observedPositions') is distinct from 'number' or (x->>'observedPositions') !~ '^(0|[1-9][0-9]*)$'
    or (x->>'observedPositions')::numeric>9007199254740991
-   or x->>'reason' is distinct from case when (x->>'observedPositions')::bigint=0 then 'no_supplied_positions' else 'lineage_interpretation_not_supported' end then
+   or x->>'reason' is distinct from (case when (x->>'observedPositions')::bigint=0 then 'no_supplied_positions' else 'lineage_interpretation_not_supported' end) then
    raise exception using errcode='22023',message='invalid_ancestry_content'; end if;
  end loop;
  if c#>>'{lineages,0,kind}' is distinct from 'mtdna' or c#>>'{lineages,1,kind}' is distinct from 'ydna' then
