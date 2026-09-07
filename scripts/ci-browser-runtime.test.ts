@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ files: new Map<string, string>(), commands: [] as string[][],
-  owner: "", probeFails: false, wrongOwner: false }));
+  owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY" }));
 vi.mock("./ci-browser-config", async importOriginal => ({
   ...await importOriginal<typeof import("./ci-browser-config")>(),
   // Pure environment/platform refusal is tested separately. These lifecycle
@@ -25,8 +25,9 @@ vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: str
   if (args[0] === "ps") return "";
   if (args[0] === "image") return `sha256:${"b".repeat(64)}`;
   if (args[0] === "network") return "sequence";
-  if (args[0] === "logs") return "ISOLATED_RUNTIME_READY";
+  if (args[0] === "logs") return state.logs;
   if (args[0] === "inspect") {
+    if (args[2]?.includes(".State.ExitCode")) return JSON.stringify({ running: state.running, exitCode: state.exitCode });
     if (args.at(-1) === "supabase_kong_sequence") return JSON.stringify({ name: "/supabase_kong_sequence", project: "sequence", running: true,
       networks: { supabase_network_sequence: { IPAddress: "172.19.0.3" } } });
     return state.wrongOwner ? "different-owner" : state.owner;
@@ -41,7 +42,7 @@ vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: str
 } }));
 import { recordCiBuild, startCiBrowserRuntime } from "./ci-browser-runtime";
 beforeEach(() => {
-  state.files.clear(); state.commands.length = 0; state.owner = ""; state.probeFails = false; state.wrongOwner = false;
+  state.files.clear(); state.commands.length = 0; state.owner = ""; state.probeFails = false; state.wrongOwner = false; state.running = true; state.exitCode = 0; state.logs = "ISOLATED_RUNTIME_READY";
   state.files.set(".next/BUILD_ID", "synthetic-build");
   vi.stubEnv("RUNNER_TEMP", "/synthetic-ci-tmp");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
@@ -64,6 +65,41 @@ describe("owned isolated CI runtime lifecycle", () => {
     runtime.stop(); runtime.stop();
     expect(state.commands.filter(command => command[1] === "rm")).toEqual([["docker", "rm", "-f", "inherit-ci-browser-runtime"]]);
     expect(state.files.has("/synthetic-ci-tmp/inherit-ci-browser-owner.json")).toBe(false);
+  });
+  it("reports an exited namespace immediately, retains phase diagnostics and never starts TLS or the app", async () => {
+    state.running = false; state.exitCode = 4;
+    state.logs = "iptables: Read-only file system\nISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=4";
+    await expect(startCiBrowserRuntime()).rejects.toThrow("exited before readiness (exit 4). Namespace diagnostics:\n" + state.logs);
+    expect(state.commands.filter(command => command[1] === "logs")).toHaveLength(1);
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+    expect(state.commands.some(command => command[1] === "exec")).toBe(false);
+  });
+  it("refuses an exited process even when its log contains an earlier ready marker", async () => {
+    state.running = false;
+    await expect(startCiBrowserRuntime()).rejects.toThrow("exited before readiness (exit 0)");
+    expect(state.commands.some(command => command[1] === "exec")).toBe(false);
+  });
+  it("keeps the ten-second deadline and bounds diagnostics while setup remains running", async () => {
+    state.logs = "x".repeat(9000) + "\nISOLATED_RUNTIME_FAILED phase=resolver-file exit=1";
+    vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
+    await expect(startCiBrowserRuntime()).rejects.toThrow("Runtime policy did not become ready. Namespace diagnostics:\n" + state.logs.slice(-8192));
+    expect(state.commands.some(command => command[1] === "exec")).toBe(false);
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+  });
+  it("captures actual shell failure stderr and a fixed phase without running later namespace commands", async () => {
+    const fs = await vi.importActual<typeof import("node:fs")>("node:fs");
+    const child = await vi.importActual<typeof import("node:child_process")>("node:child_process");
+    const os = await import("node:os"), path = await import("node:path");
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "inherit-namespace-test-"));
+    try {
+      fs.writeFileSync(path.join(directory, "ip"), "#!/bin/sh\nprintf 'synthetic ip refusal\n' >&2\nexit 17\n", { mode: 0o700 });
+      const result = child.spawnSync("/bin/sh", ["scripts/ci-browser/namespace.sh", "172.19.0.3"], {
+        env: { PATH: directory }, encoding: "utf8",
+      });
+      expect(result.status).toBe(17);
+      expect(result.stderr).toBe("");
+      expect(result.stdout).toBe("synthetic ip refusal\nISOLATED_RUNTIME_FAILED phase=loopback-address exit=17\n");
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   });
   it("leaves a preexisting ownership receipt untouched without creating a container", async () => {
     state.files.set("/synthetic-ci-tmp/inherit-ci-browser-owner.json", "unrelated-receipt");

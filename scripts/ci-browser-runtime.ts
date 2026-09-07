@@ -78,8 +78,18 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
     receiptWritten = true;
     docker(["start", CI_RUNTIME_CONTAINER]);
     const deadline = Date.now() + 10_000;
-    while (!docker(["logs", CI_RUNTIME_CONTAINER]).includes("ISOLATED_RUNTIME_READY")) {
-      assert(Date.now() < deadline, "Runtime policy did not become ready");
+    while (true) {
+      // Only the credential-free namespace process has run at this point. Its
+      // fixed-command stderr is redirected into this bounded setup log. Never
+      // collect container logs here after TLS/probe/application execution.
+      const logs = docker(["logs", "--tail", "80", CI_RUNTIME_CONTAINER]);
+      const status = JSON.parse(docker(["inspect", "--format",
+        '{"running":{{json .State.Running}},"exitCode":{{json .State.ExitCode}}}', CI_RUNTIME_CONTAINER]));
+      assert(typeof status.running === "boolean" && Number.isInteger(status.exitCode), "Invalid namespace process state");
+      const diagnostics = logs.slice(-8192);
+      assert(status.running, `Runtime policy exited before readiness (exit ${status.exitCode}). Namespace diagnostics:\n${diagnostics}`);
+      if (logs.split(/\r?\n/).includes("ISOLATED_RUNTIME_READY")) break;
+      assert(Date.now() < deadline, `Runtime policy did not become ready. Namespace diagnostics:\n${diagnostics}`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     const asUser = ["exec", "--user", `${uid}:${gid}`, CI_RUNTIME_CONTAINER];
