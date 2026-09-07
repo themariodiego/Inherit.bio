@@ -61,6 +61,12 @@ describe("owned isolated CI runtime lifecycle", () => {
     expect(creation).toContain("--cap-add=NET_ADMIN"); expect(creation).toContain("--security-opt=no-new-privileges");
     expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:8130:8130"]);
     expect(creation.join(" ")).not.toMatch(/--privileged|docker\.sock|--network=host|--env/);
+    const values = (flag: string) => creation.flatMap((value, index) => value === flag ? [creation[index + 1]] : []);
+    expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10"]);
+    expect(values("--dns")).toEqual(["127.0.0.1"]);
+    expect(values("--dns-option")).toEqual(["attempts:1", "timeout:1"]);
+    expect(values("--dns-search")).toEqual(["."]);
+    expect(values("--tmpfs").map(value => value.split(":")[0])).toEqual(["/tmp", "/tls"]);
     expect(runtime.env.CANONICAL_COPILOT_CONTROL_URL).toBe("http://127.0.0.1:8130");
     runtime.stop(); runtime.stop();
     expect(state.commands.filter(command => command[1] === "rm")).toEqual([["docker", "rm", "-f", "inherit-ci-browser-runtime"]]);
@@ -99,6 +105,23 @@ describe("owned isolated CI runtime lifecycle", () => {
       expect(result.status).toBe(17);
       expect(result.stderr).toBe("");
       expect(result.stdout).toBe("synthetic ip refusal\nISOLATED_RUNTIME_FAILED phase=loopback-address exit=17\n");
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+  });
+  it("reaches the existing firewall phase without writing Docker-managed host or resolver files", async () => {
+    const fs = await vi.importActual<typeof import("node:fs")>("node:fs");
+    const child = await vi.importActual<typeof import("node:child_process")>("node:child_process");
+    const os = await import("node:os"), path = await import("node:path");
+    const script = fs.readFileSync("scripts/ci-browser/namespace.sh", "utf8");
+    expect(script).not.toMatch(/(?:>|tee|sed|cp|mv)\s*[^\n]*\/etc\/(?:hosts|resolv\.conf)/);
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "inherit-namespace-policy-test-"));
+    try {
+      fs.writeFileSync(path.join(directory, "ip"), "#!/bin/sh\nexit 0\n", { mode: 0o700 });
+      fs.writeFileSync(path.join(directory, "iptables"), "#!/bin/sh\nprintf 'synthetic firewall refusal\n' >&2\nexit 19\n", { mode: 0o700 });
+      const result = child.spawnSync("/bin/sh", ["scripts/ci-browser/namespace.sh", "172.19.0.3"], {
+        env: { PATH: directory, NODE_ENV: "test" }, encoding: "utf8",
+      });
+      expect(result.status).toBe(19); expect(result.stderr).toBe("");
+      expect(result.stdout).toBe("synthetic firewall refusal\nISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=19\n");
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   });
   it("leaves a preexisting ownership receipt untouched without creating a container", async () => {

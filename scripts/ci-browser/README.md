@@ -23,8 +23,12 @@ to DROP, DNS is blocked including Docker's loopback resolver, and the only
 allowances are loopback, established replies and the checked gateway. No host
 firewall, routes, DNS or CA store are changed.
 
-The synthetic hostname maps inside the container to 203.0.114.10 on its own
-loopback. Real HTTPS uses an ephemeral CA and leaf in a 0700 tmpfs; only Next and
+Docker's create-time `--add-host` maps the fixed synthetic hostname to
+203.0.114.10 on this container's own loopback. Create-time `--dns`, `--dns-option`
+and `--dns-search` request only loopback DNS with bounded lookup attempts and no
+inherited search suffix; namespace startup never writes Docker-managed `/etc`
+files. The firewall still blocks Docker's embedded resolver and all DNS ports,
+including when Docker retains its embedded resolver on the custom network. Real HTTPS uses an ephemeral CA and leaf in a 0700 tmpfs; only Next and
 the transport probe receive the extra CA. The CA signing key is removed after
 issuance. No TLS private key is written to the checkout, host, logs or artifacts.
 The probe runs the actual production classifier, DNS resolver and pinned fetch,
@@ -72,3 +76,12 @@ including all 64 output cases. This portable implementation still needs its
 coordinated Linux transport and complete standard-suite run before claiming CI
 success. Focused unit checks use a simulated Docker CLI solely to test startup,
 refusal and cleanup; they do not claim kernel/network verification.
+
+The create-time host/DNS correction was checked on 2026-09-07 in a fresh local
+ARM64 container built from this Dockerfile, with the read-only root and only the
+existing `/tmp` and `/tls` tmpfs mounts. The unchanged native Node 22 transport
+probe passed as UID 501/GID 20 with no effective capabilities: real synthetic
+TLS, permission and invalid-TLS refusal, exact gateway reachability, blocked
+Docker DNS with positive DROP counters, and outside-destination refusal. No
+additional `/run` write access was needed. This bounded namespace/transport
+proof does not claim a completed standard CI browser suite.

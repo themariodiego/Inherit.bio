@@ -66,7 +66,10 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
     // No app environment, credential-bearing argv, Docker socket, host PID or
     // host network. TLS and writable scratch disappear with this container.
     const args = ["create", "--name", CI_RUNTIME_CONTAINER, "--label", `${CI_RUNTIME_LABEL}=${owner}`,
-      "--network", gateway.network, "--read-only", "--cap-drop=ALL", "--cap-add=NET_ADMIN", "--security-opt=no-new-privileges",
+      "--network", gateway.network,
+      "--add-host", "model.copilot.test:203.0.114.10",
+      "--dns", "127.0.0.1", "--dns-option", "attempts:1", "--dns-option", "timeout:1", "--dns-search", ".",
+      "--read-only", "--cap-drop=ALL", "--cap-add=NET_ADMIN", "--security-opt=no-new-privileges",
       "--tmpfs", "/tmp:rw,nosuid,nodev,size=128m,mode=1777",
       "--tmpfs", `/tls:rw,nosuid,nodev,noexec,size=4m,mode=0700,uid=${uid},gid=${gid}`,
       "--mount", `type=bind,src=${root},dst=/app,readonly`,

@@ -11,12 +11,10 @@ trap 'code=$?; if [ "$code" -ne 0 ]; then printf "ISOLATED_RUNTIME_FAILED phase=
 gateway="$1"
 phase=loopback-address
 ip address add 203.0.114.10/32 dev lo
-phase=hosts-file
-printf '\n203.0.114.10 model.copilot.test\n' >> /etc/hosts
-# Docker rewrites its embedded resolver's destination port in NAT OUTPUT.
-# Block that address outright and replace only this container's resolver file.
-phase=resolver-file
-printf 'nameserver 127.0.0.1\noptions attempts:1 timeout:1\n' > /etc/resolv.conf
+# Docker supplies the fixed hostname and loopback-only DNS configuration at
+# create time; its managed /etc files remain read-only. On custom networks it
+# may still install its embedded resolver and rewrite its port in NAT OUTPUT,
+# so retain the exact-address drop as well as both DNS port drops below.
 phase=ipv4-policy
 iptables -P OUTPUT DROP
 iptables -F OUTPUT
