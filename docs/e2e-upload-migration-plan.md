@@ -10,7 +10,13 @@ evidence for each of 65 selected cases across the `f3e21cc`, `c76a4bf` and
 content and post-withdrawal raw access. The failed runs and scope are retained
 in [the local receipt](local-upload-browser-verification.md); this is not one
 passing 65-case run. Discovery is **226 cases in 43 files**, not 226 passes. Remaining legacy
-`ingestFileAs` invocations are **14 in 12 spec files**. The older checkpoint and
+`ingestFileAs` invocations are **9 in 9 spec files** after the next prepared
+test-only batch at `1043838`. Those five migrated notice/source-control cases
+pass lint/typecheck but have not run against the pending notice runtime.
+The account-purge case retains generated derivatives and exact zero-residual
+proof; it requires a clean disposable stack because the composite worker selects
+queues globally. Its explicit prerequisite fails instead of skipping, and must
+never be enabled on preserved local fixtures. The older checkpoint and
 callsite list below describe their dated revision. Whole-plan acceptance remains
 **18/65**.
 
@@ -51,8 +57,8 @@ paused app server on 3102. That integrated CI run has not passed yet.
 ## Remaining prioritized work
 
 1. **Source controls:** account-deletion-purge, supported own file-deletion
-   and deletion-export cases need canonical setup while preserving lifecycle
-   and physical removal evidence. Their bounded migration is underway.
+   and deletion-export cases now have canonical setup preserving lifecycle,
+   generated-derivative and physical removal assertions; browser proof is pending.
    The separate other-adult deletion fixture remains unsupported and unchanged.
 2. **Connected surfaces:** the old Overview case still needs its ancestry
    computation prerequisite. Copilot's legacy file/genotype loaders,
@@ -84,11 +90,11 @@ of analytic grants.
 All paths below are under `e2e/`; these are invocation lines, not imports.
 
 ```text
-account-deletion-purge:22    ancestry:75
+ancestry:75
 copilot-output:50           copilot-refusal:136
-copilot:85                  deletion-export:23,34
+copilot:85
 family-health-picture:402   family:287
-file-deletion:11,84         mail-expiry:16
+file-deletion:105
 overview:233                portrait:339
 ```
 

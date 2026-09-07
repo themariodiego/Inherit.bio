@@ -1,5 +1,20 @@
 # Test diff register
 
+Canonical notice/source-control fixture migration (2026-09-07, unverified
+browser batch at `1043838`): mail expiry first proves preparation queues no
+ready notice, then chooses polygenic generation and retains exact immutable
+outbox/contact/deadline and zero-provider-attempt assertions. Export retains
+large-source pagination, no numeric score leakage, exact original bytes and
+captured JSON/text interpretation equality. File deletion retains queued-notice
+invalidation and adds byte-identical preservation of a second source.
+Account purge retains genuinely generated PRS/analysis/normalization evidence
+before and during notice, then requires exact zero residuals after the real
+worker. It requires a clean disposable stack, failing rather than skipping on
+preserved local fixtures. No account purge worker was run locally. Overview's
+unsupported ancestry prerequisite and the other-adult deletion test remain
+unchanged. These test edits pass lint/typecheck; notice runtime and actual
+journey verification remain required.
+
 Canonical report/export regression migration (2026-09-07, unreleased):
 `own-report-helpers` now separates actual source preparation from explicit
 report choice/generation while retaining exact hash, revision, single-sample
