@@ -151,7 +151,16 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             get_report: tool({ description: 'Read captured report outcomes and source conflicts. Uncaptured current scientific metadata is not supplied.',
                 inputSchema: z.object({ slug: z.string().max(200) }).strict(), execute: async ({ slug }) => {
                     await check();
-                    const result = capturedReportResult(await reports(), slug);
+                    const rows = await reports();
+                    let result = capturedReportResult(rows, slug);
+                    if ('error' in result && !isFixtureSlug(slug)) {
+                        // Acknowledge only a real published lookup identifier. This
+                        // supplies no current scientific metadata or personal finding.
+                        const { data: identity, error } = await db.from('report_templates').select('slug').eq('slug', slug).eq('status', 'published').maybeSingle();
+                        if (error)
+                            throw new Error('copilot_unavailable');
+                        result = capturedReportResult(rows, slug, identity?.slug);
+                    }
                     await check();
                     return { ...result, unavailable_sources: legacyAnalysis() };
                 } }),

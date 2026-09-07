@@ -104,10 +104,10 @@ export function ownGenotypeResult(rsid: number, calls: OwnChatCall[], reference:
     return { ...base, covered: true, status: 'called' as const, genotype: usable[0].genotype };
 }
 /** Never decorate old outcomes with today's scientific description/citations. */
-export function capturedReportResult(rows: OwnChatReport[], slug: string) {
+export function capturedReportResult(rows: OwnChatReport[], slug: string, publishedSlug?: string) {
     const selected = rows.filter(r => r.report.slug === slug && !isFixtureSlug(slug));
     if (!selected.length)
-        return { error: 'report_not_generated', note: 'No completed report for this topic is currently available under your selected purposes.' };
+        return { ...(publishedSlug === slug && !isFixtureSlug(slug) ? { slug } : {}), error: 'report_not_generated', note: 'No completed report for this topic is currently available under your selected purposes.' };
     return { slug, sources: selected.map(r => ({ file_id: r.file_id, purpose: r.purpose,
             ...(r.report.catalogSnapshot ? { title: r.report.catalogSnapshot.template.title, summary: r.report.catalogSnapshot.template.summary,
                 evidence: r.report.catalogSnapshot.template.evidence, citations: r.report.catalogSnapshot.template.citations, catalogSnapshot: r.report.catalogSnapshot,

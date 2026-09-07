@@ -24,7 +24,10 @@ describe("canonical Copilot content fidelity", () => {
         expect(ownGenotypeResult(call.rsid, [call, { ...call, usable: false }], reference)).toMatchObject({ status: "no-call", covered: false });
     });
     it("source-only returns no report, not a generated negative finding", () => {
-        expect(capturedReportResult([], "caffeine")).toMatchObject({ error: "report_not_generated" });
+        expect(capturedReportResult([], "caffeine")).toEqual({ error: "report_not_generated", note: "No completed report for this topic is currently available under your selected purposes." });
+        expect(capturedReportResult([], "caffeine", "caffeine")).toEqual({ slug: "caffeine", error: "report_not_generated", note: "No completed report for this topic is currently available under your selected purposes." });
+        expect(capturedReportResult([], "invented37.5percent", "caffeine")).not.toHaveProperty("slug");
+        expect(capturedReportResult([], "auto-e2e-hidden", "auto-e2e-hidden")).not.toHaveProperty("slug");
     });
     it("retains captured all-conflict and ordinary uncovered outcomes without current metadata", () => {
         const rows = [{ ...report, report: { ...report.report, covered: false, conflictingRsids: [762551], variants: [{ rsid: 762551, outcome: { status: "not-covered" as const } }] } },

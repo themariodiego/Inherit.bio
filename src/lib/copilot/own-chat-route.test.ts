@@ -54,6 +54,40 @@ beforeEach(() => {
             } } }) }));
 });
 describe("canonical chat boundaries", () => {
+    it.each([true, false])("acknowledges a missing report identifier only when published identity exists: %s", async known => {
+        const slug = known ? "caffeine-metabolism-cyp1a2-rs762551" : "invented37.5percent";
+        const query = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), maybeSingle: vi.fn().mockResolvedValue({ data: known ? { slug } : null, error: null }) };
+        mocks.from.mockReturnValue(query);
+        let result: unknown;
+        run = async flow => { result = await flow.tools.get_report.execute({ slug }); return "No completed report is available under your selected purposes."; };
+        const r = request();
+        expect((await ownChatResponse(r, await r.json(), options)).status).toBe(200);
+        expect(result).toEqual({ ...(known ? { slug } : {}), error: "report_not_generated", note: "No completed report for this topic is currently available under your selected purposes.", unavailable_sources: [] });
+        expect(mocks.from).toHaveBeenCalledExactlyOnceWith("report_templates");
+        expect(query.select).toHaveBeenCalledExactlyOnceWith("slug");
+        expect(query.eq.mock.calls).toEqual([["slug", slug], ["status", "published"]]);
+    });
+    it("does not acknowledge an excluded fixture even if its catalog identity exists", async () => {
+        let result: unknown;
+        run = async flow => { result = await flow.tools.get_report.execute({ slug: "auto-e2e-hidden" }); return "No completed report is available."; };
+        const r = request();
+        expect((await ownChatResponse(r, await r.json(), options)).status).toBe(200);
+        expect(result).not.toHaveProperty("slug");
+        expect(mocks.from).not.toHaveBeenCalled();
+    });
+    it.each(["query-error", "withdrawal"])("fails closed during missing-report identity lookup: %s", async failure => {
+        const query = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), maybeSingle: vi.fn().mockImplementation(async () => {
+            if (failure === "withdrawal") mocks.check.mockRejectedValue(new Error("withdrawn"));
+            return { data: { slug: "caffeine" }, error: failure === "query-error" ? new Error("private database details") : null };
+        }) };
+        mocks.from.mockReturnValue(query);
+        run = async flow => { await flow.tools.get_report.execute({ slug: "caffeine" }); return "hidden"; };
+        const r = request();
+        const response = await ownChatResponse(r, await r.json(), options);
+        expect(response.status).toBe(403);
+        expect(await response.json()).toEqual({ error: "copilot_unavailable" });
+        expect(mocks.rpc.mock.calls.some(call => call[0] === "commit")).toBe(false);
+    });
     it("returns closed JSON only after a guarded atomic pair commit", async () => {
         const r = request();
         const response = await ownChatResponse(r, await r.json(), options);
