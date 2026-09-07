@@ -40,7 +40,11 @@ export async function saveCopilotProvider(page: Page, baseUrl: string) {
 export async function allowCopilot(page: Page) {
   const permission = page.getByRole("region", { name: "Copilot permission", exact: true });
   await permission.getByRole("checkbox", { name: "I allow this model to use the listed information for my Copilot answers. I can withdraw this permission.", exact: true }).check();
+  const granted=page.waitForResponse(response => new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
   await permission.getByRole("button", { name: "Allow Copilot for this model", exact: true }).click();
+  const response=await granted;
+  expect(response.status()).toBe(201);
+  expect(await response.json()).toEqual({ granted:true });
   await expect(permission.getByText("Copilot is allowed for this model configuration.", { exact: true })).toBeVisible();
 }
 type ExpectedCitation = { id: string; label: string; href: string };
