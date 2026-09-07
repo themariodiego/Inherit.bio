@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, ingestFileAs, signIn } from "./helpers";
+import { adminClient, signIn } from "./helpers";
+import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
+import { subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 test("a processed self-upload queues one report-ready notice without deadline renewal", async ({ page }) => {
   const email = `mail-expiry-${randomUUID()}@e2e.local`;
@@ -13,12 +15,16 @@ test("a processed self-upload queues one report-ready notice without deadline re
   });
   expect(createError).toBeNull();
   await signIn(page, email, password);
-  const fileId = await ingestFileAs(page, email, password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), "vcf");
+  const fileId = await uploadOwnFilePrepared(page,
+    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
   const readNotice = () => admin.from("mail_outbox")
     .select("id,state,created_at,expires_at,contact_reference_id")
     .eq("target_id", fileId).eq("target_kind", "genome_file")
     .eq("purpose", "report.ready").eq("template_id", "report-ready");
+  const prepared = await readNotice();
+  expect(prepared.error).toBeNull();
+  expect(prepared.data, "source preparation alone must not announce reports ready").toEqual([]);
+  await generateOwnFileWithChosenReports(page, fileId, ["reports.polygenic"]);
   const { data: notices, error: noticeError } = await readNotice();
   expect(noticeError).toBeNull();
   expect(notices).toHaveLength(1);
@@ -30,8 +36,12 @@ test("a processed self-upload queues one report-ready notice without deadline re
 
   // Run the actual processing route twice. Neither the route nor this test
   // calls the mail worker or a provider; semantic replay cannot renew expiry.
-  const replay = await page.request.post(`/api/files/${fileId}/process`);
-  expect(replay.ok()).toBe(true);
+  const replay = await page.evaluate(async id => {
+    const response = await fetch(`/api/files/${id}/process`, { method: "POST" });
+    return { status: response.status, body: await response.json() };
+  }, fileId);
+  expect(replay.status).toBe(200);
+  expect(subjectSynchronousReportReceipt.parse(replay.body).fileId).toBe(fileId);
   const { data: replayNotices, error: replayError } = await readNotice();
   expect(replayError).toBeNull();
   expect(replayNotices).toEqual(notices);
