@@ -211,7 +211,8 @@ test("disclaimers appear on the report SURFACE, not only in ToS", async ({
   await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf", purposes: ["reports.polygenic"] });
 
   await page.goto("/genome/me/reports");
-  await page.getByRole("link", { name: "Caffeine metabolism", exact: true }).first().click();
+  await page.getByRole("link", { name: /^Caffeine metabolism · CYP1A2,/ }).click();
+  await expect(page.locator("main h1")).toHaveText("Caffeine metabolism");
   await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(1);
   await expect(page.getByTestId("report-disclaimer")).toBeVisible();
   // The one not-diagnostic line (§5 §6.1), character-for-character.

@@ -45,7 +45,14 @@ role lookup selected the older source and its real process request returned
 200. The helper now uses that lookup and asserts the selected UUID before
 generation, preserving the exact response and private source journal checks.
 No product change or arbitrary delay was needed; the complete export case
-still requires a passing rerun.
+passed in the next focused run at `c76a4bf`: six cases passed, including
+the complete export journey and five network checks. The legal report case
+then stopped at its old exact card name. The observed card name includes
+the gene and evidence label; its selector now matches the actual accessible
+name and asserts the destination heading. The exact disclaimer and personal
+genotype requirements remain. One plural "legal pages contact" network case
+was outside that focused name filter and also remains for the final rerun.
+The focused run was a failed seven-case run, not a passing gate.
 
 Own-upload MVP verification (2026-09-06): the two-file control case proves
 exact downloads, conflict refusal, visible deletion failure/retry, real
