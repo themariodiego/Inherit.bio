@@ -69,6 +69,25 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · Personal Copilot journey verified locally
+
+At `763fbf1`, one isolated production-build run passes **73/73 Copilot browser
+cases**, no skips/retries, with 10 actual Storage uploads. It proves useful
+source-backed answers, captured citations, saved conversations, 64 output cases,
+input refusals, live permission/model changes and exact source/history cleanup
+while independent data remains usable. Desktop/mobile captures were inspected.
+The preceding empty-chat defect has a 77-assertion rollback SQL proof; only its
+reviewed private dispatcher was replaced locally with preserved data/owners.
+
+The integrated runtime passes 2,811 units and full lint. The standard suite
+discovers 231 cases in 44 files; full CI remains open.
+Production stays PR75, no hosted Copilot migration/release occurred, and formal
+acceptance stays **18/65**. Next canonical runtime prerequisite is ancestry:
+selected generation, exact-purpose cleanup/export and honest existing-panel
+output must land together. Hosted notices still need the previously requested
+recipient authorization and verified allowance. See the local verification
+record for exact receipts and historical failed attempts.
+
 ### 2026-09-07 · Personal Copilot integration and compatibility repair
 
 The local canonical chat path now binds provider permission, exact sources,

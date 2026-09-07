@@ -2,6 +2,18 @@
 
 ## Latest integration · 2026-09-07
 
+At `763fbf1`, **73/73 Copilot cases in four specs pass in one run** with no
+skips/retries and 10 actual Storage uploads. This closes local Copilot migration
+proof: current-source tools, separate provider permission, closed answers,
+captured citations, saved history and exact withdrawal/deletion behavior. All
+64 output fixtures are unchanged. Desktop/mobile captures were inspected.
+Standard discovery is now **231 cases in 44 files**; full CI is not yet proved.
+The six remaining legacy ingest helper calls below are unchanged. This run is
+separate from the earlier 69-case report/control run, not one combined
+or full-suite receipt. See the current local verification record.
+
+### Previous report/control integration and Copilot repairs
+
 At `6e9acd6`, **69/69 selected cases in 20 specs pass in one run**, with no
 skips/retries and 33 actual provider uploads. This combines the earlier 65
 cases with canonical mail expiry, pagination export, account notice/cancellation
@@ -14,13 +26,14 @@ or explicit legacy isolation setup. Full discovery remains 226, not 226 passes.
 Current `6f066f1` has six remaining `ingestFileAs` calls in six spec files.
 The three Copilot specs now use actual canonical upload/preparation and explicit
 purposes. Canonical source loaders, provider permission, saved history and exact
-cleanup are implemented locally; their 73-case browser integration remains open.
+cleanup are implemented locally; their 73-case browser integration is now proved by the newer 73-case run above.
 Attempt v7 passes the first source-distinction case and the next exact withdrawal
 response, then exposes empty-history success after purge (1 passed, 1 failed,
 71 not run). Repair `c4e414d` passes 77 rollback SQL assertions; v8 verifies
 history refusal, exact message removal and preserved raw data, then finds the
 stale raw-genotype expectation corrected in both affected specs (`A/C`). See the
-current local receipt; no complete 73-case, full-CI or hosted claim follows.
+historical failure receipts; the newer v9 run above supersedes the 73-case gap.
+Full CI and hosted delivery remain open.
 
 The remaining six sites are not merely stale selectors: ancestry/Overview need
 canonical ancestry output, recipient/joint views need their actual authority and
@@ -57,6 +70,7 @@ is not a count of demonstrated failures. Acceptance remains **18/65**.
 
 ## Migrated and verified
 
+- Personal Copilot source/permission/history and withdrawal/deletion journeys.
 - Preparation, chosen own reports and two-file download/deletion/recovery.
 - Canonical issuance pause and real acknowledged-upload completion,
   preparation and exact downloads while another source remains unchanged.
@@ -91,7 +105,7 @@ paused app server on 3102. That integrated CI run has not passed yet.
 2. **Connected surfaces:** the old Overview case still needs its ancestry
    computation prerequisite. Canonical Copilot loaders, separate provider
    permission and source-bound tool authorization are implemented locally.
-   Complete saved-history/invalidation browser proof remains open after the
+   Saved-history/invalidation browser proof passes in v9 after the
    empty-history repair and raw-genotype fixture correction. Its 64 output cases use an isolated synthetic HTTPS
    provider; they do not prove a real external model's behavior.
 3. **Required notifications:** the durable canonical report-ready contract,

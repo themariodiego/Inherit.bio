@@ -3,7 +3,36 @@
 2026-09-07. **Local own-account chosen-trait journey verified; not full-plan or hosted acceptance.**
 Full-plan acceptance stays 18/65. No hosted change or real user file was used.
 
-## Canonical personal Copilot integration in progress
+## Canonical personal Copilot verified locally
+
+At `763fbf1`, **73/73 browser cases in four specs pass in one production-build
+run**, with zero failures, skips, retries or flaky cases. The actual-provider
+bootstrap records **10 Storage uploads**; the HTTPS model stays synthetic and
+inside the isolated runtime. Start `2026-09-07T10:42:17.416Z`, duration 325.8s.
+
+The run proves conflicting/missing/ungenerated sources, exact captured report
+citations, saved-history reopening without another model request, all 64 existing
+output-safeguard cases, input refusals with zero model calls, live report/Copilot
+withdrawal, model changes and source deletion that preserves an independent file
+and conversation. Report withdrawal refuses and physically removes the exact
+paired history; regrant cannot revive it. Desktop 1280×900 and mobile 390×844
+screenshots were inspected: readable answers/citations, accessible visible
+history/permission controls and no horizontal overflow. Refusal accessibility
+assertions in both themes pass within the same run.
+
+Evidence: task `work/canonical-copilot-sql-verification/integrated-browser-v9.log`
+and `browser-v9-evidence/results.json`, with desktop/mobile PNGs in that evidence
+directory. The integrated runtime also passes **2,811 unit tests in 181 files** and full
+ESLint with zero warnings (`integrated-units-763fbf1.log` and
+`integrated-lint-763fbf1.log`). No runtime source changed during those checks;
+only this progress ledger was updated. The complete standard suite discovers
+**231 cases in 44 files**;
+that suite has not run successfully on this branch. The three migrations remain
+local; full-plan acceptance is **18/65** and production remains PR75. This is
+local Copilot evidence, not the full 80-case multi-scope evaluation or hosted
+model/notification/cleanup verification.
+
+### Integration and repair history
 
 At `5d2afc7`, personal chat uses the actual current provider permission, prepared
 source snapshot, selected completed reports, captured citations and server-owned
