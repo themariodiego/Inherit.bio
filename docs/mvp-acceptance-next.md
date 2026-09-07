@@ -69,6 +69,20 @@ close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
 
+### 2026-09-07 · PR76 CI reaches name classification gate
+
+CI `34115365058` at `6fa1eaa` passes typecheck, lint, the production build,
+all **2,822 units in 181 files**, and the legal gate. It then stops at the
+name gate on 43 external-host findings; later gates and browser tests are
+unrun. The URL classifier now uses actual hostnames, recognizes reserved
+synthetic domains and loopback, and rejects malformed authorities before any
+allowed-suffix comparison. Existing private-name scanning is unchanged.
+The PostgreSQL documentation and special-use registry have cited allowlist
+entries. Twenty-five focused scanner tests and lint pass; the whole public
+scan has no findings. The full gate still correctly refuses the absent local
+private denylist and must be reverified using the existing CI secret.
+This does not waive the failed CI run or authorize merge. See ADR0007.
+
 ### 2026-09-07 · Draft PR76 and released-main integration
 
 The replacement branch is pushed and tracked by draft PR76. Its first automatic
