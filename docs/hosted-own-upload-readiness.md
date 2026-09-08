@@ -1,5 +1,65 @@
 # Hosted own-upload rollout prerequisites
 
+## Realistic-size local journey verified · 8 September 2026
+
+Migration `20260908083349_own_normalization_capacity_budget.sql` resolves the
+measured database timeout below. It avoids a redundant subject lookup for each
+autosomal row and gives only the service-only normalization RPC a 45-second
+statement budget. The five-minute processing claim is unchanged. Publication
+now rechecks exact store authority and refuses completion if its lease, session
+or consent expires during the bulk save or final metadata cleanup. All 82
+focused SQL assertions pass, including three expiry-during-insert regressions;
+the local security advisor reports no issues before or after the change.
+
+One real-browser case with one actual Storage upload passes without skips or
+retries: **24,562,693 bytes, one million distinct mapped synthetic array rows**.
+The native preparation request returned 200 in **47.710 seconds**. Before report
+choice there were exactly one million canonical rows, no analysis run or ready
+notice, and no remaining staged batches. Explicit polygenic choice produced the
+exact-source caffeine A/C finding; the original native download matched the
+entire byte count and SHA-256. Actual UI deletion returned 204 and independent
+checks found zero source, variants, observations, batches, normalization/analysis
+journals, Storage manifests and final objects for that source. The complete
+journey took **75.591 seconds**. The mail tombstone remains correctly; no global
+mail worker or hosted email was sent for this local case.
+
+Evidence: parent task `work/canonical-family-runtime-adapter/capacity/` contains
+the fixed recipe, local migration binding, receipt, browser report and resource
+samples. It reuses the pinned production build whose upload runtime is unchanged
+from `4c6312c`, against the reviewed local SQL migration. The failed baseline and
+an explicitly interrupted test-discovery attempt remain separately preserved;
+the runner now asserts exactly one discovered case before starting a provider.
+The interrupted attempt's synthetic prepared source and the baseline failed
+source remain local investigation fixtures; neither is a public user file.
+
+This establishes one realistic-size **local array journey**, not a public limit,
+hosted performance, compressed/VCF capacity or concurrent processing guarantee.
+Production remains PR77 with the existing hosted capacity settings. Before a
+useful canonical production release, finish bounded format/limit verification,
+reviewed recurring cleanup and the legacy pause/drain/transport-policy cutover.
+Full-plan acceptance remains **19/65**.
+
+## Realistic-size capacity failure · 08:30 UTC, 8 September 2026
+
+Exact integrated `4c6312c` CI `34202744965` passed 3,190 units, 1,944 SQL
+assertions, 30 lock checks and 232 browser cases, with 57 actual Storage uploads
+and no skips/retries. A separate local capacity case then uploaded one
+24,562,693-byte synthetic GRCh37 array with one million distinct mapped rows.
+Actual Storage transfer and finalization passed; source preparation returned
+503 after 26.127 seconds. PostgreSQL logged a statement timeout. The service
+role inherited the authenticator's eight-second statement limit, and the bulk
+canonical-row transaction rolled back. No report generation or deletion pass
+is claimed. The original synthetic source remains intact, with zero visible
+variants, batches or analyses; no normalization query remains active.
+
+The original fixture, complete failed-attempt receipts and resource samples are
+preserved in parent task `work/canonical-family-capacity-attempts/attempt-1-default-timeout/`.
+The app container's sampled memory peaked at about 704 MiB; host disk stayed
+above 3.99 GiB. These samples are not a true per-process peak measurement.
+No hosted limits, deployments, schedules or real genetic files changed.
+Resolve this measured failure and rerun the actual journey before adopting a
+public capacity limit. Full-plan acceptance remains **19/65**.
+
 ## Hosted own-file journey completed · 8 September 2026
 
 The protected `f0ab225` canary completed the actual browser journey for

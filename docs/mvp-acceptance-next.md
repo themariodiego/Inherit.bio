@@ -17,8 +17,11 @@ local consent, transport, complete-source validation and cleanup receipts.
 The latest local browser checkpoint now proves file selection through chosen
 personal results, withdrawal, retained source browsing and original download.
 The protected hosted journey now also proves actual signing, chosen findings,
-inbox delivery, withdrawal, retained download and exact source deletion. Useful
-production capacity, recurring cleanup and coordinated cutover still remain.
+inbox delivery, withdrawal, retained download and exact source deletion. A real
+25 MB / million-row local array journey now passes preparation, a chosen finding,
+byte-identical download and deletion after fixing a measured database timeout.
+Useful hosted capacity, remaining format/limit checks, recurring cleanup and
+coordinated cutover still remain.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every
