@@ -3,15 +3,37 @@
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 Its fresh local production-build evidence is recorded in
-`docs/local-upload-browser-verification.md`; production is PR77 (`3c59ac1`).
+`docs/local-upload-browser-verification.md`. PR76 merged on 8 September at
+11:14:32 UTC as `594e885cf94f087d4010db6795c035149ec880a5`; its tree matches
+`9f079ba`. Production deployment `dpl_HJCAo11MiZ7yMXVrFPRb5De7vTBM` became READY
+at 11:15:31 UTC and owns all six aliases. **New canonical uploads remain paused.**
 This is a delivery order, not a replacement specification or launch approval.
-The parent task is integrating parallel work on upload, normalization and
-separate report choices. Unmerged code is not a production capability.
+
+## Current production checkpoint · 8 September 2026
+
+The coordinated transport cutover is installed as `20260908111349`: the legacy
+upload policy is absent, live legacy leases/completion windows are zero, and
+canonical metadata fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec` is unchanged.
+Native production inspection confirmed the retained million-row synthetic source
+is prepared and its source-backed A/C report detail retains 1/1 coverage.
+Final-head CI `34217097810` passed 3,261 units, 2,008 SQL assertions and 232 browser
+cases with 57 actual uploads and zero skips/retries. The protected-canary proof
+already covers 91.496421-second normalization, explicit polygenic A/C and the
+24,562,693-byte original download with an exact hash match. **Deletion of that
+synthetic source and recurring retention activation/verification remain pending.**
+New public admission and a full-project pass are not claimed.
+
+Evidence is in the parent task's
+`work/production-upload-cutover/canonical-merged-deployment.json`,
+`work/production-upload-cutover/cutover-postflight-receipt.json` and
+`work/hosted-capacity-20260908/ca-normalization-success.json` /
+`ca-native-download-receipt.json`. This checkpoint supersedes earlier release
+status below without replacing the original acceptance gates.
 
 ## Owner-directed next scope · 8 September 2026
 
-Prioritize merging PR76 after resolving and verifying the current completion
-failure. Then support ordinary full-size existing WGS result files, followed by
+PR76 is merged. The next approved work is ordinary full-size existing WGS result
+files, followed by
 raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
 **one-month retention of original source files**. These are implementation and
 workload targets, not measured capacity or capabilities already delivered.
@@ -37,12 +59,12 @@ A near-24 MiB local VCF/gzip journey also passes format limits, exact-source
 selection, byte-identical originals and deletion preserving the second source.
 The final local recovery at `9ef7fca` also passed chosen findings, exact original
 bytes and two-file deletion isolation; its full CI passed 3,247 units, 2,008 SQL
-assertions and 232 browser cases. Hosted direct completion still needs the
-provider's public CA after resolving a network-route error. The CA adapter has
-109 passing focused tests and preserves certificate/hostname verification;
-final CI and hosted completion remain pending. Temporary hosted limits are
-restored and the synthetic original is preserved. Useful hosted capacity,
-recurring cleanup and coordinated cutover remain release prerequisites.
+assertions and 232 browser cases. The public-CA adapter preserves certificate
+and hostname verification; hosted million-row preparation, the chosen report
+and native original download now pass. Temporary hosted limits are restored.
+PR76 and the coordinated transport policy are deployed with new uploads paused;
+synthetic deletion and verified recurring cleanup are the pending operational
+steps. This bounded synthetic result does not establish WGS throughput.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every

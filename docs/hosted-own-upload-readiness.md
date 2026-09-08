@@ -1,6 +1,48 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: local recovery passes; hosted certificate configuration pending
+## Current checkpoint: PR76 merged and deployed; new uploads remain paused · 8 September 2026
+
+PR76 merged at **11:14:32 UTC** as
+`594e885cf94f087d4010db6795c035149ec880a5`. Its tree is byte-identical to the
+verified `9f079ba` source. Production deployment
+`dpl_HJCAo11MiZ7yMXVrFPRb5De7vTBM` became READY at **11:15:31 UTC** and owns all
+six public/project aliases, including `inherit.bio` and the main-branch alias.
+**New canonical uploads remain paused.** Native production inspection confirmed
+the retained synthetic file is prepared with one million variants and its report
+listing and source-backed A/C detail with 1/1 coverage are correct; this does not
+prove that new public upload admission is enabled.
+
+Final-head CI `34217097810` passed at 11:06:05 UTC: **3,261 unit tests, 81 fresh
+migrations, 2,008 SQL assertions, 30 independent lock checks and 232 browser
+tests**, with 57 actual local Storage uploads, zero skips/retries and cleanup
+passing.
+
+The coordinated transport-policy cutover is installed as **`20260908111349`**.
+Postflight confirms the legacy upload policy is absent, zero live legacy leases
+and completion windows remain, and canonical policy/role/guard metadata is
+unchanged: fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec`.
+The protected-canary evidence at `9f079ba` records preparation of the retained
+24,562,693-byte source in 91.496421 seconds, then produced the explicitly chosen
+polygenic A/C result and a native original download with the exact expected hash.
+**Synthetic source deletion remains pending. Recurring retention activation and
+its verification also remain pending.** Do not equate merge/deployment with
+completed cleanup or unrestricted public admission.
+
+Evidence: parent task `work/production-upload-cutover/canonical-merged-deployment.json`,
+`work/production-upload-cutover/cutover-postflight-receipt.json`, and
+`work/hosted-capacity-20260908/ca-normalization-success.json` /
+`ca-native-download-receipt.json`. Earlier failure and recovery checkpoints below
+are preserved as historical evidence; this dated checkpoint supersedes their
+production/pending status.
+
+The owner's next approved scope is ordinary full-size existing WGS result files
+first, then raw FASTQ/BAM/CRAM processing, targeting **100 genomes per month** and
+**one-month retention of originals**. Those targets are not verified capacity or
+enabled raw-format support. Format/compute/lifecycle contracts still need the
+corresponding implementation and proof. **No additional spending is authorized.**
+Full-plan acceptance remains **19/65**.
+
+## Earlier checkpoint: local recovery passed; hosted certificate configuration was pending
 
 Exact `9ef7fca` CI `34214992453` passed: **3,247 unit tests, 81 migrations,
 2,008 SQL assertions, 30 independent lock checks and 232 browser cases** with
