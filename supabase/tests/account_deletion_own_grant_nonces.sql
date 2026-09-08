@@ -53,8 +53,10 @@ select ok((select u.status='promoted' and u.upload_consent_id=sc.id and u.finali
 create temporary table unfinished_upload as select public.issue_own_storage_upload_v1(
  '79400000-0000-4000-8000-000000000001','79400000-0000-4000-8000-000000000010',
  (select id from generation_subject),'VCF',8,repeat('b',64)) receipt;
-update public.retention_due_phases set phase_deadline=clock_timestamp()-interval '1 minute'
- where target_id=(select (receipt->>'uploadId')::uuid from unfinished_upload) and retention_id='upload.staging-2h';
+-- Expire only this synthetic lease; cleanup eligibility follows upload authority,
+-- while its original two-hour phase deadline remains unchanged.
+update public.upload_sessions set expires_at=created_at+interval '1 microsecond'
+ where id=(select (receipt->>'uploadId')::uuid from unfinished_upload);
 grant select on unfinished_upload to service_role;
 create temporary table preparation as select public.own_upload_normalization_v1('begin',
  '79400000-0000-4000-8000-000000000001','79400000-0000-4000-8000-000000000010',(select (receipt->>'fileId')::uuid from finalized_upload)) receipt;

@@ -19,7 +19,14 @@ residuals zero, with the test account preserved. This is scheduler-owned retry
 proof, distinct from the earlier 69.557 ms synchronous revocation. It does not
 establish every derivative scope or all retention deadlines.
 
-The upcoming staging-retention correction is **not applied or deployed**.
+The compatible staging-retention correction was applied at **12:46:27 UTC**
+(hosted version `20260908124627`), with owner, ACL and security settings
+unchanged. Its source fingerprint matches the reviewed migration. PR79 remains
+unmerged: CI `34227457189` exposed an older account-deletion fixture that moved
+only the deadline while leaving the upload lease live. The fixture now expires
+only that synthetic lease, preserves its fixed deadline and every assertion,
+and passes **98 focused SQL checks** across account deletion, upload retention
+and finalization. Full CI must pass again before merge.
 A real abandoned synthetic upload was issued at **12:27:30.374461 UTC**, with
 lease expiry **12:57:30.37446 UTC** and original fixed cleanup deadline
 **14:27:30.374461 UTC**. It received actual Storage bytes but was neither
