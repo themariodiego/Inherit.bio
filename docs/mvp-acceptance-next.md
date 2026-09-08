@@ -427,6 +427,36 @@ original download, full-size WGS, raw FASTQ/BAM/CRAM, scheduled one-month retent
 and 100-genomes/month capacity remain pending. Production PR81, admission limits,
 subscriptions and **19/65** acceptance are unchanged.
 
+### Prepared cleanup provider dependency · source verified
+
+The next lifecycle investigation confirmed a boundary that prevents activation:
+standard Storage upload generates a private backend version, while ordinary
+removal derives physical targets from existing metadata. An interrupted upload
+whose metadata commit is rejected can therefore leave a version that the normal
+project API cannot select for removal. A metadata 404 is not deletion evidence.
+Pinned v1.70.3 has a separate operator orphan scanner, but its request is
+bucket-wide, uses a separate server admin key and queues a backup/delete event;
+it does not supply our required exact-object settlement and physical-absence
+receipt. The handler copies S3 orphans to an internal backup key before optional
+original removal; the examined handler does not establish backup expiry.
+No hosted admin access or exact hosted-version parity is claimed.
+
+Exact source findings and acknowledged-artifact/file/account/scratch disposition
+contracts are retained in parent task `work/wgs-next-backend/` as
+`prepared-orphan-lifecycle-review.md` and `prepared-cleanup-contract.md`. Current
+Supabase documentation independently distinguishes inaccessible orphaned bytes
+from deleted metadata. A concrete support question asks for supported exact-key
+inventory, deletion/absence confirmation, late-write settlement and plan/cost
+terms; external sending awaits owner approval. No scan, provider deletion,
+activation, new plan or billing change was performed.
+
+To deliver an independently useful finding correction while this provider
+question is unresolved, the reviewed PRS ambiguity fix was extracted onto
+production base PR81 as PR82 (`277b62b`). It changes newly computed scores only;
+existing saved results are not silently regenerated. Its full CI/release is
+tracked in parent task `work/prs-call-conflict-release/`. Larger-file source work
+is preserved, disabled, at `8e9ed28`; whole-plan acceptance remains **19/65**.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
