@@ -94,6 +94,14 @@ select is((select status from public.retention_due_phases where retention_id='up
  and target_id=(select (receipt->>'uploadId')::uuid from role_upload)),'cancelled','the immutable publication cancels only its staging expiry phase');
 select is((select count(*) from public.upload_staging_objects where upload_session_id=(select (receipt->>'uploadId')::uuid from role_upload)),0::bigint,
  'published source is no longer a working object eligible for staging cleanup');
+savepoint promoted_expiry;
+update public.upload_sessions set expires_at=created_at+interval '1 microsecond'
+ where id=(select (receipt->>'uploadId')::uuid from role_upload);
+select is(public.claim_own_upload_purge_v1(repeat('e',64)),null::jsonb,
+ 'even an expired promoted session cannot be selected by early staging cleanup');
+select is((select count(*) from public.genome_files where id=(select (receipt->>'fileId')::uuid from finalized_receipt)),1::bigint,
+ 'the promoted source survives early cleanup selection');
+rollback to promoted_expiry;
 select is((select count(*) from public.worker_jobs where file_id=(select (receipt->>'fileId')::uuid from finalized_receipt)),0::bigint,
  'finalization creates no processing job');
 select is((select count(*) from public.purpose_grants where target_id=(select id from upload_role_subject)),0::bigint,

@@ -40,6 +40,10 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select is((select count(*) from public.upload_staging_objects where upload_session_id=(select (receipt->>'uploadId')::uuid from role_upload)),1::bigint,'issuance records the exact staging reference');
 select ok((select fixed_deadline=u.created_at+interval '2 hours' from public.retention_rows r join public.upload_sessions u on u.id=r.target_id
  where r.target_id=(select (receipt->>'uploadId')::uuid from role_upload)),'staging deadline is fixed at issuance plus two hours');
+select is(public.claim_own_upload_purge_v1(repeat('e',64)),null::jsonb,'a live issued upload cannot be claimed early');
+create temporary table original_deadlines as select r.fixed_deadline,d.phase_deadline,d.immutable_envelope
+ from public.retention_rows r join public.retention_due_phases d on d.retention_row_id=r.id
+ where r.target_id=(select (receipt->>'uploadId')::uuid from role_upload);
 set local role service_role;
 insert into storage.objects(bucket_id,name,owner_id,metadata) values('genomes',(select receipt->>'stagingKey' from role_upload),'76400000-0000-4000-8000-000000000001','{"size":8}');
 reset role;
@@ -50,12 +54,25 @@ set local role service_role;
 insert into storage.objects(bucket_id,name,metadata) values('genomes',(select receipt->>'finalKey' from finalization_manifest),'{"size":8}');
 reset role;
 select is((select count(*) from public.upload_staging_objects where upload_session_id=(select (receipt->>'uploadId')::uuid from role_upload)),2::bigint,'an unfinished copy has its own exact working reference');
--- Advance only this synthetic due row; no unrelated fixture is changed.
-update public.retention_due_phases set phase_deadline='1900-01-01' where target_id=(select (receipt->>'uploadId')::uuid from role_upload);
-create temporary table purge_claim as select public.claim_own_upload_purge_v1(repeat('a',64)) receipt;
-grant select on purge_claim to service_role;
+select is(public.claim_own_upload_purge_v1(repeat('e',64)),null::jsonb,'a still-authorized active finalizer cannot be claimed');
+-- Expire only this synthetic upload authority, preserving its original two-hour
+-- retention clock and the schema requirement that expiry follows creation.
+update public.upload_sessions set expires_at=created_at+interval '1 microsecond'
+ where id=(select (receipt->>'uploadId')::uuid from role_upload);
+select ok((select phase_deadline>clock_timestamp() from original_deadlines),'cleanup is tested before the original deadline, not by making that deadline overdue');
+create temporary table purge_claim(receipt jsonb);
+grant select,insert on purge_claim to service_role;
+set local role service_role;
+insert into purge_claim select public.claim_own_upload_purge_v1(repeat('a',64));
+reset role;
 select is(jsonb_array_length((select receipt->'objects' from purge_claim)),2,'claim freezes only the staging/final pair');
 select is((select status from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),'rejected','claim atomically invalidates the abandoned upload');
+select is(public.claim_own_upload_purge_v1(repeat('e',64)),null::jsonb,'an active cleanup claim is not reclaimed early');
+select is((select jsonb_build_array(r.fixed_deadline,d.phase_deadline,d.immutable_envelope)
+ from public.retention_rows r join public.retention_due_phases d on d.retention_row_id=r.id
+ where r.target_id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ (select jsonb_build_array(fixed_deadline,phase_deadline,immutable_envelope) from original_deadlines),
+ 'early eligibility changes neither retention clock nor immutable authority envelope');
 select throws_ok($$select public.authorize_own_upload_purge_v1((select (receipt->>'manifestId')::uuid from purge_claim),repeat('b',64))$$,'55000','upload_purge_claim_stale','a foreign claim cannot authorize deletion');
 select throws_ok($$select public.authorize_own_upload_finalization_v1('76400000-0000-4000-8000-000000000001',
  '76400000-0000-4000-8000-000000000010',(select (receipt->>'uploadId')::uuid from role_upload),
@@ -76,6 +93,10 @@ select is(public.finish_own_upload_purge_v1((select (receipt->>'manifestId')::uu
 select is((select count(*) from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from role_upload)),0::bigint,'working upload session is removed');
 select is((select count(*) from public.upload_staging_objects where upload_session_id=(select (receipt->>'uploadId')::uuid from role_upload)),0::bigint,'working references are removed after storage');
 select is((select state from public.purge_manifests where id=(select (receipt->>'manifestId')::uuid from purge_claim)),'complete','the nonauthorizing manifest survives for crash recovery');
+select ok((select d.completed_at<o.phase_deadline and d.phase_deadline=o.phase_deadline
+ from public.retention_due_phases d cross join original_deadlines o
+ where d.target_id=(select (receipt->>'uploadId')::uuid from role_upload)),
+ 'retry and crash recovery complete before the unchanged two-hour deadline');
 set local role service_role;
 select throws_ok($$insert into storage.objects(bucket_id,name,metadata) values('genomes',(select receipt->>'finalKey' from finalization_manifest),'{"size":8}')$$,
  '42501','upload_unavailable','a delayed provider copy cannot recreate purged bytes after session deletion');
