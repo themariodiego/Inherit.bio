@@ -72,6 +72,16 @@ historical contexts even when today's source is restored. No whole-file or
 test-directory exemption, provider-token detector change, or history-baseline
 change is permitted by this decision.
 
+### Reviewed prepared-storage rejection input (2026-09-08)
+
+- Secret-Allowlist-ID: prepared-storage-credential-refusal
+
+This exact dummy credential URL appears only in the prepared Storage transport's
+configuration-rejection test. It is rejected while constructing the transport,
+before any request is possible. The single source path, complete source line and
+binding digest are pinned by the existing reviewed-negative-url mechanism. This
+adds no detector, path-wide exemption, live credential or historical baseline change.
+
 ## Consequences
 
 `pnpm gate:secrets` blocks production environment files, known provider-token

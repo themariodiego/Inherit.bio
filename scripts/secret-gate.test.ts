@@ -9,7 +9,8 @@ function readAllowlist() {
   return JSON.parse(fs.readFileSync("scripts/secret-allowlist.json", "utf8")) as Parameters<typeof validateAllowlist>[0];
 }
 const reviewedIds = ["browser-origin-credential-refusal", "storage-proxy-credential-refusal",
-  "model-endpoint-credential-refusal", "ready-origin-credential-refusal", "chat-token-deterministic-expression"];
+  "model-endpoint-credential-refusal", "ready-origin-credential-refusal", "chat-token-deterministic-expression",
+  "prepared-storage-credential-refusal"];
 
 describe("secret gate detector", () => {
   it("detects provider keys, JWTs, private keys, and contextual assignments", () => {
