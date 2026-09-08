@@ -26,6 +26,10 @@ export const subjectSynchronousReportReceipt = z.object({ fileId: uuid,
   status: z.enum(["processed", "already_processed"]), analysisState: z.literal("active"),
 }).strict();
 export const subjectProcessingReceipt = z.union([subjectNormalizationReceipt, subjectSynchronousReportReceipt]);
+/** Acknowledges preparation only; some reports or their notice may already exist. */
+export const subjectReportGenerationFailure = z.object({
+  error: z.literal("report_generation_unavailable"), fileId: uuid,
+}).strict();
 
 /** Parser identities stay internal; neither filenames nor vendor labels select authority. */
 export function declaredSubjectFormat(kind: FileKind, compressed: boolean): SubjectUploadFormat | null {

@@ -7,13 +7,34 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Current production checkpoint · 8 September 2026
 
-PR79 merge `1697723b2909800de380f0fadb8f8afa14555777` is production READY as
-`dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug` at **13:11:40.297 UTC**, on all six aliases.
-Canonical uploads are enabled, legacy issuance remains paused and direct
-normalization is enabled. Verified limits are **24 MiB raw/decoded per file,
-128 MiB per account and two active uploads**. CI `34228275512` passed 3,261 units
-(203 files), 83 migrations, 2,049 SQL assertions (55 files), 30 locks and 232
-browser cases in 15.0 minutes, zero skips/retries.
+PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
+`dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
+CI `34240644001` passed **3,310 units (204 files), 85 fresh migrations, 2,120 SQL
+assertions (56 files), 30 independent lock checks and 232 browser cases in 16.0
+minutes**, with 57 actual Storage uploads and zero skips/retries. Both compatible
+hosted migrations are installed; application flags, upload caps and plans are unchanged.
+
+A native hosted synthetic VCF upload prepared **500,000 variants and 500,000
+observations in 220.357201 seconds**. The subsequent report attempt failed; the
+page incorrectly labelled this as failed preparation despite the completed source.
+One explicit report-only retry returned **200** and displayed exact-source **A/C**
+with one provenance source. The original download event occurred in the browser;
+a separate authenticated application download verified both original hashes.
+Application DELETE returned **204**; independent **15:27:20 UTC** checks found
+all nine selected source/working/analysis/Storage counts zero, including both exact
+Storage keys. The other four files' metadata fingerprint and variant/observation/
+analysis counts were unchanged. Native JavaScript deletion confirmation remains
+unverified because the browser control could not operate its prompt.
+
+This proves hosted preparation plus report recovery, not an uninterrupted pass.
+The confirmed next correction distinguishes report failure from acknowledged
+preparation. Automatic statistics refreshed between failure and retry; that timing
+is a clue, not proof of the first report failure's cause. Full-size WGS, 100 genomes
+per month and one-month original expiry remain approved, unproved scope. No cap or
+subscription was increased; acceptance remains **19/65**. Receipts: parent task
+`work/wgs-release-pr80/`.
+
+### Earlier PR79 and local preparation evidence
 
 Actual abandoned staging cleanup finished **50.367195 seconds after real lease
 expiry**, with its original deadline unchanged and exact residuals zero. A fresh
@@ -26,7 +47,7 @@ preserved. Native JavaScript deletion confirmation remains unproved. Detailed
 receipts and timestamps are in `docs/hosted-own-upload-readiness.md` and parent
 task `work/current-retention-release/production-pr79/`.
 
-Next is the **local, unreleased WGS streaming batch**. Source `75a1a05`, build
+The earlier local WGS streaming verification is retained below. Source `75a1a05`, build
 `1D0A_d2kzmT7TFNSpjf3L`, passed one small native Storage → chosen reports →
 download → deletion case (17.6 seconds; 20.1 seconds total), three fresh Storage
 POSTs and zero skips/retries. A prepared 1,999 variants / 2,002 observations;
@@ -65,15 +86,15 @@ The prior fetch-lifetime and local-proxy timeout failures remain historical;
 their originals/working rows are cleaned. The earlier native 409 was followed by
 exact-claim expiry and successful recovery at 14:34:15 UTC. Keep the small-browser
 proof and failed-run receipts; do not describe the split preparation/continuation
-as one uninterrupted pass. Next: full CI, two hosted migrations and verification.
-Production remains PR79; **19/65** acceptance is unchanged. Full-size WGS,
+as one uninterrupted pass. The subsequent PR80 release and hosted recovery are
+recorded above; **19/65** acceptance is unchanged. Full-size WGS,
 100-genomes/month and one-month original retention are not enabled/proven by this
 local result; no additional spending is authorized.
 Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026
 
-PR79 is deployed. The next approved work is ordinary full-size existing WGS result
+PR80 is deployed. After correcting report-recovery messaging, the next approved work is ordinary full-size existing WGS result
 files, followed by
 raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
 **one-month retention of original source files**. These are implementation and

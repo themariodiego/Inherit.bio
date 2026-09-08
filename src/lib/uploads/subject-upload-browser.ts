@@ -3,7 +3,7 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, uploadSessionBody } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadSessionBody } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
@@ -12,7 +12,7 @@ export class BrowserUploadError extends Error {
   constructor(readonly code: UploadFailureCode) { super(code); }
 }
 export class BrowserPreparationError extends Error {
-  constructor(readonly code: "build_unknown" | "unavailable") { super(code); }
+  constructor(readonly code: "build_unknown" | "unavailable" | "report_generation_unavailable") { super(code); }
 }
 
 /** Preparation is covered by storage consent, not an extra analysis choice.
@@ -21,9 +21,13 @@ export async function prepareSubjectFile(fileId: string) {
   if (!subjectNormalizationReceipt.shape.fileId.safeParse(fileId).success) throw new BrowserPreparationError("unavailable");
   const response = await fetch(route("api.file-process", { id: fileId }), {
     method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-  });
+  }).catch(() => { throw new BrowserPreparationError("unavailable"); });
   const value: unknown = await response.json().catch(() => null);
   if (!response.ok) {
+    const reportFailure = subjectReportGenerationFailure.safeParse(value);
+    if (response.status === 503 && reportFailure.success && reportFailure.data.fileId === fileId) {
+      throw new BrowserPreparationError("report_generation_unavailable");
+    }
     const code = value && typeof value === "object" && "error" in value ? value.error : null;
     throw new BrowserPreparationError(code === "build_unknown" ? "build_unknown" : "unavailable");
   }
