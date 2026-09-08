@@ -81,47 +81,60 @@ test("count detector fails injected missing-class, mixed-headline, mixed-token a
   await signIn(page, account.email, account.password);
   await page.goto("/genome/me/reports");
   await assertCounts(page);
-  for (const [mutation, expected] of [
-    ["missing-class", "missing-or-mixed-count-class"],
-    ["mixed-headline", "mixed-count-headline"],
-    ["mixed-token", "missing-or-mixed-count-class"],
-    ["bare-count", "unclassified-report-count"],
-    ["dangling-definition", "missing-or-wrong-count-definition"],
-    ["legacy-attribute", "legacy-count-attribute"],
-  ]) {
-    const fixture = await page.evaluateHandle((kind) => {
-      const fixture = document.createElement("section");
-      fixture.id = "count-audit-mutation";
-      const first = document.querySelector('[data-slot="count"][data-figure-class="estimate"]')!.cloneNode(true) as HTMLElement;
-      if (kind === "missing-class") first.removeAttribute("data-figure-class");
-      if (kind === "mixed-token") first.setAttribute("data-figure-class", "estimate variant-call");
-      if (kind === "dangling-definition") first.setAttribute("aria-describedby", "no-such-definition");
-      if (kind === "legacy-attribute") first.setAttribute("data-count-class", "polygenic");
-      fixture.append(first);
-      if (kind === "mixed-headline") {
-        const heading = document.createElement("h2");
-        heading.append(first, document.querySelector('[data-slot="count"][data-figure-class="variant-call"]')!.cloneNode(true));
-        fixture.append(heading);
+  // Create a browser-owned copy of the trusted, self-contained inspector once.
+  const inspector = await page.evaluateHandle<typeof inspectReportCounts>(`(${inspectReportCounts.toString()})`);
+  try {
+    for (const [mutation, expected] of [
+      ["missing-class", "missing-or-mixed-count-class"],
+      ["mixed-headline", "mixed-count-headline"],
+      ["mixed-token", "missing-or-mixed-count-class"],
+      ["bare-count", "unclassified-report-count"],
+      ["dangling-definition", "missing-or-wrong-count-definition"],
+      ["legacy-attribute", "legacy-count-attribute"],
+    ]) {
+      const evidence = await page.evaluate(({ kind, inspect, definitions }) => {
+        const fixture = document.createElement("section");
+        fixture.id = "count-audit-mutation";
+        const first = document.querySelector('[data-slot="count"][data-figure-class="estimate"]')!.cloneNode(true) as HTMLElement;
+        if (kind === "missing-class") first.removeAttribute("data-figure-class");
+        if (kind === "mixed-token") first.setAttribute("data-figure-class", "estimate variant-call");
+        if (kind === "dangling-definition") first.setAttribute("aria-describedby", "no-such-definition");
+        if (kind === "legacy-attribute") first.setAttribute("data-count-class", "polygenic");
+        fixture.append(first);
+        if (kind === "mixed-headline") {
+          const heading = document.createElement("h2");
+          heading.append(first, document.querySelector('[data-slot="count"][data-figure-class="variant-call"]')!.cloneNode(true));
+          fixture.append(heading);
+        }
+        if (kind === "bare-count") {
+          const bare = document.createElement("p");
+          const number = document.createElement("span");
+          number.textContent = "162";
+          bare.append(number, " reports");
+          fixture.append(bare);
+        }
+        const main = document.querySelector("main")!;
+        main.append(fixture);
+        try {
+          // Mutation, inspection and evidence share one synchronous browser task;
+          // React cannot detach the injected node between separate protocol calls.
+          const connectedBefore = fixture.isConnected && main.contains(fixture);
+          const issues = inspect(definitions);
+          return { connectedBefore, connectedAfter: fixture.isConnected && main.contains(fixture), issues };
+        } finally {
+          fixture.remove(); // Remove this exact node even if inspection throws.
+        }
+      }, { kind: mutation, inspect: inspector, definitions: DEFINITIONS });
+      try {
+        expect(evidence.connectedBefore).toBe(true);
+        expect(evidence.connectedAfter).toBe(true);
+        expect(evidence.issues).toContain(expected);
+      } finally {
+        await expect(page.locator("#count-audit-mutation")).toHaveCount(0);
+        await assertCounts(page);
       }
-      if (kind === "bare-count") {
-        const bare = document.createElement("p");
-        const number = document.createElement("span");
-        number.textContent = "162";
-        bare.append(number, " reports");
-        fixture.append(bare);
-      }
-      document.querySelector("main")!.append(fixture);
-      return fixture;
-    }, mutation);
-    try {
-      expect(await page.evaluate(inspectReportCounts, DEFINITIONS)).toContain(expected);
-    } finally {
-      // Retain the exact injected node: React may detach it after the audit.
-      // A locator would wait for a replacement instead of cleaning this node.
-      try { await fixture.evaluate((node) => node.remove()); }
-      finally { await fixture.dispose(); }
-      await expect(page.locator("#count-audit-mutation")).toHaveCount(0);
-      await assertCounts(page);
     }
+  } finally {
+    await inspector.dispose();
   }
 });

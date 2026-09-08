@@ -51,6 +51,14 @@ not automatically invalidated or recomputed. No real genetic file was altered.
 Whole-plan acceptance remains **19/65**. Release evidence is in parent task
 `work/prs-call-conflict-release/`.
 
+PR82's initial CI run `34278270396` passed the preceding gates and 231 browser
+cases, but its injected count-mutation test expected a missing-class finding and
+received none. The test inserted its fixture and audited it in separate browser
+calls, allowing the page to detach it between them. The correction runs insertion,
+inspection with the unchanged detector, and cleanup synchronously in one browser
+call, preserving every negative assertion. The exact CI timing cause is not
+claimed; the earlier failed run is retained and a new exact-head check is required.
+
 ### Earlier PR80 hosted preparation and recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
