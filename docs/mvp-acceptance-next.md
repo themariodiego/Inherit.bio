@@ -40,9 +40,16 @@ results first, FASTQ/BAM/CRAM next, 100 genomes/month, and originals retained fo
 one month. Supabase interrupted-write cleanup is unresolved through the available
 project APIs; a support draft awaits permission to send externally. A bounded
 current-documentation R2 review found plausible direct-object recovery APIs, but
-no account capacity, provider proof or architecture change is claimed. Next:
-verify an existing-plan cleanup capability and capacity before activation; no
-additional spending is authorized.
+no provider proof or architecture change is claimed. A subsequent read-only check
+confirmed the active inherit.bio zone belongs to Cloudflare account
+`165b6ad801f990d009e90b64b39f87dd`; R2 bucket listing returns provider error
+**10042: enable R2 through the dashboard**. R2 is not enabled, so remaining
+allowance is unknown and a trial cannot use an existing active R2 subscription.
+Cloudflare's current setup documentation requires subscription checkout. No
+activation or spending occurred. The account probe is preserved in parent task
+`work/wgs-next-backend/r2-account-preflight.json`. Next: approval to send the
+existing-plan Supabase support draft, or a separate owner decision on R2
+activation; do not substitute scope approval for spending authorization.
 
 ### Earlier PR81 preparation/report recovery
 
