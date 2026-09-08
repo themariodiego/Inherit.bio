@@ -948,3 +948,25 @@ extractor or legal statement is removed or relaxed.
 - `v2_contracts.sql` now expects 121 stores (the previous 119 plus immutable
   manifest and final-member stores), with 24 assertions. Existing classifications
   and protections remain intact; this registration is not a cleanup executor.
+
+
+## Published source transport and member authority · 8 September 2026
+
+- `storage-artifact-fetch.test.ts` adds 41 authenticated HTTP transport checks:
+  exact registered metadata/headers, body ownership before first iteration,
+  cancellation and late responses, and integration with the existing full
+  hash/EOF/current-authority verifier. Responses remain synthetic.
+- `published-source-reader.test.ts` adds 17 real parser/materializer/root-to-read
+  composition checks through synthetic RPC/Storage responses. It preserves
+  GRCh37 source evidence, bounded cursor continuity and exact published identity;
+  it refuses mismatches, revoked operations, corrupt bytes and loss of an unread
+  member at final exhaustive verification. Initial member-error assertions were
+  corrected to the verified reader's opaque unavailable error and strengthened
+  to require zero Storage reads for the mismatched member. No refusal was relaxed.
+- `own_prepared_member_authorization.sql` uses actual synthetic signed source
+  issuance/finalization/publication plus metadata-only Storage rows. It tests
+  constant-cost exact-member checks separately from exhaustive source integrity,
+  current-session authority and final clocks. The first SQL run's source-revision
+  fixture hit an existing consistency constraint; an explicit constraint-refusal
+  assertion remains, and the stale-source probe changes both revision fields
+  coherently before requiring the same member-gate refusal. No guard is bypassed.

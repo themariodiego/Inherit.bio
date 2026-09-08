@@ -71,6 +71,15 @@ cannot reuse a stale worker token as permission. Published jobs leave temporary
 job expiry, and reciprocal serialization prevents legacy normalization on the
 same file. No legacy normalization journal is fabricated.
 
+Published coordinate reads use actual authenticated RPC and Storage transports.
+The full source/member digest is checked before and after a bounded page; each
+selected object also gets an indexed exact-member check, avoiding a complete
+membership scan for every range. The reader requires the caller's distinct
+current operation check around I/O and at return. It preserves original evidence
+and canonical target order, so report projection must still preserve existing
+collision semantics. These adapters remain inactive until report claim/commit,
+complete exports and deletion share the same published source identity.
+
 The new manifest/member stores are in the purge inventory, with restrictive
 foreign keys preserving object identities. Full file/account/expiry deletion and
 scratch cleanup still require integration and verification before activation.

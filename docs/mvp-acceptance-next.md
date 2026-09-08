@@ -268,6 +268,44 @@ adoption, revocable original download and one-month expiry remain open. No new
 PR is opened for this disabled foundation. Production PR81, public limits,
 subscriptions and **19/65** whole-plan acceptance are unchanged.
 
+### Authenticated published-coordinate reads · local only
+
+The published coordinate reader now connects exact actor/file/manifest selection
+to service RPCs and authenticated Storage GET/range transports. It loads the
+actual serialized combined/canonical roots, verifies hashes and source/count
+bindings, and preserves full canonical evidence through bounded cursors. Every
+selected object rechecks exact published membership and the caller's distinct
+current operation. Exhaustive full-source checks at both page boundaries detect
+loss of an unread member during I/O; this was added after independent review.
+
+**17 reader composition and 41 transport tests pass**, with scoped TypeScript,
+lint and independent review. These use real synthetic parser/materializer roots
+and synthetic HTTP responses. The cumulative focused engine inventory is now
+**784 cases**, not a rerun of full CI or a provider journey. Existing application
+report readers remain unchanged until claim/completion bind the same manifest.
+
+The additive member-authorization migration factors the existing source gate
+without changing its source/session/store/file-type predicates. A point check
+uses exact indexed final membership plus actual Storage metadata identity; it
+does not rescan every member. Full source reads retain exhaustive validation.
+**36 rollback-only SQL assertions pass** in `member-authority-attempt-3/`; all
+file/object hashes, counts, config/history and absence of new schema match the
+baseline. One earlier driver attempt stopped during preflight before migration
+execution; the next SQL run found an invalid partial-revision fixture. The final
+fixture preserves that constraint-refusal assertion and separately proves a
+coherent changed revision invalidates the captured source. Earlier outcomes stay
+recorded. No runtime migration, hosted request, admission or retention change.
+
+Next is actual local Storage composition of preparation → publication → current
+indexed read. Report claim/detail/mail binding, complete export, worker recovery
+and exact file/account/scratch deletion are still required before activation.
+The deletion assessment identifies one shared exact-artifact cleanup protocol:
+include all attempts, distinguish published nonmembers from final members, and
+retire members → manifests → artifacts → jobs before the existing file graph.
+Unacknowledged provider writes require durable physical-absence evidence; metadata
+absence alone is insufficient. See parent task `prepared-deletion-integration.md`.
+Production PR81 and whole-plan acceptance **19/65** remain unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
