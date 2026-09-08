@@ -1,5 +1,44 @@
 # Hosted own-upload rollout prerequisites
 
+## Hosted own-file journey completed · 8 September 2026
+
+The protected `f0ab225` canary completed the actual browser journey for
+`inherit-test@plus.bio`: one 425-byte synthetic GRCh38 file, five usable calls,
+one chosen polygenic report purpose, and an exact-source lactase finding A/G.
+The other report purposes stayed off. The catalog contains 151 captured reports;
+the UI reports seven covered entries, not 151 personal findings or calculated risks.
+
+The application queued one canonical ready notice. The existing production
+mail scheduler accepted it once; Resend recorded delivery and the actual Zoho
+inbox received it. Clicking that message's link reached authenticated Reports
+and the saved-source finding. No direct provider send or manual global worker ran.
+Withdrawal completed the exact-grant purge in about 0.1 seconds, before its
+60-second deadline; the old result URL returned 404. Original downloads before
+and after withdrawal both matched all 425 bytes and SHA-256
+`3a7d4c51e5fea9a241909c24f83433b601289ad3f032128c87c6dd229128b361`.
+
+Actual UI deletion removed the sole synthetic source. At 07:50:32 UTC, SELECT-only
+checks found zero source, variant, observation, normalization, analysis, ancestry,
+file-worker, pending-deletion, ledger and staging/final Storage rows for its exact
+IDs. The revoked grant, completed purge audit and consumed upload tombstone with
+null final-file reference remain correctly. The same notice stays delivered with
+one attempt and its original expiry. No raw-locus browser check is claimed here.
+
+Evidence: parent task `work/current-canary-notice-resume/02-prepared-receipt.json`
+through `09-deletion-receipt.json`, actual result screenshot and two downloaded
+fixtures. Independent review confirms consistent source/grant/mail/purge bindings.
+The earlier file-permission and Mac-lock holds are resolved. Current integrated
+`fa26e1a` CI `34170049395` passes 3,190 units, 1,944 SQL assertions, 30 lock checks
+and 232 browser tests, with 57 actual local Storage uploads and no skips/retries.
+PR77 post-merge CI `34169600502` also passes all 220 browser cases.
+
+This is protected hosted evidence, not a public release. Production remains PR77
+(`3c59ac1`); acceptance remains **19/65**. Before PR76 release, establish useful
+bounded upload capacity, recurring retention execution with reviewed due-work scope,
+and the documented legacy pause/drain plus incompatible transport-policy cutover.
+Before this one-email batch, Vercel usage was $1.75/$20 included and Resend
+3,171/50,000 with transaction overages off; no plan/add-on change was made.
+
 ## Current production baseline · 8 September 2026
 
 **PR77 is live**, merge `3c59ac17bd3805e912068b76d12d1f64142f9397`, deployment
@@ -22,7 +61,7 @@ branch received the existing public Supabase URL/anon key; no service-role or
 private key was retrieved. That preview proved routing and Settings, but its
 Overview lacked server configuration. The production check above closes that
 preview limitation. The original own-upload canary remains `f0ab225` with its
-stable alias unchanged. Its browser upload permission is still pending.
+stable alias unchanged. Its completed hosted journey is recorded above.
 
 Use **PR77 as the current legacy runtime and rollback baseline** for PR76's
 future cutover. It retains PR75's pause/drain behavior, mail worker and data

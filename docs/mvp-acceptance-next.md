@@ -16,8 +16,9 @@ not the catalog-wide G1.11/G4.7 gates. The new own-upload implementation has
 local consent, transport, complete-source validation and cleanup receipts.
 The latest local browser checkpoint now proves file selection through chosen
 personal results, withdrawal, retained source browsing and original download.
-Hosted signing, retention execution and broader regressions still separate
-this verified local journey from a delivered production milestone.
+The protected hosted journey now also proves actual signing, chosen findings,
+inbox delivery, withdrawal, retained download and exact source deletion. Useful
+production capacity, recurring cleanup and coordinated cutover still remain.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every
@@ -61,11 +62,11 @@ not the intended MVP.
   on the landing page, authenticated Overview and an actual uploaded-source
   report. Performance medians are 96/98/97; all accessibility scores are 100.
   This closes one exact gate, not full accessibility or required CI wiring.
-- **Current release prerequisite:** complete exact-head CI and the protected
-  hosted findings/ready-notice/withdrawal/cleanup journey. The synthetic Zoho
-  alias is registered and email-confirmed; browser file-URL permission is
-  still needed before its first upload. Keep incompatible schema cutover
-  deferred until the documented pause/drain/application transition.
+- **Current release prerequisite:** exact `fa26e1a` CI and the protected hosted
+  findings/actual inbox-link/withdrawal/download/deletion journey now pass.
+  Establish useful bounded capacity and recurring retention execution; keep
+  incompatible schema cutover deferred until the documented legacy
+  pause/drain/application transition.
 - **After the core flow stabilizes:** finish complete route/state coverage and
   route dispositions for G1.12/G2.2/G2.3, then their required CI integration.
   Repeatedly rerunning incomplete full suites does not close those gates.
@@ -75,6 +76,17 @@ grading under G3.1–G3.3. A written protocol or invented transcripts cannot
 close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
+
+### 2026-09-08 · Protected hosted own-file journey completed
+
+One actual synthetic upload reached a chosen source-backed finding, a ready
+notice delivered to Zoho and followed back to the result, timely purpose
+withdrawal, byte-identical downloads before/after withdrawal and exact source
+removal. Current `fa26e1a` CI passes all 232 browser cases with 57 actual local
+uploads. The complete hosted receipts and remaining production capacity,
+recurring retention and coordinated cutover conditions are in
+`docs/hosted-own-upload-readiness.md`. Production remains PR77 and acceptance
+remains **19/65**; no broader gate is promoted from this single hosted slice.
 
 ### 2026-09-08 · Authentication return protection released separately
 

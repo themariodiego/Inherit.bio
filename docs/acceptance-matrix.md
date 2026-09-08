@@ -16,6 +16,11 @@ Later work can supersede that behavior without completing the stricter gates.
   G1.16 and hosted upload release conditions remain open. Production is PR77
   (`3c59ac1`), an independently verified authentication-only release; see
   `docs/hosted-own-upload-readiness.md`.
+- Protected hosted own-file evidence now includes actual chosen finding, ready
+  notice delivered to Zoho and followed, exact-grant withdrawal, byte-identical
+  retained download and complete source deletion. This contributes to the own
+  G2.6 slice; other required journeys and public rollout remain open. No new
+  gate is promoted. See `docs/hosted-own-upload-readiness.md`.
 - PR65 closes G4.6 after complete CI and hosted verification. Exact merge
   `16c01b71fdda862d9a1fd23153a6f618e2a255a7` is live on both public domains;
   the additive metadata migration preserves all files and historical unknowns.
