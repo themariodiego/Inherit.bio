@@ -14,14 +14,25 @@ Later work can supersede that behavior without completing the stricter gates.
   document/status/content checks, no skips/retries. The independent review
   confirms the complete gate; see `docs/local-upload-browser-verification.md`.
   G1.16 and broader upload/rights release conditions remain open. Production
-  is PR79 merge `1697723b2909800de380f0fadb8f8afa14555777`, deployment
-  `dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug`, READY at 13:11:40.297 UTC on
+  is PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384`, deployment
+  `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ`, READY at 15:12:14.085 UTC on
   2026-09-08 across all six aliases. Canonical upload admission is enabled;
   legacy issuance remains paused. See `docs/hosted-own-upload-readiness.md`.
-- PR79 CI `34228275512` passed: 3,261 unit tests across 203 files, 83 fresh
-  migrations, 2,049 SQL assertions across 55 files, 30 independent lock checks
-  and 232 browser cases in 15.0 minutes, zero skips/retries. Verified limits
-  are 24 MiB per raw/decoded file, 128 MiB per account and two active uploads.
+- PR80 CI `34240644001` passed: 3,310 units (204 files), 85 fresh migrations,
+  2,120 SQL assertions (56 files), 30 independent lock checks and 232 browser
+  cases in 16.0 minutes, 57 actual Storage uploads, zero skips/retries. Both
+  compatible hosted migrations are installed. Existing upload caps are unchanged.
+- Hosted dense VCF preparation produced 500,000 variants and observations in
+  220.357201 seconds. Its later report attempt failed, then one explicit report
+  retry returned 200 and exact-source A/C with one provenance source. Original
+  download hashes match; app DELETE returned 204. Independent 15:27:20 checks
+  found all nine selected counts and both Storage keys zero, with the other four
+  sources' metadata/counts unchanged. Browser download event was observed; byte
+  verification used the authenticated app endpoint. Native deletion confirmation
+  remains unverified. This is preparation plus recovery, not an uninterrupted
+  pass. Incorrect preparation-error copy is the next correction; no broad gate
+  closes. Details: `docs/hosted-own-upload-readiness.md` and parent task
+  `work/wgs-release-pr80/`.
 - Actual abandoned-upload cleanup completed at 12:58:20.741655 UTC, **50.367195
   seconds after its real lease expiry**, with the original 14:27:30.374461 UTC
   deadline unchanged, manifest complete and Storage/session/staging residuals
@@ -46,7 +57,7 @@ Later work can supersede that behavior without completing the stricter gates.
   passed separately without a browser rerun. Earlier selector failures remain
   preserved. See parent task `work/wgs-browser-verification-v3/` and the hosted
   readiness ledger for receipts.
-- This WGS batch remains **local and unreleased**. Review found previously
+- Earlier local review found previously
   accepted long alleles could exceed the larger registration envelope. The
   corrected helper targets one-MB batches and preserves the four-MB genetic
   stage bound, with only 1,024 bytes of registration metadata headroom. All 80
@@ -73,8 +84,8 @@ Later work can supersede that behavior without completing the stricter gates.
 - Earlier dense v1/v2 failures remain preserved; all their synthetic originals
   and working rows are cleaned, following exact-claim expiry/recovery at
   14:34:15 UTC after an initial native 409. The earlier small-browser proof is
-  unchanged. The WGS batch is **local and unreleased**: full CI, two hosted
-  migrations and hosted verification remain next. Production stays PR79;
+  unchanged. PR80 subsequently passed full CI and hosted preparation with report
+  recovery, as recorded above. Production is PR80;
   acceptance remains **19/65**. No full-size WGS, 100-genomes/month or one-month
   original-retention capability is inferred; no additional spending is authorized.
 - Protected hosted own-file evidence now includes actual chosen finding, ready
