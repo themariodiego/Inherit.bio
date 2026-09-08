@@ -92,6 +92,33 @@ prepared for fresh replay; the complete existing SQL suite was not rerun here.
 The current signed original-download link remains an explicit ADR-0016 gap.
 Original expiry, public limits, production PR81 and **19/65** acceptance are unchanged.
 
+### Canonical ordering and registered writes · local only
+
+Canonical runs and eight-way merging now preserve every original disposition
+while ordering normalized calls by target coordinates, with stable source ties.
+Their **45 focused cases** and independent review pass. Whole-source terminal
+verification remains distinct from a merge receipt; no target/rsID index or
+application publication is implied.
+
+The private Storage adapter reserves a database-generated `prepared/<UUID>` key
+before its create-only upload, checks live job authority, reads and hashes the
+entire stored object through EOF, then acknowledges the exact registered identity.
+Failures close that writer without automatic retry; uncertain reservations remain
+owned by cleanup. **60 mocked transport tests** and **31 range-reader tests**
+pass, including a reviewed cancellation race between response resolution and its
+awaiting continuation. Scoped TypeScript/lint pass. Across the existing engine
+and these additions there are **348 distinct focused cases**, not a full CI run.
+
+The unapplied migration's permanent namespace and rollback-probe commit fence
+passed **85 rollback-only SQL assertions** in `job-authority-attempt-4/`.
+All source/object fingerprints, counts and schema absence again match baseline.
+Storage v1.70.3 source review confirms finalization may outlive client abort and
+failure cleanup may enqueue physical deletion. Metadata refusal is therefore
+insufficient evidence of byte removal. The actual local provider interruption
+proof is next; its synthetic source setup and exact reversal must be complete
+before temporarily installing the draft migration. No provider writes or runtime
+migration commits occurred in this batch. Dispatch and public limits stay unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as

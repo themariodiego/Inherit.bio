@@ -40,6 +40,12 @@ session cannot silently replace the job's captured authorization.
 Register an immutable artifact identity and byte reservation before each write.
 Transport verifies complete stored bytes independently of the database metadata
 acknowledgement. Failed or uncertain submissions stay in the cleanup manifest.
+Prepared keys use the permanent `prepared/<database-generated UUID>` namespace.
+Its metadata trigger rejects unknown keys and all updates, including after job
+membership is retired. Storage's rollback-only permission probe is admitted
+under the same live reservation; a deferred constraint prevents committing the
+probe's weaker metadata shape. Final writes require the exact registered size
+and a real object version. This fences metadata, not physical provider bytes.
 Freeze registration and publication before deletion. A request already submitted
 to Storage can finish after cancellation; lease expiry alone is insufficient to
 prove absence. Fence or drain outstanding writes, remove exact frozen identities,

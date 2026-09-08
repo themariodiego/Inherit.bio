@@ -4,7 +4,7 @@ import { createPreparedContainerPacker, type PreparedContainerDescriptor } from 
 import { syntheticSource } from "./fixtures";
 import { createPreparedRangeFetch, readPreparedStorageBlock, type PreparedRangeFetch } from "./storage-reader";
 
-const key = "33333333-3333-4333-8333-333333333333";
+const key = "prepared/33333333-3333-4333-8333-333333333333";
 async function fixture() {
   let container!: PreparedContainerDescriptor, bytes!: Uint8Array;
   const packer = createPreparedContainerPacker({ source: syntheticSource, sink: async value => {
@@ -51,10 +51,11 @@ describe("authorized bounded prepared-object reads", () => {
     });
     expect(fetchRange).toHaveBeenCalledTimes(when === "before" ? 0 : 1);
   });
-  it.each(["missing block", "path injection", "changed offsets", "changed source"])("refuses %s before I/O", async fault => {
+  it.each(["missing block", "path injection", "raw original key", "changed offsets", "changed source"])("refuses %s before I/O", async fault => {
     const f = await fixture();
     if (fault === "missing block") f.selection.blockSequence = 5;
     if (fault === "path injection") f.selection.objectKey = "../other?key=secret";
+    if (fault === "raw original key") f.selection.objectKey = key.slice("prepared/".length);
     if (fault === "changed offsets") f.selection.container.blocks[1].offset++;
     if (fault === "changed source") f.selection.container.source.sourceRevision++;
     const check = vi.fn(async () => {}), fetchRange = vi.fn(async () => f.response());
@@ -126,6 +127,21 @@ describe("authorized bounded prepared-object reads", () => {
     const rejected = expect(operation).rejects.toMatchObject({ code: "aborted" });
     await vi.advanceTimersByTimeAsync(30_000); await rejected; expect(fetchRange).not.toHaveBeenCalled();
   });
+  it("owns a resolved response when cancellation beats its await continuation", async () => {
+    const f = await fixture(), controller = new AbortController(), cancel = vi.fn();
+    let finish!: (value: Response) => void, started!: () => void;
+    const pending = new Promise<Response>(resolve => { finish = resolve; });
+    const fetched = new Promise<void>(resolve => { started = resolve; });
+    const check = vi.fn(async () => {});
+    const operation = readPreparedStorageBlock(f.selection, { check, signal: controller.signal,
+      fetchRange: () => { started(); return pending; } });
+    const rejected = expect(operation).rejects.toMatchObject({ code: "aborted" });
+    await fetched;
+    finish(new Response(new ReadableStream({ cancel }), { status: 206, headers: f.response().headers }));
+    queueMicrotask(() => controller.abort());
+    await rejected;
+    expect(cancel).toHaveBeenCalledTimes(1); expect(check).toHaveBeenCalledTimes(1);
+  });
   it("sanitizes a provider exception", async () => {
     const f = await fixture();
     await expect(readPreparedStorageBlock(f.selection, { check: async () => {}, fetchRange: async () => {
@@ -153,8 +169,8 @@ describe("server-configured private Storage transport", () => {
       vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", configured); vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-placeholder");
       expect(() => createPreparedRangeFetch()).toThrow("unavailable");
     });
-  it("allows the explicit local Supabase CLI origin", () => {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+  it.each(["http://127.0.0.1:54321", "http://127.0.0.1:55321"])("allows an explicit local Supabase origin", origin => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", origin);
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-placeholder");
     expect(createPreparedRangeFetch()).toBeTypeOf("function");
   });

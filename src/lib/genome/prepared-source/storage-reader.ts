@@ -3,8 +3,8 @@ import { z } from "zod";
 import { decodePreparedBlock } from "./codec";
 import { validatePreparedContainerDescriptor, type PreparedContainerDescriptor } from "./containers";
 import { PREPARED_BLOCK_MAX_COMPRESSED_BYTES } from "./schema";
+import { preparedObjectKeySchema as objectKeySchema, preparedStorageConfig } from "./storage-common";
 
-const objectKeySchema = z.uuid().regex(/^[0-9a-f-]+$/);
 const sequenceSchema = z.number().int().nonnegative().safe();
 export class PreparedStorageReadError extends Error {
   constructor(readonly code: "invalid_selection" | "unavailable" | "integrity_mismatch" | "aborted") {
@@ -18,18 +18,9 @@ export type PreparedRangeFetch = (request: PreparedRangeRequest) => Promise<Resp
  * registered-artifact protocol, never accepted from an HTTP request. No signed
  * URLs, redirects, public bucket, response cache, or provider retry is used. */
 export function createPreparedRangeFetch(): PreparedRangeFetch {
-  const configured = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!configured || !key) throw new PreparedStorageReadError("unavailable");
-  let origin: string;
-  try {
-    const url = new URL(configured);
-    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password
-      || url.search || url.hash || url.pathname !== "/") throw new Error();
-    if (url.protocol === "http:" && !["http://127.0.0.1:54321", "http://localhost:54321",
-      "http://[::1]:54321"].includes(url.origin)) throw new Error();
-    origin = url.origin;
-  } catch { throw new PreparedStorageReadError("unavailable"); }
+  let origin: string, key: string;
+  try { ({ origin, key } = preparedStorageConfig()); }
+  catch { throw new PreparedStorageReadError("unavailable"); }
   return async ({ objectKey, start, end, signal }) => {
     if (!objectKeySchema.safeParse(objectKey).success || !sequenceSchema.safeParse(start).success
       || !sequenceSchema.safeParse(end).success || end < start
@@ -90,7 +81,10 @@ export async function readPreparedStorageBlock(selection: {
       end: block.offset + block.length - 1, signal });
     // A non-cooperative transport can return after cancellation; do not leave
     // its body downloading after this operation has already been refused.
-    void pending.then(late => { if (signal.aborted) void late.body?.cancel().catch(() => {}); }, () => {});
+    void pending.then(late => {
+      response = late;
+      if (signal.aborted) void late.body?.cancel().catch(() => {});
+    }, () => {});
     response = await wait(pending, signal); active(signal);
     if (response.status !== 206 || !response.body
       || response.headers.get("content-range") !== `bytes ${block.offset}-${block.offset + block.length - 1}/${container.byteCount}`

@@ -44,7 +44,8 @@ create table private.own_preparation_artifacts (
  attempt_id uuid not null,
  sequence integer not null check(sequence between 0 and 4095),
  kind text not null check(kind='container'),
- object_key uuid not null unique default gen_random_uuid(),
+ object_key text not null unique default ('prepared/'||gen_random_uuid()::text)
+  check(object_key ~ '^prepared/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'),
  byte_count bigint not null check(byte_count between 1 and 8388608),
  sha256 text not null check(sha256 ~ '^[0-9a-f]{64}$'),
  write_expires_at timestamptz not null,
@@ -270,7 +271,8 @@ begin
  -- The service transport proves complete content hashing. SQL independently
  -- checks identity/size; a metadata ACK is not a claim that SQL hashed bytes.
  perform 1 from storage.objects o where o.id=p_storage_object_id and o.bucket_id='genomes'
-  and o.name=a.object_key::text and (o.metadata->>'size')::numeric=a.byte_count for share;
+  and o.name=a.object_key and o.version ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  and (o.metadata->>'size')::numeric=a.byte_count for share;
  if not found then raise exception using errcode='42501',message='not_found'; end if;
  if exists(select 1 from public.genome_storage_objects where object_id=p_storage_object_id)
   or exists(select 1 from public.genome_files where storage_object_id=p_storage_object_id or bucket_path=a.object_key::text) then
@@ -354,6 +356,77 @@ begin
  end loop;
  return jsonb_build_object('version','own-preparation-freeze-scan-v1','frozen',count_frozen,'cleanupComplete',false);
 end; $$;
+
+-- The namespace guard survives every job/artifact row. Unknown prepared/*
+-- names therefore never become writable after their metadata is retired.
+-- This is a Storage metadata fence only: provider blob ordering and later
+-- physical absence verification remain separate integration prerequisites.
+create function private.guard_own_preparation_object_v1()
+returns trigger language plpgsql security definer set search_path=pg_catalog,private as $$
+declare a private.own_preparation_artifacts%rowtype; j private.own_preparation_jobs%rowtype; size_field text;
+begin
+ if tg_op='UPDATE' then
+  if (old.bucket_id='genomes' and old.name like 'prepared/%')
+   or (new.bucket_id='genomes' and new.name like 'prepared/%') then
+   raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+  return new;
+ end if;
+ if new.bucket_id<>'genomes' or new.name not like 'prepared/%' then return new; end if;
+ if auth.jwt()->>'role' is distinct from 'service_role' then
+  raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ select * into a from private.own_preparation_artifacts where object_key=new.name;
+ if a.id is null then raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ select * into j from private.own_preparation_jobs where id=a.job_id;
+ if j.id is null then raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ -- The existing exact claim checker takes Auth user, originating session,
+ -- profile, subject and source locks before its job lock. Artifact is last.
+ begin
+  perform private.check_own_preparation_claim_v1(j.id,a.attempt_id,j.claim_token_hash);
+ exception when insufficient_privilege or object_not_in_prerequisite_state then
+  raise exception using errcode='42501',message='prepared_object_unavailable'; end;
+ select * into j from private.own_preparation_jobs where id=j.id for update;
+ select * into a from private.own_preparation_artifacts where id=a.id for update;
+ if a.id is null or a.job_id is distinct from j.id or a.attempt_id is distinct from j.attempt_id
+  or a.object_key is distinct from new.name or a.state<>'reserved'
+  or j.state<>'claimed' or least(a.write_expires_at,j.claim_expires_at,j.job_deadline)<=clock_timestamp() then
+  raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ -- Storage v1.70.3 create-only admission uses a rollback-only version='1'
+ -- INSERT with contentLength. Finalization uses a generated UUID version and
+ -- metadata.size. A separate deferred constraint forbids committing probes.
+ if new.version='1' then
+  size_field:='contentLength';
+ elsif new.version ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+  size_field:='size';
+ else raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ if jsonb_typeof(new.metadata->size_field) is distinct from 'number'
+  or (new.metadata->>size_field)!~'^[1-9][0-9]{0,7}$'
+  or (new.metadata->>size_field)::bigint<>a.byte_count then
+  raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ -- Metadata hashes are not content evidence. Only a subsequent exact ACK can
+ -- record the service transport's separately observed full-object SHA256.
+ perform private.check_own_preparation_claim_v1(j.id,a.attempt_id,j.claim_token_hash);
+ if least(a.write_expires_at,j.claim_expires_at,j.job_deadline)<=clock_timestamp() then
+  raise exception using errcode='42501',message='prepared_object_unavailable'; end if;
+ return new;
+end; $$;
+create trigger guard_own_preparation_object before insert or update on storage.objects
+ for each row execute function private.guard_own_preparation_object_v1();
+revoke all on function private.guard_own_preparation_object_v1()
+ from public,anon,authenticated,inherit_upload_only,service_role;
+
+create function private.refuse_committed_preparation_probe_v1()
+returns trigger language plpgsql security definer set search_path=pg_catalog,private as $$
+begin
+ -- Provider admission explicitly rolls its transaction back. Even a service
+ -- caller cannot turn that weaker metadata shape into a committed object row.
+ raise exception using errcode='42501',message='prepared_probe_uncommittable';
+end; $$;
+create constraint trigger refuse_committed_preparation_probe
+ after insert on storage.objects deferrable initially deferred
+ for each row when (new.bucket_id='genomes' and new.name like 'prepared/%' and new.version='1')
+ execute function private.refuse_committed_preparation_probe_v1();
+revoke all on function private.refuse_committed_preparation_probe_v1()
+ from public,anon,authenticated,inherit_upload_only,service_role;
 
 -- Public RPC wrappers are invokers; only the service role can reach their
 -- private authority-checking entry points. Internal source/receipt/freeze

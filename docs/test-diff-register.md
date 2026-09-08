@@ -895,12 +895,23 @@ extractor or legal statement is removed or relaxed.
   These use synthetic transport responses, not a claimed provider proof.
 - The secret gate's existing adversarial fixture matrix gains one exact URL
   rejection input under ADR-0006. Detectors and history baseline are unchanged.
-- `own_preparation_jobs.sql` adds 67 rollback-only metadata/authority assertions.
+- `own_preparation_jobs.sql` adds 85 rollback-only metadata/authority assertions.
   Actual upload issuance and finalization RPCs create synthetic source receipts;
   no normalized completion, provider byte proof or cleanup success is fabricated.
   The initial invalid original-metadata and consent-clock mutations were corrected
   to assert the existing immutable guard and use a valid elapsed consent expiry.
   Guards, expected refusals and existing tests remain intact.
+  The namespace extension adds actual-shaped rollback probes, a deferred
+  no-commit check, immutable final writes and permanent refusal after retirement.
+- `canonical-runs.test.ts` and `canonical-merge.test.ts` add target ordering,
+  collisions and all-disposition preservation, exact terminal/EOF and durable-sink
+  receipt requirements, bounded runs/merges, corrupt late blocks and cancellation.
+- `storage-writer.test.ts` verifies reserve-before-upload, complete readback hash
+  before exact ACK, deadline/lease cancellation and refusal to retry uncertain
+  submissions. Transport responses remain mocks; physical cleanup is not claimed.
+  Reader/writer regressions cover cancellation between response resolution and
+  the awaiting continuation. Reader keys now require the prepared namespace;
+  origin tests also cover the existing local family Kong port 55321.
 - `v2_contracts.sql` raises the registered store count from 117 to 119 and adds
   exact source-working classification assertions for the two new private stores;
   all previous assertions remain. Fresh full replay remains a release requirement.

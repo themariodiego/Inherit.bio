@@ -98,12 +98,41 @@ create function pg_temp.ack(expected jsonb default null,observed text default re
  '89900000-0000-4000-8000-000000000030',
  coalesce(expected,(select receipt from receipts where label='artifact')),observed);
 $$;
+create function pg_temp.insert_prepared_object(object_name text,object_bytes bigint default 8)
+ returns void language sql as $$
+ insert into storage.objects(bucket_id,name,version,metadata)
+ values('genomes',object_name,gen_random_uuid()::text,jsonb_build_object('size',object_bytes));
+$$;
+create function pg_temp.prepared_permission_probe(check_commit boolean default false) returns text language plpgsql as $$
+declare admitted boolean:=false;
+begin
+ begin
+  insert into storage.objects(bucket_id,name,version,metadata)
+   values('genomes',(select receipt->>'objectKey' from receipts where label='artifact'),'1',
+   '{"mimetype":"application/octet-stream","contentLength":8}');
+  admitted:=true;
+  if check_commit then
+   set constraints storage.refuse_committed_preparation_probe immediate;
+   return 'unexpectedly_committable';
+  end if;
+  raise exception using errcode='PT001',message='rollback_provider_permission_probe';
+ exception when sqlstate 'PT001' then
+  return case when admitted then 'admitted_then_rolled_back' else 'not_admitted' end;
+ when insufficient_privilege then return sqlerrm;
+ end;
+end;
+$$;
 select ok((select not enabled from private.own_preparation_config),'prototype is disabled by default');
 select is((select count(*)::integer from public.purge_target_stores where store_name in
  ('private.own_preparation_jobs','private.own_preparation_artifacts')),2,'both sensitive stores have purge registry entries');
 select ok((select bool_and(relrowsecurity) from pg_class where oid in
  ('private.own_preparation_jobs'::regclass,'private.own_preparation_artifacts'::regclass,'private.own_preparation_config'::regclass)),
  'private stores have RLS enabled');
+select ok((select condeferrable and condeferred from pg_constraint
+ where conrelid='storage.objects'::regclass and conname='refuse_committed_preparation_probe'),
+ 'probe constraint is deferred so the actual provider rollback admission can run');
+select ok(exists(select 1 from pg_trigger where tgrelid='storage.objects'::regclass and tgname='guard_own_upload_final_copy'),
+ 'existing original final-copy guard remains installed');
 select ok(not has_table_privilege('service_role','private.own_preparation_jobs','SELECT')
  and not has_table_privilege('service_role','private.own_preparation_artifacts','INSERT'),
  'service worker cannot bypass job RPCs through raw tables');
@@ -220,8 +249,32 @@ insert into receipts values('artifact',pg_temp.reserve());
 select is(pg_temp.reserve(),(select receipt from receipts where label='artifact'),'exact reserve replay returns original immutable identity');
 select throws_ok($$select pg_temp.reserve(0,9)$$,'22023','artifact_replay_conflict','conflicting reservation replay refuses');
 select throws_ok($$select pg_temp.ack()$$,'42501','not_found','reservation alone cannot acknowledge missing provider object');
-insert into storage.objects(id,bucket_id,name,metadata) values('89900000-0000-4000-8000-000000000030',
- 'genomes',(select receipt->>'objectKey' from receipts where label='artifact'),'{"size":8}');
+select ok((select (receipt->>'objectKey') ~ '^prepared/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+ from receipts where label='artifact'),'server chooses a strict permanent prepared namespace identity');
+select throws_ok($$select pg_temp.insert_prepared_object('prepared/89900000-0000-4000-8000-000000000099')$$,
+ '42501','prepared_object_unavailable','unregistered prepared key is permanently refused');
+select throws_ok($$select pg_temp.insert_prepared_object('prepared/not-a-uuid')$$,
+ '42501','prepared_object_unavailable','malformed names cannot escape prepared namespace protection');
+select throws_ok($$select pg_temp.insert_prepared_object((select receipt->>'objectKey' from receipts where label='artifact'),9)$$,
+ '42501','prepared_object_unavailable','registered object requires exact reserved byte count');
+select set_config('request.jwt.claims','{"role":"authenticated"}',true);
+select throws_ok($$select pg_temp.insert_prepared_object((select receipt->>'objectKey' from receipts where label='artifact'))$$,
+ '42501','prepared_object_unavailable','service connection without service-role JWT cannot create prepared metadata');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select is(pg_temp.prepared_permission_probe(),'admitted_then_rolled_back','actual provider-shaped permission probe may insert then roll back');
+select is(pg_temp.prepared_permission_probe(true),'prepared_probe_uncommittable','deferred constraint prevents committing a weak permission probe');
+select ok(not exists(select 1 from storage.objects where bucket_id='genomes' and name=(select receipt->>'objectKey' from receipts where label='artifact')),
+ 'both probe transactions leave no Storage metadata behind');
+insert into storage.objects(id,bucket_id,name,version,metadata) values('89900000-0000-4000-8000-000000000030',
+ 'genomes',(select receipt->>'objectKey' from receipts where label='artifact'),gen_random_uuid()::text,'{"size":8}');
+select throws_ok($$update storage.objects set metadata='{"size":8}' where id='89900000-0000-4000-8000-000000000030'$$,
+ '42501','prepared_object_unavailable','prepared objects refuse even identical UPDATEs');
+select throws_ok($$update storage.objects set name=gen_random_uuid()::text where id='89900000-0000-4000-8000-000000000030'$$,
+ '42501','prepared_object_unavailable','UPDATE cannot move an existing prepared object out of the guarded namespace');
+select throws_ok($$insert into storage.objects(bucket_id,name,version,metadata)
+ values('genomes',(select receipt->>'objectKey' from receipts where label='artifact'),gen_random_uuid()::text,'{"size":8}')
+ on conflict(bucket_id,name) do update set metadata=excluded.metadata$$,
+ '42501','prepared_object_unavailable','finalizer-style upsert cannot replace a concurrently created prepared object');
 select throws_ok($$select pg_temp.ack(null,repeat('0',64))$$,'42501','not_found','transport-observed hash mismatch refuses');
 select throws_ok($$select pg_temp.ack((select receipt||'{"extra":true}' from receipts where label='artifact'))$$,
  '42501','not_found','ACK receipt is closed and exact rather than a subset');
@@ -258,6 +311,30 @@ select throws_ok($$select pg_temp.reserve(13,8388608)$$,'22023','artifact_limit_
 reset role;
 select is((select artifact_count from private.own_preparation_jobs where id=pg_temp.job_id()),13,
  'failed reservation does not increment reserved identity count');
+-- A valid near-term consent deadline clamps a new reservation. Restoring the
+-- fixture's original live permission after it elapses isolates the immutable
+-- write deadline from general authorization refusal. Everything rolls back.
+create function pg_temp.expired_prepared_write() returns text language plpgsql as $$
+declare reservation jsonb; refusal text;
+begin
+ begin
+  update public.subject_consents set expires_at=clock_timestamp()+interval '50 milliseconds'
+   where id=(select id from original_store_consent);
+  reservation:=pg_temp.reserve(13);
+  perform pg_sleep(0.075);
+  update public.subject_consents set expires_at=(select expires_at from original_store_consent)
+   where id=(select id from original_store_consent);
+  perform pg_temp.check_claim();
+  begin perform pg_temp.insert_prepared_object(reservation->>'objectKey');
+  exception when insufficient_privilege then refusal:=sqlerrm; end;
+  raise exception using errcode='PT001',message='rollback_synthetic_expired_write';
+ exception when sqlstate 'PT001' then return refusal; end;
+end;
+$$;
+select is(pg_temp.expired_prepared_write(),'prepared_object_unavailable',
+ 'elapsed write lease refuses delayed metadata even after exact live authority is restored');
+select is((select artifact_count from private.own_preparation_jobs where id=pg_temp.job_id()),13,
+ 'expired-write savepoint restores reservation counters and identities');
 update private.own_preparation_config set enabled=false where singleton;
 set local role service_role;
 select throws_ok($$select pg_temp.check_claim()$$,'55000','preparation_disabled','turning private gate off stops active work');
@@ -270,6 +347,9 @@ update private.own_preparation_config set enabled=true where singleton;
 set local role service_role;
 select throws_ok($$select pg_temp.reserve(13,1)$$,'42501','not_found','freeze forbids new reservations');
 select throws_ok($$select pg_temp.ack()$$,'42501','not_found','freeze forbids late ACK even for an existing object');
+select throws_ok($$select pg_temp.insert_prepared_object(
+ (select receipt->>'objectKey' from receipts where label='artifact'))$$,
+ '42501','prepared_object_unavailable','freeze refuses delayed prepared metadata insertion');
 reset role;
 select ok((select j.write_fence_at>=max(a.write_expires_at) and j.cleanup_deadline=j.created_at+interval '2 hours'
  from private.own_preparation_jobs j join private.own_preparation_artifacts a on a.job_id=j.id
@@ -278,6 +358,25 @@ select is((select count(*)::integer from private.own_preparation_artifacts where
  'freeze keeps registered cleanup identities until physical absence can be verified');
 select throws_ok($$delete from private.own_preparation_jobs where id=pg_temp.job_id()$$,'23503',null::text,
  'registered artifacts prevent premature job identity deletion');
+-- Simulate future metadata retirement only inside a rollback savepoint. The
+-- unused reserved key has no Storage object, so refusal cannot rely on uniqueness.
+create function pg_temp.retired_prepared_key_refusal() returns text language plpgsql as $$
+declare old_key text; refusal text;
+begin
+ begin
+  select object_key into old_key from private.own_preparation_artifacts where job_id=pg_temp.job_id() and sequence=1;
+  delete from private.own_preparation_artifacts where job_id=pg_temp.job_id();
+  delete from private.own_preparation_jobs where id=pg_temp.job_id();
+  begin perform pg_temp.insert_prepared_object(old_key,8388608);
+  exception when insufficient_privilege then refusal:=sqlerrm; end;
+  raise exception using errcode='PT001',message='rollback_synthetic_metadata_retirement';
+ exception when sqlstate 'PT001' then return refusal; end;
+end;
+$$;
+select is(pg_temp.retired_prepared_key_refusal(),'prepared_object_unavailable',
+ 'namespace guard still refuses a delayed write after every artifact/job identity is removed');
+select is((select count(*)::integer from private.own_preparation_artifacts where job_id=pg_temp.job_id()),13,
+ 'retirement negative restores exact registered identities without claiming physical cleanup');
 -- Second source exercises bounded retry without reading/adopting any artifact
 -- from the first attempt. Only the private test claim expiry is moved backwards.
 set local role service_role;
