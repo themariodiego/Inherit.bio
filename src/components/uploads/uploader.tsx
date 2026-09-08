@@ -10,9 +10,10 @@ import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { route } from "@/lib/primary-routes";
 import { BrowserPreparationError, BrowserUploadError, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
+import { PreparationRecovery } from "./preparation-recovery";
 
-type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "prepared" | "results-ready"; fileId: string }
-  | { step: "preparation-error"; fileId: string; code: "build_unknown" | "unavailable" }
+type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "making-reports" | "prepared" | "results-ready"; fileId: string }
+  | { step: "preparation-error"; fileId: string; code: BrowserPreparationError["code"] }
   | { step: "error"; message: string; action?: { label: string; href: string } };
 
 function uploadError(error: unknown): Extract<Phase, { step: "error" }> {
@@ -39,8 +40,8 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
   const inFlight = useRef(false);
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const busy = !["idle", "prepared", "results-ready", "preparation-error", "error"].includes(phase.step);
-  async function prepare(fileId: string) {
-    setPhase({ step: "preparing", fileId });
+  async function prepare(fileId: string, reportsOnly = false) {
+    setPhase({ step: reportsOnly ? "making-reports" : "preparing", fileId });
     try {
       const receipt = await prepareSubjectFile(fileId);
       setPhase({ step: receipt.analysisState === "active" ? "results-ready" : "prepared", fileId });
@@ -50,10 +51,10 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
     }
     router.refresh();
   }
-  async function retryPreparation(fileId: string) {
+  async function retryPreparation(fileId: string, reportsOnly: boolean) {
     if (disabled || inFlight.current) return;
     inFlight.current = true;
-    try { await prepare(fileId); } finally { inFlight.current = false; }
+    try { await prepare(fileId, reportsOnly); } finally { inFlight.current = false; }
   }
   async function handleFile(file: File) {
     if (disabled || inFlight.current) return;
@@ -89,6 +90,7 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
         : phase.step === "uploading" ? <p>Uploading to private storage… {phase.pct}%</p>
         : phase.step === "validating" ? <p>Verifying the complete uploaded file…</p>
         : phase.step === "preparing" ? <p>Your file is stored. Preparing it for your results…</p>
+        : phase.step === "making-reports" ? <p>Your file was prepared. Retrying your selected reports…</p>
         : phase.step === "prepared" || phase.step === "results-ready" ? <p className="text-ok">
           {phase.step === "results-ready" ? "Your file is stored and your selected reports are ready."
             : "Your file is stored and prepared. Reports have not been generated yet."}{" "}
@@ -97,13 +99,10 @@ export function Uploader({ disabled = false, subjectId = "me" }: { disabled?: bo
           <Link href={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
             className="underline underline-offset-2">View your file</Link>
         </p>
-        : phase.step === "preparation-error" ? <div>
-          <p role="alert" className="text-danger">{phase.code === "build_unknown"
-            ? "We could not identify the reference genome used in this file. Ask its provider for a VCF or raw DNA file that states GRCh37 or GRCh38."
-            : "File preparation did not finish. You can retry this step without uploading your file again."}</p>
-          {phase.code === "unavailable" ? <Button className="mt-3" disabled={disabled}
-            onClick={() => void retryPreparation(phase.fileId)}>Retry preparation</Button> : null}
-        </div>
+        : phase.step === "preparation-error" ? <PreparationRecovery code={phase.code} disabled={disabled}
+          onRetry={() => void retryPreparation(phase.fileId, phase.code === "report_generation_unavailable")}
+          reportsHref={route("genome.reports", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
+          fileHref={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })} />
         : phase.step === "error" ? <p role="alert" className="text-danger">{phase.message}
           {phase.action ? <> <Link href={phase.action.href} className="underline underline-offset-2">{phase.action.label}</Link></> : null}
         </p> : null}

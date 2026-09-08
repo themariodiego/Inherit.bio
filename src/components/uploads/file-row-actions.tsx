@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { fileDeletionError } from "@/copy/upload/file-deletion";
 import { BrowserPreparationError, prepareSubjectFile } from "@/lib/uploads/subject-upload-browser";
+import { route } from "@/lib/primary-routes";
+import { PreparationRecovery } from "./preparation-recovery";
 
 export function FileRowActions({
   fileId,
@@ -20,6 +22,7 @@ export function FileRowActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preparationError, setPreparationError] = useState<BrowserPreparationError["code"] | null>(null);
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -34,12 +37,11 @@ export function FileRowActions({
           onClick={async () => {
             setBusy(true);
             setError(null);
+            setPreparationError(null);
             if (preparationOnly) {
               try { await prepareSubjectFile(fileId); }
               catch (error) {
-                setError(error instanceof BrowserPreparationError && error.code === "build_unknown"
-                  ? "Ask your file provider for raw DNA data that states GRCh37 or GRCh38."
-                  : "Preparation did not finish. Please retry; you do not need to upload the file again.");
+                setPreparationError(error instanceof BrowserPreparationError ? error.code : "unavailable");
               } finally { setBusy(false); router.refresh(); }
               return;
             }
@@ -78,6 +80,7 @@ export function FileRowActions({
             return;
           setBusy(true);
           setError(null);
+          setPreparationError(null);
           try {
             const response = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
             if (!response.ok) {
@@ -96,6 +99,8 @@ export function FileRowActions({
         Delete
       </Button>
     </div>
+    {preparationError ? <PreparationRecovery code={preparationError} disabled={busy}
+      reportsHref={route("genome.reports", { subject: "me" })} /> : null}
     {error ? (
       <p role="alert" className="max-w-xs text-right text-xs text-danger">
         {error}

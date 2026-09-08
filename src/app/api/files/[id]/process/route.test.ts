@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
   updates: [] as { table: string; value: Record<string, unknown> }[],
   inserts: [] as { table: string; rows: Record<string, unknown>[] }[],
   deletes: [] as string[],
-  boundary: vi.fn(), normalize: vi.fn(), canonical: false,
+  boundary: vi.fn(), normalize: vi.fn(), reports: vi.fn(), canonical: false,
   deleteError: null as string | null,
   updateError: null as string | null,
   fileOwner: "test-user",
@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   persistedFile: { status: "annotated", build: "GRCh38" } as Record<string, unknown>,
 }));
 vi.mock("@/lib/uploads/subject-normalization", () => ({ normalizeSubjectFile: state.normalize }));
+vi.mock("@/lib/uploads/own-report-generation", () => ({ generateOwnReports: state.reports }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => {
   state.boundary("client"); return ({
   auth: { getUser: async () => { state.boundary("auth"); return ({ data: { user: { id: "test-user", email: null } } }); } },
@@ -49,7 +50,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (tabl
 import { POST } from "./route";
 
 beforeEach(() => {
-  state.boundary.mockReset(); state.normalize.mockReset(); state.canonical = false;
+  state.boundary.mockReset(); state.normalize.mockReset(); state.reports.mockReset(); state.canonical = false;
   state.updates = []; state.inserts = []; state.deletes = []; state.deleteError = null;
   state.fileOwner = "test-user"; state.insertError = null;
   state.updateError = null; state.persistedFile = { status: "annotated", build: "GRCh38" };
@@ -221,5 +222,63 @@ describe("canonical completion route deadline", () => {
     expect(state.normalize).toHaveBeenCalledExactlyOnceWith(request, "test-file", 271_000);
     expect(now).toBe(116_000);
     expect(state.updates).toEqual([]); expect(state.inserts).toEqual([]);
+  });
+});
+
+describe("canonical preparation and report failure stages", () => {
+  const fileId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const normalized = { fileId, status: "normalization_complete", analysisState: "not_generated" };
+  const invoke = () => POST(new Request(`https://example.test/api/files/${fileId}/process`, { method: "POST" }),
+    { params: Promise.resolve({ id: fileId }) });
+  beforeEach(() => { state.canonical = true; state.normalize.mockResolvedValue(Response.json(normalized)); });
+
+  it.each([401, 403, 422, 503])("preserves normalization failure %s without attempting reports", async status => {
+    const response = Response.json({ error: "unavailable" }, { status });
+    state.normalize.mockResolvedValue(response);
+    expect(await invoke()).toBe(response);
+    expect(state.reports).not.toHaveBeenCalled();
+    expect(state.updates).toEqual([]); expect(state.inserts).toEqual([]); expect(state.deletes).toEqual([]);
+  });
+
+  it.each([
+    null, { ...normalized, fileId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+    { ...normalized, extra: true }, { fileId, status: "processed", analysisState: "active" },
+  ])("does not acknowledge malformed or other-file normalization success (%j)", async body => {
+    state.normalize.mockResolvedValue(Response.json(body));
+    const response = await invoke();
+    expect(response.status).toBe(503); expect(await response.json()).toEqual({ error: "unavailable" });
+    expect(state.reports).not.toHaveBeenCalled();
+  });
+
+  it("retains HTTP failure while distinguishing report failure after acknowledged preparation", async () => {
+    state.reports.mockResolvedValue(Response.json({ error: "unavailable", detail: "private report failure" }, { status: 503 }));
+    const response = await invoke();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "report_generation_unavailable", fileId });
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(state.normalize).toHaveBeenCalledTimes(1); expect(state.reports).toHaveBeenCalledTimes(1);
+    expect(state.updates).toEqual([]); expect(state.inserts).toEqual([]); expect(state.deletes).toEqual([]);
+  });
+
+  it("does not infer report absence when the failed stage was readiness after results completed", async () => {
+    // The report dispatcher can return503 after its durable result commit.
+    // That receipt cannot certify not_generated or all-ready at this boundary.
+    state.reports.mockResolvedValue(Response.json({ error: "unavailable" }, { status: 503 }));
+    const body = await (await invoke()).json();
+    expect(body).toEqual({ error: "report_generation_unavailable", fileId });
+    expect(body).not.toHaveProperty("analysisState"); expect(body).not.toHaveProperty("status");
+  });
+
+  it.each([401, 403, 404, 422])("preserves report refusal %s instead of granting a new preparation acknowledgement", async status => {
+    const response = Response.json({ error: "forbidden" }, { status }); state.reports.mockResolvedValue(response);
+    expect(await invoke()).toBe(response);
+  });
+
+  it.each([
+    normalized, { fileId, status: "processed", analysisState: "active" },
+    { fileId, status: "already_processed", analysisState: "active" },
+  ])("preserves the successful existing result ABI (%j)", async body => {
+    const response = Response.json(body); state.reports.mockResolvedValue(response);
+    expect(await invoke()).toBe(response); expect(await response.json()).toEqual(body);
   });
 });

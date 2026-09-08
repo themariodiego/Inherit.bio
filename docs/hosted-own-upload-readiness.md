@@ -1,18 +1,71 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: PR79 public own-upload verified; WGS streaming remains local · 8 September 2026
+## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
-PR79 merged as **`1697723b2909800de380f0fadb8f8afa14555777`**. Production
-`dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug` became READY at **13:11:40.297 UTC** on all
-six aliases. Persistent production settings are
-`INHERIT_CANONICAL_UPLOADS_PAUSED=false`, `INHERIT_PAUSE_LEGACY_UPLOADS=true`
-and `INHERIT_NORMALIZATION_DIRECT_DATABASE=true`. Canonical admission is enabled;
-legacy issuance remains paused. Verified caps are **24 MiB raw/decoded per file,
-128 MiB per account and two active uploads**.
+PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
+`dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
+It distinguishes a confirmed prepared file from a later selected-report failure,
+with a retry path that does not require another upload. No database, environment,
+scheduler, plan or admission-limit changes accompanied this release.
 
-CI **`34228275512`** passed **3,261 units across 203 files, 83 fresh migrations,
-2,049 SQL assertions across 55 files, 30 independent lock checks and 232 browser
-cases in 15.0 minutes**, zero skips/retries.
+Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
+2,120 SQL assertions (56 files), 30 lock checks and 232 browser cases**, with
+57 actual Storage uploads and zero skipped or automatically retried cases. CI
+`34245372159` attempt one had one pre-response sign-out socket failure, 222 passes
+and nine dependent cases not run. The unchanged whole-job second attempt passed,
+including all those cases; the original failure and unproved cause are retained.
+
+Desktop and mobile inspection used the actual shared recovery component in an
+isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
+synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new
+recovery strings in the served client asset; the account remained empty and its
+test session was signed out. This did not force or observe another hosted report
+failure. Receipt details: parent task `work/wgs-release-pr80/recovery-*`.
+Acceptance remains **19/65**.
+
+The new compact preparation engine remains local-only. Its exact 82 MB synthetic
+filesystem proof preserved four million events through staged merge and exact
+cleanup in 241.013 seconds. It has no hosted Storage/job/authority/report or
+original-expiry integration, and changes no public limit. Full details and scope
+are in `docs/mvp-acceptance-next.md` and parent task
+`work/wgs-next-backend/disk-integration-attempt-1/`.
+
+## Earlier PR80 dense preparation and report recovery verified
+
+PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
+`dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
+CI `34240644001` passed **3,310 units (204 files), 85 fresh migrations, 2,120 SQL
+assertions (56 files), 30 independent lock checks and 232 browser cases in 16.0
+minutes**, with 57 actual Storage uploads and zero skips/retries. Both compatible
+hosted migrations are installed; application flags, upload caps and plans are unchanged.
+
+A native hosted synthetic VCF upload prepared **500,000 variants and 500,000
+observations in 220.357201 seconds**. The subsequent report attempt failed; the
+page incorrectly labelled this as failed preparation despite the completed source.
+One explicit report-only retry returned **200** and displayed exact-source **A/C**
+with one provenance source. The original download event occurred in the browser;
+a separate authenticated application download verified both original hashes.
+Application DELETE returned **204**; independent **15:27:20 UTC** checks found
+all nine selected source/working/analysis/Storage counts zero, including both exact
+Storage keys. The other four files' metadata fingerprint and variant/observation/
+analysis counts were unchanged. Native JavaScript deletion confirmation remains
+unverified because the browser control could not operate its prompt.
+
+This proves hosted preparation plus report recovery, not an uninterrupted pass.
+PR81 now distinguishes report failure from acknowledged preparation. Automatic statistics refreshed between failure and retry; that timing
+is a clue, not proof of the first report failure's cause. Full-size WGS, 100 genomes
+per month and one-month original expiry remain approved, unproved scope. No cap or
+subscription was increased; acceptance remains **19/65**. Receipts: parent task
+`work/wgs-release-pr80/`.
+
+Persistent flags remain `INHERIT_CANONICAL_UPLOADS_PAUSED=false`,
+`INHERIT_PAUSE_LEGACY_UPLOADS=true` and `INHERIT_NORMALIZATION_DIRECT_DATABASE=true`.
+Limits remain **24 MiB raw/decoded per file, 128 MiB per account and two active uploads**.
+Hosted registration migration `20260908145739` and observed-index migration
+`20260908145753` were verified before app release. The prior normalization body
+and five existing observations were unchanged; the new index is valid and ready.
+
+### Earlier PR79 and local preparation evidence
 
 The genuinely abandoned upload's scheduled phase completed at
 **12:58:20.741655 UTC**, **50.367195 seconds** after real lease expiry at
@@ -39,7 +92,7 @@ Receipts: parent task `work/current-retention-release/production-pr79/`, includi
 `public-deletion-residuals.json`. Earlier checkpoints remain historical evidence
 and are superseded only for current production/pending status.
 
-The next WGS streaming implementation remains **local and unreleased**. Source
+The earlier local WGS streaming verification used source
 `75a1a05`, build `1D0A_d2kzmT7TFNSpjf3L`, passed one small native browser journey
 through actual Storage, chosen reports, original download and deletion: **17.6
 seconds for the case / 20.1 seconds total**, three fresh Storage POSTs and zero
@@ -100,10 +153,9 @@ Historical receipts include parent task `work/wgs-dense-recovery/`; the earlier
 small-browser receipts above remain valid. No timeout or failed attempt is
 relabelled a pass.
 
-This batch remains **local and unreleased**. Next are full CI, the two hosted
-migrations and hosted verification. Dense synthetic preparation and continuation
-do not establish full-size WGS or 100-genomes/month throughput. Production
-remains PR79 and full-plan acceptance remains **19/65**.
+PR80 subsequently passed full CI, both hosted migrations and hosted preparation
+with report recovery as recorded above. Dense synthetic evidence does not establish
+full-size WGS or 100-genomes/month throughput; acceptance remains **19/65**.
 Approved scope remains existing full-size WGS results first, then raw
 FASTQ/BAM/CRAM, targeting **100 genomes/month** and **one-month originals**.
 Those workload/retention targets are not enabled; **no additional spending is

@@ -21,6 +21,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeSubjectFile } from "@/lib/uploads/subject-normalization";
 import { generateOwnReports } from "@/lib/uploads/own-report-generation";
+import { subjectNormalizationReceipt, subjectReportGenerationFailure } from "@/lib/uploads/subject-upload-contract";
+import { ownUploadJson } from "@/lib/uploads/own-upload-context";
 
 export const maxDuration = 300;
 
@@ -60,7 +62,15 @@ export async function POST(
   if (file.single_logical_sample_verified_at !== null) {
     const prepared = await normalizeSubjectFile(request, id, completionDeadline);
     if (prepared.status !== 200) return prepared;
-    return generateOwnReports(request, id);
+    const receipt = subjectNormalizationReceipt.safeParse(await prepared.json().catch(() => null));
+    if (!receipt.success || receipt.data.fileId !== id) return ownUploadJson({ error: "unavailable" }, 503);
+    const reports = await generateOwnReports(request, id);
+    // Preparation committed independently. Do not describe a later report or
+    // ready-notice failure as failed preparation, or infer which reports exist.
+    if (reports.status === 503) return ownUploadJson(subjectReportGenerationFailure.parse({
+      error: "report_generation_unavailable", fileId: id,
+    }), 503);
+    return reports;
   }
   if (file.tier !== 1) {
     return new Response("Only Tier-1 files are processed serverside", {

@@ -36,6 +36,37 @@ beforeEach(() => {
 });
 
 describe("preparing an already finalized file", () => {
+  it("distinguishes exact-file report failure and retries that file without another upload", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "report_generation_unavailable", fileId }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ fileId, status: "processed", analysisState: "active" }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "report_generation_unavailable", message: "report_generation_unavailable" });
+    expect(await prepareSubjectFile(fileId)).toEqual({ fileId, status: "processed", analysisState: "active" });
+    expect(fetchMock.mock.calls).toEqual(Array.from({ length: 2 }, () => [`/api/files/${fileId}/process`, {
+      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
+    }]));
+    expect(requests).toHaveLength(0);
+  });
+  it.each([
+    { error: "report_generation_unavailable", fileId: subjectId },
+    { error: "report_generation_unavailable" },
+    { error: "report_generation_unavailable", fileId, analysisState: "not_generated" },
+    { error: "report_generation_unavailable", fileId, detail: "private" },
+    { error: "another_error", fileId }, null, [],
+  ])("cannot claim preparation from a malformed, open or other-file failure (%j)", async body => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json(body, { status: 503 }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable" });
+  });
+  it.each([200, 401, 403, 422, 500])("does not accept a report-stage error under status%s", async status => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "report_generation_unavailable", fileId }, { status }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable" });
+  });
+  it("keeps lost and unreadable responses uncertain without exposing network details", async () => {
+    fetchMock.mockReset().mockRejectedValueOnce(new Error("private network detail"))
+      .mockResolvedValueOnce(new Response("not JSON", { status: 503 }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable", message: "unavailable" });
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable", message: "unavailable" });
+    expect(requests).toHaveLength(0);
+  });
   it.each(["processed", "already_processed"])("preserves the authoritative %s receipt for previously chosen reports", async status => {
     const value = { fileId, status, analysisState: "active" };
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(value));
