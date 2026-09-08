@@ -92,7 +92,12 @@ export function createOwnPreparedCoordinateReader(rawActor: { accountId: string;
           signal, cache: "no-store", redirect: "error" });
         void pending.then(late => { response = late; if (signal.aborted) cancel(); }, () => {});
         response = await wait(pending);
-        if (!response.ok || !response.body || response.headers.has("content-range")
+        // PostgREST scalar JSON responses include item-count metadata even
+        // without a Range request. Accept only the exact single-result forms;
+        // byte ranges and partial/multiple results are not this RPC contract.
+        const range = response.headers.get("content-range"), unit = response.headers.get("range-unit");
+        if (response.status !== 200 || !response.body || ![null, "0-0/*", "0-0/1"].includes(range)
+          || (unit !== null && unit !== "items")
           || (response.headers.has("content-encoding") && response.headers.get("content-encoding") !== "identity"))
           throw new PublishedSourceReadError("unavailable");
         reader = response.body.getReader(); const bytes = new Uint8Array(16_384); let length = 0;

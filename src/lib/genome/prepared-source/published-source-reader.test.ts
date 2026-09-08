@@ -27,13 +27,14 @@ async function setup(rows?: string[], build: "GRCh37" | "GRCh38" = "GRCh38") {
     expect(url.startsWith(origin)).toBe(true); expect(init).toMatchObject({ cache: "no-store", redirect: "error", signal: expect.any(AbortSignal) });
     expect(new Headers(init.headers).get("Authorization")).toBe(`Bearer ${credential}`);
     const override = state.override?.(url, init); if (override !== undefined) return override;
-    if (url.endsWith("/read_own_prepared_manifest_v1")) { order.push("source"); return Response.json(source); }
+    const rpcHeaders = { "Content-Range": "0-0/*", "Range-Unit": "items" };
+    if (url.endsWith("/read_own_prepared_manifest_v1")) { order.push("source"); return Response.json(source, { headers: rpcHeaders }); }
     if (url.endsWith("/check_own_prepared_member_v1")) {
       const args = JSON.parse(init.body as string); const artifact = publication.members.find(a => a.receipt.artifactId === args.p_artifact_id);
       expect(args).toMatchObject({ p_account_id: actor.accountId, p_session_id: actor.sessionId,
         p_file_id: source.fileId, p_expected_manifest_id: manifestId });
       order.push(`member:${args.p_artifact_id}`);
-      return artifact ? Response.json(member(artifact)) : Response.json({ error: "not_found" }, { status: 403 });
+      return artifact ? Response.json(member(artifact), { headers: rpcHeaders }) : Response.json({ error: "not_found" }, { status: 403 });
     }
     const key = url.split("/genomes/")[1], bytes = f.objects.get(key); if (!bytes) return new Response(null, { status: 404 });
     const artifact = publication.members.find(a => a.receipt.objectKey === key)!;
@@ -164,6 +165,49 @@ describe("published canonical source reader (synthetic HTTP, not hosted proof)",
     const f = await setup(); f.state.override = url => url.endsWith("read_own_prepared_manifest_v1")
       ? new Response(JSON.stringify(f.source) + " ".repeat(16_384)) : undefined;
     await expect(f.read(f.request, f)).rejects.toMatchObject({ code: "integrity_mismatch" });
+    expect(f.provider).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([null, "0-0/*", "0-0/1"])("accepts only scalar RPC count metadata %s across source and member reads", async range => {
+    const f = await setup(); let rpcReads = 0;
+    f.state.override = (url, init) => {
+      if (!url.includes("/rest/v1/rpc/")) return undefined;
+      rpcReads++;
+      const headers: HeadersInit = range === null ? {} : { "Content-Range": range };
+      if (url.endsWith("read_own_prepared_manifest_v1")) return Response.json(f.source, { headers });
+      const args = JSON.parse(init.body as string);
+      const artifact = f.publication.members.find(member => member.receipt.artifactId === args.p_artifact_id)!;
+      return Response.json(f.member(artifact), { headers });
+    };
+    const result = await f.read(f.request, f);
+    expect(result.source).toEqual(f.source); expect(result.records.length).toBeGreaterThan(0);
+    expect(rpcReads).toBeGreaterThan(2);
+  });
+
+  it.each([
+    { status: 206, range: "0-0/*", unit: "items" },
+    { status: 201, range: "0-0/1", unit: "items" },
+    { status: 200, range: "bytes 0-1457/1458", unit: "bytes" },
+    { status: 200, range: "0-0/*", unit: "bytes" },
+    { status: 200, range: "0-1/*", unit: "items" },
+    { status: 200, range: "0-1/2", unit: "items" },
+    { status: 200, range: "0-0/2", unit: "items" },
+    { status: 200, range: "1-1/2", unit: "items" },
+    { status: 200, range: "*/0", unit: "items" },
+    { status: 200, range: "0-0/01", unit: "items" },
+  ])("refuses partial, byte, multiple or malformed RPC range $status/$range/$unit before Storage", async fault => {
+    const f = await setup(), cancel = vi.fn();
+    f.state.override = () => new Response(new ReadableStream({ cancel }, { highWaterMark: 0 }), {
+      status: fault.status, headers: { "Content-Range": fault.range, "Range-Unit": fault.unit },
+    });
+    await expect(f.read(f.request, f)).rejects.toMatchObject({ code: "unavailable" });
+    expect(f.provider).toHaveBeenCalledTimes(1); expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let valid single-result count metadata turn an array into a scalar source receipt", async () => {
+    const f = await setup();
+    f.state.override = () => Response.json([f.source], { headers: { "Content-Range": "0-0/1" } });
+    await expect(f.read(f.request, f)).rejects.toMatchObject({ code: "unavailable" });
     expect(f.provider).toHaveBeenCalledTimes(1);
   });
 

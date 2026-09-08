@@ -306,6 +306,35 @@ Unacknowledged provider writes require durable physical-absence evidence; metada
 absence alone is insufficient. See parent task `prepared-deletion-integration.md`.
 Production PR81 and whole-plan acceptance **19/65** remain unchanged.
 
+
+### Actual publication composition: RPC transport correction
+
+Two bounded local attempts at `47698d2` completed actual signing/finalization,
+parser and canonical/rsID preparation, registered writes and SQL publication:
+**14 objects, six scratch artifacts and eight final members** per attempt, from
+the same 547-byte synthetic GRCh38 VCF. Neither attempt returned a coordinate
+page. The diagnostic retry identified a runtime defect before any Storage read:
+PostgREST returned HTTP 200 with valid single-result `Content-Range: 0-0/*`,
+which the new scalar RPC transport incorrectly rejected.
+
+The corrected reader accepts absent or exact single-result item-count metadata
+(`0-0/*`, `0-0/1`) with HTTP 200. Partial/byte ranges, multiple results, malformed
+metadata and non-scalar JSON remain refused. **31 focused reader tests pass**;
+scoped TypeScript and lint pass. This adds 14 cases to the cumulative focused
+engine inventory (**798**); it does not establish a successful provider read yet.
+
+Both attempts settled their requests, removed every registered physical version
+and sidecar, retired only their exact synthetic rows, removed the original, and
+reversed all three temporary migrations. Existing 33 files/33 objects and schema,
+config, migration-history and registry fingerprints were preserved. Root checks
+independently confirmed physical absence and removed only the empty synthetic
+prepared namespace. Two synthetic Auth/audit fixtures remain, each with two
+sessions. Earlier failure receipts stay in parent task
+`work/wgs-next-backend/storage-published-integration-attempt-{1,2}/` and diagnosis
+in `storage-published-diagnosis.json`. The next run requires the reviewed fix at
+a new clean source commit. No hosted changes or scale/cleanup-implementation
+claim; production PR81 and full-plan acceptance **19/65** are unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
