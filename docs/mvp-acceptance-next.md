@@ -19,8 +19,11 @@ is prepared and its source-backed A/C report detail retains 1/1 coverage.
 Final-head CI `34217097810` passed 3,261 units, 2,008 SQL assertions and 232 browser
 cases with 57 actual uploads and zero skips/retries. The protected-canary proof
 already covers 91.496421-second normalization, explicit polygenic A/C and the
-24,562,693-byte original download with an exact hash match. **Deletion of that
-synthetic source and recurring retention activation/verification remain pending.**
+24,562,693-byte original download with an exact hash match. **Synthetic deletion passed through the authenticated production API with all
+source/variant/result/Storage residuals zero at 11:46 UTC.** The separate global
+retention smoke processed three known synthetic obligations with zero failures.
+Recurring activation and deadline verification remain pending; the old overdue
+obligations cannot count as on-time completion.
 New public admission and a full-project pass are not claimed.
 
 Evidence is in the parent task's
@@ -63,8 +66,8 @@ assertions and 232 browser cases. The public-CA adapter preserves certificate
 and hostname verification; hosted million-row preparation, the chosen report
 and native original download now pass. Temporary hosted limits are restored.
 PR76 and the coordinated transport policy are deployed with new uploads paused;
-synthetic deletion and verified recurring cleanup are the pending operational
-steps. This bounded synthetic result does not establish WGS throughput.
+verified recurring cleanup is the pending operational step; synthetic deletion
+now passes through the production API with independent zero-residual checks. This bounded synthetic result does not establish WGS throughput.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every

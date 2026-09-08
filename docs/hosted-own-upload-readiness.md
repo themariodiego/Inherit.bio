@@ -24,8 +24,14 @@ unchanged: fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec`.
 The protected-canary evidence at `9f079ba` records preparation of the retained
 24,562,693-byte source in 91.496421 seconds, then produced the explicitly chosen
 polygenic A/C result and a native original download with the exact expected hash.
-**Synthetic source deletion remains pending. Recurring retention activation and
-its verification also remain pending.** Do not equate merge/deployment with
+**Synthetic source deletion passed through the authenticated production API at
+11:46 UTC:** source, one million variants, observations, analysis/normalization
+records and the original Storage object are absent; the account and subject
+remain. Browser confirmation was inaccessible, so this is API deletion plus
+independent residual proof, not a native-button success claim. The bounded
+production retention GET also processed three known synthetic obligations with
+zero failures; their expired deadlines are not retroactive passes. **Recurring
+retention activation and its verification remain pending.** Do not equate merge/deployment with
 completed cleanup or unrestricted public admission.
 
 Evidence: parent task `work/production-upload-cutover/canonical-merged-deployment.json`,

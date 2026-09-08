@@ -96,10 +96,81 @@ worker retains every due-work predicate, purge check and fixed batch bound.
 Its response is preserved; an unexpected exception returns only the closed
 `retention_worker_unavailable` error with HTTP 503.
 
-This adapter does not install or enable a schedule. A hosted invocation is a
+The adapter itself does not install a schedule; Production deployment of the
+configuration below enables its minute schedule. A hosted invocation is a
 composite retention run across all due accounts, not a selectable synthetic
 canary. Refresh the aggregate due-work inventory before a proposed hosted run,
 and verify scheduler cost, deployed prerequisites and actual cleanup before
 claiming recurring retention delivery. Focused adapter tests cover credential
 refusal, selector refusal, fresh POST delegation, HEAD refusal and failures;
 they do not establish hosted execution or scheduled cleanup.
+
+## Scheduled execution
+
+Production `vercel.json` schedules the existing authenticated composite GET
+once per minute, preserving the three research, annotation and mail schedules.
+It remains a global, database-selected sweep. HTTP 200 alone is not cleanup
+success: inspect failed counts and exact residuals. Vercel delivery can be late,
+missed or duplicated; a minute schedule alone does not establish a 60-second
+physical-deletion deadline.
+
+The separate operator scripts in `scripts/operations/retention-*.sql` add a
+15-second database-only path for the existing own-report purge dispatcher.
+`retention-install.sql` enables the already available/preloaded pg_cron extension
+and creates only `inherit-own-report-retention-15s-v1`, **inactive**. An existing
+exact job is left unchanged; conflicting command, schedule, destination or
+owner refuses. It requires postgres/database context, executor ACLs, seconds
+support and run logging. It does not install pg_net, move secrets or issue HTTP.
+After fresh aggregate scope review, explicit `retention-activate.sql` activates
+only the matching command fingerprint. Installation is not activation evidence.
+
+The exact `retention-command.sql` sets transaction-local service_role and 20s
+statement/2s lock/5s idle budgets before its DO statement, then calls the existing
+public dispatcher at most five times. Null, retry, blocked, malformed receipt,
+error, cancellation or elapsed budget stops further calls. In particular, a
+cancellation caught by the dispatcher and returned as retry cannot restart the
+loop. Returned retry/blocked accounting commits; uncaught failures roll back.
+No selector, executor, authority, immutable deadline or application ACL changes.
+The scheduler serializes this named SQL job; the ordinary composite worker may
+also run, subject to the existing database claims and locks.
+
+One fixed-vocabulary warning per tick records outcome and completed count only.
+A separate 2s transaction removes at most 200 completed run-detail rows for this
+exact job older than one day; failure cannot undo committed purges. This bounds
+normal run-history growth to approximately one day while preserving pending
+runs. External database logs retain the platform's own retention policy.
+`retention-observe.sql` returns only metadata and the newest 100 run timings;
+cron success alone may include a retry/blocked outcome, so inspect immutable
+worker/manifest completion and residuals too. Watch oldest pending age, missed
+starts, execution duration, terminal failures and history-cleanup errors.
+
+Before public enablement, observe real scheduled runs and exact authorized
+synthetic cleanup within the original deadline, with unrelated data preserved.
+Nominal 15s wait plus 20s work leaves 25s margin; outages, contention, retries and
+backlog can consume it. Five steps per tick is a capacity bound, not a guarantee.
+The SQL job covers only the existing canonical/historical-self report selector;
+Storage, Auth and other adult/embryo/account obligations remain with their
+registered executors. Do not claim those deadlines from this job's cadence.
+Keep admission paused for uncovered or missed obligations; never move clocks.
+
+`retention-unschedule.sql` removes only the exact matching named job. It does
+not cancel an in-flight invocation, delete other jobs, drop pg_cron or erase
+pending product obligations. Preserve safe run receipts before unscheduling;
+old run history then needs an explicitly scoped operator disposition. Vercel
+schedule removal is separate. An instant application rollback is not proof
+that either scheduler changed ownership or stopped.
+
+Official references: [Supabase Cron](https://supabase.com/docs/guides/cron/quickstart),
+[pg_cron intervals/concurrency](https://github.com/citusdata/pg_cron), and
+[Vercel cron operation](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
+
+Local operational verification: run
+`python3 scripts/operations/retention-proof.py` only against the explicitly
+owned disposable `supabase_db_inherit-family-20260907` database. It refuses an
+installed scheduler or an existing eligible queue. Its actual pg_cron inactive
+installation and real generation/revocation fixtures roll back; it never
+activates a job. The 23 assertions include a real 20s cancellation, preserved
+retry accounting, zero derived residuals, original-source preservation and
+successful-phase observation. Fixture transaction delimiters replace the job's
+outer transaction boundaries for rollback safety. This establishes local SQL
+behavior, not hosted scheduler delivery.
