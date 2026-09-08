@@ -200,6 +200,32 @@ The approved targets remain existing WGS results first, FASTQ/BAM/CRAM afterward
 100 genomes/month and one-month original retention; capacity and expiry are not
 enabled or proven, and no additional spending is authorized.
 
+### Verified indexed reads · local only
+
+The new reader follows an exact provisional root through its coordinate pages,
+container directories and selected canonical byte ranges. It verifies object
+membership metadata, hashes and descriptors; preserves all matching normalized
+records across bounded cursors; and performs per-object and final source-authority
+callbacks before returning a page. Missing/corrupt objects and late withdrawal
+fail the response, including empty queries. Reverse-strand GRCh37 tests retain
+original A/C evidence beside the normalized G/T call at its GRCh38 coordinate.
+
+**73 manifest, 17 coordinate-reader and 24 rsID-container cases** pass, as do
+27 existing materializer cases after shared fixture extraction. Independent review
+and scoped TypeScript/lint pass. Review added a cross-directory artifact-sequence
+check and a two-directory regression; metadata preflight rejects getters without
+executing them. The focused engine inventory is now **617 distinct cases**.
+These use synthetic/in-memory range transport, not a newly verified provider or
+application journey. No running source, schema, limits or subscriptions changed.
+
+The report seam is identified: normalized call fields plus original usability,
+with existing source-line/collision behavior preserved. It is **not activated**:
+a real published backend receipt must bind report begin/check/commit, and full
+publication must validate every unseen directory member and total data bytes.
+Next is final index persistence/publication/checkpoints and lifecycle integration,
+then the larger-file application proof and a coherent PR. Production stays PR81;
+acceptance stays **19/65**, with original expiry and larger admission still off.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
