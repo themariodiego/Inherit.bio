@@ -6,6 +6,7 @@ import { getPublishedTemplates } from "../genome/load";
 import { resolveReportCalls, type ReportCall } from "../genome/report-calls";
 import { resolveTemplate } from "../genome/reports";
 import { computePrs } from "../genome/prs";
+import { createPrsCallLookup } from "../genome/prs-call-lookup";
 import { ALL_PRS_SCORES } from "../genome/prs-data";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
@@ -141,15 +142,7 @@ export async function generateOwnReports(request: Request, fileId: string) {
           variants: report.variants.map(row => ({ rsid: row.variant.rsid, outcome: row.outcome })),
           conflictingRsids: [...resolved.conflicts].filter(rsid => template.variants.some(v => v.rsid === rsid)) };
       });
-      const lookup = new Map(variants.map(row => [`${row.chrom}:${row.pos}`, { genotype: row.genotype, ref: row.ref, alt: row.alt }]));
-      // Keep disputed, filtered and missing calls out of score matching too.
-      const unusablePositions = new Set<string>();
-      for (const row of observations) {
-        const key = `${row.chrom}:${row.pos}`, prior = lookup.get(key);
-        if (row.usable === false || row.genotype === "--" || (prior && prior.genotype !== row.genotype)) unusablePositions.add(key);
-        else if (!prior) lookup.set(key, { genotype: row.genotype, ref: row.ref, alt: row.alt });
-      }
-      for (const key of unusablePositions) lookup.delete(key);
+      const lookup = createPrsCallLookup(variants, observations);
       const prs = purpose === "reports.polygenic" ? ALL_PRS_SCORES.map(score => {
         const result = computePrs(lookup, score);
         return { pgs_id: score.pgs_id, raw_score: result.raw, coverage: result.coverage, matched: result.matched };

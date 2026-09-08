@@ -9,6 +9,7 @@ import { generateOwnReports } from "./own-report-generation";
 import { AIMS } from "../genome/admixture";
 import { ownAncestryContentSchema } from "./own-ancestry-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
+import { ALL_PRS_SCORES } from "../genome/prs-data";
 
 const account = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", session = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc", claimId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
@@ -71,6 +72,52 @@ describe("independent synchronous own reports", () => {
       .toEqual({ fileId, status: "normalization_complete", analysisState: "not_generated" });
     expect(mocks.templates).not.toHaveBeenCalled();
     expect(mocks.rpc.mock.calls.every(call => call[1].p_operation === "begin")).toBe(true);
+  });
+  it("completes the same withheld PRS payload for conflicting variant-only rows in either order", async () => {
+    const marker = ALL_PRS_SCORES[0].variants[0];
+    const make = (genotype: string) => ({ file_id: fileId, rsid: marker.rsid, chrom: marker.chrom,
+      pos: marker.pos38, ref: marker.other_allele, alt: marker.effect_allele, genotype });
+    const effect = make(`${marker.effect_allele}/${marker.effect_allele}`);
+    const other = make(`${marker.other_allele}/${marker.other_allele}`);
+    async function generate(rows: typeof effect[]) {
+      finished.clear(); mocks.rpc.mockClear();
+      mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "read-variants"
+        ? { data: args.p_payload.offset === 0 ? rows.filter(row => args.p_payload.loci.some(
+          (point: { chrom: number; pos: number }) => point.chrom === row.chrom && point.pos === row.pos)) : [], error: null }
+        : rpc(name, args));
+      expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+      const completions = mocks.rpc.mock.calls.filter(([, args]) => args.p_operation === "complete");
+      expect(completions).toHaveLength(1);
+      return completions[0][1].p_payload.prs;
+    }
+    const positive = await generate([effect]);
+    expect(positive[0]).toMatchObject({ pgs_id: ALL_PRS_SCORES[0].pgs_id, matched: 1,
+      raw_score: 2 * marker.weight, coverage: 1 / ALL_PRS_SCORES[0].variants.length });
+    const forward = await generate([effect, other]), reverse = await generate([other, effect]);
+    expect(forward).toEqual(reverse);
+    expect(forward).toEqual(ALL_PRS_SCORES.map(score => ({ pgs_id: score.pgs_id, raw_score: 0, coverage: 0, matched: 0 })));
+  });
+
+  it.each(["no-call", "filtered", "conflicting observation"])("completes withheld PRS for %s across both stores", async fault => {
+    const marker = ALL_PRS_SCORES[0].variants[0];
+    const valid = { file_id: fileId, rsid: marker.rsid, chrom: marker.chrom, pos: marker.pos38,
+      ref: marker.other_allele, alt: marker.effect_allele, genotype: `${marker.effect_allele}/${marker.effect_allele}` };
+    const invalid = { ...valid, genotype: fault === "no-call" ? "--" : fault === "conflicting observation"
+      ? `${marker.other_allele}/${marker.other_allele}` : valid.genotype, usable: fault !== "filtered" };
+    for (const swapped of [false, true]) {
+      finished.clear(); mocks.rpc.mockClear();
+      mocks.rpc.mockImplementation(async (name, args) => {
+        if (["read-variants", "read-observed"].includes(args.p_operation)) {
+          const row = (args.p_operation === "read-variants") !== swapped ? valid : invalid;
+          return { data: args.p_payload.offset === 0 && args.p_payload.loci.some(
+            (point: { chrom: number; pos: number }) => point.chrom === row.chrom && point.pos === row.pos) ? [row] : [], error: null };
+        }
+        return rpc(name, args);
+      });
+      expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+      const payload = mocks.rpc.mock.calls.find(([, args]) => args.p_operation === "complete")![1].p_payload;
+      expect(payload.prs).toEqual(ALL_PRS_SCORES.map(score => ({ pgs_id: score.pgs_id, raw_score: 0, coverage: 0, matched: 0 })));
+    }
   });
   it("makes monogenic results independently with no PGS payload", async () => {
     selected = new Set(["reports.monogenic"]);
