@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { assertLocalProviderEnvironment, chromiumStorageProxyArgs, localBrowserTarget } from "./local-storage-browser-config";
+import { assertLocalProviderEnvironment, chromiumStorageProxyArgs, localBrowserTarget, localBrowserUpstreamTimeout } from "./local-storage-browser-config";
 import { verifyE2EReport } from "./e2e-report-contract";
 
 describe("local provider runner safety boundaries", () => {
@@ -41,6 +42,38 @@ describe("local provider runner safety boundaries", () => {
     }
     expect(() => localBrowserTarget("http://127.0.0.1:55321/storage/v1/", {})).toThrow();
     expect(() => assertLocalProviderEnvironment({ ...family, ...disposable }, true, [])).toThrow();
+  });
+  it("uses the route budget only for exact same-origin local normalization POSTs", () => {
+    const path = "/api/files/cccccccc-cccc-4ccc-8ccc-cccccccccccc/process";
+    for (const origin of ["http://localhost:3100", "http://localhost:3101", "http://localhost:3102"]) {
+      expect(localBrowserUpstreamTimeout(origin + path, "POST", origin)).toBe(300_000);
+    }
+    const origin = "http://localhost:3100";
+    for (const altered of [path + "?mode=own", path + "?", path + "#fragment", path + "/",
+      path.replace("process", "%70rocess"), path.replace("/files/", "/files%2f"),
+      path.replace("/api/", "/ignored/../api/"), path.replace("4ccc", "not-a-uuid"), "/api/files"]) {
+      expect(localBrowserUpstreamTimeout(origin + altered, "POST", origin)).toBe(60_000);
+    }
+    for (const method of ["GET", "PUT", "OPTIONS", "DELETE", "post", undefined]) {
+      expect(localBrowserUpstreamTimeout(origin + path, method, origin)).toBe(60_000);
+    }
+    for (const otherOrigin of [undefined, "http://localhost:3101", "https://inherit.bio"]) {
+      expect(localBrowserUpstreamTimeout(origin + path, "POST", otherOrigin)).toBe(60_000);
+    }
+    expect(localBrowserUpstreamTimeout("http://127.0.0.1:54321" + path, "POST", "http://127.0.0.1:54321")).toBe(60_000);
+    expect(() => localBrowserUpstreamTimeout("https://inherit.bio" + path, "POST", "https://inherit.bio")).toThrow();
+  });
+  it("wires the upstream timeout selector and preserves the actual process route budget", () => {
+    const route = readFileSync("src/app/api/files/[id]/process/route.ts", "utf8");
+    expect(route).toMatch(/export const maxDuration = 300;/);
+    const runner = readFileSync("scripts/run-upload-browser.mts", "utf8");
+    expect(runner).toContain('const upstreamTimeout = localBrowserUpstreamTimeout(request.url ?? "", request.method, request.headers.origin);');
+    expect(runner).toContain("upstream.setTimeout(upstreamTimeout, () => upstream.destroy());");
+    expect(runner).toContain("if (upstreamTimeout === 300_000)");
+    expect(runner).toContain("const deadline = setTimeout(() => { upstream.destroy(); response.destroy(); }, upstreamTimeout);");
+    for (const event of ['upstream.once("error", clearDeadline)', 'upstream.once("close", clearDeadline)',
+      'response.once("finish", clearDeadline)', 'response.once("close", clearDeadline)']) expect(runner).toContain(event);
+    expect(runner).not.toContain("upstream.setTimeout(60_000");
   });
   it("configures only Chromium CLI proxy flags, with forced loopback and no APIRequest proxy option", () => {
     expect(chromiumStorageProxyArgs("http://127.0.0.1:45678")).toEqual([
