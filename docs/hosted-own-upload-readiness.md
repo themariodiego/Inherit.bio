@@ -24,20 +24,46 @@ unchanged: fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec`.
 The protected-canary evidence at `9f079ba` records preparation of the retained
 24,562,693-byte source in 91.496421 seconds, then produced the explicitly chosen
 polygenic A/C result and a native original download with the exact expected hash.
-**Synthetic source deletion passed through the authenticated production API at
-11:46 UTC:** source, one million variants, observations, analysis/normalization
-records and the original Storage object are absent; the account and subject
-remain. Browser confirmation was inaccessible, so this is API deletion plus
-independent residual proof, not a native-button success claim. The bounded
-production retention GET also processed three known synthetic obligations with
-zero failures; their expired deadlines are not retroactive passes. **Recurring
-retention activation and its verification remain pending.** Do not equate merge/deployment with
-completed cleanup or unrestricted public admission.
+**Synthetic source deletion passed through the real production API:** HTTP 204
+at **11:46:30 UTC** for source `7011928e-9c9d-47c5-82b4-72ebd1e5d844`.
+Independent checks at **11:46:54 UTC** found the source, one million variants,
+results and Storage object absent while preserving the account. The native
+browser confirmation button was not proved; this is API deletion plus residual
+verification, not a native-button success claim.
+
+The manual production retention GET at **11:36:11 UTC** returned HTTP 200 with
+**processed 3 / failed 0 / pending 0**, covering two known synthetic expired
+upload sessions and one historical synthetic grant-replacement cleanup. Exact
+residuals are zero. The old overdue job records `completedWithinDeadline: false`;
+late cleanup does not retroactively satisfy its original deadline.
+
+The bounded database-only `pg_cron` purge job was installed inactive at
+**11:51 UTC**, activated at **11:58 UTC**, and observed completing **15 consecutive
+successful runs at 15-second intervals through 12:01:56 UTC**. This establishes
+scheduled execution, not ownership of a particular purge. A separate native
+production revocation of the 425-byte synthetic source
+`b320380a-c803-4b70-8e70-2021be0fb4de` started at **12:01:26.470879 UTC** and
+completed at **12:01:26.540436 UTC** (**69.557 ms**). Manifest
+`8c20a9a4-049a-4de5-b1a1-e38507884b78` records four deleted members and zero
+exact-grant residuals. **That is the synchronous fast path, not scheduler-owned
+purge proof.** The minute composite cron addition is committed at `c2b` but is
+**not deployed**. It is separate from the active database-only job; complete
+scheduled cleanup and deadline coverage are not yet established.
+
+Independent review also found that explicit Family withdrawal could leave
+paired assistant answers and dependent chat history behind. The follow-up fix
+passes 33 focused SQL assertions and a two-session writer/purge check; integration
+and hosted verification remain pending. Generic Family purge-job verification
+remains a separate open requirement. Global sharing pause is deliberately non-destructive and must not
+be described as requiring deletion. New uploads remain paused; neither the
+scheduler run count nor the synchronous smoke closes all release prerequisites.
 
 Evidence: parent task `work/production-upload-cutover/canonical-merged-deployment.json`,
 `work/production-upload-cutover/cutover-postflight-receipt.json`, and
 `work/hosted-capacity-20260908/ca-normalization-success.json` /
-`ca-native-download-receipt.json`. Earlier failure and recovery checkpoints below
+`ca-native-download-receipt.json`; retention evidence is under
+`work/current-retention-release/production-594e885/`, including
+`manual-invocation-receipt.json` and `scheduler-activation-result.json`. Earlier failure and recovery checkpoints below
 are preserved as historical evidence; this dated checkpoint supersedes their
 production/pending status.
 

@@ -19,18 +19,37 @@ is prepared and its source-backed A/C report detail retains 1/1 coverage.
 Final-head CI `34217097810` passed 3,261 units, 2,008 SQL assertions and 232 browser
 cases with 57 actual uploads and zero skips/retries. The protected-canary proof
 already covers 91.496421-second normalization, explicit polygenic A/C and the
-24,562,693-byte original download with an exact hash match. **Synthetic deletion passed through the authenticated production API with all
-source/variant/result/Storage residuals zero at 11:46 UTC.** The separate global
-retention smoke processed three known synthetic obligations with zero failures.
-Recurring activation and deadline verification remain pending; the old overdue
-obligations cannot count as on-time completion.
-New public admission and a full-project pass are not claimed.
+24,562,693-byte original download with an exact hash match. **Synthetic deletion passed through the real production API (204 at 11:46:30
+UTC)** for `7011928e-9c9d-47c5-82b4-72ebd1e5d844`. Independent 11:46:54 checks
+found source, one million variants, results and Storage residuals zero while
+preserving the account. Native browser confirmation was not proved.
+
+The manual retention GET at **11:36:11 UTC** returned HTTP 200,
+**processed 3 / failed 0 / pending 0**, for two known synthetic expired sessions
+and one historical synthetic grant-replacement cleanup. The overdue job's
+`completedWithinDeadline: false` remains a failed deadline, despite zero residuals.
+The database-only `pg_cron` purge job was installed inactive at 11:51, activated
+at 11:58, and produced **15 consecutive successful 15-second runs through
+12:01:56 UTC**. A separate native revocation of the 425-byte synthetic source
+`b320380a-c803-4b70-8e70-2021be0fb4de` completed from 12:01:26.470879 to
+12:01:26.540436 UTC (**69.557 ms**): manifest
+`8c20a9a4-049a-4de5-b1a1-e38507884b78`, four deleted members, zero exact-grant
+residuals. **This was synchronous cleanup, not a scheduler-owned purge.** The
+minute composite cron addition at `c2b` is committed but not deployed. Scheduled
+execution is observed; complete scheduler-owned deadline coverage is not proved.
+
+Explicit Family withdrawal needs complete affected chat turns and their
+dependent history removed. The follow-up fix passes 33 focused SQL assertions
+and a two-session writer/purge check; integration and hosted verification remain
+pending. Generic Family purge-job verification is a separate open requirement. Global pause is intentionally non-destructive. New public
+admission and a full-project pass remain unclaimed; **19/65** is unchanged.
 
 Evidence is in the parent task's
 `work/production-upload-cutover/canonical-merged-deployment.json`,
 `work/production-upload-cutover/cutover-postflight-receipt.json` and
 `work/hosted-capacity-20260908/ca-normalization-success.json` /
-`ca-native-download-receipt.json`. This checkpoint supersedes earlier release
+`ca-native-download-receipt.json`; scheduler/manual-run evidence is in
+`work/current-retention-release/production-594e885/`. This checkpoint supersedes earlier release
 status below without replacing the original acceptance gates.
 
 ## Owner-directed next scope · 8 September 2026
@@ -66,8 +85,10 @@ assertions and 232 browser cases. The public-CA adapter preserves certificate
 and hostname verification; hosted million-row preparation, the chosen report
 and native original download now pass. Temporary hosted limits are restored.
 PR76 and the coordinated transport policy are deployed with new uploads paused;
-verified recurring cleanup is the pending operational step; synthetic deletion
-now passes through the production API with independent zero-residual checks. This bounded synthetic result does not establish WGS throughput.
+the database-only scheduler is active, but scheduler-owned purge/deadline proof,
+composite schedule deployment and the Family withdrawal repair remain unfinished.
+Synthetic source deletion passes through the production API with independent
+zero-residual checks. This bounded result does not establish WGS throughput.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every

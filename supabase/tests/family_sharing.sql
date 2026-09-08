@@ -347,8 +347,8 @@ create temporary table stopped as
 select * from public.stop_family_sharing_v1((select alpha from fx), (select beta from fx));
 
 select isnt((select ended_at from stopped), null::timestamptz, 'stop returns the ended date');
-select is((select deleted_counts from stopped), '{"portrait_results": 1, "chat_messages": 1}'::jsonb,
-  'stop returns the itemised deleted counts');
+select is((select deleted_counts from stopped), '{"portrait_results": 1, "chat_messages": 2}'::jsonb,
+  'stop counts both roles of the affected turn, including its unannotated assistant');
 select is((select status from public.family_pairs where id = (select id from pair)), 'revoked',
   'stop revokes the pair');
 select is((select pair_revision from public.family_pairs where id = (select id from pair)),
@@ -361,11 +361,11 @@ select is((select count(*) from public.subject_relationships
   where relationship_kind = 'family_member' and status = 'current'), 0::bigint,
   'stop ends the family relationships');
 select is((select count(*) from public.chat_messages
-  where chat_id = '75000000-0000-4000-8000-000000000030'), 1::bigint,
-  'only the message built from the other subject is deleted');
+  where chat_id = '75000000-0000-4000-8000-000000000030'), 0::bigint,
+  'the complete affected turn has no retained assistant answer');
 select is((select count(*) from public.family_sharing_stops
   where account_low_id = least((select alpha from fx), (select beta from fx))
-    and deleted_counts = '{"portrait_results": 1, "chat_messages": 1}'::jsonb), 1::bigint,
+    and deleted_counts = '{"portrait_results": 1, "chat_messages": 2}'::jsonb), 1::bigint,
   'the tombstone row both accounts read is written');
 select is((select count(*) from public.worker_jobs
   where kind = 'revoke_purge' and output_kind = 'lifecycle.revoke-purge'
