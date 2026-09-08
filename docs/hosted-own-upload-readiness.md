@@ -66,8 +66,44 @@ old-valid singleton with a 3,999,989-byte stage body and 4,000,014-byte registra
 body passes the actual SQL boundary. All **80 focused checks across three files**
 and **71 SQL assertions** pass, with exact rollback preservation. Receipt:
 parent task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
-A fresh build and dense-call benchmark are still pending. Full-size WGS capacity
-and hosted migration/release remain unproved; none is attributable to PR79.
+Dense local verification now proves **preparation plus a separate successful
+continuation**, not one uninterrupted journey. Dense v3 source `138bb6f` reused
+application source `d722225`, build `wi0PVIbQtedwR6Zm8lKOp`, with the reviewed
+proxy-only change. It prepared **500,000 variants / 500,000 observations** from
+20,500,210 decoded bytes / 2,436,110 gzip bytes in **103.304 seconds**, completing
+at **14:37:36.179692 UTC**; direct SQL took **37.929564 seconds**. The subsequent
+report request failed in 8.482 seconds because observed-point lookup lacked an
+index. Migration `20260908143927` adds `(file_id, chrom, pos, source_line)`;
+the local lookup probe then took **0.515 ms**, replacing the sequential scan.
+
+The same prepared source passed the separate continuation in **10.4 seconds /
+13.4 seconds total**, zero uploads/skips/retries: report POST **200 in 1.159
+seconds**, exact-source A/C with one provenance source, original download with
+matching raw and decoded hashes, and native DELETE **204 in 2.580 seconds**.
+At **14:45:06.892 UTC**, all 11 selected residual counts, including both exact
+Storage keys, were zero; the other **33 files' fingerprints and counts were
+unchanged**. Runner exit was 0, listeners closed and resource flags false.
+Evidence: parent task `work/wgs-dense-continuation/` and the retained dense v3
+preparation receipts. Sampled preparation peaks were **529,740,596 app bytes /
+404,121,191 DB bytes**; continuation DB peak was **512,753,664 bytes**. Cluster-wide
+WAL growth was approximately **1.007 GB during preparation / 277.5 MB during
+continuation**, not isolated per-file WAL. Retained relation/index allocation
+needs separate accounting; these samples do not establish steady monthly capacity.
+
+Earlier failed runs remain preserved: dense v1 exposed the 30-second fetch
+lifetime under backpressure (fixed in `d722225`, 84 focused checks and lint);
+v2 exposed the local proxy's 60-second idle timeout (seven configuration tests
+and lint; app 300-second budget unchanged). Both attempts' synthetic originals
+and working rows are now cleaned. A native deletion initially returned 409 while
+its exact claim was live; expiry and recovery completed at **14:34:15 UTC**.
+Historical receipts include parent task `work/wgs-dense-recovery/`; the earlier
+small-browser receipts above remain valid. No timeout or failed attempt is
+relabelled a pass.
+
+This batch remains **local and unreleased**. Next are full CI, the two hosted
+migrations and hosted verification. Dense synthetic preparation and continuation
+do not establish full-size WGS or 100-genomes/month throughput. Production
+remains PR79 and full-plan acceptance remains **19/65**.
 Approved scope remains existing full-size WGS results first, then raw
 FASTQ/BAM/CRAM, targeting **100 genomes/month** and **one-month originals**.
 Those workload/retention targets are not enabled; **no additional spending is

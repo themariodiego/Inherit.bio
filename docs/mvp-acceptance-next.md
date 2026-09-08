@@ -41,11 +41,34 @@ failures remain preserved in the evidence history.
 The newly found long-allele registration-envelope defect is now fixed locally:
 one-MB batch targets, the unchanged four-MB stage cap, and 1,024 bytes of bounded
 registration metadata headroom. All 80 focused checks across three files and 71
-actual SQL assertions pass; rollback metadata is identical. Fresh build and
-dense-call capacity verification remain pending. Evidence is in parent task
-`work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
-Hosted migration/deployment remain pending. Production remains PR79; acceptance
-stays **19/65**, with no additional spending.
+actual SQL assertions pass; rollback metadata is identical. Evidence is in parent
+task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+Dense v3 (`138bb6f`, application `d722225`, build
+`wi0PVIbQtedwR6Zm8lKOp`) prepared **500,000 variants / 500,000 observations** in
+**103.304 seconds**, completing at 14:37:36.179692 UTC; direct SQL took 37.929564
+seconds. Its report request then failed in 8.482 seconds on an unindexed observed
+point scan. Migration `20260908143927` adds `(file_id, chrom, pos, source_line)`;
+the local lookup probe became 0.515 ms.
+
+A **separate continuation on that same prepared source** passed in 10.4 seconds /
+13.4 seconds total, zero uploads/skips/retries: report POST 200 in 1.159 seconds,
+exact-source A/C and one provenance source, raw/decoded original hashes matching,
+and native DELETE 204 in 2.580 seconds. At 14:45:06.892 UTC all 11 selected counts,
+including both Storage keys, were zero; the other 33 files' fingerprints/counts
+were unchanged. Exit 0, listeners closed, resource flags false. Preparation app/
+DB sampled peaks were 529,740,596 / 404,121,191 bytes; continuation DB peak was
+512,753,664 bytes. Cluster-wide WAL grew approximately 1.007 GB / 277.5 MB across
+the two phases; this is not isolated per-file or steady-state capacity evidence.
+See parent task `work/wgs-dense-continuation/` and dense v3 preparation receipts.
+
+The prior fetch-lifetime and local-proxy timeout failures remain historical;
+their originals/working rows are cleaned. The earlier native 409 was followed by
+exact-claim expiry and successful recovery at 14:34:15 UTC. Keep the small-browser
+proof and failed-run receipts; do not describe the split preparation/continuation
+as one uninterrupted pass. Next: full CI, two hosted migrations and verification.
+Production remains PR79; **19/65** acceptance is unchanged. Full-size WGS,
+100-genomes/month and one-month original retention are not enabled/proven by this
+local result; no additional spending is authorized.
 Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026

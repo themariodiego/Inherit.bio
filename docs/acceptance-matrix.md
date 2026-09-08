@@ -51,12 +51,32 @@ Later work can supersede that behavior without completing the stricter gates.
   corrected helper targets one-MB batches and preserves the four-MB genetic
   stage bound, with only 1,024 bytes of registration metadata headroom. All 80
   focused checks across three files and 71 actual SQL assertions pass; the SQL
-  verification rolled back with exact state preservation. A fresh build and
-  dense-call benchmark remain pending. Evidence is in parent task
-  `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
-  Production stays PR79; no G gate is promoted and acceptance remains **19/65**.
-  The 100-genomes/month and one-month originals targets are not enabled capacity;
-  no additional spending is authorized.
+  verification rolled back with exact state preservation. Evidence is in parent
+  task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+- Dense local v3 source `138bb6f`, application `d722225`, build
+  `wi0PVIbQtedwR6Zm8lKOp`, prepared **500,000 variants / 500,000 observations**
+  in **103.304 seconds** (complete 14:37:36.179692 UTC; direct SQL 37.929564
+  seconds). Report generation then failed in 8.482 seconds on an unindexed
+  observed-point scan. Migration `20260908143927` adds the exact
+  `(file_id, chrom, pos, source_line)` index; local lookup probe: 0.515 ms.
+  A separate continuation on the same source passed in 10.4 seconds / 13.4
+  seconds total, zero uploads/skips/retries: report POST 200 in 1.159 seconds,
+  exact-source A/C and one provenance source, matching raw/decoded download
+  hashes, native DELETE 204 in 2.580 seconds. At 14:45:06.892 UTC all 11 selected
+  counts, including both Storage keys, were zero; the other 33 files' fingerprints
+  and counts were unchanged. Exit 0, listeners closed, resource flags false.
+  Evidence: parent task `work/wgs-dense-continuation/` and dense v3 preparation
+  receipts. This is preparation plus a separate continuation, not an uninterrupted
+  pass. Sampled preparation app/DB peaks: 529,740,596 / 404,121,191 bytes;
+  continuation DB peak: 512,753,664 bytes. Cluster-wide WAL growth of approximately
+  1.007 GB / 277.5 MB is not isolated per-file capacity evidence.
+- Earlier dense v1/v2 failures remain preserved; all their synthetic originals
+  and working rows are cleaned, following exact-claim expiry/recovery at
+  14:34:15 UTC after an initial native 409. The earlier small-browser proof is
+  unchanged. The WGS batch is **local and unreleased**: full CI, two hosted
+  migrations and hosted verification remain next. Production stays PR79;
+  acceptance remains **19/65**. No full-size WGS, 100-genomes/month or one-month
+  original-retention capability is inferred; no additional spending is authorized.
 - Protected hosted own-file evidence now includes actual chosen finding, ready
   notice delivered to Zoho and followed, exact-grant withdrawal, byte-identical
   retained download and complete source deletion. This contributes to the own
