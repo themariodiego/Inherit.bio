@@ -7,6 +7,55 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Current production checkpoint · 8 September 2026
 
+PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
+`dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
+It distinguishes a confirmed prepared file from a later selected-report failure,
+with a retry path that does not require another upload. No database, environment,
+scheduler, plan or admission-limit changes accompanied this release.
+
+Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
+2,120 SQL assertions (56 files), 30 lock checks and 232 browser cases**, with
+57 actual Storage uploads and zero skipped or automatically retried cases. CI
+`34245372159` attempt one had one pre-response sign-out socket failure, 222 passes
+and nine dependent cases not run. The unchanged whole-job second attempt passed,
+including all those cases; the original failure and unproved cause are retained.
+
+Desktop and mobile inspection used the actual shared recovery component in an
+isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
+synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new
+recovery strings in the served client asset; the account remained empty and its
+test session was signed out. This did not force or observe another hosted report
+failure. Receipt details: parent task `work/wgs-release-pr80/recovery-*`.
+Acceptance remains **19/65**.
+
+### Local larger-file preparation prototype (not deployed)
+
+Local engine commit `ba35b15d60f970aa1cfd018faa1107c8143a9720` adds bounded,
+lossless provisional blocks, sorted runs, eight-way merging and grouped immutable
+containers. **139 distinct focused tests** plus 24 existing parser tests passed;
+module lint/type checks and independent run review passed. No application upload,
+job, authorization, index, report or retention integration is implied.
+
+One actual filesystem proof used a synthetic **2,000,000-record VCF** (82,000,210
+decoded / 9,743,598 gzip bytes). Both source hashes verified before terminal
+acceptance. It preserved all **4,000,000 events** exactly, including the sole
+caffeine locus, across **125 → 16 → 2 → 1** runs. Initial preparation took
+49.951 seconds; total merge/readback/cleanup proof took **241.013 seconds**.
+There were 173 container writes and 8,000 filesystem range reads. Peak temporary
+storage was **30,010,188 bytes** and sampled test-process RSS **333,889,536 bytes**.
+All generated artifacts/bytes were removed; the original inode, size and raw hash
+were rechecked. Root independently confirmed the owned directory was absent.
+
+This repetitive synthetic filesystem result is not hosted Storage performance,
+full-WGS capacity or a 100-genomes/month allowance. Next: integrate current
+source authority, durable jobs, indexes/read adapters and complete lifecycle,
+then verify an actual larger-file application journey. Public limits and
+one-month original-expiry behavior remain unchanged. Receipts: parent task
+`work/wgs-next-backend/disk-integration-attempt-1/` and
+`work/wgs-next-backend/prototype-review-receipt.json`.
+
+### Earlier PR80 dense preparation and report recovery
+
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
 `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
 CI `34240644001` passed **3,310 units (204 files), 85 fresh migrations, 2,120 SQL
@@ -27,8 +76,7 @@ analysis counts were unchanged. Native JavaScript deletion confirmation remains
 unverified because the browser control could not operate its prompt.
 
 This proves hosted preparation plus report recovery, not an uninterrupted pass.
-The confirmed next correction distinguishes report failure from acknowledged
-preparation. Automatic statistics refreshed between failure and retry; that timing
+PR81 now distinguishes report failure from acknowledged preparation. Automatic statistics refreshed between failure and retry; that timing
 is a clue, not proof of the first report failure's cause. Full-size WGS, 100 genomes
 per month and one-month original expiry remain approved, unproved scope. No cap or
 subscription was increased; acceptance remains **19/65**. Receipts: parent task
@@ -94,7 +142,7 @@ Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026
 
-PR80 is deployed. After correcting report-recovery messaging, the next approved work is ordinary full-size existing WGS result
+PR81 is deployed with corrected report-recovery messaging. The next approved work is ordinary full-size existing WGS result
 files, followed by
 raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
 **one-month retention of original source files**. These are implementation and
