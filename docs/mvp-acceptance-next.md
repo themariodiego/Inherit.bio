@@ -1,6 +1,6 @@
 # MVP-first acceptance sequence
 
-Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-09.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
@@ -43,18 +43,32 @@ Whole-plan acceptance stays **19/65**. Evidence: parent task
 Larger WGS admission remains inactive. The approved targets remain existing WGS
 results first, FASTQ/BAM/CRAM next, 100 genomes/month, and originals retained for
 one month. Supabase interrupted-write cleanup is unresolved through the available
-project APIs; a support draft awaits permission to send externally. A bounded
-current-documentation R2 review found plausible direct-object recovery APIs, but
-no provider proof or architecture change is claimed. A subsequent read-only check
-confirmed the active inherit.bio zone belongs to Cloudflare account
-`165b6ad801f990d009e90b64b39f87dd`; R2 bucket listing returns provider error
-**10042: enable R2 through the dashboard**. R2 is not enabled, so remaining
-allowance is unknown and a trial cannot use an existing active R2 subscription.
-Cloudflare's current setup documentation requires subscription checkout. No
-activation or spending occurred. The account probe is preserved in parent task
-`work/wgs-next-backend/r2-account-preflight.json`. Next: approval to send the
-existing-plan Supabase support draft, or a separate owner decision on R2
-activation; do not substitute scope approval for spending authorization.
+project APIs; a support draft awaits permission to send externally. The owner has
+now activated R2, superseding the earlier error10042 activation blocker. Live
+bucket listing on account `165b6ad801f990d009e90b64b39f87dd` succeeded with an
+empty inventory. The original failed preflight remains historical evidence.
+
+A reviewed, pre-registered private Standard R2 trial completed in **23 provider
+calls and 255 aggregate synthetic bytes**, within the newly activated included
+allowance. Both ASCII objects read back exactly; the second was recovered by its
+registered key without consuming its settled PUT receipt. Public managed access
+remained disabled and custom domains absent. Exact-key deletion was followed by
+specific provider error10007 and empty lists. The owned empty trial bucket was
+then deleted; error10006 and an empty bucket inventory confirmed its absence.
+The connector exposed no HTTP status for thrown not-found responses and omitted
+pagination metadata on these small lists; neither is invented in the receipt.
+
+This closes the tiny direct-object recovery/cleanup access prerequisite, not WGS
+delivery. It does not test an interrupted or late write, multipart cleanup,
+arbitrary binary transport, physical media erasure, report composition, full-size
+capacity or scheduled retention. The WEUR location hint used only synthetic data
+and is not an EU residency guarantee. No persistent bucket, credentials, Worker,
+application configuration or admission cap changed. Owner activation does not
+authorize overages. Next: connect a reviewed R2 transport to the existing
+preparation authority and deletion fencing, then verify an actual tiny complete
+application lifecycle before increasing admission. Evidence in parent task:
+`work/wgs-next-backend/r2-trial-{preregistration,complete-events,verification}.json`
+and the independent trial reviews. Whole-plan acceptance remains **19/65**.
 
 ### Earlier PR81 preparation/report recovery
 
