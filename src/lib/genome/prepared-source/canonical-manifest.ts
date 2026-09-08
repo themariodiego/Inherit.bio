@@ -266,3 +266,6 @@ export function decodeCanonicalCoordinatePage(bytes: Uint8Array, expected: Canon
   requireValid(equal(describeCanonicalCoordinateIndex(page, context.binding), reference.envelope));
   return page;
 }
+
+/** Shared closed-JSON metadata bound for other prepared index manifests. */
+export { preflight as assertPreparedMetadataBounds };

@@ -919,3 +919,32 @@ extractor or legal statement is removed or relaxed.
 - `v2_contracts.sql` raises the registered store count from 117 to 119 and adds
   exact source-working classification assertions for the two new private stores;
   all previous assertions remain. Fresh full replay remains a release requirement.
+
+
+## Final prepared publication foundation · 8 September 2026
+
+- `materialize-canonical-rsid.test.ts` adds 31 final pointer-order, merge-terminal,
+  zero-ID, exact writer receipt, bounded container/directory and cancellation cases.
+- `verify-canonical-materialization.test.ts` adds 43 complete-artifact checks:
+  actual hashes/EOF/counts, every coordinate bound against decoded records,
+  cross-block order, identity membership, byte sums and authority/time fences.
+- `verify-rsid-materialization.test.ts` adds 17 complete final-index checks,
+  including exact pointer-stream digest and zero-ID behavior. Its real parser,
+  canonical and rsID setup is shared with the publication assembler tests.
+- `prepare-genome-publication.test.ts` adds 18 integration cases for three exact
+  registered roots, full final membership, GRCh37 count units, partial writes,
+  final authority and cancellation. Review found and corrected a cross-phase
+  sequence assumption: registered temporary rsID sorting artifacts may lie between
+  final canonical and rsID members. The test writes those scratch artifacts before
+  the final rsID phase and proves they remain excluded and cleanup-owned.
+- `own_prepared_publication.sql` tests the disabled atomic publication/read/replay
+  transition using actual synthetic consent/issuance/finalization operations and
+  metadata-only Storage rows. It does not prove physical bytes or deletion success.
+  Review added exact current file-type identity and a mutation/refusal regression.
+  The corrected rollback-only run passes 51 assertions. Its first attempt stopped
+  after 46 passes because the synthetic withdrawal omitted its required reason;
+  the exact captured consent now gets both timestamp and reason, with explicit
+  valid-state and unchanged read-denial checks. Both baselines were restored.
+- `v2_contracts.sql` now expects 121 stores (the previous 119 plus immutable
+  manifest and final-member stores), with 24 assertions. Existing classifications
+  and protections remain intact; this registration is not a cleanup executor.

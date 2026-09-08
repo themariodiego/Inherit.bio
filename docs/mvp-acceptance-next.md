@@ -226,6 +226,48 @@ Next is final index persistence/publication/checkpoints and lifecycle integratio
 then the larger-file application proof and a coherent PR. Production stays PR81;
 acceptance stays **19/65**, with original expiry and larger admission still off.
 
+### Complete final-object verification and publication · local only
+
+The final rsID materializer now persists bounded index containers and directories.
+Full canonical and rsID verifiers read every final object through exact hashes
+and EOF, checking order, actual index bounds, counts and unique membership.
+The publication assembler writes separate canonical/rsID roots and a compact
+combined root through the registered writer, then returns the exact final subset.
+Temporary rsID sorting objects remain registered scratch even when allocated
+between final phases. This corrects an assumption found by independent review.
+
+The four new suites pass **109 focused cases** (31 materializer, 43 complete
+canonical verification, 17 complete rsID verification, 18 publication assembly).
+Scoped TypeScript/lint and independent review pass. The focused engine inventory
+is **726 distinct cases**; only the changed four suites were rerun this batch.
+Transport composition remains synthetic/in-memory, distinct from the earlier
+actual local Storage primitive proof.
+
+The additive disabled publication migration passed **51 rollback-only SQL
+assertions** in `publication-authority-attempt-2/`. Initial publication uses the
+actual originating session and finite claim; subsequent reads and exact replay
+use the current reader's source/store/lifecycle authority. Published membership
+is immutable, ordinary job expiry cannot freeze it, legacy normalization cannot
+steal its file, and current withdrawal denies reading it. Review added exact
+current file-type identity. No legacy normalization rows are fabricated.
+
+The first SQL attempt passed 46 assertions before a synthetic consent withdrawal
+omitted its required reason. The corrected fixture sets the exact captured
+consent's timestamp and reason, then asserts valid withdrawal and the same denial.
+Both transactions fully rolled back: file/object fingerprints, Auth/data counts,
+configuration, migration history and schema absence match baseline. The actual
+runtime registry remains 117; the updated 121-store/24-assertion contract fixture
+is prepared for fresh replay. No provider writes, schema commits or activation.
+
+This closes the local byte-verification and atomic publication prerequisite.
+Next: connect real published membership to indexed report/read/export access,
+complete file/account/scratch deletion with unrelated-file preservation, and
+integrate bounded worker recovery before the larger synthetic application proof.
+The final publication transport and worker are not connected yet. Checkpoint
+adoption, revocable original download and one-month expiry remain open. No new
+PR is opened for this disabled foundation. Production PR81, public limits,
+subscriptions and **19/65** whole-plan acceptance are unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as

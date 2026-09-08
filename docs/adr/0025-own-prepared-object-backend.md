@@ -56,6 +56,27 @@ The initial private protocol is a narrow extension alongside generic worker jobs
 It grants no analytical purpose and sends no report-ready notice. Chosen reports
 must retain their own source/grant checks and atomic captured completion.
 
+## Disabled publication transition
+
+The additive publication migration stores an immutable final manifest and exact
+ACKed artifact membership. Full byte verifiers read every final canonical and
+rsID object before the executor writes separate canonical/rsID roots and a compact
+combined root. Intermediate sorting objects remain registered scratch even when
+their sequences fall between the final materialization phases.
+
+Initial publication requires the actual originating session, claim and source
+under locks and a final deadline fence. A published read or exact replay resolves
+the reader's current session and current store/source/lifecycle authority; it
+cannot reuse a stale worker token as permission. Published jobs leave temporary
+job expiry, and reciprocal serialization prevents legacy normalization on the
+same file. No legacy normalization journal is fabricated.
+
+The new manifest/member stores are in the purge inventory, with restrictive
+foreign keys preserving object identities. Full file/account/expiry deletion and
+scratch cleanup still require integration and verification before activation.
+The publication function and metadata assertions do not independently prove
+provider bytes, report completion or successful cleanup.
+
 ## Complete delivery boundary
 
 Before enabling even the private writer, connect and verify the complete journey:

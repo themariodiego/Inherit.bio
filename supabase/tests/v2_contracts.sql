@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(24);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
@@ -13,14 +13,20 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- private.own_normalization_runs; report generation adds private.own_analysis_runs.
 -- Incremental VCF preparation adds the genetic own_normalization_positions index.
 -- The inactive object backend also registers its job and artifact identities.
-select is((select count(*) from public.purge_target_stores), 119::bigint,
-  'all 119 purge stores, including private prepared-object working identities, are classified');
+select is((select count(*) from public.purge_target_stores), 121::bigint,
+  'all 121 purge stores, including private prepared-object working identities, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_jobs'),'variant-rows',
   'preparation jobs belong to the source-working purge inventory');
 select is((select target_id from public.purge_target_stores
   where store_name='private.own_preparation_artifacts'),'variant-rows',
   'preparation artifacts retain registered cleanup membership');
+select is((select target_id from public.purge_target_stores
+  where store_name='private.own_prepared_manifest_members'),'variant-rows',
+  'published final membership remains in the source purge inventory');
+select is((select target_id from public.purge_target_stores
+  where store_name='private.own_prepared_manifests'),'variant-rows',
+  'published source identity remains in the source purge inventory');
 select is((select target_id from public.purge_target_stores
   where store_name = 'public.embryo_ingest_chunks'), 'upload-and-ingest-working-state',
   'chunk receipts are classified for attempt cleanup');
