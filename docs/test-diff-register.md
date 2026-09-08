@@ -912,6 +912,10 @@ extractor or legal statement is removed or relaxed.
   Reader/writer regressions cover cancellation between response resolution and
   the awaiting continuation. Reader keys now require the prepared namespace;
   origin tests also cover the existing local family Kong port 55321.
+- Canonical container/reader tests preserve exact source and normalized bytes,
+  bindings, range offsets and flush acknowledgement under bounded streaming,
+  long blocks, cancellation and current authority refusal. The existing parser
+  reader assertions stay intact while both codecs share the same range transport.
 - `v2_contracts.sql` raises the registered store count from 117 to 119 and adds
   exact source-working classification assertions for the two new private stores;
   all previous assertions remain. Fresh full replay remains a release requirement.

@@ -119,6 +119,17 @@ proof is next; its synthetic source setup and exact reversal must be complete
 before temporarily installing the draft migration. No provider writes or runtime
 migration commits occurred in this batch. Dispatch and public limits stay unchanged.
 
+Canonical grouped containers and range reads are now connected locally. They
+preserve exact encoded bytes and original/normalized evidence with the same
+1 MiB target, 8 MiB ceiling and 128-block bound as parser containers. The shared
+range transport retains the existing 31 reader cases; 38 canonical-container and
+13 canonical-reader cases pass, with scoped TypeScript/lint and independent review.
+The focused engine inventory is now **399 distinct cases**. These are still
+provisional data adapters: target/rsID indexes, publication and the complete
+application journey remain pending. Actual Storage proof uses a tiny original
+through the existing ephemeral local signing setup, then targets the unchanged
+Storage service for prepared writes and interruption cleanup.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as

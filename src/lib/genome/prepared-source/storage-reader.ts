@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { decodePreparedBlock } from "./codec";
-import { validatePreparedContainerDescriptor, type PreparedContainerDescriptor } from "./containers";
+import { PREPARED_CONTAINER_MAX_BYTES, validatePreparedContainerDescriptor, type PreparedContainerDescriptor } from "./containers";
 import { PREPARED_BLOCK_MAX_COMPRESSED_BYTES } from "./schema";
 import { preparedObjectKeySchema as objectKeySchema, preparedStorageConfig } from "./storage-common";
 
@@ -13,6 +13,9 @@ export class PreparedStorageReadError extends Error {
 }
 export type PreparedRangeRequest = { objectKey: string; start: number; end: number; signal: AbortSignal };
 export type PreparedRangeFetch = (request: PreparedRangeRequest) => Promise<Response>;
+export type PreparedStorageReadOptions = {
+  check: (signal: AbortSignal) => Promise<void>; fetchRange: PreparedRangeFetch; signal?: AbortSignal;
+};
 
 /** Server configuration only. Object keys must be assigned by the database's
  * registered-artifact protocol, never accepted from an HTTP request. No signed
@@ -59,7 +62,7 @@ async function wait<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
  * interrupts stalled callbacks. Late provider responses are cancelled. */
 export async function readPreparedStorageBlock(selection: {
   objectKey: string; container: PreparedContainerDescriptor; blockSequence: number;
-}, options: { check: (signal: AbortSignal) => Promise<void>; fetchRange: PreparedRangeFetch; signal?: AbortSignal }) {
+}, options: PreparedStorageReadOptions) {
   let container: PreparedContainerDescriptor, objectKey: string, blockSequence: number;
   try {
     objectKey = objectKeySchema.parse(selection.objectKey);
@@ -68,6 +71,26 @@ export async function readPreparedStorageBlock(selection: {
   } catch { throw new PreparedStorageReadError("invalid_selection"); }
   const block = container.blocks.find(entry => entry.descriptor.sequence === blockSequence);
   if (!block) throw new PreparedStorageReadError("invalid_selection");
+  return readPreparedStorageRange({ objectKey, offset: block.offset, length: block.length, total: container.byteCount }, {
+    ...options, decode: (bytes, signal) => decodePreparedBlock((async function* () { yield bytes; })(), block.descriptor, { signal }),
+  });
+}
+
+/** Shared I/O for validated parser/canonical block selections. Only internal
+ * server adapters may supply decode: it must verify the exact descriptor's
+ * complete hash and schema before returning. A valid range or caller's hash
+ * does not establish source authority. Nothing escapes before the final check. */
+export async function readPreparedStorageRange<T>(selection: {
+  objectKey: string; offset: number; length: number; total: number;
+}, options: PreparedStorageReadOptions & { decode: (bytes: Uint8Array, signal: AbortSignal) => Promise<T> }): Promise<T> {
+  let objectKey: string, offset: number, length: number, total: number;
+  try {
+    objectKey = objectKeySchema.parse(selection.objectKey);
+    offset = sequenceSchema.parse(selection.offset);
+    length = sequenceSchema.positive().max(PREPARED_BLOCK_MAX_COMPRESSED_BYTES).parse(selection.length);
+    total = sequenceSchema.positive().max(PREPARED_CONTAINER_MAX_BYTES).parse(selection.total);
+    if (offset >= total || length > total - offset) throw new Error();
+  } catch { throw new PreparedStorageReadError("invalid_selection"); }
   const deadline = new AbortController();
   const timer = setTimeout(() => deadline.abort(), 30_000);
   timer.unref();
@@ -77,8 +100,7 @@ export async function readPreparedStorageBlock(selection: {
   try {
     active(signal);
     await wait(options.check(signal), signal); active(signal);
-    const pending = options.fetchRange({ objectKey, start: block.offset,
-      end: block.offset + block.length - 1, signal });
+    const pending = options.fetchRange({ objectKey, start: offset, end: offset + length - 1, signal });
     // A non-cooperative transport can return after cancellation; do not leave
     // its body downloading after this operation has already been refused.
     void pending.then(late => {
@@ -87,12 +109,12 @@ export async function readPreparedStorageBlock(selection: {
     }, () => {});
     response = await wait(pending, signal); active(signal);
     if (response.status !== 206 || !response.body
-      || response.headers.get("content-range") !== `bytes ${block.offset}-${block.offset + block.length - 1}/${container.byteCount}`
-      || (response.headers.has("content-length") && response.headers.get("content-length") !== String(block.length))
+      || response.headers.get("content-range") !== `bytes ${offset}-${offset + length - 1}/${total}`
+      || (response.headers.has("content-length") && response.headers.get("content-length") !== String(length))
       || (response.headers.has("content-encoding") && response.headers.get("content-encoding") !== "identity")) {
       throw new PreparedStorageReadError("integrity_mismatch");
     }
-    const bytes = new Uint8Array(block.length);
+    const bytes = new Uint8Array(length);
     let count = 0;
     reader = response.body.getReader();
     const ownedReader = reader;
@@ -107,7 +129,7 @@ export async function readPreparedStorageBlock(selection: {
       bytes.set(part.value, count); count += part.value.length;
     }
     if (count !== bytes.length) throw new PreparedStorageReadError("integrity_mismatch");
-    const decoded = await decodePreparedBlock((async function* () { yield bytes; })(), block.descriptor, { signal });
+    const decoded = await wait(options.decode(bytes, signal), signal); active(signal);
     await wait(options.check(signal), signal); active(signal);
     return decoded;
   } catch (error) {
