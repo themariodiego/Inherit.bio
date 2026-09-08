@@ -7,6 +7,45 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Current production checkpoint · 8 September 2026
 
+PR82 merge `6a497adbb75428989725fc6a7d3f1e69ed4fcfda` is production READY as
+`dpl_DP7mGub7E1bW6aLk4qrSavT6Fm1y` at **21:56:39.141 UTC**, on all six aliases.
+Newly computed polygenic scores now withhold conflicting, missing, unsupported or
+filtered calls instead of choosing the last inserted variant. Agreeing allele
+counts contribute once. Saved results are not automatically invalidated or
+recomputed. No real genetic file, schema, signing key, scheduler, limit,
+retention setting or subscription changed.
+
+Exact head `05f762f3110acd82bcea4c522374ef39829f3203` passed CI `34281293710`:
+**3,371 units (206 files), 85 fresh migrations, 2,120 SQL assertions (56 files),
+30 lock checks and 232 browser cases in 14.8 minutes**, including 57 actual
+Storage uploads, zero skips/retries and owned runtime cleanup. The merge and
+reviewed head have identical Git tree `5f71e09cfb9a8af4a82ecf6a7c78a78cdf3d586d`.
+Initial CI `34278270396` had one injected count-audit failure and 231 browser
+passes. Its test allowed fixture insertion and inspection to interleave with
+page updates. Synchronous insertion/audit/exact cleanup preserves all six
+negative assertions; isolated Chromium reproduced the old timing failure and
+passed 12 ordinary/controlled-removal checks. The original CI failure is retained;
+its exact page-detachment event was not logged.
+
+Production smoke finished **21:57:34.326 UTC**: authenticated synthetic-only
+`/files`, `/files/upload` and `/genome/me/reports` returned HTTP 200 with their
+expected headings; the account remained empty and its new session was signed out.
+This is page-availability evidence, not hosted score recomputation. Automatic
+main CI `34283267485` is in progress at this checkpoint and is being followed.
+Whole-plan acceptance stays **19/65**. Evidence: parent task
+`work/prs-call-conflict-release/{release-receipt,ci-corrected-review,production-smoke}.json`.
+
+Larger WGS admission remains inactive. The approved targets remain existing WGS
+results first, FASTQ/BAM/CRAM next, 100 genomes/month, and originals retained for
+one month. Supabase interrupted-write cleanup is unresolved through the available
+project APIs; a support draft awaits permission to send externally. A bounded
+current-documentation R2 review found plausible direct-object recovery APIs, but
+no account capacity, provider proof or architecture change is claimed. Next:
+verify an existing-plan cleanup capability and capacity before activation; no
+additional spending is authorized.
+
+### Earlier PR81 preparation/report recovery
+
 PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
 `dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
 It distinguishes a confirmed prepared file from a later selected-report failure,
