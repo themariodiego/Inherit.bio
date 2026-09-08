@@ -13,9 +13,26 @@ Later work can supersede that behavior without completing the stricter gates.
   accessibility 100 throughout. One real synthetic Storage upload, exact
   document/status/content checks, no skips/retries. The independent review
   confirms the complete gate; see `docs/local-upload-browser-verification.md`.
-  G1.16 and hosted upload release conditions remain open. Production is PR77
-  (`3c59ac1`), an independently verified authentication-only release; see
+  G1.16 and hosted upload release conditions remain open. Current production
+  is PR78 merge `4f925509e9980d376d313e88e9dd4ba9614091d5`, deployment
+  `dpl_3Zry7EHxbTj1k8mam2GYNb16NvPs`, READY at 12:32:04.915 UTC on
+  2026-09-08. New uploads remain paused; see
   `docs/hosted-own-upload-readiness.md`.
+- PR78 CI `34224538704` passed: 3,261 unit tests, 82 fresh migrations,
+  2,041 SQL assertions across 55 files, 30 independent lock checks and 232
+  browser cases, zero skips/retries. Actual scheduled retry under a controlled
+  fault completed the exact synthetic purge in **21.430137 seconds**, within
+  its original deadline, while preserving the source. That source was later
+  deleted separately, with exact zero residuals and the account preserved.
+  This bounded proof does not complete every retention/rights scope or promote
+  a G gate. The compatible staging-retention correction was applied at 12:46:27 UTC
+  (hosted version `20260908124627`); its PR79 merge is still pending. An older
+  account-deletion fixture backdated only the deadline while leaving its lease
+  live; the corrected fixture preserves every assertion. All 98 focused SQL
+  checks pass, and full CI must pass again before merge. A genuinely abandoned synthetic upload issued at 12:27:30.374461
+  UTC, expiring at 12:57:30.37446 UTC, still awaits actual scheduled removal;
+  its original fixed deadline is 14:27:30.374461 UTC. No removal/deadline pass
+  is inferred in advance. Full-plan acceptance remains **19/65**.
 - Protected hosted own-file evidence now includes actual chosen finding, ready
   notice delivered to Zoho and followed, exact-grant withdrawal, byte-identical
   retained download and complete source deletion. This contributes to the own

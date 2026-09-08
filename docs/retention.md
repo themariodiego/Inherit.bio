@@ -80,6 +80,8 @@ This is the sole authority for retention clocks, deletion clocks, notice clocks 
 
 The retention job computes targets by immutable database identifiers and joins, covers both canonical and legacy Storage layouts, and is idempotent. Acceptance re-queries every named table and object with the service role after the job and requires zero prohibited rows or objects. Production release is blocked if any route, UI string, migration default, job schedule or legal artifact states a different clock.
 
+For canonical own uploads, `upload.staging-2h` is a deletion deadline, not a wait-until time. An unpromoted upload becomes eligible for its exact staging/final working-object purge when its existing upload authority expires (normally within 30 minutes). This leaves time for scheduled cleanup and retries before the unchanged creation-time-plus-two-hours maximum. The claim preserves the original phase clock and manifest binding, skips live finalization transactions and active cleanup claims, excludes promoted sources, and completes only after Storage acknowledgement and zero-residual checks.
+
 ## Cron transport adapter
 
 `GET /api/cron/retention` is a separate transport for the existing bodyless
