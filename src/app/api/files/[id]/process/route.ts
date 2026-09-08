@@ -38,6 +38,7 @@ export async function POST(
   request: Request,
   ctx: RouteContext<"/api/files/[id]/process">,
 ) {
+  const completionDeadline = performance.now() + 270_000;
   const { id } = await ctx.params;
 
   const supabase = await createClient();
@@ -57,7 +58,7 @@ export async function POST(
   // New sources prepare canonical rows under store consent only. They never
   // enter the legacy all-analysis dispatcher below.
   if (file.single_logical_sample_verified_at !== null) {
-    const prepared = await normalizeSubjectFile(request, id);
+    const prepared = await normalizeSubjectFile(request, id, completionDeadline);
     if (prepared.status !== 200) return prepared;
     return generateOwnReports(request, id);
   }

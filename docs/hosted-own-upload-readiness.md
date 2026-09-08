@@ -1,5 +1,116 @@
 # Hosted own-upload rollout prerequisites
 
+## Current checkpoint: preparation passes; report lookup recovery pending
+
+The corrected typed JSON binding at `848a834` prepared the full synthetic
+million-row source through the actual browser in **49.753 seconds (200)**.
+The database showed one direct completion connection, then none; the exact
+source had one million variants, a complete journal and no staging batches.
+The subsequent explicit polygenic report request failed after **8.413 seconds**
+with a database statement timeout. The prepared source is retained for recovery;
+the whole journey did not pass. Receipt: parent task
+`work/canonical-family-runtime-adapter/direct-capacity-json/`.
+
+The timeout was in the variant lookup before automatic statistics refreshed.
+Migration `20260908101150_own_report_locus_lookup.sql` makes the two read queries
+start from deduplicated requested positions using existing indexes, preserving
+all source/authority checks and pagination. No indexes or timeout increases are
+added. Local rollback suites pass **65 assertions**; browser recovery and hosted
+application remain pending. Current post-statistics query measurements do not
+reproduce the earlier query plan. The CI secret gate identified synthetic test
+expressions, which have been renamed as explicit examples; the scanner and
+allowlist are unchanged. Production remains PR77; acceptance remains **19/65**.
+
+
+## Current checkpoint: direct-completion binding fix pending · 8 September 2026
+
+The first local browser attempt with the opt-in direct-database completion
+adapter at `7605b0b` returned **503 after 18.222 seconds** during preparation.
+The original synthetic source is preserved with **zero published variant rows**.
+The failed receipt is retained in parent task
+`work/canonical-family-runtime-adapter/direct-capacity/`; the test namespace was
+restored and owned listeners closed. This is a failed new-adapter application
+journey, separate from the earlier successful REST/local-SQL capacity cases.
+
+A read-only, rollback-only probe using the actual `postgres` **3.4.9** driver
+confirmed the binding defect: interpolating `JSON.stringify(payload)` into the
+JSONB parameter produces a JSON **string**, while `tx.json(payload)` produces
+the required JSON **object**, preserving its count and nested fields. The probe
+passed at 09:59:21 UTC and changed no upload or completion state. Evidence:
+parent task `work/hosted-capacity-20260908/direct-json-binding-receipt.json`.
+The adapter correction and a fresh actual-browser run are **pending**; the
+standalone driver probe is not proof of successful application completion.
+The previous hosted statement-timeout evidence below remains unresolved.
+
+The owner prioritizes merging PR76 after the current completion defect is
+resolved. Next scope is full-size existing WGS result files first, then raw
+FASTQ/BAM/CRAM processing, targeting **100 genomes per month** and **one-month
+retention of original source files**. These are newly approved scope/workload
+targets, not current accepted raw formats or demonstrated capacity. Update the
+affected format, compute and retention contracts before enabling those paths;
+do not silently replace existing lifecycle obligations. There is **no new
+spending authorization**: any capacity or compute beyond verified existing
+allowances requires a separate cost decision. Production remains PR77 and
+full-plan acceptance remains **19/65**.
+
+
+
+## Current checkpoint: hosted capacity still blocked · 09:25 UTC, 8 September 2026
+
+Exact `0d05e1c` CI `34206586233` is green: **3,190 unit tests, 1,989 SQL
+assertions across 53 files, 30 independent lock checks and 232 browser cases**,
+with 57 actual local Storage uploads and no skips or retries. This verifies the
+integrated local runtime and database chain, not hosted throughput.
+
+The separate local format-capacity journey also passes at a temporary **24 MiB
+raw/decoded format ceiling**, 128 MiB account allowance and one active upload.
+Plain VCF (25,165,789 bytes) and its gzip representation (1,444,064 bytes) each
+prepare exactly **541,341 variants and one observation**, in 27.363 and 26.225
+seconds. Both have zero analysis runs before choice. Only the older plain source
+is then selected: its exact-source report shows A/C, while the newer unselected
+source shows no result. Raw over-limit issuance and gzip decoded-over-limit
+finalization both refuse with 413; rejected bytes are cleaned without changing
+the two valid sources. Native downloads match each original's bytes/hash.
+Deleting the older source preserves the newer source's exact metadata, rows and
+download; deleting the newer source then leaves zero scoped source/derivative
+rows and objects. Three actual Storage uploads, zero skips/retries. Temporary
+local limits were restored and owned app listeners were absent afterward.
+
+Sampled Docker container memory peaked at 537.8 MiB for the app and 354.2 MiB for
+the database. These are sampled container figures, not exact process peaks.
+The positive decoded input is 35 bytes below the ceiling; the negative input is
+12 bytes above. This is one serial synthetic SNP workload with only one
+rsID-backed observation per source, not WGS, a large observation-table test,
+concurrency evidence or proof of all permitted file sizes. Receipts and the
+independent summaries are in parent task
+`work/canonical-family-runtime-adapter/format-capacity/`.
+
+The exact capacity migration was then installed on the hosted project at
+**09:19:26 UTC**, recorded version `20260908091926`, with source SHA-256
+`90ce86a71ae119264910d908d8d58309d692226f4d7f4e2d56e393894f7d5057`.
+The intended normalization function settings and execution privileges were
+verified; the service-only wrapper has the 45-second statement budget. See
+parent task `work/production-upload-cutover/hosted-capacity-migration-receipt.json`.
+
+Despite that change, the protected `f0ab225` canary's **24,562,693-byte,
+one-million-row synthetic array failed hosted normalization**. Storage upload
+and finalization succeeded; preparation returned 503, and the database recorded
+a statement timeout at **09:23:52.020 UTC**, log ID
+`407db189-0f62-46f7-bf4f-10f56f4770f0`. Exact source
+`7011928e-9c9d-47c5-82b4-72ebd1e5d844` remains retained for diagnosis, with
+**zero published variants and zero remaining staged batches**. No chosen
+reports or ready mail were generated in this attempt; no successful hosted
+preparation, report or deletion outcome is claimed for it.
+
+Temporary hosted limits were restored at **09:25:09 UTC** to 64 KiB per file,
+256 KiB per account and two active uploads. The checkpoint and failure receipt
+are preserved in parent task `work/hosted-capacity-20260908/`. Diagnose the
+hosted statement bottleneck before another attempt; local success does not
+justify raising the public cap. Production remains **PR77 (`3c59ac1`)**,
+full-plan acceptance remains **19/65**, and useful hosted capacity remains a
+release blocker alongside recurring cleanup and the coordinated cutover.
+
+
 ## Realistic-size local journey verified · 8 September 2026
 
 Migration `20260908083349_own_normalization_capacity_budget.sql` resolves the
@@ -32,11 +143,11 @@ the runner now asserts exactly one discovered case before starting a provider.
 The interrupted attempt's synthetic prepared source and the baseline failed
 source remain local investigation fixtures; neither is a public user file.
 
-This establishes one realistic-size **local array journey**, not a public limit,
-hosted performance, compressed/VCF capacity or concurrent processing guarantee.
-Production remains PR77 with the existing hosted capacity settings. Before a
-useful canonical production release, finish bounded format/limit verification,
-reviewed recurring cleanup and the legacy pause/drain/transport-policy cutover.
+This establishes one realistic-size **local array journey**, not a public limit
+or hosted/concurrent processing guarantee. The subsequent bounded local VCF/gzip
+pass and hosted timeout are recorded in the current checkpoint above. Production
+remains PR77. Useful hosted capacity, reviewed recurring cleanup and the legacy
+pause/drain/transport-policy cutover still block the canonical public release.
 Full-plan acceptance remains **19/65**.
 
 ## Realistic-size capacity failure · 08:30 UTC, 8 September 2026

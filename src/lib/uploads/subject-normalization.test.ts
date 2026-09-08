@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), fetch: vi.fn(), remove: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), fetch: vi.fn(), remove: vi.fn(), completionFactory: vi.fn(), directComplete: vi.fn() }));
+vi.mock("./normalization-database", () => ({ normalizationDatabaseCompletion: mocks.completionFactory }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, storage: { from: () => mocks } }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 import { normalizeSubjectFile } from "./subject-normalization";
@@ -34,6 +35,7 @@ function served(_url: string, options: RequestInit) {
 }
 beforeEach(() => {
   vi.resetAllMocks(); vi.stubGlobal("fetch", mocks.fetch);
+  mocks.completionFactory.mockReturnValue(null);
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://storage.example.test");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-service-key");
   manifest = { status: "authorized", fileId, claim, subjectId, bucket: "genomes", objectKey, objectId,
@@ -50,6 +52,46 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("store-only source normalization", () => {
+  it("sends only complete through the opt-in adapter with the exact verified claim and payload", async () => {
+    mocks.completionFactory.mockReturnValue(mocks.directComplete);
+    mocks.directComplete.mockResolvedValue({ data: receipt, error: null });
+    const before = performance.now();
+    const response = await send();
+    expect(await response.json()).toEqual(receipt);
+    expect(operations()).toEqual(["begin", "check", "check", "check", "stage", "stage"]);
+    expect(mocks.directComplete).toHaveBeenCalledOnce();
+    const [identity, payload, deadline] = mocks.directComplete.mock.calls[0];
+    expect(identity).toEqual({ p_account_id: accountId, p_session_id: sessionId, p_file_id: fileId, p_claim: claim });
+    expect(payload).toMatchObject({ sourceBuild: "GRCh38", rawSha256: hash(source), decodedSha256: hash(source),
+      variantCount: 1, observedCallCount: 1 });
+    expect(deadline).toBeGreaterThanOrEqual(before + 270_000);
+    expect(deadline).toBeLessThanOrEqual(performance.now() + 270_000);
+    expect(mocks.remove).not.toHaveBeenCalled();
+  });
+  it("passes an existing route-entry deadline unchanged instead of granting a fresh budget", async () => {
+    mocks.completionFactory.mockReturnValue(mocks.directComplete);
+    mocks.directComplete.mockResolvedValue({ data: receipt, error: null });
+    const deadline = performance.now() + 20_000;
+    expect((await normalizeSubjectFile(request(), fileId, deadline)).status).toBe(200);
+    expect(mocks.directComplete.mock.calls[0][2]).toBe(deadline);
+  });
+  it("uses existing guarded REST fail after uncertain direct commit, without retry or Storage removal", async () => {
+    mocks.completionFactory.mockReturnValue(mocks.directComplete);
+    mocks.directComplete.mockRejectedValue(new Error("private transport detail"));
+    // A completed SQL journal refuses fail; the route must leave it untouched.
+    const fallback = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "fail"
+      ? { data: false, error: null } : fallback(name, args));
+    const response = await send();
+    expect(response.status).toBe(503); expect(await response.json()).toEqual({ error: "unavailable" });
+    expect(operations()).toEqual(["begin", "check", "check", "check", "stage", "stage", "fail"]);
+    expect(mocks.directComplete).toHaveBeenCalledOnce(); expect(mocks.remove).not.toHaveBeenCalled();
+  });
+  it("fails an invalid enabled database config before beginning or reading source", async () => {
+    mocks.completionFactory.mockImplementation(() => { throw new Error("normalization_database_unavailable"); });
+    expect((await send()).status).toBe(503);
+    expect(mocks.rpc).not.toHaveBeenCalled(); expect(mocks.fetch).not.toHaveBeenCalled();
+  });
   it("prepares canonical rows without an analytic purpose, analysis or mail", async () => {
     const response = await send(); expect(response.status).toBe(200); expect(await response.json()).toEqual(receipt);
     expect(response.headers.get("cache-control")).toBe("private, no-store");

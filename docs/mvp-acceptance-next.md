@@ -8,6 +8,19 @@ This is a delivery order, not a replacement specification or launch approval.
 The parent task is integrating parallel work on upload, normalization and
 separate report choices. Unmerged code is not a production capability.
 
+## Owner-directed next scope · 8 September 2026
+
+Prioritize merging PR76 after resolving and verifying the current completion
+failure. Then support ordinary full-size existing WGS result files, followed by
+raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
+**one-month retention of original source files**. These are implementation and
+workload targets, not measured capacity or capabilities already delivered.
+Raw formats remain refused until their format/compute/lifecycle contracts and
+verified execution path are updated. Do not silently alter existing retention
+obligations. **No additional spending is authorized**; any necessary resources
+outside verified existing allowances require a separate cost decision.
+This changes the next delivery priority, not the **19/65** acceptance count.
+
 ## Why the count looks stuck
 
 There is both real progress and a real bottleneck. PR72 released useful,
@@ -20,8 +33,17 @@ The protected hosted journey now also proves actual signing, chosen findings,
 inbox delivery, withdrawal, retained download and exact source deletion. A real
 25 MB / million-row local array journey now passes preparation, a chosen finding,
 byte-identical download and deletion after fixing a measured database timeout.
-Useful hosted capacity, remaining format/limit checks, recurring cleanup and
-coordinated cutover still remain.
+A near-24 MiB local VCF/gzip journey also passes format limits, exact-source
+selection, byte-identical originals and deletion preserving the second source.
+However, the protected hosted million-row array still failed normalization with
+a statement timeout after the capacity migration was installed. Its synthetic
+source is retained with zero published variants/batches; temporary hosted limits
+are restored. Useful hosted capacity remains a release blocker, alongside
+recurring cleanup and coordinated cutover. The first local direct-completion
+adapter attempt at `7605b0b` also returned 503 after 18.222 seconds, with zero
+published rows and the original preserved. An actual-driver read-only rollback
+probe has now identified JSON double serialization; the typed JSON binding fix
+and fresh browser verification are pending.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every
@@ -65,11 +87,14 @@ not the intended MVP.
   on the landing page, authenticated Overview and an actual uploaded-source
   report. Performance medians are 96/98/97; all accessibility scores are 100.
   This closes one exact gate, not full accessibility or required CI wiring.
-- **Current release prerequisite:** exact `fa26e1a` CI and the protected hosted
-  findings/actual inbox-link/withdrawal/download/deletion journey now pass.
-  Establish useful bounded capacity and recurring retention execution; keep
-  incompatible schema cutover deferred until the documented legacy
-  pause/drain/application transition.
+- **Current release prerequisite:** exact `0d05e1c` CI `34206586233` passes
+  3,190 units, 1,989 SQL assertions across 53 files, 30 locks and 232 browser
+  cases, with 57 actual Storage uploads and no skips/retries. The tiny protected
+  hosted findings/inbox-link/withdrawal/download/deletion journey remains valid,
+  but the later million-row hosted preparation timed out despite the installed
+  capacity fix. Resolve that measured bottleneck and verify recurring retention;
+  keep incompatible cutover deferred until the legacy pause/drain/application
+  transition. Local format-capacity success is not hosted capacity approval.
 - **After the core flow stabilizes:** finish complete route/state coverage and
   route dispositions for G1.12/G2.2/G2.3, then their required CI integration.
   Repeatedly rerunning incomplete full suites does not close those gates.
@@ -79,6 +104,59 @@ grading under G3.1–G3.3. A written protocol or invented transcripts cannot
 close it. Human recruitment remains an explicitly recorded launch condition.
 
 ## Reporting after each PR
+
+### 2026-09-08 · Million-row preparation passes; report lookup repair under verification
+
+Typed direct completion at `848a834` returns 200 in 49.753 seconds with the
+actual connection observed, one million published variants and a complete
+normalization journal. Explicit report generation then times out after
+8.413 seconds. Its original and prepared rows are preserved for browser recovery.
+The query-only locus lookup migration passes 65 local rollback assertions;
+it uses existing indexes and retains source, permission and pagination checks.
+Browser recovery, hosted capacity, exact CI and coordinated release remain
+pending. Production PR77 and **19/65** are unchanged. The earlier failed attempts
+remain separate evidence, not passing full journeys.
+
+### 2026-09-08 · Direct-completion attempt failed; JSON binding defect isolated
+
+The opt-in adapter's first actual local browser run at `7605b0b` failed
+preparation with 503 after 18.222 seconds. Zero variants were published and the
+original synthetic source remains available for diagnosis. The failed receipt
+is preserved; the namespace was restored and owned listeners closed.
+
+A read-only rollback probe with `postgres` 3.4.9 proved that the existing
+`JSON.stringify(payload)` binding becomes a JSONB string. `tx.json(payload)`
+produces the required object and preserves nested fields. The correction and
+new browser run remain pending. The probe did not retry completion or modify
+an upload. See parent-task `work/hosted-capacity-20260908/direct-json-binding-receipt.json`
+and `work/canonical-family-runtime-adapter/direct-capacity/`. This does not
+supersede the earlier local passes or resolve the separate hosted timeout;
+production PR77 and **19/65** remain unchanged.
+
+
+### 2026-09-08 · Local format capacity passes; hosted capacity still fails
+
+The local plain VCF and gzip cases each prepared **541,341 variants and one
+observation** at a temporary 24 MiB decoded ceiling, with no analysis before
+choice. Only the older source produced the chosen A/C report; the newer source
+remained ungenerated. Both originals passed byte/hash checks, deleting the first
+preserved the second, and final source cleanup passed. Over-limit raw input was
+refused before Storage; over-limit decoded gzip was rejected and cleaned. The
+one browser case used three actual uploads with zero skips/retries; local limits
+were restored. This is bounded local evidence, not WGS or concurrency capacity.
+
+Hosted migration `20260908091926` installed the exact reviewed capacity fix at
+09:19:26 UTC; normalization settings/ACLs were verified. The protected `f0ab225`
+canary then uploaded and finalized the 24,562,693-byte million-row array but
+failed preparation with a database statement timeout at 09:23:52 UTC (log
+`407db189-0f62-46f7-bf4f-10f56f4770f0`). Source
+`7011928e-9c9d-47c5-82b4-72ebd1e5d844` is retained, with zero published variants
+and zero batches. No report choice or ready-mail generation occurred. Hosted
+limits were restored at 09:25:09 UTC. Preserve the failed receipt and diagnose
+before retrying; production **PR77** and the **19/65** acceptance count are
+unchanged. Exact CI and evidence paths are recorded in
+`docs/hosted-own-upload-readiness.md`.
+
 
 ### 2026-09-08 · Protected hosted own-file journey completed
 

@@ -18,6 +18,7 @@ import type { Build, VariantRecord } from "../genome/types";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt } from "./subject-upload-contract";
+import { normalizationDatabaseCompletion } from "./normalization-database";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
@@ -41,14 +42,18 @@ function refuse(code: Failure = "unavailable"): never { throw new NormalizationE
 
 /** A source is checked in bounded ranges on both passes. The first establishes
  * its build and byte identity without creating or interpreting genotypes. */
-export async function normalizeSubjectFile(request: Request, fileId: string) {
+export async function normalizeSubjectFile(
+  request: Request, fileId: string, completionDeadline = performance.now() + 270_000,
+) {
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   if (new URL(request.url).search || !uuid.safeParse(fileId).success || !(await hasEmptyRequestBody(request))) {
     return ownUploadJson({ error: "invalid_request" }, 422);
   }
   let actor: Awaited<ReturnType<typeof currentOwnUploadAccount>>, rpc: Rpc, admin: ReturnType<typeof createAdminClient>;
+  let directComplete: ReturnType<typeof normalizationDatabaseCompletion>;
   try { actor = await currentOwnUploadAccount(); admin = createAdminClient();
+    directComplete = normalizationDatabaseCompletion();
     // Narrow adapter until generated types include this migration. It exposes
     // exactly one service-only RPC, not an untyped database client.
     rpc = admin.rpc.bind(admin) as unknown as Rpc;
@@ -56,8 +61,14 @@ export async function normalizeSubjectFile(request: Request, fileId: string) {
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   let manifest: Manifest | undefined;
   const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_file_id: fileId };
-  const call = (operation: Operation, payload: unknown = null) => rpc("own_upload_normalization_v1", {
-    ...args, p_operation: operation, p_claim: manifest?.claim ?? null, p_payload: payload });
+  const call = (operation: Operation, payload: unknown = null) => {
+    if (operation === "complete" && directComplete) {
+      if (!manifest) refuse();
+      return directComplete({ ...args, p_claim: manifest.claim }, payload, completionDeadline);
+    }
+    return rpc("own_upload_normalization_v1", {
+      ...args, p_operation: operation, p_claim: manifest?.claim ?? null, p_payload: payload });
+  };
   async function cleanupBuild(raw: unknown) {
     const parsed = cleanupSchema.safeParse(raw);
     if (!parsed.success || parsed.data.fileId !== fileId) refuse();

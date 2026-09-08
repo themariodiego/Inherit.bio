@@ -6,20 +6,23 @@ const state = vi.hoisted(() => ({
   updates: [] as { table: string; value: Record<string, unknown> }[],
   inserts: [] as { table: string; rows: Record<string, unknown>[] }[],
   deletes: [] as string[],
+  boundary: vi.fn(), normalize: vi.fn(), canonical: false,
   deleteError: null as string | null,
   updateError: null as string | null,
   fileOwner: "test-user",
   insertError: null as string | null,
   persistedFile: { status: "annotated", build: "GRCh38" } as Record<string, unknown>,
 }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
-  auth: { getUser: async () => ({ data: { user: { id: "test-user", email: null } } }) },
-  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: {
+vi.mock("@/lib/uploads/subject-normalization", () => ({ normalizeSubjectFile: state.normalize }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => {
+  state.boundary("client"); return ({
+  auth: { getUser: async () => { state.boundary("auth"); return ({ data: { user: { id: "test-user", email: null } } }); } },
+  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => { state.boundary("ownership"); return ({ data: {
     id: "test-file", user_id: state.fileOwner, subject_id: "test-subject", tier: 1, file_type: "vcf", bucket_path: "test-user/file.vcf",
     // Real pre-cutover database rows have NULL, not an omitted property.
-    single_logical_sample_verified_at: null,
-  } }) }) }) }),
-}) }));
+    single_logical_sample_verified_at: state.canonical ? "2026-09-08T00:00:00Z" : null,
+  } }); } }) }) }),
+}); } }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (table: string) => ({
   update: (value: Record<string, unknown>) => {
     const filters = new Map<string, unknown>();
@@ -46,6 +49,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (tabl
 import { POST } from "./route";
 
 beforeEach(() => {
+  state.boundary.mockReset(); state.normalize.mockReset(); state.canonical = false;
   state.updates = []; state.inserts = []; state.deletes = []; state.deleteError = null;
   state.fileOwner = "test-user"; state.insertError = null;
   state.updateError = null; state.persistedFile = { status: "annotated", build: "GRCh38" };
@@ -109,7 +113,7 @@ describe("observed reference processing", () => {
     expect(state.inserts.find((entry) => entry.table === "user_variants")).toBeUndefined();
   });
 });
-afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 async function processVcf(header: string, row: string) {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(`##fileformat=VCFv4.2\n${header}\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n${row}\n`)));
@@ -195,5 +199,27 @@ describe("source build processing boundary", () => {
       chrom: 1, pos: 418769, ref: "A", alt: "C", genotype: "A/C",
     }]);
     expect(state.updates.at(-1)?.value.build).toBe("GRCh37");
+  });
+});
+
+
+describe("canonical completion route deadline", () => {
+  it("captures the deadline before params, client, auth and ownership awaits", async () => {
+    let now = 1_000;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    state.canonical = true;
+    state.boundary.mockImplementation(() => { now += 5_000; });
+    const refused = new Response("unavailable", { status: 503 });
+    state.normalize.mockResolvedValue(refused);
+    let resolveParams!: (params: { id: string }) => void;
+    const params = new Promise<{ id: string }>(resolve => { resolveParams = resolve; });
+    const request = new Request("https://example.test/api/files/test-file/process", { method: "POST" });
+    const pending = POST(request, { params });
+    now += 100_000; resolveParams({ id: "test-file" });
+    expect(await pending).toBe(refused);
+    expect(state.boundary.mock.calls.map(([stage]) => stage)).toEqual(["client", "auth", "ownership"]);
+    expect(state.normalize).toHaveBeenCalledExactlyOnceWith(request, "test-file", 271_000);
+    expect(now).toBe(116_000);
+    expect(state.updates).toEqual([]); expect(state.inserts).toEqual([]);
   });
 });
