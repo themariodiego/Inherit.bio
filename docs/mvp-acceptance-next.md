@@ -31,7 +31,12 @@ Production smoke finished **21:57:34.326 UTC**: authenticated synthetic-only
 `/files`, `/files/upload` and `/genome/me/reports` returned HTTP 200 with their
 expected headings; the account remained empty and its new session was signed out.
 This is page-availability evidence, not hosted score recomputation. Automatic
-main CI `34283267485` is in progress at this checkpoint and is being followed.
+main CI `34283267485` also passed on exact merge `6a497ad` at **22:17:37 UTC**:
+3,371 units, 2,120 SQL assertions, 85 migrations, 30 lock checks and all 232
+browser cases in 15.4 minutes, with 57 actual uploads, zero skips/retries and
+both cleanup steps successful. The formerly failing mutation test passed again.
+Its separate receipt is `work/prs-call-conflict-release/main-ci-review.json` in
+the parent task. No further test run is needed for this unchanged release.
 Whole-plan acceptance stays **19/65**. Evidence: parent task
 `work/prs-call-conflict-release/{release-receipt,ci-corrected-review,production-smoke}.json`.
 
