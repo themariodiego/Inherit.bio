@@ -11,6 +11,10 @@
     {
       "path": "/api/jobs/mail",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/retention",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -1,6 +1,80 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: local recovery passes; hosted certificate configuration pending
+## Current checkpoint: PR76 merged and deployed; new uploads remain paused · 8 September 2026
+
+PR76 merged at **11:14:32 UTC** as
+`594e885cf94f087d4010db6795c035149ec880a5`. Its tree is byte-identical to the
+verified `9f079ba` source. Production deployment
+`dpl_HJCAo11MiZ7yMXVrFPRb5De7vTBM` became READY at **11:15:31 UTC** and owns all
+six public/project aliases, including `inherit.bio` and the main-branch alias.
+**New canonical uploads remain paused.** Native production inspection confirmed
+the retained synthetic file is prepared with one million variants and its report
+listing and source-backed A/C detail with 1/1 coverage are correct; this does not
+prove that new public upload admission is enabled.
+
+Final-head CI `34217097810` passed at 11:06:05 UTC: **3,261 unit tests, 81 fresh
+migrations, 2,008 SQL assertions, 30 independent lock checks and 232 browser
+tests**, with 57 actual local Storage uploads, zero skips/retries and cleanup
+passing.
+
+The coordinated transport-policy cutover is installed as **`20260908111349`**.
+Postflight confirms the legacy upload policy is absent, zero live legacy leases
+and completion windows remain, and canonical policy/role/guard metadata is
+unchanged: fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec`.
+The protected-canary evidence at `9f079ba` records preparation of the retained
+24,562,693-byte source in 91.496421 seconds, then produced the explicitly chosen
+polygenic A/C result and a native original download with the exact expected hash.
+**Synthetic source deletion passed through the real production API:** HTTP 204
+at **11:46:30 UTC** for source `7011928e-9c9d-47c5-82b4-72ebd1e5d844`.
+Independent checks at **11:46:54 UTC** found the source, one million variants,
+results and Storage object absent while preserving the account. The native
+browser confirmation button was not proved; this is API deletion plus residual
+verification, not a native-button success claim.
+
+The manual production retention GET at **11:36:11 UTC** returned HTTP 200 with
+**processed 3 / failed 0 / pending 0**, covering two known synthetic expired
+upload sessions and one historical synthetic grant-replacement cleanup. Exact
+residuals are zero. The old overdue job records `completedWithinDeadline: false`;
+late cleanup does not retroactively satisfy its original deadline.
+
+The bounded database-only `pg_cron` purge job was installed inactive at
+**11:51 UTC**, activated at **11:58 UTC**, and observed completing **15 consecutive
+successful runs at 15-second intervals through 12:01:56 UTC**. This establishes
+scheduled execution, not ownership of a particular purge. A separate native
+production revocation of the 425-byte synthetic source
+`b320380a-c803-4b70-8e70-2021be0fb4de` started at **12:01:26.470879 UTC** and
+completed at **12:01:26.540436 UTC** (**69.557 ms**). Manifest
+`8c20a9a4-049a-4de5-b1a1-e38507884b78` records four deleted members and zero
+exact-grant residuals. **That is the synchronous fast path, not scheduler-owned
+purge proof.** The minute composite cron addition is committed at `c2b` but is
+**not deployed**. It is separate from the active database-only job; complete
+scheduled cleanup and deadline coverage are not yet established.
+
+Independent review also found that explicit Family withdrawal could leave
+paired assistant answers and dependent chat history behind. The follow-up fix
+passes 33 focused SQL assertions and a two-session writer/purge check; integration
+and hosted verification remain pending. Generic Family purge-job verification
+remains a separate open requirement. Global sharing pause is deliberately non-destructive and must not
+be described as requiring deletion. New uploads remain paused; neither the
+scheduler run count nor the synchronous smoke closes all release prerequisites.
+
+Evidence: parent task `work/production-upload-cutover/canonical-merged-deployment.json`,
+`work/production-upload-cutover/cutover-postflight-receipt.json`, and
+`work/hosted-capacity-20260908/ca-normalization-success.json` /
+`ca-native-download-receipt.json`; retention evidence is under
+`work/current-retention-release/production-594e885/`, including
+`manual-invocation-receipt.json` and `scheduler-activation-result.json`. Earlier failure and recovery checkpoints below
+are preserved as historical evidence; this dated checkpoint supersedes their
+production/pending status.
+
+The owner's next approved scope is ordinary full-size existing WGS result files
+first, then raw FASTQ/BAM/CRAM processing, targeting **100 genomes per month** and
+**one-month retention of originals**. Those targets are not verified capacity or
+enabled raw-format support. Format/compute/lifecycle contracts still need the
+corresponding implementation and proof. **No additional spending is authorized.**
+Full-plan acceptance remains **19/65**.
+
+## Earlier checkpoint: local recovery passed; hosted certificate configuration was pending
 
 Exact `9ef7fca` CI `34214992453` passed: **3,247 unit tests, 81 migrations,
 2,008 SQL assertions, 30 independent lock checks and 232 browser cases** with
