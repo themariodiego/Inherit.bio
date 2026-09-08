@@ -34,11 +34,29 @@ Later work can supersede that behavior without completing the stricter gates.
   application DELETE returned 204 at 13:17:27 UTC. Independent 13:18:46 checks
   found file/variant/observation/analysis/normalization/Storage-ledger counts
   zero and preserved the account. Native JavaScript confirmation is not proved.
-- New WGS streaming work remains **local and unreleased**, with 79 focused
-  TypeScript/helper/parser tests and 108 SQL assertions reported passing.
-  It has no actual VCF-capacity/browser proof or hosted migration yet. No G
-  gate is promoted; full-plan acceptance remains **19/65**. The approved
-  100-genomes/month and one-month originals targets are not enabled capacity.
+- WGS streaming source `75a1a05`, build `1D0A_d2kzmT7TFNSpjf3L`, passed one
+  small native Storage/report/download/deletion case: 17.6 seconds, 20.1 seconds
+  total, three fresh Storage POSTs and zero skips/retries. A had 1,999 variants /
+  2,002 observations (including reference/no-call); B's five variants remained
+  intact; later-batch C returned 415 with no public/private working rows. Native
+  deletion removed six synthetic files across attempts. Independent 13:51:50 UTC
+  checks found source/derived/run/index/batch rows and 12 exact Storage keys zero;
+  the other 33 files' fingerprint was unchanged. The original wrapper exit 1
+  was a scratch report-path mismatch; its exact unmodified report contract
+  passed separately without a browser rerun. Earlier selector failures remain
+  preserved. See parent task `work/wgs-browser-verification-v3/` and the hosted
+  readiness ledger for receipts.
+- This WGS batch remains **local and unreleased**. Review found previously
+  accepted long alleles could exceed the larger registration envelope. The
+  corrected helper targets one-MB batches and preserves the four-MB genetic
+  stage bound, with only 1,024 bytes of registration metadata headroom. All 80
+  focused checks across three files and 71 actual SQL assertions pass; the SQL
+  verification rolled back with exact state preservation. A fresh build and
+  dense-call benchmark remain pending. Evidence is in parent task
+  `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+  Production stays PR79; no G gate is promoted and acceptance remains **19/65**.
+  The 100-genomes/month and one-month originals targets are not enabled capacity;
+  no additional spending is authorized.
 - Protected hosted own-file evidence now includes actual chosen finding, ready
   notice delivered to Zoho and followed, exact-grant withdrawal, byte-identical
   retained download and complete source deletion. This contributes to the own

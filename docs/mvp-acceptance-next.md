@@ -26,11 +26,26 @@ preserved. Native JavaScript deletion confirmation remains unproved. Detailed
 receipts and timestamps are in `docs/hosted-own-upload-readiness.md` and parent
 task `work/current-retention-release/production-pr79/`.
 
-Next is the **local, unreleased WGS streaming batch**: 79 focused
-TypeScript/helper/parser tests and 108 SQL assertions pass. Actual VCF-capacity
-and browser proof, hosted migration and deployment have not happened for that
-batch. Current public admission does not establish full-size WGS throughput,
-all other upload journeys or every retention scope. Acceptance stays **19/65**.
+Next is the **local, unreleased WGS streaming batch**. Source `75a1a05`, build
+`1D0A_d2kzmT7TFNSpjf3L`, passed one small native Storage → chosen reports →
+download → deletion case (17.6 seconds; 20.1 seconds total), three fresh Storage
+POSTs and zero skips/retries. A prepared 1,999 variants / 2,002 observations;
+B's five variants survived A's processing/deletion; later-batch C was refused
+with 415 and no public/private working rows. Six synthetic files were deleted
+natively, and independent 13:51:50 UTC checks found all exact source/derived/
+working rows and 12 Storage keys zero, preserving the other 33 files' fingerprint.
+The wrapper's exit 1 was a scratch report-path mismatch: the exact unmodified
+report contract passed separately, with no browser rerun. Earlier two selector
+failures remain preserved in the evidence history.
+
+The newly found long-allele registration-envelope defect is now fixed locally:
+one-MB batch targets, the unchanged four-MB stage cap, and 1,024 bytes of bounded
+registration metadata headroom. All 80 focused checks across three files and 71
+actual SQL assertions pass; rollback metadata is identical. Fresh build and
+dense-call capacity verification remain pending. Evidence is in parent task
+`work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+Hosted migration/deployment remain pending. Production remains PR79; acceptance
+stays **19/65**, with no additional spending.
 Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026

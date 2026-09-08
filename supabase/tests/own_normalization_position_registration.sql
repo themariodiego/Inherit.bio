@@ -116,6 +116,30 @@ create temporary table isolation_before as select to_jsonb(n) run,to_jsonb(f) fi
 
 create temporary table original_run as select claim,expires_at,authority,manifest from private.own_normalization_runs
  where file_id=(select (receipt->>'fileId')::uuid from finalized_upload);
+-- Exact PostgreSQL JSONB byte counts: the new registration envelope must not
+-- reject an existing-valid singleton. No file/decoded/stage ceiling is raised.
+savepoint byte_envelope;
+create temporary table byte_variant as select jsonb_build_object('rsid',null,'chrom',1,'pos',100000,
+ 'ref','A','alt',repeat('C',1999930),'genotype','A/'||repeat('C',1999930)) value;
+select is((select octet_length(jsonb_build_object('kind','variants','sequence',0,'rows',jsonb_build_array(value))::text) from byte_variant),3999989,
+ 'near-cap singleton remains below the original four-MB stage bound');
+select is((select octet_length(jsonb_build_array(jsonb_build_object('source_chrom',1,'source_pos',100000,'mapped',null,'variant',value))::text) from byte_variant),4000014,
+ 'only the new registration metadata crosses four MB');
+select is(pg_temp.register(0,(select jsonb_build_array(jsonb_build_object('source_chrom',1,'source_pos',100000,'mapped',null,'variant',value)) from byte_variant),'GRCh38'),
+ '{"acceptedVariantOrdinals":[0],"attempted":0,"unmapped":0}'::jsonb,'bounded registration headroom accepts the old-valid singleton');
+select is(pg_temp.normalize('stage',(select jsonb_build_object('kind','variants','sequence',0,'rows',jsonb_build_array(value)) from byte_variant)),
+ 'true'::jsonb,'unchanged actual stage accepts the exact same near-cap variant');
+rollback to byte_envelope;
+savepoint original_stage_bound;
+select pg_temp.register(0,jsonb_build_array(jsonb_build_object('source_chrom',1,'source_pos',100000,'mapped',null,
+ 'variant',jsonb_build_object('rsid',null,'chrom',1,'pos',100000,'ref','A','alt',repeat('C',2000000),'genotype','A/'||repeat('C',2000000)))),'GRCh38');
+select throws_ok($$select pg_temp.normalize('stage',jsonb_build_object('kind','variants','sequence',0,'rows',jsonb_build_array(
+ jsonb_build_object('rsid',null,'chrom',1,'pos',100000,'ref','A','alt',repeat('C',2000000),'genotype','A/'||repeat('C',2000000)))))$$,
+ '22023','invalid_request','registration metadata allowance does not enlarge the existing genetic stage bound');
+rollback to original_stage_bound;
+select throws_ok($$select pg_temp.register(0,jsonb_build_array(jsonb_build_object('source_chrom',1,'source_pos',100000,'mapped',null,
+ 'variant',jsonb_build_object('rsid',null,'chrom',1,'pos',100000,'ref','A','alt',repeat('C',2000500),'genotype','A/'||repeat('C',2000500)))),'GRCh38')$$,
+ '22023','invalid_request','registration allowance is itself bounded to 1024 extra metadata bytes');
 savepoint pristine;
 set local role service_role;
 select is(pg_temp.register(0,jsonb_build_array(pg_temp.entry(100,false),pg_temp.entry(100),pg_temp.entry(100),

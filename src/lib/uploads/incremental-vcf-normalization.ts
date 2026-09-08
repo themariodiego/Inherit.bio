@@ -1,3 +1,4 @@
+import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { streamVcf } from "../genome/parsers/vcf";
 import type { ObservedCall } from "../genome/observed-calls";
 import type { Build, VariantRecord } from "../genome/types";
@@ -21,14 +22,45 @@ type Options = {
   stage: (kind: "variants" | "observed", sequence: number, rows: unknown[]) => Promise<void>;
 };
 
+const BATCH_TARGET_BYTES = 1_000_000;
+// A singleton source variant that fits the existing stage object can require a
+// slightly larger registration envelope. This is metadata headroom only; the
+// old stage/genetic payload limit and all file/decoded limits remain unchanged.
+const REGISTRATION_MAXIMUM_BYTES = INGEST_CHUNK_MAXIMUM_BYTES + 1024;
+
+/** PostgreSQL JSONB text uses a space after commas/colons and expands numeric
+ * exponents. Compact JSON.stringify length alone undercounts the SQL limit. */
+export function normalizationJsonbByteLength(value: unknown): number {
+  if (value === null || value === undefined) return 4;
+  if (typeof value === "string" || typeof value === "boolean") return Buffer.byteLength(JSON.stringify(value));
+  if (typeof value === "number") {
+    const encoded = JSON.stringify(value);
+    const exponent = /^(-?)(\d+)(?:\.(\d+))?e([+-]?\d+)$/.exec(encoded);
+    if (!exponent) return encoded.length;
+    const digits = exponent[2].length + (exponent[3]?.length ?? 0);
+    const point = exponent[2].length + Number(exponent[4]);
+    return exponent[1].length + (point <= 0 ? 2 - point + digits : point >= digits ? point : digits + 1);
+  }
+  if (Array.isArray(value)) return 2 + value.reduce((sum, item) => sum + normalizationJsonbByteLength(item), 0)
+    + Math.max(0, value.length - 1) * 2;
+  if (typeof value === "object") {
+    const entries = Object.entries(value).filter(([, item]) => item !== undefined);
+    return 2 + entries.reduce((sum, [key, item]) => sum + Buffer.byteLength(JSON.stringify(key)) + 2 + normalizationJsonbByteLength(item), 0)
+      + Math.max(0, entries.length - 1) * 2;
+  }
+  throw new IncrementalVcfError("unavailable");
+}
+
 /** All batches stay unpublished until the caller verifies the terminal summary,
- * complete byte hashes and current authority. Only one thousand source lines,
- * their mapped rows and the parser's current line are retained in memory.
+ * complete byte hashes and current authority. Pending source positions target
+ * one MB and at most one thousand rows; one individually valid large row can
+ * exceed that target, bounded by the existing four-MB genetic stage payload.
  * The exact-claim database index owns cross-batch duplicate/conflict checks. */
 export async function prepareIncrementalVcf(lines: AsyncIterable<string>, options: Options) {
   if (options.build === "GRCh37" && !options.lift) throw new IncrementalVcfError("unavailable");
   let current: PendingPosition | undefined;
   let batch: PendingPosition[] = [];
+  let batchBytes = 0;
   let sequence = 0, variantSequence = 0, observedSequence = 0;
   let variantCount = 0, observedCallCount = 0, usableObserved = 0;
   let attempted = 0, unmapped = 0, summarySeen = false;
@@ -39,6 +71,7 @@ export async function prepareIncrementalVcf(lines: AsyncIterable<string>, option
       variant: row.variant ?? null,
       mapped: options.build === "GRCh37" && row.chrom >= 1 && row.chrom <= 22
         ? Boolean(options.lift!(row.chrom, row.pos)) : null }));
+    if (normalizationJsonbByteLength(entries) > REGISTRATION_MAXIMUM_BYTES) throw new IncrementalVcfError("unrecognised_format");
     const receipt = await options.register(sequence++, entries);
     if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)
       || Object.keys(receipt).length !== 3
@@ -78,14 +111,39 @@ export async function prepareIncrementalVcf(lines: AsyncIterable<string>, option
         genotype_quality: source.genotypeQuality, read_depth: source.depth, quality_state: source.quality,
         usable: source.usable }];
     });
-    if (variants.length) { await options.stage("variants", variantSequence++, variants); variantCount += variants.length; }
-    if (observed.length) { await options.stage("observed", observedSequence++, observed); observedCallCount += observed.length; }
-    batch = [];
+    async function stageRows(kind: "variants" | "observed", rows: unknown[]) {
+      let pending: unknown[] = [], bytes = 0;
+      const nextSequence = () => kind === "variants" ? variantSequence : observedSequence;
+      const payloadBytes = (rowBytes: number, count: number) =>
+        normalizationJsonbByteLength({ kind, sequence: nextSequence(), rows: [] }) + rowBytes + Math.max(0, count - 1) * 2;
+      async function send() {
+        if (!pending.length) return;
+        await options.stage(kind, nextSequence(), pending);
+        if (kind === "variants") { variantSequence++; variantCount += pending.length; }
+        else { observedSequence++; observedCallCount += pending.length; }
+        pending = []; bytes = 0;
+      }
+      for (const row of rows) {
+        const size = normalizationJsonbByteLength(row);
+        if (payloadBytes(size, 1) > INGEST_CHUNK_MAXIMUM_BYTES) throw new IncrementalVcfError("unrecognised_format");
+        if (pending.length && (pending.length === 1000 || payloadBytes(bytes + size, pending.length + 1) > BATCH_TARGET_BYTES)) await send();
+        // A sequence crossing a decimal boundary changes the envelope size.
+        if (payloadBytes(size, 1) > INGEST_CHUNK_MAXIMUM_BYTES) throw new IncrementalVcfError("unrecognised_format");
+        pending.push(row); bytes += size;
+      }
+      await send();
+    }
+    await stageRows("variants", variants);
+    await stageRows("observed", observed);
+    batch = []; batchBytes = 0;
   }
   async function finishLine() {
     if (!current) return;
-    batch.push(current); current = undefined;
-    if (batch.length === 1000) await flush();
+    const row = current; current = undefined;
+    const size = normalizationJsonbByteLength(row);
+    if (batch.length && batchBytes + size > BATCH_TARGET_BYTES) await flush();
+    batch.push(row); batchBytes += size;
+    if (batch.length === 1000 || batchBytes >= BATCH_TARGET_BYTES) await flush();
   }
 
   for await (const event of streamVcf(lines)) {

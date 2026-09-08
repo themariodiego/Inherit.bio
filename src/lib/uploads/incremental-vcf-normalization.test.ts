@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { IncrementalVcfError, prepareIncrementalVcf, type PositionEntry, type PositionReceipt } from "./incremental-vcf-normalization";
+import { IncrementalVcfError, normalizationJsonbByteLength, prepareIncrementalVcf, type PositionEntry, type PositionReceipt } from "./incremental-vcf-normalization";
 import type { Liftover } from "../genome/liftover";
 
 type Options = Parameters<typeof prepareIncrementalVcf>[1];
@@ -47,6 +47,77 @@ function staged(stage: ReturnType<typeof setup>["stage"], kind: "variants" | "ob
 const lift: Liftover = (chrom, pos) => ({ chrom, pos: pos + 100, strand: -1 });
 
 describe("incremental VCF normalization", () => {
+  function assertByteBounds(harness: ReturnType<typeof setup>) {
+    expect(harness.register.mock.calls.every(([, entries]) => entries.length <= 1000 && normalizationJsonbByteLength(entries) <= 4_001_024)).toBe(true);
+    for (const kind of ["variants", "observed"] as const) {
+      const calls = harness.stage.mock.calls.filter(call => call[0] === kind);
+      expect(calls.map(call => call[1])).toEqual(calls.map((_, index) => index));
+      for (const [kind, sequence, rows] of calls) {
+        expect(rows.length).toBeLessThanOrEqual(1000);
+        expect(normalizationJsonbByteLength({ kind, sequence, rows })).toBeLessThanOrEqual(4_000_000);
+      }
+    }
+  }
+
+  it("counts PostgreSQL separators, escaped strings, Unicode and expanded numeric exponents", () => {
+    expect(normalizationJsonbByteLength({ text: 'é,:"\\', values: [1e21, 1e-7, 1.23e-7, -1e21] }))
+      .toBe(Buffer.byteLength('{"text": "é,:\\"\\\\", "values": [1000000000000000000000, 0.0000001, 0.000000123, -1000000000000000000000]}'));
+  });
+
+  it("splits the old-valid 1000 long-allele counterexample before registration exceeds four MB", async () => {
+    const harness = setup();
+    const rows = Array.from({ length: 1000 }, (_, index) => row(100000 + index, "0/1", "1", "C".repeat(1930), "."));
+    const result = await prepareIncrementalVcf(input(rows), harness.options);
+    expect(result).toEqual({ variantCount: 1000, observedCallCount: 0, attempted: 0, unmapped: 0 });
+    const allEntries = harness.register.mock.calls.flatMap(([, entries]) => entries);
+    expect(normalizationJsonbByteLength(allEntries)).toBe(4_014_000);
+    expect(normalizationJsonbByteLength({ kind: "variants", sequence: 0, rows: allEntries.map(entry => entry.variant) })).toBe(3_944_045);
+    expect(harness.register.mock.calls.length).toBeGreaterThan(1);
+    expect(staged(harness.stage, "variants").map(record => record.pos)).toEqual(Array.from({ length: 1000 }, (_, index) => 100000 + index));
+    assertByteBounds(harness);
+  });
+
+  it("preserves an old-valid near-cap singleton using only bounded registration metadata headroom", async () => {
+    const harness = setup();
+    const result = await prepareIncrementalVcf(input([row(100000, "0/1", "1", "C".repeat(1_999_930), ".")]), harness.options);
+    expect(result).toMatchObject({ variantCount: 1, observedCallCount: 0 });
+    expect(normalizationJsonbByteLength(harness.register.mock.calls[0][1])).toBe(4_000_014);
+    expect(normalizationJsonbByteLength({ kind: "variants", sequence: 0, rows: staged(harness.stage, "variants") })).toBe(3_999_989);
+    assertByteBounds(harness);
+  });
+
+  it("keeps the original four-MB stage limit despite registration metadata allowance", async () => {
+    const harness = setup();
+    await expect(prepareIncrementalVcf(input([row(100000, "0/1", "1", "C".repeat(2_000_000), ".")]), harness.options))
+      .rejects.toMatchObject({ code: "unrecognised_format" });
+    expect(harness.stage).not.toHaveBeenCalled();
+  });
+
+  it("splits long observation metadata by bytes while preserving every source line", async () => {
+    const harness = setup();
+    const rows = Array.from({ length: 1000 }, (_, index) => row(100000 + index).replace("\tPASS\t", `\t${"é,:\\".repeat(1000)}\t`));
+    expect(await prepareIncrementalVcf(input(rows), harness.options)).toMatchObject({ variantCount: 1000, observedCallCount: 1000 });
+    const calls = harness.stage.mock.calls.filter(call => call[0] === "observed");
+    expect(calls.length).toBeGreaterThan(1);
+    expect(staged(harness.stage, "observed").map(record => record.source_line)).toEqual(Array.from({ length: 1000 }, (_, index) => index + 4));
+    expect(staged(harness.stage, "observed").every(record => record.site_filter === "é,:\\".repeat(1000))).toBe(true);
+    assertByteBounds(harness);
+  });
+
+  it("applies byte backpressure before collecting a thousand large source positions", async () => {
+    const gate = Promise.withResolvers<void>(), entered = Promise.withResolvers<void>();
+    const model = registration(); let read = 0;
+    const harness = setup({ register: async (...args) => { entered.resolve(); await gate.promise; return model(...args); } });
+    async function* source() {
+      yield* header();
+      for (let index = 0; index < 4; index++) { read++; yield row(100000 + index, "0/1", "1", "C".repeat(600_000), "."); }
+    }
+    const result = prepareIncrementalVcf(source(), harness.options);
+    await entered.promise; expect(read).toBe(2);
+    gate.resolve(); expect(await result).toMatchObject({ variantCount: 4 });
+    expect(model.mock.calls.map(([, entries]) => entries.length)).toEqual([1, 1, 1, 1]);
+  });
+
   it("deduplicates variants across 1000-line batches while preserving every observation", async () => {
     const harness = setup();
     const rows = Array.from({ length: 1000 }, (_, i) => row(i + 1));

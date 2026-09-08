@@ -39,10 +39,35 @@ Receipts: parent task `work/current-retention-release/production-pr79/`, includi
 `public-deletion-residuals.json`. Earlier checkpoints remain historical evidence
 and are superseded only for current production/pending status.
 
-The next WGS streaming implementation is **local, unreleased work**: 79 focused
-TypeScript/helper/parser tests and 108 SQL assertions pass, but there is **no
-actual VCF-capacity/browser proof or hosted migration** for it yet. Do not
-attribute it to PR79 or infer full WGS support from the current synthetic cases.
+The next WGS streaming implementation remains **local and unreleased**. Source
+`75a1a05`, build `1D0A_d2kzmT7TFNSpjf3L`, passed one small native browser journey
+through actual Storage, chosen reports, original download and deletion: **17.6
+seconds for the case / 20.1 seconds total**, three fresh Storage POSTs and zero
+skips/retries. Source A prepared **1,999 variants / 2,002 observations**, including
+called-reference and no-call observations; source B's five variants were
+preserved. A later-batch conflict in C returned **415**, with public and private
+working rows zero. Native deletion removed all six synthetic files (three from
+the first attempt and three fresh files). Independent checks at **13:51:50 UTC**
+found source, variant, observation, normalization-run, position-index, batch,
+analysis and all **12 exact Storage keys** zero; the other **33 files' metadata
+fingerprint was unchanged**.
+
+The two earlier selector-failure attempts remain preserved. The successful
+journey's original wrapper exited **1** because its report was written to the
+scratch location; the exact **unmodified** browser-report contract was verified
+separately against that report, without another browser run. Receipts are in
+parent task `work/wgs-browser-verification-v3/`: `receipt.json`, `results.json`,
+`report-contract-postflight.json` and `independent-cleanup-postflight.json`.
+
+The long-allele review defect is corrected locally: pending batches target one
+MB, stage bodies remain at most four MB, and the service-only registration
+body gains only 1,024 bytes to accommodate its larger metadata envelope. An
+old-valid singleton with a 3,999,989-byte stage body and 4,000,014-byte registration
+body passes the actual SQL boundary. All **80 focused checks across three files**
+and **71 SQL assertions** pass, with exact rollback preservation. Receipt:
+parent task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+A fresh build and dense-call benchmark are still pending. Full-size WGS capacity
+and hosted migration/release remain unproved; none is attributable to PR79.
 Approved scope remains existing full-size WGS results first, then raw
 FASTQ/BAM/CRAM, targeting **100 genomes/month** and **one-month originals**.
 Those workload/retention targets are not enabled; **no additional spending is

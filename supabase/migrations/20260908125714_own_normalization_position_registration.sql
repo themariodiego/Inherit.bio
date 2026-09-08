@@ -50,7 +50,10 @@ begin
   or p_source_build is null or p_source_build not in('GRCh37','GRCh38')
   or jsonb_typeof(p_entries) is distinct from 'array' then
   raise exception using errcode='22023',message='invalid_request'; end if;
- if jsonb_array_length(p_entries) not between 1 and 1000 or octet_length(p_entries::text)>4000000 then
+ -- Preserve an old-valid near-4MB singleton variant despite this new source
+ -- registration envelope. Only 1024 metadata bytes are added; the existing
+ -- stage payload remains <=4000000 and upload/decoded ceilings do not change.
+ if jsonb_array_length(p_entries) not between 1 and 1000 or octet_length(p_entries::text)>4001024 then
   raise exception using errcode='22023',message='invalid_request'; end if;
  for v_entry in select value from jsonb_array_elements(p_entries) loop
   if jsonb_typeof(v_entry) is distinct from 'object' or not(v_entry ?& array['source_chrom','source_pos','variant','mapped'])
