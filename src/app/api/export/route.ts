@@ -1,5 +1,6 @@
 import { ZipArchive } from "archiver";
 import { PassThrough, Readable } from "node:stream";
+import { finished } from "node:stream/promises";
 import {
   getGenotypesByRsid,
   getProcessedFiles,
@@ -12,6 +13,7 @@ import { loadPrsForExport } from "@/lib/genome/prs-output";
 import { EVIDENCE_PUBLIC_LABELS } from "@/lib/genome/taxonomy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "@/lib/exports/own-subject-content";
 
 export const maxDuration = 300;
 
@@ -105,6 +107,7 @@ async function appendVariantsCsv(
   admin: ReturnType<typeof createAdminClient>,
   archive: ZipArchive,
   fileId: string,
+  makeStream: () => PassThrough,
 ): Promise<number> {
   const fetchPage = (from: number) =>
     admin
@@ -120,7 +123,7 @@ async function appendVariantsCsv(
   }
   if (!first.data || first.data.length === 0) return 0;
 
-  const stream = new PassThrough();
+  const stream = makeStream();
   archive.append(stream, { name: `variants/${fileId}.csv` });
 
   let total = 0;
@@ -140,7 +143,7 @@ async function appendVariantsCsv(
 
 /** Resolves the report library against each processed file exactly like the
  * /reports pages do (same loaders, same resolver — no reimplementation). */
-async function buildReports(supabase: Db) {
+async function buildReports(supabase: Db, legacyIds: Set<string>) {
   const [processedFiles, allTemplates] = await Promise.all([
     getProcessedFiles(supabase),
     getPublishedTemplates(supabase),
@@ -150,7 +153,7 @@ async function buildReports(supabase: Db) {
   );
 
   const files = [];
-  for (const f of processedFiles) {
+  for (const f of processedFiles.filter(file => legacyIds.has(file.id))) {
     const genotypes = await getGenotypesByRsid(
       supabase,
       f.id,
@@ -191,6 +194,9 @@ async function buildReports(supabase: Db) {
   return files;
 }
 
+type ExportReportFile = Awaited<ReturnType<typeof buildReports>>[number]
+  | Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["reports"]>>;
+
 /** Greedy word-wrap for the plain-text report rendering; every emitted line
  * (including the first) carries the given indent. */
 function wrapText(text: string, indent: string, width = 78): string {
@@ -223,7 +229,7 @@ const VARIANT_STATUS_TEXT: Record<string, string> = {
  * never disagree.
  */
 function renderReportsTxt(
-  reportFiles: Awaited<ReturnType<typeof buildReports>>,
+  reportFiles: ExportReportFile[],
   accountEmail: string | undefined,
   exportedAt: string,
 ): string {
@@ -239,8 +245,8 @@ function renderReportsTxt(
       "This is the human-readable version of reports.json in this archive — " +
         "the same reports, formatted for printing or for sharing with a " +
         "doctor or genetic counselor. Inherit is informational, not a " +
-        "medical device: nothing here is a diagnosis. Every report states " +
-        "its evidence level and cites its sources.",
+        "medical device: nothing here is a diagnosis. Canonical stored outcomes " +
+        "state which generation metadata was not captured.",
       "",
     ),
   );
@@ -252,11 +258,13 @@ function renderReportsTxt(
     out.push("-".repeat(Math.min(78, 6 + file.original_name.length)));
     if (file.reports.length === 0) {
       out.push("");
-      out.push("No covered reports for this file.");
+      out.push("source_revision" in file ? "No completed reports for this file." : "No covered reports for this file.");
       continue;
     }
 
+    if ("source_revision" in file) out.push(`Source revision: ${file.source_revision}; SHA-256: ${file.source_sha256}`);
     file.reports.forEach((report, i) => {
+      if ("provenance_note" in report) { out.push("", `${i + 1}. ${renderOwnSubjectReport(report)}`); return; }
       out.push("");
       out.push(`${i + 1}. ${report.title}`);
       out.push(
@@ -353,7 +361,7 @@ async function buildChats(
   };
 }
 
-// One-click full export: original uploads + normalized variants + computed
+// Existing synchronous ZIP delivery (not the completed large-export contract): original uploads + normalized variants + computed
 // report results + polygenic scores + ancestry + consents + chat history,
 // as a ZIP stream. Free, forever — there is deliberately no billing,
 // quota, or fee code path here, and never will be (see /terms).
@@ -365,19 +373,48 @@ export async function GET() {
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const admin = createAdminClient();
+  let stopped = false;
+  const assertActive = () => { if (stopped) throw new Error("export unavailable"); };
+  const { data: claimsData } = await supabase.auth.getClaims();
+  if (claimsData?.claims?.sub !== user.id || typeof claimsData.claims.session_id !== "string") {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  const ownContent = ownSubjectExportContent(admin.rpc.bind(admin) as unknown as OwnExportRpc,
+    { accountId: user.id, sessionId: claimsData.claims.session_id }, assertActive);
+  let canonical: OwnExportSnapshot[];
+  try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
-  const [{ data: files }, { data: ancestry }, { data: consents }] =
+  const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents }] =
     await Promise.all([
-      admin.from("genome_files").select("*").eq("user_id", user.id),
+      fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
+        .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
       admin.from("ancestry_results").select("*").eq("user_id", user.id),
       admin
         .from("consent_grants")
         .select("provider_key, data_classes, granted_at, revoked_at")
         .eq("user_id", user.id),
     ]);
+  if (ancestryError) return new Response("Export unavailable", { status: 503 });
 
+  const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
+  const legacyIds = new Set(legacyFiles.map(file => file.id));
   const archive = new ZipArchive({ store: true });
   const out = new PassThrough();
+  const members = new Set<Readable>();
+  const member = () => {
+    assertActive();
+    const stream = new PassThrough(); members.add(stream);
+    stream.once("close", () => members.delete(stream));
+    return stream;
+  };
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    for (const stream of members) stream.destroy();
+    archive.abort(); archive.destroy();
+  };
+  archive.on("error", () => { stop(); out.destroy(new Error("export unavailable")); });
+  out.once("close", stop);
   archive.pipe(out);
 
   void (async () => {
@@ -395,15 +432,6 @@ export async function GET() {
         },
       ];
 
-      archive.append(JSON.stringify(ancestry ?? [], null, 2), {
-        name: "ancestry.json",
-      });
-      contents.push({
-        path: "ancestry.json",
-        description: "Your derived ancestry composition results.",
-        count: (ancestry ?? []).length,
-      });
-
       archive.append(JSON.stringify(consents ?? [], null, 2), {
         name: "consents.json",
       });
@@ -413,8 +441,76 @@ export async function GET() {
         count: (consents ?? []).length,
       });
 
-      // Report results, resolved the same way the /reports pages render them.
-      const reportFiles = await buildReports(supabase);
+      const rowCounts = new Map<string, number>();
+      const warnings: string[] = [];
+      const canonicalReports: ExportReportFile[] = [];
+      const canonicalPrs: Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["prs"]>> = [];
+      // Verify, consume and release one original before loading the next source.
+      for (const snapshot of canonical) {
+        const f = snapshot.file;
+        // Own-subject originals have opaque per-file names, so two uploads
+        // with the same safe display label cannot overwrite each other.
+        assertActive();
+        const blob = await ownContent.original(snapshot, key => admin.storage.from("genomes").download(key));
+        assertActive();
+        canonicalReports.push(await ownContent.reports(snapshot)); assertActive();
+        canonicalPrs.push(...await ownContent.prs(snapshot)); assertActive();
+        await ownContent.check(snapshot); assertActive();
+        let count = 0;
+        const variants = member();
+        archive.append(variants, { name: `variants/${f.id}.csv` });
+        await writeChunk(variants, CSV_HEADER);
+        for await (const page of ownContent.variants(snapshot)) {
+          await writeChunk(variants, csvChunk(page)); count += page.length;
+        }
+        variants.end();
+        if (f.variant_count !== null && count !== f.variant_count) throw new Error("export unavailable");
+        rowCounts.set(f.id, count);
+        contents.push({ path: `variants/${f.id}.csv`, description: "Your normalized GRCh38 variants.", count });
+        const observations = member();
+        archive.append(observations, { name: `observed/${f.id}.json` });
+        await writeChunk(observations, "[");
+        let observedCount = 0;
+        for await (const page of ownContent.observed(snapshot)) for (const row of page) {
+          await writeChunk(observations, `${observedCount++ ? "," : ""}${JSON.stringify(row)}`);
+        }
+        await writeChunk(observations, "]"); observations.end();
+        contents.push({ path: `observed/${f.id}.json`, description: "Literal source records, including reference and no-call observations.", count: observedCount });
+        await ownContent.check(snapshot); assertActive();
+        const original = Readable.fromWeb(blob.stream() as never);
+        members.add(original);
+        original.once("close", () => members.delete(original));
+        archive.append(original, { name: `originals/${f.id}` });
+        await finished(original); assertActive();
+        contents.push({ path: `originals/${f.id}`, description: "Your original upload, byte-for-byte." });
+      }
+
+      // Legacy rows never supply canonical ancestry. The checked reader uses
+      // the exact live ancestry grant and completed source journal, not this
+      // account-wide table read, and does not generate during export.
+      const ancestry = member();
+      archive.append(ancestry, { name: "ancestry.json" });
+      await writeChunk(ancestry, "[");
+      let ancestryCount = 0;
+      const writeAncestry = (rows: unknown[]) => {
+        if (!rows.length) return Promise.resolve();
+        const chunk = `${ancestryCount ? "," : ""}${rows.map(row => JSON.stringify(row)).join(",")}`;
+        ancestryCount += rows.length;
+        return writeChunk(ancestry, chunk);
+      };
+      await writeAncestry((legacyAncestry ?? []).filter(row => legacyIds.has(row.file_id)));
+      for (const snapshot of canonical) {
+        const rows = await ownContent.ancestry(snapshot); assertActive();
+        // Write synchronously after the final authority check. Do not hold a
+        // checked source while awaiting another source or stream backpressure.
+        await writeAncestry(rows);
+      }
+      await writeChunk(ancestry, "]"); ancestry.end();
+      contents.push({ path: "ancestry.json", description: "Completed source-bound ancestry estimates and legacy ancestry results.", count: ancestryCount });
+
+      // Stored canonical outcomes and the unchanged legacy report resolver.
+      const reportFiles: ExportReportFile[] = [...await buildReports(supabase, legacyIds), ...canonicalReports];
+      assertActive();
       const reportCount = reportFiles.reduce((n, f) => n + f.report_count, 0);
       archive.append(JSON.stringify(reportFiles, null, 2), {
         name: "reports.json",
@@ -422,7 +518,7 @@ export async function GET() {
       contents.push({
         path: "reports.json",
         description:
-          "All reports: every covered report resolved against each processed file (genotype, interpretation, citations).",
+          "Existing completed canonical reports and covered legacy reports (genotype, interpretation, citations).",
         count: reportCount,
       });
 
@@ -439,7 +535,8 @@ export async function GET() {
         count: reportCount,
       });
 
-      const prs = await loadPrsForExport(admin, user.id);
+      const prs = (await loadPrsForExport(admin, user.id)).filter(row => legacyIds.has(row.file_id));
+      assertActive(); prs.push(...canonicalPrs);
       archive.append(JSON.stringify(prs, null, 2), { name: "prs.json" });
       contents.push({
         path: "prs.json",
@@ -449,6 +546,7 @@ export async function GET() {
       });
 
       const chats = await buildChats(admin, user.id);
+      assertActive();
       archive.append(JSON.stringify(chats, null, 2), { name: "chats.json" });
       contents.push({
         path: "chats.json",
@@ -459,10 +557,8 @@ export async function GET() {
 
       // Per genome file: normalized variants as CSV (streamed page by page
       // to bound memory) and the original upload byte-for-byte.
-      const rowCounts = new Map<string, number>();
-      const warnings: string[] = [];
-      for (const f of files ?? []) {
-        const rowCount = await appendVariantsCsv(admin, archive, f.id);
+      for (const f of legacyFiles) {
+        const rowCount = await appendVariantsCsv(admin, archive, f.id, member);
         rowCounts.set(f.id, rowCount);
         if (rowCount > 0) {
           contents.push({
@@ -480,6 +576,7 @@ export async function GET() {
         const { data: blob } = await admin.storage
           .from("genomes")
           .download(f.bucket_path);
+        assertActive();
         if (blob) {
           archive.append(Readable.fromWeb(blob.stream() as never), {
             name: `originals/${f.original_name}`,
@@ -491,6 +588,7 @@ export async function GET() {
         }
       }
 
+      assertActive();
       // Manifest last: by now every variant CSV has been fully written, so
       // per-file row counts are exact and verified against variant_count.
       const manifest = {
@@ -519,14 +617,35 @@ export async function GET() {
       });
 
       await archive.finalize();
-    } catch (err) {
-      archive.destroy(err instanceof Error ? err : new Error(String(err)));
+    } catch {
+      stop();
+      out.destroy(new Error("export unavailable"));
     }
   })();
 
-  return new Response(Readable.toWeb(out) as ReadableStream, {
+  // Mark cancellation synchronously; the Node close event alone can arrive
+  // after an awaited provider read resumes. Pulling keeps ZIP backpressure.
+  const iterator = out[Symbol.asyncIterator]();
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const next = await iterator.next();
+        if (cancelled) return;
+        if (next.done) controller.close(); else controller.enqueue(next.value);
+      } catch {
+        if (!cancelled) controller.error(new Error("export unavailable"));
+      }
+    },
+    async cancel() {
+      cancelled = true; stop(); out.destroy();
+      await iterator.return?.();
+    },
+  });
+  return new Response(body, {
     headers: {
       "Content-Type": "application/zip",
+      "Cache-Control": "private, no-store",
       "Content-Disposition": `attachment; filename="inherit-export-${user.id.slice(0, 8)}.zip"`,
     },
   });

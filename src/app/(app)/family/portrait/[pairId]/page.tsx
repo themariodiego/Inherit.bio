@@ -1,3 +1,4 @@
+import { loadPortraitSourceReadiness } from "@/lib/family/portrait-source-readiness";
 import type { Metadata } from "next";
 import { CarrierInputProvenance } from "@/components/family/carrier-input-provenance";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
@@ -52,7 +53,6 @@ import {
 } from "@/lib/family/portrait";
 import { acknowledged } from "@/lib/family/tier2";
 import { listTraitEntries } from "@/lib/family/traits";
-import { getSubjectProcessedFiles } from "@/lib/genome/load";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -171,19 +171,25 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   // and this session has passed the gate.
   let noFile: string[] = [];
   let output: OutputRead | null = null;
+  let sourceSnapshot: Awaited<ReturnType<typeof loadPortraitSourceReadiness>> | null = null;
+  let canonicalSources = false;
   if (ready) {
     const admin = createAdminClient();
-    const [filesA, filesB] = await Promise.all([
-      getSubjectProcessedFiles(admin, rows.a.id),
-      getSubjectProcessedFiles(admin, rows.b.id),
-    ]);
+    sourceSnapshot = await loadPortraitSourceReadiness(admin, {
+      pairId: rows.pair.id, counterpartAccountId: other.subjectAccountId!, subjectAId: rows.a.id, subjectBId: rows.b.id,
+    });
+    if (!sourceSnapshot.state) notFound();
+    canonicalSources = sourceSnapshot.state.kind === "canonical" && (sourceSnapshot.state.a.hasPreparedSource || sourceSnapshot.state.b.hasPreparedSource);
+    const hasSourceA = sourceSnapshot.state.a.hasPreparedSource || sourceSnapshot.state.a.hasLegacySource;
+    const hasSourceB = sourceSnapshot.state.b.hasPreparedSource || sourceSnapshot.state.b.hasLegacySource;
+    const legacyPair = sourceSnapshot.state.a.hasLegacySource && sourceSnapshot.state.b.hasLegacySource;
     // The viewer's own empty state is in the second person; the other
     // person's names them. No sentence takes the first-person placeholder.
     noFile = [
-      ...(filesA.length === 0 ? [noFileYetFor({ name: labelOf(rows.a), isViewer: rows.a.id === mine.id })] : []),
-      ...(filesB.length === 0 ? [noFileYetFor({ name: labelOf(rows.b), isViewer: rows.b.id === mine.id })] : []),
+      ...(!hasSourceA ? [noFileYetFor({ name: labelOf(rows.a), isViewer: rows.a.id === mine.id })] : []),
+      ...(!hasSourceB ? [noFileYetFor({ name: labelOf(rows.b), isViewer: rows.b.id === mine.id })] : []),
     ];
-    if (noFile.length === 0 && carrierAllowed) {
+    if (noFile.length === 0 && carrierAllowed && legacyPair) {
       const refVariants = await readClassifiedVariants(admin);
       const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
       const summary = await resolveCarrierPair(
@@ -192,6 +198,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
         { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b) },
         refVariants,
         conditions,
+        { a: sourceSnapshot.state.a.legacyFileIds, b: sourceSnapshot.state.b.legacyFileIds },
       );
       // The one-sided readings are decided whether or not any classified
       // position is shared: a carrier whose partner's file covers none of
@@ -236,6 +243,8 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
     (match) => !oneSidedGenes.has(match.gene.toLowerCase()),
   );
   const outputCount = output ? matches.length + output.oneSided.length : 0;
+
+  if (sourceSnapshot && !await sourceSnapshot.confirm()) notFound();
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
@@ -284,6 +293,14 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             {DISTINGUISHING_PRINCIPLE}
           </p>
 
+          {sourceSnapshot?.state?.kind === "legacy-only" && counterpart ? (
+            <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+              To include newer files, each person needs to turn Portrait off and on again in their own{" "}
+              <Link className="underline underline-offset-2" href={`/family/${counterpart.handle.routeSegment}/permissions`}>Permissions</Link>.
+              {" "}Existing shared files keep their current access.
+            </p>
+          ) : null}
+
           <section aria-labelledby="portrait-outputs-heading" className="space-y-6">
             <h2 id="portrait-outputs-heading" className="text-lg font-semibold">
               {OUTPUTS_HEADING}
@@ -301,6 +318,10 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             ) : !carrierAllowed ? (
               <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
                 {carrierDecision.userFacingCopy}
+              </p>
+            ) : canonicalSources && !output ? (
+              <p role="status" data-state="unavailable" data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
+                {NO_CLASSIFIED_POSITIONS}
               </p>
             ) : output && outputCount === 0 ? (
               <p role="status" data-state={output.summary.classifiedPositions === 0 ? "unavailable" : "empty"} data-slot="portrait-empty" className="max-w-prose text-base leading-relaxed text-ink">
@@ -333,6 +354,11 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
               </ul>
             ) : null}
 
+            {canonicalSources && output ? (
+              <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                This view uses your previously supported files. Clinical results from newer files are not available yet.
+              </p>
+            ) : null}
             <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{TRAITS_LEDE}</p>
             <div data-slot="trait-cards" className="grid gap-4 sm:grid-cols-2">
               {listTraitEntries().map((entry) => (

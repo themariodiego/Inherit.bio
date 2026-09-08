@@ -17,6 +17,8 @@
 import { subjectKind, type SubjectBarSubject } from "@/components/subjects/subject-bar";
 import {
   BASELINE_ABSENT,
+  SAVED_REPORTS_LABEL,
+  TABLE_SCROLL_CUE,
   tableCaption,
 } from "@/copy/family/health-picture";
 import { KIND_CHIPS, fileCount } from "@/copy/reports/strings";
@@ -47,9 +49,10 @@ export interface HealthPictureColumn {
 }
 
 export interface HealthPictureRow {
+  key?: string;
   slug: string;
   title: string;
-  category: CategoryId;
+  category: CategoryId | null;
   /** One state per column, in column order. */
   cells: readonly HealthPictureCellState[];
   /** One report link per column, in column order; null where none may render. */
@@ -61,6 +64,7 @@ export interface HealthPictureTableProps {
   columns: readonly HealthPictureColumn[];
   rows: readonly HealthPictureRow[];
   viewerAccountId: string;
+  states?: readonly HealthPictureCellState[];
 }
 
 export function SubjectChip({
@@ -106,11 +110,14 @@ export function HealthPictureTable({
   columns,
   rows,
   viewerAccountId,
+  states,
 }: HealthPictureTableProps) {
   const captionId = `health-picture-caption-${layer}`;
   const categories = [...new Set(rows.map((row) => row.category))];
   return (
-    <div className="overflow-x-auto">
+    <div className="space-y-2">
+      <p data-slot="table-scroll-cue" className="text-sm text-ink-muted md:hidden">{TABLE_SCROLL_CUE}</p>
+      <div className="overflow-x-auto" role="region" aria-labelledby={captionId} tabIndex={0}>
       <table
         data-compare-surface="true"
         data-card={layer}
@@ -122,34 +129,40 @@ export function HealthPictureTable({
         </caption>
         <thead>
           <tr>
-            <td className="w-64" />
+            <td className="w-64 min-w-48" />
             {columns.map((column) => (
               <th
                 key={column.dataSubjectId}
                 scope="col"
                 data-subject-id={column.dataSubjectId}
-                className="border-b border-line p-2 align-bottom text-base font-medium"
+                className="min-w-80 border-b border-line p-2 align-bottom text-base font-medium"
               >
                 <SubjectChip column={column} viewerAccountId={viewerAccountId} />
               </th>
             ))}
           </tr>
         </thead>
+        {states ? <tbody><tr data-slot="health-picture-column-status">
+          <th scope="row" className="border-b border-line p-2 align-top text-base font-normal">{SAVED_REPORTS_LABEL}</th>
+          {columns.map((column, index) => <HealthPictureCell key={column.dataSubjectId}
+            dataSubjectId={column.dataSubjectId} personName={column.displayLabel} reportTitle={SAVED_REPORTS_LABEL}
+            layer={layer} state={states[index]} href={null} captionId={captionId} />)}
+        </tr></tbody> : null}
         {categories.map((category) => (
-          <tbody key={category}>
+          <tbody key={category ?? "saved-reports"}>
             <tr>
               <th
                 scope="rowgroup"
                 colSpan={columns.length + 1}
                 className="border-b border-line pt-6 pb-2 text-sm font-medium text-ink-muted"
               >
-                {categoryLabel(category)}
+                {category === null ? SAVED_REPORTS_LABEL : categoryLabel(category)}
               </th>
             </tr>
             {rows
               .filter((row) => row.category === category)
               .map((row) => (
-                <tr key={row.slug} data-slot="health-picture-row" data-report-slug={row.slug}>
+                <tr key={row.key ?? row.slug} data-slot="health-picture-row" data-report-slug={row.slug}>
                   <th
                     scope="row"
                     className="border-b border-line p-2 align-top text-base font-normal text-ink"
@@ -180,7 +193,7 @@ export function HealthPictureTable({
                 key={column.dataSubjectId}
                 data-slot="column-footer"
                 data-subject-id={column.dataSubjectId}
-                className="p-2 align-top text-sm leading-relaxed text-ink"
+                className="min-w-80 p-2 align-top text-sm leading-relaxed text-ink"
               >
                 {BASELINE_ABSENT}
               </td>
@@ -188,6 +201,7 @@ export function HealthPictureTable({
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

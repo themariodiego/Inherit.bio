@@ -11,7 +11,7 @@ import {
   rowControlLabel,
   type PermissionState,
 } from "@/copy/family/permissions";
-import type { GrantPurposeRequest } from "@/lib/family/grant-token";
+import { submitFamilyPermission, type PermissionAction } from "@/lib/family/permission-response";
 
 /**
  * <PermissionGrantRow> — one purpose, one direction, one control (brief §3
@@ -30,10 +30,8 @@ const GLYPHS: Record<PermissionState, string> = {
   expired: "⊘",
 };
 
-export type RowAction =
-  /** The exact closed body the server component built for this one endpoint. */
-  | { kind: "grant"; request: GrantPurposeRequest }
-  | { kind: "revoke"; grantId: string };
+/** The exact closed operation the server built for this one endpoint. */
+export type RowAction = PermissionAction;
 
 export function PermissionGrantRow({
   label,
@@ -96,20 +94,17 @@ export function PermissionGrantRow({
           onClick={async () => {
             setPending(true);
             setFailed(false);
-            const response =
-              action.kind === "grant"
-                ? await fetch("/api/consents", {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify(action.request),
-                  })
-                : await fetch(`/api/consents/${action.grantId}/revoke`, { method: "POST" });
-            setPending(false);
-            if (!response.ok) {
+            try {
+              if (!await submitFamilyPermission(action)) {
+                setFailed(true);
+                return;
+              }
+              router.refresh();
+            } catch {
               setFailed(true);
-              return;
+            } finally {
+              setPending(false);
             }
-            router.refresh();
           }}
         >
           {action.kind === "grant" ? TURN_ON_BUTTON : TURN_OFF_BUTTON}

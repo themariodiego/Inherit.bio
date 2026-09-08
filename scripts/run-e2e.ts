@@ -1,49 +1,23 @@
-/**
- * Runs Playwright and makes the no-skip/no-retry contract part of `pnpm e2e`.
- * Playwright itself treats a skipped test as a successful run, so the JSON
- * report must be checked before the command can report success.
+/** Run Playwright, then enforce fresh JSON evidence with no skips or retries.
+ * Invoked inside run-upload-browser.mts so every run has a real local provider.
  */
+import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import path from "node:path";
+import { verifyE2EReport } from "./e2e-report-contract";
 
-type Result = { retry?: number; status?: string };
-type Test = { results?: Result[] };
-type Spec = { tests?: Test[] };
-type Suite = { specs?: Spec[]; suites?: Suite[] };
-type Report = { suites?: Suite[] };
-
+assert(process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY && process.env.INHERIT_UPLOAD_SIGNING_JWK,
+  "Run pnpm e2e through the real local provider bootstrap");
 const reportPath = path.resolve("test-results/results.json");
+// A crashed run must not reuse an earlier successful report.
+rmSync(reportPath, { force: true });
 const command = process.platform === "win32" ? "playwright.cmd" : "playwright";
-const run = spawnSync(command, ["test"], {
+const run = spawnSync(command, ["test", ...process.argv.slice(2)], {
   env: process.env,
   stdio: "inherit",
 });
-
-if (run.error) throw run.error;
+if (run.error) throw new Error("Playwright did not start");
 if (run.status !== 0) process.exit(run.status ?? 1);
-
-const report = JSON.parse(readFileSync(reportPath, "utf8")) as Report;
-const results: Result[] = [];
-
-function collect(suites: Suite[]) {
-  for (const suite of suites) {
-    for (const spec of suite.specs ?? []) {
-      for (const test of spec.tests ?? []) results.push(...(test.results ?? []));
-    }
-    collect(suite.suites ?? []);
-  }
-}
-
-collect(report.suites ?? []);
-const skipped = results.filter((result) => result.status === "skipped");
-const retried = results.filter((result) => (result.retry ?? 0) > 0);
-
-if (skipped.length > 0 || retried.length > 0) {
-  console.error(
-    `E2E contract failed: ${skipped.length} skipped result(s), ${retried.length} retried result(s).`,
-  );
-  process.exit(1);
-}
-
-console.log(`E2E contract passed: ${results.length} result(s), no skips, no retries.`);
+const count = verifyE2EReport(JSON.parse(readFileSync(reportPath, "utf8")));
+console.log(`E2E contract passed: ${count} result(s), no skips, no retries.`);

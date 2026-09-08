@@ -1,9 +1,13 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
+import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
+import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-cleanup";
+import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 
 export const maxDuration = 300;
 
@@ -32,12 +36,12 @@ function authorized(request: Request): boolean {
   return false;
 }
 
-function requestHasSelectors(request: Request): boolean {
+async function requestHasSelectors(request: Request): Promise<boolean> {
   const url = new URL(request.url);
   return (
     url.search.length > 0 ||
     request.headers.has("transfer-encoding") ||
-    Number(request.headers.get("content-length") ?? "0") > 0
+    Number(request.headers.get("content-length") ?? "0") > 0 || !(await hasEmptyRequestBody(request))
   );
 }
 
@@ -66,13 +70,27 @@ export async function POST(request: Request) {
   if (!authorized(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
-  if (requestHasSelectors(request)) {
+  if (await requestHasSelectors(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+
+  const reportRevocations = await drainOwnReportRevocations(admin);
+  processed += reportRevocations.processed; failed += reportRevocations.failed;
+
+  // Expired preparation batches are private genetic working data. Their
+  // database-selected cleanup is independent of source and mail providers.
+  const preparation = await drainOwnNormalizationCleanup(admin);
+  processed += preparation.processed; failed += preparation.failed;
+
+  // Independent due work: a failed mail/embryo queue must not strand uploads.
+  try {
+    const uploads = await drainOwnUploadCleanup(admin);
+    processed += uploads.processed; failed += uploads.failed;
+  } catch { failed++; }
 
   const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");
   if (refusalReceiptExpiryError) failed++;

@@ -1,8 +1,25 @@
 # Browser-test genome fixture provenance
 
-These fixtures are deterministic synthetic test data. They describe no real
-person and must never be replaced with customer, patient, or personal genome
-data.
+These fixtures are synthetic test data or explicitly identified public reference
+benchmarks. Synthetic fixtures describe no real person; the public HG001
+benchmark is not synthetic. Never substitute private customer, patient, or
+personal genome data.
+
+## HG001_GRCh38_chr20_1000000-1100000.vcf.gz
+
+- Classification: public GIAB / NIST HG001 (NA12878) reference benchmark window,
+  not invented genotypes. The checked-in parent and upstream source hashes,
+  retrieval date and terms are recorded in `data/samples/PROVENANCE.md` and
+  `docs/dataset-licenses.md`.
+- `scripts/generate-giab-browser-window.mts --check` reproduces all original
+  headers and all 144 chr20 records at inclusive positions 1000000–1100000,
+  retaining every field and original order. It makes no genotype or ID edits.
+- The bounded window is 7,011 compressed bytes / 100,410 decoded bytes. Its
+  receipt records the parent hash, decoded hash, 127 supported calls and 17
+  unsupported records. Browser rsID/gene positive assertions use the separate
+  synthetic `tiny-grch38.vcf`; canonical parent lineages remain uncomputed.
+- Repository SHA-256:
+  `4b9accc049c47395dacdf0dc6f3a78234819aa83aef1abb0fe4096940c2b8ecd`.
 
 ## behavior-scope-grch38.vcf
 

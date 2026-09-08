@@ -8,9 +8,10 @@ const mocks = vi.hoisted(() => ({
   files: vi.fn(), user: vi.fn(), queries: [] as { table: string; filters: unknown[][] }[],
 }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from }) }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.user } }) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.user }, from: mocks.from }) }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
 vi.mock("@/lib/genome/load", () => ({ getSubjectProcessedFiles: mocks.files, getSubjectFileCount: async () => 2, getSubjectGenotypesByRsid: mocks.genotypes }));
+vi.mock("@/lib/genome/prepared-sources", () => ({ getPreparedSourceFiles: mocks.files, getPreparedSourceGenotypes: mocks.genotypes }));
 vi.mock("@/lib/genome/input-sources", () => ({ loadInputSources: mocks.sources }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not-found"); } }));
 vi.mock("@/components/browse/genome-browser", () => ({ GenomeBrowser: () => null }));
@@ -133,6 +134,8 @@ describe("expert result input composition", () => {
   });
 
   it.each(["rs762551", "CYP1A2"])("%s labels the search's actual file set when it differs from the outer track snapshot", async (query) => {
+    mocks.files.mockResolvedValueOnce([{ id: "newest" }, { id: "older" }])
+      .mockResolvedValue([{ id: "just-finished" }, { id: "newest" }, { id: "older" }]);
     mocks.genotypes.mockResolvedValue({ genotypes: new Map([[762551, "A/C"]]), conflicts: new Set(), inputFileIds: ["just-finished"], checkedFileIds: ["just-finished", "older"], fileCount: 2 });
     const [table, track] = provenance(await browser(query));
     expect(table.sources.map((s) => [s.fileId, s.hasResultRecord])).toEqual([["just-finished", true], ["older", false]]);

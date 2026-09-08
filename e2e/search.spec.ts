@@ -40,6 +40,21 @@ async function openWithButton(page: Page) {
   await expect(input(page)).toBeFocused();
 }
 
+/** URL arrival alone does not mean the client shortcut effect is installed.
+ * Exercise the real open/close handlers first, then test the shortcut from the
+ * body independently; never substitute a button click for keyboard opening. */
+async function openWithShortcut(page: Page) {
+  await openWithButton(page);
+  await page.keyboard.press("Escape");
+  await expect(dialog(page)).toBeHidden();
+  await expect(searchButton(page)).toBeFocused();
+  await searchButton(page).evaluate((button) => button.blur());
+  await expect(page.locator("body")).toBeFocused();
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(dialog(page)).toBeVisible();
+  await expect(input(page)).toBeFocused();
+}
+
 /** The dialog's rendered text carries no figure, no percent and no genotype pair. */
 async function expectDestinationsOnly(page: Page) {
   const box = dialog(page);
@@ -84,7 +99,7 @@ test("the header button is on /overview and /genome/me; the shortcut and the but
   await expect(dialog(page)).toBeHidden();
 
   // Keyboard shortcut from the page body.
-  await page.keyboard.press("ControlOrMeta+k");
+  await openWithShortcut(page);
   const box = dialog(page);
   await expect(box).toBeVisible();
   await expect(box).toHaveAttribute("aria-modal", "true");
@@ -102,7 +117,7 @@ test("the header button is on /overview and /genome/me; the shortcut and the but
 
   await page.goto("/genome/me");
   await expect(searchButton(page)).toBeVisible();
-  await page.keyboard.press("ControlOrMeta+k");
+  await openWithShortcut(page);
   await expect(dialog(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog(page)).toBeHidden();
@@ -146,7 +161,7 @@ test("typing caffeine lists the Reports group with the caffeine template link ca
 
 test("typing settings lists the Settings group with /settings", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
-  await page.keyboard.press("ControlOrMeta+k");
+  await openWithShortcut(page);
   await input(page).fill("settings");
 
   const settings = dialog(page).getByRole("group", { name: "Settings" });

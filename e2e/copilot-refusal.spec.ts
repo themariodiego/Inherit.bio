@@ -1,8 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
-import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
-import { ADVERSARIAL_NUMBER, mockLlmCalls, mockLlmLastMessages, startMockLlm } from "./mock-llm";
+import { randomUUID } from "node:crypto";
+import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { ADVERSARIAL_NUMBER } from "./mock-llm";
+import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
+  expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture } from "./fixtures/canonical-copilot-browser";
 import {
   crossSubjectRefusal,
   REFUSAL_DIAGNOSIS,
@@ -29,20 +33,13 @@ import {
  * yet, so the cohort-only rules (comparatives, "which of them") are proved
  * by `src/lib/copilot/guard.test.ts` alone until one does.
  *
- * The "cloud" provider is the same in-process mock e2e/copilot.spec.ts uses,
- * reached through a host name isLocalBaseUrl treats as non-local, so the
- * real consent path runs with zero real third-party traffic. Every
- * assertion here is derivable from the code: the refusal strings are
- * imported from the registry, the refusal id comes back in the
- * `x-copilot-refusal` header, and the mock's counter, which counts every
- * request it receives on any path, is read in-process.
+ * The synthetic HTTPS provider is inside the isolated app namespace. Closed
+ * canonical JSON hides tool/reasoning parts; provider receipts still prove the
+ * real tool loop and complete authorized history. No local-as-cloud exception.
  */
 
-const USER = { email: "copilot-refusal@e2e.local", password: "e2e-copilot-refusal-pw" };
+const USER = { email: `copilot-refusal-${randomUUID()}@e2e.local`, password: "e2e-copilot-refusal-pw" };
 const MOCK_PORT = 8123;
-const MOCK_HOST = "localhost.localdomain";
-const MOCK_BASE = `http://${MOCK_HOST}:${MOCK_PORT}/v1`;
-
 /**
  * Brief line 1040's prompts plus the remaining gated intents. The four
  * treatment prompts each reach a different rule (`treatment.should-i-take`,
@@ -65,24 +62,17 @@ const GATED_PROMPTS: ReadonlyArray<{ prompt: string; id: string; refusal: (subje
 /** One gated prompt per theme for the axe audit, so the audited page shows a refusal turn. */
 const AXE_PROMPTS = ["Do I have haemochromatosis?", "Will I get Alzheimer’s?"] as const;
 
-let stopMock: (() => Promise<void>) | null = null;
+let fixture: CopilotFixture;
 let userId = "";
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  stopMock = await startMockLlm(MOCK_PORT);
+  fixture = await startCopilotFixture(MOCK_PORT);
   userId = await createConfirmedUser(USER.email, USER.password);
-  const admin = adminClient();
-  await admin.from("llm_keys").delete().eq("user_id", userId);
-  await admin.from("llm_settings").delete().eq("user_id", userId);
-  await admin.from("subject_consents").delete().eq("account_id", userId).eq("consent_type", "cloud_model");
-  await admin.from("consent_grants").delete().eq("user_id", userId);
 });
 
-test.afterAll(async () => {
-  await stopMock?.();
-});
+test.afterAll(async () => { await fixture?.stop(); });
 
 /** The self subject's label, which the thread header names and the cross-subject refusal repeats. */
 async function selfLabel(): Promise<string> {
@@ -98,7 +88,7 @@ async function selfLabel(): Promise<string> {
 
 /** Send one prompt and return the chat route's response. */
 async function ask(page: Page, prompt: string) {
-  const response = page.waitForResponse((candidate) => candidate.url().includes("/api/chat"));
+  const response = page.waitForResponse((candidate) => new URL(candidate.url()).pathname === "/api/chat");
   await page.getByLabel("Message the copilot").fill(prompt);
   await page.getByRole("button", { name: "Send" }).click();
   return response;
@@ -133,52 +123,35 @@ test("each gated prompt gets its exact refusal as the whole turn and the provide
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await ingestFileAs(
+  await uploadOwnFileWithChosenReports(
     page,
-    USER.email,
-    USER.password,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
+    { fileType: "vcf", purposes: ["reports.polygenic"] },
   );
 
-  // The mock as an OpenAI-compatible CLOUD endpoint, as e2e/copilot.spec.ts.
-  await page.goto("/settings/copilot");
-  await page.getByLabel("Provider", { exact: true }).click();
-  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
-  await page.getByLabel("Base URL").fill(MOCK_BASE);
-  await expect(page.getByText(/Cloud service found/)).toBeVisible();
-  await page.getByLabel("Model").fill("mock-model");
-  await page.getByRole("button", { name: "Save provider" }).click();
-  await expect(page.getByText("Saved.")).toBeVisible();
-
+  await saveCopilotProvider(page, fixture.baseUrl);
+  await allowCopilot(page);
   await page.goto("/copilot/me");
   await expect(page.getByTestId("data-flow-indicator")).toContainText("Cloud mode");
 
-  // Consent first, so that afterwards the only thing between a prompt and
-  // the provider is the gate itself.
-  await ask(page, "What is my caffeine genotype?");
-  await page.getByRole("button", { name: "Review what would be shared" }).click();
-  await page.getByTestId("consent-grant").click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-
-  // The allowed prompt reaches the provider: the tool call runs, the answer
-  // streams, the mock's counter moves.
-  const beforeAllowed = mockLlmCalls();
-  const allowed = await ask(page, "What is my caffeine genotype?");
+  await fixture.configure({ prompt: CAFFEINE_PROMPT,
+    tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER });
+  const beforeAllowed = (await fixture.snapshot()).calls;
+  const allowed = await ask(page, CAFFEINE_PROMPT);
   expect(allowed.status()).toBe(200);
   expect(allowed.headers()["x-copilot-refusal"]).toBeUndefined();
-  await expect(page.getByText(/Caffeine metabolism report \(CYP1A2, rs762551\)/)).toBeVisible({
-    timeout: 30_000,
-  });
-  await expect(page.getByText(/your genotype is A\/C/)).toBeVisible();
-  await expect(page.getByText("get_genotype")).toHaveCount(1);
-  expect(mockLlmCalls()).toBeGreaterThan(beforeAllowed);
+  await expect(page.getByText(CAFFEINE_ANSWER, { exact: true })).toBeVisible();
+  const allowedReceipt = await fixture.snapshot();
+  const chatId = await expectClosedCompletion(allowed, CAFFEINE_ANSWER, expectedCaffeineCitations(lastToolResult(allowedReceipt)));
+  expect(allowedReceipt.calls - beforeAllowed).toBe(2);
+  expect(lastToolResult(allowedReceipt)).toMatchObject({ slug: CAFFEINE_SLUG });
+  await expect(page.getByText("get_report", { exact: true })).toHaveCount(0);
 
   const subject = await selfLabel();
   const seen = new Map<string, number>();
   for (const { prompt, id, refusal } of GATED_PROMPTS) {
     const expected = refusal(subject);
-    const before = mockLlmCalls();
+    const before = (await fixture.snapshot()).calls;
     const response = await ask(page, prompt);
     // The route answers 200 on the chat transport, names the class, and the
     // refusal is the entire assistant turn.
@@ -187,30 +160,38 @@ test("each gated prompt gets its exact refusal as the whole turn and the provide
     const count = (seen.get(expected) ?? 0) + 1;
     seen.set(expected, count);
     await expect(page.getByText(expected, { exact: true })).toHaveCount(count);
-    await expect(page.getByText("Thinking…")).toHaveCount(0);
+    await expect(page.getByText("Checking your question…", { exact: true })).toHaveCount(0);
     // Zero provider calls, no consent dialog, no tool part: the gate ran
     // before every provider-facing step.
-    expect(mockLlmCalls()).toBe(before);
+    expect((await fixture.snapshot()).calls).toBe(before);
+    const { count: storedCount, error } = await adminClient().from("chat_messages").select("id", { head: true, count: "exact" })
+      .eq("chat_id", chatId).eq("user_id", userId);
+    expect(error).toBeNull();
+    expect(storedCount).toBe(2);
     await expect(page.getByRole("button", { name: "Review what would be shared" })).toHaveCount(0);
-    await expect(page.getByText("get_genotype")).toHaveCount(1);
+    await expect(page.getByText("get_report", { exact: true })).toHaveCount(0);
   }
   await expect(page.getByText(REFUSAL_TREATMENT, { exact: true })).toHaveCount(5);
 
   // A later allowed prompt reaches the provider with the refused turns
   // dropped from its history: the provider sees the two allowed user turns
   // and none of the gated ones.
-  const beforeResend = mockLlmCalls();
-  const resend = await ask(page, "What is my caffeine genotype?");
+  await fixture.configure({ prompt: CAFFEINE_PROMPT,
+    tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } }, answer: CAFFEINE_ANSWER });
+  const beforeResend = (await fixture.snapshot()).calls;
+  const resend = await ask(page, CAFFEINE_PROMPT);
   expect(resend.status()).toBe(200);
   expect(resend.headers()["x-copilot-refusal"]).toBeUndefined();
-  await expect(page.getByText("get_genotype")).toHaveCount(2, { timeout: 30_000 });
-  expect(mockLlmCalls()).toBeGreaterThan(beforeResend);
-  const userTurns = mockLlmLastMessages()
+  await expect(page.getByText(CAFFEINE_ANSWER, { exact: true })).toHaveCount(2);
+  const history = await fixture.snapshot();
+  expect(await expectClosedCompletion(resend, CAFFEINE_ANSWER, expectedCaffeineCitations(lastToolResult(history)))).toBe(chatId);
+  expect(history.calls - beforeResend).toBe(2);
+  expect(lastToolResult(history)).toMatchObject({ slug: CAFFEINE_SLUG });
+  const userTurns = history.requests.at(-1)!.messages
     .filter((message) => message.role === "user")
     .map((message) => (typeof message.content === "string" ? message.content : JSON.stringify(message.content)));
-  // The consent-blocked first ask may or may not remain in the client's
-  // thread; the allowed asks after it do, so at least two reach the provider.
-  expect(userTurns.filter((text) => text.includes("caffeine genotype")).length).toBeGreaterThanOrEqual(2);
+  // The server supplies exactly the two authorized user turns.
+  expect(userTurns).toEqual([CAFFEINE_PROMPT, CAFFEINE_PROMPT]);
   for (const { prompt } of GATED_PROMPTS) {
     expect(userTurns.some((text) => text.includes(prompt))).toBe(false);
   }
@@ -230,14 +211,24 @@ test("an answer carrying a number no tool returned is replaced whole with the fi
   // the mock's adversarial completion carries a percentage absent from the
   // tool JSON, so the output guard replaces the completion, tool part
   // included, and the fabricated number never reaches the page.
-  const before = mockLlmCalls();
-  const response = await ask(page, "How common is my caffeine genotype?");
+  const prompt = "How common is my caffeine genotype?";
+  await fixture.configure({ prompt, tool: { name: "get_report", arguments: { slug: CAFFEINE_SLUG } },
+    answer: `According to your Caffeine metabolism report (CYP1A2, rs762551), about ${ADVERSARIAL_NUMBER} of people share your genotype A/C. This is informational, not medical advice.` });
+  const before = (await fixture.snapshot()).calls;
+  const response = await ask(page, prompt);
   expect(response.status()).toBe(200);
   expect(response.headers()["x-copilot-refusal"]).toBe("unsupported-number");
   await expect(page.getByText(REFUSAL_UNSUPPORTED_NUMBER, { exact: true })).toBeVisible({
     timeout: 30_000,
   });
-  expect(mockLlmCalls()).toBeGreaterThan(before);
+  expect((await fixture.snapshot()).calls - before).toBe(2);
+  const chatId = await expectClosedCompletion(response, REFUSAL_UNSUPPORTED_NUMBER);
+  const { data: stored, error } = await adminClient().from("chat_messages").select("role,content")
+    .eq("chat_id", chatId).eq("user_id", userId);
+  expect(error).toBeNull();
+  expect(stored).toHaveLength(2);
+  expect(stored).toEqual(expect.arrayContaining([{ role: "assistant", content: [{ type: "text", text: REFUSAL_UNSUPPORTED_NUMBER }] }]));
+  expect(JSON.stringify(stored)).not.toContain(ADVERSARIAL_NUMBER);
   await expect(page.getByText("get_genotype")).toHaveCount(0);
   expect(await page.content()).not.toContain(ADVERSARIAL_NUMBER);
   await expect(page.getByText(/Caffeine metabolism report/)).toHaveCount(0);

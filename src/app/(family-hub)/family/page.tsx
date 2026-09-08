@@ -19,8 +19,9 @@ import {
   WHERE_THIS_WORKS_LINK,
 } from "@/copy/family/index";
 import { COPILOT_GROUP_SCOPES_AVAILABLE } from "@/copy/overview";
-import { hasReportGrant, permits, familyCapability } from "@/lib/family/access";
+import { grantedLayers, hasReportGrant, permits, familyCapability } from "@/lib/family/access";
 import { listFamilyPeople, type FamilyPerson } from "@/lib/family/graph";
+import { confirmSharedReportReadiness, loadSharedReportReadiness } from "@/lib/family/shared-report-results";
 import { resolveCapability } from "@/lib/legal/jurisdictions";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -84,10 +85,10 @@ function PublicPanels() {
 }
 
 /** The one state line a card may carry, chosen without leaking a file's existence. */
-function cardState(person: FamilyPerson, annotatedFiles: number): PersonCardState {
+function cardState(person: FamilyPerson, annotatedFiles: number, canonical = false): PersonCardState {
   if (person.sharing === "paused") return "paused";
   if (!hasReportGrant(person)) return "waiting";
-  return annotatedFiles > 0 ? "ready" : "no-file";
+  return annotatedFiles > 0 ? "ready" : canonical ? "awaiting-results" : "no-file";
 }
 
 export default async function FamilyPage() {
@@ -111,26 +112,27 @@ export default async function FamilyPage() {
   const readable = allowed
     ? people.filter((person) => hasReportGrant(person))
     : [];
+  // Readiness never fetches report content before the Family result gate.
+  const readiness = new Map(await Promise.all(readable.map(async person => [person.dataSubjectId,
+    await loadSharedReportReadiness(admin, { subjectId: person.dataSubjectId,
+      counterpartAccountId: person.counterpartAccountId,
+      purposes: grantedLayers(person).map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
+    }),
+  ] as const)));
   const annotated = new Map<string, number>();
   if (readable.length > 0) {
     const { data } = await admin
       .from("genome_files")
       .select("subject_id")
       .eq("status", "annotated")
-      .in("subject_id", readable.map((person) => person.dataSubjectId));
+      .is("single_logical_sample_verified_at", null)
+      .in("subject_id", readable.filter(person => readiness.get(person.dataSubjectId)?.authorized)
+        .map(person => person.dataSubjectId));
     for (const row of data ?? []) {
       if (!row.subject_id) continue;
       annotated.set(row.subject_id, (annotated.get(row.subject_id) ?? 0) + 1);
     }
   }
-
-  const entries: PersonListEntry[] = people.map((person) => ({
-    person,
-    state: allowed
-      ? cardState(person, annotated.get(person.dataSubjectId) ?? 0)
-      : "waiting",
-    href: route("family.person", { person: person.handle.routeSegment }),
-  }));
 
   // The first person whose reports the viewer may actually open.
   const firstReadable = allowed
@@ -161,6 +163,19 @@ export default async function FamilyPage() {
         )?.id ?? null;
     }
   }
+
+  // Pair and other metadata reads have finished; recheck captured authority
+  // before rendering any ready state. A stale grant reveals no file state.
+  const capturedReadiness = [...readiness];
+  const confirmedReadiness = await confirmSharedReportReadiness(capturedReadiness.map(([, snapshot]) => snapshot));
+  const currentReadiness = new Map(capturedReadiness.map(([id], index) => [id, confirmedReadiness[index]]));
+  const entries: PersonListEntry[] = people.map(person => {
+    const current = currentReadiness.get(person.dataSubjectId);
+    return { person, state: allowed && (person.sharing === "paused" || !hasReportGrant(person) || current?.authorized)
+      ? cardState(person, (annotated.get(person.dataSubjectId) ?? 0) + (current?.hasReports ? 1 : 0),
+        current?.access.some(access => access.kind === "canonical"))
+      : "waiting", href: route("family.person", { person: person.handle.routeSegment }) };
+  });
 
   const tileHref: Record<string, string | null> = {
     "individual-risks": firstReadable

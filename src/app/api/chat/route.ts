@@ -1,3 +1,5 @@
+import { ownChatResponse } from "@/lib/copilot/own-chat-route";
+import { hasCanonicalCopilotScope } from "@/lib/copilot/own-chat";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import {
@@ -111,9 +113,13 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const body = (await request.json()) as {
-    messages: UIMessage[];
-  };
+  const raw: unknown = await request.json().catch(() => null);
+  if (raw && typeof raw === "object" && ("contextToken" in raw || "chatId" in raw || "message" in raw)) {
+    return ownChatResponse(request, raw, { systemPrompt: SYSTEM_PROMPT, refusal: refusalResponse });
+  }
+  const legacy = z.object({ messages: z.array(z.custom<UIMessage>()).max(100) }).strict().safeParse(raw);
+  if (!legacy.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  const body = legacy.data;
   const scopeSegment = new URL(request.url).searchParams.get("scope") ?? "me";
   const subject = await resolveSubjectForAccount(user.id, scopeSegment);
   // Only a self or an adult subject has a chat scope today; a minor or an
@@ -122,6 +128,10 @@ export async function POST(request: Request) {
   const scopeKind = subject ? guardScopeKindFor(subject.subjectClass) : null;
   if (!subject || !scopeKind) {
     return NextResponse.json({ error: "scope_not_found" }, { status: 404 });
+  }
+
+  if (await hasCanonicalCopilotScope(subject.id).catch(() => true)) {
+    return NextResponse.json({ error: "copilot_unavailable" }, { status: 403 });
   }
 
   // Intent gate (brief line 2262; §5.7 line 366, §6.4 line 402): the newest

@@ -2,6 +2,8 @@ import "server-only";
 import type { Db } from "./load";
 import { OBSERVED_CALL_VERSION } from "./observed-calls";
 import { genotypeKey, type ReportTemplate, type TemplateVariant } from "./reports";
+import { filterOwnAnalysisFiles, loadOwnReportCallPage } from "./own-analysis-access";
+import type { OwnReportPurpose } from "@/lib/uploads/own-report-purpose";
 
 export interface ReportCall {
   file_id: string;
@@ -59,19 +61,32 @@ async function allPages<T>(query: (offset: number) => PromiseLike<{ data: T[] | 
 }
 
 /** Shared report-only read. Callers must authorize the subject before an admin read. */
-export async function loadReportCallRows(db: Db, subjectId: string, rsids: readonly number[], ownerId?: string) {
-  const files = await allPages((offset) => db.from("genome_files")
-    .select("id,build,observed_call_sha256,observed_call_version")
-    .eq("subject_id", subjectId).eq("status", "annotated")
+export async function loadReportCallRows(db: Db, subjectId: string, rsids: readonly number[], ownerId?: string,
+  purpose: OwnReportPurpose | null = null) {
+  const candidates = await allPages((offset) => db.from("genome_files")
+    .select("id,build,status,observed_call_sha256,observed_call_version,single_logical_sample_verified_at")
+    .eq("subject_id", subjectId).in("status", ["annotated", "stored"])
     .in("build", ["GRCh37", "GRCh38"]).order("id").range(offset, offset + PAGE - 1));
+  const files = candidates ? await filterOwnAnalysisFiles(db, subjectId, purpose, candidates) : null;
   const calls: ReportCall[] = [];
   const checkedFileIds = files?.map((file) => file.id) ?? [];
   if (!files) return { calls, fileCount: 0, checkedFileIds };
   if (!files.length || !rsids.length) return { calls, fileCount: files.length, checkedFileIds };
   const byFile = new Map(files.map((file) => [file.id, file]));
+  const legacyFiles = files.filter(file => file.single_logical_sample_verified_at === null);
+  const failedModern = new Set<string>();
+  if (purpose) for (const file of files.filter(file => file.single_logical_sample_verified_at != null)) {
+    const fileCalls: ReportCall[] = [];
+    for (let offset = 0; offset < rsids.length; offset += 200) {
+      const rows = await allPages(page => loadOwnReportCallPage(db, file.id, purpose, rsids.slice(offset, offset + 200), page));
+      if (!rows) { failedModern.add(file.id); break; }
+      fileCalls.push(...rows);
+    }
+    if (!failedModern.has(file.id)) calls.push(...fileCalls);
+  }
   // Bound both IN lists, and exhaust each deterministic page before resolving.
-  for (let fileOffset = 0; fileOffset < files.length; fileOffset += 100) {
-    const fileIds = files.slice(fileOffset, fileOffset + 100).map((file) => file.id);
+  for (let fileOffset = 0; fileOffset < legacyFiles.length; fileOffset += 100) {
+    const fileIds = legacyFiles.slice(fileOffset, fileOffset + 100).map((file) => file.id);
     for (let i = 0; i < rsids.length; i += 200) {
       const chunk = rsids.slice(i, i + 200);
       const [variants, observations] = await Promise.all([
@@ -102,11 +117,19 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
       calls.push(...variants, ...certified);
     }
   }
-  return { calls, fileCount: files.length, checkedFileIds };
+  // A withdrawal during the paged read must not escape as an analytic response.
+  const current = await filterOwnAnalysisFiles(db, subjectId, purpose, files.filter(f => !failedModern.has(f.id)));
+  const currentIds = new Set(current.map(f => f.id));
+  return { calls: calls.filter(c => currentIds.has(c.file_id)), fileCount: current.length,
+    checkedFileIds: checkedFileIds.filter(id => currentIds.has(id)) };
 }
 
 export async function getSubjectReportCalls(db: Db, subjectId: string, templates: readonly ReportTemplate[]) {
   const rsids = [...new Set(templates.flatMap((template) => template.variants.map((variant) => variant.rsid)))];
-  const { calls, fileCount, checkedFileIds } = await loadReportCallRows(db, subjectId, rsids);
+  // One load, one layer: mixing purposes into one genotype map would let an
+  // allowed estimate reveal an unselected variant-call layer (or vice versa).
+  const layers = new Set(templates.map(t => t.layer ?? "estimate"));
+  const purpose = layers.size === 1 ? layers.has("variant_call") ? "reports.monogenic" : "reports.polygenic" : null;
+  const { calls, fileCount, checkedFileIds } = await loadReportCallRows(db, subjectId, rsids, undefined, purpose);
   return { ...resolveReportCalls(calls, templates), calls, fileCount, checkedFileIds };
 }

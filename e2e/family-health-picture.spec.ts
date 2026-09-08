@@ -2,51 +2,34 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import path from "node:path";
 import {
   adminClient,
-  anonClient,
   createConfirmedUser,
   firstViewportInteractives,
-  ingestFileAs,
   signIn,
 } from "./helpers";
 import { CARRIER_FIXTURE_POSITIONS, type FixtureGenotype } from "./fixtures/carrier-pair-positions";
 import { buildCarrierPairVcf, verify, type FixtureCheck } from "./fixtures/carrier-pair-fixture";
 
-/**
- * `/family/health-picture` (design docs/design/w9-family-surfaces.md §6.2):
- * two adults side by side, the carrier panel above the table, and the
- * Overview line that points at it.
+/** Ten Health Picture journeys through actual canonical upload, selected report
+ * generation, invitation acceptance and freshly signed directional permissions.
+ * No grant, analysis completion, annotated status or independent-login marker is
+ * fabricated. Both source files retain their own identity throughout withdrawal.
  *
- * What it pins: the mandated banner and the G4.5 statement verbatim; one
- * compare surface per layer with one attributed claim block per cell; no
- * control anywhere that could order, rank or sum the table; the exact
- * baseline-absence sentence in every column footer; exactly one block with
- * the 25-in-100 sentence and none anywhere else; the named reason on every
- * other match, the two-copies reason included; each person's own variant
- * and classification named in every block; the runs measure stored with
- * the file at ingest; another adult's cells reading "Not shared with you"
- * without that layer's own grant while the column and the panel remain;
- * the count sentence over a classified set with no match and the plain
- * sentence over an empty one; and no word about how the two people are
- * related.
+ * The synthetic clinical reference strings below remain deliberately unbound:
+ * canonical ROH/clinical analysis is NOT implemented or accepted by these tests.
+ * The original deterministic ROH calculator proof remains checked separately;
+ * the former ingest-time persisted-ROH acceptance stays open rather than being
+ * replaced by a fabricated measurement or a claim that refusal completes it.
  *
- * Setup. The permissions page carries a "Health picture" row for
- * `family.heritability` (ADR 0017), on the same own-session rules as the
- * other rows. This spec writes every grant through the real routine
- * (`grant_directional_purpose_v1`) with the service-role client, exactly as
- * the rows do, and sets the independent-login marker through the real
- * routine (`mark_independent_login_v1`) from a real session of each
- * account, so the surface is exercised without a second sign-in dance. The
- * seven classified positions are synthetic rows inserted here and removed
- * in `afterAll`: the shipped reference table has no classification at all,
- * so these branches have no other way to be proved.
- *
- * The Tier-2 gate is a session cookie keyed to the auth session
- * (src/lib/family/tier2.ts), and every `test()` runs in a fresh browser
- * context, so every test that reads a result passes the gate itself
- * (`passGate`); the second test pins the gate's own behaviour explicitly.
+ * This spec's real global mail drain requires the owned disposable browser DB
+ * and local capture provider on port 8124, as Family/Portrait do. Never run that drain
+ * against a preserved shared queue without reviewing every eligible item.
+ * Each result-reading context passes the session-bound Tier-2 gate.
  */
 
 const A = { email: `family-hp-a-${randomUUID()}@e2e.local`, password: "e2e-family-hp-pw" };
@@ -164,17 +147,22 @@ let accountA = "";
 let accountB = "";
 let selfSubjectA = "";
 let selfSubjectB = "";
-/** The grants B made toward A, by purpose, so a test can revoke one through the real routine. */
+let invitedSubjectB = "";
+const sourceFileIds: string[] = [];
+let sourceBefore: unknown;
+let ownGrantsBefore: unknown;
+interface CapturedEmail { to: string[] | string; html?: string }
+const captured: CapturedEmail[] = [];
+let resendMock: http.Server;
+const JOBS_SECRET = process.env.JOBS_SECRET;
+if (!JOBS_SECRET) throw new Error("JOBS_SECRET is required for the Health Picture mail fixture");
+/** Only IDs returned by B's actual permission POSTs. */
 const grantsFromB = new Map<GrantedPurpose, string>();
 /** The fixture as the generator builds it, checked with the real parser and the real runs measure. */
 let fixtureCheck: FixtureCheck;
 
+test.use({ trace: "off" }); // Restricted upload, invitation and permission bearers stay out of traces.
 test.describe.configure({ mode: "serial" });
-
-async function accountIdFor(email: string): Promise<string> {
-  const { data } = await adminClient().auth.admin.listUsers();
-  return data!.users.find((user) => user.email === email)!.id;
-}
 
 async function selfSubjectOf(accountId: string): Promise<string> {
   const { data } = await adminClient()
@@ -187,69 +175,50 @@ async function selfSubjectOf(accountId: string): Promise<string> {
   return (data as { id: string }).id;
 }
 
-async function principalOf(subjectId: string, accountId: string): Promise<string> {
-  const { data } = await adminClient()
-    .from("subject_principals")
-    .select("id")
-    .eq("subject_id", subjectId)
-    .eq("account_id", accountId)
-    .eq("principal_kind", "account_subject")
-    .eq("status", "active")
-    .limit(1)
-    .single();
-  return (data as { id: string }).id;
+/** A fresh presentation is obtained for every purpose; an earlier signature
+ * may create the relationship captured by the next presentation. */
+async function setSharingPurpose(page: Page, recipientHandle: string, purpose: GrantedPurpose, enabled: boolean) {
+  await page.goto(`/family/s-${recipientHandle}/permissions`);
+  const label = PERMISSION_ROWS.find(row => row.id === purpose)!.label;
+  const row = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: new RegExp(`^${label}$`) }) });
+  await expect(row.locator('[data-slot="permission-state"]')).toHaveText(enabled ? "Off" : "On");
+  const response = page.waitForResponse(response => response.request().method() === "POST"
+    && (enabled ? response.url().endsWith("/api/consents")
+      : response.url().endsWith(`/api/consents/${grantsFromB.get(purpose)}/revoke`)));
+  await row.getByRole("button", { name: enabled ? /^Turn on / : /^Turn off / }).click();
+  const result = await response;
+  expect(result.status()).toBe(enabled ? 201 : 200);
+  const receipt = await result.json();
+  expect(receipt).toMatchObject(enabled ? { recordKind: "purpose_grant", purposeKey: purpose,
+    artifactKey: "consent.share-with-adult" } : { revoked: true });
+  if (enabled) expect(receipt.recordId).toMatch(/^[0-9a-f-]{36}$/);
+  else expect(Number.isFinite(Date.parse(receipt.effectiveAt))).toBe(true);
+  await expect(row.locator('[data-slot="permission-state"]')).toHaveText(enabled ? "On" : "Off");
+  return enabled ? receipt.recordId as string : null;
 }
 
-/** The auth session id an access token carries, as `authSessionIdFromAccessToken` reads it server-side. */
-function authSessionIdOf(accessToken: string): string {
-  const payload = JSON.parse(
-    Buffer.from(accessToken.split(".")[1] ?? "", "base64url").toString("utf8"),
-  ) as { session_id?: unknown };
-  if (typeof payload.session_id !== "string") throw new Error("the access token carries no session id");
-  return payload.session_id;
+async function sourceReceipt() {
+  const result = await adminClient().from("genome_files")
+    .select("id,user_id,subject_id,sha256,source_sha256,storage_object_id,size_bytes,status,upload_revision,normalization_source_revision,normalization_completed_at")
+    .in("id", sourceFileIds).order("id");
+  expect(result.error).toBeNull(); expect(result.data).toHaveLength(2);
+  return result.data;
 }
 
-/**
- * The independent-login marker, through the real routine from a real
- * session of the account: `grant_directional_purpose_v1` refuses
- * `family.heritability` while it is unset, and the marker is otherwise
- * stamped by a server-verified sign-in the harness cannot reproduce for two
- * accounts in one browser context. These accounts accepted no invitation,
- * so any session of theirs stamps.
- */
-async function markIndependentLogin(account: { email: string; password: string }, accountId: string) {
-  const { data, error } = await anonClient().auth.signInWithPassword({
-    email: account.email,
-    password: account.password,
-  });
-  if (error || !data.session) throw new Error(`sign-in: ${error?.message}`);
-  const stamped = await adminClient().rpc("mark_independent_login_v1", {
-    p_account_id: accountId,
-    p_auth_session_id: authSessionIdOf(data.session.access_token),
-  });
-  expect(stamped.error).toBeNull();
-  expect(stamped.data).toBe(1);
+async function ownGrantReceipt() {
+  const result = await adminClient().from("purpose_grants")
+    .select("grant_id,grant_revision,target_id,purpose,revoked_at")
+    .in("target_id", [selfSubjectA, selfSubjectB])
+    .in("artifact_key", ["consent.own-monogenic", "consent.own-polygenic"]).order("grant_id");
+  expect(result.error).toBeNull(); expect(result.data).toHaveLength(4);
+  expect(result.data!.every(row => row.revoked_at === null)).toBe(true);
+  return result.data;
 }
 
-/** One directional grant of one purpose, through the real routine. */
-async function grantPurpose(
-  purpose: GrantedPurpose,
-  granterAccount: string,
-  granterSubject: string,
-  recipientPrincipal: string,
-): Promise<string> {
-  const { data, error } = await adminClient().rpc("grant_directional_purpose_v1", {
-    p_account_id: granterAccount,
-    p_data_subject_id: granterSubject,
-    p_recipient_principal_id: recipientPrincipal,
-    p_purpose: purpose,
-    p_artifact_key: "consent.share-with-adult",
-    p_artifact_version: 1,
-    // The presentation nonce is single-use by design, so each grant mints its own.
-    p_token_nonce: `e2e-hp-${randomUUID()}`,
-  });
-  if (error) throw new Error(`grant ${purpose}: ${error.message}`);
-  return data as unknown as string;
+async function expectSourcesAndOwnPermissionsPreserved() {
+  expect(await sourceReceipt()).toEqual(sourceBefore);
+  expect(await ownGrantReceipt()).toEqual(ownGrantsBefore);
 }
 
 /** Removes the classification from the given synthetic rows: the shipped table's own state. */
@@ -296,8 +265,19 @@ async function expectAxeClean(page: Page) {
 
 test.beforeAll(async () => {
   const admin = adminClient();
-  await createConfirmedUser(A.email, A.password);
-  await createConfirmedUser(B.email, B.password);
+  resendMock = http.createServer((request, response) => {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    request.on("end", () => {
+      if (request.method === "POST" && request.url === "/emails") {
+        captured.push(JSON.parse(body) as CapturedEmail);
+        response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ id: `health-picture-${captured.length}` }));
+      } else response.writeHead(404).end();
+    });
+  });
+  await new Promise<void>((resolve, reject) => { resendMock.once("error", reject); resendMock.listen(8124, "127.0.0.1", resolve); });
+  accountA = await createConfirmedUser(A.email, A.password);
+  accountB = await createConfirmedUser(B.email, B.password);
 
   // The spec's expectations and the fixture's rows are one list: the
   // genotype each entry expects is the one the generator writes there.
@@ -344,40 +324,12 @@ test.beforeAll(async () => {
     if (conditionError) throw new Error(`condition_registry: ${conditionError.message}`);
   }
 
-  // The two people, their self subjects (provisioned with the account) and
-  // the principals the grants are addressed to.
-  accountA = await accountIdFor(A.email);
-  accountB = await accountIdFor(B.email);
   selfSubjectA = await selfSubjectOf(accountA);
   selfSubjectB = await selfSubjectOf(accountB);
-  await markIndependentLogin(A, accountA);
-  await markIndependentLogin(B, accountB);
-  const principalA = await principalOf(selfSubjectA, accountA);
-  const principalB = await principalOf(selfSubjectB, accountB);
-
-  // Every grant in both directions: the joint one that opens the column
-  // and the panel, and the two report layers that open the cells (D-038).
-  for (const purpose of GRANTED_PURPOSES) {
-    await grantPurpose(purpose, accountA, selfSubjectA, principalB);
-    grantsFromB.set(purpose, await grantPurpose(purpose, accountB, selfSubjectB, principalA));
-  }
-  const { data: live } = await admin
-    .from("purpose_grants")
-    .select("purpose, target_id")
-    .in("target_id", [selfSubjectA, selfSubjectB])
-    .is("revoked_at", null);
-  expect(live).toHaveLength(GRANTED_PURPOSES.length * 2);
-  for (const target of [selfSubjectA, selfSubjectB]) {
-    expect(
-      (live as { purpose: string; target_id: string }[])
-        .filter((row) => row.target_id === target)
-        .map((row) => row.purpose)
-        .sort(),
-    ).toEqual([...GRANTED_PURPOSES].sort());
-  }
 });
 
 test.afterAll(async () => {
+  if (resendMock) await new Promise<void>(resolve => resendMock.close(() => resolve()));
   const admin = adminClient();
   await admin
     .from("condition_registry")
@@ -389,62 +341,103 @@ test.afterAll(async () => {
     .in("rsid", CARRIER_FIXTURE_POSITIONS.map((entry) => entry.rsid));
 });
 
-test("both adults add the synthetic file, and its runs measure is stored with it", async ({
-  page,
-}) => {
-  const admin = adminClient();
+test("both adults prepare their real source and generate chosen reports before sharing", async ({ page, request }) => {
   const fixture = path.join(process.cwd(), "e2e/fixtures/carrier-pair-grch38.vcf");
   const measure = fixtureCheck.measure;
-  if (measure.status !== "measured") throw new Error("the fixture must be measurable");
-
+  if (measure.status !== "measured") throw new Error("the fixture calculator must remain measurable");
+  expect(measure.aboveThreshold).toBe(false);
+  expect(measure.runCount).toBeGreaterThanOrEqual(1);
+  expect(measure.totalRunBases).toBeGreaterThan(0);
+  expect(measure.coveredSpanBases).toBeGreaterThan(0);
+  expect(measure.fRoh).toBeCloseTo(measure.totalRunBases / measure.coveredSpanBases, 6);
   for (const account of [A, B]) {
     await signIn(page, account.email, account.password);
-    const fileId = await ingestFileAs(page, account.email, account.password, fixture, "vcf");
-    await expect
-      .poll(
-        async () => {
-          const { data } = await admin
-            .from("genome_files")
-            .select("status")
-            .eq("id", fileId)
-            .single();
-          return (data as { status: string } | null)?.status;
-        },
-        { timeout: 60_000 },
-      )
-      .toBe("annotated");
-
-    // The processing route measured the file's own runs once and stored
-    // them (ADR 0017 §7, D-030): the same numbers the real measure gives
-    // for the fixture, and nothing about any other file.
-    const { data: stored } = await admin
-      .from("genome_files")
-      .select("roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction, roh_measured_at")
-      .eq("id", fileId)
-      .single();
-    const columns = stored as {
-      roh_status: string | null;
-      roh_reason: string | null;
-      roh_total_bases: number | string | null;
-      roh_covered_bases: number | string | null;
-      roh_fraction: number | string | null;
-      roh_measured_at: string | null;
-    };
-    expect(columns.roh_status).toBe("measured");
-    expect(columns.roh_reason).toBeNull();
-    expect(Number(columns.roh_total_bases)).toBe(measure.totalRunBases);
-    expect(Number(columns.roh_covered_bases)).toBe(measure.coveredSpanBases);
-    expect(Math.abs(Number(columns.roh_fraction) - measure.fRoh)).toBeLessThan(1e-6);
-    expect(columns.roh_measured_at).not.toBeNull();
-    expect(measure.aboveThreshold).toBe(false);
-    expect(measure.runCount).toBeGreaterThanOrEqual(1);
-    expect(Number(columns.roh_total_bases)).toBeGreaterThan(0);
-
+    sourceFileIds.push(await uploadOwnFileWithChosenReports(page, fixture, { fileType: "vcf",
+      purposes: ["reports.monogenic", "reports.polygenic"] }));
     await page.request.post("/auth/sign-out");
   }
+  sourceBefore = await sourceReceipt();
+  ownGrantsBefore = await ownGrantReceipt();
+  // Canonical preparation does not compute persisted ROH. Preserve this gap
+  // explicitly alongside the real calculator proof; never stamp measured rows.
+  const roh = await adminClient().from("genome_files")
+    .select("roh_status,roh_reason,roh_total_bases,roh_covered_bases,roh_fraction,roh_measured_at").in("id", sourceFileIds);
+  expect(roh.error).toBeNull(); expect(roh.data).toHaveLength(2);
+  for (const row of roh.data!) expect(Object.values(row).every(value => value === null)).toBe(true);
+  // Acceptance links real accounts; it does not share their existing own reports.
+  await signIn(page, A.email, A.password);
+  await page.goto("/family/invite");
+  await page.getByLabel("Their email address").fill(B.email);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Send invitation" }).click();
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
+  const drain = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+  expect(drain.status()).toBe(200);
+  const message = captured.find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
+    && /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/.test(email.html ?? ""));
+  const invitationUrl = message?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0];
+  expect(invitationUrl).toBeTruthy();
+  await page.request.post("/auth/sign-out");
+  await page.goto(invitationUrl!);
+  await page.getByRole("link", { name: "Sign in to accept" }).click();
+  await page.getByLabel("Email").fill(B.email);
+  await page.getByLabel("Password").fill(B.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(invitationUrl!);
+  await page.getByRole("button", { name: "Accept through my account" }).click();
+  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  // This was B's actual acceptance session. A's Family route names the invited
+  // representative, while every source assertion still names B's own self.
+  const admin = adminClient();
+  const inviter = await admin.from("subject_principals").select("id")
+    .eq("account_id", accountA).eq("subject_id", selfSubjectA)
+    .eq("principal_kind", "account_subject").eq("status", "active").single();
+  expect(inviter.error).toBeNull();
+  const invitation = await admin.from("subject_invitations").select("target_id,invitee_principal_id,accepted_at")
+    .eq("inviter_principal_id", inviter.data!.id).eq("invitation_kind", "adult_subject")
+    .eq("target_kind", "subject").eq("status", "accepted").single();
+  expect(invitation.error).toBeNull();
+  expect(invitation.data!.accepted_at).not.toBeNull();
+  expect(invitation.data!.invitee_principal_id).not.toBeNull();
+  invitedSubjectB = invitation.data!.target_id;
+  expect(invitedSubjectB).not.toBe(selfSubjectB);
+  const representative = await admin.from("subjects")
+    .select("id,subject_class,subject_account_id,owner_account_id,lifecycle").eq("id", invitedSubjectB).single();
+  expect(representative.error).toBeNull();
+  expect(representative.data).toEqual({ id: invitedSubjectB, subject_class: "other_adult",
+    subject_account_id: accountB, owner_account_id: null, lifecycle: "active" });
+  const invitee = await admin.from("subject_principals").select("account_id,subject_id,principal_kind,status")
+    .eq("id", invitation.data!.invitee_principal_id!).single();
+  expect(invitee.error).toBeNull();
+  expect(invitee.data).toEqual({ account_id: accountB, subject_id: invitedSubjectB, principal_kind: "account_subject", status: "active" });
+  const binding = await admin.from("subject_account_bindings").select("account_principal_id")
+    .eq("subject_id", invitedSubjectB).eq("subject_principal_id", invitation.data!.invitee_principal_id!)
+    .eq("account_id", accountB).eq("binding_kind", "adult_claim").eq("status", "current").is("ended_at", null).single();
+  expect(binding.error).toBeNull();
+  const boundSelf = await admin.from("subject_principals").select("account_id,subject_id,principal_kind,status")
+    .eq("id", binding.data!.account_principal_id).single();
+  expect(boundSelf.error).toBeNull();
+  expect(boundSelf.data).toEqual({ account_id: accountB, subject_id: selfSubjectB, principal_kind: "account_subject", status: "active" });
+  await page.request.post("/auth/sign-out");
+  // B signs in independently and only reads the permission presentation.
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}/permissions`);
+  await expect(page.getByRole("heading", { name: "Permissions", exact: true })).toBeVisible();
+  const grants = await adminClient().from("directional_grants").select("grant_id")
+    .in("recipient_account_id", [accountA, accountB]).eq("direction", "subject_to_recipient").eq("status", "current");
+  expect(grants.error).toBeNull(); expect(grants.data).toEqual([]);
 });
 
 test("the page withholds every result until the one Tier-2 gate is passed", async ({ page }) => {
+  // Real permission UI supplies current endpoint receipts. A routes through
+  // the accepted representative; B routes through A's self. DNA attribution
+  // continues to use both self IDs, never the invitation representative.
+  await signIn(page, A.email, A.password);
+  for (const purpose of GRANTED_PURPOSES) await setSharingPurpose(page, invitedSubjectB, purpose, true);
+  await page.request.post("/auth/sign-out");
+  await signIn(page, B.email, B.password);
+  for (const purpose of GRANTED_PURPOSES) grantsFromB.set(purpose, (await setSharingPurpose(page, selfSubjectA, purpose, true))!);
+  await page.request.post("/auth/sign-out");
   await signIn(page, A.email, A.password);
   await page.goto("/family/health-picture");
   await expect(
@@ -489,11 +482,11 @@ test("the side-by-side table compares nothing and offers no way to order it", as
   // One table per layer, and no table mixes two layers.
   const tables = page.locator("[data-compare-surface]");
   const tableCount = await tables.count();
-  expect(tableCount).toBeGreaterThan(0);
+  expect(tableCount).toBe(2);
   const layers = await tables.evaluateAll((nodes) =>
     nodes.map((node) => node.getAttribute("data-layer")),
   );
-  expect(new Set(layers).size).toBe(tableCount);
+  expect(new Set(layers)).toEqual(new Set(["variant_call", "estimate"]));
   for (let index = 0; index < tableCount; index++) {
     await expect(tables.nth(index).locator("caption")).toHaveCount(1);
   }
@@ -515,13 +508,28 @@ test("the side-by-side table compares nothing and offers no way to order it", as
     new Set([selfSubjectA, selfSubjectB]),
   );
 
-  // With both report layers granted, the other adult's cells carry their
+  // With both report layers granted, the other adult's covered cells carry their
   // letters as observed genotype figures, and no cell says "not shared".
   const lettersOfB = page.locator(
     `[data-slot="health-picture-cell"] [data-claim-block][data-subject-id="${selfSubjectB}"] [data-figure-kind="genotype"]`,
   );
   expect(await lettersOfB.count()).toBeGreaterThan(0);
   await expect(page.locator('[data-slot="cell-absence"]', { hasText: NOT_SHARED_CELL })).toHaveCount(0);
+
+  // These are actual fixture calls rendered from each separately completed
+  // stored report, not synthetic clinical labels or a shared genotype map.
+  const estimates = page.locator('[data-compare-surface][data-layer="estimate"]');
+  for (const [index, subjectId, segment] of [[0, selfSubjectA, "me"], [1, selfSubjectB, `s-${invitedSubjectB}`]] as const) {
+    for (const [slug, genotype] of [["caffeine-metabolism-cyp1a2-rs762551", "A/C"], ["lactase-persistence-lct-rs4988235", "A/A"]]) {
+      const row = estimates.locator(`[data-report-slug="${slug}"]`);
+      const source = row.locator(`[data-source-file-id="${sourceFileIds[index]}"]`);
+      await expect(source).toHaveCount(1);
+      await expect(source.locator(`[data-claim-block][data-subject-id="${subjectId}"] [data-figure-kind="genotype"]`)).toContainText(genotype);
+      await expect(source.getByRole("link", { name: /Open/ })).toHaveAttribute("href",
+        `/genome/${segment}/reports/${slug}?source=${sourceFileIds[index]}`);
+    }
+  }
+  await expect(page.locator('[data-slot="subject-files"]')).toHaveCount(0);
 
   // Nothing sorts, ranks or sums.
   await expect(page.locator("[aria-sort]")).toHaveCount(0);
@@ -530,15 +538,34 @@ test("the side-by-side table compares nothing and offers no way to order it", as
   const content = await page.content();
   expect(content).not.toMatch(/aria-sort/);
 
-  // The mandated column footer, once per column and nowhere altered.
+  // The mandated footer appears once per column in EACH rendered layer table.
   const footers = page.locator('[data-slot="column-footer"]');
-  await expect(footers).toHaveCount(2);
-  for (let index = 0; index < 2; index++) {
+  await expect(footers).toHaveCount(2 * tableCount);
+  for (let index = 0; index < 2 * tableCount; index++) {
     await expect(footers.nth(index)).toHaveText(BASELINE_ABSENT);
   }
 
   // Acceptance 20: nothing on this page says how these two people are related.
   expect(content).not.toMatch(/centimorgan|\bcM\b|kinship|shared DNA|related to/i);
+
+  // Follow each real saved-source link: the own route and recipient route must
+  // both show the captured call with source provenance, not just a valid href.
+  const slug = "caffeine-metabolism-cyp1a2-rs762551";
+  for (const [index, subjectId, segment] of [[0, selfSubjectA, "me"], [1, selfSubjectB, `s-${invitedSubjectB}`]] as const) {
+    const sourceLink = page.locator(`[data-compare-surface][data-layer="estimate"] [data-report-slug="${slug}"] [data-source-file-id="${sourceFileIds[index]}"]`)
+      .getByRole("link", { name: /Open/ });
+    const expectedPath = `/genome/${segment}/reports/${slug}?source=${sourceFileIds[index]}`;
+    await sourceLink.click();
+    await expect(page).toHaveURL(new URL(expectedPath, page.url()).toString());
+    await expect(page.locator(`[data-claim-block][data-subject-id="${subjectId}"] [data-figure-kind="genotype"]`)).toContainText("A/C");
+    const provenance = page.locator('[data-slot="input-provenance"]');
+    await expect(provenance).toBeVisible();
+    await expect(provenance.locator('[data-slot="input-source"]')).toHaveCount(1);
+    await expect(provenance).toContainText("No change of genome coordinates was needed.");
+    // The same session already acknowledged Tier-2 before opening the report.
+    await page.goto("/family/health-picture");
+    await expect(page.locator('[data-compare-surface][data-layer="estimate"]')).toBeVisible();
+  }
 });
 
 test("the carrier panel withholds unbound clinical labels and explicitly states unavailable", async ({
@@ -588,11 +615,14 @@ test("without that layer's own grant, the other adult's cells read as not shared
   // B withdraws the estimates layer toward A; the joint grant and the
   // variant layer stay. The column still opens on the joint grant, and so
   // does the carrier panel; the cells of that layer do not (D-038).
-  const { error } = await adminClient().rpc("revoke_directional_purpose_v1", {
-    p_account_id: accountB,
-    p_grant_id: grantsFromB.get("reports.polygenic"),
-  });
-  expect(error).toBeNull();
+  await signIn(page, B.email, B.password);
+  await setSharingPurpose(page, selfSubjectA, "reports.polygenic", false);
+  await expectSourcesAndOwnPermissionsPreserved();
+  const remaining = await adminClient().from("purpose_grants").select("grant_id,revoked_at")
+    .in("grant_id", [grantsFromB.get("reports.monogenic")!, grantsFromB.get("family.heritability")!]);
+  expect(remaining.error).toBeNull(); expect(remaining.data).toHaveLength(2);
+  expect(remaining.data!.every(row => row.revoked_at === null)).toBe(true);
+  await page.request.post("/auth/sign-out");
 
   await signIn(page, A.email, A.password);
   await passGate(page);
@@ -618,20 +648,26 @@ test("without that layer's own grant, the other adult's cells read as not shared
   );
   expect(await lettersOfA.count()).toBeGreaterThan(0);
 
+  // B's independently shared variant-call layer remains available. Its
+  // current catalog may have no covered report in this fixture; do not invent
+  // a positive call or require a nonexistent report link to prove permission.
+  const variantStatusOfB = page.locator(`[data-compare-surface][data-layer="variant_call"] [data-slot="health-picture-column-status"] [data-claim-block][data-subject-id="${selfSubjectB}"]`);
+  await expect(variantStatusOfB).toHaveCount(1);
+  await expect(variantStatusOfB).not.toContainText(NOT_SHARED_CELL);
+
   // The joint section stays, with the same unavailable clinical state.
   await expect(page.locator('[data-slot="carrier-panel"] [data-claim-block]')).toHaveCount(
     0,
   );
   await expect(page.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
-  await expect(page.locator('[data-slot="column-footer"]')).toHaveCount(2);
+  await expect(page.locator('[data-slot="column-footer"]')).toHaveCount(4);
 });
 
 test("with fewer legacy labels, the panel still states unavailable rather than a negative screen", async ({
   page,
 }) => {
-  // Only the two positions neither file shows the classified change at
-  // stay classified: both files cover them, so there is something to check
-  // and nothing to show.
+  // Reduce only the deliberately unbound legacy reference labels. Their
+  // presence or absence must not activate canonical clinical computation.
   await declassify(CARRIED.map((entry) => entry.rsid));
 
   await signIn(page, A.email, A.password);
@@ -662,16 +698,15 @@ test("with no classified position at all, the panel says so in words, never a co
   await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
   await expect(panel).not.toContainText("checked the");
   await expect(panel).not.toContainText("0 positions");
-  // The table beneath still shows the positions both files do cover.
+  // The independently generated report table remains available.
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 
 test("revoking one direction empties the panel and the Overview line at once", async ({ page }) => {
-  const { error } = await adminClient().rpc("revoke_directional_purpose_v1", {
-    p_account_id: accountB,
-    p_grant_id: grantsFromB.get("family.heritability"),
-  });
-  expect(error).toBeNull();
+  await signIn(page, B.email, B.password);
+  await setSharingPurpose(page, selfSubjectA, "family.heritability", false);
+  await expectSourcesAndOwnPermissionsPreserved();
+  await page.request.post("/auth/sign-out");
 
   // Under two columns the page states so before the gate: nothing to pass.
   await signIn(page, A.email, A.password);

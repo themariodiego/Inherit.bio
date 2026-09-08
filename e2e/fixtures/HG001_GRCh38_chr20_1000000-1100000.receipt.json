@@ -1,0 +1,46 @@
+{
+  "kind": "public-reference-benchmark-window",
+  "sample": "GIAB HG001 / NA12878",
+  "build": "GRCh38",
+  "source": {
+    "path": "data/samples/HG001_GRCh38_chr20-22.vcf.gz",
+    "sha256": "3717fc164ef9137a4eec6a2ab48711f2478881ca55fbb230964764be48a78a83",
+    "compressedBytes": 4937533,
+    "decodedBytes": 99744915,
+    "upstreamFile": "HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz",
+    "upstreamSha256": "93bc4c2c696eaf13515ab058caecc064bfed704f85bac7482330ca91bc730daa",
+    "retrieved": "2026-08-28",
+    "provenance": "data/samples/PROVENANCE.md",
+    "licenseRecord": "docs/dataset-licenses.md — GIAB / NIST HG001 benchmark: public-domain U.S. government data, Use"
+  },
+  "transformation": "All parent header bytes and all chr20 records at inclusive positions 1000000..1100000, in original order, retained verbatim. No ID annotation or other field changes. Gzip level 9, timestamp zero, no filename.",
+  "fixture": {
+    "path": "e2e/fixtures/HG001_GRCh38_chr20_1000000-1100000.vcf.gz",
+    "sha256": "4b9accc049c47395dacdf0dc6f3a78234819aa83aef1abb0fe4096940c2b8ecd",
+    "compressedBytes": 7011,
+    "decodedSha256": "df10e731541a2286fe04b351847db83c18ce0aed54360df3ee5319a12b6998d9",
+    "decodedBytes": 100410,
+    "headerBytes": 22571,
+    "records": 144,
+    "variants": 144,
+    "counts": {
+      "called": 127,
+      "noCall": 0,
+      "unsupported": 17,
+      "failedFilter": 0,
+      "blocks": 0,
+      "singleSample": true,
+      "buildClaim": true
+    },
+    "firstPoint": {
+      "rsid": null,
+      "chrom": 20,
+      "pos": 1002295,
+      "ref": "G",
+      "alt": "A",
+      "genotype": "A/G"
+    },
+    "ancestryMarkerCount": 0
+  },
+  "scope": "Bounded positive benchmark transport/preparation/locus proof. rsID/gene positives use a separate actual synthetic source. Canonical parent lineages remain uncomputed; this does not close A8 MT/Y coverage."
+}

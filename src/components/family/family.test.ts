@@ -70,9 +70,10 @@ describe("family people list", () => {
     expect(html).not.toMatch(/\d+ files?/);
   });
 
-  it("names the four card states and nothing else", () => {
+  it("distinguishes a missing file from an unavailable shared result", () => {
     expect(personCardLine("ready", "Bo")).toBe(hub.CARD_READY_STATUS);
     expect(personCardLine("no-file", "Bo")).toBe(hub.CARD_NO_FILE_STATUS);
+    expect(personCardLine("awaiting-results", "Bo")).toBe(hub.CARD_AWAITING_RESULTS_STATUS);
     expect(personCardLine("paused", "Bo")).toBe(hub.CARD_PAUSED_STATUS);
     expect(personCardLine("waiting", "Bo")).toBe("Waiting for Bo to share");
   });

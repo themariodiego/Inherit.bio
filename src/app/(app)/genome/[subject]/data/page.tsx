@@ -19,7 +19,8 @@ import {
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
 import type { CoverageSpec } from "@/lib/figures/spec";
-import { getSubjectFileCount, getSubjectProcessedFiles } from "@/lib/genome/load";
+import { getSubjectFileCount } from "@/lib/genome/load";
+import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -44,7 +45,7 @@ export default async function GenomeDataPage(
   // The coverage facts read the processed files; the subject bar counts
   // every file in the record, whatever its status.
   const [files, fileCount] = await Promise.all([
-    getSubjectProcessedFiles(admin, subject.id),
+    getPreparedSourceFiles(admin, subject.id),
     getSubjectFileCount(admin, subject.id),
   ]);
 
@@ -55,7 +56,7 @@ export default async function GenomeDataPage(
   // against a global fallback panel, so nothing numeric about risk is shown
   // (§4 §2.5, X4.2).
   const { data: prsRows } = files.length > 0
-    ? await admin
+    ? await supabase
         .from("user_prs")
         .select("pgs_id, matched, file_id")
         .eq("subject_id", subject.id)
@@ -75,7 +76,8 @@ export default async function GenomeDataPage(
       return meta ? [{ row, meta }] : [];
     })
     .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
-  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id));
+  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id),
+    { kind: "report", purpose: "reports.polygenic" });
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">

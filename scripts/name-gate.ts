@@ -149,10 +149,10 @@ function isIgnoredHost(host: string): boolean {
   const normalized = host
     .toLowerCase()
     .replace(/^www\./, "")
-    .replace(/[),.;]+$/, "")
-    .replace(/:.*$/, "");
+    .replace(/[),.;]+$/, "");
   return (
     normalized === "localhost" ||
+    normalized === "[::1]" ||
     normalized === "inherit.bio" ||
     normalized.endsWith(".inherit.bio") ||
     normalized.endsWith(".e2e.local") ||
@@ -160,6 +160,8 @@ function isIgnoredHost(host: string): boolean {
     normalized.endsWith(".example.com") ||
     normalized.endsWith(".example.test") ||
     normalized.endsWith(".example.invalid") ||
+    normalized === "test" || normalized.endsWith(".test") ||
+    normalized === "invalid" || normalized.endsWith(".invalid") ||
     normalized === "example.com" ||
     normalized === "example.test" ||
     normalized === "example.invalid" ||
@@ -212,7 +214,7 @@ export function scanDenylist(
   return findings;
 }
 
-function scanExternalHosts(
+export function scanExternalHosts(
   text: string,
   relativePath: string,
   allowed: ResolvedAllowedName[],
@@ -220,13 +222,24 @@ function scanExternalHosts(
   const findings: NameFinding[] = [];
   const expression = /https?:\/\/([^\s/"'<>`)]+)/g;
   for (const match of text.matchAll(expression)) {
-    const host = match[1];
+    // Extract the URL hostname, not credentials, port, query or fragment.
+    // SQL URL validators spell literal dots as \\.; decode only that escape.
+    // Other backslashes stay unparsed so URL's slash normalization cannot
+    // conceal an unreviewed authority. This is name classification, not an
+    // outbound-request permission check; the private denylist scans all text.
+    const authority = match[1].split(/[?#]/, 1)[0].replace(/\\\./g, ".").replace(/[),.;]+$/, "");
+    let host = authority, parsed = false;
+    if (!authority.includes("\\")) {
+      try { host = new URL(`https://${authority}`).hostname; parsed = true; } catch { /* flag malformed authorities below */ }
+    }
     const line = lineNumberAt(text, match.index ?? 0);
     const lineText = text.split(/\r?\n/)[line - 1] ?? "";
     if (
       isProviderCarveout(relativePath, lineText) ||
-      isIgnoredHost(host) ||
-      hostIsAllowed(host, allowed)
+      // Retain existing source-template handling; unparsed literal authorities
+      // cannot borrow an allowed suffix after a backslash or invalid port.
+      (!authority.includes("\\") && /[${}]/.test(authority)) ||
+      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed)))
     ) {
       continue;
     }

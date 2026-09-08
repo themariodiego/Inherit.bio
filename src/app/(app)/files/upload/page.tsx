@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Uploader } from "@/components/uploads/uploader";
-import { connection } from "next/server";
-import { legacyUploadsPaused } from "@/lib/uploads/legacy-upload-pause";
+import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 
 export const metadata: Metadata = { title: "Add a file" };
 
-export default async function FileUploadPage() {
-  await connection();
+export default function FileUploadPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="space-y-3">
@@ -18,7 +15,7 @@ export default async function FileUploadPage() {
           off until their separate consent and legal rules are met.
         </p>
       </header>
-      <Uploader paused={legacyUploadsPaused()} />
+      <OwnUploadEntry />
       <p className="text-sm">
         <Link href="/files" className="underline underline-offset-2">← All files</Link>
       </p>

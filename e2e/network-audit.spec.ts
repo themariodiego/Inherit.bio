@@ -1,6 +1,8 @@
+import { uploadOwnFilePrepared } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { randomUUID } from "node:crypto";
+import { createConfirmedUser, signIn } from "./helpers";
 
 // A14 — the network audit as an E2E test over REAL rendered pages: the set
 // of request origins on landing, dashboard, and a report page must be
@@ -22,7 +24,7 @@ const TRACKER_HOST_FRAGMENTS = [
   "adsrvr", "taboola", "outbrain", "quantserve", "scorecardresearch",
 ];
 
-const USER = { email: "netaudit@e2e.local", password: "e2e-netaudit-pw" };
+const USER = { email: `netaudit-${randomUUID()}@e2e.local`, password: "e2e-netaudit-pw" };
 
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
@@ -111,18 +113,12 @@ test("browse page with the embedded genome browser contacts no third-party origi
   page,
 }) => {
   const user = {
-    email: "netaudit-browse@e2e.local",
+    email: `netaudit-browse-${randomUUID()}@e2e.local`,
     password: "e2e-netaudit-browse-pw",
   };
   await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
-  await ingestFileAs(
-    page,
-    user.email,
-    user.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
+  await uploadOwnFilePrepared(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
 
   const observed = watchRequests(page);
   // rs762551 is a non-ref call in the tiny fixture, so the search returns a

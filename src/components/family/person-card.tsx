@@ -14,6 +14,7 @@ import Link from "next/link";
 import { subjectKind } from "@/components/subjects/subject-bar";
 import {
   CARD_NO_FILE_STATUS,
+  CARD_AWAITING_RESULTS_STATUS,
   CARD_PAUSED_STATUS,
   CARD_READY_STATUS,
   waitingToShareStatus,
@@ -34,7 +35,7 @@ const DISC_CLASSES = [
   "bg-subject-7",
 ] as const;
 
-export type PersonCardState = "ready" | "no-file" | "paused" | "waiting";
+export type PersonCardState = "ready" | "no-file" | "awaiting-results" | "paused" | "waiting";
 
 export function personCardLine(state: PersonCardState, name: string): string {
   switch (state) {
@@ -42,6 +43,8 @@ export function personCardLine(state: PersonCardState, name: string): string {
       return CARD_READY_STATUS;
     case "no-file":
       return CARD_NO_FILE_STATUS;
+    case "awaiting-results":
+      return CARD_AWAITING_RESULTS_STATUS;
     case "paused":
       return CARD_PAUSED_STATUS;
     case "waiting":

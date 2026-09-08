@@ -1,3 +1,6 @@
+import { prepareHealthPictureGrant } from "@/lib/family/health-picture-results";
+import { preparePortraitGrant } from "@/lib/family/portrait-source-readiness";
+import { prepareSharedReportGrant } from "@/lib/family/shared-report-results";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -175,17 +178,27 @@ export default async function FamilyPermissionsPage(
     }
   }
 
+  const reportEndpointReceipt = mayGrant && mySelf ? await prepareSharedReportGrant(admin, mySelf.id, person.counterpartAccountId) : null;
+  const portraitEndpointReceipt = mayGrant && mySelf ? await preparePortraitGrant(admin, mySelf.id, person.counterpartAccountId) : null;
+  const healthPictureEndpointReceipt = mayGrant && mySelf ? await prepareHealthPictureGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const canMint = Boolean(mySelf && myPrincipal && theirPrincipal && artifact && profile);
   function actionFor(purpose: Purpose): RowAction | undefined {
     const held = outbound.get(purpose);
     if (held && held.state === "on") return { kind: "revoke", grantId: held.grantId };
     if (!mayGrant || !canMint) return undefined;
+    const isReport = purpose === "reports.monogenic" || purpose === "reports.polygenic";
+    if (isReport && !reportEndpointReceipt) return undefined;
+    if (purpose === "family.portrait" && !portraitEndpointReceipt) return undefined;
+    if (purpose === "family.heritability" && !healthPictureEndpointReceipt) return undefined;
     const request: GrantPurposeRequest = {
       action: "grant-purpose",
       subjectId: mySelf!.id,
       purposeKey: purpose,
       artifactVersion: artifact!.version,
       artifactPresentationToken: mintGrantPresentation({
+        ...(isReport ? { reportEndpointReceipt: reportEndpointReceipt! } : {}),
+        ...(purpose === "family.portrait" ? { portraitEndpointReceipt: portraitEndpointReceipt! } : {}),
+        ...(purpose === "family.heritability" ? { healthPictureEndpointReceipt: healthPictureEndpointReceipt! } : {}),
         accountId: user.id,
         dataSubjectId: mySelf!.id,
         subjectBindingRevision: mySelf!.subject_binding_revision,

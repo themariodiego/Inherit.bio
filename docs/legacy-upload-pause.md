@@ -1,5 +1,11 @@
 # Pause new legacy uploads during cutover
 
+Historical instructions for released PR75 (`a7d5a8e`) only. The canonical
+replacement uses `INHERIT_CANONICAL_UPLOADS_PAUSED`; the legacy setting and
+its old tests/helpers are not part of the replacement runtime. See
+`hosted-own-upload-readiness.md` for the ordered transition and
+`test-diff-register.md` for the preserved canonical pause assertions.
+
 `INHERIT_PAUSE_LEGACY_UPLOADS` is a server-only deployment setting. It is off
 when unset or `false`; only the exact value `true` pauses new issuance. On
 Vercel, changing the saved value requires a new deployment before it applies.

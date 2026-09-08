@@ -1,32 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Uploader } from "@/components/uploads/uploader";
+import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { legacyUploadsPaused } from "@/lib/uploads/legacy-upload-pause";
+import { fileStatusLabel } from "@/lib/uploads/file-status";
 
 export const metadata: Metadata = { title: "My files" };
-
-const STATUS_LABEL: Record<string, string> = {
-  uploading: "Uploading",
-  uploaded: "Awaiting processing",
-  parsing: "Processing…",
-  parsed: "Parsed",
-  annotated: "Processed",
-  failed: "Failed",
-  stored: "Stored (Tier 2)",
-};
 
 export default async function UploadsPage() {
   const supabase = await createClient();
   const { data: files } = await supabase
     .from("genome_files")
     .select(
-      "id, original_name, file_type, tier, size_bytes, sha256, status, build, variant_count, error, created_at, processing_started_at, processing_finished_at",
+      "id, original_name, file_type, tier, size_bytes, sha256, status, build, variant_count, error, created_at, processing_started_at, processing_finished_at, single_logical_sample_verified_at, normalization_completed_at",
     )
     .order("created_at", { ascending: false });
 
@@ -57,7 +47,7 @@ export default async function UploadsPage() {
         )}
       </div>
 
-      <Uploader paused={legacyUploadsPaused()} />
+      <OwnUploadEntry />
 
       <div className="space-y-1 text-xs text-ink-muted">
         <p>
@@ -111,7 +101,7 @@ export default async function UploadsPage() {
                 <Badge
                   variant={f.status === "failed" ? "destructive" : "secondary"}
                 >
-                  {STATUS_LABEL[f.status] ?? f.status}
+                  {fileStatusLabel(f)}
                 </Badge>
                 {f.status === "annotated" ? (
                   <Link
@@ -120,11 +110,19 @@ export default async function UploadsPage() {
                   >
                     See your reports →
                   </Link>
+                ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
+                  <Link
+                    href="/genome/me/reports"
+                    className="whitespace-nowrap text-xs text-forest underline underline-offset-2"
+                  >
+                    Choose reports →
+                  </Link>
                 ) : null}
                 <FileRowActions
                   fileId={f.id}
                   status={f.status}
                   tier={f.tier}
+                  preparationOnly={f.single_logical_sample_verified_at !== null}
                 />
               </div>
             </div>

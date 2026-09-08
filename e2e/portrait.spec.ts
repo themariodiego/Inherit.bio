@@ -2,13 +2,13 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
+import { uploadOwnFilePrepared } from "./own-report-helpers";
 import path from "node:path";
 import {
   adminClient,
-  anonClient,
   createConfirmedUser,
   firstViewportInteractives,
-  ingestFileAs,
   signIn,
 } from "./helpers";
 import { CARRIER_FIXTURE_POSITIONS, type FixtureGenotype } from "./fixtures/carrier-pair-positions";
@@ -42,9 +42,9 @@ import { TRAIT_KEYS } from "@/lib/family/traits";
 /**
  * `/family/portrait/[pairId]` (design docs/design/w9-family-surfaces.md
  * §6.2; the brief's `portrait` suite, line 2308): two adults with their own
- * accounts, an invitation-free pairing through the real grant routine, the
- * real acknowledgement routine, the real independent-login marker, and the
- * synthetic carrier-pair fixture ingested for both.
+ * accounts, an actual invitation accepted by B, explicit Portrait permission
+ * controls and acknowledgement checkboxes in each account, and the synthetic
+ * carrier-pair fixture prepared through restricted Storage uploads for both.
  *
  * What it pins: with only A's grant, the blocking screen naming B and each
  * undone step, the banner pair verbatim, no figure and no image; A's own
@@ -70,8 +70,9 @@ import { TRAIT_KEYS } from "@/lib/family/traits";
 const A = { email: `portrait-a-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
 const B = { email: `portrait-b-${randomUUID()}@e2e.local`, password: "e2e-portrait-pw" };
 
-/** Neither self subject carries a name, so each sees the other as an adult. */
-const OTHER = "Another adult";
+/** The inviter sees the invitation handle; its recipient sees the unnamed self. */
+const INVITEE_LABEL = "Invited adult";
+const INVITER_LABEL = "Another adult";
 
 const GATE_CHECKBOX = "I understand this can tell me something I can’t un-know.";
 const GATE_BUTTON = "Show what’s shared";
@@ -106,11 +107,19 @@ let accountA = "";
 let accountB = "";
 let selfSubjectA = "";
 let selfSubjectB = "";
-let principalA = "";
-let principalB = "";
+/** A routes through the accepted invitation record; B routes through A’s self record. */
+let invitedSubjectB = "";
 let pairId = "";
 let fixtureCheck: FixtureCheck;
+const sourceFileIds: string[] = [];
+let sourceBefore: unknown;
 
+interface CapturedEmail { to: string[] | string; html?: string }
+const captured: CapturedEmail[] = [];
+let resendMock: http.Server;
+const JOBS_SECRET = process.env.JOBS_SECRET;
+if (!JOBS_SECRET) throw new Error("JOBS_SECRET is required for the Portrait mail worker fixture");
+test.use({ trace: "off" }); // Restricted upload and signed grant bearers stay out of traces.
 test.describe.configure({ mode: "serial" });
 
 async function accountIdFor(email: string): Promise<string> {
@@ -129,64 +138,18 @@ async function selfSubjectOf(accountId: string): Promise<string> {
   return (data as { id: string }).id;
 }
 
-async function principalOf(subjectId: string, accountId: string): Promise<string> {
-  const { data } = await adminClient()
-    .from("subject_principals")
-    .select("id")
-    .eq("subject_id", subjectId)
-    .eq("account_id", accountId)
-    .eq("principal_kind", "account_subject")
-    .eq("status", "active")
-    .limit(1)
-    .single();
-  return (data as { id: string }).id;
-}
-
-function authSessionIdOf(accessToken: string): string {
-  const payload = JSON.parse(
-    Buffer.from(accessToken.split(".")[1] ?? "", "base64url").toString("utf8"),
-  ) as { session_id?: unknown };
-  if (typeof payload.session_id !== "string") throw new Error("the access token carries no session id");
-  return payload.session_id;
-}
-
-/**
- * The independent-login marker through the real routine from a real session
- * of the account (`grant_directional_purpose_v1` refuses `family.portrait`
- * while it is unset, and the page names it as a step). These accounts
- * accepted no invitation, so any session of theirs stamps.
- */
-async function markIndependentLogin(account: { email: string; password: string }, accountId: string) {
-  const { data, error } = await anonClient().auth.signInWithPassword({
-    email: account.email,
-    password: account.password,
-  });
-  if (error || !data.session) throw new Error(`sign-in: ${error?.message}`);
-  const stamped = await adminClient().rpc("mark_independent_login_v1", {
-    p_account_id: accountId,
-    p_auth_session_id: authSessionIdOf(data.session.access_token),
-  });
-  expect(stamped.error).toBeNull();
-  expect(stamped.data).toBe(1);
-}
-
-/** One directional Portrait grant, through the real routine, from the granter's own account. */
-async function grantPortrait(
-  granterAccount: string,
-  granterSubject: string,
-  recipientPrincipal: string,
-): Promise<string> {
-  const { data, error } = await adminClient().rpc("grant_directional_purpose_v1", {
-    p_account_id: granterAccount,
-    p_data_subject_id: granterSubject,
-    p_recipient_principal_id: recipientPrincipal,
-    p_purpose: "family.portrait",
-    p_artifact_key: "consent.share-with-adult",
-    p_artifact_version: 1,
-    p_token_nonce: `e2e-portrait-${randomUUID()}`,
-  });
-  if (error) throw new Error(`grant family.portrait: ${error.message}`);
-  return data as unknown as string;
+/** A fresh server presentation and real permission POST from the current account. */
+async function grantPortrait(page: Page, recipientHandle: string) {
+  await page.goto(`/family/s-${recipientHandle}/permissions`);
+  const row = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
+  await expect(row.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  const response = page.waitForResponse(response => response.url().endsWith("/api/consents") && response.request().method() === "POST");
+  await row.getByRole("button", { name: /Turn on/ }).click();
+  const receipt = await response;
+  expect(receipt.status()).toBe(201);
+  expect(await receipt.json()).toMatchObject({ recordKind: "purpose_grant", purposeKey: "family.portrait", artifactKey: "consent.share-with-adult" });
+  await expect(row.locator('[data-slot="permission-state"]')).toHaveText("On");
 }
 
 async function acknowledgedAt(subjectId: string): Promise<string | null> {
@@ -262,6 +225,17 @@ function sourceFiles(directory: string): string[] {
 }
 
 test.beforeAll(async () => {
+  resendMock = http.createServer((request, response) => {
+    let body = "";
+    request.on("data", chunk => { body += chunk; });
+    request.on("end", () => {
+      if (request.method === "POST" && request.url === "/emails") {
+        captured.push(JSON.parse(body) as CapturedEmail);
+        response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ id: `portrait-${captured.length}` }));
+      } else response.writeHead(404).end();
+    });
+  });
+  await new Promise<void>(resolve => resendMock.listen(8124, "127.0.0.1", resolve));
   const admin = adminClient();
   await createConfirmedUser(A.email, A.password);
   await createConfirmedUser(B.email, B.password);
@@ -313,13 +287,10 @@ test.beforeAll(async () => {
   accountB = await accountIdFor(B.email);
   selfSubjectA = await selfSubjectOf(accountA);
   selfSubjectB = await selfSubjectOf(accountB);
-  await markIndependentLogin(A, accountA);
-  await markIndependentLogin(B, accountB);
-  principalA = await principalOf(selfSubjectA, accountA);
-  principalB = await principalOf(selfSubjectB, accountB);
 });
 
 test.afterAll(async () => {
+  if (resendMock) await new Promise<void>(resolve => resendMock.close(() => resolve()));
   const admin = adminClient();
   await admin
     .from("condition_registry")
@@ -331,30 +302,85 @@ test.afterAll(async () => {
     .in("rsid", CARRIER_FIXTURE_POSITIONS.map((entry) => entry.rsid));
 });
 
-test("both adults add the synthetic file to their own record", async ({ page }) => {
-  const admin = adminClient();
+test("both adults add the synthetic file to their own record", async ({ page, request }) => {
   const fixture = path.join(process.cwd(), "e2e/fixtures/carrier-pair-grch38.vcf");
   for (const account of [A, B]) {
     await signIn(page, account.email, account.password);
-    const fileId = await ingestFileAs(page, account.email, account.password, fixture, "vcf");
-    await expect
-      .poll(
-        async () => {
-          const { data } = await admin.from("genome_files").select("status").eq("id", fileId).single();
-          return (data as { status: string } | null)?.status;
-        },
-        { timeout: 60_000 },
-      )
-      .toBe("annotated");
+    sourceFileIds.push(await uploadOwnFilePrepared(page, fixture, { fileType: "vcf" }));
     await page.request.post("/auth/sign-out");
   }
+  const sources = await adminClient().from("genome_files").select("id,user_id,subject_id,sha256,upload_revision,normalization_source_revision,normalization_completed_at,status")
+    .in("id", sourceFileIds).order("id");
+  expect(sources.error).toBeNull(); expect(sources.data).toHaveLength(2); sourceBefore = sources.data;
+  // An actual accepted invitation provides the permissions surface; neither
+  // account grants Portrait or any report purpose merely by accepting it.
+  await signIn(page, A.email, A.password);
+  await page.goto("/family/invite");
+  await page.getByLabel("Their email address").fill(B.email);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Send invitation" }).click();
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
+  const drain = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+  expect(drain.status()).toBe(200);
+  const message = captured.find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email));
+  const invitationUrl = message?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0];
+  expect(invitationUrl).toBeTruthy();
+  await page.request.post("/auth/sign-out");
+  await page.goto(invitationUrl!);
+  await page.getByRole("link", { name: "Sign in to accept" }).click();
+  await page.getByLabel("Email").fill(B.email);
+  await page.getByLabel("Password").fill(B.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(invitationUrl!);
+  await page.getByRole("button", { name: "Accept through my account" }).click();
+  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  // This was B's actual acceptance session. A's Family route names the invited
+  // representative, while every DNA/pair assertion still names B's own self.
+  const admin = adminClient();
+  const inviter = await admin.from("subject_principals").select("id")
+    .eq("account_id", accountA).eq("subject_id", selfSubjectA)
+    .eq("principal_kind", "account_subject").eq("status", "active").single();
+  expect(inviter.error).toBeNull();
+  const invitation = await admin.from("subject_invitations").select("target_id,invitee_principal_id,accepted_at")
+    .eq("inviter_principal_id", inviter.data!.id).eq("invitation_kind", "adult_subject")
+    .eq("target_kind", "subject").eq("status", "accepted").single();
+  expect(invitation.error).toBeNull();
+  expect(invitation.data!.accepted_at).not.toBeNull();
+  expect(invitation.data!.invitee_principal_id).not.toBeNull();
+  invitedSubjectB = invitation.data!.target_id;
+  expect(invitedSubjectB).not.toBe(selfSubjectB);
+  const representative = await admin.from("subjects")
+    .select("id,subject_class,subject_account_id,owner_account_id,lifecycle").eq("id", invitedSubjectB).single();
+  expect(representative.error).toBeNull();
+  expect(representative.data).toEqual({ id: invitedSubjectB, subject_class: "other_adult",
+    subject_account_id: accountB, owner_account_id: null, lifecycle: "active" });
+  const invitee = await admin.from("subject_principals").select("account_id,subject_id,principal_kind,status")
+    .eq("id", invitation.data!.invitee_principal_id!).single();
+  expect(invitee.error).toBeNull();
+  expect(invitee.data).toEqual({ account_id: accountB, subject_id: invitedSubjectB, principal_kind: "account_subject", status: "active" });
+  const binding = await admin.from("subject_account_bindings").select("account_principal_id")
+    .eq("subject_id", invitedSubjectB).eq("subject_principal_id", invitation.data!.invitee_principal_id!)
+    .eq("account_id", accountB).eq("binding_kind", "adult_claim").eq("status", "current").is("ended_at", null).single();
+  expect(binding.error).toBeNull();
+  const boundSelf = await admin.from("subject_principals").select("account_id,subject_id,principal_kind,status")
+    .eq("id", binding.data!.account_principal_id).single();
+  expect(boundSelf.error).toBeNull();
+  expect(boundSelf.data).toEqual({ account_id: accountB, subject_id: selfSubjectB, principal_kind: "account_subject", status: "active" });
+  await page.request.post("/auth/sign-out");
+  // B signs in independently and only reads the permission presentation.
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}/permissions`);
+  await expect(page.getByRole("heading", { name: "Permissions", exact: true })).toBeVisible();
+  const grants = await adminClient().from("purpose_grants").select("grant_id").in("target_id", [selfSubjectA, selfSubjectB]).is("revoked_at", null);
+  expect(grants.error).toBeNull(); expect(grants.data).toEqual([]);
 });
 
 test("with only A's grant, the page is the blocking screen: it names B's steps, carries the banner pair and shows no figure", async ({
   page,
 }) => {
   // A turns Portrait on from A's own account; the routine creates the pair.
-  await grantPortrait(accountA, selfSubjectA, principalB);
+  await signIn(page, A.email, A.password);
+  await grantPortrait(page, invitedSubjectB);
   const pair = await pairOf();
   pairId = pair.id;
   expect(pair.status).toBe("pending");
@@ -362,10 +388,10 @@ test("with only A's grant, the page is the blocking screen: it names B's steps, 
   await signIn(page, A.email, A.password);
   await page.goto(url());
   await expect(page.getByRole("heading", { level: 1, name: PORTRAIT_H1 })).toBeVisible();
-  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${OTHER} / ${PORTRAIT_H1}`);
+  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${INVITEE_LABEL} / ${PORTRAIT_H1}`);
   await expect(page.locator('nav[aria-label="Breadcrumb"] a').nth(1)).toHaveAttribute(
     "href",
-    `/family/s-${selfSubjectB}`,
+    `/family/s-${invitedSubjectB}`,
   );
 
   // Both chips, no file count on either (a fact about another adult's files).
@@ -383,13 +409,13 @@ test("with only A's grant, the page is the blocking screen: it names B's steps, 
   // the server-derived list, the action to the consents page.
   const blocking = page.locator('[data-slot="portrait-blocking"]');
   await expect(blocking).toHaveAttribute("data-state", "consent-required");
-  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(`you and ${OTHER}`));
+  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(`you and ${INVITEE_LABEL}`));
   await expect(blocking).toContainText(BLOCKING_BODY);
   const steps = blocking.locator('[data-slot="portrait-missing-step"]');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0)).toHaveText(viewerMissingStep(VIEWER_PORTRAIT_STEPS.acknowledged));
-  await expect(steps.nth(1)).toHaveText(missingStep(OTHER, PORTRAIT_STEPS.grant));
-  await expect(steps.nth(2)).toHaveText(missingStep(OTHER, PORTRAIT_STEPS.acknowledged));
+  await expect(steps.nth(1)).toHaveText(missingStep(INVITEE_LABEL, PORTRAIT_STEPS.grant));
+  await expect(steps.nth(2)).toHaveText(missingStep(INVITEE_LABEL, PORTRAIT_STEPS.acknowledged));
   await expect(page.getByRole("link", { name: OPEN_CONSENTS_BUTTON })).toHaveAttribute("href", "/settings/consents");
 
   // Nothing derived, no image, no result (acceptance 16, G5.9(a)).
@@ -429,7 +455,7 @@ test("A acknowledges through the real checkbox, for A's own subject only", async
   // A's own step is gone on the refreshed page; B's two remain; no checkbox is offered.
   const blocking = page.locator('[data-slot="portrait-blocking"]');
   await expect(blocking.locator('[data-slot="portrait-missing-step"]')).toHaveCount(2);
-  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(OTHER));
+  await expect(blocking.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(INVITEE_LABEL));
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByRole("link", { name: OPEN_CONSENTS_BUTTON })).toHaveAttribute("href", "/settings/consents");
   expect(await acknowledgedAt(selfSubjectA)).not.toBeNull();
@@ -440,13 +466,16 @@ test("A acknowledges through the real checkbox, for A's own subject only", async
 test("once B has turned Portrait on and acknowledged, the page withholds every result until the one Tier-2 gate is passed", async ({
   page,
 }) => {
-  await grantPortrait(accountB, selfSubjectB, principalA);
-  const { data: stamp, error } = await adminClient().rpc("acknowledge_portrait_v1", {
-    p_account_id: accountB,
-    p_subject_id: selfSubjectB,
-  });
-  expect(error).toBeNull();
-  expect(stamp).toBeTruthy();
+  await signIn(page, B.email, B.password);
+  await grantPortrait(page, selfSubjectA);
+  await page.goto(url());
+  const acknowledgement = page.locator('[data-slot="portrait-acknowledge"]');
+  await expect(acknowledgement.getByRole("checkbox")).not.toBeChecked();
+  await acknowledgement.getByRole("checkbox").check();
+  await acknowledgement.getByRole("button", { name: ACKNOWLEDGE_BUTTON }).click();
+  await expect(page.getByText(GATE_CHECKBOX, { exact: true })).toBeVisible();
+  expect(await acknowledgedAt(selfSubjectB)).not.toBeNull();
+  await page.request.post("/auth/sign-out");
   expect((await pairOf()).status).toBe("current");
 
   await signIn(page, A.email, A.password);
@@ -574,9 +603,9 @@ test("A's session and B's session render byte-equal finding text (brief line 133
   const fromB = await findingTexts(page);
   expect(fromB).toEqual(fromA);
   await expect(page.locator('[data-slot="portrait-empty"]')).toHaveText(unavailableA!);
-  // B sees A as the other adult and themself as "You"; the findings name nobody.
-  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${OTHER} / ${PORTRAIT_H1}`);
-  for (const text of fromB) expect(text).not.toContain(OTHER);
+  // B sees A through the unnamed-self fallback, not A’s invitation label for B.
+  await expect(page.locator('nav[aria-label="Breadcrumb"]')).toHaveText(`Family / ${INVITER_LABEL} / ${PORTRAIT_H1}`);
+  for (const text of fromB) for (const label of [INVITEE_LABEL, INVITER_LABEL]) expect(text).not.toContain(label);
 });
 
 test("the page keeps its budgets and is clean in both themes", async ({ page }) => {
@@ -655,15 +684,18 @@ test("B deletes it: the page closes for both on the next request, and B's own gr
     .select("id", { count: "exact", head: true })
     .eq("family_pair_id", pairId);
   expect(count ?? 0).toBe(0);
+  const preserved = await admin.from("genome_files").select("id,user_id,subject_id,sha256,upload_revision,normalization_source_revision,normalization_completed_at,status")
+    .in("id", sourceFileIds).order("id");
+  expect(preserved.error).toBeNull(); expect(preserved.data).toEqual(sourceBefore);
 
   // Acceptance 19: A's very next request is the blocking screen naming B, with nothing derived.
   await page.request.post("/auth/sign-out");
   await signIn(page, A.email, A.password);
   await page.goto(url());
   const blockingForA = page.locator('[data-slot="portrait-blocking"]');
-  await expect(blockingForA.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(OTHER));
+  await expect(blockingForA.getByRole("heading", { level: 2 })).toHaveText(blockingHeading(INVITEE_LABEL));
   await expect(blockingForA.locator('[data-slot="portrait-missing-step"]')).toHaveText([
-    missingStep(OTHER, PORTRAIT_STEPS.grant),
+    missingStep(INVITEE_LABEL, PORTRAIT_STEPS.grant),
   ]);
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);

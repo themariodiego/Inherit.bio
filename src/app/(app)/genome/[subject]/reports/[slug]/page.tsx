@@ -1,3 +1,4 @@
+import { loadOwnStoredReportSnapshot } from "@/lib/genome/own-stored-report";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -53,7 +54,6 @@ import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectFileCount,
-  getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
@@ -71,8 +71,11 @@ import {
   type CategoryId,
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
-import { LAYER_PURPOSES, viewerMaySee } from "@/lib/family/access";
+import { grantedLayers, LAYER_PURPOSES, viewerMaySee } from "@/lib/family/access";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
+import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
+import { resolveStoredSharedReport, selectSharedReport, sharedReportsForSlug } from "@/lib/family/shared-report-display";
+import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -117,15 +120,48 @@ function chromosomeName(chrom: number): string {
  * reads its genotypes from that person's own subject, is answered only after
  * the Tier-2 gate, and only for the layer they granted.
  */
-const loadReport = cache(async (segment: string, slug: string) => {
+const loadReport = cache(async (segment: string, slug: string, source?: string | string[]) => {
+  if (source !== undefined && typeof source !== "string") return { kind: "not-found" } as const;
   const context = await resolveSubjectRoute(segment, {
     anyOf: ["reports.monogenic", "reports.polygenic"],
   });
   if (context.kind !== "ok") return context;
   const admin = createAdminClient();
+  if (!context.person && source !== undefined) {
+    const own = await loadOwnStoredReportSnapshot(admin, { subjectId: context.dataSubjectId, fileId: source, slug });
+    const stored = own.reports[0];
+    if (!own.authorized || !stored) return { kind: "not-found" } as const;
+    return { ...context, shared: own, sharedReport: stored, sharedChoices: [stored], sharedLegacyAvailable: false,
+      template: stored.report.catalogSnapshot.template,
+      files: [{ id: stored.fileId, file_type: own.sources[0].fileType }], fileCount: await getSubjectFileCount(admin, context.dataSubjectId) };
+  }
+  const shared = context.person ? await loadSharedReportSnapshot(admin, {
+    subjectId: context.dataSubjectId, counterpartAccountId: context.person.counterpartAccountId,
+    purposes: grantedLayers(context.person).map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
+  }) : null;
+  if (shared && !shared.authorized) return { kind: "not-found" } as const;
+  const sharedChoices = shared ? sharedReportsForSlug(shared.reports, slug) : [];
+  const legacyCandidates = context.person
+    ? await loadOwnAnalysisCandidateFiles(admin, context.dataSubjectId, { legacyOnly: true }) : null;
+  const sharedLegacyAvailable = (legacyCandidates?.length ?? 0) > 0;
+  const sharedReport = shared && source !== "legacy" ? selectSharedReport(shared.reports, slug, source) : null;
+  if (sharedReport) {
+    const input = shared!.sources.find(item => item.fileId === sharedReport.fileId);
+    return { ...context, shared, sharedReport, sharedChoices, sharedLegacyAvailable,
+      template: sharedReport.report.catalogSnapshot.template,
+      files: [{ id: sharedReport.fileId, file_type: input?.fileType ?? "unknown" }],
+      fileCount: new Set(shared!.sources.map(item => item.fileId)).size + (legacyCandidates?.length ?? 0),
+    };
+  }
+  // An explicit source never silently changes to another file or legacy data.
+  if (context.person && source !== undefined && !(source === "legacy" && sharedLegacyAvailable)) return { kind: "not-found" } as const;
+  if (source !== "legacy" && shared?.unavailableReports.some(row => row.slug === slug)) {
+    if (!(await shared.confirm()).authorized) return { kind: "not-found" } as const;
+    return { kind: "shared-unavailable" } as const;
+  }
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
-  const [{ data: raw }, files, fileCount] = await Promise.all([
+  const [{ data: raw }, candidateFiles, fileCount] = await Promise.all([
     admin
       .from("report_templates")
       .select(
@@ -134,21 +170,30 @@ const loadReport = cache(async (segment: string, slug: string) => {
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle(),
-    getSubjectProcessedFiles(admin, context.dataSubjectId),
-    getSubjectFileCount(admin, context.dataSubjectId),
+    legacyCandidates ?? loadOwnAnalysisCandidateFiles(admin, context.dataSubjectId),
+    context.person
+      ? admin.from("genome_files").select("id", { count: "exact", head: true })
+        .eq("subject_id", context.dataSubjectId).is("single_logical_sample_verified_at", null).then(result => result.count ?? 0)
+      : getSubjectFileCount(admin, context.dataSubjectId),
   ]);
   if (!raw) return { kind: "not-found" } as const;
-  return { ...context, files, fileCount, template: raw as unknown as ReportTemplate };
+  const layer = (raw.layer ?? "estimate") as FindingLayer;
+  if (context.person && !viewerMaySee(context.person, LAYER_PURPOSES[layer])) return { kind: "not-found" } as const;
+  const files = await filterOwnAnalysisFiles(admin, context.dataSubjectId,
+    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", context.person ? candidateFiles.filter(file => file.single_logical_sample_verified_at === null) : candidateFiles);
+  return { ...context, files, fileCount, shared, sharedReport: null, sharedChoices, sharedLegacyAvailable, template: raw as unknown as ReportTemplate };
 });
 
 export async function generateMetadata(
   props: PageProps<"/genome/[subject]/reports/[slug]">,
 ): Promise<Metadata> {
   const { slug, subject: segment } = await props.params;
-  const context = await loadReport(segment, slug);
+  const params = await props.searchParams;
+  const context = await loadReport(segment, slug, params.source);
+  const current = context.kind === "ok" && context.shared ? await context.shared.confirm() : null;
   return {
     title:
-      context.kind === "ok"
+      context.kind === "ok" && (!current || current.authorized)
         ? `${context.displayLabel} · ${reportNameOf(context.template.title)}`
         : "Report",
   };
@@ -268,8 +313,16 @@ export default async function ReportDetailPage(
   const revealParam =
     typeof searchParams.reveal === "string" ? searchParams.reveal : undefined;
 
-  const context = await loadReport(subjectSegment, slug);
+  const sourceParam = searchParams.source;
+  const context = await loadReport(subjectSegment, slug, sourceParam);
   if (context.kind === "not-found") notFound();
+  if (context.kind === "shared-unavailable") {
+    return <section role="status" className="mx-auto max-w-prose space-y-4">
+      <h1 className="display text-3xl">Saved result unavailable</h1>
+      <p>This saved result is missing the source details needed to show it.</p>
+      <Link className="underline" href={route("family.person", { person: subjectSegment })}>Back to shared results</Link>
+    </section>;
+  }
   // The Family domain has one gate, on the person page; a report reached
   // before it is sent there and fetches nothing derived.
   if (context.kind === "gate") {
@@ -284,7 +337,7 @@ export default async function ReportDetailPage(
       />
     );
   }
-  const { user, subject, dataSubjectId, person, domain, files, fileCount, template } = context;
+  const { user, subject, dataSubjectId, person, domain, files, fileCount, template, shared, sharedReport, sharedChoices, sharedLegacyAvailable } = context;
 
   const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";
@@ -313,7 +366,7 @@ export default async function ReportDetailPage(
   const revealHref = route(
     "genome.report",
     { ...subjectParams, slug: template.slug },
-    { query: { reveal: "1" } },
+    { query: { reveal: "1", ...(sharedReport ? { source: sharedReport.fileId } : person && sourceParam === "legacy" ? { source: "legacy" } : {}) } },
   );
   // "Not now" returns to the library at this report's category section; a
   // template with an unmapped legacy category returns to that category's id.
@@ -343,7 +396,7 @@ export default async function ReportDetailPage(
   let inputSources: InputSourceView[] = [];
   let inputState: "recorded" | "noCall" | "conflict" | "absent" = "absent";
   if (showResults) {
-    const { genotypes, conflicts, calls, checkedFileIds } = hasData
+    const { genotypes, conflicts: legacyConflicts, calls, checkedFileIds } = hasData && !sharedReport
       ? await getSubjectReportCalls(
           createAdminClient(),
           dataSubjectId,
@@ -351,10 +404,15 @@ export default async function ReportDetailPage(
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>(), calls: [], checkedFileIds: [] };
     const recordedFiles = new Set(calls.map((call) => call.file_id));
-    inputSources = (await loadInputSources(createAdminClient(), dataSubjectId, checkedFileIds))
+    inputSources = sharedReport ? (shared?.sources ?? []).filter(item => item.fileId === sharedReport.fileId) : (await loadInputSources(createAdminClient(), dataSubjectId, checkedFileIds,
+      { kind: "report", purpose: layer === "variant_call" ? "reports.monogenic" : "reports.polygenic" }))
       .map((source) => ({ ...source, hasResultRecord: recordedFiles.has(source.fileId) }));
-    inputState = conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
-    const resolved = resolveTemplate(template, (rsid) => genotypes.get(rsid));
+    const conflicts = sharedReport ? new Set(sharedReport.report.conflictingRsids) : legacyConflicts;
+    inputState = sharedReport ? (conflicts.size ? "conflict"
+      : sharedReport.report.variants.some(item => item.outcome.status === "no-call") ? "noCall"
+      : sharedReport.report.variants.some(item => item.outcome.status === "genotyped" || item.outcome.status === "unrecognized") ? "recorded" : "absent") : conflicts.size ? "conflict" : [...genotypes.values()].includes("--") ? "noCall" : calls.length ? "recorded" : "absent";
+    const resolved = sharedReport ? resolveStoredSharedReport(sharedReport) : resolveTemplate(template, (rsid) => genotypes.get(rsid));
+    if (!resolved) notFound();
     callSummary = hasData && resolved.variants.length > 0 ? summarizeReportCalls(resolved, conflicts) : null;
     coveredPositions = callSummary?.interpreted ?? 0;
     anyNotCovered =
@@ -386,7 +444,9 @@ export default async function ReportDetailPage(
         ))}
       </div>
     ) : (
-      <p className="text-sm text-ink">{NO_FILE_YET}</p>
+      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : (
+        <>Choose this result type in <Link className="underline" href={reportsHref}>Reports</Link> to see what your file supports.</>
+      )}</p>
     );
   } else {
     yourResult = (
@@ -417,6 +477,10 @@ export default async function ReportDetailPage(
   const annotatedCitations = annotateReportSources(summarySourceIds, template.citations);
   const visibleCitations = annotatedCitations.slice(0, VISIBLE_CITATIONS);
   const moreCitations = annotatedCitations.slice(VISIBLE_CITATIONS);
+
+  // No awaited work follows this authority recheck. Metadata generation also
+  // confirms its own projection; neither cached context grants lasting access.
+  if (shared && !(await shared.confirm()).authorized) notFound();
 
   return (
     <article
@@ -450,6 +514,24 @@ export default async function ReportDetailPage(
           ) : null}
           <h1 className="display text-3xl">{reportName}</h1>
         </div>
+        {sharedChoices.length + Number(sharedLegacyAvailable) > 1 ? <nav aria-label="Saved result source" className="flex flex-wrap gap-3 text-sm">
+          {sharedChoices.map((row, index) => <Link key={row.fileId}
+            href={route("genome.report", { ...subjectParams, slug }, { query: {
+              source: row.fileId, ...(revealParam === "1" ? { reveal: "1" } : {}),
+            } })}
+            aria-current={sharedReport?.fileId === row.fileId ? "page" : undefined}
+            className="inline-flex min-h-11 items-center underline underline-offset-2">
+            <span data-ui-chrome-kind="item-count">Saved result {index + 1}</span>
+          </Link>)}
+          {sharedLegacyAvailable ? <Link
+            href={route("genome.report", { ...subjectParams, slug }, { query: {
+              source: "legacy", ...(revealParam === "1" ? { reveal: "1" } : {}),
+            } })}
+            aria-current={!sharedReport ? "page" : undefined}
+            className="inline-flex min-h-11 items-center underline underline-offset-2">Other files</Link> : null}
+        </nav> : null}
+        {sharedReport ? <p className="text-sm text-ink-muted">Saved on <time dateTime={sharedReport.completedAt}>
+          {sharedReport.completedAt.slice(0, 10)}</time>. Each saved result uses one source file.</p> : null}
         <ul data-slot="chip-row" className="space-y-2 text-sm">
           <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span data-chip="layer" className={CHIP}>

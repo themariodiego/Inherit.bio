@@ -256,3 +256,22 @@ export const WHERE_FROM_LEAD =
 
 /** The two lines shared with the report surface, from their one home. */
 export { NOT_DIAGNOSTIC, NO_RANGE_YET, PROVENANCE_LINE };
+
+/** Source and captured-result states; absence never implies a negative result. */
+export const CELL_NO_PREPARED_FILE = "No prepared file yet";
+export const CELL_NOT_GENERATED = "No saved reports for the prepared files yet";
+export const CELL_CATALOG_UNAVAILABLE = "Some saved reports lack the information needed to show them here";
+export const CELL_VERSION_UNAVAILABLE = "No saved result for this version of the report";
+export const CELL_NO_CALL = "No call was recorded for this report";
+export const CELL_UNRECOGNIZED = "The saved call could not be read for this report";
+export const CELL_SAVED = "Saved reports are shown below";
+export const CELL_LEGACY = "This layer can use earlier files";
+export const HEALTH_PICTURE_UNAVAILABLE = "This view is no longer available. Check the permissions before opening it again.";
+export const SAVED_SOURCE_LINK = "Open this saved result";
+
+export const CELL_NO_REPORT = "No saved report is available for this report purpose";
+export const CELL_CONFLICTING_CALLS = "Some saved calls disagree; those letters are not shown";
+
+export const SAVED_REPORTS_LABEL = "Saved reports";
+
+export const TABLE_SCROLL_CUE = "Scroll sideways to see each person’s results.";

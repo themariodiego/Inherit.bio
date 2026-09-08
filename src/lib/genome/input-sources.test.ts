@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { loadInputSources } from "./input-sources";
 import { INPUT_PROVENANCE_VERSION, type InputProvenanceSnapshot } from "./input-provenance";
 import type { Db } from "./load";
+const canonical = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+vi.mock("./canonical-input-sources", () => ({ loadCanonicalInputSources: canonical }));
 
 const SUBJECT = "authorized-subject";
 const DIGEST = "a".repeat(64);
@@ -22,7 +24,7 @@ const SNAPSHOT: InputProvenanceSnapshot = {
 function file(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, file_type: "vcf", status: "annotated", processing_finished_at: FINISHED,
-    input_provenance: SNAPSHOT, input_source_sha256: DIGEST, ...overrides,
+    input_provenance: SNAPSHOT, input_source_sha256: DIGEST, single_logical_sample_verified_at: null, ...overrides,
   };
 }
 
@@ -57,6 +59,29 @@ function database(respond: (ids: string[], page: number) => Response) {
 }
 
 describe("authorized result input-source metadata", () => {
+  it("reads modern facts only through the explicit purpose boundary and leaves historical metadata unchanged", async () => {
+    const modern = { fileId: "modern", fileType: "vcf", processedAt: FINISHED, snapshot: null };
+    canonical.mockResolvedValueOnce([modern]);
+    const { db } = database(() => ({ data: [file("legacy"), file("modern", { status: "stored", single_logical_sample_verified_at: FINISHED })] }));
+    const context = { kind: "report", purpose: "reports.monogenic" } as const;
+    const result = await loadInputSources(db, SUBJECT, ["modern", "legacy"], context);
+    expect(result[0].snapshot?.counts).toEqual(SNAPSHOT.counts);
+    expect(result[1]).toEqual(modern);
+    expect(canonical).toHaveBeenLastCalledWith(db, SUBJECT, ["modern"], context);
+  });
+  it("does not fall back to a planted historical snapshot after canonical authorization fails", async () => {
+    canonical.mockResolvedValueOnce([]);
+    const { db } = database(() => ({ data: [file("modern", { single_logical_sample_verified_at: FINISHED })] }));
+    expect(await loadInputSources(db, SUBJECT, ["modern"], { kind: "prepared" })).toEqual([unknown("modern")]);
+  });
+  it("missing structural metadata is not evidence of a historical file for opted-in callers", async () => {
+    const { db } = database(() => ({ data: [file("missing", { single_logical_sample_verified_at: undefined })] }));
+    expect(await loadInputSources(db, SUBJECT, ["missing"], { kind: "prepared" })).toEqual([unknown("missing")]);
+  });
+  it("a canonical source without an explicit access context never uses legacy provenance", async () => {
+    const { db } = database(() => ({ data: [file("modern", { single_logical_sample_verified_at: FINISHED })] }));
+    expect(await loadInputSources(db, SUBJECT, ["modern"])).toEqual([unknown("modern")]);
+  });
   it("does not query metadata when no result source IDs were requested", async () => {
     const { db, from } = database(() => ({ data: [] }));
     expect(await loadInputSources(db, SUBJECT, [])).toEqual([]);
@@ -71,7 +96,7 @@ describe("authorized result input-source metadata", () => {
     expect(queries).toHaveLength(3);
     for (const [page, query] of queries.entries()) {
       expect(query.table).toBe("genome_files");
-      expect(query.select.mock.calls).toEqual([["id,file_type,status,processing_finished_at,input_provenance,input_source_sha256"]]);
+      expect(query.select.mock.calls).toEqual([["id,file_type,status,processing_finished_at,input_provenance,input_source_sha256,single_logical_sample_verified_at"]]);
       expect(query.eq.mock.calls).toEqual([["subject_id", SUBJECT]]);
       expect(query.in.mock.calls).toEqual([["id", ids.slice(page * 100, (page + 1) * 100)]]);
       expect(query.order.mock.calls).toEqual([["id"]]);

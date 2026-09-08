@@ -41,6 +41,37 @@ source expression, a second assignment path or any hosted credential.
 Identifier mentions in prose are not treated as credential literals.
 Credential detectors and the history baseline remain unchanged.
 
+### Reviewed rejection inputs and deterministic expression (2026-09-07)
+
+- Secret-Allowlist-ID: browser-origin-credential-refusal
+- Secret-Allowlist-ID: storage-proxy-credential-refusal
+- Secret-Allowlist-ID: model-endpoint-credential-refusal
+- Secret-Allowlist-ID: ready-origin-credential-refusal
+- Secret-Allowlist-ID: chat-token-deterministic-expression
+
+The first four entries are exact dummy user/password URL inputs to unit tests
+that require rejection before any connection or envelope creation. Their
+destinations are the reviewed loopback, synthetic model and application-origin
+validation cases; the application-origin case does not authorize a request to
+that public host. These are not working credentials or permission to commit
+credentials for those hosts. The fifth entry is the assignment scanner's
+fragment of a deterministic repeated-byte test-key expression, not a key literal.
+
+Each new entry binds the exact detector value, one exact source path, and a
+SHA-256 of the entire reviewed source line. The scanner separately pins the
+digest of that binding. A JSON or ADR edit alone cannot approve another value,
+path, expression or source context. Filtering checks the actual source line
+for each current-tree or historical finding, so a correct current declaration
+cannot hide a different earlier assignment. The expression fragment is exempt
+from literal-occurrence scanning in prose only; contextual assignment detection
+remains active everywhere. URL literals remain subject to exact-path scanning.
+
+Adversarial tests preserve detector findings and reject changed credentials,
+undeclared test paths, edited binding metadata, altered source lines and changed
+historical contexts even when today's source is restored. No whole-file or
+test-directory exemption, provider-token detector change, or history-baseline
+change is permitted by this decision.
+
 ## Consequences
 
 `pnpm gate:secrets` blocks production environment files, known provider-token

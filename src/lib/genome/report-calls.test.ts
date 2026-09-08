@@ -29,7 +29,7 @@ describe("report-only observed call resolution", () => {
   });
   it("requires matching completed extraction hash, version, source build and annotated files", async () => {
     const source = { ...call, source_sha256: "a".repeat(64), extraction_version: OBSERVED_CALL_VERSION, source_build: "GRCh38" };
-    const file = { id: "file", build: "GRCh38", observed_call_sha256: source.source_sha256, observed_call_version: OBSERVED_CALL_VERSION };
+    const file = { id: "file", status: "annotated", single_logical_sample_verified_at: null, build: "GRCh38", observed_call_sha256: source.source_sha256, observed_call_version: OBSERVED_CALL_VERSION };
     const queries: { table: string; eq: ReturnType<typeof vi.fn>; in: ReturnType<typeof vi.fn> }[] = [];
     let observed = [source];
     const db = { from: (table: string) => {
@@ -38,7 +38,7 @@ describe("report-only observed call resolution", () => {
       queries.push(query); return query;
     } } as unknown as Db;
     expect((await loadReportCallRows(db, "subject", [671], "owner")).calls).toHaveLength(1);
-    expect(queries[0].eq.mock.calls).toContainEqual(["status", "annotated"]);
+    expect(queries[0].in.mock.calls).toContainEqual(["status", ["annotated", "stored"]]);
     for (const query of queries.slice(1)) {
       expect(query.eq.mock.calls).toContainEqual(["subject_id", "subject"]);
       expect(query.eq.mock.calls).toContainEqual(["user_id", "owner"]);
@@ -52,7 +52,7 @@ describe("report-only observed call resolution", () => {
   it.each(["user_variants", "report_observed_calls"])("reads conflicts after row 1000 in %s and fails the whole load on a later-page error", async (store) => {
     let fail = false;
     const observed = { ...call, source_sha256: "a".repeat(64), extraction_version: OBSERVED_CALL_VERSION, source_build: "GRCh38" };
-    const file = { id: "file", build: "GRCh38", observed_call_sha256: observed.source_sha256, observed_call_version: OBSERVED_CALL_VERSION };
+    const file = { id: "file", status: "annotated", single_logical_sample_verified_at: null, build: "GRCh38", observed_call_sha256: observed.source_sha256, observed_call_version: OBSERVED_CALL_VERSION };
     const offsets: number[] = [];
     const db = { from: (table: string) => {
       let offset = 0;
@@ -70,7 +70,7 @@ describe("report-only observed call resolution", () => {
     expect((await loadReportCallRows(db, "subject", [671])).calls).toEqual([]);
   });
   it("does not drop an older conflicting file beyond the first 1000 files", async () => {
-    const files = Array.from({ length: 1001 }, (_, i) => ({ id: `file-${i}`, build: "GRCh38", observed_call_sha256: null, observed_call_version: null }));
+    const files = Array.from({ length: 1001 }, (_, i) => ({ id: `file-${i}`, status: "annotated", single_logical_sample_verified_at: null, build: "GRCh38", observed_call_sha256: null, observed_call_version: null }));
     const db = { from: (table: string) => {
       let start = 0; let end = 0; let selected: string[] = [];
       const q = { select: () => q, eq: () => q, order: () => q,

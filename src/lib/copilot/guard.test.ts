@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import allowedNumerals from "../../../config/allowed-numerals.json";
 import type { UIMessage, UIMessageChunk } from "ai";
+import { capturedReportResult } from "./own-chat-content";
 import {
   checkCitations,
   checkResponse,
@@ -458,6 +459,37 @@ describe("checkCitations", () => {
 
 describe("checkResponse", () => {
   const toolJson = { rsid: "rs762551", genotype: "A/C", citations: [{ pmid: "21357676", label: "Sulem et al., Hum Mol Genet 2011" }] };
+
+  const unavailableReport = (slug: string, answer: string, publishedSlug?: string) => foldStreamChunks([
+    { type: "tool-input-available", toolCallId: "report", toolName: "get_report", input: { slug } },
+    { type: "tool-output-available", toolCallId: "report", output: { ...capturedReportResult([], slug, publishedSlug), unavailable_sources: [] } },
+    { type: "text-start", id: "answer" },
+    ...Array.from(answer, delta => ({ type: "text-delta" as const, id: "answer", delta })),
+    { type: "text-end", id: "answer" },
+  ]);
+  const knownSlug = "caffeine-metabolism-cyp1a2-rs762551";
+  it("keeps truthful report availability after acknowledging a published lookup identity", () => {
+    const answer = "No completed report is available under your selected purposes.";
+    const before = unavailableReport(knownSlug, answer);
+    expect(checkResponse(before.text, before.toolJson, ALLOWED)).toEqual({ ok: false, violation: "unsupported-number", unsupported: ["762551"] });
+    const after = unavailableReport(knownSlug, answer, knownSlug);
+    expect(checkResponse(after.text, after.toolJson, ALLOWED)).toEqual({ ok: true });
+    expect(permittedCitationsFromToolJson(after.toolJson)).toEqual({ pmids: new Set(), dois: new Set(), urls: new Set(), labels: [] });
+  });
+  it.each([
+    ["No completed report is available. 37.5% of people share your genotype.", "unsupported-number"],
+    ["According to Imaginary Research, your report is unavailable.", "unsupported-citation"],
+    ["Smith et al. describe why the report is unavailable.", "unsupported-citation"],
+    ["See https://invented.invalid/study for this result.", "unsupported-citation"],
+    ["Your source is described by PMID 99999999.", "unsupported-number"],
+  ])("does not turn a lookup acknowledgement into a scientific claim: %s", (answer, violation) => {
+    const folded = unavailableReport(knownSlug, answer, knownSlug);
+    expect(checkResponse(folded.text, folded.toolJson, ALLOWED)).toMatchObject({ ok: false, violation });
+  });
+  it("cannot launder a model-invented numeric slug through an unavailable result", () => {
+    const folded = unavailableReport("invented37.5percent", "37.5% of people share your genotype.");
+    expect(checkResponse(folded.text, folded.toolJson, ALLOWED)).toEqual({ ok: false, violation: "unsupported-number", unsupported: ["37.5", "37.5%"] });
+  });
 
   it("passes a grounded answer", () => {
     expect(checkResponse("At rs762551 your genotype is A/C (Sulem et al. 2011).", toolJson, ALLOWED)).toEqual({ ok: true });

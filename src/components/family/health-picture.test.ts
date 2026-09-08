@@ -140,6 +140,17 @@ describe("health picture table", () => {
     expect(html).not.toContain("data-subject-pair");
   });
 
+  it("keeps result columns readable inside a named keyboard-scrollable region", () => {
+    expect(html).toMatch(/<div[^>]*class="overflow-x-auto"[^>]*role="region"[^>]*aria-labelledby="health-picture-caption-estimate"[^>]*tabindex="0"/);
+    expect(html).toContain(copy.TABLE_SCROLL_CUE);
+    expect(html.indexOf('data-slot="table-scroll-cue"')).toBeLessThan(html.indexOf('class="overflow-x-auto"'));
+    const resultCells = html.match(/<td[^>]*data-slot="health-picture-cell"[^>]*>/g) ?? [];
+    const columnHeaders = html.match(/<th[^>]*scope="col"[^>]*>/g) ?? [];
+    const footers = html.match(/<td[^>]*data-slot="column-footer"[^>]*>/g) ?? [];
+    expect(resultCells).toHaveLength(2); expect(columnHeaders).toHaveLength(2); expect(footers).toHaveLength(2);
+    for (const element of [...resultCells, ...columnHeaders, ...footers]) expect(element).toContain("min-w-80");
+  });
+
   it("offers nothing that orders, ranks or sums the table", () => {
     expect(html).not.toContain("aria-sort");
     expect(html).not.toMatch(/<th[^>]*>\s*<button/);

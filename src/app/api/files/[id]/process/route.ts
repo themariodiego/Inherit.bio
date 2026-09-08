@@ -19,6 +19,8 @@ import type { ParseResult, VariantRecord } from "@/lib/genome/types";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeSubjectFile } from "@/lib/uploads/subject-normalization";
+import { generateOwnReports } from "@/lib/uploads/own-report-generation";
 
 export const maxDuration = 300;
 
@@ -33,9 +35,10 @@ const ARRAY_KINDS = new Set([
 // variant store -> ancestry results -> report-ready email. Runs entirely
 // inside this deployment: user genotypes never leave it.
 export async function POST(
-  _request: Request,
+  request: Request,
   ctx: RouteContext<"/api/files/[id]/process">,
 ) {
+  const completionDeadline = performance.now() + 270_000;
   const { id } = await ctx.params;
 
   const supabase = await createClient();
@@ -52,6 +55,13 @@ export async function POST(
     .maybeSingle();
   if (!file) return new Response("Not found", { status: 404 });
   if (file.user_id !== user.id) return new Response("Not found", { status: 404 });
+  // New sources prepare canonical rows under store consent only. They never
+  // enter the legacy all-analysis dispatcher below.
+  if (file.single_logical_sample_verified_at !== null) {
+    const prepared = await normalizeSubjectFile(request, id, completionDeadline);
+    if (prepared.status !== 200) return prepared;
+    return generateOwnReports(request, id);
+  }
   if (file.tier !== 1) {
     return new Response("Only Tier-1 files are processed serverside", {
       status: 400,

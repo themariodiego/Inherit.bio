@@ -21,6 +21,20 @@
   ],
   "entries": [
     {
+      "name": "PostgreSQL",
+      "category": "dependency-platform",
+      "aliases": ["postgresql", "postgresql.org"],
+      "reason": "Database engine documentation supporting the reviewed private upload permission helper.",
+      "evidence": ["docs/adr/0023-upload-only-boolean-permission-check.md"]
+    },
+    {
+      "name": "IANA domain registry",
+      "category": "cited-organisation",
+      "aliases": ["iana.org"],
+      "reason": "Special-use domain registry supporting reserved test-host classification in the name scanner.",
+      "evidence": ["docs/adr/0007-private-name-denylist.md"]
+    },
+    {
       "name": "Stanford author article host",
       "category": "cited-organisation",
       "aliases": ["ai.stanford.edu"],

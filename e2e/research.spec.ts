@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import {
   JOBS_SECRET,
   adminClient,
@@ -14,7 +15,7 @@ import {
 // Resend API — the SDK honors RESEND_BASE_URL; production uses the real
 // API, verified in the Resend dashboard).
 
-const USER = { email: "digest-optin@e2e.local", password: "e2e-digest-pw" };
+const USER = { email: `digest-optin-${randomUUID()}@e2e.local`, password: "e2e-digest-pw" };
 const SLUG = "auto-e2e-test-trait-rs11223344";
 
 interface CapturedEmail {
@@ -47,10 +48,12 @@ test.beforeAll(async () => {
 
   const userId = await createConfirmedUser(USER.email, USER.password);
   const admin = adminClient();
-  await admin
+  const optIn = await admin
     .from("profiles")
     .update({ digest_opt_in: true })
-    .eq("id", userId);
+    .eq("id", userId).select("id,digest_opt_in").single();
+  expect(optIn.error).toBeNull();
+  expect(optIn.data).toEqual({ id: userId, digest_opt_in: true });
   // Clean any leftover fixture template/changelog from previous runs.
   await admin.from("changelog_entries").delete().eq("template_slug", SLUG);
   await admin.from("report_templates").delete().eq("slug", SLUG);
@@ -144,13 +147,27 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   expect(json.published).toBe(true);
   expect(json.digest_queued).toBeGreaterThanOrEqual(1);
 
-  const drain = await request.post("/api/jobs/mail", {
-    headers: { authorization: `Bearer ${JOBS_SECRET}` },
-  });
-  expect(drain.status()).toBe(200);
-  const drainJson = (await drain.json()) as { processed: number; failed: number };
-  expect(drainJson.processed).toBeGreaterThanOrEqual(1);
-  expect(drainJson.failed).toBe(0);
+  // The global worker claims at most 25 ordinary rows in queue order. Earlier
+  // source-ready notices remain genuine work; a successful batch is not a promise
+  // that this newly queued digest was included. Continue only successful batches
+  // with due work and progress, without selecting/deleting/reordering any row.
+  // As with the invitation journeys, this needs a disposable local queue and
+  // the fixed capture provider; it must not drain an unreviewed shared queue.
+  for (let batch = 0; batch < 10; batch++) {
+    const drain = await request.post("/api/jobs/mail", {
+      headers: { authorization: `Bearer ${JOBS_SECRET}` },
+    });
+    expect(drain.status()).toBe(200);
+    const drainJson = (await drain.json()) as { processed: number; failed: number; pending: number };
+    await test.info().attach(`research-mail-batch-${batch + 1}`, {
+      body: JSON.stringify({ processed: drainJson.processed, failed: drainJson.failed, pending: drainJson.pending }),
+      contentType: "application/json",
+    });
+    expect(drainJson.processed).toBeGreaterThanOrEqual(1);
+    expect(drainJson.failed).toBe(0);
+    if (captured.some(email => [email.to].flat().includes(USER.email))) break;
+    expect(drainJson.pending, "a missing digest needs remaining due queue work").toBeGreaterThan(0);
+  }
 
   // Changelog page shows the entry (heading carries the report title).
   await page.goto("/changelog");

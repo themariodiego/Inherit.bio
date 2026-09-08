@@ -13,7 +13,7 @@ function db(records: unknown[]): Db {
   return { from: (table: string) => {
     const q = { select: () => q, eq: () => q, in: () => q, order: () => q, range: () => q,
       then: (resolve: (value: unknown) => void) => resolve({ data: table === "genome_files"
-        ? ["a", "b", "checked-only"].map((id) => ({ id, build: "GRCh38" })) : table === "user_variants" ? records : [], error: null }),
+        ? ["a", "b", "checked-only"].map((id) => ({ id, status: "annotated", single_logical_sample_verified_at: null, build: "GRCh38" })) : table === "user_variants" ? records : [], error: null }),
     }; return q;
   } } as unknown as Db;
 }

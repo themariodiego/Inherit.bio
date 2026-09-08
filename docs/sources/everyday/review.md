@@ -1,9 +1,9 @@
 # Everyday report follow-through — source review
 
 Reviewed 2026-09-06 by Codex agent root; not human or clinical signoff.
-Status: implemented and targeted local browser checks passed; not yet released.
-Independent scientific review is complete; full CI remains required before
-publication.
+Status: released by PR72 on 2026-09-06. Independent scientific review and
+exact-head full CI passed; hosted postimages and production report summaries
+were verified. See `docs/hosted-rollout-2026-09-06.md` for the release receipt.
 
 ## Product scope
 
@@ -134,6 +134,10 @@ cases. The initial full PR CI failures and expanded fixtures are recorded in
 Unit DOM tests render all registered paragraphs for eight report components;
 the actual detail page renders the selected genotype only. Intended export
 and digest metadata is not proof of full rendered-channel capture.
-Publication must update only the four reviewed hosted templates, preserve
-the other 158 published reports and all real files, and verify the exact
-green application revision. No hosted data has been changed for this package.
+Publication updated only the four reviewed hosted templates at
+2026-09-06T10:18:52.062962Z. Full postimages matched the approved package;
+the other 158 reports and all three genome-file rows remained unchanged.
+Exact-head CI passed 216 browser cases, 2,209 unit tests, 1,044 database
+assertions and 30 independent-session lock checks. Merge `2450606` is
+production READY on both domains. Public source-index and authenticated
+summary/source checks passed without reading personal genotype output.

@@ -1,14 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
 // Ancestry surface (`/genome/[subject]/ancestry`; brief §4.6, A.8, G4.4,
 // X16.5; acceptance 30–34) over the REAL processing route and the local
 // Supabase stack, on two users:
 //
-// - the tiny GRCh38 fixture covers none of the marker panel, so the page
+// - the tiny GRCh38 fixture has one explicit reference call in the marker panel, so the page
 //   renders the grey state: the exact mandated sentence with the counts,
 //   no chips, no toggle, no visible percent sign outside the disclosure,
 //   the lineage empty states, `#neanderthal`, no `archaic-hominin`, and
@@ -25,12 +27,22 @@ import { adminClient, createConfirmedUser, ingestFileAs, signIn } from "./helper
 // Nothing numeric is retyped: the panel size comes from `data/ref/aims.json`
 // and the forbidden words from `data/ref/regions/label-denylist.json`.
 
-const GREY_USER = { email: "ancestry-grey@e2e.local", password: "e2e-ancestry-grey-pw" };
-const SHOWN_USER = { email: "ancestry-shown@e2e.local", password: "e2e-ancestry-shown-pw" };
+const RUN_ID = randomUUID();
+const GREY_USER = { email: `ancestry-grey-${RUN_ID}@e2e.local`, password: "e2e-ancestry-grey-pw" };
+const SHOWN_USER = { email: `ancestry-shown-${RUN_ID}@e2e.local`, password: "e2e-ancestry-shown-pw" };
 
 const ANCESTRY = "/genome/me/ancestry";
 const TINY_FIXTURE = "e2e/fixtures/tiny-grch38.vcf";
 const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
+
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== "passed") return;
+  await expect(page.locator('[data-slot="maternal-input-provenance"],[data-slot="paternal-input-provenance"]')).toHaveCount(0);
+  for (const viewport of [{ name: "desktop", width: 1280, height: 800 }, { name: "phone", width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({ path: info.outputPath(`ancestry-${viewport.name}.png`), fullPage: true });
+  }
+});
 
 /** The shipped marker panel's size, read from the panel file. */
 const PANEL_SIZE = (
@@ -42,14 +54,12 @@ const DENYLIST = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "data/ref/regions/label-denylist.json"), "utf8"),
 ) as { words: string[] };
 
-const GREY_SENTENCE = `Your file covers only 0 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
+const GREY_SENTENCE = `Your file covers only 1 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
 const RAW_NUMBERS_SUMMARY = "Show the unreliable raw numbers anyway";
 const TOGGLE_LABEL = "Show only what’s well supported";
 const CHIP_UNASSIGNABLE = "Not assignable to any region:";
 const CHIP_HIDDEN = "Hidden as not well supported:";
 const NO_RANGE_YET = "no range yet";
-const NO_Y_LEAD =
-  "Your file has no Y-chromosome data, so no father’s line can be read from it. This says nothing about who your father was.";
 const CLOSE = "Close";
 
 const SHARE_VALUE = /^\d+\.\d%$/;
@@ -70,19 +80,12 @@ test.beforeAll(async () => {
   await createConfirmedUser(SHOWN_USER.email, SHOWN_USER.password);
 });
 
-/** Upload and process a fixture, then wait for the row to be annotated (the pattern of overview.spec.ts). */
-async function ingestAndWait(page: Page, user: { email: string; password: string }, fixture: string) {
-  const fileId = await ingestFileAs(page, user.email, user.password, path.join(process.cwd(), fixture), "vcf");
-  const admin = adminClient();
-  await expect
-    .poll(
-      async () => {
-        const { data } = await admin.from("genome_files").select("status").eq("id", fileId).single();
-        return (data as { status: string } | null)?.status;
-      },
-      { timeout: 60_000 },
-    )
-    .toBe("annotated");
+/** Real preparation precedes a separate explicit ancestry choice; no annotated
+ * flag or fabricated grant stands in for the exact completion journal. */
+async function ingestAndWait(page: Page, fixture: string) {
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), fixture), { fileType: "vcf" });
+  await expectNoOwnAncestryResult(fileId);
+  await generateOwnFileWithChosenReports(page, fileId, ["ancestry"]);
   return fileId;
 }
 
@@ -199,7 +202,15 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
 }) => {
   test.setTimeout(240_000);
   await signIn(page, GREY_USER.email, GREY_USER.password);
-  await ingestAndWait(page, GREY_USER, TINY_FIXTURE);
+  await ingestAndWait(page, TINY_FIXTURE);
+
+  // An ancestry-only completion is useful on Overview without claiming either
+  // report layer was generated or displaying a starter list for those layers.
+  await page.goto("/overview");
+  await expect(page.getByRole("heading", { name: "Your ancestry result is ready", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "View ancestry", exact: true })).toHaveAttribute("href", ANCESTRY);
+  await expect(page.getByText(/\d+ statistical estimates|\d+ specific-variant reports?/)).toHaveCount(0);
+  await expect(page.locator('section[aria-labelledby="starter-title"]')).toHaveCount(0);
 
   await page.goto(ANCESTRY);
   const admixture = page.getByTestId("admixture");
@@ -226,11 +237,14 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
   await expect(rawList.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(5);
   expect(await percentTextNodes(page, { visibleOnly: true, outside: "details" })).toEqual([]);
 
-  // The lineage cards keep their empty states.
-  await expect(page.getByTestId("mtdna")).toContainText(/no mitochondrial positions/i);
-  await expect(page.getByTestId("ydna")).toContainText(NO_Y_LEAD);
-  await expect(page.getByTestId("ydna")).toContainText(/no Y-chromosome positions/i);
-  await expect(page.getByTestId("ydna")).toContainText(/without a Y chromosome/i);
+  // AIMS-only reads do not prove whole-file Y/MT absence or support a
+  // haplogroup. Retain empty lineage cards with the explicit computation limit.
+  for (const kind of ["mtdna", "ydna"]) {
+    const lineage = page.getByTestId(kind);
+    await expect(lineage).toContainText("Lineage has not been computed from this file.");
+    await expect(lineage).not.toContainText(/no (?:mitochondrial|Y-chromosome) positions|no Y-chromosome data|without a Y chromosome/i);
+    await expect(lineage.locator('[data-slot="haplogroup"],[data-slot="haplogroup-path"]')).toHaveCount(0);
+  }
 
   await expect(page.locator("#neanderthal")).toBeVisible();
   await expect(page.locator("#neanderthal")).toContainText("How much of your DNA came from Neanderthals");
@@ -255,7 +269,7 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 800 });
   await signIn(page, SHOWN_USER.email, SHOWN_USER.password);
-  await ingestAndWait(page, SHOWN_USER, MIXED_FIXTURE);
+  await ingestAndWait(page, MIXED_FIXTURE);
 
   // Only first-party origins, and no request for the geometry file: the
   // server decodes the committed TopoJSON and hands the client path data.
@@ -298,7 +312,10 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
   }
   expect(await percentTextNodes(page, { visibleOnly: false, outside: '[data-figure-kind="ancestry-share"]' })).toEqual([]);
   await expect(page.locator('[data-testid="admixture"] [data-claim-block][data-subject-id]').filter({ has: page.locator('[data-figure-kind="ancestry-share"]') })).toHaveCount(1);
-  await expect(page.locator('[data-slot="input-provenance"]')).toHaveCount(3);
+  // One computed region result has source facts. Uncomputed parent lines
+  // must not imply that their markers were analyzed by repeating that block.
+  await expect(page.locator('[data-slot="input-provenance"]')).toHaveCount(1);
+  await expect(page.getByTestId("admixture").locator('[data-slot="input-provenance"]')).toHaveCount(1);
   await expect(page.locator('[data-slot="input-provenance"] details')).toHaveCount(0);
 
   // The toggle: a labelled switch, on by default; the sum rule holds in both states.

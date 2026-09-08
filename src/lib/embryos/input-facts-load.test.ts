@@ -7,7 +7,7 @@ describe("embryo source facts are exact and complete", () => {
   it.each(["missing", "error", "old", "complete"])("keeps upstream facts unknown with %s metadata", async (mode) => {
     const digest = "a".repeat(64), date = "2026-09-06T00:00:00.000Z";
     const filters: unknown[][] = [];
-    const record = (id: string) => ({ id, file_type: "vcf", status: "annotated", processing_finished_at: date, input_source_sha256: digest,
+    const record = (id: string) => ({ id, file_type: "vcf", status: "annotated", single_logical_sample_verified_at: null, processing_finished_at: date, input_source_sha256: digest,
       input_provenance: { version: INPUT_PROVENANCE_VERSION, sourceSha256: digest, completedAt: date, sourceBuild: "GRCh37", targetBuild: "GRCh38", buildBasis: "source-declared", chainSha256: "b".repeat(64), variantRowsMapped: 1, variantRowsUnmapped: 0, counts: emptyReadCounts() } });
     const db = { from: () => {
       let select = "";

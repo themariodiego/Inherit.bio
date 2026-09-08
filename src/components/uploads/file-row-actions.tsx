@@ -4,15 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { fileDeletionError } from "@/copy/upload/file-deletion";
+import { BrowserPreparationError, prepareSubjectFile } from "@/lib/uploads/subject-upload-browser";
 
 export function FileRowActions({
   fileId,
   status,
   tier,
+  preparationOnly = false,
 }: {
   fileId: string;
   status: string;
   tier: number;
+  preparationOnly?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -31,6 +34,15 @@ export function FileRowActions({
           onClick={async () => {
             setBusy(true);
             setError(null);
+            if (preparationOnly) {
+              try { await prepareSubjectFile(fileId); }
+              catch (error) {
+                setError(error instanceof BrowserPreparationError && error.code === "build_unknown"
+                  ? "Ask your file provider for raw DNA data that states GRCh37 or GRCh38."
+                  : "Preparation did not finish. Please retry; you do not need to upload the file again.");
+              } finally { setBusy(false); router.refresh(); }
+              return;
+            }
             // The route flips status to "parsing" as it starts; refresh
             // early so the badge reflects that while the run continues.
             const earlyRefresh = setTimeout(() => router.refresh(), 1500);
@@ -49,7 +61,8 @@ export function FileRowActions({
             router.refresh();
           }}
         >
-          {busy ? "Processing…" : status === "failed" ? "Retry" : "Process"}
+          {preparationOnly ? (busy ? "Preparing…" : status === "failed" ? "Retry preparation" : "Prepare")
+            : busy ? "Processing…" : status === "failed" ? "Retry" : "Process"}
         </Button>
       ) : null}
       <Button

@@ -2,13 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
-  adminClient,
   createConfirmedUser,
   firstViewportInteractives,
-  ingestFileAs,
   seededTemplateCount,
   signIn,
 } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 // Overview (`/overview`) — brief §2 §3 and X9: one h1 and three domain h2s
 // (four headings, never more), nine entry boxes whose accessible names are
@@ -24,6 +23,14 @@ const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
   { name: "phone", width: 390, height: 844 },
 ] as const;
+
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== "passed") return;
+  for (const viewport of VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await page.screenshot({ path: info.outputPath(`overview-${viewport.name}.png`), fullPage: true });
+  }
+});
 
 const HEADINGS = ["Overview", "My Genome", "Family", "Embryos"];
 
@@ -50,17 +57,16 @@ const NOT_DIAGNOSTIC =
 const ANCESTRY_TOO_FEW =
   "Ancestry: your file covers too few markers to estimate regions.";
 
-// The tiny fixture covers exactly four starter-eligible reports (all
-// `emerging`, single-locus, outside brain/mood and cancer): rs1815739 het
-// resolves the two ACTN3 templates (everyday traits), rs762551 het the
-// caffeine template and rs4988235 hom-alt the lactase template (food, drink
-// and metabolism); rs671 is hom-ref, dropped at parse, so both ALDH2
-// templates stay uncovered. Ordered by category rank, then slug.
+// Canonical observed calls preserve rs671 G/G, so the ALDH2 flush report
+// joins both ACTN3 reports, caffeine and lactase in the deterministic five-item
+// starter. Reference observations count as evidence; the cap and exclusions
+// still apply. Ordered by category rank, then slug.
 const STARTER_LINE =
-  "4 reports to read first. They’re the clearest ones your file supports.";
+  "Five reports to read first. They’re the clearest ones your file supports.";
 const STARTER_SLUGS = [
   "muscle-composition-actn3-rs1815739",
   "sprint-power-actn3",
+  "alcohol-flush-aldh2-rs671",
   "caffeine-metabolism-cyp1a2-rs762551",
   "lactase-persistence-lct-rs4988235",
 ];
@@ -230,29 +236,9 @@ test("State C: after one processed file — split count with note, ancestry line
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  const fileId = await ingestFileAs(
-    page,
-    USER.email,
-    USER.password,
+  await uploadOwnFileWithChosenReports(page,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
-  );
-  // The process route answers once the file is annotated; confirm the row
-  // rather than trusting the response shape.
-  const admin = adminClient();
-  await expect
-    .poll(
-      async () => {
-        const { data } = await admin
-          .from("genome_files")
-          .select("status")
-          .eq("id", fileId)
-          .single();
-        return (data as { status: string } | null)?.status;
-      },
-      { timeout: 60_000 },
-    )
-    .toBe("annotated");
+    { fileType: "vcf", purposes: ["reports.monogenic", "reports.polygenic", "ancestry"] });
 
   await page.goto("/overview");
   await expect(page.getByRole("heading")).toHaveText(HEADINGS);
@@ -276,7 +262,7 @@ test("State C: after one processed file — split count with note, ancestry line
   await expect(page.getByText("Results read from one spot in your DNA.", { exact: true })).toBeVisible();
   await expect(page.getByText(ESTIMATE_DEFINITION, { exact: true })).toBeVisible();
   await expect(page.getByText(VARIANT_CALL_DEFINITION, { exact: true })).toBeVisible();
-  // The tiny VCF covers 0 of the 168 ancestry markers.
+  // The tiny VCF retains one observed reference call among 168 ancestry markers.
   await expect(page.getByText(ANCESTRY_TOO_FEW, { exact: true })).toBeVisible();
 
   await expectExactlyOnePrimary(page, "Open my reports", "/genome/me/reports");

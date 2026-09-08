@@ -14,9 +14,13 @@
  * and a result the viewer has not been granted is never rendered at all.
  */
 import Link from "next/link";
+import { InputProvenance } from "@/components/reports/input-provenance";
+import type { InputSourceView } from "@/lib/genome/input-sources";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import {
   CELL_FILES_DISAGREE,
+  CELL_NO_PREPARED_FILE, CELL_NOT_GENERATED, CELL_CATALOG_UNAVAILABLE, CELL_VERSION_UNAVAILABLE,
+  CELL_NO_CALL, CELL_UNRECOGNIZED, CELL_SAVED, CELL_LEGACY, SAVED_SOURCE_LINK, CELL_NO_REPORT, CELL_CONFLICTING_CALLS,
   CELL_NOT_SHARED,
   CELL_NO_FILE,
   LAYER_CHIP_LABELS,
@@ -34,12 +38,17 @@ import type { FindingLayer } from "@/lib/genome/taxonomy";
  * joint grant opens the column, and only the layer's own grant opens the
  * cell (register `multiSubjectLayer`, D-038).
  */
-export type HealthPictureCellState =
+export type HealthPictureSimpleState =
   | { kind: "letters"; genotypes: readonly string[] }
   | { kind: "not-covered" }
   | { kind: "no-file" }
   | { kind: "disagree" }
-  | { kind: "not-shared" };
+  | { kind: "not-shared" }
+  | { kind: "no-prepared-file" | "not-generated" | "catalog-unavailable" | "version-unavailable" | "no-call" | "unrecognized" | "saved" | "legacy" | "no-report" | "conflicting-calls" };
+export type HealthPictureCellState = HealthPictureSimpleState | { kind: "sources"; entries: readonly {
+  fileId: string; sourceLabel: string; conflictingCalls?: boolean; state: HealthPictureSimpleState; href: string; source: InputSourceView;
+  coverage: { read: number; needed: number };
+}[] };
 
 export interface HealthPictureCellProps {
   /** The subject the letters were read from. */
@@ -74,7 +83,7 @@ function figuresFor(
   }));
 }
 
-function absenceWord(state: HealthPictureCellState, personName: string): string | null {
+function absenceWord(state: HealthPictureSimpleState, personName: string): string | null {
   switch (state.kind) {
     case "not-covered":
       return cellNotCovered(personName);
@@ -84,8 +93,17 @@ function absenceWord(state: HealthPictureCellState, personName: string): string 
       return CELL_FILES_DISAGREE;
     case "not-shared":
       return CELL_NOT_SHARED;
-    case "letters":
-      return null;
+    case "no-report": return CELL_NO_REPORT;
+    case "conflicting-calls": return CELL_CONFLICTING_CALLS;
+    case "no-prepared-file": return CELL_NO_PREPARED_FILE;
+    case "not-generated": return CELL_NOT_GENERATED;
+    case "catalog-unavailable": return CELL_CATALOG_UNAVAILABLE;
+    case "version-unavailable": return CELL_VERSION_UNAVAILABLE;
+    case "no-call": return CELL_NO_CALL;
+    case "unrecognized": return CELL_UNRECOGNIZED;
+    case "saved": return CELL_SAVED;
+    case "legacy": return CELL_LEGACY;
+    case "letters": return null;
   }
 }
 
@@ -98,10 +116,23 @@ export function HealthPictureCell({
   href,
   captionId,
 }: HealthPictureCellProps) {
+  if (state.kind === "sources") return <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
+    {state.entries.map(entry => <div key={entry.fileId} data-source-file-id={entry.fileId} className="space-y-2 py-2">
+      <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2 p-3">
+        <p data-slot="saved-result-person" className="text-sm font-medium text-ink">{personName}</p>
+        {absenceWord(entry.state, personName) ? <p data-slot="cell-absence">{absenceWord(entry.state, personName)}</p> : null}
+        {entry.conflictingCalls && entry.state.kind !== "conflicting-calls" ? <p>{CELL_CONFLICTING_CALLS}</p> : null}
+        {entry.state.kind === "letters" ? <p data-chip="layer" aria-describedby={captionId} className="text-sm text-ink-muted">{LAYER_CHIP_LABELS[layer]}</p> : null}
+        <Link href={entry.href} aria-label={`${openReportLabel(reportTitle, personName)} · ${entry.sourceLabel}`} className="inline-flex min-h-11 items-center text-sm underline">{SAVED_SOURCE_LINK}</Link>
+      </ClaimBlock>
+      <InputProvenance nested sources={[entry.source]} sourceLabels={{ [entry.fileId]: entry.sourceLabel }} subject={{ subjectId: dataSubjectId }} coverage={entry.coverage}
+        state={entry.conflictingCalls ? "conflict" : entry.state.kind === "no-call" ? "noCall" : entry.state.kind === "not-covered" ? "absent" : "recorded"} />
+    </div>)}
+  </td>;
   const figures = figuresFor(state, layer, personName);
   const absent = absenceWord(state, personName);
   return (
-    <td data-slot="health-picture-cell" className="align-top p-2">
+    <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figures} className="space-y-2 p-3">
         {absent ? (
           <p data-slot="cell-absence" className="text-sm leading-relaxed text-ink">

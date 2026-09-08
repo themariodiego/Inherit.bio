@@ -1,5 +1,177 @@
 # Test diff register
 
+## Health Picture canonical journey and exact-source navigation · 2026-09-07
+
+`e2e/family-health-picture.spec.ts` retains ten serial cases. Actual browser
+upload/preparation and explicit own report generation replace `ingestFileAs`;
+actual invitation acceptance binds A's invited representative to B's own
+subject. Fresh Permissions actions record both directional Health Picture
+permissions and each separately chosen report layer. No grant, completed
+analysis, independent-login marker or source identity is fabricated. Mail uses
+the existing required worker configuration and owned disposable capture queue.
+
+The ten assertions remain: (1) real sources/generation/invitation, (2) Tier-2
+before any result, (3) attributed two-layer tables/no ranking and exact own/shared
+source links, (4) unavailable clinical output, (5) interaction budgets and both
+themes' axe checks, (6) no unsupported Overview match, (7) one layer's withdrawal,
+(8) fewer unbound legacy labels, (9) no classified labels, (10) joint withdrawal.
+Case 3 follows actual caffeine links for both adults, checks the exact source
+URL, A/C and a single source's input provenance, then returns in the same
+acknowledged session. Case 7 retains B's independent monogenic permission and
+non-withheld status without inventing a covered monogenic result. Exact source
+and own-permission records must survive both sharing withdrawals.
+
+Footer counts now reflect two people in each of two separate layer tables;
+there is no mixed count or duplicate source. The deterministic synthetic ROH
+calculation remains checked, while canonical ROH columns must be uncomputed.
+Earlier persisted-ROH/clinical and Portrait trait/lineage acceptance stays open;
+unavailable output does not replace the missing positive scientific proof.
+
+V2 failed only on asking the already-acknowledged session to pass Tier-2 again
+on return; the minimal fix keeps the first gate and timeout unchanged. V3
+passed all 16 Health Picture/Family cases; visual review then prompted 320-pixel
+columns and visible owner labels. V4 at `7ebabc5`, fresh build
+`ZtFdEBSPtsfwjGkWXRtjE`, passes **16/16**, three actual uploads, no skips/retries;
+all five desktop/phone captures were inspected. Full units pass 3,121 at
+`085dc9b`; latest focused tests pass 53 and 39, plus full typecheck/readability.
+See the local verification ledger for separate V2/V3/V4 receipts. The historical
+entries below retain their original scope; no full-plan acceptance changes.
+
+## Portrait names from each adult’s actual Family graph · 2026-09-07
+
+The real invitation creates an “Invited adult” handle in A’s graph; B sees
+A’s unnamed self as “Another adult.” The browser fixture now asserts these
+two distinct labels in their correct sessions, including missing steps and
+withdrawal. It does not rename either record or change product copy. All ten
+cases, receipt-body assertions, source preservation and result gates remain.
+
+## Bounded GIAB browser fixture and separate synthetic search positives · 2026-09-07
+
+`e2e/upload-vcf.spec.ts` retains four serial browser cases. The original
+99,744,915-byte decoded HG001 chr20–22 sample exceeds the approved 50 MiB
+canonical decoder limit. Its replacement retains all parent header bytes and
+all 144 records in the inclusive chr20:1,000,000–1,100,000 window verbatim.
+`scripts/generate-giab-browser-window.mts --check` verifies the pinned parent
+SHA, exact decoded and compressed bytes, 127 supported calls, 17 unsupported
+records and zero shipped ancestry-marker positions. The adjacent fixture
+receipt preserves upstream/source hashes and the existing public GIAB license
+and provenance records. No rsID, allele, genotype or header is annotated.
+
+The first case now exercises actual consent, browser SHA declaration, Storage,
+finalization, prepared-file UI and a separate explicit ancestry choice. It
+first uploads the existing synthetic `tiny-grch38.vcf`, then the GIAB window;
+both sources are genuinely prepared and only the GIAB source is generated.
+The second and third cases replace the old conditional rsID branch and
+success-or-empty gene check with mandatory rs762551 A/C and CYP1A2 positives
+from that separate synthetic source. They retain the GIAB locus, exact point,
+first-party track, source attribution, call-rate and coordinate provenance
+checks. Table and track are distinct provenance contexts: each locus context
+has one GIAB source; rsID/gene tables check both real uploads. Repeated display
+of one source is not counted as a second uploaded file.
+
+The fourth case asserts genuinely computed zero-AIM grey ancestry, hidden
+unreliable numbers and their explicit disclosure. It replaces the old inferred
+MT/Y-absence/XX labels with the current explicit uncomputed-lineage state.
+This records a current product limitation; it does **not** close the original
+A8 MT/Y coverage requirement or convert refusal into lineage acceptance.
+Historical acceptance evidence and the formal 18/65 total are unchanged.
+Fixture reproduction, scoped lint/typecheck and four-case discovery are the
+pre-browser checks; actual browser success must be recorded separately.
+
+## Portrait invitation route identity · 2026-09-07
+
+`e2e/portrait.spec.ts` now derives A’s Family handle from the actual accepted
+adult invitation, scoped to A’s exact self principal. It verifies the invitee
+principal and current adult-claim binding belong to B and point to B’s own
+self principal. Only A’s permission route and breadcrumb use that distinct
+representative ID; uploads, grants, acknowledgments and the pair still use
+the real self-subject IDs. This repairs the second case’s pre-POST 404 caused
+by treating a data-subject ID as the inviter’s route handle. All ten cases
+and their permission assertions remain; no application or schema changed.
+
+## BAM/CRAM historical proof and current refusal contract · 2026-09-07
+
+`e2e/tier2-upload.spec.ts` now has two current-contract cases, one each for BAM
+and CRAM. This explicitly retires its earlier positive storage/TUS expectation;
+it does not implement resumable BAM/CRAM, count their rejection as A10 success,
+or claim that the current full browser suite passes.
+
+The historical A10 statement, verdict and evidence remain intact in
+[acceptance-matrix.md](./acceptance-matrix.md). Its positive test was introduced
+at `f1b148c` and last adjusted at `ffa7099`; inspect the preserved implementation
+with `git show ffa7099:e2e/tier2-upload.spec.ts`. That proof exercised an
+approximately 14 MB BAM-magic fixture, interrupted/resumed TUS, stored/hash/size
+presentation and byte-identical download. Existing `e2e/fixtures/tiny.bam` is
+not changed or removed by this reconciliation.
+
+The reason is an accepted contract change, not a changed UI or failing test:
+[ADR0016](./adr/0016-supersede-large-file-transport-and-compute.md), introduced
+with the closed route register at `c078de4`, supersedes ADR0001 in full and
+explicitly excludes BAM/CRAM storage and mandatory TUS/6 MiB behavior. The
+original brief permits superseding ADRs (§A.1, C1), requires an explicit test
+disposition (G8.1), and preserves historical acceptance evidence. Restoring
+these formats would need another accepted ADR and coherent route-register
+change, not ordinary-login Storage credentials or a fixture bypass.
+
+The replacement assertions exercise the real boundary more directly:
+
+- Actual file selection refuses both binary formats, including misleading VCF
+  filenames, with the exact error and reusable picker, zero issuance/Storage/
+  processing requests, zero leases and zero genetic/output rows.
+- Native authenticated requests to both upload-session aliases reject explicit
+  BAM/CRAM declarations with exact `422 {error: "invalid_request"}` and no lease.
+- A deliberately misdeclared supported declaration receives a real restricted
+  one-object capability and uploads the exact tiny signature fixture to actual
+  Storage. An independent Storage read verifies its bytes. Actual bodyless
+  server finalization must return exact `415 {error: "unrecognised_format"}`,
+  consume/reject the lease, acknowledge cleanup, and leave zero staging/final
+  objects, file rows, variants, observations, PRS/ancestry/journals, jobs or ready
+  notices. No processing request or downloadable file may appear.
+
+Supported transport and recovery positives remain in
+`e2e/own-upload-positive.spec.ts` and `e2e/own-upload-pause.spec.ts`, with their
+existing actual-provider receipts recorded in
+[local-upload-browser-verification.md](./local-upload-browser-verification.md).
+These prove current direct Storage/finalization recovery, not legacy TUS resume.
+
+Verification for this test-only change (both commands exit 0):
+
+- `pnpm exec eslint e2e/tier2-upload.spec.ts --max-warnings=0`
+- `pnpm exec playwright test e2e/tier2-upload.spec.ts --list --project=chromium`
+  discovers exactly the BAM and CRAM cases above.
+
+Two executable cases are retained without skips/retries. Browser execution is
+pending root integration: local focused command
+`node --import tsx scripts/run-upload-browser.mts -- e2e/tier2-upload.spec.ts`.
+Standard CI remains `pnpm e2e`, with no narrowed selectors. Required execution is the existing actual-provider
+bootstrap with the exact local synthetic stack (`supabase_db_sequence` for
+read-only private-table proof), current migrations and test build. The signature
+fixtures contain no real genetic data and make no alignment-validity claim.
+
+PR74/PR75 integration (2026-09-07): the canonical replacement retains the
+released My genome → starter reports → Family → Embryos layout, including
+PR74's desktop/mobile DOM-order and non-overlap assertions in `overview.spec.ts`.
+The six conflicted runtime/config files retain the already verified canonical
+implementation; no legacy issuer or mixed upload contract is restored.
+
+PR75's retired pause browser case and 15 legacy-specific units are superseded
+by the existing canonical cases, not skipped: `subject-upload-issuance.test.ts`
+checks the exact flag, auth-first refusal, no signer/lease work and normal
+issuance; `own-upload-entry.test.ts` checks both normal and withheld picker
+states; `subject-upload-browser.test.ts` checks live stale-page refusal and
+zero Storage/finalization work. `own-upload-pause.spec.ts` checks both aliases,
+both entry pages, unchanged file/lease counts and zero writes on refusal,
+actual stored bytes, interrupted finalization, successful completion and
+preparation through the paused app, exact downloads and retained controls.
+Its existing 24-case and later 69-case production-build receipts are retained.
+The unused legacy pause helper/copy/error-mapper and legacy environment example
+are removed with those old-contract tests. PR75's operational record remains
+explicitly historical in `legacy-upload-pause.md`. The additional Overview
+assertions await the separately recorded canonical ancestry prerequisite;
+this merge does not claim a new full browser pass.
+
+Historical released PR75 verification (legacy runtime; canonical replacement receipts follow):
+
 Legacy upload pause (2026-09-06): adds 15 focused route/presentation units
 and one browser case, preserving every existing case and assertion. The
 browser case uses a third same-build app instance with pause enabled, actual
@@ -20,6 +192,134 @@ sets the file to `annotated`. The canonical branch has different lease semantics
 Scoped lint, typecheck and unchanged 220-case discovery pass; corrected CI is
 still required. The local canonical database policy must not be reverted to
 make a legacy test pass.
+
+Canonical notice/source-control verification (`6e9acd6`, 2026-09-07): all
+69 selected cases pass together with zero skips/retries and 33 actual provider
+uploads. This supersedes the pending notice, expiry, export and first self-file
+deletion statuses below. The account purge and other-adult deletion cases remain
+unrun on preserved local fixtures. The initial five-case attempt passed three,
+failed oversized HG001 finalization with a correct 413 and left one serial case
+unrun. Its 99.7 MB decoded source exceeded the 50 MiB configured ceiling.
+The replacement is a wholly synthetic 2,005-call gzip within that ceiling;
+existing byte/count/privacy assertions remain and exact CSV rows plus raw and
+decoded hashes are added. No runtime limit or existing fixture was changed.
+
+Ready-notice SQL review found and corrected an unsupported PostgreSQL regex
+bound and NULL predicate propagation. Source identity remains immutable; the
+rollback-only negative test changes its normalization manifest instead of the
+file hash. Releasing the final teardown savepoint preserves pgTAP bookkeeping
+while the outer transaction still restores data. Final exact fresh migration
+and eleven-fixture verification passes 68 migrations and 299 assertions at
+`6c25379`; previous failed receipts remain retained.
+
+Canonical notice/source-control fixture migration (2026-09-07, unverified
+browser batch at `1043838`): mail expiry first proves preparation queues no
+ready notice, then chooses polygenic generation and retains exact immutable
+outbox/contact/deadline and zero-provider-attempt assertions. Export retains
+large-source pagination, no numeric score leakage, exact original bytes and
+captured JSON/text interpretation equality. File deletion retains queued-notice
+invalidation and adds byte-identical preservation of a second source.
+Account purge retains genuinely generated PRS/analysis/normalization evidence
+before and during notice, then requires exact zero residuals after the real
+worker. It requires a clean disposable stack, failing rather than skipping on
+preserved local fixtures. No account purge worker was run locally. Overview's
+unsupported ancestry prerequisite and the other-adult deletion test remain
+unchanged. These test edits pass lint/typecheck; notice runtime and actual
+journey verification remain required.
+
+Canonical report/export regression migration (2026-09-07, unreleased):
+`own-report-helpers` now separates actual source preparation from explicit
+report choice/generation while retaining exact hash, revision, single-sample
+and private completed-purpose journal checks. Six existing spec files keep
+their presentation, scientific, source, count and network assertions. The
+reference-call test checks canonical normalization plus each stored source
+hash/extraction version instead of legacy file snapshot columns; native
+browser processing replay retains the eight observations and zero variant-only
+rows. The synthetic array declares its recognized vendor format. Raw Browser
+uses no analytic grant; only the later Data score case chooses polygenic.
+
+An additive export browser case downloads actual ZIPs before any report choice,
+after generating one of two prepared sources, and after withdrawal. It checks
+both original byte arrays, full normalized rows, observed calls, captured
+interpretations in JSON/text, purpose isolation and coverage-only PRS. This
+case is implemented and typechecked. Its first integrated attempt passed the
+initial raw ZIP checks but stopped at generation of the selected older source;
+the complete export journey is not yet verified. Standard discovery is 226
+cases/43 files; it is not a passing suite.
+
+The full runner uses the actual local Storage provider and keeps both standard
+projects plus the independent paused server. Four guard/report tests and a
+real provider/CORS/Chromium transport check pass. APIRequest and route.fetch
+now use direct HTTP; route.fetch does not invent the browser Sec-Fetch-Site
+header. Disposable CI cannot narrow test selectors or retain bearer traces.
+
+The first integrated 65-case run at `5ee7121` recorded four passes, one old
+listed-call wording failure and 60 cases not run. Exact canonical source-rate
+phrases now retain 4/4 and 11/11; report-specific coverage wording is unchanged.
+Preflight also found that the later two-layer count case needs an explicit
+monogenic choice: it now generates that second layer for the existing source
+at that case, while the earlier estimate-only case stays polygenic-only.
+No count, scientific meaning or authorization assertion is weakened.
+
+The second integrated attempt at `f3e21cc` passed 57 cases, failed three and
+left five not run, with no retries. Legal and network setup collided with
+preserved local synthetic accounts; those specs now use fresh UUID addresses
+without deleting fixtures or changing account helpers. The export case
+observed generation for the newer source while waiting for the selected older
+source. A scoped reproduction identified the exact label lookup returning zero
+while the native select existed, so the helper skipped selection. The combobox
+role lookup selected the older source and its real process request returned
+200. The helper now uses that lookup and asserts the selected UUID before
+generation, preserving the exact response and private source journal checks.
+No product change or arbitrary delay was needed; the complete export case
+passed in the next focused run at `c76a4bf`: six cases passed, including
+the complete export journey and five network checks. The legal report case
+then stopped at its old exact card name. The observed card name includes
+the gene and evidence label; its selector now matches the actual accessible
+name and asserts the destination heading. The exact disclaimer and personal
+genotype requirements remain. One plural "legal pages contact" network case
+was outside that focused name filter and also remains for the final rerun.
+The focused run was a failed seven-case run, not a passing gate.
+
+Own-upload MVP verification (2026-09-06): the two-file control case proves
+exact downloads, conflict refusal, visible deletion failure/retry, real
+selected-source Storage removal and preservation of the other source. The
+source-facts case adds actual GRCh37 conversion, called/no-call counts,
+private-hash non-disclosure and analytic withdrawal with retained raw access.
+Behavior-study, report-preview and sensitive-gate cases now choose their
+explicit polygenic purpose through the real UI, preserving interpretation,
+source/claim, SSR leak, cross-account and sensitive-reveal assertions. Native
+browser requests replace only proxy-incompatible APIRequestContext calls.
+No legacy `annotated` status or analytic grant is fabricated.
+
+The first expanded run exposed stale local reference templates and a malformed
+synthetic vendor header. Local reference seeding and the fixture header were
+corrected; detection and expected scientific behavior were retained. A legacy
+embryo unit fixture now states its actual null canonical marker. Visual review
+separated file-wide listed-call wording from report coverage. At `5d755c9`,
+all 2,619 units and all 23 selected real-provider browser cases pass with zero
+skips/retries; sixteen uploads crossed actual Storage. This is not full-suite
+or hosted acceptance.
+
+The cron adapter adds credential/selector/HEAD refusal and exact fresh-POST
+forwarding tests while preserving the existing worker tests. At `77dbad1`,
+all 2,641 units pass; no scheduled or hosted cleanup is claimed. Canonical
+issuance-pause tests preserve current auth/consent/capacity checks when off,
+require no signer/lease/Storage work after authenticated pause, and check
+unchanged finalize/preparation behavior with the pause enabled. Its final
+integrated browser receipt is recorded separately when actually run.
+
+At `a8d82b5`, all 2,661 units passed and the expanded browser run passed the
+existing 23 cases. Its new pause case stopped at an ambiguous alert locator
+that also selected the Next route announcer. Both alerts now select their
+actual message and retain exact-text assertions. Independent read-only review
+confirmed the remaining expectations against canonical runtime and local schema,
+including the actual Storage trigger's `uploaded` lease state. No authorization,
+byte-preservation, preparation, cleanup or download assertion was relaxed.
+At `9b45b75`, the corrected 24-case integrated run passes with zero skips,
+retries or flaky cases and 18 actual Storage uploads. Desktop/mobile paused
+file controls were inspected. Runtime is unchanged from the 2,661-unit source.
+
 
 Copilot pre-merge usability review: four extra cases bring the completion
 corpus to 64 and new unit coverage to 69 tests. Three first failed on
@@ -552,3 +852,33 @@ The combined local production-build rerun passed all 16 cases in
 `report-skeleton.spec.ts`, including the seven serial cases not run after
 the CI failure. Typecheck and scoped lint also passed. Full PR CI must still
 pass on the updated revision before publication.
+
+### Own-account upload screen integration (2026-09-06, unreleased)
+
+The runtime route inventory adds the registered `api.consents` and
+`api.account-completion` builders. Its exact-set and register-path equality
+assertions remain; the test title now describes that runtime inventory.
+The new account-completion API has a closed, independently registered contract.
+
+`e2e/own-upload-consent.spec.ts` is additive. A fresh synthetic account starts
+with no birth date or consents and performs each decision through the real
+browser/API/database. It proves current-signature reload and that none of
+these steps creates analysis permission or sends a genetic file. It explicitly
+does not substitute this pre-file-selection test for G2.6.
+
+`e2e/file-deletion.spec.ts` retains every existing assertion and adds a check
+that the missing-details screen is present while the file deletion controls
+still work. Both deletion cases and the new consent case pass in the local
+production-build run, without retries or skips. The first run's failure was
+the new test selecting nonexistent `purpose_grants.id`; selecting the real
+`target_id` preserves the exact empty-grant requirement.
+
+The signing RPC, token and tests now distinguish account-binding from subject
+revision. `supabase/tests/own_upload_account_completion.sql` uses the actual
+adult acceptance transition and a scoped synthetic delivery token; it never
+claims unrelated mail. Both own-upload database suites pass 72 assertions.
+The focused unit inventory passes 84 cases; no existing assertion is removed.
+
+The plain-word registry adds “birth”, “date”, “complete” and “own” for the
+literal account and DNA labels. No jargon entry, readability threshold,
+extractor or legal statement is removed or relaxed.

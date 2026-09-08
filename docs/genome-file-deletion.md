@@ -26,7 +26,11 @@ The finish transaction rechecks authority and bindings, requires the token and
 independently verifies that exact Storage metadata row is absent. It removes
 download sessions, registered object metadata and worker state, then the file.
 Variants, PRS, ancestry and the private deletion record cascade from the file.
-The subject, other files, consent records and chat history are not deleted.
+The subject, other files and consent records are not deleted. Canonical chat
+pairs whose frozen provenance depends on this file, including a dependent later
+turn, are removed after Storage acknowledgement. Unattributed legacy history
+and independent conversations are preserved; partial canonical provenance
+blocks preparation rather than being treated as legacy.
 
 This is settled self-upload deletion, not a fence for an in-flight embryo
 writer. Source keys are immutable and client creation in the final bucket is
@@ -47,8 +51,10 @@ with their file, without a new public purge class or a retained orphan token.
 Pending manifests contain only existing exact object identity, account binding
 and retry metadata, never file contents. Legacy object keys may include a
 filename. The manifest cascades on completion or account purge.
-Completed upload session journals and chat history retain their existing rules;
-the button describes file-based results, not whole-account deletion.
+Completed upload session journals and unattributed legacy chat history retain
+their existing rules; the button describes file-based results, not whole-account
+deletion. Canonical chat manifests contain exact message/turn identifiers and
+projection hashes, never an inferred dependency from conversation text.
 
 Preparation invalidates queued or claimed report-ready notices for this exact
 file, including on retry. A separate mail insert guard serializes with the file

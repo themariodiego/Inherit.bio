@@ -3,14 +3,16 @@ select plan(20);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
-select is((select count(*) from public.retention_phase_registry), 52::bigint,
-  'all 52 scheduled phase IDs are registered');
+select is((select count(*) from public.retention_phase_registry), 53::bigint,
+  '52 scheduled phases plus the canonical own-report revocation phase are registered');
 select is((select count(*) from public.purge_manifest_classes), 25::bigint,
   'all 25 purge manifest classes are registered');
 select is((select count(*) from public.purge_targets), 33::bigint,
   'all 33 ordered purge targets are registered');
-select is((select count(*) from public.purge_target_stores), 113::bigint,
-  'all 113 purge stores, including terminal invitation notice intents, are classified');
+-- Canonical normalization adds private.own_normalization_batches and
+-- private.own_normalization_runs; report generation adds private.own_analysis_runs.
+select is((select count(*) from public.purge_target_stores), 116::bigint,
+  'all 116 purge stores, including canonical normalization and analysis journals, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name = 'public.embryo_ingest_chunks'), 'upload-and-ingest-working-state',
   'chunk receipts are classified for attempt cleanup');

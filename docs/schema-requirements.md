@@ -1,5 +1,30 @@
 # Inherit v2 schema requirements
 
+## Approved upload-only predicate exception (2026-09-06)
+
+The operator approved one additional private, zero-argument boolean check
+for the upload-only Storage policy. It derives the exact account, originating
+session, upload ID, bearer ID and staging key only from validated JWT claims;
+it returns no record or personal data. It is callable by `inherit_upload_only`
+and the service role only, not `anon` or `authenticated`. This is not a table
+SELECT grant or a generic target-authorizing RPC.
+
+Add a private, RLS-protected singleton upload configuration with the exact
+deployment Auth issuer; no implicit issuer inference or production key is
+seeded. The live-session check returns only authorization and revisions.
+Session revision is the provider's stored refresh-token counter plus one
+(a null initial counter maps to one); it is not a token's bearer ID.
+
+Extend existing upload sessions additively with the Storage bucket, declared
+format, upload bearer ID and immutable account/session/subject/lifecycle/
+consent snapshots. Legacy rows remain unchanged and cannot acquire the new
+role's authority. New issuance requires the exact current upload-class store
+grant and insurance artifact; analysis permission is deliberately not implied.
+The new Storage policy creates only its exact staging object in `genomes`.
+Its role has no SELECT, UPDATE, DELETE or application-table privileges.
+Activation of the new endpoint and retirement of legacy transport must be one
+reviewed integration release; this migration alone is not that release.
+
 Status: binding implementation checklist
 
 This document translates `docs/route-register.json`, `docs/retention.md`, and
@@ -340,3 +365,125 @@ annotated state clears both provenance values. A fresh UUID claims an eligible
 non-active processing run and binds completion/failure updates. No client grant,
 new store, retention clock or historical backfill is added. See
 `docs/result-input-provenance.md` for the per-result read and unknown-state rules.
+
+## Own-account upload consent integration (in progress)
+
+Implement `consent-action-capability-v1`'s own-subject case for the existing
+self subject and a finalized adult subject held by that same person's account.
+The class artifact is `content/legal/consent.upload-self/v1.md`; no uploader,
+owner-only or family-grantee relation may sign it. The insurance disclosure
+remains a separate explicit decision and uses its existing versioned artifact.
+
+Add nullable `profiles.date_of_birth` with no guessed/backfilled value. The
+signing boundary requires a stored adult birth date; signup and existing-account
+completion must be connected before this upload work is released. Preserve all
+`consent.self-source-migrated` signatures and grants unchanged.
+An invoker trigger denies direct anon/authenticated birth-date inserts or
+changes despite the pre-existing table-level profile grants. The future
+account-completion route must validate and write this field server-side.
+
+Extend existing `account_operation_nonces.operation` with
+`own_upload_artifact_sign`, retaining its existing account/session ownership,
+15-minute maximum clock, RLS and account-deletion cleanup. Store no token,
+birth date, subject identifier or artifact text in the nonce row. The signed
+presentation supplies the exact subject, artifact hash/version and current
+account, auth-session, jurisdiction and subject-binding revisions.
+
+Add `upload_class` to the existing `subject_consents.consent_type` values:
+this is a revocable store-only grant, not an analytic-purpose grant. Signing a
+new class version supersedes only an earlier upload-class grant for that exact
+subject/account. It must not revoke historical self-source or purpose grants.
+
+The public signing RPC is SECURITY INVOKER and service-role-only. Its unexposed
+private implementation is service-role-only with fixed search path; it locks
+and rechecks the live originating auth session, profile, subject/binding,
+published artifact and one-use nonce before recording the signature and class
+grant atomically. Stale or altered presentation, another person's subject,
+non-adult/missing birth date, deletion hold, revoked session, nonce replay or
+invalid statement keys must leave zero signature/grant changes. No genetic
+upload, processing, mail or model operation is part of this transaction.
+
+### Initial account completion and upload-screen presentation
+
+`api.account-completion` explicitly closes the legacy no-date gap. It writes
+only an unset `profiles.date_of_birth`, under the live originating session,
+account/auth revisions and one-use nonce, and increments `account_revision`.
+It cannot change an existing declaration, consent, jurisdiction or file. The
+date is validated as a real calendar date and at least 18 completed UTC years;
+the response contains only `status: completed`. A date declaration is not
+identity verification. Missing legacy dates are never guessed.
+
+Extend `account_operation_nonces.operation` with `own_account_completion`.
+Preparation for the upload screen checks exact live own-subject authority and
+returns only current revision numbers and whether the date is absent/adult.
+Nonce issuance repeats that authority and revision check, uses the existing
+ten-minute presentation lifetime, and removes only expired own-upload or
+account-completion nonce rows for the same account. Private implementations
+are service-role-only, with public invoker wrappers; no client table grant or
+new storage table, expiry clock, genetic or analytic write is introduced.
+
+## Canonical own-report purpose revocation executor
+
+The `own-report-purpose-purge` worker phase belongs to the existing
+`purpose.derived-60s` retention ID and `purpose-derived-only` manifest class.
+It adds no scheduled phase or new sensitive store. `purge_manifests` gains
+`physical_purge_started_at`, a monotone `batch_cursor`, and an immutable
+`frozen_manifest_hash`. Exact grant-bound manifest membership and the phase
+envelope become immutable before enqueue; progress fields stay separate.
+
+Future canonical self monogenic/polygenic revocations freeze the disposition,
+phase and manifest before withdrawal, then execute their database-only members
+synchronously after logical withdrawal. A failed physical subtransaction leaves
+revocation and a durable pending job. The original deadline is never renewed;
+worker fallback alone is not evidence of meeting sixty seconds.
+
+Validated historical jobs retain their original dispatch binding and receive a
+visible `cancelled`/`superseded` receipt with `cleanupComplete: false` only after
+creating or reusing the compliant replacement. Only that replacement's actual
+residual proof establishes cleanup completion. Transient failures use bounded
+attempts/backoff; unsupported or exhausted work has a coded failed receipt.
+The service-only, zero-argument `run_own_report_purge_v1` returns only a closed
+outcome and deleted-row count. Exact-job helpers remain private and ungranted.
+
+This executor handles only grant-attributed `public.user_prs` coverage and
+`private.own_analysis_runs` journals. Source observations and Storage objects
+are never members. Regrant residual protection requires a live exact new grant
+and complete current source/normalization/Storage binding. A changed frozen
+target lifecycle revision or unsupported attributed chat output fails closed;
+this is not a generic family, cohort, lifecycle or source cleanup executor.
+
+
+## Canonical own-report ready notices
+
+`mail_outbox.canonical_readiness` is an immutable, non-genetic source/authority
+snapshot for canonical `report-ready` rows. It names the account, subject, file,
+computation and recipient-contact revisions and each currently selected supported purpose's exact
+source, normalization, grant, legal artifact and principal/binding authority.
+Session revisions are excluded from durable identity; delivery does not require
+the originating browser session to survive. Current account, recipient, contact,
+source, consent and deletion authority still fence every claim and submission.
+
+The service-only `own_report_generation_with_mail_v1` adapter preserves the core
+operation checks and requires a verified-account encrypted contact envelope for
+completion. It commits the last selected-purpose completion and notice together,
+or rolls both back when enqueue rejects. Preparation and partial/failed selected
+work have no ready notice. The existing core RPC remains available to the old
+application during rollout; it does not gain notices without application replacement.
+
+The idempotency key is SHA256 of the canonical JSONB readiness snapshot text.
+Replay cannot replace its recipient, renew its database-issued 30-day deadline
+or rewrite its snapshot. Withdrawal invalidates queued/claimed affected events
+in the same transaction. Insert, claim and immediate pre-submit share
+`private.file_ready_mail_current_v1`; only actual legacy sources retain the
+annotated-file branch. No failure-email window is introduced by this adapter.
+
+The DB-owned `profiles.mail_contact_revision` starts at one and advances only for
+actual Auth email/confirmation changes. A field guard covers browser INSERT and
+UPDATE despite existing table grants. The server reads this counter before
+verified `getUser`; enqueue locks Auth then profile in the existing account order
+and refuses an obsolete envelope. The Auth transition follows Auth → profile →
+outbox order, invalidates old canonical rows and rotates their captured contacts.
+Claim/pre-submit re-resolve the current counter without taking Auth/profile locks
+while holding an outbox lock. No analysis revision changes for an email-only edit.
+An explicit processing retry can create one event at the new contact revision;
+the prior event's recipient, source snapshot and deadline remain unchanged.

@@ -38,3 +38,22 @@ Local contributors need an operator-supplied denylist file outside the checkout.
 CI needs the encrypted `NAME_DENYLIST` repository or organisation secret. The
 public provider directory remains complete and factual, while the same denied
 name fails in every non-carved-out file and every post-baseline commit message.
+
+## URL classification correction · 2026-09-07
+
+The external-host pass classifies a parsed hostname rather than treating URL
+credentials, ports, queries or fragments as part of a provider name. Literal
+SQL regex dot escapes are decoded narrowly; unknown authorities and other
+backslash forms remain findings. IPv6 loopback and the reserved `.test` and
+`.invalid` domains (including their subdomains) are local/synthetic reference
+names, as listed by the [special-use domain registry](https://www.iana.org/assignments/special-use-domain-names).
+This is solely external-name classification, not permission to connect to any
+URL. Private denylist matching still scans original text, identifiers, paths
+and post-baseline commit messages, including reserved-host URLs and userinfo.
+The separate credential scanner still checks those fixtures. Tests retain
+unknown-host, suffix-confusion, credential-authority and private-name rejection.
+
+PR76 CI at `6fa1eaa` passed build and units, then stopped on 43 external-host
+findings. They comprise these parsing/reserved-domain cases, existing citation
+regex hosts, and the cited database documentation host now registered with
+its actual evidence. No private denylist entry was removed or retrieved.

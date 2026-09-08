@@ -27,7 +27,6 @@ import {
 import {
   getPublishedTemplates,
   getSubjectFileCount,
-  getSubjectProcessedFiles,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
@@ -44,7 +43,11 @@ import {
   type FindingLayer,
 } from "@/lib/genome/taxonomy";
 import { grantedLayers } from "@/lib/family/access";
+import { loadOwnAnalysisCandidateFiles } from "@/lib/genome/own-analysis-access";
+import { OwnReportChoicesEntry } from "@/components/reports/own-report-choices-entry";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
+import { loadSharedReportSnapshot } from "@/lib/family/shared-report-results";
+import { resolveStoredSharedReport } from "@/lib/family/shared-report-display";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cn } from "@/lib/utils";
@@ -113,22 +116,38 @@ export default async function ReportsPage(
   if (allowedLayers.length === 0) notFound();
 
   const admin = createAdminClient();
+  const shared = person ? await loadSharedReportSnapshot(admin, {
+    subjectId: dataSubjectId, counterpartAccountId: person.counterpartAccountId,
+    purposes: allowedLayers.map(layer => layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"),
+  }) : null;
+  if (shared && !shared.authorized) notFound();
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
-  const [files, fileCount, allTemplates] = await Promise.all([
-    getSubjectProcessedFiles(admin, dataSubjectId),
-    getSubjectFileCount(admin, dataSubjectId),
+  const [files, legacyOrOwnFileCount, allTemplates] = await Promise.all([
+    loadOwnAnalysisCandidateFiles(admin, dataSubjectId, { legacyOnly: person !== null }),
+    person ? admin.from("genome_files").select("id", { count: "exact", head: true })
+      .eq("subject_id", dataSubjectId).is("single_logical_sample_verified_at", null).then(result => result.count ?? 0)
+      : getSubjectFileCount(admin, dataSubjectId),
     getPublishedTemplates(admin),
   ]);
   // Test fixtures never reach the user-facing library.
-  const templates = allTemplates.filter((t) => !isFixtureSlug(t.slug));
-  const { genotypes, conflicts } = await getSubjectReportCalls(
-    admin,
-    dataSubjectId,
-    templates,
-  );
+  const stored = new Map<string, NonNullable<ReturnType<typeof resolveStoredSharedReport>>>();
+  // The reader orders completed results newest first. List cards summarize that
+  // saved result; the detail page keeps every source separately selectable.
+  for (const row of shared?.reports ?? []) {
+    const result = resolveStoredSharedReport(row);
+    if (result && !stored.has(result.template.slug)) stored.set(result.template.slug, result);
+  }
+  const templateBySlug = new Map(allTemplates.map(template => [template.slug, template]));
+  for (const result of stored.values()) templateBySlug.set(result.template.slug, result.template);
+  const templates = [...templateBySlug.values()].filter(t => !isFixtureSlug(t.slug));
+  // Each layer has its own input map: one selected purpose cannot populate
+  // another layer's coverage, genotypes or personalized text.
+  const layerCalls = new Map(await Promise.all(allowedLayers.map(async layer => [layer,
+    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer)),
+  ] as const)));
   const resolved = templates.map((t) =>
-    resolveTemplate(t, (rsid) => genotypes.get(rsid)),
+    stored.get(t.slug) ?? resolveTemplate(t, (rsid) => layerCalls.get(t.layer ?? "estimate")?.genotypes.get(rsid)),
   );
   const previewContributors = new Map<string, string[]>();
   const previews = await loadPersonalPreviews(admin, {
@@ -137,10 +156,15 @@ export default async function ReportsPage(
     subjectClass: subject.subjectClass,
     subjectId: dataSubjectId,
     isFamily: person !== null,
-  }, templates, files, conflicts, previewContributors);
-  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat());
+  }, templates.filter(t => (t.layer ?? "estimate") === "estimate"), files,
+  layerCalls.get("estimate")?.conflicts ?? new Set(), previewContributors);
+  const previewInputs = await loadInputSources(admin, dataSubjectId, [...previewContributors.values()].flat(),
+    { kind: "report", purpose: "reports.polygenic" });
 
-  const hasData = files.length > 0;
+  if (shared && !(await shared.confirm()).authorized) notFound();
+  const fileCount = legacyOrOwnFileCount + new Set(shared?.sources.map(source => source.fileId) ?? []).size;
+  const layerHasResult = (layer: FindingLayer) => (layerCalls.get(layer)?.fileCount ?? 0) > 0
+    || [...stored.values()].some(result => (result.template.layer ?? "estimate") === layer);
   const subjectParams = { subject: subject.routeSegment };
 
   // One group per layer; a layer with zero templates is absent, not empty.
@@ -181,7 +205,7 @@ export default async function ReportsPage(
         summary: template.summary,
         evidenceLabel: EVIDENCE_PUBLIC_LABELS[template.evidence] ?? template.evidence,
         genes: template.variants.map((variant) => variant.gene),
-        status: hasData ? (covered ? "covered" : "not-covered") : "awaiting",
+        status: (stored.has(template.slug) || (layerCalls.get(activeLayer)?.fileCount ?? 0) > 0) ? (covered ? "covered" : "not-covered") : "awaiting",
         preview: previews.get(template.slug),
       });
       byCategory.set(category, list);
@@ -221,7 +245,8 @@ export default async function ReportsPage(
 
       <header className="space-y-3">
         <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
-        {!hasData ? <p className="text-sm text-ink-muted">{LIST_NO_FILE}</p> : null}
+        {fileCount === 0 ? <p className="text-sm text-ink-muted">{shared?.access.some(access => access.kind === "canonical")
+          ? "No completed result is shared yet." : LIST_NO_FILE}</p> : null}
         {/* One count line per non-empty layer, each carrying its own layer
             noun (G4.3), so a future variant_call layer is never described
             as estimates: the covered count, then the layer total. */}
@@ -231,12 +256,12 @@ export default async function ReportsPage(
           const describedBy = `layer-${layer}-definition`;
           const counts = (
             <>
-              {hasData ? (
+              {layerHasResult(layer) ? (
                 <>
                   <Count
                     value={covered}
                     layerClass={LAYER_CLASS[layer]}
-                    qualifier="covered by your file"
+                    qualifier={person ? "covered by a shared file" : "covered by your file"}
                     describedBy={describedBy}
                   />
                   {", out of "}
@@ -271,6 +296,7 @@ export default async function ReportsPage(
           </p>
         ) : null}
       </header>
+      {!person ? <OwnReportChoicesEntry subject={subject.routeSegment} /> : null}
 
       {nonEmptyLayers.length > 1 ? (
         <nav aria-label="Report groups" className="flex gap-1 border-b border-line">

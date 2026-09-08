@@ -7,7 +7,7 @@ on:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -48,8 +49,6 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
-      - name: Production build
-        run: pnpm build
       - name: Unit tests
         run: pnpm test
       - name: Legal placeholder gate
@@ -76,8 +75,23 @@ jobs:
         run: pnpm test:invitation-locks
       - name: Seed local Supabase
         run: pnpm seed
-      - name: Full browser suite
+      - name: Prepare credential-free isolated Linux runtime image
+        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+      - name: Production build with current local public configuration
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+        run: |
+          pnpm build
+          pnpm exec tsx scripts/ci-browser-runtime.run.mts record-build
+      - name: Full browser suite with the real local Storage provider
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
         run: pnpm e2e
+      - name: Clean up only the owned browser runtime
+        if: always()
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+        run: pnpm exec tsx scripts/ci-browser-runtime.run.mts cleanup
       - name: Stop local Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup

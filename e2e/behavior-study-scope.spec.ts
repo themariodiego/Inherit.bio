@@ -4,7 +4,8 @@ import path from "node:path";
 import mental from "../data/templates/mental-health.json";
 import addiction from "../data/templates/addiction.json";
 import environmental from "../data/templates/environmental-sensitivity.json";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { isGatedTemplate } from "../src/lib/genome/taxonomy";
 import { readStudyContext } from "../src/lib/genome/study-context";
 import type { ReportTemplate } from "../src/lib/genome/reports";
@@ -23,8 +24,9 @@ test.beforeAll(async () => { await createConfirmedUser(USER.email, USER.password
 for (const [index, entry] of CASES.entries()) {
   test(`/genome/[subject]/reports/[slug] shown ${entry.slug}: processed call and exact source scope`, async ({ page }) => {
     await signIn(page, USER.email, USER.password);
-    if (index === 0) await ingestFileAs(page, USER.email, USER.password,
-      path.join(process.cwd(), "e2e/fixtures/behavior-scope-grch38.vcf"), "vcf");
+    if (index === 0) await uploadOwnFileWithChosenReports(page,
+      path.join(process.cwd(), "e2e/fixtures/behavior-scope-grch38.vcf"),
+      { fileType: "vcf", purposes: ["reports.polygenic"] });
     const template = templates.find((t) => t.slug === entry.slug)!;
     await page.goto(`/genome/me/reports/${entry.slug}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(template.title.split(" · ")[0]);

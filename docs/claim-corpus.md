@@ -25,7 +25,7 @@ The canonical registers remain `data/citations.json`, `data/claims.json` and
   summaries, 51 study-context paragraphs and 12 genotype interpretations.
   The released first four reports (COMT, BDNF, FAAH and SLC45A2) account for
   39 independently reviewed statements. The everyday-trait follow-through
-  adds 32 statements for cilantro, asparagus odor, bright-light sneezing and
+  released by PR72 adds 32 statements for cilantro, asparagus odor, bright-light sneezing and
   earwax; see `docs/sources/everyday/review.md` for source-review and release
   status. The combined register has 19 sources: 12 publications and seven
   Ensembl position/transcript records.

@@ -11,13 +11,8 @@ import {
   type ProcessingTiming,
 } from "@/components/overview/processing-panel";
 import { StartHere } from "@/components/overview/start-here";
-import {
-  isStarterCandidate,
-  selectStarterReports,
-} from "@/components/overview/starter";
 import { Count } from "@/components/reports/count";
 import { StarterReports } from "@/components/overview/starter-reports";
-import { isFixtureSlug } from "@/components/reports/library";
 import { Button } from "@/components/ui/button";
 import {
   COPILOT_GROUP_SCOPES_AVAILABLE,
@@ -27,6 +22,7 @@ import {
   NOT_DIAGNOSTIC,
   OVERVIEW_H1,
   PRIMARY,
+  PREPARED_REPORTS,
   SPLIT_NOTE,
   SPLIT_NOTE_VARIANT_CALL,
   VARIANT_CALL_DEFINITION,
@@ -49,8 +45,8 @@ import { acknowledged } from "@/lib/family/tier2";
 import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
 import { subjectAttributes } from "@/lib/figures/contract";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
-import { getSubjectGenotypesByRsid, templateRsids } from "@/lib/genome/load";
-import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
+import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
+import { loadOwnOverviewReports } from "@/components/overview/own-report-summary";
 import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -154,7 +150,12 @@ export default async function OverviewPage() {
   const selfFiles = ((fileRows ?? []) as FileRow[]).filter(
     (file) => self != null && file.subject_id === self.id,
   );
-  const annotated = selfFiles.filter((file) => file.status === "annotated");
+  const [ownReports, ancestry] = self ? await Promise.all([
+    loadOwnOverviewReports(admin, self.id), selfFiles.length ? loadAncestryResultSnapshot(admin, supabase, self.id) : Promise.resolve(null),
+  ]) : [null, null];
+  let ownAncestry = ancestry?.rows.find(row => row.kind === "admixture");
+  let hasAncestry = Boolean(ownAncestry);
+  const hasReports = ownReports?.hasReports ?? false;
   const inFlight = selfFiles.find((file) => STEP_FOR_STATUS[file.status] != null);
   // The people the viewer shares a Family relationship with, from either
   // side, each shown under the name the graph resolved rather than the label
@@ -167,17 +168,17 @@ export default async function OverviewPage() {
 
   // E, then B, then D/C, then A: a second upload in flight is never hidden
   // behind the processed file's State C.
-  const state: OverviewState =
+  const resolveState = (): OverviewState =>
     embryoSubjects.length > 0
       ? "E"
       : inFlight
         ? "B"
-        : annotated.length > 0
+        : hasReports || hasAncestry
           ? familyRows.length > 0
             ? "D"
             : "C"
           : "A";
-  const hasReports = annotated.length > 0;
+  let state = resolveState();
 
   // ---- State B: measured timing for the in-flight file's tier -------------
   let timing: ProcessingTiming | null = null;
@@ -197,50 +198,9 @@ export default async function OverviewPage() {
     }
   }
 
-  // ---- Library counts (split string) and the starter list ----------------
-  let estimateCount = 0;
-  let variantCallCount = 0;
-  let starter: ReportTemplate[] = [];
-  // The one ancestry line (D26): rendered only when an admixture result
-  // exists with too few usable markers; otherwise no ancestry line at all.
-  let ancestryTooFew = false;
-  if (hasReports && self) {
-    const { data: templateRows } = await admin
-      .from("report_templates")
-      .select(
-        "slug, category, title, summary, evidence, variants, pgs_id, citations, layer, estimate_kind",
-      )
-      .eq("status", "published");
-    const templates = ((templateRows ?? []) as unknown as ReportTemplate[]).filter(
-      (t) => !isFixtureSlug(t.slug),
-    );
-    // Counted per layer, never summed (brief §4 §1.4).
-    estimateCount = templates.filter((t) => (t.layer ?? "estimate") === "estimate").length;
-    variantCallCount = templates.filter((t) => t.layer === "variant_call").length;
-
-    const candidates = templates.filter(isStarterCandidate);
-    const { genotypes } = await getSubjectGenotypesByRsid(
-      admin,
-      self.id,
-      templateRsids(candidates),
-    );
-    starter = selectStarterReports(
-      candidates.map((t) => resolveTemplate(t, (rsid) => genotypes.get(rsid))),
-    );
-
-    const { data: admixRow } = await admin
-      .from("ancestry_results")
-      .select("result")
-      .eq("subject_id", self.id)
-      .eq("kind", "admixture")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (admixRow) {
-      const admix = admixRow.result as unknown as StoredAdmixture;
-      ancestryTooFew = (admix.markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION;
-    }
-  }
+  // Public catalog counts retain their existing meaning; starter links alone
+  // are personalized from exact live completed-purpose inputs.
+  const { estimateCount = 0, variantCallCount = 0, starter = [], showStarter = false } = ownReports ?? {};
 
   // ---- State E counts -----------------------------------------------------
   let embryoCounts: { files: number; passed: number; notMeasured: number } | null =
@@ -301,6 +261,16 @@ export default async function OverviewPage() {
     }
   }
 
+  // Confirm the same saved result after all other awaited page reads, before
+  // presenting ancestry readiness or coverage from the captured content.
+  ownAncestry = (await ancestry?.confirm())?.find(row => row.kind === "admixture");
+  hasAncestry = Boolean(ownAncestry);
+  state = resolveState();
+  const needsReportChoice = !hasReports && !hasAncestry && (ownReports?.hasPreparedSource ?? false);
+  const ancestryTooFew = ownAncestry
+    ? ((ownAncestry.result as StoredAdmixture).markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION
+    : false;
+
   const firstAdultSegment = family[0]?.handle.routeSegment ?? null;
   const boxesFor = (domain: DomainId): EntryBox[] =>
     ENTRY_BOXES.filter((box) => box.domain === domain).map((box) => ({
@@ -320,14 +290,24 @@ export default async function OverviewPage() {
     >
       <header className="space-y-3">
         <h1 className="display text-4xl">{OVERVIEW_H1}</h1>
-        {state === "A" ? (
+        {state === "A" && !needsReportChoice ? (
           <p className="max-w-prose text-base leading-relaxed text-ink-muted">
             {STATE_A_LEDE}
           </p>
         ) : null}
       </header>
 
-      {state === "A" ? <StartHere /> : null}
+      {state === "A" && !needsReportChoice ? <StartHere /> : null}
+      {state === "A" && needsReportChoice ? (
+        <section aria-labelledby="prepared-reports-title" data-density-top-level-section
+          className="rounded-2xl border border-line bg-card p-5 sm:p-6">
+          <p id="prepared-reports-title" className="text-lg font-semibold">{PREPARED_REPORTS.title}</p>
+          <p className="mt-2 max-w-prose text-sm text-ink-muted">{PREPARED_REPORTS.description}</p>
+          <Button asChild size="lg" className="mt-4 min-h-11">
+            <Link href={route("genome.reports", { subject: "me" })}>{PREPARED_REPORTS.action}</Link>
+          </Button>
+        </section>
+      ) : null}
       {state === "B" && inFlight ? (
         <ProcessingPanel
           fileName={inFlight.original_name}
@@ -381,6 +361,15 @@ export default async function OverviewPage() {
                   </Button>
                 ) : null}
               </>
+            ) : hasAncestry ? (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Your ancestry result is ready</h3>
+                <p className="text-sm text-ink-muted">See the covered markers, broad regions and what remains unknown.</p>
+                {ancestryTooFew ? <p className="text-base leading-relaxed text-ink">{STATE_C.ancestryTooFew}</p> : null}
+                <Button asChild size="lg" className="min-h-11">
+                  <Link href={route("genome.ancestry", { subject: "me" })}>View ancestry</Link>
+                </Button>
+              </div>
             ) : (
               <p className="text-base leading-relaxed text-ink-muted">
                 {ledeFor("my-genome")}
@@ -443,7 +432,7 @@ export default async function OverviewPage() {
         </DomainSection>,
         // Keep useful own reports next to My genome, before secondary domains.
         // Nothing records which reports were opened, so no read-state is shown.
-        section.id === "my-genome" && hasReports ? (
+        section.id === "my-genome" && hasReports && showStarter ? (
           <StarterReports key="own-starter-reports" reports={starter} />
         ) : null,
       ])}

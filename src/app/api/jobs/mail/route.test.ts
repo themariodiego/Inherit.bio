@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn(), pending: 0 }));
 vi.mock("@/lib/embryo/terminal-mail", () => ({ drainEmbryoTerminalMail: mocks.terminal }));
 vi.mock("@/lib/embryos/invitation-terminal-mail", () => ({ drainInvitationTerminalMail: mocks.invitationTerminal }));
 vi.mock("@/lib/email", () => ({ submitMail: mocks.submit }));
@@ -9,13 +9,14 @@ vi.mock("@/lib/crypto", () => ({ decryptSecret: () => "synthetic@example.test", 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     rpc: mocks.rpc,
-    from: () => ({ select: () => ({ eq: () => ({ lte: () => ({ gt: async () => ({ count: 0 }) }) }) }) }),
+    from: () => ({ select: () => ({ eq: () => ({ lte: () => ({ gt: async () => ({ count: mocks.pending }) }) }) }) }),
   }),
 }));
 
 describe("independent mail queues", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.pending = 0;
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.terminal.mockResolvedValue({ processed: 0, failed: 0 });
     mocks.invitationTerminal.mockResolvedValue({ processed: 0, failed: 0 });
@@ -85,6 +86,39 @@ describe("independent mail queues", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("complete_mail_attempt", expect.objectContaining({
       p_success: true, p_outcome_code: "accepted", p_provider_message_id_hmac: "provider-id-hash",
     }));
+  });
+
+  it("leaves a digest behind 25 older ready notices for the next successful bounded global batch", async () => {
+    const queue = [
+      ...Array.from({ length: 25 }, (_, index) => ({ ...row, outbox_id: `ready-${index}`, template_id: "report-ready",
+        template_payload: { reportCount: 1, dashboardUrl: "https://example.test/overview" } })),
+      { ...row, outbox_id: "digest", template_id: "research-digest", template_payload: {
+        entries: [{ title: "New public report", summary: "Reviewed public summary", url: "https://example.test/reports/new" }],
+        manageUrl: "https://example.test/settings",
+      } },
+    ];
+    mocks.pending = queue.length;
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_mail_outbox") {
+        const next = queue.shift(); mocks.pending = queue.length;
+        return { data: next ? [next] : [], error: null };
+      }
+      if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+      if (name === "complete_mail_attempt") return { data: null, error: null };
+      throw new Error(`Unexpected RPC ${name}`);
+    });
+    const first = await POST(workerRequest());
+    expect(first.status).toBe(200);
+    expect(await first.json()).toEqual({ processed: 25, failed: 0, pending: 1 });
+    expect(mocks.submit).toHaveBeenCalledTimes(25);
+    expect(mocks.submit.mock.calls.every(([, mail]) => mail.id === "report-ready")).toBe(true);
+    expect(queue.map(item => item.outbox_id)).toEqual(["digest"]);
+    const second = await POST(workerRequest());
+    expect(second.status).toBe(200);
+    expect(await second.json()).toEqual({ processed: 1, failed: 0, pending: 0 });
+    expect(mocks.submit).toHaveBeenCalledTimes(26);
+    expect(mocks.submit.mock.calls.at(-1)?.[1]).toMatchObject({ id: "research-digest" });
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "authorize_mail_submission_v1")).toHaveLength(26);
   });
 
   it("does not overwrite provider acceptance with a failure after a lost database receipt", async () => {

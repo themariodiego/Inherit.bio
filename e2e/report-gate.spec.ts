@@ -1,8 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { createConfirmedUser, ingestFileAs, signIn } from "./helpers";
+import { createConfirmedUser, signIn } from "./helpers";
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 // Sensitive-report gate — reports in life-altering categories (cancer-risk,
 // neurodegenerative, mental-health, plus templates recommending clinical
@@ -32,6 +33,17 @@ const GENOTYPE_NODE = '[data-figure-kind="genotype"]';
 const NOT_COVERED_VCF_FIRST_SENTENCE = "Your file does not cover this variant.";
 const LIMIT_OF_FILE = "This is a limit of your file, not a result about you.";
 
+// Native same-origin fetch uses the browser's actual transport/session without
+// executing the document's reveal-memory code or logging request credentials.
+async function readDocument(page: Page, url: string): Promise<string> {
+  const result = await page.evaluate(async destination => {
+    const response = await fetch(destination, { cache: "no-store" });
+    return { status: response.status, html: await response.text() };
+  }, url);
+  expect(result.status).toBe(200);
+  return result.html;
+}
+
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
@@ -42,19 +54,15 @@ test("APOE report gates the result; 'Show my result' reveals via ?reveal=1 and i
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
-  await ingestFileAs(
+  await uploadOwnFileWithChosenReports(
     page,
-    USER.email,
-    USER.password,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
-    "vcf",
+    { fileType: "vcf", purposes: ["reports.polygenic"] },
   );
 
   // The gated response itself (raw HTML, inline scripts included) carries no
   // result content at all.
-  const gatedRes = await page.request.get("/genome/me/reports/apoe-e4-alzheimers-risk");
-  expect(gatedRes.ok()).toBe(true);
-  const gatedHtml = await gatedRes.text();
+  const gatedHtml = await readDocument(page, "/genome/me/reports/apoe-e4-alzheimers-risk");
   expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain(NOT_COVERED_VCF_FIRST_SENTENCE);
   expect(gatedHtml).not.toContain(LIMIT_OF_FILE);
@@ -174,24 +182,17 @@ test("leak regression: gated response contains no genotype anywhere, ?reveal=1 s
       "",
     ].join("\n"),
   );
-  await ingestFileAs(page, USER.email, USER.password, vcfPath, "vcf");
+  await uploadOwnFileWithChosenReports(page, vcfPath, { fileType: "vcf", purposes: ["reports.polygenic"] });
 
-  // Raw served HTML of the gated page (page.request shares the signed-in
-  // context's cookies). The genotype and its label must appear nowhere —
+  // Raw served HTML of the gated page. The genotype and its label must appear nowhere —
   // not in rendered markup, not in inline __next_f/RSC payload scripts.
-  const gatedRes = await page.request.get(`/genome/me/reports/${FGFR2_SLUG}`);
-  expect(gatedRes.ok()).toBe(true);
-  const gatedHtml = await gatedRes.text();
+  const gatedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}`);
   expect(gatedHtml).not.toContain(GENOTYPE_NODE.slice(1, -1));
   expect(gatedHtml).not.toContain("A/G");
   expect(gatedHtml).not.toContain("One copy of the A risk allele");
 
   // The same URL with ?reveal=1 does serve the result.
-  const revealedRes = await page.request.get(
-    `/genome/me/reports/${FGFR2_SLUG}?reveal=1`,
-  );
-  expect(revealedRes.ok()).toBe(true);
-  const revealedHtml = await revealedRes.text();
+  const revealedHtml = await readDocument(page, `/genome/me/reports/${FGFR2_SLUG}?reveal=1`);
   expect(revealedHtml).toContain(GENOTYPE_NODE.slice(1, -1));
   expect(revealedHtml).toContain("A/G");
   expect(revealedHtml).toContain("One copy of the A risk allele");

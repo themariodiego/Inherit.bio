@@ -118,6 +118,8 @@ describe("figureText", () => {
       [{ ...base, kind: "natural-frequency", value: 0.004 }, "about 4 in 1,000", null],
       [{ ...base, kind: "percentile", value: 80 }, "higher than about 80 of every 100 people like you", null],
       [{ ...base, kind: "coverage", read: 1180, needed: 1200 }, "read 1,180 of the 1,200 positions this needs", null],
+      [{ ...base, kind: "coverage", read: 1180, needed: 1200, wording: "listed-calls" }, "calls in 1,180 of 1,200 listed, supported records", null],
+      [{ ...base, kind: "coverage", read: 0, needed: 1, wording: "listed-calls" }, "calls in 0 of 1 listed, supported record", null],
       [{ ...base, kind: "interval", point: 0.12, low: 0.08, high: 0.17 }, "It could reasonably be 8.0% to 17%.", null],
       [{ ...base, kind: "genotype", genotype: "A/C", label: "x" }, "A/C", null],
       [{ ...base, kind: "carrier-status", status: "carrier" }, "carrier", null],

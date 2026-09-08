@@ -43,9 +43,12 @@ export async function loadPrsForChat(db: Db, subjectId: string, scoreId: string,
   if (hasFiles) {
     const { data, error } = await db
       .from("user_prs")
-      .select("matched")
+      .select("matched,genome_files!inner(single_logical_sample_verified_at)")
       .eq("subject_id", subjectId)
       .eq("pgs_id", scoreId)
+      // New report choices never enable Copilot; its own scoped authorization
+      // is a separate workflow. Keep this legacy chat path on legacy sources.
+      .is("genome_files.single_logical_sample_verified_at", null)
       .order("computed_at", { ascending: false })
       .limit(1);
     if (error) return { error: "score coverage unavailable" };

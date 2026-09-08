@@ -1690,6 +1690,7 @@ export type Database = {
           recipient_principal_id: string
           relationship_id: string | null
           relationship_or_pair_revision: number
+          self_principal_revision: number | null
           status: string
         }
         Insert: {
@@ -1703,6 +1704,7 @@ export type Database = {
           recipient_principal_id: string
           relationship_id?: string | null
           relationship_or_pair_revision: number
+          self_principal_revision?: number | null
           status?: string
         }
         Update: {
@@ -1716,6 +1718,7 @@ export type Database = {
           recipient_principal_id?: string
           relationship_id?: string | null
           relationship_or_pair_revision?: number
+          self_principal_revision?: number | null
           status?: string
         }
         Relationships: [
@@ -4072,6 +4075,8 @@ export type Database = {
           sample_count: number
           sha256: string | null
           single_logical_sample_verified_at: string | null
+          normalization_completed_at: string | null
+          normalization_source_revision: number | null
           size_bytes: number
           source_binding_fingerprint: string | null
           source_publication_revision: number
@@ -4113,6 +4118,8 @@ export type Database = {
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null
+          normalization_completed_at?: string | null
+          normalization_source_revision?: number | null
           size_bytes: number
           source_binding_fingerprint?: string | null
           source_publication_revision?: number
@@ -4154,6 +4161,8 @@ export type Database = {
           sample_count?: number
           sha256?: string | null
           single_logical_sample_verified_at?: string | null
+          normalization_completed_at?: string | null
+          normalization_source_revision?: number | null
           size_bytes?: number
           source_binding_fingerprint?: string | null
           source_publication_revision?: number
@@ -5130,36 +5139,42 @@ export type Database = {
           account_revision: number
           auth_session_revision: number
           created_at: string
+          date_of_birth: string | null
           deletion_requested_at: string | null
           digest_opt_in: boolean
           display_name: string | null
           id: string
           jurisdiction_code: string | null
           jurisdiction_revision: number
+          mail_contact_revision: number
           non_self_upload_suspended_at: string | null
         }
         Insert: {
           account_revision?: number
           auth_session_revision?: number
           created_at?: string
+          date_of_birth?: string | null
           deletion_requested_at?: string | null
           digest_opt_in?: boolean
           display_name?: string | null
           id: string
           jurisdiction_code?: string | null
           jurisdiction_revision?: number
+          mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
         Update: {
           account_revision?: number
           auth_session_revision?: number
           created_at?: string
+          date_of_birth?: string | null
           deletion_requested_at?: string | null
           digest_opt_in?: boolean
           display_name?: string | null
           id?: string
           jurisdiction_code?: string | null
           jurisdiction_revision?: number
+          mail_contact_revision?: number
           non_self_upload_suspended_at?: string | null
         }
         Relationships: []
@@ -7133,54 +7148,112 @@ export type Database = {
       }
       upload_sessions: {
         Row: {
+          account_auth_session_revision: number | null
+          account_binding_revision: number | null
           account_id: string
+          account_revision: number | null
           auth_session_id: string
           cohort_id: string | null
           consumed_at: string | null
           content_type: string
           created_at: string
-          expected_sha256: string
+          declared_format: string | null
+          expected_sha256: string | null
           expected_size: number
           expires_at: string
+          final_object_name: string | null
+          finalization_claim: string | null
+          finalization_cleanup_pending: boolean
+          finalization_started_at: string | null
+          finalized_file_id: string | null
           id: string
+          jurisdiction_revision: number | null
+          maximum_decoded_bytes: number | null
+          originating_session_revision: number | null
           staging_object_name: string
           status: string
+          storage_bucket: string
+          subject_binding_revision: number | null
           subject_id: string | null
+          subject_lifecycle_revision: number | null
+          token_jti: string | null
+          upload_consent_id: string | null
           upload_revision: number
         }
         Insert: {
+          account_auth_session_revision?: number | null
+          account_binding_revision?: number | null
           account_id: string
+          account_revision?: number | null
           auth_session_id: string
           cohort_id?: string | null
           consumed_at?: string | null
           content_type: string
           created_at?: string
-          expected_sha256: string
+          declared_format?: string | null
+          expected_sha256?: string | null
           expected_size: number
           expires_at: string
+          final_object_name?: string | null
+          finalization_claim?: string | null
+          finalization_cleanup_pending?: boolean
+          finalization_started_at?: string | null
+          finalized_file_id?: string | null
           id?: string
+          jurisdiction_revision?: number | null
+          maximum_decoded_bytes?: number | null
+          originating_session_revision?: number | null
           staging_object_name: string
           status?: string
+          storage_bucket?: string
+          subject_binding_revision?: number | null
           subject_id?: string | null
+          subject_lifecycle_revision?: number | null
+          token_jti?: string | null
+          upload_consent_id?: string | null
           upload_revision: number
         }
         Update: {
+          account_auth_session_revision?: number | null
+          account_binding_revision?: number | null
           account_id?: string
+          account_revision?: number | null
           auth_session_id?: string
           cohort_id?: string | null
           consumed_at?: string | null
           content_type?: string
           created_at?: string
-          expected_sha256?: string
+          declared_format?: string | null
+          expected_sha256?: string | null
           expected_size?: number
           expires_at?: string
+          final_object_name?: string | null
+          finalization_claim?: string | null
+          finalization_cleanup_pending?: boolean
+          finalization_started_at?: string | null
+          finalized_file_id?: string | null
           id?: string
+          jurisdiction_revision?: number | null
+          maximum_decoded_bytes?: number | null
+          originating_session_revision?: number | null
           staging_object_name?: string
           status?: string
+          storage_bucket?: string
+          subject_binding_revision?: number | null
           subject_id?: string | null
+          subject_lifecycle_revision?: number | null
+          token_jti?: string | null
+          upload_consent_id?: string | null
           upload_revision?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "upload_sessions_finalized_file_id_fkey"
+            columns: ["finalized_file_id"]
+            isOneToOne: false
+            referencedRelation: "genome_files"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "upload_sessions_cohort_id_fkey"
             columns: ["cohort_id"]
@@ -7195,12 +7268,20 @@ export type Database = {
             referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "upload_sessions_upload_consent_id_fkey"
+            columns: ["upload_consent_id"]
+            isOneToOne: false
+            referencedRelation: "subject_consents"
+            referencedColumns: ["id"]
+          },
         ]
       }
       upload_staging_objects: {
         Row: {
           created_at: string
           object_id: string
+          object_kind: string
           object_name: string
           state: string
           upload_session_id: string
@@ -7208,6 +7289,7 @@ export type Database = {
         Insert: {
           created_at?: string
           object_id: string
+          object_kind?: string
           object_name: string
           state: string
           upload_session_id: string
@@ -7215,6 +7297,7 @@ export type Database = {
         Update: {
           created_at?: string
           object_id?: string
+          object_kind?: string
           object_name?: string
           state?: string
           upload_session_id?: string
@@ -7223,7 +7306,7 @@ export type Database = {
           {
             foreignKeyName: "upload_staging_objects_upload_session_id_fkey"
             columns: ["upload_session_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "upload_sessions"
             referencedColumns: ["id"]
           },
@@ -7979,6 +8062,174 @@ export type Database = {
           p_token_nonce: string
         }
         Returns: string
+      }
+      own_upload_context_v1: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      own_report_context_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      filter_own_prepared_sources_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_subject_id: string; p_file_ids: string[] };
+        Returns: string[];
+      };
+      read_own_input_sources_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string;
+          p_file_ids: string[]; p_purpose: string | null;
+        };
+        Returns: Json;
+      };
+      filter_own_analysis_files_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string; p_purpose: string;
+          p_file_ids: string[]; p_stored_result: boolean
+        }
+        Returns: string[]
+      }
+      read_own_report_calls_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
+          p_rsids: number[]; p_offset: number
+        }
+        Returns: Json
+      }
+      grant_own_report_purpose_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string; p_snapshot: Json;
+          p_purpose: string; p_artifact_version: number; p_artifact_body_sha256: string;
+          p_nonce_hash: string; p_expires_at: string
+        }
+        Returns: Json
+      }
+      begin_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      claim_own_upload_purge_v1: {
+        Args: { p_claim_token_hash: string }
+        Returns: Json
+      }
+      authorize_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: boolean
+      }
+      finish_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: boolean
+      }
+      fail_own_upload_purge_v1: {
+        Args: { p_manifest_id: string; p_claim_token_hash: string }
+        Returns: undefined
+      }
+      authorize_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      complete_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_decoded_sha256: string
+          p_raw_sha256: string
+          p_session_id: string
+          p_storage_object_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      abort_own_upload_finalization_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: Json
+      }
+      ack_own_upload_finalization_cleanup_v1: {
+        Args: {
+          p_account_id: string
+          p_claim: string
+          p_session_id: string
+          p_upload_id: string
+        }
+        Returns: boolean
+      }
+      issue_own_storage_upload_v1: {
+        Args: {
+          p_account_id: string
+          p_declared_format: string
+          p_session_id: string
+          p_sha256: string | null
+          p_size_bytes: number
+          p_subject_id: string | null
+        }
+        Returns: Json
+      }
+      issue_own_upload_nonce_v1: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_auth_session_revision: number
+          p_expires_at: string
+          p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_operation: string
+          p_session_id: string
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: undefined
+      }
+      complete_own_upload_account_v1: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_auth_session_revision: number
+          p_date_of_birth: string
+          p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      sign_own_upload_artifact_v1: {
+        Args: {
+          p_account_binding_revision: number
+          p_account_id: string
+          p_account_revision: number
+          p_artifact_body_sha256: string
+          p_artifact_key: string
+          p_artifact_version: number
+          p_auth_session_revision: number
+          p_jurisdiction_revision: number
+          p_nonce_hash: string
+          p_session_id: string
+          p_statement_keys: string[]
+          p_subject_binding_revision: number
+          p_subject_id: string
+        }
+        Returns: Json
       }
       stop_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }

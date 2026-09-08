@@ -1141,7 +1141,7 @@
       "internalAtomicResult": "a-database-RPC-may-evaluate-relationship-consent-and-jurisdiction-atomically-but-returns-a-closed-internal-reason-class-so-the-server-can-select-the-registered-response-without-exposing-an-unknown-target",
       "dataRead": "use-the-callers-scoped-Supabase-context-and-an-RLS-protected-table-view-or-operation-specific-RPC-that-returns-only-the-closed-authorized-projection",
       "viewSecurity": "every-exposed-view-over-user-data-sets-security_invoker=true-and-relies-on-base-table-RLS; any-non-invoker-helper-lives-in-an-unexposed-schema-with-all-API-role-grants-revoked",
-      "rpcSecurity": "normal-operation-RPCs-are-SECURITY-INVOKER; the-sole-caller-role-definer-exception-is-authContracts.authenticated-session-v1.databaseHelperProfile-a-zero-argument-unexposed-claims-only-live-session-check-with-its-exact-authenticated-and-inherit_upload_only-grants; every-other-SECURITY-DEFINER-helper-must-live-in-an-unexposed-schema-REVOKE-ALL-and-EXECUTE-from-PUBLIC-anon-and-authenticated-grant-only-to-the-exact-service-role-set-search_path-to-pg_catalog-plus-explicit-schema-names-fully-qualify-every-object-reject-caller-supplied-principal-owner-path-or-kind-and-recheck-principal-target-lifecycle-and-operation-before-returning-a-closed-shape",
+      "rpcSecurity": "normal-operation-RPCs-are-SECURITY-INVOKER; the-original-caller-role-definer-exception-is-authContracts.authenticated-session-v1.databaseHelperProfile-a-zero-argument-unexposed-claims-only-live-session-check-with-its-exact-authenticated-and-inherit_upload_only-grants; every-other-SECURITY-DEFINER-helper-must-live-in-an-unexposed-schema-REVOKE-ALL-and-EXECUTE-from-PUBLIC-anon-and-authenticated-grant-only-to-the-exact-service-role-set-search_path-to-pg_catalog-plus-explicit-schema-names-fully-qualify-every-object-reject-caller-supplied-principal-owner-path-or-kind-and-recheck-principal-target-lifecycle-and-operation-before-returning-a-closed-shape; operator-approved-ADR-0023-adds-only-private.authorize_storage_upload_insert()-a-zero-argument-validated-claims-only-boolean-predicate-executable-by-inherit_upload_only-and-service_role-without-table-SELECT-or-arbitrary-target-input",
       "authenticatedSessionDbProfile": "authContracts.authenticated-session-v1.databaseHelperProfile",
       "enforcement": "before-service-role-read-write-download-session-create-bounded-Storage-range-read-enqueue-export-retrieval-or-model-call-and-with-policyContracts.canonical-source-publication-v1-at-every-source-list-read-selector",
       "serviceRole": "never-the-sole-access-guard; allowed-only-for-a-bounded-follow-on-operation-over-the-exact-row-or-object-returned-by-the-database-authorization-function-and-must-recheck-the-current-authenticated-session-decision-revision-when-applicable-plus-its-lifecycle-and-publication-revisions-before-every-side-effect",
@@ -1471,7 +1471,17 @@
         "immutableProvenance": "every-cohort-context-and-each-persisted-turn-pair-binds-the-exact-current-basis-case-basis-revision-all-five-requiredUploadPrincipals-dispositionAuthorities-attributionPrincipals-noticeRecipients-and-recordKeyRecipients-memberships-and-set-revisions-plus-the-current-donor-feature-classification-donor-slot-donor-artifact-and-attribution-revision-or-an-explicit-donor-neutral-no-donor-classification",
         "recheck": "re-resolve-and-compare-the-complete-binding-before-every-context-selector-every-retrieved-row-every-citation-read-every-model-call-and-immediately-before-the-paired-turn-commit; any-mismatch-returns-no-context-or-model-bytes-and-invalidates-the-complete-paired-turn-plus-every-dependent-later-message"
       },
-      "closedProjections": {
+      "canonicalOwnImplementation": {
+      "module": "src/lib/copilot/own-chat-route.ts",
+      "authority": "private.own_copilot_authority_v1 plus private.own_copilot_chat_v1; exact current account/session/store/Copilot purpose/recipient snapshot before every tool, pinned connection, commit and response",
+      "readers": "canonical prepared observations and exact completed report-purpose/source journals; explicit legacy processed-file observations remain separately snapshot-bound; historical report/PRS authority is unavailable per source",
+      "scientificMetadata": "only immutable catalogSnapshot captured at completion; no current-template decoration of historical outcomes",
+      "history": "server-owned single-use context or immutable chat ID; no client history; atomic paired messages with captured citations; stale or unverified pairs invalidate the whole dependent chain",
+      "cleanup": "exact-grant frozen purpose-derived manifest before message deletion; selected-file deletion freezes exact dependent message IDs in its Storage-ACK record; successor grants and independent chats excluded",
+      "scopeLimit": "this implementation is self only; legacy ABI remains isolated behind absence of canonical consent/source/chat markers; no canonical RPC error may fall back",
+      "nonceStore": "private.own_copilot_nonces stores only hashes/IDs, is service-only, expires logically after nine minutes, cleans expired rows at next redemption, and cascades on account/session deletion"
+    },
+    "closedProjections": {
         "self": [
           "resolved-reports",
           "prs",
@@ -2477,7 +2487,28 @@
         "embryo-donor-attribution-v1"
       ]
     },
+    "own-report-synchronous-v1": {
+      "decision": "docs/adr/0024-own-report-synchronous-generation.md",
+      "route": "api.file-process",
+      "scope": "only structurally verified, normalized Tier-1 sources bound to the acting account's active self subject",
+      "operations": { "reports.monogenic": "variant_call report templates", "reports.polygenic": "estimate report templates and existing coverage-only PGS computation" },
+      "identity": "server selects each operation independently from its current exact self-direction canonical purpose grant; request bodies, filenames and client-selected operation overrides are forbidden",
+      "checkpoints": "the identical current grant, artifact, source/hash/normalization revision, principal/binding, jurisdiction and lifecycle authority is checked before every bounded genetic read and in the atomic completion transaction; an incomplete or revoked run exposes no completed-result marker",
+      "completion": "private.own_analysis_runs records the exact per-purpose source and grant snapshot and computation revision; completed report interpretations and selected PGS rows commit atomically with that marker; genome_files remains stored and no global annotated flag authorizes another purpose",
+      "read": "every result reader requires both the current exact-purpose authority and a matching completed-purpose run; normal session refresh does not substitute for durable source or consent binding checks",
+      "readyNoticeImplementation": {
+        "adapter": "public.own_report_generation_with_mail_v1 is service-only; the application uses it exclusively and completion requires a server-resolved verified-account encrypted contact envelope. Core completion and ready-notice insertion share one transaction, and enqueue rejection rolls back completion and PGS rows",
+        "eligibility": "one report-ready event only after all current selected supported purposes have matching completed source/grant snapshots; preparation and partial/failed generation create no ready event. Insertion, claim and immediate pre-submit share private.file_ready_mail_current_v1 with current account/principal/contact, source/normalization, grant/artifact, withdrawal and deletion fences",
+        "identity": "SHA256 of PostgreSQL canonical JSONB text containing own-report-ready-v1, accountId, fileId, subjectId, own-reports-v1 computationRevision the DB-owned recipientContactRevision and sorted current supported-purpose authority snapshots; browser session revisions are omitted from durable identity",
+        "immutability": "semantic replay reuses the existing outbox row, contact reference, snapshot and original database-issued 30-day deadline; readiness and recipient bindings cannot be rewritten. Auth email/confirmation transitions increment a guarded profiles.mail_contact_revision without changing analysis authority, terminalize affected old notices and rotate their contacts; the server reads that revision before verified getUser and enqueue requires it still current. An explicit retry may create one successor contact-revision event, never rewrite the old event. Payload contains only the fixed reports URL and legacy reportCount compatibility field, with no genetic details",
+        "transition": "old public.own_report_generation_v1 stays service-only and callable for deployed-candidate compatibility; its callers do not queue notices until application replacement. Actual legacy sources retain their annotated-file path; canonical sources cannot use that flag or generic enqueue to bypass readiness"
+      },
+      "response": "use only file-processing-v1 synchronous processed or already_processed receipts after every selected supported operation is currently complete; no supported selected operation returns the normalization_complete/not_generated receipt",
+      "excluded": ["ancestry generation", "other_adult", "embryo", "family analysis", "outside models", "implicit purpose grants", "worker-job receipts", "validated personal PGS score or risk claims"],
+      "queueCompatibility": "worker-job-enqueue-v1 is unchanged and mandatory for its registered queued operations; this explicit synchronous exception creates no worker_jobs row and cannot claim a queued or running job"
+    },
     "analysis-eligibility-v1": {
+      "synchronousOwnReportException": "own-report-synchronous-v1 permits only its two registered own-account Tier-1 report purposes without a worker_jobs row; operation identity is server-selected, and the same normalization, exact-purpose, source-revision, lifecycle and current-authority checks apply before each genetic read and atomic result write",
       "source": "server-resolved-file-subject-cohort-current-consents-attestations-disclosure-acknowledgements-and-for-every-embryo-job-the-exact-embryo-basis-authority-v1-output-sets-basis-revision-and-embryo-donor-attribution-v1-state",
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "enqueueContract": "worker-job-enqueue-v1",
@@ -5915,6 +5946,17 @@
       ]
     },
     "revocation-disposition-purge-v1": {
+      "canonicalOwnReportExecutor": {
+        "phaseId": "own-report-purpose-purge",
+        "retentionId": "purpose.derived-60s",
+        "computationRevision": "own-report-revocation-v1",
+        "scope": "exact self reports.monogenic or reports.polygenic grant only; registered public.user_prs and private.own_analysis_runs members; raw source and newer authorized current-source generations are excluded",
+        "bindingEncoding": "SHA256 of UTF-8 PostgreSQL jsonb text for the frozen disposition/phase/manifest envelope, including exact subject-principal-purpose-grant revision and lifecycle/claim/hold revisions",
+        "execution": "freeze before logical withdrawal; execute the exact database-only manifest synchronously after withdrawal in the same transaction; a failed physical subtransaction leaves withdrawal and pending work durable; jobs.retention may retry at most five database-selected steps per invocation",
+        "compatibility": "validate the historical family-revoke-purge-v1 immutable binding and exact self report tuple; create or reuse the compliant replacement before cancelling the original as superseded with cleanupComplete false; never relabel the original binding",
+        "failure": "transient contention retries with bounded attempts/backoff without renewing the original deadline; blocked and retry-exhausted jobs retain explicit noncompletion receipts; pending fallback does not itself establish the 60-second guarantee",
+        "limitations": "no generic family/cohort/source purge; unsupported attributed chat outputs and changed frozen lifecycle revisions fail closed; completion requires exact old-grant residual proof"
+      },
       "claim": "one-SECURITY-DEFINER-RPC-may-claim-only-one-current-revocation-disposition-whose-canonical-retention-ID-deadline-is-due-using-FOR-UPDATE-SKIP-LOCKED-under-the-common-target-subject-or-cohort-then-disposition-then-lifecycle-then-hold-or-claim-then-manifest-then-worker-lock-order-and-returns-only-an-immutable-disposition-target-lifecycle-hold-claim-class-and-purge-manifest-revision-envelope",
       "scope": "the-claimed-disposition-is-prepartitioned-to-one-exact-subject-or-cohort-and-its-manifest-enumerates-only-row-primary-keys-and-random-storage-object-handles-reachable-by-current-explicit-foreign-key-joins; account-IDs-object-prefixes-historical-relations-client-targets-and-analysis-source-bytes-are-never-returned",
       "phaseRows": {
@@ -6749,7 +6791,7 @@
       "authenticatedSelect": "deny-for-new-and-legacy-objects",
       "authenticatedList": "deny",
       "selfOrAdultUploadInsert": "authenticated-direct-Storage-INSERT-under-a-short-lived-non-refreshable-upload-JWT-minted-by-api.file-upload-session-and-an-operation-aware-RLS-policy-that-first-invokes-authContracts.authenticated-session-v1.databaseHelperProfile-for-the-bearers-server-validated-sub-and-originating-Supabase-session_id-and-account-auth-session-revision-then-joins-its-own-jti-and-exact-server-generated-staging-key-to-an-unexpired-unconsumed-upload-session-row; for-self-recheck-the-own-subject-upload-consent-and-lifecycle; for-other_adult-require-a-finalized-subject-row-and-recheck-the-identical-immutable-policyResolvers.upload-class-v1.cases.other_adult-relationship-flow-basis-subject-confirmation-consent-capability-contact-authority-lifecycle-and-session-revisions: path-a-is-eligible-only-through-the-current-own-subject-account-after-acceptance-and-path-b-only-after-recipient-activation-with-the-current-completed-esignature-or-reviewed-document-basis; global-contact-refusal-bar-v1-is-a-preactivation-invitation-gate-and-never-an-established-subject-upload-RLS-predicate; an-adult-subject-draft-hidden-or-pending-invitation-api.subjects-opaque-receipt-unconfirmed-recipient-or-generic-quarantine-label-is-never-an-RLS-upload-basis; purpose-grants-are-not-required-for-byte-storage-but-remain-required-before-genotype-interpretation-or-analysis; signed-object-upload-bearers-and-normal-user-or-refresh-tokens-in-JavaScript-storage-are-forbidden",
-      "directUploadJwt": "signed-for-Supabase-Storage-with-a-dedicated-rotatable-least-privilege-key-audience-inherit-storage-upload-role-inherit_upload_only-sub-equal-to-the-acting-user-session_id-equal-to-the-current-originating-Supabase-auth.sessions-id-account_auth_session_revision-equal-to-the-mint-time-revision-upload_session_id-jti-and-no-refresh-claim; jti-is-only-the-upload-token-replay-ID-and-never-a-session_id; inherit_upload_only-is-a-dedicated-custom-Postgres-role-with-only-the-minimum-schema-USAGE-and-INSERT-on-storage.objects-required-by-Supabase-Storage-the-one-exact-create-only-RLS-policy-and-the-exact-authContracts.authenticated-session-v1.databaseHelperProfile-grants-and-has-no-SELECT-LIST-UPDATE-DELETE-or-other-table-view-function-schema-PostgREST-auth-application-service-or-dashboard-privilege; RLS-denial-and-table-grants-are-independent-conjuncts; hard-expiry-is-the-earlier-of-30-minutes-or-upload.staging-2h; RLS-binds-the-live-Supabase-session-and-revision-plus-jti-upload-row-user-and-exact-key-and-either-revocation-invalidates-it; the-browser-keeps-it-only-in-ephemeral-memory-and-sends-it-only-as-the-Storage-Authorization-Bearer-header; URL-cookie-localStorage-sessionStorage-IndexedDB-service-worker-cache-logs-analytics-error-reporting-and-reuse-for-PostgREST-or-another-object-are-forbidden",
+      "directUploadJwt": "signed-for-Supabase-Storage-with-a-dedicated-rotatable-least-privilege-key-audience-inherit-storage-upload-role-inherit_upload_only-sub-equal-to-the-acting-user-session_id-equal-to-the-current-originating-Supabase-auth.sessions-id-account_auth_session_revision-equal-to-the-mint-time-revision-upload_session_id-jti-and-no-refresh-claim; jti-is-only-the-upload-token-replay-ID-and-never-a-session_id; inherit_upload_only-is-a-dedicated-custom-Postgres-role-with-only-the-minimum-schema-USAGE-and-INSERT-on-storage.objects-required-by-Supabase-Storage-the-one-exact-create-only-RLS-policy-and-the-exact-authContracts.authenticated-session-v1.databaseHelperProfile-grants-plus-only-the-ADR-0023-zero-argument-boolean-upload-predicate-EXECUTE-and-has-no-SELECT-LIST-UPDATE-DELETE-or-other-table-view-function-schema-PostgREST-auth-application-service-or-dashboard-privilege; RLS-denial-and-table-grants-are-independent-conjuncts; hard-expiry-is-the-earlier-of-30-minutes-or-upload.staging-2h; RLS-binds-the-live-Supabase-session-and-revision-plus-jti-upload-row-user-and-exact-key-and-either-revocation-invalidates-it; the-browser-keeps-it-only-in-ephemeral-memory-and-sends-it-only-as-the-Storage-Authorization-Bearer-header; URL-cookie-localStorage-sessionStorage-IndexedDB-service-worker-cache-logs-analytics-error-reporting-and-reuse-for-PostgREST-or-another-object-are-forbidden",
       "uploadCapability": "authContracts.authenticated-session-v1.authenticatedDerivedCapability-governs-mint-use-and-revocation; the-upload-JWT-current-originating-Supabase-auth.sessions-row-current-account-auth-session-revision-and-current-RLS-upload-session-row-are-required-conjuncts-and-bind-one-acting-user-one-create-only-key-maximum-size-and-declared-allowlisted-content; UPDATE-UPSERT-and-a-second-INSERT-are-denied-and-the-session-is-atomically-consumed-before-finalization",
       "uploadSessionRetentionId": "upload.staging-2h",
       "finalization": "after-server-side-sniff-and-sha256-verification-copy-to-a-fresh-immutable-server-only-final-key-verify-then-delete-the-staging-key-before-marking-finalized",
@@ -6824,6 +6866,12 @@
       "endpoint": "resource-not-found-v1"
     },
     "routes": {
+      "api.account-completion": {
+        "targetSource": "acting-account-and-own-subject-from-signed-presentation",
+        "operation": "initial-birth-date-declaration",
+        "authorization": "verified-account-and-originating-live-session; exact-current-account-auth-jurisdiction-subject-and-account-binding-revisions; single-use-operation-bound-nonce; previously-unset-birth-date-only",
+        "projection": "closed-account-completion-v1-receipt-without-birth-date-or-genetic-data"
+      },
       "app.overview": {
         "targetSource": "acting-account",
         "operation": "overview-read",
@@ -7783,6 +7831,7 @@
         "jobs.research-publish",
         "jobs.research-refresh",
         "jobs.retention",
+        "jobs.retention-cron",
         "jobs.mail"
       ],
       "contracts": [
@@ -8069,7 +8118,7 @@
       "every-observability-template-slot-enumFrom-resolves-to-an-exact-array-in-observabilityCodeRegistries-and-the-generated-wrapper-rejects-any-nonmember-before-the-sink",
       "every-authenticated-page-endpoint-private-public-or-authenticated-branch-reviewer-route-mutation-database-operation-and-service-role-follow-on-inherits-authContracts.authenticated-session-v1-and-no-auth.uid-cookie-or-JWT-signature-only-path-is-allowed",
       "every-upload-ingest-evidence-export-download-chat-model-or-other-capability-minted-from-an-authenticated-or-reviewer-session-stores-rechecks-and-invalidates-the-originating-Supabase-session_id-and-account-auth-session-revision-under-authContracts.authenticated-session-v1.authenticatedDerivedCapability-while-each-independent-purpose-session-must-name-its-own-complete-authority-and-revocation-graph",
-      "authContracts.authenticated-session-v1.databaseHelperProfile-is-the-only-authenticated-or-inherit_upload_only-callable-SECURITY-DEFINER-helper-and-every-migration-grant-signature-return-field-and-RLS-or-RPC-use-must-match-it-exactly",
+      "authContracts.authenticated-session-v1.databaseHelperProfile-and-operator-approved-ADR-0023-private.authorize_storage_upload_insert()-are-the-only-authenticated-or-inherit_upload_only-callable-SECURITY-DEFINER-exceptions-and-every-migration-grant-signature-return-field-and-RLS-or-RPC-use-must-match-their-exact-role-scopes",
       "every-persisted-public-token-authenticated-abuse-control-or-machine-rate-bucket-inherits-securityRateLimitContract-and-retention-id-security.rate-limit-hmac-24h-with-no-raw-network-contact-key-token-credential-principal-or-target-value",
       "every-worker-job-idempotency-key-includes-output_kind-the-complete-immutable-source-binding-and-authorization-revision-and-computation_revision-and-conflict-equality-covers-the-full-canonical-length-prefixed-tuple",
       "every-source-bearing-route-storage-list-download-export-worker-model-context-and-result-selector-inherits-policyContracts.canonical-source-publication-v1-and-cannot-project-a-pending-source-provisional-QC-marker-status-reason-ID-or-existence-signal",
@@ -8452,7 +8501,7 @@
         "return": "one-recursively-closed-non-PII-envelope-containing-only-authorized-boolean-account_auth_session_revision-and-session_revision; user-session-token-email-target-row-and-existence-detail-are-forbidden",
         "grants": "private-is-not-a-PostgREST-exposed-schema; REVOKE-ALL-and-EXECUTE-from-PUBLIC-and-anon; GRANT-only-schema-USAGE-and-this-zero-argument-function-EXECUTE-to-authenticated-inherit_upload_only-and-the-exact-registered-operation-RPC-owner-role; no-other-private-function-grant-is-implied",
         "use": "normal-authenticated-operation-RPCs-and-RLS-policies-plus-the-one-inherit_upload_only-create-only-Storage-RLS-policy-may-invoke-it; a-client-cannot-select-a-target-or-principal-and-the-envelope-is-never-an-application-response",
-        "exception": "this-zero-argument-claims-only-session-check-is-the-sole-authenticated-or-inherit_upload_only-SECURITY-DEFINER-exception-to-policyContracts.resource-authorization-v1.rpcSecurity; every-target-capable-or-data-returning-definer-helper-remains-service-role-only",
+        "exception": "this-zero-argument-claims-only-session-check-and-the-operator-approved-ADR-0023-private.authorize_storage_upload_insert()-boolean-predicate-are-the-only-caller-role-definer-exceptions; the-upload-predicate-is-not-granted-to-authenticated-or-anon; every-other-target-capable-or-data-returning-definer-helper-remains-service-role-only",
         "failure": "return-authorized-false-with-no-revision-or-raise-the-registered-opaque-authorization-failure-before-any-protected-row-object-metadata-or-byte"
       },
       "authenticatedDerivedCapability": {
@@ -9030,6 +9079,7 @@
     "jobs.research-publish": "machine-api-v1",
     "jobs.research-refresh": "machine-api-v1",
     "jobs.retention": "machine-api-v1",
+    "jobs.retention-cron": "machine-api-v1",
     "jobs.mail": "machine-api-v1"
   },
   "requestSchemas": {
@@ -9632,6 +9682,22 @@
       "success": [
         {
           "status": 200,
+          "when": "the-exact-source-revision-has-completed-ingest.normalize-under-current-store-authority-without-generating-analytic-results-in-this-operation; idempotent-replay-returns-the-same-closed-receipt-after-current-authority-recheck",
+          "contentType": "application/json",
+          "body": {
+            "fileId": "opaque-server-id",
+            "status": {
+              "const": "normalization_complete"
+            },
+            "analysisState": {
+              "const": "not_generated"
+            }
+          },
+          "unknownFields": "forbidden",
+          "effects": "normalization-does-not-create-purpose-grants-or-imply-reports-are-ready; current-independent-purpose-grants-are-evaluated-through-policyResolvers.analysis-eligibility-v1.normalizationOrdering"
+        },
+        {
+          "status": 200,
           "when": "new-synchronous-tier-1-completion",
           "contentType": "application/json",
           "body": {
@@ -9793,6 +9859,18 @@
       },
       "failureEffects": "set-only-the-exact-safe-error-code-delete-every-upload-or-derived-object-and-write-no-genetic-row-result-or-analysis-job"
     },
+    "canonical-uploads-paused-v1": {
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "uploads_paused"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "effects": "after-same-origin-declaration-and-verified-account-session-checks-refuse-new-canonical-ordinary-subject-leases-before-signer-RPC-token-or-Storage; existing-uploads-and-file-controls-are-not-revoked"
+    },
     "file-too-large-v1": {
       "status": 413,
       "contentType": "application/json",
@@ -9906,6 +9984,18 @@
       "failureEffects": "delete-every-staging-or-uncommitted-promoted-object-and-write-zero-final-file-authority-adult_upload_revision-canonical-genetic-row-derived-row-result-or-job",
       "unknownFieldsRecursively": "forbidden",
       "subjectContactObjectPathUploadTokenPurposeOrJobInternalsExceptOpaqueJobId": "forbidden"
+    },
+    "own-copilot-unavailable-v1": {
+      "status": 403,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "copilot_unavailable"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "use": "canonical self stale source/purpose/provider configuration, transport or guarded generation failure; no provider details or partial model response"
     },
     "copilot-denial-v1": {
       "stillReadableScopeMissingCloudConsent": {
@@ -10037,6 +10127,13 @@
       },
       "unknownFieldsRecursively": "forbidden",
       "contract": "lifecycleDispositionContracts.account-deletion-v1"
+    },
+    "account-completion-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": { "status": { "const": "completed" } },
+      "unknownFields": "forbidden",
+      "birthDateAccountOrSubjectDetails": "forbidden"
     },
     "account-deletion-cancelled-v1": {
       "status": 200,
@@ -12067,6 +12164,11 @@
         "invalid-request-v1",
         "account-deletion-accepted-v1"
       ],
+      "api.account-completion": [
+        "account-completion-v1",
+        "invalid-request-v1",
+        "resource-not-found-v1"
+      ],
       "api.account-delete-cancel": [
         "account-deletion-cancelled-v1",
         "resource-not-found-v1"
@@ -12079,7 +12181,8 @@
         "copilot-denial-v1",
         "copilot-refusal-v1",
         "embryo-closed-schema-v1",
-        "chat-completion-v1"
+        "chat-completion-v1",
+        "own-copilot-unavailable-v1"
       ],
       "api.chat-history": [
         "chat-history-v1",
@@ -12104,6 +12207,7 @@
       ],
       "api.file-upload-session": [
         "upload-session-v1",
+        "canonical-uploads-paused-v1",
         "file-too-large-v1",
         "invalid-request-v1",
         "upload-refusal-v1",
@@ -12461,6 +12565,10 @@
         "machine-job-result-v1"
       ],
       "jobs.retention": [
+        "machine-job-result-v1"
+      ],
+      "jobs.retention-cron": [
+        "invalid-request-v1",
         "machine-job-result-v1"
       ],
       "jobs.mail": [
@@ -13516,6 +13624,15 @@
     {
       "id": "family.health-picture",
       "path": "/family/health-picture",
+      "canonicalSavedReportImplementation": {
+        "module": "src/lib/family/health-picture-results.ts",
+        "presentationAndCommit": "health_picture_grant_presentation_v1 and grant_health_picture_purpose_v1 capture and recheck exact endpoint and directional relationship revisions; family.heritability remains two directional relationships, never a Portrait pair; older unproven grants stay legacy-only until explicit new consent",
+        "content": "health_picture_results_v1 reads only completed source-bound own journals with captured catalog metadata; each shared column additionally requires both strong joint directions and its own strong report-layer sharing grant; no canonical raw, clinical, ROH or new score computation",
+        "terminalConfirmation": "confirm_health_picture_results_v1 is one final transaction for every own/shared column, purpose, source page and empty capture, with stable NOWAIT locks and an expiry fence after the final authority pass; receipts remain server-only",
+        "legacy": "exact subject-bound annotated file IDs with all canonical markers absent; per-purpose not-shared state forbids legacy computation even when another purpose permits those IDs; hard denial never falls back",
+        "migration": "20260907153506_health_picture_canonical_results.sql",
+        "scopeLimit": "authority/data prerequisite only; Health Picture page integration and actual browser acceptance are separate gates; no clinical or ROH output is added"
+      },
       "kind": "page",
       "domain": "family",
       "auth": "authenticated",
@@ -13551,6 +13668,13 @@
     {
       "id": "family.portrait",
       "path": "/family/portrait/[pairId]",
+      "canonicalSourceReadinessImplementation": {
+        "rpc": "public.family_portrait_source_readiness_v1(account,session,pair,counterpart-account,expected-receipt)",
+        "readBoundary": "after-both-own-session-Portrait-grants-independent-logins-acknowledgments-and-the-session-Tier-2-gate; metadata-only-presence-of-a-current-prepared-source-per-side-with-exact-store-source-object-normalization-and-endpoint-proof-and-server-only-exact-legacy-file-IDs; the-readiness-RPC-reads-no-variant-observed-call-reference-ROH-or-result-payload",
+        "terminalConfirmation": "the-last-await-before-render-rechecks-the-captured-receipt-under-one-transaction-locking-both-current-endpoints-grants-and-source-metadata; mismatch-session-end-pause-withdrawal-or-source-change-denies-without-legacy-fallback",
+        "outputLimit": "canonical-source-readiness-only; canonical-clinical-outputs-remain-explicitly-unavailable; independently-valid-legacy-pair-output-is-preserved-using-only-the-captured-subject-bound-legacy-file-IDs-rechecked-for-null-canonical-markers-at-genotype-and-ROH-read-time; no-Portrait-result-or-new-export-derivative-is-created; this-does-not-complete-carrier-ROH-trait-or-whole-Portrait-acceptance",
+        "migration": "20260907142213_portrait_canonical_source_readiness.sql"
+      },
       "kind": "page",
       "domain": "family",
       "auth": "authenticated",
@@ -14390,6 +14514,50 @@
       "disposition": "kept"
     },
     {
+      "id": "api.account-completion",
+      "path": "/api/account/completion",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "dateOfBirth": "valid-ISO-calendar-date-proving-18-or-older-by-server-UTC-calculation",
+          "presentationToken": "short-lived-single-use-token-bound-to-the-current-account-session-and-account-authorization-revisions"
+        },
+        "requiredSignals": [
+          "Origin-exactly-canonical-origin",
+          "Sec-Fetch-Site-same-origin",
+          "X-Inherit-CSRF-header-matching-the-account-completion-presentation"
+        ],
+        "forbiddenFields": [
+          "accountId",
+          "subjectId",
+          "age",
+          "isAdult",
+          "jurisdiction",
+          "consent",
+          "grants"
+        ],
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "own-account-onboarding",
+        "operation": "initial-birth-date-declaration",
+        "transaction": "lock-and-recheck-the-live-account-session-current-account-and-auth-revisions-and-one-use-nonce; validate-the-calendar-date-and-completed-UTC-age; write-only-an-unset-profiles.date_of_birth-and-increment-account_revision-atomically; never-overwrite-a-stored-date-or-record-upload-consent-or-create-a-genetic-file",
+        "purpose": "one-time-completion-for-accounts-without-the-plan-required-stored-adult-date-including-legacy-accounts; not-a-Tier-1-consent-ritual-or-identity-verification",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "account-completion-v1",
+      "disposition": "kept"
+    },
+    {
       "id": "api.account-delete-cancel",
       "path": "/api/account/delete/cancel",
       "kind": "endpoint",
@@ -14838,6 +15006,7 @@
         "scopeSource": "database-owned-file-row",
         "requestObjectPath": "forbidden",
         "normalizationOrchestration": "select-only-analysis-eligibility-v1.jobKindPurposeCapabilityMatrix.ingest.normalize-for-the-exact-current-source-revision; self-may-run-the-registered-synchronous-Tier-1-path-or-conditionally-enqueue-and-other_adult-requires-its-confirmed-upload-revision-and-conditionally-enqueues-or-reuses-the-one-normalization-job; after-normalization_complete-re-evaluate-current-purpose-rows-and-conditionally-enqueue-their-exact-analytic-jobs-with-no-purpose-creation",
+        "synchronousOwnReports": "after exact-source normalization, own-report-synchronous-v1 may synchronously generate only the currently selected own monogenic/polygenic report operations; this exception does not enqueue or alter other registered job kinds",
         "contracts": [
           "resource-authorization-v1",
           "genetic-file-ingest-v1",
@@ -14894,6 +15063,15 @@
         "prerequisiteCheckpoint": "before-first-durable-session-row-or-byte",
         "formatMatrix": "policyContracts.genetic-file-ingest-v1.targetFormatMatrix",
         "ordinarySubjectGate": "policyContracts.genetic-file-ingest-v1.ordinarySubjectSingleSample",
+        "operationalPause": {
+          "serverFlag": "INHERIT_CANONICAL_UPLOADS_PAUSED",
+          "enabledValue": "true",
+          "default": "off; unset-or-any-other-value",
+          "scope": "new-canonical-ordinary-subject-lease-and-token-issuance-only; not-cohort-transport",
+          "responseContract": "canonical-uploads-paused-v1",
+          "legacyFlag": "INHERIT_PAUSE_LEGACY_UPLOADS-is-separate-and-does-not-control-this-resolver",
+          "existingWork": "finalization-preparation-results-download-deletion-and-retention-keep-their-existing-authority-and-deadlines"
+        },
         "objectIdentity": "database-generated",
         "uploadClass": "server-set-once-and-immutable",
         "storageAccessContract": "genomes-server-mediated-v1",
@@ -15913,7 +16091,13 @@
           "persistence": "one-consent_signatures-row-then-the-purpose_grants-base-row-and-the-directional_grants-direction-row-at-one-identical-revision-under-the-deferred-pair-check; an-identical-live-grant-is-returned-rather-than-duplicated",
           "familyPortraitPair": "a-family.portrait-grant-creates-the-public.family_pairs-row-between-the-data-subject-and-the-recipients-self-subject-with-status-pending-when-absent-and-promotes-it-to-current-when-both-own-session-directions-are-live; every-other-purpose-carries-a-current-family_member-subject_relationships-row",
           "independentLoginCheckpoint": "family.heritability-and-family.portrait-require-subjects.independent_login_at-on-the-data-subject-before-the-grant-writes",
-          "pausedSharing": "a-current-public.family_sharing_pauses-row-between-the-two-accounts-refuses-a-new-grant-until-resume"
+          "pausedSharing": "a-current-public.family_sharing_pauses-row-between-the-two-accounts-refuses-a-new-grant-until-resume",
+          "canonicalPortraitAdapter": {
+            "presentationRpc": "public.family_portrait_grant_presentation_v1(account,session,subject,recipient-account)",
+            "commitRpc": "public.grant_family_portrait_purpose_v1(account,session,subject,recipient-principal,recipient-account,purpose,artifact-version,artifact-body-hash,nonce,endpoint-receipt)",
+            "binding": "the-signed-Portrait-presentation-captures-both-current-account-subject-principal-binding-and-jurisdiction-revisions-and-the-existing-pair-id-revision-status-or-absence; commit-revalidates-that-exact-presentation-under-lock-before-delegating-to-the-original-directional-grant-routine-and-persisting-its-immutable-endpoint-snapshot",
+            "transition": "historical-grants-without-the-new-endpoint-snapshot-retain-only-independently-valid-legacy-source-access; each-adult-must-explicitly-reaffirm-with-a-fresh-presentation-before-canonical-source-readiness-is-available; report-grant-adapters-and-other-purpose-ABIs-remain-separate"
+          }
         }
       },
       "successResponseContract": "consent-recorded-v1",
@@ -19087,6 +19271,61 @@
           "embryo-donor-attribution-v1",
           "embryo-autosomal-only-v1"
         ]
+      }
+    },
+    {
+      "id": "jobs.retention-cron",
+      "path": "/api/cron/retention",
+      "kind": "endpoint",
+      "domain": "jobs",
+      "auth": "method-specific",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden",
+        "transferEncoding": "forbidden",
+        "callerHeaders": "never-forwarded-to-worker",
+        "contentLength": "absent-or-exactly-zero"
+      },
+      "stateProfile": "endpoint",
+      "disposition": "kept",
+      "successResponseContract": "machine-job-result-v1",
+      "policy": {
+        "mode": "machine-due-row-only",
+        "operation": "retention-due-phase",
+        "contract": "retention-due-phase-v1",
+        "deleteContract": "retention-purge-v1",
+        "targetRegistry": "sensitive-purge-target-registry-v1",
+        "workerBinding": "workerExecutionBindings.jobs.retention",
+        "targetAuthority": "workerExecutionBindings.jobs.retention",
+        "requestTargetOrPrefix": "forbidden",
+        "contracts": [
+          "resource-authorization-v1",
+          "retention-due-phase-v1",
+          "retention-purge-v1",
+          "sensitive-purge-target-registry-v1",
+          "mail-token-delivery-v1",
+          "embryo-basis-authority-v1",
+          "embryo-donor-attribution-v1",
+          "embryo-autosomal-only-v1"
+        ],
+        "adapterFor": "jobs.retention",
+        "requestMaySelectSubjectTargetSourceOrRows": false,
+        "delegatedResponse": "preserve-status-headers-and-body; unexpected-exceptions-use-closed-retention_worker_unavailable-503"
+      },
+      "methodPolicies": {
+        "GET": {
+          "authAllOf": [
+            "cron-secret"
+          ],
+          "comparison": "constant-time-exact-bearer",
+          "delegation": "one-server-created-bodyless-POST-to-jobs.retention-after-authentication-and-selector-refusal"
+        },
+        "HEAD": {
+          "execution": "refuse-405-before-delegation"
+        }
       }
     },
     {

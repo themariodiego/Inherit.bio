@@ -1,7 +1,8 @@
+import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { adminClient, ingestFileAs, seededTemplateCount, signIn } from "./helpers";
+import { adminClient, seededTemplateCount, signIn } from "./helpers";
 import { LAYER_DEFINITIONS } from "../src/copy/reports/strings";
 import { inspectReportCounts } from "./report-count-audit";
 
@@ -20,8 +21,8 @@ test("real report counts stay single-layer through upload, Overview, both librar
   await signIn(page, account.email, account.password);
   await page.goto("/genome/me/reports");
   await assertCounts(page); // no-file library still contains both seeded layers
-  await ingestFileAs(page, account.email, account.password,
-    path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), "vcf");
+  await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),
+    { fileType: "vcf", purposes: ["reports.monogenic", "reports.polygenic"] });
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto("/overview");
@@ -88,7 +89,7 @@ test("count detector fails injected missing-class, mixed-headline, mixed-token a
     ["dangling-definition", "missing-or-wrong-count-definition"],
     ["legacy-attribute", "legacy-count-attribute"],
   ]) {
-    await page.evaluate((kind) => {
+    const fixture = await page.evaluateHandle((kind) => {
       const fixture = document.createElement("section");
       fixture.id = "count-audit-mutation";
       const first = document.querySelector('[data-slot="count"][data-figure-class="estimate"]')!.cloneNode(true) as HTMLElement;
@@ -110,9 +111,17 @@ test("count detector fails injected missing-class, mixed-headline, mixed-token a
         fixture.append(bare);
       }
       document.querySelector("main")!.append(fixture);
+      return fixture;
     }, mutation);
-    expect(await page.evaluate(inspectReportCounts, DEFINITIONS)).toContain(expected);
-    await page.locator("#count-audit-mutation").evaluate((node) => node.remove());
-    await assertCounts(page);
+    try {
+      expect(await page.evaluate(inspectReportCounts, DEFINITIONS)).toContain(expected);
+    } finally {
+      // Retain the exact injected node: React may detach it after the audit.
+      // A locator would wait for a replacement instead of cleaning this node.
+      try { await fixture.evaluate((node) => node.remove()); }
+      finally { await fixture.dispose(); }
+      await expect(page.locator("#count-audit-mutation")).toHaveCount(0);
+      await assertCounts(page);
+    }
   }
 });

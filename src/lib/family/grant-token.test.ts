@@ -44,6 +44,15 @@ const CLAIMS = {
 };
 
 describe("directional grant presentation token", () => {
+  it.each([null, 5, "bad", "A".repeat(64)])("rejects malformed Health Picture endpoint proof %s", healthPictureEndpointReceipt => {
+    const claims = readGrantPresentation(mintGrantPresentation(CLAIMS))!;
+    expect(readGrantPresentation(sealAs({ ...claims, purpose: "family.heritability", healthPictureEndpointReceipt }, "family-grant-presentation-v1"))).toBeNull();
+  });
+  it("preserves the signed Health Picture endpoint receipt", () => {
+    const claims = { ...CLAIMS, purpose: "family.heritability" as const, healthPictureEndpointReceipt: "d".repeat(64) };
+    expect(readGrantPresentation(mintGrantPresentation(claims))).toMatchObject(claims);
+  });
+
   it("round-trips exactly the endpoints it was minted for", () => {
     const claims = readGrantPresentation(mintGrantPresentation(CLAIMS));
     expect(claims).toMatchObject({ ...CLAIMS, direction: "subject_to_recipient" });
@@ -210,6 +219,16 @@ describe("cohort grant presentation token", () => {
     for (const token of [artifact, cohortGrant]) {
       expect(readGrantPresentation(token, NOW)).toBeNull();
       expect(readSharingOperation(token, NOW)).toBeNull();
+    }
+  });
+});
+
+describe("report endpoint receipt in signed presentation", () => {
+  it("preserves the exact DB receipt and rejects malformed receipt values", () => {
+    expect(readGrantPresentation(mintGrantPresentation({ ...CLAIMS, reportEndpointReceipt: "e".repeat(64) }))?.reportEndpointReceipt).toBe("e".repeat(64));
+    for (const receipt of [null, 1, {}, "", "E".repeat(64)]) {
+      const payload = { ...CLAIMS, direction: "subject_to_recipient", nonce: "synthetic-nonce", expiresAt: Date.now() + 10000, reportEndpointReceipt: receipt };
+      expect(readGrantPresentation(sealAs(payload, "family-grant-presentation-v1"))).toBeNull();
     }
   });
 });

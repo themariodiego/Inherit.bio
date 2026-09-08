@@ -489,6 +489,7 @@ export async function resolveCarrierPair(
   b: CarrierPairPerson,
   refVariants: readonly CarrierRefVariant[],
   conditions: readonly CarrierCondition[],
+  legacyFileIds?: { a: readonly string[]; b: readonly string[] },
 ): Promise<CarrierPairSummary> {
   const classifiedPositions = refVariants.length;
   if (classifiedPositions === 0) {
@@ -496,8 +497,8 @@ export async function resolveCarrierPair(
   }
   const rsids = refVariants.map((variant) => variant.rsid);
   const [readA, readB] = await Promise.all([
-    getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids),
-    getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids),
+    getSubjectGenotypesByRsid(supabase, a.dataSubjectId, rsids, legacyFileIds?.a),
+    getSubjectGenotypesByRsid(supabase, b.dataSubjectId, rsids, legacyFileIds?.b),
   ]);
   const genotypes = { a: readA.genotypes, b: readB.genotypes };
   const inputFileIds = { a: readA.inputFileIds, b: readB.inputFileIds };
@@ -517,8 +518,8 @@ export async function resolveCarrierPair(
 
   const runsInputsA = new Set<string>(), runsInputsB = new Set<string>();
   const [runsA, runsB] = await Promise.all([
-    readSubjectRuns(supabase, a.dataSubjectId, runsInputsA),
-    readSubjectRuns(supabase, b.dataSubjectId, runsInputsB),
+    readSubjectRuns(supabase, a.dataSubjectId, runsInputsA, legacyFileIds?.a),
+    readSubjectRuns(supabase, b.dataSubjectId, runsInputsB, legacyFileIds?.b),
   ]);
 
   return {

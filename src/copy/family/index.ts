@@ -67,6 +67,7 @@ export const ADD_ANOTHER_ADULT_BUTTON = "Add another adult";
  */
 export const CARD_READY_STATUS = "Reports ready";
 export const CARD_NO_FILE_STATUS = "No file yet";
+export const CARD_AWAITING_RESULTS_STATUS = "No shared results yet";
 export const CARD_PAUSED_STATUS = "Sharing paused";
 
 export function waitingToShareStatus(name: string): string {

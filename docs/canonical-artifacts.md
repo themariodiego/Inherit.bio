@@ -66,6 +66,7 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Security rate-bucket key shape, first-attempt clock, HMAC rotation, non-enumeration and deletion | `docs/route-register.json#securityRateLimitContract` | every registered public, token, authenticated-abuse-control and machine bucket; route-specific ceilings consume this authority and retention ID `security.rate-limit-hmac-24h` without storing a raw network, contact, key, token, credential, principal or target value |
 | Worker-job idempotency tuple and conflict equality | `docs/route-register.json#policyContracts.worker-job-enqueue-v1` | worker-job migration, every enqueue/claim resolver and tests for all three embryo score outputs, revoke/regrant and intentional computation-version reprocessing |
 | Directional purpose-grant endpoints and one-use presentation-token binding | `docs/route-register.json#policyContracts.directional-purpose-grant-v1` | permissions RSC tokens, `api.consents`, family columns/pairs, reports, workers, exports, downloads, share links, Copilot and raw-export authorization; a no-account Path-B subject is the signer/data subject and the immutable current uploader or grantee account is the recipient; no client recipient ID or family-wide grant is valid |
+| Initial adult-date declaration for accounts with missing onboarding data | `docs/route-register.json#routes` route `api.account-completion`, its resource-authorization binding and `account-completion-v1` response | own-upload account-completion screen and atomic RPC; an additive initial declaration, not an existing-date edit, identity verification, upload consent or analytic-purpose grant |
 | Copilot subject/cohort context and stale-turn deletion boundary | `docs/route-register.json#policyContracts.copilot-context-v1` | Copilot route, turn/context/history persistence, local/cloud transport guards, exact purpose/pair/five-set/donor checks and response filtering |
 | Future Person Record-Key and no-account Card delivery authority | `docs/route-register.json#tokenSecurityContract.futurePersonRecordKey` and `#tokenSecurityContract.futurePersonRecordKeyNoAccountDelivery` | cohort finalization, current recipient print rights, authenticated and no-account Card routes, transfer/addendum rotation, claim intake and credential purge |
 | Global sensitive-data observability sink boundary and allowed slot classes | `docs/route-register.json#observabilitySinkContract` | every page, endpoint, redirect, worker, background task and external-provider adapter; raw request, response, error, PII, genetic, embryo, evidence, consent, claim and model values never reach logs, traces, analytics or error capture |
@@ -125,6 +126,11 @@ The order is legality, accuracy, comprehension, accessibility, simplicity, aesth
 | Append-only approach, defect, decision and gate ledgers | `docs/protocol/approaches.md`, `docs/protocol/defects.md`, `docs/protocol/decisions.md`, `docs/protocol/gates.md` | adversarial loop |
 
 ## Database schema and enums
+
+The operator-approved exception in ADR 0023 permits only the zero-argument
+boolean Storage predicate described there, in addition to the existing live
+session helper. It overrides earlier sole-helper wording; no table-read grant
+or arbitrary-target helper is authorized.
 
 `docs/schema-requirements.md` is the pre-migration request ledger. Once a requirement is implemented, the ordered SQL in `supabase/migrations/` is authoritative. Generated Supabase TypeScript types are a mirror, never a schema authority. The Platform workstream is the sole migration author.
 
