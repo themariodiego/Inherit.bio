@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(22);
 
 select is((select count(*) from public.retention_registry), 49::bigint,
   'all 49 retention IDs are registered exactly once');
@@ -12,8 +12,15 @@ select is((select count(*) from public.purge_targets), 33::bigint,
 -- Canonical normalization adds private.own_normalization_batches and
 -- private.own_normalization_runs; report generation adds private.own_analysis_runs.
 -- Incremental VCF preparation adds the genetic own_normalization_positions index.
-select is((select count(*) from public.purge_target_stores), 117::bigint,
-  'all 117 purge stores, including the incremental source-position index, are classified');
+-- The inactive object backend also registers its job and artifact identities.
+select is((select count(*) from public.purge_target_stores), 119::bigint,
+  'all 119 purge stores, including private prepared-object working identities, are classified');
+select is((select target_id from public.purge_target_stores
+  where store_name='private.own_preparation_jobs'),'variant-rows',
+  'preparation jobs belong to the source-working purge inventory');
+select is((select target_id from public.purge_target_stores
+  where store_name='private.own_preparation_artifacts'),'variant-rows',
+  'preparation artifacts retain registered cleanup membership');
 select is((select target_id from public.purge_target_stores
   where store_name = 'public.embryo_ingest_chunks'), 'upload-and-ingest-working-state',
   'chunk receipts are classified for attempt cleanup');

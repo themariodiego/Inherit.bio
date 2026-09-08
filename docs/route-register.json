@@ -16,6 +16,30 @@
     }
   ],
   "policyContracts": {
+    "own-prepared-object-v1": {
+      "decision": "docs/adr/0025-own-prepared-object-backend.md",
+      "status": "private integration only; disabled by default; no machine route, scheduler, public admission change or publication is enabled by the primitive migration",
+      "scope": "one structurally verified finalized VCF-family source owned by the acting account's active self subject; preparation creates no analytic purpose grant or report",
+      "stores": ["private.own_preparation_jobs", "private.own_preparation_artifacts"],
+      "queueCompatibility": "this narrowly registered private preparation protocol does not enqueue or claim generic worker_jobs; all other queued operations retain worker-job-enqueue-v1 and worker-job-dispatch-v1",
+      "limits": {
+        "jobMaximumSeconds": 900,
+        "claimMaximumSeconds": 300,
+        "writeMaximumSeconds": 30,
+        "maximumAttempts": 3,
+        "maximumArtifactsPerJob": 4096,
+        "maximumReservedArtifactBytesPerJob": 104857600
+      },
+      "retention": "docs/retention.md id preparation.scratch-2h",
+      "authority": "enqueue captures the actual originating Supabase session and exact account/principal/binding/store artifact revisions; claim, every source or artifact read, reservation, acknowledgement, checkpoint and eventual publication re-resolve that same live authority. Logout, expiry, rotation, store withdrawal, source change or deletion freeze cannot be bypassed by a service key or prior job receipt. Reauthorization requires a real authenticated operation, never a mail-only authority helper",
+      "source": "exact file and subject IDs, immutable original object ID/key, source revision, complete verified raw and decoded hashes, structural single-sample evidence and pinned parser/build/liftover identities; no source key, weaker operation or backend choice supplied by the browser",
+      "deadlines": "job deadline is fixed at creation; claim and write leases are clamped to all earlier job, attempt, originating-session and current consent deadlines. Retry never extends the original job or scratch-retention deadline",
+      "artifacts": "reserve an immutable database-generated artifact identity and key with bounded expected bytes/hash before submitting a create-only write. Acknowledgement matches the exact receipt and Storage identity/metadata plus the transport's separately verified complete hash; SQL metadata is not independent proof of provider bytes. Unknown acknowledgements remain owned cleanup members",
+      "freeze": "freeze prevents new claims, reservations, acknowledgements and publication. Outstanding write leases and uncertain submissions remain registered; elapsed lease time alone does not prove a submitted provider write was cancelled. Fence or drain writes before exact removal and independent absence verification. A frozen receipt is never deletion success",
+      "checkpointAndPublication": "not implemented by the first primitive migration. Durable checkpoint adoption must name and protect the exact verified predecessor membership. Final publication requires complete parser and canonical terminal evidence, immutable coordinate and rsID indexes, current authority and atomic backend receipt binding; never manufacture a database normalization journal to satisfy an existing reader",
+      "activation": "keep private dispatch disabled until actual Storage writes/reads, indexed chosen reports, all-call export, revocable original download, file/account/expiry cleanup, bounded failure recovery and unrelated-file preservation are verified together. Public limits and the owner-approved one-month original policy require their own measured compatible activation",
+      "excluded": ["raw FASTQ/BAM/CRAM admission", "other-adult and embryo processing", "automatic report selection", "session-independent genetic reads", "new subscriptions or unapproved overages"]
+    },
     "genetic-file-ingest-v1": {
       "allowedDataFormats": [
         "consumer-array-text-v1",

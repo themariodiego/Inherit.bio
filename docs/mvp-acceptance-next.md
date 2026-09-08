@@ -20,6 +20,12 @@ Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
 and nine dependent cases not run. The unchanged whole-job second attempt passed,
 including all those cases; the original failure and unproved cause are retained.
 
+Automatic main CI `34250269387` also passed on the exact production merge:
+3,346 units, 85 fresh migrations, 2,120 SQL assertions, 30 lock checks and all
+232 browser cases in 14.2 minutes, with 57 actual uploads and zero skips or
+automatic retries. The previously affected Health Picture case and both cleanup
+steps passed. No further rerun was requested.
+
 Desktop and mobile inspection used the actual shared recovery component in an
 isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
 synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new
@@ -53,6 +59,38 @@ then verify an actual larger-file application journey. Public limits and
 one-month original-expiry behavior remain unchanged. Receipts: parent task
 `work/wgs-next-backend/disk-integration-attempt-1/` and
 `work/wgs-next-backend/prototype-review-receipt.json`.
+
+### Canonical data and private job authority · local only
+
+Local commits `1d7834f` and `89b6098` add parity with the current canonical
+normalizer, preservation of original evidence, a bounded private Storage range
+reader, and a canonical codec that avoids duplicating unchanged long alleles.
+There are **240 distinct focused engine tests** (139 earlier engine cases plus
+32 canonical, 28 reader and 41 canonical-codec cases); scoped TypeScript/lint and
+independent review passed. The reader's provider boundary is tested with
+synthetic responses, not hosted Storage. The secret gate and its 19 regression
+cases passed with one exact, reviewed synthetic URL fixture.
+
+The disabled private job migration
+`20260908164616_own_preparation_job_authority.sql` passed **67 rollback-only SQL
+assertions** on the existing owned local database. Its exact source and corrected
+fixture hashes are in parent task `work/wgs-next-backend/job-authority-attempt-3/`.
+The first two attempts exposed invalid fixture mutations; neither disabled an
+existing protection. Final verification used real consent expiry and actual
+source deletion preparation in a rolled-back savepoint. After the complete
+migration/test transaction rolled back, original file/object fingerprints,
+row counts, the 117-store runtime registry and absence of all new schema objects
+matched the baseline. No migration was committed to that runtime or a provider.
+
+The draft contract and ADR-0025 preserve originating-session checks and define
+finite job, claim, write and scratch deadlines. Dispatch defaults off. Metadata
+freeze preserves registered outstanding writes and never claims deletion success.
+Concurrency, actual artifact transport/fencing, durable checkpoints, target and
+rsID indexes, backend-aware chosen reports/exports/readers and complete cleanup
+remain integration requirements. The updated 119-store inventory assertion is
+prepared for fresh replay; the complete existing SQL suite was not rerun here.
+The current signed original-download link remains an explicit ADR-0016 gap.
+Original expiry, public limits, production PR81 and **19/65** acceptance are unchanged.
 
 ### Earlier PR80 dense preparation and report recovery
 

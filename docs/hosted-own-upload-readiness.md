@@ -15,6 +15,12 @@ Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
 and nine dependent cases not run. The unchanged whole-job second attempt passed,
 including all those cases; the original failure and unproved cause are retained.
 
+Automatic main CI `34250269387` also passed on the exact production merge:
+3,346 units, 85 fresh migrations, 2,120 SQL assertions, 30 lock checks and all
+232 browser cases in 14.2 minutes, with 57 actual uploads and zero skips or
+automatic retries. The previously affected Health Picture case and both cleanup
+steps passed. No further rerun was requested.
+
 Desktop and mobile inspection used the actual shared recovery component in an
 isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
 synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new

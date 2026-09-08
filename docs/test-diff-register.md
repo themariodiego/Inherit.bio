@@ -882,3 +882,25 @@ The focused unit inventory passes 84 cases; no existing assertion is removed.
 The plain-word registry adds “birth”, “date”, “complete” and “own” for the
 literal account and DNA labels. No jargon entry, readability threshold,
 extractor or legal statement is removed or relaxed.
+
+
+## Private WGS prepared-object integration · 8 September 2026
+
+- `canonical.test.ts` adds source-position duplicate/conflict, all-observation,
+  no-call, actual GRCh37 mapping, long-allele and terminal/EOF parity checks.
+- `canonical-codec.test.ts` adds complete source/disposition round trips,
+  normalized deltas, near-limit alleles, corrupt bindings/bytes and cancellation.
+- `storage-reader.test.ts` adds exact bounded range/EOF validation, pre/post
+  authority refusals, abort/late-body cleanup and private origin configuration.
+  These use synthetic transport responses, not a claimed provider proof.
+- The secret gate's existing adversarial fixture matrix gains one exact URL
+  rejection input under ADR-0006. Detectors and history baseline are unchanged.
+- `own_preparation_jobs.sql` adds 67 rollback-only metadata/authority assertions.
+  Actual upload issuance and finalization RPCs create synthetic source receipts;
+  no normalized completion, provider byte proof or cleanup success is fabricated.
+  The initial invalid original-metadata and consent-clock mutations were corrected
+  to assert the existing immutable guard and use a valid elapsed consent expiry.
+  Guards, expected refusals and existing tests remain intact.
+- `v2_contracts.sql` raises the registered store count from 117 to 119 and adds
+  exact source-working classification assertions for the two new private stores;
+  all previous assertions remain. Fresh full replay remains a release requirement.
