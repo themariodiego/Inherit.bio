@@ -36,6 +36,15 @@ original-expiry integration, and changes no public limit. Full details and scope
 are in `docs/mvp-acceptance-next.md` and parent task
 `work/wgs-next-backend/disk-integration-attempt-1/`.
 
+The private registered writer/freeze boundary now also has an actual **local**
+Storage v1.70.3 proof at source `93e5fda`: successful complete readback/hash/ACK,
+overwrite refusal without changing bytes, and an admitted partial upload frozen
+before finalization with exact physical cleanup. Its temporary schema was reversed
+and existing data/configuration fingerprints restored; one declared synthetic
+Auth/consent fixture remains. See `storage-integration-attempt-1/` and the acceptance
+ledger for the exact scope. No hosted prepared-object migration, writer dispatch,
+capacity increase or original-expiry policy is activated by this result.
+
 ## Earlier PR80 dense preparation and report recovery verified
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as

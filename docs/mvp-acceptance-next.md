@@ -130,6 +130,39 @@ application journey remain pending. Actual Storage proof uses a tiny original
 through the existing ephemeral local signing setup, then targets the unchanged
 Storage service for prepared writes and interruption cleanup.
 
+### Actual local Storage write/freeze proof · 8 September 2026
+
+At source `93e5fda24e27ab98952a044ed1ddeb0ff62aed69`, the first actual provider
+attempt passed in **4.823 seconds** (18:01:14.490–18:01:19.313 UTC). A 547-byte
+synthetic VCF used real signing, issuance, structural validation and finalization
+through the existing ephemeral local provider setup. Preparation then used the
+unchanged Storage v1.70.3 service and its existing queue configuration.
+
+The actual registered writer stored a 554-byte provisional container, verified
+the complete readback hash and exact ACK, and matched an independent physical
+file hash. An overwrite returned HTTP 400 and preserved the object/version/hash.
+A second upload was paused after its one-byte physical file appeared. The real
+job freeze occurred with almost 30 seconds remaining on its write lease; after
+the remaining bytes were sent, finalization returned HTTP 400, no object metadata
+remained, and the exact physical version and `.info` companion were absent.
+
+Cleanup removed both prepared memberships and the original through the actual
+file/Storage deletion contracts, settled both test processes, then reversed the
+temporary additive migration without `CASCADE`. Existing file/object fingerprints,
+33-file/33-object counts, upload configuration, registry, migration history and
+Storage triggers matched the baseline. Root independently checked database
+restoration and all eight candidate prepared version/companion paths absent.
+One explicitly declared synthetic Auth/session/consent fixture remains locally;
+this is not an account-deletion proof. Receipts and frozen driver pins are in
+parent task `work/wgs-next-backend/storage-integration-attempt-1/`.
+
+This closes the actual **local file-backend** write/freeze prerequisite. It does
+not establish hosted S3 cleanup, full-size throughput, canonical indexed reads,
+or the complete application lifecycle. Next: durable manifest/index membership,
+target/rsID lookups, backend-aware report/export/download and cleanup integration,
+then the larger synthetic application journey. Production PR81, public limits,
+original expiry, subscriptions and **19/65** acceptance remain unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
