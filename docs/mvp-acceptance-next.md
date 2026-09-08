@@ -7,6 +7,52 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Current production checkpoint · 8 September 2026
 
+PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
+`dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
+It distinguishes a confirmed prepared file from a later selected-report failure,
+with a retry path that does not require another upload. No database, environment,
+scheduler, plan or admission-limit changes accompanied this release.
+
+Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
+2,120 SQL assertions (56 files), 30 lock checks and 232 browser cases**, with
+57 actual Storage uploads and zero skipped or automatically retried cases. CI
+`34245372159` attempt one had one pre-response sign-out socket failure, 222 passes
+and nine dependent cases not run. The unchanged whole-job second attempt passed,
+including all those cases; the original failure and unproved cause are retained.
+
+Automatic main CI `34250269387` also passed on the exact production merge:
+3,346 units, 85 fresh migrations, 2,120 SQL assertions, 30 lock checks and all
+232 browser cases in 14.2 minutes, with 57 actual uploads and zero skips or
+automatic retries. The previously affected Health Picture case and both cleanup
+steps passed. No further rerun was requested.
+
+Desktop and mobile inspection used the actual shared recovery component in an
+isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
+synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new
+recovery strings in the served client asset; the account remained empty and its
+test session was signed out. This did not force or observe another hosted report
+failure. Receipt details: parent task `work/wgs-release-pr80/recovery-*`.
+Acceptance remains **19/65**.
+
+### PRS conflict correction · release candidate
+
+New report generation now combines variant and observation evidence without
+letting the last inserted row choose a PRS genotype. Agreeing allele counts
+contribute once; conflicting, missing, unsupported or filtered calls withhold
+that target locus from score matching. Existing dosage arithmetic, score weights,
+coverage denominators, report interpretations and ancestry calculations remain.
+
+The focused production patch passes **78 helper/PRS/generator tests**, scoped
+TypeScript and lint, independent source review and the secret gate. Full PR CI
+and deployment verification remain pending. It contains no database migration,
+new backend activation, upload-limit, retention, scheduler or subscription change.
+It corrects newly generated or recomputed scores; earlier completed results are
+not automatically invalidated or recomputed. No real genetic file was altered.
+Whole-plan acceptance remains **19/65**. Release evidence is in parent task
+`work/prs-call-conflict-release/`.
+
+### Earlier PR80 hosted preparation and recovery
+
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
 `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
 CI `34240644001` passed **3,310 units (204 files), 85 fresh migrations, 2,120 SQL
