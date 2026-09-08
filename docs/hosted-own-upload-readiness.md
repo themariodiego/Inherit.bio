@@ -1,6 +1,47 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: PR76 merged and deployed; new uploads remain paused · 8 September 2026
+## Current checkpoint: PR78 deployed; staging cleanup proof pending · 8 September 2026
+
+PR78 merged as **`4f925509e9980d376d313e88e9dd4ba9614091d5`**. Production
+`dpl_3Zry7EHxbTj1k8mam2GYNb16NvPs` became READY at **12:32:04.915 UTC**.
+CI **`34224538704`** passed **3,261 unit tests, 82 fresh migrations, 2,041 SQL
+assertions across 55 files, 30 independent lock checks and 232 browser cases**,
+with zero skips/retries. **New uploads remain paused.**
+
+The actual scheduled retry fault proof completed exact synthetic derivative
+cleanup in **21.430137 seconds**, within the immutable 60-second deadline:
+revocation at 12:13:20.476012 UTC, completion at 12:13:41.906149 UTC,
+`completedWithinDeadline: true`, four deleted manifest members and zero
+exact-grant residuals. The original source remained available during that purge.
+The source was subsequently deleted separately; the 12:19:03 UTC independent
+check found file, variant, observation, analysis, normalization and Storage
+residuals zero, with the test account preserved. This is scheduler-owned retry
+proof, distinct from the earlier 69.557 ms synchronous revocation. It does not
+establish every derivative scope or all retention deadlines.
+
+The upcoming staging-retention correction is **not applied or deployed**.
+A real abandoned synthetic upload was issued at **12:27:30.374461 UTC**, with
+lease expiry **12:57:30.37446 UTC** and original fixed cleanup deadline
+**14:27:30.374461 UTC**. It received actual Storage bytes but was neither
+finalized nor processed. **Actual scheduled removal is still awaited**; do not
+claim a completed cleanup or move the original deadline while waiting.
+
+Evidence is retained in parent task
+`work/current-retention-release/production-594e885/scheduled-fallback-completion.json`,
+`scheduled-fallback-residuals.json`, `scheduled-proof-source-deletion-residuals.json`
+and `work/current-retention-release/abandoned-synthetic-upload-receipt.json`.
+Earlier checkpoints below remain historical evidence and are superseded only
+for current production/pending status. The explicit Family-withdrawal issue
+concerned **complete chat turns and their dependent history after explicit
+withdrawal**, not Portrait-result deletion; global pause remains deliberately
+non-destructive.
+
+Full-plan acceptance remains **19/65**. Approved next scope remains full-size
+existing WGS results first, then raw FASTQ/BAM/CRAM, targeting **100 genomes per
+month** and **one-month original retention**, with **no additional spending
+authorized**. Those targets are not enabled formats or verified throughput.
+
+## Earlier checkpoint: PR76 merged and deployed with new uploads paused · 8 September 2026
 
 PR76 merged at **11:14:32 UTC** as
 `594e885cf94f087d4010db6795c035149ec880a5`. Its tree is byte-identical to the
