@@ -2,59 +2,40 @@
 
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
-Its fresh local production-build evidence is recorded in
-`docs/local-upload-browser-verification.md`. PR76 merged on 8 September at
-11:14:32 UTC as `594e885cf94f087d4010db6795c035149ec880a5`; its tree matches
-`9f079ba`. Production deployment `dpl_HJCAo11MiZ7yMXVrFPRb5De7vTBM` became READY
-at 11:15:31 UTC and owns all six aliases. **New canonical uploads remain paused.**
-This is a delivery order, not a replacement specification or launch approval.
+The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
+This is a delivery order, not a replacement specification or a whole-project pass.
 
 ## Current production checkpoint · 8 September 2026
 
-The coordinated transport cutover is installed as `20260908111349`: the legacy
-upload policy is absent, live legacy leases/completion windows are zero, and
-canonical metadata fingerprint `9bfa8a0e952a44c3baf5e795bcfc31ec` is unchanged.
-Native production inspection confirmed the retained million-row synthetic source
-is prepared and its source-backed A/C report detail retains 1/1 coverage.
-Final-head CI `34217097810` passed 3,261 units, 2,008 SQL assertions and 232 browser
-cases with 57 actual uploads and zero skips/retries. The protected-canary proof
-already covers 91.496421-second normalization, explicit polygenic A/C and the
-24,562,693-byte original download with an exact hash match. **Synthetic deletion passed through the real production API (204 at 11:46:30
-UTC)** for `7011928e-9c9d-47c5-82b4-72ebd1e5d844`. Independent 11:46:54 checks
-found source, one million variants, results and Storage residuals zero while
-preserving the account. Native browser confirmation was not proved.
+PR79 merge `1697723b2909800de380f0fadb8f8afa14555777` is production READY as
+`dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug` at **13:11:40.297 UTC**, on all six aliases.
+Canonical uploads are enabled, legacy issuance remains paused and direct
+normalization is enabled. Verified limits are **24 MiB raw/decoded per file,
+128 MiB per account and two active uploads**. CI `34228275512` passed 3,261 units
+(203 files), 83 migrations, 2,049 SQL assertions (55 files), 30 locks and 232
+browser cases in 15.0 minutes, zero skips/retries.
 
-The manual retention GET at **11:36:11 UTC** returned HTTP 200,
-**processed 3 / failed 0 / pending 0**, for two known synthetic expired sessions
-and one historical synthetic grant-replacement cleanup. The overdue job's
-`completedWithinDeadline: false` remains a failed deadline, despite zero residuals.
-The database-only `pg_cron` purge job was installed inactive at 11:51, activated
-at 11:58, and produced **15 consecutive successful 15-second runs through
-12:01:56 UTC**. A separate native revocation of the 425-byte synthetic source
-`b320380a-c803-4b70-8e70-2021be0fb4de` completed from 12:01:26.470879 to
-12:01:26.540436 UTC (**69.557 ms**): manifest
-`8c20a9a4-049a-4de5-b1a1-e38507884b78`, four deleted members, zero exact-grant
-residuals. **This was synchronous cleanup, not a scheduler-owned purge.** The
-minute composite cron addition at `c2b` is committed but not deployed. Scheduled
-execution is observed; complete scheduler-owned deadline coverage is not proved.
+Actual abandoned staging cleanup finished **50.367195 seconds after real lease
+expiry**, with its original deadline unchanged and exact residuals zero. A fresh
+native public 425-byte upload prepared five variants with no analysis before
+choice, then generated only the chosen traits. Bitter taste correctly showed
+A/A at `rs1726866` and 1-of-2 coverage with `rs713598` absent. Authenticated app
+download matched the original hash; app DELETE returned 204 and independent
+checks found exact source/derivative/Storage-ledger counts zero with the account
+preserved. Native JavaScript deletion confirmation remains unproved. Detailed
+receipts and timestamps are in `docs/hosted-own-upload-readiness.md` and parent
+task `work/current-retention-release/production-pr79/`.
 
-Explicit Family withdrawal needs complete affected chat turns and their
-dependent history removed. The follow-up fix passes 33 focused SQL assertions
-and a two-session writer/purge check; integration and hosted verification remain
-pending. Generic Family purge-job verification is a separate open requirement. Global pause is intentionally non-destructive. New public
-admission and a full-project pass remain unclaimed; **19/65** is unchanged.
-
-Evidence is in the parent task's
-`work/production-upload-cutover/canonical-merged-deployment.json`,
-`work/production-upload-cutover/cutover-postflight-receipt.json` and
-`work/hosted-capacity-20260908/ca-normalization-success.json` /
-`ca-native-download-receipt.json`; scheduler/manual-run evidence is in
-`work/current-retention-release/production-594e885/`. This checkpoint supersedes earlier release
-status below without replacing the original acceptance gates.
+Next is the **local, unreleased WGS streaming batch**: 79 focused
+TypeScript/helper/parser tests and 108 SQL assertions pass. Actual VCF-capacity
+and browser proof, hosted migration and deployment have not happened for that
+batch. Current public admission does not establish full-size WGS throughput,
+all other upload journeys or every retention scope. Acceptance stays **19/65**.
+Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026
 
-PR76 is merged. The next approved work is ordinary full-size existing WGS result
+PR79 is deployed. The next approved work is ordinary full-size existing WGS result
 files, followed by
 raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
 **one-month retention of original source files**. These are implementation and
@@ -84,11 +65,10 @@ bytes and two-file deletion isolation; its full CI passed 3,247 units, 2,008 SQL
 assertions and 232 browser cases. The public-CA adapter preserves certificate
 and hostname verification; hosted million-row preparation, the chosen report
 and native original download now pass. Temporary hosted limits are restored.
-PR76 and the coordinated transport policy are deployed with new uploads paused;
-the database-only scheduler is active, but scheduler-owned purge/deadline proof,
-composite schedule deployment and the Family withdrawal repair remain unfinished.
-Synthetic source deletion passes through the production API with independent
-zero-residual checks. This bounded result does not establish WGS throughput.
+PR79 now enables bounded canonical public uploads. Scheduled derivative retry
+and actual expired-staging cleanup have separate successful receipts; a fresh
+public native upload/result and app download/deletion also pass. These bounded
+results do not establish full-size WGS throughput or every rights/retention scope.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every

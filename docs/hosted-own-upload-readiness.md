@@ -1,6 +1,54 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: PR78 deployed; staging cleanup proof pending · 8 September 2026
+## Current checkpoint: PR79 public own-upload verified; WGS streaming remains local · 8 September 2026
+
+PR79 merged as **`1697723b2909800de380f0fadb8f8afa14555777`**. Production
+`dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug` became READY at **13:11:40.297 UTC** on all
+six aliases. Persistent production settings are
+`INHERIT_CANONICAL_UPLOADS_PAUSED=false`, `INHERIT_PAUSE_LEGACY_UPLOADS=true`
+and `INHERIT_NORMALIZATION_DIRECT_DATABASE=true`. Canonical admission is enabled;
+legacy issuance remains paused. Verified caps are **24 MiB raw/decoded per file,
+128 MiB per account and two active uploads**.
+
+CI **`34228275512`** passed **3,261 units across 203 files, 83 fresh migrations,
+2,049 SQL assertions across 55 files, 30 independent lock checks and 232 browser
+cases in 15.0 minutes**, zero skips/retries.
+
+The genuinely abandoned upload's scheduled phase completed at
+**12:58:20.741655 UTC**, **50.367195 seconds** after real lease expiry at
+12:57:30.374460 UTC. Its original fixed deadline, **14:27:30.374461 UTC**, was
+unchanged. The manifest is complete and exact Storage/session/staging residuals
+are zero. This is actual scheduled removal, separate from the previously proved
+21.430137-second scheduled derivative retry and the synchronous fast path.
+
+A fresh **native public upload** prepared **425 bytes / five variants** at
+**13:12:34.326917 UTC**, with **zero analyses initially**. Only the traits choice
+was enabled and generated. The native bitter-taste report showed `rs1726866`
+**A/A** and correctly stated **one of two positions covered**, with `rs713598`
+missing. Authenticated application download returned exactly 425 bytes and
+SHA-256 `3a7d4c51e5fea9a241909c24f83433b601289ad3f032128c87c6dd229128b361`.
+Real application DELETE returned **204 at 13:17:27 UTC**; independent checks at
+**13:18:46 UTC** found file, variants, observations, analysis, normalization and
+Storage-ledger counts zero while preserving the account. **No native JavaScript
+confirmation-button success is claimed** for deletion.
+
+Receipts: parent task `work/current-retention-release/production-pr79/`, including
+`deployment.json`, `ci.json`, `ordinary-capacity-applied.json`,
+`abandoned-scheduled-phase.json`, `abandoned-scheduled-result.json`,
+`public-prepared.json`, `public-download-and-deletion.json` and
+`public-deletion-residuals.json`. Earlier checkpoints remain historical evidence
+and are superseded only for current production/pending status.
+
+The next WGS streaming implementation is **local, unreleased work**: 79 focused
+TypeScript/helper/parser tests and 108 SQL assertions pass, but there is **no
+actual VCF-capacity/browser proof or hosted migration** for it yet. Do not
+attribute it to PR79 or infer full WGS support from the current synthetic cases.
+Approved scope remains existing full-size WGS results first, then raw
+FASTQ/BAM/CRAM, targeting **100 genomes/month** and **one-month originals**.
+Those workload/retention targets are not enabled; **no additional spending is
+authorized**. Whole-plan acceptance remains **19/65**.
+
+## Earlier checkpoint: PR78 deployed; staging cleanup proof was pending · 8 September 2026
 
 PR78 merged as **`4f925509e9980d376d313e88e9dd4ba9614091d5`**. Production
 `dpl_3Zry7EHxbTj1k8mam2GYNb16NvPs` became READY at **12:32:04.915 UTC**.
