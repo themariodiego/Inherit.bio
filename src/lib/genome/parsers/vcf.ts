@@ -31,7 +31,26 @@ export function buildFromHeader(line: string): Build | null {
   return null;
 }
 
+export type VcfParseEvent =
+  | { type: "variant"; line: number; record: VariantRecord }
+  | { type: "reference"; line: number; call: ReferenceCall }
+  | { type: "observed"; line: number; call: ObservedCall }
+  | { type: "summary"; build: Build; skipped: number; variantCount: number;
+      referenceCallCount: number; observedCallCount: number; observedCallsValid: boolean };
+
 /**
+ * Incremental decoded-line parser. Memory is bounded by the current input line;
+ * no file-sized record arrays, position maps or deduplication sets are retained.
+ * Pulling the iterator applies backpressure; closing it closes the input iterator.
+ *
+ * A line can emit both an observed call and a variant/reference call. Observations
+ * are provisional: a later repeated/multisample header invalidates earlier ones.
+ * Consumers must await the sole terminal summary and discard staged observations
+ * when observedCallsValid is false. Counts describe emitted events, including
+ * those provisional observations. Build claims are likewise resolved only at EOF.
+ * Input failure or early cancellation emits no summary and cannot be published.
+ * Global coordinate deduplication/conflict checks belong to the consumer.
+ *
  * Parse decoded VCF/gVCF lines into variant records.
  * - Genotype comes from the first sample's GT, resolved against REF/ALT.
  * - Only GT-referenced ALT alleles are kept (multiallelic rows keep just the
@@ -44,12 +63,12 @@ export function buildFromHeader(line: string): Build | null {
  *   carries <NON_REF> describe a range, not a call, and are dropped without
  *   counting, so a gVCF contributes no reference call.
  */
-export async function parseVcf(
+export async function* streamVcf(
   lines: AsyncIterable<string>
-): Promise<ParseResult> {
-  const records: VariantRecord[] = [];
-  const referenceCalls: ReferenceCall[] = [];
-  const observedCalls: ObservedCall[] = [];
+): AsyncGenerator<VcfParseEvent, void, unknown> {
+  let variantCount = 0;
+  let referenceCallCount = 0;
+  let observedCallCount = 0;
   let singleSample = false;
   let sawSampleHeader = false;
   let ambiguousSamples = false;
@@ -90,7 +109,10 @@ export async function parseVcf(
     }
     if (singleSample) {
       const observed = observedVcfCall(f, chrom, pos, lineNumber);
-      if (observed) observedCalls.push(observed);
+      if (observed) {
+        observedCallCount++;
+        yield { type: "observed", line: lineNumber, call: observed };
+      }
     }
     const gtIndex = f[8].split(":").indexOf("GT");
     if (gtIndex === -1) {
@@ -138,12 +160,13 @@ export async function parseVcf(
       // records its reference only as blocks therefore yields no reference
       // call, and the runs measure says it cannot measure it.
       if (!alts.includes("<NON_REF>")) {
-        referenceCalls.push({
+        referenceCallCount++;
+        yield { type: "reference", line: lineNumber, call: {
           chrom,
           pos,
           genotype: gtAlleles.length === 1 ? gtAlleles[0] : gtAlleles.slice().sort().join("/"),
           ref,
-        });
+        } };
       }
       continue;
     }
@@ -154,15 +177,33 @@ export async function parseVcf(
         ? gtAlleles[0]
         : gtAlleles.slice().sort().join("/");
 
-    records.push({
+    variantCount++;
+    yield { type: "variant", line: lineNumber, record: {
       rsid: parseRsid(f[2]),
       chrom,
       pos,
       ref,
       alt: calledAlts.join(","),
       genotype,
-    });
+    } };
   }
 
-  return { build, records, referenceCalls, observedCalls: ambiguousSamples ? [] : observedCalls, skipped };
+  yield { type: "summary", build, skipped, variantCount, referenceCallCount,
+    observedCallCount, observedCallsValid: !ambiguousSamples };
+}
+
+/** Compatibility collector; use streamVcf for bounded-memory consumers. */
+export async function parseVcf(lines: AsyncIterable<string>): Promise<ParseResult> {
+  const records: VariantRecord[] = [];
+  const referenceCalls: ReferenceCall[] = [];
+  const observedCalls: ObservedCall[] = [];
+  for await (const event of streamVcf(lines)) {
+    if (event.type === "variant") records.push(event.record);
+    else if (event.type === "reference") referenceCalls.push(event.call);
+    else if (event.type === "observed") observedCalls.push(event.call);
+    else return { build: event.build, records, referenceCalls,
+      observedCalls: event.observedCallsValid ? observedCalls : [], skipped: event.skipped };
+  }
+  // The generator always yields a summary after normal exhaustion.
+  throw new Error("VCF stream ended without a summary");
 }
