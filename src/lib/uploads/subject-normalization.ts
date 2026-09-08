@@ -119,12 +119,17 @@ export async function normalizeSubjectFile(
           || response.headers.get("content-range") !== `bytes ${start}-${end}/${source.sizeBytes}`) {
           await response.body?.cancel(); refuse();
         }
+        // Finish this bounded network read under its original 30-second
+        // deadline before parser/SQL backpressure can suspend consumption.
+        // At most one exact four-MB range is retained, never the whole source.
+        const range = new Uint8Array(end - start + 1);
         let size = 0;
         for await (const bytes of response.body as unknown as AsyncIterable<Uint8Array>) {
-          size += bytes.length; if (size > end - start + 1) refuse("upload_integrity_mismatch");
-          yield bytes;
+          if (bytes.length > range.length - size) refuse("upload_integrity_mismatch");
+          range.set(bytes, size); size += bytes.length;
         }
-        if (size !== end - start + 1) refuse("upload_integrity_mismatch");
+        if (size !== range.length) refuse("upload_integrity_mismatch");
+        yield range;
       }
     }
     const isVcf = source.fileType === "vcf" || source.fileType === "gvcf";

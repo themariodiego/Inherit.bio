@@ -128,6 +128,74 @@ describe("store-only source normalization", () => {
       expect(options.cache).toBe("no-store"); expect(options.redirect).toBe("error");
     }
   });
+  it("finishes each ranged network body before downstream SQL can outlive its network deadline", async () => {
+    setSource(Buffer.from(header + Array.from({ length: 2100 }, (_, i) =>
+      row.replace("100000", String(100000 + i))).join("")));
+    const deadlines: AbortController[] = [];
+    const networkClosed: boolean[] = [];
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation(milliseconds => {
+      expect(milliseconds).toBe(30_000);
+      const controller = new AbortController(); deadlines.push(controller); return controller.signal;
+    });
+    mocks.fetch.mockImplementation(async (_url, options: RequestInit) => {
+      const index = networkClosed.length; networkClosed.push(false);
+      let offset = 0;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          options.signal!.addEventListener("abort", () => {
+            if (!networkClosed[index]) controller.error(new DOMException("Network deadline", "TimeoutError"));
+          }, { once: true });
+        },
+        pull(controller) {
+          if (offset === source.length) { networkClosed[index] = true; controller.close(); return; }
+          // More than one parser batch arrives before the response is exhausted.
+          const end = Math.min(source.length, offset + 55_000);
+          controller.enqueue(new Uint8Array(source.subarray(offset, end))); offset = end;
+        },
+      }, { highWaterMark: 0 });
+      return new Response(body, { status: 206, headers: { "content-range": `bytes 0-${source.length - 1}/${source.length}` } });
+    });
+    const fallback = mocks.rpc.getMockImplementation()!;
+    let closedAtFirstRegistration: boolean | undefined;
+    mocks.rpc.mockImplementation(async (name, args) => {
+      if (name === "register_own_normalization_positions_v1" && closedAtFirstRegistration === undefined) {
+        closedAtFirstRegistration = networkClosed[1];
+        // Deterministically expire the unchanged network deadline while SQL is
+        // awaiting, without sleeping thirty seconds or extending any timeout.
+        deadlines[1].abort(); await Promise.resolve();
+      }
+      return fallback(name, args);
+    });
+    try {
+      expect((await send()).status).toBe(200);
+      expect(closedAtFirstRegistration).toBe(true);
+      expect(networkClosed).toEqual([true, true]);
+      const completed = mocks.rpc.mock.calls.find(call => call[1].p_operation === "complete")![1].p_payload;
+      expect(completed).toMatchObject({ variantCount: 2100, observedCallCount: 2100,
+        rawSha256: hash(source), decodedSha256: hash(source) });
+    } finally { timeout.mockRestore(); }
+  });
+  it.each(["short", "oversized", "network-error"])("refuses a %s ranged body before parsing or staging", async mode => {
+    const cancel = vi.fn();
+    mocks.fetch.mockImplementation(async () => {
+      let sent = false;
+      return new Response(new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (sent) { controller.close(); return; }
+          sent = true;
+          if (mode === "network-error") { controller.error(new DOMException("Network deadline", "TimeoutError")); return; }
+          controller.enqueue(mode === "short" ? new Uint8Array(source.subarray(0, -1))
+            : new Uint8Array(Buffer.concat([source, Buffer.from("x")])));
+        }, cancel,
+      }, { highWaterMark: 0 }), { status: 206,
+        headers: { "content-range": `bytes 0-${source.length - 1}/${source.length}` } });
+    });
+    const response = await send();
+    expect(await response.json()).toEqual({ error: mode === "network-error" ? "unavailable" : "upload_integrity_mismatch" });
+    expect(operations()).not.toContain("stage"); expect(operations()).not.toContain("complete");
+    expect(operations().at(-1)).toBe("fail");
+    if (mode === "oversized") expect(cancel).toHaveBeenCalledOnce();
+  });
   it("returns an idempotent preparation receipt without re-reading source", async () => {
     mocks.rpc.mockResolvedValue({ data: receipt, error: null });
     expect(await (await send()).json()).toEqual(receipt); expect(mocks.fetch).not.toHaveBeenCalled();
