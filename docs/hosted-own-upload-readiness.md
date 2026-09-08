@@ -39,6 +39,42 @@ and the documented legacy pause/drain plus incompatible transport-policy cutover
 Before this one-email batch, Vercel usage was $1.75/$20 included and Resend
 3,171/50,000 with transaction overages off; no plan/add-on change was made.
 
+## Current operational preflight · 08:03 UTC, 8 September 2026
+
+All 23 cleanup entrypoints, transitive helpers and associated triggers match
+committed `fa26e1a` body SHA-256, owner, security mode, search path and effective
+EXECUTE privileges. All required relations/columns are present. Aggregate due
+inventory and a three-hour look-ahead find two expired upload attempts and one
+historical self-revocation job; all three belong to the previously recorded
+synthetic account. Every other selector and raw invitation/contact check is zero.
+The two old attempts have no staging object. Their original deadlines are past;
+cleaning them later cannot retroactively establish deadline compliance.
+No worker ran. Refresh this inventory immediately before any global activation.
+
+Live capacity remains 64 KiB per file, 256 KiB per account, two active uploads.
+Aggregate existing genome Storage is five objects / 88,603,743 bytes; none belongs
+to the just-deleted fixture. The database is about 991 MB, with the variant
+relation about 967 MB. No real file was read or changed and no limit was raised.
+
+A proposed narrow PR77 retention bridge was rejected before commit/push: although
+63 focused tests, lint and types pass, its fresh branch database omits canonical
+cleanup RPCs. Three real legacy browser tests correctly require zero cleanup
+failures. Do not suppress missing RPC failures or weaken those assertions.
+Use the already integrated PR76 runtime and its coherent migration chain.
+The unscheduled draft is preserved only as investigation evidence.
+
+Next release batch: prepare the canonical production candidate and useful bounded
+capacity; deploy the current legacy runtime with new issuance paused, verify the
+pause and drain existing leases/finalizations under their unchanged deadlines;
+coordinate the application transition with `20260906133807`; verify public
+contracts, original file controls and restrictive authorization. Activate the
+existing retention GET schedule only after refreshed scope/cost review, and
+verify actual scheduled cleanup. Keep a canonical-compatible recovery deployment
+once canonical sources can be admitted. Whole-plan acceptance remains **19/65**.
+Evidence: parent task `work/current-retention-release/` metadata, parity, due and
+synthetic-scope receipts. Vercel usage was refreshed at $1.75 covered by credits;
+no scheduler, plan, secret or environment setting changed in this preflight.
+
 ## Current production baseline · 8 September 2026
 
 **PR77 is live**, merge `3c59ac17bd3805e912068b76d12d1f64142f9397`, deployment
