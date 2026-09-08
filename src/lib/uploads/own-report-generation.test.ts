@@ -1,14 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 import type { ReportTemplate } from "../genome/reports";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn(), profile: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn(), profile: vi.fn(), prepared: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: () => ({ select: () => ({ eq: () => ({ single: mocks.profile }) }) }) }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: mocks.templates }));
+vi.mock("@/lib/genome/prepared-source/report-call-pages", async importOriginal => ({
+  ...await importOriginal<typeof import("../genome/prepared-source/report-call-pages")>(),
+  readOwnPreparedReportPages: mocks.prepared,
+}));
 import { generateOwnReports } from "./own-report-generation";
 import { AIMS } from "../genome/admixture";
 import { ownAncestryContentSchema } from "./own-ancestry-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
+import { ALL_PRS_SCORES } from "../genome/prs-data";
 
 const account = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", session = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc", claimId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
@@ -23,7 +28,10 @@ const template = { ...gastrointestinal[0], layer: "estimate", estimate_kind: "si
 let selected: Set<string>, finished: Set<string>;
 const done = (purpose: string) => ({ status: "complete", purpose });
 let ancestryFileType: string;
-const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization,
+const preparedIdentity = { version: "own-prepared-report-source-v1", backend: "prepared-object-v1",
+  manifestId: principal, membershipSha256: "b".repeat(64), rootArtifactId: principal, rootSha256: "c".repeat(64) };
+let prepared: boolean;
+const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization: { ...authorization, ...(prepared ? { preparedSource: preparedIdentity } : {}) },
   ...(purpose === "ancestry" ? { source: { fileId, fileType: ancestryFileType, normalizedBuild: "GRCh38",
     callEncoding: ancestryFileType.startsWith("array_") ? "array-genotype" : "vcf-literal" } } : {}) });
 const sourceCall = { file_id: fileId, rsid: 4988235, chrom: 2, pos: 135851076, ref: "G", alt: "A", genotype: "A/G" };
@@ -40,7 +48,7 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
 }
 beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
-  ancestryFileType = "vcf";
+  ancestryFileType = "vcf"; prepared = false;
   vi.resetAllMocks(); selected = new Set(["reports.polygenic"]); finished = new Set();
   mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
   mocks.getUser.mockResolvedValue({ data: { user: { id: account, email: "ready@e2e.local", email_confirmed_at: "2026-09-06T12:00:00Z" } } });
@@ -50,6 +58,122 @@ beforeEach(() => {
 });
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); });
 describe("independent synchronous own reports", () => {
+  function preparedRpc(implementation = rpc) {
+    mocks.rpc.mockImplementation((name, args) => {
+      const result = Promise.resolve(implementation(name, args));
+      return Object.assign(result, { abortSignal: (signal: AbortSignal) => {
+        if (signal.aborted) return Promise.reject(Error("aborted")); return result;
+      } });
+    });
+  }
+  it("uses only the captured prepared source and preserves the existing selected report result", async () => {
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const baseline = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    finished.clear(); mocks.rpc.mockClear(); prepared = true; preparedRpc();
+    mocks.prepared.mockImplementation(async function* (actor, source, loci, options) {
+      expect(actor).toEqual({ accountId: account, sessionId: session });
+      expect(source).toEqual({ fileId, subjectId: subject, sourceRevision: 1, sourceSha256: authorization.sourceSha256,
+        normalizedAt: authorization.normalizedAt, preparedSource: preparedIdentity });
+      expect(loci.length).toBeLessThanOrEqual(200);
+      await options.checkOperation(new AbortController().signal);
+      yield { variants: [], observations: [] };
+      if (loci.some((p: { chrom: number; pos: number }) => p.chrom === sourceCall.chrom && p.pos === sourceCall.pos))
+        yield { variants: [{ sourceLine: 10, call: sourceCall }], observations: [] };
+      await options.checkOperation(new AbortController().signal);
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(mocks.prepared).toHaveBeenCalled();
+    const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    expect(completed.reports).toEqual(baseline.reports); expect(completed.prs).toEqual(baseline.prs);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+  it.each(["reports.monogenic", "reports.polygenic", "ancestry"])("closes over-budget prepared %s reads without truncating or completing", async purpose => {
+    prepared = true; selected = new Set([purpose]); preparedRpc();
+    let pulled = 0, closed = 0;
+    mocks.prepared.mockImplementation(async function* () {
+      try {
+        for (let page = 0; page < 10; page++) {
+          pulled++;
+          const row = { sourceLine: 10, call: { ...sourceCall, usable: true } };
+          yield { variants: Array(500).fill(row), observations: Array(500).fill(row) };
+        }
+      } finally { closed++; }
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(pulled).toBe(9); expect(closed).toBe(1);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete" || a.p_operation === "ready")).toBe(false);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "fail")).toBe(true);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+  it("bounds empty prepared pages and preserves an earlier independently completed purpose", async () => {
+    prepared = true; selected = new Set(["reports.monogenic", "reports.polygenic"]); preparedRpc();
+    let pulled = 0, closed = 0;
+    mocks.prepared.mockImplementation(async function* () {
+      if (!finished.has("reports.monogenic")) { yield { variants: [], observations: [] }; return; }
+      try {
+        for (let page = 0; page < 70; page++) { pulled++; yield { variants: [], observations: [] }; }
+      } finally { closed++; }
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(pulled).toBe(65); expect(closed).toBe(1);
+    expect(mocks.rpc.mock.calls.filter(([, a]) => a.p_operation === "complete").map(([, a]) => a.p_purpose))
+      .toEqual(["reports.monogenic"]);
+    expect(finished.has("reports.monogenic")).toBe(true);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "ready")).toBe(false);
+  });
+
+  it("refuses changed manifest authority during object reads without committing a partial report", async () => {
+    prepared = true;
+    preparedRpc(async (name, args) => args.p_operation === "check" ? { data: { ...claim(args.p_purpose),
+      authorization: { ...authorization, preparedSource: { ...preparedIdentity, rootSha256: "f".repeat(64) } } }, error: null } : rpc(name, args));
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal); yield { variants: [], observations: [] };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete")).toBe(false);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "fail")).toBe(true);
+  });
+  it("does not fall back to database calls after a partial prepared read fails", async () => {
+    prepared = true; preparedRpc();
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal);
+      yield { variants: [{ sourceLine: 10, call: sourceCall }], observations: [] };
+      throw Error("object unavailable");
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-") || a.p_operation === "complete")).toBe(false);
+  });
+  it("refuses malformed prepared claims before choosing a data reader", async () => {
+    prepared = true;
+    mocks.rpc.mockResolvedValue({ data: { ...claim("reports.monogenic"),
+      authorization: { ...authorization, preparedSource: { ...preparedIdentity, rootSha256: null } } }, error: null });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503); expect(mocks.prepared).not.toHaveBeenCalled();
+  });
+  it("requires an actually cancellable claim-check transport for prepared pages", async () => {
+    prepared = true; // Existing legacy mock is a plain Promise, not a PostgREST builder.
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal); yield { variants: [], observations: [] };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete")).toBe(false);
+  });
+  it("feeds prepared VCF observations into the existing ancestry computation", async () => {
+    prepared = true; selected = new Set(["ancestry"]); preparedRpc();
+    const marker = AIMS[0];
+    mocks.prepared.mockImplementation(async function* (_actor, _source, loci, options) {
+      await options.checkOperation(new AbortController().signal);
+      const observations = loci.some((p: { chrom: number; pos: number }) => p.chrom === marker.chrom && p.pos === marker.pos38)
+        ? [{ sourceLine: 10, call: { file_id: fileId, chrom: marker.chrom, pos: marker.pos38,
+          rsid: null, ref: "A", alt: "C", genotype: "--", usable: false } }] : [];
+      yield { variants: [], observations };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    expect(ownAncestryContentSchema.safeParse(completed.ancestry).success).toBe(true);
+    expect(completed.ancestry.panelPositions.noCall).toBe(1);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+
   it("generates the real MCM6 AG interpretation for only the chosen estimate purpose", async () => {
     const response = await generateOwnReports(request(), fileId);
     expect(await response.json()).toEqual({ fileId, status: "processed", analysisState: "active" });
@@ -71,6 +195,52 @@ describe("independent synchronous own reports", () => {
       .toEqual({ fileId, status: "normalization_complete", analysisState: "not_generated" });
     expect(mocks.templates).not.toHaveBeenCalled();
     expect(mocks.rpc.mock.calls.every(call => call[1].p_operation === "begin")).toBe(true);
+  });
+  it("completes the same withheld PRS payload for conflicting variant-only rows in either order", async () => {
+    const marker = ALL_PRS_SCORES[0].variants[0];
+    const make = (genotype: string) => ({ file_id: fileId, rsid: marker.rsid, chrom: marker.chrom,
+      pos: marker.pos38, ref: marker.other_allele, alt: marker.effect_allele, genotype });
+    const effect = make(`${marker.effect_allele}/${marker.effect_allele}`);
+    const other = make(`${marker.other_allele}/${marker.other_allele}`);
+    async function generate(rows: typeof effect[]) {
+      finished.clear(); mocks.rpc.mockClear();
+      mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "read-variants"
+        ? { data: args.p_payload.offset === 0 ? rows.filter(row => args.p_payload.loci.some(
+          (point: { chrom: number; pos: number }) => point.chrom === row.chrom && point.pos === row.pos)) : [], error: null }
+        : rpc(name, args));
+      expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+      const completions = mocks.rpc.mock.calls.filter(([, args]) => args.p_operation === "complete");
+      expect(completions).toHaveLength(1);
+      return completions[0][1].p_payload.prs;
+    }
+    const positive = await generate([effect]);
+    expect(positive[0]).toMatchObject({ pgs_id: ALL_PRS_SCORES[0].pgs_id, matched: 1,
+      raw_score: 2 * marker.weight, coverage: 1 / ALL_PRS_SCORES[0].variants.length });
+    const forward = await generate([effect, other]), reverse = await generate([other, effect]);
+    expect(forward).toEqual(reverse);
+    expect(forward).toEqual(ALL_PRS_SCORES.map(score => ({ pgs_id: score.pgs_id, raw_score: 0, coverage: 0, matched: 0 })));
+  });
+
+  it.each(["no-call", "filtered", "conflicting observation"])("completes withheld PRS for %s across both stores", async fault => {
+    const marker = ALL_PRS_SCORES[0].variants[0];
+    const valid = { file_id: fileId, rsid: marker.rsid, chrom: marker.chrom, pos: marker.pos38,
+      ref: marker.other_allele, alt: marker.effect_allele, genotype: `${marker.effect_allele}/${marker.effect_allele}` };
+    const invalid = { ...valid, genotype: fault === "no-call" ? "--" : fault === "conflicting observation"
+      ? `${marker.other_allele}/${marker.other_allele}` : valid.genotype, usable: fault !== "filtered" };
+    for (const swapped of [false, true]) {
+      finished.clear(); mocks.rpc.mockClear();
+      mocks.rpc.mockImplementation(async (name, args) => {
+        if (["read-variants", "read-observed"].includes(args.p_operation)) {
+          const row = (args.p_operation === "read-variants") !== swapped ? valid : invalid;
+          return { data: args.p_payload.offset === 0 && args.p_payload.loci.some(
+            (point: { chrom: number; pos: number }) => point.chrom === row.chrom && point.pos === row.pos) ? [row] : [], error: null };
+        }
+        return rpc(name, args);
+      });
+      expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+      const payload = mocks.rpc.mock.calls.find(([, args]) => args.p_operation === "complete")![1].p_payload;
+      expect(payload.prs).toEqual(ALL_PRS_SCORES.map(score => ({ pgs_id: score.pgs_id, raw_score: 0, coverage: 0, matched: 0 })));
+    }
   });
   it("makes monogenic results independently with no PGS payload", async () => {
     selected = new Set(["reports.monogenic"]);

@@ -370,6 +370,63 @@ remain unchanged. Next: bind report begin/check/complete/detail/mail to the same
 published source and integrate shared cleanup/recovery before enabling the
 backend or running a full-size application journey. Acceptance stays **19/65**.
 
+### Prepared chosen reports share exact source authority · local only
+
+The new report path consumes the actual prepared coordinate reader only when
+its captured claim names the exact manifest, membership digest and root. It
+preserves normalized calls and original observation quality, follows short or
+empty pages until the actual cursor ends, and refuses changed authority or
+partial reads without a database fallback. Existing database-backed report
+claims retain their prior JSON contract. An independent PRS correction removes
+insertion-order-dependent winners at conflicting target loci; agreeing evidence
+counts once and ambiguous, filtered or missing evidence withholds that locus.
+Existing score arithmetic and report/ancestry calculations remain unchanged.
+
+Each prepared report purpose now admits at most **8,192 selected evidence rows,
+8 MiB of serialized evidence and 64 pages**, shared across locus batches and
+both call streams. Exceeding a limit refuses the whole pending page, closes the
+reader and fails that purpose without truncation or readiness. Earlier completed
+independent purposes remain intact. These are selected-evidence refusal limits,
+not a total process-memory, genome-size or monthly-capacity claim.
+
+**118 distinct focused TypeScript tests** pass across the report generator,
+page adapter, evidence budget, PRS lookup and existing PRS calculations. Scoped
+TypeScript, eight-file lint and independent source review pass. Adapter/RPC
+transports in these tests are mocked; the earlier actual Storage publication/read
+proof is separate and does not establish this complete report journey.
+
+The disabled backend's new migration
+`20260908201613_own_prepared_report_authority.sql` passes **73 rollback-only SQL
+assertions** in **7.804 seconds**. Three private helpers and ten compatible
+function replacements bind begin/check/complete, saved detail/ancestry and ready
+mail to the same source. Full final membership is checked at completion and
+saved-read boundaries; mail uses metadata-only membership checks without a
+session genetic-read capability. Actual terminal clocks reject expired running
+claims and completion, including expiry after result mutation. A frozen,
+unpublished attempt can still recover through genuine database normalization;
+invalid published sources cannot fall back. Family access remains closed.
+
+Three earlier fixture failures are retained: absent transactional pgTAP setup,
+owner-only inspection attempted under the service role, and two ambiguous JSON
+subtraction expressions. Corrections changed setup/role scopes/parentheses,
+without relaxing product permissions or any of the 73 assertions. All four
+attempts rolled back; existing **33 files / 33 objects**, 1,000,740 variant rows,
+184 observations, 52 Auth users, analysis journals, schema/ACL catalogs,
+configuration and migration history match baseline. No prototype or pgTAP
+extension remains installed. Receipts and exact source pins are in parent task
+`work/wgs-next-backend/prepared-report-authority-attempt-{1,2,3,4}/`,
+`prepared-report-ts-checkpoint.json` and the independent review receipts.
+
+This closes the local report-authority prerequisite, not full application or
+provider report delivery. Next: verify actual prepared-reader → report completion
+composition, integrate backend readiness and complete file/account/scratch
+cleanup plus durable recovery before activation. Replaced runtime functions need
+an explicit restoration plan for any temporary provider proof; the earlier
+additive-only reversal driver cannot be reused unchanged. Export/revocable
+original download, full-size WGS, raw FASTQ/BAM/CRAM, scheduled one-month retention
+and 100-genomes/month capacity remain pending. Production PR81, admission limits,
+subscriptions and **19/65** acceptance are unchanged.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as

@@ -6,6 +6,9 @@ import { getPublishedTemplates } from "../genome/load";
 import { resolveReportCalls, type ReportCall } from "../genome/report-calls";
 import { resolveTemplate } from "../genome/reports";
 import { computePrs } from "../genome/prs";
+import { createPrsCallLookup } from "../genome/prs-call-lookup";
+import { preparedReportSourceSchema, readOwnPreparedReportPages } from "../genome/prepared-source/report-call-pages";
+import { createPreparedReportEvidenceBudget } from "../genome/prepared-source/report-evidence-budget";
 import { ALL_PRS_SCORES } from "../genome/prs-data";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
@@ -19,7 +22,7 @@ const PURPOSES = [...REPORT_PURPOSES, "ancestry"] as const;
 type Purpose = (typeof PURPOSES)[number];
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/), revision = z.number().int().positive().safe();
 const authorization = z.object({ context: ownReportSnapshot, grantId: uuid, grantRevision: revision,
-  sourceRevision: revision, sourceSha256: z.string().regex(/^[0-9a-f]{64}$/), normalizedAt: z.iso.datetime({ offset: true }), subjectId: uuid,
+  sourceRevision: revision, sourceSha256: z.string().regex(/^[0-9a-f]{64}$/), normalizedAt: z.iso.datetime({ offset: true }), subjectId: uuid, preparedSource: preparedReportSourceSchema.optional(),
 }).strict();
 const ancestrySourceSchema = z.object({ fileId: uuid,
   fileType: z.enum(["vcf", "gvcf", "array_23andme", "array_ancestry", "array_myheritage", "array_ftdna"]),
@@ -70,6 +73,28 @@ export async function generateOwnReports(request: Request, fileId: string) {
       const parsed = claimSchema.safeParse(start.data);
       if (!parsed.success || parsed.data.purpose !== purpose) return unavailable();
       claim = parsed.data;
+      const preparedSource = claim.authorization.preparedSource;
+      const checkPreparedClaim = async (signal: AbortSignal) => {
+        if (signal.aborted) throw new Error("unavailable");
+        const pending = call("check") as ReturnType<Rpc> & {
+          abortSignal?: (signal: AbortSignal) => ReturnType<Rpc>;
+        };
+        // The installed PostgREST builder supports abortSignal. A missing
+        // cancellable transport must not silently bypass the page deadline.
+        if (typeof pending.abortSignal !== "function") throw new Error("unavailable");
+        const checked = await pending.abortSignal(signal), same = claimSchema.safeParse(checked.data);
+        if (signal.aborted || checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim))
+          throw new Error("unavailable");
+      };
+      const preparedBudget = createPreparedReportEvidenceBudget();
+      const preparedPages = async function* (loci: { chrom: number; pos: number }[]) {
+        if (!preparedSource || !claim) throw new Error("unavailable");
+        const pages = readOwnPreparedReportPages(actor, { fileId, subjectId: claim.authorization.subjectId,
+          sourceRevision: claim.authorization.sourceRevision, sourceSha256: claim.authorization.sourceSha256,
+          normalizedAt: claim.authorization.normalizedAt, preparedSource }, loci,
+        { checkOperation: checkPreparedClaim, signal: request.signal });
+        for await (const page of pages) { preparedBudget.consume(page); yield page; }
+      };
       if (claim.purpose === "ancestry") {
         const source = claim.source;
         const encoding = source.fileType === "vcf" || source.fileType === "gvcf" ? "vcf-literal" : "array-genotype";
@@ -80,6 +105,14 @@ export async function generateOwnReports(request: Request, fileId: string) {
         for (let index = 0; index < points.length; index += 200) {
           const loci = points.slice(index, index + 200);
           const requested = new Set(loci.map(point => `${point.chrom}:${point.pos}`));
+          if (preparedSource) {
+            if (encoding !== "vcf-literal") throw new Error("unavailable");
+            for await (const page of preparedPages(loci)) {
+              calls.push(...page.observations.map(({ call: row }) => ({ file_id: row.file_id,
+                chrom: row.chrom, pos: row.pos, ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable! })));
+            }
+            continue;
+          }
           for (let offset = 0; ; offset += 1000) {
             const response = await call(operation, { loci, offset });
             const rows = z.array(callSchema).max(1000).safeParse(response.data);
@@ -103,8 +136,8 @@ export async function generateOwnReports(request: Request, fileId: string) {
         generated++; completedPurposes.push(purpose);
         continue;
       }
-      // Published templates are public reference material; actual genetic reads
-      // happen exclusively through the checked, file-bound RPC below.
+      // Public reference templates are separate from genetic reads. The claim
+      // selects a checked database source or the exact published object source.
       const templates = (await getPublishedTemplates(admin)).filter(template => purpose === "reports.monogenic"
         ? template.layer === "variant_call" : template.layer === "estimate");
       if (!templates.length) throw new Error("unavailable");
@@ -118,6 +151,13 @@ export async function generateOwnReports(request: Request, fileId: string) {
       const points = [...loci.values()];
       const variants: ReportCall[] = [], observations: ReportCall[] = [];
       for (let index = 0; index < points.length; index += 200) {
+        if (preparedSource) {
+          for await (const page of preparedPages(points.slice(index, index + 200))) {
+            variants.push(...page.variants.map(row => row.call));
+            observations.push(...page.observations.map(row => row.call));
+          }
+          continue;
+        }
         for (const operation of ["read-variants", "read-observed"] as const) {
           for (let offset = 0; ; offset += 1000) {
             const response = await call(operation, { loci: points.slice(index, index + 200), offset });
@@ -141,15 +181,7 @@ export async function generateOwnReports(request: Request, fileId: string) {
           variants: report.variants.map(row => ({ rsid: row.variant.rsid, outcome: row.outcome })),
           conflictingRsids: [...resolved.conflicts].filter(rsid => template.variants.some(v => v.rsid === rsid)) };
       });
-      const lookup = new Map(variants.map(row => [`${row.chrom}:${row.pos}`, { genotype: row.genotype, ref: row.ref, alt: row.alt }]));
-      // Keep disputed, filtered and missing calls out of score matching too.
-      const unusablePositions = new Set<string>();
-      for (const row of observations) {
-        const key = `${row.chrom}:${row.pos}`, prior = lookup.get(key);
-        if (row.usable === false || row.genotype === "--" || (prior && prior.genotype !== row.genotype)) unusablePositions.add(key);
-        else if (!prior) lookup.set(key, { genotype: row.genotype, ref: row.ref, alt: row.alt });
-      }
-      for (const key of unusablePositions) lookup.delete(key);
+      const lookup = createPrsCallLookup(variants, observations);
       const prs = purpose === "reports.polygenic" ? ALL_PRS_SCORES.map(score => {
         const result = computePrs(lookup, score);
         return { pgs_id: score.pgs_id, raw_score: result.raw, coverage: result.coverage, matched: result.matched };
