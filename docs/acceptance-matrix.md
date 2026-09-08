@@ -13,30 +13,74 @@ Later work can supersede that behavior without completing the stricter gates.
   accessibility 100 throughout. One real synthetic Storage upload, exact
   document/status/content checks, no skips/retries. The independent review
   confirms the complete gate; see `docs/local-upload-browser-verification.md`.
-  G1.16 and hosted upload release conditions remain open. Current production
-  is PR78 merge `4f925509e9980d376d313e88e9dd4ba9614091d5`, deployment
-  `dpl_3Zry7EHxbTj1k8mam2GYNb16NvPs`, READY at 12:32:04.915 UTC on
-  2026-09-08. New uploads remain paused; see
-  `docs/hosted-own-upload-readiness.md`.
-- PR78 CI `34224538704` passed: 3,261 unit tests, 82 fresh migrations,
-  2,041 SQL assertions across 55 files, 30 independent lock checks and 232
-  browser cases, zero skips/retries. Actual scheduled retry under a controlled
-  fault completed the exact synthetic purge in **21.430137 seconds**, within
-  its original deadline, while preserving the source. That source was later
-  deleted separately, with exact zero residuals and the account preserved.
-  This bounded proof does not complete every retention/rights scope or promote
-  a G gate. The compatible staging-retention correction was applied at 12:46:27 UTC
-  (hosted version `20260908124627`); its PR79 merge is still pending. An older
-  account-deletion fixture backdated only the deadline while leaving its lease
-  live; the corrected fixture preserves every assertion. All 98 focused SQL
-  checks pass, and full CI must pass again before merge. A genuinely abandoned synthetic upload issued at 12:27:30.374461
-  UTC, expiring at 12:57:30.37446 UTC, still awaits actual scheduled removal;
-  its original fixed deadline is 14:27:30.374461 UTC. No removal/deadline pass
-  is inferred in advance. Full-plan acceptance remains **19/65**.
+  G1.16 and broader upload/rights release conditions remain open. Production
+  is PR79 merge `1697723b2909800de380f0fadb8f8afa14555777`, deployment
+  `dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug`, READY at 13:11:40.297 UTC on
+  2026-09-08 across all six aliases. Canonical upload admission is enabled;
+  legacy issuance remains paused. See `docs/hosted-own-upload-readiness.md`.
+- PR79 CI `34228275512` passed: 3,261 unit tests across 203 files, 83 fresh
+  migrations, 2,049 SQL assertions across 55 files, 30 independent lock checks
+  and 232 browser cases in 15.0 minutes, zero skips/retries. Verified limits
+  are 24 MiB per raw/decoded file, 128 MiB per account and two active uploads.
+- Actual abandoned-upload cleanup completed at 12:58:20.741655 UTC, **50.367195
+  seconds after its real lease expiry**, with the original 14:27:30.374461 UTC
+  deadline unchanged, manifest complete and Storage/session/staging residuals
+  zero. This extends the earlier 21.430137-second scheduled derivative retry
+  proof; neither proves every retention scope or deadline.
+- Fresh native public upload prepared five variants from 425 bytes with zero
+  initial analyses. Explicitly enabling only traits produced the bitter-taste
+  `rs1726866` A/A report with honest 1-of-2 coverage (`rs713598` absent).
+  Authenticated application download matched the original bytes/hash; real
+  application DELETE returned 204 at 13:17:27 UTC. Independent 13:18:46 checks
+  found file/variant/observation/analysis/normalization/Storage-ledger counts
+  zero and preserved the account. Native JavaScript confirmation is not proved.
+- WGS streaming source `75a1a05`, build `1D0A_d2kzmT7TFNSpjf3L`, passed one
+  small native Storage/report/download/deletion case: 17.6 seconds, 20.1 seconds
+  total, three fresh Storage POSTs and zero skips/retries. A had 1,999 variants /
+  2,002 observations (including reference/no-call); B's five variants remained
+  intact; later-batch C returned 415 with no public/private working rows. Native
+  deletion removed six synthetic files across attempts. Independent 13:51:50 UTC
+  checks found source/derived/run/index/batch rows and 12 exact Storage keys zero;
+  the other 33 files' fingerprint was unchanged. The original wrapper exit 1
+  was a scratch report-path mismatch; its exact unmodified report contract
+  passed separately without a browser rerun. Earlier selector failures remain
+  preserved. See parent task `work/wgs-browser-verification-v3/` and the hosted
+  readiness ledger for receipts.
+- This WGS batch remains **local and unreleased**. Review found previously
+  accepted long alleles could exceed the larger registration envelope. The
+  corrected helper targets one-MB batches and preserves the four-MB genetic
+  stage bound, with only 1,024 bytes of registration metadata headroom. All 80
+  focused checks across three files and 71 actual SQL assertions pass; the SQL
+  verification rolled back with exact state preservation. Evidence is in parent
+  task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+- Dense local v3 source `138bb6f`, application `d722225`, build
+  `wi0PVIbQtedwR6Zm8lKOp`, prepared **500,000 variants / 500,000 observations**
+  in **103.304 seconds** (complete 14:37:36.179692 UTC; direct SQL 37.929564
+  seconds). Report generation then failed in 8.482 seconds on an unindexed
+  observed-point scan. Migration `20260908143927` adds the exact
+  `(file_id, chrom, pos, source_line)` index; local lookup probe: 0.515 ms.
+  A separate continuation on the same source passed in 10.4 seconds / 13.4
+  seconds total, zero uploads/skips/retries: report POST 200 in 1.159 seconds,
+  exact-source A/C and one provenance source, matching raw/decoded download
+  hashes, native DELETE 204 in 2.580 seconds. At 14:45:06.892 UTC all 11 selected
+  counts, including both Storage keys, were zero; the other 33 files' fingerprints
+  and counts were unchanged. Exit 0, listeners closed, resource flags false.
+  Evidence: parent task `work/wgs-dense-continuation/` and dense v3 preparation
+  receipts. This is preparation plus a separate continuation, not an uninterrupted
+  pass. Sampled preparation app/DB peaks: 529,740,596 / 404,121,191 bytes;
+  continuation DB peak: 512,753,664 bytes. Cluster-wide WAL growth of approximately
+  1.007 GB / 277.5 MB is not isolated per-file capacity evidence.
+- Earlier dense v1/v2 failures remain preserved; all their synthetic originals
+  and working rows are cleaned, following exact-claim expiry/recovery at
+  14:34:15 UTC after an initial native 409. The earlier small-browser proof is
+  unchanged. The WGS batch is **local and unreleased**: full CI, two hosted
+  migrations and hosted verification remain next. Production stays PR79;
+  acceptance remains **19/65**. No full-size WGS, 100-genomes/month or one-month
+  original-retention capability is inferred; no additional spending is authorized.
 - Protected hosted own-file evidence now includes actual chosen finding, ready
   notice delivered to Zoho and followed, exact-grant withdrawal, byte-identical
   retained download and complete source deletion. This contributes to the own
-  G2.6 slice; other required journeys and public rollout remain open. No new
+  G2.6 slice; other required journeys and broader capacity remain open. No new
   gate is promoted. See `docs/hosted-own-upload-readiness.md`.
 - PR65 closes G4.6 after complete CI and hosted verification. Exact merge
   `16c01b71fdda862d9a1fd23153a6f618e2a255a7` is live on both public domains;

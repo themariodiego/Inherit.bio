@@ -11,8 +11,9 @@ select is((select count(*) from public.purge_targets), 33::bigint,
   'all 33 ordered purge targets are registered');
 -- Canonical normalization adds private.own_normalization_batches and
 -- private.own_normalization_runs; report generation adds private.own_analysis_runs.
-select is((select count(*) from public.purge_target_stores), 116::bigint,
-  'all 116 purge stores, including canonical normalization and analysis journals, are classified');
+-- Incremental VCF preparation adds the genetic own_normalization_positions index.
+select is((select count(*) from public.purge_target_stores), 117::bigint,
+  'all 117 purge stores, including the incremental source-position index, are classified');
 select is((select target_id from public.purge_target_stores
   where store_name = 'public.embryo_ingest_chunks'), 'upload-and-ingest-working-state',
   'chunk receipts are classified for attempt cleanup');

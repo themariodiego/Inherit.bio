@@ -27,7 +27,7 @@ function request(body?: string, headers: Record<string, string> = {}) {
     headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", ...headers } });
 }
 const send = (req = request()) => normalizeSubjectFile(req, fileId);
-function operations() { return mocks.rpc.mock.calls.map(call => call[1].p_operation); }
+function operations() { return mocks.rpc.mock.calls.filter(call => call[0] === "own_upload_normalization_v1").map(call => call[1].p_operation); }
 function served(_url: string, options: RequestInit) {
   const [, first, last] = /^bytes=(\d+)-(\d+)$/.exec(new Headers(options.headers).get("range")!)!;
   return new Response(new Uint8Array(source.subarray(+first, +last + 1)), { status: 206,
@@ -44,8 +44,13 @@ beforeEach(() => {
   setSource(Buffer.from(header + row));
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
   mocks.getClaims.mockResolvedValue({ data: { claims: { sub: accountId, session_id: sessionId } } });
-  mocks.rpc.mockImplementation(async (_name, args) => ({ data: args.p_operation === "begin" || args.p_operation === "check"
-    ? manifest : args.p_operation === "complete" ? receipt : ["reject-build", "check-rejected"].includes(args.p_operation) ? cleanup : true, error: null }));
+  mocks.rpc.mockImplementation(async (name, args) => {
+    if (name === "register_own_normalization_positions_v1") return { data: {
+      acceptedVariantOrdinals: args.p_entries.flatMap((entry: { variant: unknown }, index: number) => entry.variant ? [index] : []),
+      attempted: 0, unmapped: 0 }, error: null };
+    return { data: args.p_operation === "begin" || args.p_operation === "check"
+      ? manifest : args.p_operation === "complete" ? receipt : ["reject-build", "check-rejected"].includes(args.p_operation) ? cleanup : true, error: null };
+  });
   mocks.remove.mockResolvedValue({ data: [], error: null });
   mocks.fetch.mockImplementation(async (url, options) => served(url, options));
 });
@@ -96,7 +101,12 @@ describe("store-only source normalization", () => {
     const response = await send(); expect(response.status).toBe(200); expect(await response.json()).toEqual(receipt);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(operations()).toEqual(["begin", "check", "check", "check", "stage", "stage", "complete"]);
-    expect(mocks.rpc.mock.calls.every(call => call[0] === "own_upload_normalization_v1")).toBe(true);
+    expect(mocks.rpc.mock.calls.every(call => ["own_upload_normalization_v1", "register_own_normalization_positions_v1"].includes(call[0]))).toBe(true);
+    const registration = mocks.rpc.mock.calls.filter(call => call[0] === "register_own_normalization_positions_v1");
+    expect(registration).toHaveLength(1);
+    expect(registration[0][1]).toEqual({ p_account_id: accountId, p_session_id: sessionId, p_file_id: fileId,
+      p_claim: claim, p_sequence: 0, p_source_build: "GRCh38", p_entries: [{ source_chrom: 1, source_pos: 100000,
+        mapped: null, variant: { rsid: 123, chrom: 1, pos: 100000, ref: "A", alt: "G", genotype: "A/G" } }] });
     const variant = mocks.rpc.mock.calls.find(call => call[1].p_payload?.kind === "variants")![1].p_payload.rows[0];
     expect(variant).toEqual({ rsid: 123, chrom: 1, pos: 100000, ref: "A", alt: "G", genotype: "A/G" });
     expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("SYNTHETIC");
@@ -117,6 +127,74 @@ describe("store-only source normalization", () => {
       expect(+last - +first + 1).toBeLessThanOrEqual(INGEST_CHUNK_MAXIMUM_BYTES);
       expect(options.cache).toBe("no-store"); expect(options.redirect).toBe("error");
     }
+  });
+  it("finishes each ranged network body before downstream SQL can outlive its network deadline", async () => {
+    setSource(Buffer.from(header + Array.from({ length: 2100 }, (_, i) =>
+      row.replace("100000", String(100000 + i))).join("")));
+    const deadlines: AbortController[] = [];
+    const networkClosed: boolean[] = [];
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockImplementation(milliseconds => {
+      expect(milliseconds).toBe(30_000);
+      const controller = new AbortController(); deadlines.push(controller); return controller.signal;
+    });
+    mocks.fetch.mockImplementation(async (_url, options: RequestInit) => {
+      const index = networkClosed.length; networkClosed.push(false);
+      let offset = 0;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          options.signal!.addEventListener("abort", () => {
+            if (!networkClosed[index]) controller.error(new DOMException("Network deadline", "TimeoutError"));
+          }, { once: true });
+        },
+        pull(controller) {
+          if (offset === source.length) { networkClosed[index] = true; controller.close(); return; }
+          // More than one parser batch arrives before the response is exhausted.
+          const end = Math.min(source.length, offset + 55_000);
+          controller.enqueue(new Uint8Array(source.subarray(offset, end))); offset = end;
+        },
+      }, { highWaterMark: 0 });
+      return new Response(body, { status: 206, headers: { "content-range": `bytes 0-${source.length - 1}/${source.length}` } });
+    });
+    const fallback = mocks.rpc.getMockImplementation()!;
+    let closedAtFirstRegistration: boolean | undefined;
+    mocks.rpc.mockImplementation(async (name, args) => {
+      if (name === "register_own_normalization_positions_v1" && closedAtFirstRegistration === undefined) {
+        closedAtFirstRegistration = networkClosed[1];
+        // Deterministically expire the unchanged network deadline while SQL is
+        // awaiting, without sleeping thirty seconds or extending any timeout.
+        deadlines[1].abort(); await Promise.resolve();
+      }
+      return fallback(name, args);
+    });
+    try {
+      expect((await send()).status).toBe(200);
+      expect(closedAtFirstRegistration).toBe(true);
+      expect(networkClosed).toEqual([true, true]);
+      const completed = mocks.rpc.mock.calls.find(call => call[1].p_operation === "complete")![1].p_payload;
+      expect(completed).toMatchObject({ variantCount: 2100, observedCallCount: 2100,
+        rawSha256: hash(source), decodedSha256: hash(source) });
+    } finally { timeout.mockRestore(); }
+  });
+  it.each(["short", "oversized", "network-error"])("refuses a %s ranged body before parsing or staging", async mode => {
+    const cancel = vi.fn();
+    mocks.fetch.mockImplementation(async () => {
+      let sent = false;
+      return new Response(new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (sent) { controller.close(); return; }
+          sent = true;
+          if (mode === "network-error") { controller.error(new DOMException("Network deadline", "TimeoutError")); return; }
+          controller.enqueue(mode === "short" ? new Uint8Array(source.subarray(0, -1))
+            : new Uint8Array(Buffer.concat([source, Buffer.from("x")])));
+        }, cancel,
+      }, { highWaterMark: 0 }), { status: 206,
+        headers: { "content-range": `bytes 0-${source.length - 1}/${source.length}` } });
+    });
+    const response = await send();
+    expect(await response.json()).toEqual({ error: mode === "network-error" ? "unavailable" : "upload_integrity_mismatch" });
+    expect(operations()).not.toContain("stage"); expect(operations()).not.toContain("complete");
+    expect(operations().at(-1)).toBe("fail");
+    if (mode === "oversized") expect(cancel).toHaveBeenCalledOnce();
   });
   it("returns an idempotent preparation receipt without re-reading source", async () => {
     mocks.rpc.mockResolvedValue({ data: receipt, error: null });
@@ -181,14 +259,26 @@ describe("store-only source normalization", () => {
     expect(operations()).not.toContain("stage");
   });
   it("does not complete after a failed atomic batch", async () => {
-    mocks.rpc.mockImplementation(async (_name, args) => ({ data: args.p_operation === "begin" || args.p_operation === "check" ? manifest : true,
-      error: args.p_operation === "stage" ? { code: "42501" } : null }));
+    const fallback = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "stage"
+      ? { data: null, error: { code: "42501" } } : fallback(name, args));
     expect((await send()).status).toBe(503); expect(operations()).not.toContain("complete");
     expect(operations().at(-1)).toBe("fail");
   });
   it("does not accept a report-ready completion masquerading as normalization", async () => {
-    mocks.rpc.mockImplementation(async (_name, args) => ({ data: args.p_operation === "begin" || args.p_operation === "check"
-      ? manifest : args.p_operation === "complete" ? { ...receipt, analysisState: "active" } : true, error: null }));
+    const fallback = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name, args) => args.p_operation === "complete"
+      ? { data: { ...receipt, analysisState: "active" }, error: null } : fallback(name, args));
     expect((await send()).status).toBe(503);
+    expect(operations()).toContain("complete");
+  });
+  it.each(["42501", "22023"])("refuses registration failure %s without staging or publishing", async code => {
+    const fallback = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name, args) => name === "register_own_normalization_positions_v1"
+      ? { data: null, error: { code } } : fallback(name, args));
+    const response = await send();
+    expect(response.status).toBe(code === "22023" ? 415 : 503);
+    expect(operations()).not.toContain("stage"); expect(operations()).not.toContain("complete");
+    expect(operations().at(-1)).toBe("fail");
   });
 });

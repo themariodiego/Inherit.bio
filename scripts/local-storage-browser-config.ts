@@ -31,6 +31,17 @@ export function localBrowserTarget(value: string, env: Readonly<Record<string, s
   return target;
 }
 
+/** Match only the existing normalization route's 300-second budget. This
+ * changes test-proxy socket inactivity, not app authorization or deadlines. */
+export function localBrowserUpstreamTimeout(value: string, method: string | undefined, origin: string | undefined): number {
+  const target = localBrowserTarget(value);
+  return method === "POST" && origin === target.origin
+    && LOCAL_BROWSER_ORIGINS.slice(1).some(app => app === target.origin)
+    && value === target.origin + target.pathname && !target.search && !target.hash
+    && /^\/api\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/process$/.test(target.pathname)
+    ? 300_000 : 60_000;
+}
+
 /** Chromium flags apply to every browser context, including browser.newContext.
  * They do not populate Playwright's context proxy option, so APIRequest and
  * route.fetch keep their normal local HTTP transport instead of using CONNECT.

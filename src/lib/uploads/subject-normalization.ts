@@ -13,12 +13,13 @@ import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { buildLiftover, liftSingleBaseVariant } from "../genome/liftover";
 import { countInputLines, emptyReadCounts, INPUT_PROVENANCE_VERSION } from "../genome/input-provenance";
 import { parseArray, type ArrayKind } from "../genome/parsers/array";
-import { buildFromHeader, parseVcf } from "../genome/parsers/vcf";
+import { buildFromHeader } from "../genome/parsers/vcf";
 import type { Build, VariantRecord } from "../genome/types";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { subjectNormalizationReceipt } from "./subject-upload-contract";
 import { normalizationDatabaseCompletion } from "./normalization-database";
+import { IncrementalVcfError, prepareIncrementalVcf, type PositionEntry } from "./incremental-vcf-normalization";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
@@ -35,6 +36,12 @@ type Operation = "begin" | "check" | "stage" | "complete" | "fail" | "reject-bui
 type Rpc = (name: "own_upload_normalization_v1", args: { p_operation: Operation; p_account_id: string;
   p_session_id: string; p_file_id: string; p_claim: string | null; p_payload: unknown | null }) =>
   PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+type RegistrationRpc = (name: "register_own_normalization_positions_v1", args: {
+  p_account_id: string; p_session_id: string; p_file_id: string; p_claim: string;
+  p_sequence: number; p_source_build: "GRCh37" | "GRCh38"; p_entries: PositionEntry[];
+}) => PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+const positionReceiptSchema = z.object({ acceptedVariantOrdinals: z.array(z.number().int().nonnegative().safe()),
+  attempted: z.number().int().nonnegative().safe(), unmapped: z.number().int().nonnegative().safe() }).strict();
 type Failure = "unavailable" | "upload_integrity_mismatch" | "too_large" | "unrecognised_format" |
   "build_unknown" | "empty_after_parse" | "liftover_loss";
 class NormalizationError extends Error { constructor(readonly code: Failure) { super(code); } }
@@ -112,12 +119,17 @@ export async function normalizeSubjectFile(
           || response.headers.get("content-range") !== `bytes ${start}-${end}/${source.sizeBytes}`) {
           await response.body?.cancel(); refuse();
         }
+        // Finish this bounded network read under its original 30-second
+        // deadline before parser/SQL backpressure can suspend consumption.
+        // At most one exact four-MB range is retained, never the whole source.
+        const range = new Uint8Array(end - start + 1);
         let size = 0;
         for await (const bytes of response.body as unknown as AsyncIterable<Uint8Array>) {
-          size += bytes.length; if (size > end - start + 1) refuse("upload_integrity_mismatch");
-          yield bytes;
+          if (bytes.length > range.length - size) refuse("upload_integrity_mismatch");
+          range.set(bytes, size); size += bytes.length;
         }
-        if (size !== end - start + 1) refuse("upload_integrity_mismatch");
+        if (size !== range.length) refuse("upload_integrity_mismatch");
+        yield range;
       }
     }
     const isVcf = source.fileType === "vcf" || source.fileType === "gvcf";
@@ -138,7 +150,46 @@ export async function normalizeSubjectFile(
     await recheck();
     const counts = emptyReadCounts();
     const lines = countInputLines(verifiedLines(ranges(), source), source.fileType, counts);
-    const parsed = isVcf ? await parseVcf(lines) : await parseArray(lines, source.fileType as ArrayKind);
+    async function completePrepared(variantCount: number, observedCallCount: number,
+      attempted: number, unmapped: number, chainSha256: string | null) {
+      const completed = await call("complete", { sourceBuild: build, rawSha256: source.rawSha256,
+        decodedSha256: source.decodedSha256, variantCount, observedCallCount,
+        provenance: { version: INPUT_PROVENANCE_VERSION, sourceSha256: source.rawSha256, sourceBuild: build,
+          buildBasis: counts.buildClaim ? "source-declared" : "format-assumption", targetBuild: "GRCh38",
+          chainSha256, variantRowsMapped: variantCount, variantRowsUnmapped: unmapped, attempted, counts },
+      });
+      const receipt = subjectNormalizationReceipt.safeParse(completed.data);
+      if (completed.error || !receipt.success || receipt.data.fileId !== fileId) refuse();
+      return ownUploadJson(receipt.data);
+    }
+    if (isVcf) {
+      let lift: ReturnType<typeof buildLiftover> | undefined;
+      let chainSha256: string | null = null;
+      if (build === "GRCh37") {
+        const chain = await readFile(path.join(process.cwd(), "data/ref/chain/GRCh37_to_GRCh38.chain.gz"));
+        chainSha256 = createHash("sha256").update(chain).digest("hex");
+        lift = buildLiftover(chain);
+      }
+      const registerPositions = admin.rpc.bind(admin) as unknown as RegistrationRpc;
+      const prepared = await prepareIncrementalVcf(lines, { build, lift,
+        maximumUnmappedFraction: register.policyContracts["genome-liftover-v1"].maximumUnmappedFraction,
+        register: async (sequence, entries) => {
+          const response = await registerPositions("register_own_normalization_positions_v1", {
+            ...args, p_claim: source.claim, p_sequence: sequence, p_source_build: build, p_entries: entries });
+          if (response.error?.code === "22023") refuse("unrecognised_format");
+          const checked = positionReceiptSchema.safeParse(response.data);
+          if (response.error || !checked.success) refuse();
+          return checked.data;
+        },
+        stage: async (kind, sequence, rows) => {
+          const response = await call("stage", { kind, sequence, rows });
+          if (response.error || response.data !== true) refuse();
+        },
+      });
+      return await completePrepared(prepared.variantCount, prepared.observedCallCount,
+        prepared.attempted, prepared.unmapped, chainSha256);
+    }
+    const parsed = await parseArray(lines, source.fileType as ArrayKind);
     if (parsed.build !== build) refuse("upload_integrity_mismatch");
     // Deduplicate literal positions; conflicting duplicate calls are not silently
     // turned into one genotype. Keep observed no-call evidence separate.
@@ -187,20 +238,12 @@ export async function normalizeSubjectFile(
       genotype: normalized.genotype, site_filter: source.filter, sample_filter: source.sampleFilter,
       genotype_quality: source.genotypeQuality, read_depth: source.depth, quality_state: source.quality, usable: source.usable,
     })));
-    const completed = await call("complete", { sourceBuild: build, rawSha256: source.rawSha256,
-      decodedSha256: source.decodedSha256, variantCount: records.length, observedCallCount: observed.length,
-      provenance: { version: INPUT_PROVENANCE_VERSION, sourceSha256: source.rawSha256, sourceBuild: build,
-        buildBasis: counts.buildClaim ? "source-declared" : "format-assumption", targetBuild: "GRCh38",
-        chainSha256, variantRowsMapped: records.length, variantRowsUnmapped: unmapped, attempted, counts },
-    });
-    const receipt = subjectNormalizationReceipt.safeParse(completed.data);
-    if (completed.error || !receipt.success || receipt.data.fileId !== fileId) refuse();
-    return ownUploadJson(receipt.data);
+    return await completePrepared(records.length, observed.length, attempted, unmapped, chainSha256);
   } catch (error) {
     // An uncertain complete response must not delete committed canonical rows.
     // The database fail case accepts only the still-running exact claim.
     if (manifest) { try { await call("fail"); } catch { /* source remains retryable; no genetic error text */ } }
-    const code = error instanceof NormalizationError ? error.code : "unavailable";
+    const code = error instanceof NormalizationError || error instanceof IncrementalVcfError ? error.code : "unavailable";
     if (code === "build_unknown") return ownUploadJson({ error: code,
       next: { labelCopyId: "upload.build.ask-source", routeId: "files.upload" } }, 422);
     return ownUploadJson({ error: code }, code === "unavailable" ? 503 : code === "too_large" ? 413 : code === "unrecognised_format" ? 415 : 422);

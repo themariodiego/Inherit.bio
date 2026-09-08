@@ -1,6 +1,115 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: PR78 deployed; staging cleanup proof pending · 8 September 2026
+## Current checkpoint: PR79 public own-upload verified; WGS streaming remains local · 8 September 2026
+
+PR79 merged as **`1697723b2909800de380f0fadb8f8afa14555777`**. Production
+`dpl_8Y1uzqwrLUj9g7THzC1UrEjaWmug` became READY at **13:11:40.297 UTC** on all
+six aliases. Persistent production settings are
+`INHERIT_CANONICAL_UPLOADS_PAUSED=false`, `INHERIT_PAUSE_LEGACY_UPLOADS=true`
+and `INHERIT_NORMALIZATION_DIRECT_DATABASE=true`. Canonical admission is enabled;
+legacy issuance remains paused. Verified caps are **24 MiB raw/decoded per file,
+128 MiB per account and two active uploads**.
+
+CI **`34228275512`** passed **3,261 units across 203 files, 83 fresh migrations,
+2,049 SQL assertions across 55 files, 30 independent lock checks and 232 browser
+cases in 15.0 minutes**, zero skips/retries.
+
+The genuinely abandoned upload's scheduled phase completed at
+**12:58:20.741655 UTC**, **50.367195 seconds** after real lease expiry at
+12:57:30.374460 UTC. Its original fixed deadline, **14:27:30.374461 UTC**, was
+unchanged. The manifest is complete and exact Storage/session/staging residuals
+are zero. This is actual scheduled removal, separate from the previously proved
+21.430137-second scheduled derivative retry and the synchronous fast path.
+
+A fresh **native public upload** prepared **425 bytes / five variants** at
+**13:12:34.326917 UTC**, with **zero analyses initially**. Only the traits choice
+was enabled and generated. The native bitter-taste report showed `rs1726866`
+**A/A** and correctly stated **one of two positions covered**, with `rs713598`
+missing. Authenticated application download returned exactly 425 bytes and
+SHA-256 `3a7d4c51e5fea9a241909c24f83433b601289ad3f032128c87c6dd229128b361`.
+Real application DELETE returned **204 at 13:17:27 UTC**; independent checks at
+**13:18:46 UTC** found file, variants, observations, analysis, normalization and
+Storage-ledger counts zero while preserving the account. **No native JavaScript
+confirmation-button success is claimed** for deletion.
+
+Receipts: parent task `work/current-retention-release/production-pr79/`, including
+`deployment.json`, `ci.json`, `ordinary-capacity-applied.json`,
+`abandoned-scheduled-phase.json`, `abandoned-scheduled-result.json`,
+`public-prepared.json`, `public-download-and-deletion.json` and
+`public-deletion-residuals.json`. Earlier checkpoints remain historical evidence
+and are superseded only for current production/pending status.
+
+The next WGS streaming implementation remains **local and unreleased**. Source
+`75a1a05`, build `1D0A_d2kzmT7TFNSpjf3L`, passed one small native browser journey
+through actual Storage, chosen reports, original download and deletion: **17.6
+seconds for the case / 20.1 seconds total**, three fresh Storage POSTs and zero
+skips/retries. Source A prepared **1,999 variants / 2,002 observations**, including
+called-reference and no-call observations; source B's five variants were
+preserved. A later-batch conflict in C returned **415**, with public and private
+working rows zero. Native deletion removed all six synthetic files (three from
+the first attempt and three fresh files). Independent checks at **13:51:50 UTC**
+found source, variant, observation, normalization-run, position-index, batch,
+analysis and all **12 exact Storage keys** zero; the other **33 files' metadata
+fingerprint was unchanged**.
+
+The two earlier selector-failure attempts remain preserved. The successful
+journey's original wrapper exited **1** because its report was written to the
+scratch location; the exact **unmodified** browser-report contract was verified
+separately against that report, without another browser run. Receipts are in
+parent task `work/wgs-browser-verification-v3/`: `receipt.json`, `results.json`,
+`report-contract-postflight.json` and `independent-cleanup-postflight.json`.
+
+The long-allele review defect is corrected locally: pending batches target one
+MB, stage bodies remain at most four MB, and the service-only registration
+body gains only 1,024 bytes to accommodate its larger metadata envelope. An
+old-valid singleton with a 3,999,989-byte stage body and 4,000,014-byte registration
+body passes the actual SQL boundary. All **80 focused checks across three files**
+and **71 SQL assertions** pass, with exact rollback preservation. Receipt:
+parent task `work/wgs-position-registration-verification/byte-bound/byte-fix-receipt.json`.
+Dense local verification now proves **preparation plus a separate successful
+continuation**, not one uninterrupted journey. Dense v3 source `138bb6f` reused
+application source `d722225`, build `wi0PVIbQtedwR6Zm8lKOp`, with the reviewed
+proxy-only change. It prepared **500,000 variants / 500,000 observations** from
+20,500,210 decoded bytes / 2,436,110 gzip bytes in **103.304 seconds**, completing
+at **14:37:36.179692 UTC**; direct SQL took **37.929564 seconds**. The subsequent
+report request failed in 8.482 seconds because observed-point lookup lacked an
+index. Migration `20260908143927` adds `(file_id, chrom, pos, source_line)`;
+the local lookup probe then took **0.515 ms**, replacing the sequential scan.
+
+The same prepared source passed the separate continuation in **10.4 seconds /
+13.4 seconds total**, zero uploads/skips/retries: report POST **200 in 1.159
+seconds**, exact-source A/C with one provenance source, original download with
+matching raw and decoded hashes, and native DELETE **204 in 2.580 seconds**.
+At **14:45:06.892 UTC**, all 11 selected residual counts, including both exact
+Storage keys, were zero; the other **33 files' fingerprints and counts were
+unchanged**. Runner exit was 0, listeners closed and resource flags false.
+Evidence: parent task `work/wgs-dense-continuation/` and the retained dense v3
+preparation receipts. Sampled preparation peaks were **529,740,596 app bytes /
+404,121,191 DB bytes**; continuation DB peak was **512,753,664 bytes**. Cluster-wide
+WAL growth was approximately **1.007 GB during preparation / 277.5 MB during
+continuation**, not isolated per-file WAL. Retained relation/index allocation
+needs separate accounting; these samples do not establish steady monthly capacity.
+
+Earlier failed runs remain preserved: dense v1 exposed the 30-second fetch
+lifetime under backpressure (fixed in `d722225`, 84 focused checks and lint);
+v2 exposed the local proxy's 60-second idle timeout (seven configuration tests
+and lint; app 300-second budget unchanged). Both attempts' synthetic originals
+and working rows are now cleaned. A native deletion initially returned 409 while
+its exact claim was live; expiry and recovery completed at **14:34:15 UTC**.
+Historical receipts include parent task `work/wgs-dense-recovery/`; the earlier
+small-browser receipts above remain valid. No timeout or failed attempt is
+relabelled a pass.
+
+This batch remains **local and unreleased**. Next are full CI, the two hosted
+migrations and hosted verification. Dense synthetic preparation and continuation
+do not establish full-size WGS or 100-genomes/month throughput. Production
+remains PR79 and full-plan acceptance remains **19/65**.
+Approved scope remains existing full-size WGS results first, then raw
+FASTQ/BAM/CRAM, targeting **100 genomes/month** and **one-month originals**.
+Those workload/retention targets are not enabled; **no additional spending is
+authorized**. Whole-plan acceptance remains **19/65**.
+
+## Earlier checkpoint: PR78 deployed; staging cleanup proof was pending · 8 September 2026
 
 PR78 merged as **`4f925509e9980d376d313e88e9dd4ba9614091d5`**. Production
 `dpl_3Zry7EHxbTj1k8mam2GYNb16NvPs` became READY at **12:32:04.915 UTC**.

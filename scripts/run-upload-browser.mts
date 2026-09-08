@@ -16,7 +16,7 @@ import { localE2eProject, disposableProjectWorkdir, validateDisposableProjectCon
 import http, { type IncomingMessage } from "node:http";
 import { createInterface } from "node:readline";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
-import { assertLocalProviderEnvironment, localBrowserTarget, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
+import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 
 const arguments_ = process.argv.slice(2);
 const fullSuite = arguments_[0] === "--full";
@@ -217,7 +217,18 @@ const proxy = http.createServer(async (request, response) => {
       incoming.pipe(response);
     });
     upstream.on("error", () => { if (!response.headersSent) response.writeHead(502); response.end(); });
-    upstream.setTimeout(60_000, () => upstream.destroy());
+    const upstreamTimeout = localBrowserUpstreamTimeout(request.url ?? "", request.method, request.headers.origin);
+    upstream.setTimeout(upstreamTimeout, () => upstream.destroy());
+    if (upstreamTimeout === 300_000) {
+      // Socket activity must not extend this one route beyond its app budget.
+      const deadline = setTimeout(() => { upstream.destroy(); response.destroy(); }, upstreamTimeout);
+      deadline.unref();
+      const clearDeadline = () => clearTimeout(deadline);
+      upstream.once("error", clearDeadline);
+      upstream.once("close", clearDeadline);
+      response.once("finish", clearDeadline);
+      response.once("close", clearDeadline);
+    }
     request.pipe(upstream);
   } catch {
     if (!response.headersSent) response.writeHead(502);

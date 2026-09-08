@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { toLines } from "./lines";
-import { parseVcf } from "./vcf";
+import { parseVcf, streamVcf } from "./vcf";
 
 const fixture = (name: string) =>
   fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url));
@@ -141,5 +141,96 @@ describe("parseVcf: rows", () => {
     );
     expect(r.records).toHaveLength(0);
     expect(r.skipped).toBe(1);
+  });
+});
+
+describe("streamVcf: bounded incremental consumption", () => {
+  const called = "1\t10\trs9\tA\tC\t50\tPASS\t.\tGT\t0/1";
+
+  it("emits both observations and variants without reading the next line ahead", async () => {
+    let read = 0;
+    let closed = false;
+    async function* input() {
+      try {
+        for (const line of (HEADER + called + "\n" + called).split("\n")) {
+          read++;
+          yield line;
+        }
+      } finally { closed = true; }
+    }
+    const stream = streamVcf(input());
+    expect(await stream.next()).toMatchObject({ done: false, value: { type: "observed", line: 3, call: { genotype: "A/C", usable: true } } });
+    expect(read).toBe(3);
+    expect(await stream.next()).toMatchObject({ done: false, value: { type: "variant", line: 3, record: { genotype: "A/C" } } });
+    expect(read).toBe(3);
+    await stream.return();
+    expect(closed).toBe(true);
+    expect(read).toBe(3);
+    expect(await stream.next()).toEqual({ done: true, value: undefined });
+  });
+
+  it("keeps conflicting same-position calls separate and counts emitted events", async () => {
+    const events = [];
+    const rows = [called, called.replace("0/1", "1/1"), called.replace("0/1", "0/0"),
+      called.replace("0/1", "./."), "1\t11\t.\tA\t<NON_REF>\t.\t.\tEND=20\tGT\t0/0"];
+    for await (const event of streamVcf(fromString(HEADER + rows.join("\n")))) events.push(event);
+    expect(events.filter(event => event.type === "observed").map(event => event.call.genotype)).toEqual(["A/C", "C/C", "A/A", "--"]);
+    expect(events.filter(event => event.type === "variant").map(event => event.record.genotype)).toEqual(["A/C", "C/C"]);
+    expect(events.filter(event => event.type === "reference").map(event => event.call.genotype)).toEqual(["A/A"]);
+    expect(events.at(-1)).toEqual({ type: "summary", build: "unknown", skipped: 1,
+      variantCount: 2, referenceCallCount: 1, observedCallCount: 4, observedCallsValid: true });
+  });
+
+  it("invalidates provisional observations on a late duplicate sample header", async () => {
+    const text = HEADER + called + "\n" + HEADER + called;
+    const events = [];
+    for await (const event of streamVcf(fromString(text))) events.push(event);
+    expect(events.filter(event => event.type === "observed")).toHaveLength(1);
+    expect(events.at(-1)).toMatchObject({ type: "summary", observedCallCount: 1, observedCallsValid: false, variantCount: 2 });
+    const collected = await parseVcf(fromString(text));
+    expect(collected.observedCalls).toEqual([]);
+    expect(collected.records).toHaveLength(2);
+  });
+
+  it("resolves late build conflicts only in the terminal summary", async () => {
+    const events = [];
+    for await (const event of streamVcf(fromString("##reference=GRCh38\n" + HEADER + called + "\n##reference=GRCh37"))) events.push(event);
+    expect(events.at(-1)).toMatchObject({ type: "summary", build: "unknown" });
+    expect(events.slice(0, -1).every(event => !("build" in event))).toBe(true);
+  });
+
+  it("propagates source failures without a publishable summary and closes input", async () => {
+    let closed = false;
+    const failure = new Error("synthetic input interrupted");
+    async function* input() {
+      try { yield* (HEADER + called).split("\n"); throw failure; }
+      finally { closed = true; }
+    }
+    const types: string[] = [];
+    await expect((async () => {
+      for await (const event of streamVcf(input())) types.push(event.type);
+    })()).rejects.toBe(failure);
+    expect(types).toEqual(["observed", "variant"]);
+    expect(closed).toBe(true);
+  });
+
+  it("consumes a generated distinct-row source with only incremental counters", async () => {
+    const count = 20_000;
+    async function* input() {
+      yield* HEADER.trimEnd().split("\n");
+      for (let i = 1; i <= count; i++) yield `1\t${i}\trs${i}\tA\tC\t50\tPASS\t.\tGT\t0/1`;
+    }
+    let variants = 0;
+    let observed = 0;
+    let summaries = 0;
+    for await (const event of streamVcf(input())) {
+      if (event.type === "variant") { variants++; expect(event.record.pos).toBe(variants); }
+      if (event.type === "observed") observed++;
+      if (event.type === "summary") {
+        summaries++;
+        expect(event).toMatchObject({ variantCount: count, observedCallCount: count, referenceCallCount: 0, skipped: 0 });
+      }
+    }
+    expect({ variants, observed, summaries }).toEqual({ variants: count, observed: count, summaries: 1 });
   });
 });
