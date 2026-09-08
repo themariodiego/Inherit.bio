@@ -335,6 +335,41 @@ in `storage-published-diagnosis.json`. The next run requires the reviewed fix at
 a new clean source commit. No hosted changes or scale/cleanup-implementation
 claim; production PR81 and full-plan acceptance **19/65** are unchanged.
 
+
+### Actual published Storage composition verified locally
+
+At clean source `95c4a4cbbd64ebc6e5b50c355f7bf1d83cf16c64`, attempt three
+passes the complete tiny local provider composition in **11.685 seconds**:
+actual signing/finalization → parser runs → canonical materialization → rsID
+materialization → registered final publication → current-session coordinate read.
+The 547-byte synthetic original produced **14 registered objects: six scratch
+and eight final members**. The actual reader fetched both serialized roots and
+three authenticated byte ranges and returned exactly the expected two canonical
+records for rs762551, with normalized **A/C** and original observation evidence.
+
+Wrong manifest and scratch-member requests were refused. Expiring the originating
+preparation session refused that session's read while a fresh same-owner session
+returned an identical page, manifest, root and membership digest. Committed file
+deletion preparation then denied reading before any prepared bytes were removed.
+All requests settled; every registered prepared object, staging/original version
+and physical sidecar was verified absent before exact synthetic row retirement
+and temporary-schema reversal. Root independently checked physical absence and
+removed only the empty synthetic namespace. The existing **33 files and 33
+objects**, configuration, migration history, registry and function/trigger/table/
+type fingerprints match baseline. One synthetic Auth/audit fixture with two
+sessions remains from this successful run; the earlier two failed runs remain
+fully recorded. Evidence: parent task
+`work/wgs-next-backend/storage-published-integration-attempt-3/`.
+
+This closes actual local publication/read composition, including the PostgREST
+compatibility defect found by real I/O. It is **not** WGS-scale, hosted S3,
+clinical/report-purpose, browser, durable recovery, scheduled retention or
+production file/account/scratch cleanup evidence. The proof's scoped SQL row
+retirement is test teardown. Current production and admission/retention settings
+remain unchanged. Next: bind report begin/check/complete/detail/mail to the same
+published source and integrate shared cleanup/recovery before enabling the
+backend or running a full-size application journey. Acceptance stays **19/65**.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
