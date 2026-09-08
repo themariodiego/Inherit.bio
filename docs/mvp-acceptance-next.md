@@ -35,15 +35,14 @@ inbox delivery, withdrawal, retained download and exact source deletion. A real
 byte-identical download and deletion after fixing a measured database timeout.
 A near-24 MiB local VCF/gzip journey also passes format limits, exact-source
 selection, byte-identical originals and deletion preserving the second source.
-However, the protected hosted million-row array still failed normalization with
-a statement timeout after the capacity migration was installed. Its synthetic
-source is retained with zero published variants/batches; temporary hosted limits
-are restored. Useful hosted capacity remains a release blocker, alongside
-recurring cleanup and coordinated cutover. The first local direct-completion
-adapter attempt at `7605b0b` also returned 503 after 18.222 seconds, with zero
-published rows and the original preserved. An actual-driver read-only rollback
-probe has now identified JSON double serialization; the typed JSON binding fix
-and fresh browser verification are pending.
+The final local recovery at `9ef7fca` also passed chosen findings, exact original
+bytes and two-file deletion isolation; its full CI passed 3,247 units, 2,008 SQL
+assertions and 232 browser cases. Hosted direct completion still needs the
+provider's public CA after resolving a network-route error. The CA adapter has
+109 passing focused tests and preserves certificate/hostname verification;
+final CI and hosted completion remain pending. Temporary hosted limits are
+restored and the synthetic original is preserved. Useful hosted capacity,
+recurring cleanup and coordinated cutover remain release prerequisites.
 
 Many NO rows are whole-product conjunctions: G2.6 requires all four upload
 journeys; G1.12 requires every registered route/state; G4.7 requires every

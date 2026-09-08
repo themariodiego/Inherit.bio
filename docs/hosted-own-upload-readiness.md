@@ -1,25 +1,47 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: preparation passes; report lookup recovery pending
+## Current checkpoint: local recovery passes; hosted certificate configuration pending
 
-The corrected typed JSON binding at `848a834` prepared the full synthetic
-million-row source through the actual browser in **49.753 seconds (200)**.
-The database showed one direct completion connection, then none; the exact
-source had one million variants, a complete journal and no staging batches.
-The subsequent explicit polygenic report request failed after **8.413 seconds**
-with a database statement timeout. The prepared source is retained for recovery;
-the whole journey did not pass. Receipt: parent task
-`work/canonical-family-runtime-adapter/direct-capacity-json/`.
+Exact `9ef7fca` CI `34214992453` passed: **3,247 unit tests, 81 migrations,
+2,008 SQL assertions, 30 independent lock checks and 232 browser cases** with
+57 actual Storage uploads, no skips/retries and successful cleanup.
+The separate actual-browser recovery also passed on that exact build: the
+retained million-row source produced its A/C finding and original hash, a new
+tiny A/A source proved result/deletion isolation, and both sources reached zero
+file/derivative/Storage residuals. The 15.0-second recovery case includes only
+one new tiny upload, not a new million-row upload. Earlier preparation at
+`848a834` took 49.753 seconds; its initial report timeout remains recorded.
 
-The timeout was in the variant lookup before automatic statistics refreshed.
-Migration `20260908101150_own_report_locus_lookup.sql` makes the two read queries
-start from deduplicated requested positions using existing indexes, preserving
-all source/authority checks and pagination. No indexes or timeout increases are
-added. Local rollback suites pass **65 assertions**; browser recovery and hosted
-application remain pending. Current post-statistics query measurements do not
-reproduce the earlier query plan. The CI secret gate identified synthetic test
-expressions, which have been renamed as explicit examples; the scanner and
-allowlist are unchanged. Production remains PR77; acceptance remains **19/65**.
+The query-only locus lookup migration is installed hosted as `20260908102804`.
+Its body fingerprint, owner, ACL and search path match local; 65 focused SQL
+assertions passed. The historical bad query plan was not reproduced after
+statistics refreshed. Security advisors remain the existing 138 informational
+findings and two warnings; this is not a claim of an entirely clean advisor list.
+
+Hosted direct completion first failed to resolve the existing database route
+(`ENOTFOUND`), then reached the verified shared pooler but failed certificate
+validation (`SELF_SIGNED_CERT_IN_CHAIN`). Neither attempt published variants;
+the synthetic original is retained and temporary capacity limits restored.
+The existing database password and environment scopes were preserved while its
+route changed to the project's dashboard-provided IPv4 shared pooler. Supabase's
+public CA was obtained from its dashboard download link and independently
+verified against that pooler's hostname using TLS 1.3, without credentials or SQL.
+
+The adapter now accepts an optional `INHERIT_NORMALIZATION_DATABASE_CA_CERT`
+containing one public PEM CA certificate. It preserves hostname verification,
+`rejectUnauthorized: true`, project binding and all transaction/deadline guards.
+Malformed/non-CA/bundled values fail closed; the setting affects only this hosted
+database connection. Unset retains platform roots; flag-off retains REST.
+**109 focused tests pass; fresh final CI and hosted completion are pending.**
+Set the public CA from the provider's trusted dashboard, never from an unverified
+peer; do not disable certificate verification. This public trust anchor has been
+registered for future canary/Production deployments; current Production remains
+PR77. Evidence is in the parent task's `work/hosted-capacity-20260908/`,
+`work/report-capacity-20260908/` and `work/ci-9ef7fca/`.
+
+New admission remains subject to the controlled legacy pause/drain/policy cutover
+and verified recurring cleanup. Acceptance remains **19/65**; WGS workload and
+retention targets below remain follow-up scope.
 
 
 ## Current checkpoint: direct-completion binding fix pending · 8 September 2026

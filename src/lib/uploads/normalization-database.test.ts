@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { rootCertificates } from "node:tls";
+import { X509Certificate } from "node:crypto";
 const mocks = vi.hoisted(() => ({ postgres: vi.fn() }));
 vi.mock("postgres", () => ({ default: mocks.postgres }));
 import { normalizationDatabaseCompletion, normalizationDatabaseConfig } from "./normalization-database";
 
 const ref = "abcdefghijklmnopqrst";
+// Node's bundled public CA has no private material or project identity.
+const publicCa = rootCertificates[0].trim() + "\n";
 // Build reserved synthetic configuration in memory; never use a real credential.
 const exampleDatabaseUrl = (host = `db.${ref}.supabase.co`, user = "postgres", port = 5432) => {
   const url = new URL(`postgresql://${host}:${port}/postgres`);
@@ -47,12 +51,53 @@ afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("completion database destination", () => {
   it.each([undefined, "false"])("keeps REST for %s without inspecting DATABASE_URL", flag => {
-    expect(normalizationDatabaseCompletion({ INHERIT_NORMALIZATION_DIRECT_DATABASE: flag, DATABASE_URL: "EXAMPLE-bad" })).toBeNull();
+    expect(normalizationDatabaseCompletion({ INHERIT_NORMALIZATION_DIRECT_DATABASE: flag, DATABASE_URL: "EXAMPLE-bad",
+      INHERIT_NORMALIZATION_DATABASE_CA_CERT: "malformed-unused" })).toBeNull();
     expect(mocks.postgres).not.toHaveBeenCalled();
   });
   it("accepts the exact direct project with verified TLS", () => {
     expect(normalizationDatabaseConfig(env())).toMatchObject({ host: `db.${ref}.supabase.co`, port: 5432,
       ssl: { rejectUnauthorized: true, servername: `db.${ref}.supabase.co` } });
+    expect(normalizationDatabaseConfig(env())?.ssl).not.toHaveProperty("ca");
+  });
+  it.each(["direct", "pooler"])("passes one public CA to only the %s connection while retaining verified TLS", async destination => {
+    const configured = { ...env(), INHERIT_NORMALIZATION_DATABASE_CA_CERT: publicCa,
+      ...(destination === "pooler" ? { DATABASE_URL: exampleDatabaseUrl("aws-0-eu-west-1.pooler.supabase.com", `postgres.${ref}`, 6543) } : {}) };
+    const hostname = new URL(configured.DATABASE_URL).hostname;
+    await normalizationDatabaseCompletion(configured)!(identity, payload, performance.now() + 270_000);
+    expect(mocks.postgres.mock.calls[0][0].ssl).toEqual({ rejectUnauthorized: true, servername: hostname, ca: publicCa });
+    expect(normalizationDatabaseConfig(env())?.ssl).not.toHaveProperty("ca");
+  });
+  it("accepts ordinary CRLF PEM without changing its trust semantics", () => {
+    const ca = publicCa.replace(/\n/g, "\r\n");
+    expect(normalizationDatabaseConfig({ ...env(), INHERIT_NORMALIZATION_DATABASE_CA_CERT: ca })?.ssl)
+      .toMatchObject({ rejectUnauthorized: true, ca: ca.trim() + "\n" });
+  });
+  it("refuses a parseable certificate whose CA constraint is false", () => {
+    // Change only the public fixture's CA boolean; no key or signing operation.
+    // Its signature is deliberately invalid: this tests configuration parsing,
+    // while real chain/signature/hostname verification remains the TLS layer.
+    const der = Buffer.from(new X509Certificate(publicCa).raw);
+    const constraint = der.indexOf(Buffer.from("30030101ff", "hex"));
+    expect(constraint).toBeGreaterThanOrEqual(0);
+    der[constraint + 4] = 0;
+    const nonCa = new X509Certificate(der);
+    expect(nonCa.ca).toBe(false);
+    expect(() => normalizationDatabaseCompletion({ ...env(), INHERIT_NORMALIZATION_DATABASE_CA_CERT: nonCa.toString() }))
+      .toThrow(/^normalization_database_unavailable$/);
+    expect(mocks.postgres).not.toHaveBeenCalled();
+  });
+  it.each([
+    "", " \n", "not a certificate", "x".repeat(16_385), publicCa + publicCa,
+    "unexpected prefix\n" + publicCa, publicCa + "unexpected suffix",
+    publicCa.replace("CERTIFICATE", ["PRIVATE", "KEY"].join(" ")),
+    publicCa.replace(/\n[^\n]+\n/, "\nAAAA\n"),
+    publicCa.replace("\n-----END", "AAAA\n-----END"),
+  ])("refuses invalid, concatenated or non-certificate CA setting %# before connecting", ca => {
+    expect(() => normalizationDatabaseCompletion({ ...env(), INHERIT_NORMALIZATION_DATABASE_CA_CERT: ca }))
+      .toThrow(/^normalization_database_unavailable$/);
+    expect(mocks.postgres).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith("normalization_database_failed", { phase: "configuration", code: "unavailable" });
   });
   it.each([5432, 6543])("accepts project-bound Supavisor on %i with verified TLS", port => {
     const configured = normalizationDatabaseConfig({ ...env(), DATABASE_URL: exampleDatabaseUrl("aws-0-eu-west-1.pooler.supabase.com", `postgres.${ref}`, port) });
@@ -80,6 +125,7 @@ describe("completion database destination", () => {
       const local = { ...env(), INHERIT_LOCAL_E2E_PROJECT: project,
         NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${apiPort}`, DATABASE_URL: exampleDatabaseUrl("127.0.0.1", "postgres", dbPort) };
       expect(normalizationDatabaseConfig(local)?.ssl).toBe(false);
+      expect(normalizationDatabaseConfig({ ...local, INHERIT_NORMALIZATION_DATABASE_CA_CERT: publicCa })?.ssl).toBe(false);
       for (const override of [{ VERCEL: "1" }, { VERCEL_ENV: "preview" }, { VERCEL_URL: "app.example.test" },
         { INHERIT_LOCAL_E2E_PROJECT: undefined }, { NEXT_PUBLIC_SUPABASE_URL: `http://localhost:${apiPort}` },
         { DATABASE_URL: exampleDatabaseUrl("127.0.0.1", "postgres", dbPort + 1) }]) {

@@ -1,4 +1,5 @@
 import "server-only";
+import { X509Certificate } from "node:crypto";
 import postgres from "postgres";
 import { z } from "zod";
 import { subjectNormalizationReceipt } from "./subject-upload-contract";
@@ -9,6 +10,18 @@ export type CompletionIdentity = {
 };
 const unavailable = () => new Error("normalization_database_unavailable");
 const completionPayloadSchema = z.record(z.string(), z.json());
+/** Deployment-owned public trust anchor only; never a peer certificate, key,
+ * bundle or global TLS override. The TLS handshake still verifies hostname. */
+function hostedCertificateAuthority(raw: string | undefined) {
+  if (raw === undefined) return undefined;
+  if (raw.length > 16_384) throw unavailable();
+  const pem = raw.trim();
+  const body = /^-----BEGIN CERTIFICATE-----\r?\n([A-Za-z0-9+/=\r\n]+)\r?\n-----END CERTIFICATE-----$/.exec(pem)?.[1];
+  if (!body) throw unavailable();
+  const certificate = new X509Certificate(pem);
+  if (!certificate.ca || certificate.raw.toString("base64") !== body.replace(/[\r\n]/g, "")) throw unavailable();
+  return pem + "\n";
+}
 type DiagnosticPhase = "configuration" | "identity" | "payload" | "budget" | "driver" | "connect" |
   "role" | "timeouts" | "complete" | "commit" | "deadline" | "close";
 const diagnosticCodes = new Set([
@@ -58,8 +71,9 @@ export function normalizationDatabaseConfig(env: Environment) {
       && api.origin === `http://127.0.0.1:${localPorts[0]}` && db.hostname === "127.0.0.1"
       && port === localPorts[1] && username === "postgres" && !db.search;
     if (!hosted && !local) throw unavailable();
+    const ca = hosted ? hostedCertificateAuthority(env.INHERIT_NORMALIZATION_DATABASE_CA_CERT) : undefined;
     return { host: db.hostname, port, username, password, database: "postgres",
-      ssl: hosted ? { rejectUnauthorized: true as const, servername: db.hostname } : false as const };
+      ssl: hosted ? { rejectUnauthorized: true as const, servername: db.hostname, ...(ca ? { ca } : {}) } : false as const };
   } catch { throw unavailable(); }
 }
 
