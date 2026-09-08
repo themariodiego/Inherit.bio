@@ -18,6 +18,8 @@ const receiptSchema = z.object({ version: z.literal("own-preparation-artifact-v1
   writeExpiresAt: z.iso.datetime({ offset: true }),
 }).strict();
 export type PreparedArtifactReceipt = z.infer<typeof receiptSchema>;
+export { receiptSchema as preparedArtifactReceiptSchema };
+export type PreparedStoredArtifact = { receipt: PreparedArtifactReceipt; storageObjectId: string };
 export type PreparedArtifactDescriptor = z.infer<typeof descriptorSchema>;
 export class PreparedStorageWriteError extends Error {
   constructor(readonly code: "invalid_request" | "invalid_state" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -82,7 +84,7 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
   const claimArgs = { p_job_id: claim.jobId, p_attempt_id: claim.attemptId, p_claim_token_hash: claim.claimTokenHash };
   let busy = false, failed = false;
   return async (input: { descriptor: PreparedArtifactDescriptor; bytes: Uint8Array }, external?: AbortSignal):
-    Promise<{ receipt: PreparedArtifactReceipt; storageObjectId: string }> => {
+    Promise<PreparedStoredArtifact> => {
     if (busy || failed) throw new PreparedStorageWriteError("invalid_state");
     let descriptor: PreparedArtifactDescriptor, owned: Uint8Array;
     try {

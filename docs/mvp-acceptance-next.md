@@ -163,6 +163,43 @@ target/rsID lookups, backend-aware report/export/download and cleanup integratio
 then the larger synthetic application journey. Production PR81, public limits,
 original expiry, subscriptions and **19/65** acceptance remain unchanged.
 
+### Indexed canonical materialization · local only
+
+The coordinate index derives bounded, inclusive target ranges from fully decoded,
+hash-verified canonical blocks. Original rsID pointers preserve observations,
+duplicates, unmapped and unsupported dispositions; reference events without an
+rsID are not assigned one. Sorted pointer runs and eight-way merging retain
+separate completion evidence. Their 41 coordinate and 36 rsID cases pass.
+
+The materializer now connects sorted canonical output to the registered writer,
+coordinate pages and paged container directories. It checks the exact job,
+attempt, contiguous artifact sequence, unique object identities and byte hashes.
+Directory pages are bounded at 1 MiB; the root receipt at 4 MB. The true canonical
+terminal, separate merge terminal, exact record counts and actual upstream EOF
+are required. All outputs remain provisional pending final index/publication and
+current authority checks. Its 27 cases include real parser → canonical → merge →
+materialized-byte → selected-coordinate and rsID-pointer roundtrips using an
+in-memory transport, plus malformed receipts, cancellation and artifact limits.
+This composition test is not another provider or application proof.
+
+Independent review corrected a mismatch between unique unmapped source positions
+and unmapped record dispositions. Real GRCh37 regressions now preserve these
+separate quantities, including unsupported alleles at an unmapped position. An
+rsID receipt-size check also moved before schema cloning. Scoped TypeScript/lint
+pass; the focused engine inventory is **503 distinct cases**, not full CI.
+
+The first materializer test attempt omitted a required canonicalizer fixture
+option and failed before exercising the materializer; fixing the fixture restored
+the intended checks. No production behavior or assertion was weakened.
+
+Next: validate immutable directory/manifest membership, connect indexed reads to
+chosen reports and exports, persist checkpoints and complete cleanup, then verify
+the larger-file application journey before release. No foundation-only PR or
+runtime activation was made. Production PR81 and **19/65** acceptance remain.
+The approved targets remain existing WGS results first, FASTQ/BAM/CRAM afterward,
+100 genomes/month and one-month original retention; capacity and expiry are not
+enabled or proven, and no additional spending is authorized.
+
 ### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
