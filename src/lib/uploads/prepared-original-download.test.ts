@@ -17,7 +17,7 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs();
 describe("revocable prepared original byte stream", () => {
   it("hashes exact raw bytes through EOF and checks before/after each bounded range and EOF", async () => {
     const f = fixture(2_097_159);
-    expect(await collect(streamPreparedOriginalDownload(f.options))).toEqual(f.raw);
+    expect((await collect(streamPreparedOriginalDownload(f.options))).equals(f.raw)).toBe(true);
     expect(vi.mocked(f.options.readRange!).mock.calls.map(([, a, b]) => [a, b])).toEqual([[0, 1_048_575], [1_048_576, 2_097_151], [2_097_152, 2_097_158]]);
     expect(f.check).toHaveBeenCalledTimes(7);
   });

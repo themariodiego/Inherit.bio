@@ -210,7 +210,8 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     state.canonicalRunsReceipt = await createCanonicalRuns(canonicalizePreparedEvents(
     mergePreparedRuns(sourceReader.runs, { source, readBlock: sourceReader.readBlock, signal }), {
       source, parserReceipt, expectedMergeSummary: mergeSummary, expectedParserRevision: "vcf-stream-v1",
-      liftover: options.liftover, maximumUnmappedFraction: options.maximumUnmappedFraction, signal,
+      liftover: source.sourceBuild === "GRCh37" ? options.liftover : undefined,
+      maximumUnmappedFraction: options.maximumUnmappedFraction, signal,
     }), { binding, signal, sink: canonicalStore.sink });
     state.canonicalRuns = canonicalStore.handles;
     await checkpoint("canonical-runs", state.canonicalRunsReceipt, [], state.canonicalRuns);

@@ -47,10 +47,15 @@ under the same live reservation; a deferred constraint prevents committing the
 probe's weaker metadata shape. Final writes require the exact registered size
 and a real object version. This fences metadata, not physical provider bytes.
 Freeze registration and publication before deletion. A request already submitted
-to Storage can finish after cancellation; lease expiry alone is insufficient to
-prove absence. Fence or drain outstanding writes, remove exact frozen identities,
-and independently verify absence before acknowledging cleanup. Foreign keys must
-not silently erase the only references to outstanding objects.
+to a provider can finish after cancellation; lease expiry alone is insufficient
+to prove absence. R2 cleanup uses the registered exact key and an atomic zero-byte
+tombstone that prevents a late create-only write from restoring its payload. The
+executor verifies the tombstone version, empty-byte hash and exact current SQL
+selection before acknowledging `payload-tombstoned`. The fencing key remains;
+this disposition does not claim key absence or physical media erasure. Supabase
+prepared writes with unknown physical versions remain unresolved rather than
+being acknowledged from missing metadata. Foreign keys must not silently erase
+the only references to outstanding objects.
 
 The initial private protocol is a narrow extension alongside generic worker jobs.
 It grants no analytical purpose and sends no report-ready notice. Chosen reports
@@ -81,8 +86,11 @@ collision semantics. These adapters remain inactive until report claim/commit,
 complete exports and deletion share the same published source identity.
 
 The new manifest/member stores are in the purge inventory, with restrictive
-foreign keys preserving object identities. Full file/account/expiry deletion and
-scratch cleanup still require integration and verification before activation.
+foreign keys preserving object identities. File, account and scratch cleanup now
+share bounded SQL-selected dispositions and exact provider acknowledgements.
+File deletion returns pending until every selected prepared payload is disposed;
+published scratch cleanup preserves final members. The complete provider and
+application journey still requires release verification before activation.
 The publication function and metadata assertions do not independently prove
 provider bytes, report completion or successful cleanup.
 
@@ -95,14 +103,27 @@ deletion with another file preserved. Existing readers, saved reports, mail,
 Copilot and exports must dispatch by an exact backend receipt or clearly refuse
 an unsupported backend; an empty legacy SQL result is not missing coverage.
 
-The current Files download route returns a temporary signed Storage URL. This
-remains a gap against ADR-0016's revocable chunk contract and must be repaired
-for the complete larger-file delivery. It is not evidence of per-chunk revocation.
+Prepared Files downloads now resolve current full source authority before response
+headers and stream exact original ranges of at most 1 MiB. They recheck the same
+captured identity before and after each range and at EOF, and verify the whole
+original hash before releasing the last range. Already delivered bytes cannot be
+retracted after a later refusal. Legacy Files downloads keep their existing
+300-second signed URL path; this change does not establish per-chunk revocation
+for that older path.
 
-One-month original expiry is a separate compatibility change: existing read and
-export predicates require a live original. Retained verified results need a
-versioned expiry receipt, honest unavailable-original presentation and exact
-quota/deletion handling first. Do not backdate expiry for existing real files.
+Optional original retirement is registered only at a new prepared publication,
+when its private configuration is enabled and the source was created on or after
+its configured applicability boundary. The immutable deadline is source
+`created_at + interval '1 month'`, not publication time or a fixed 30-day period.
+Configuration defaults off, and no existing source is backfilled. Original access
+is refused when due or deletion has started. An exact provider deletion ACK plus
+current identity and metadata-absence checks records retirement; missing metadata,
+an empty provider result or a lost ACK alone cannot establish success. Prepared
+read/report/export source gates accept only that exact verified retirement receipt,
+while current account, session, store consent and publication checks remain.
+Original quota accounting remains conservative and unchanged. The actual ZIP
+consumer must omit a retired original explicitly while retaining verified calls
+and results; its route-level verification is a separate release gate.
 Raw-read formats similarly need their own closed admission, compute and
 scientific validation changes after existing-result capacity is demonstrated.
 

@@ -1,6 +1,10 @@
 import { ZipArchive } from "archiver";
 import { PassThrough, Readable } from "node:stream";
 import { finished } from "node:stream/promises";
+import { isDeepStrictEqual } from "node:util";
+import { z } from "zod";
+import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
+import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
 import {
   getGenotypesByRsid,
   getProcessedFiles,
@@ -16,6 +20,10 @@ import { createClient } from "@/lib/supabase/server";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "@/lib/exports/own-subject-content";
 
 export const maxDuration = 300;
+const originalStateSchema = z.object({ version: z.literal("own-original-download-state-v1"), fileId: z.uuid(),
+  prepared: z.boolean(), retired: z.boolean(), expiresAt: z.iso.datetime({ offset: true }).nullable() }).strict();
+const originalReceiptSchema = z.object({ source: preparedOriginalDownloadSourceSchema, originalName: z.string().min(1).max(1024) }).strict();
+type OriginalRpc = (name: string, args: Record<string, unknown>) => { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
 
 // PostgREST caps every response at its configured max-rows (1,000 on a
 // default Supabase deployment) regardless of the requested range, so all
@@ -453,7 +461,7 @@ export async function GET() {
         // Own-subject originals have opaque per-file names, so two uploads
         // with the same safe display label cannot overwrite each other.
         assertActive();
-        const blob = await ownContent.original(snapshot, key => admin.storage.from("genomes").download(key));
+        const blob = snapshot.preparedSource ? null : await ownContent.original(snapshot, key => admin.storage.from("genomes").download(key));
         assertActive();
         canonicalReports.push(await ownContent.reports(snapshot)); assertActive();
         canonicalPrs.push(...await ownContent.prs(snapshot)); assertActive();
@@ -510,7 +518,42 @@ export async function GET() {
         contents.push({ path: `observed/${f.id}.json`, description: "Literal source records, including reference and no-call observations.", count: observedCount });
         }
         await ownContent.check(snapshot); assertActive();
-        const original = Readable.fromWeb(blob.stream() as never);
+        let original: Readable;
+        if (snapshot.preparedSource) {
+          const rpc = admin.rpc.bind(admin) as unknown as OriginalRpc;
+          const args = { p_account_id: user.id, p_session_id: claimsData!.claims.session_id, p_file_id: f.id };
+          const initialSignal = AbortSignal.any([exportAbort.signal, AbortSignal.timeout(30_000)]);
+          const stateResponse = await rpc("own_original_download_state_v1", { p_account_id: user.id, p_file_id: f.id }).abortSignal(initialSignal);
+          initialSignal.throwIfAborted();
+          if (stateResponse.error) throw new Error("export unavailable");
+          assertPreparedMetadataBounds(stateResponse.data, 4096);
+          const state = originalStateSchema.parse(stateResponse.data);
+          if (state.fileId !== f.id || !state.prepared) throw new Error("export unavailable");
+          // A deletion/authority failure must not be mistaken for ordinary original expiry.
+          await ownContent.check(snapshot); assertActive();
+          if (state.retired) {
+            warnings.push(`originals/${f.id} omitted: the original retention period has ended. Prepared records and saved reports remain included.`);
+            continue;
+          }
+          async function authorize(expected: unknown, signal: AbortSignal) {
+            const response = await rpc("authorize_own_prepared_original_v1", { ...args, p_expected: expected }).abortSignal(signal);
+            signal.throwIfAborted();
+            if (response.error) throw new Error("export unavailable");
+            assertPreparedMetadataBounds(response.data, 4096);
+            const { source } = originalReceiptSchema.parse(response.data);
+            if (source.fileId !== f.id || source.manifestId !== snapshot.preparedSource!.manifestId
+              || source.sourceRevision !== f.upload_revision || source.rawSha256 !== f.sha256
+              || source.sizeBytes !== f.size_bytes || source.objectId !== f.storage_object_id
+              || source.objectKey !== f.bucket_path || (expected !== null && !isDeepStrictEqual(source, expected))) throw new Error("export unavailable");
+            return source;
+          }
+          const source = await authorize(null, initialSignal); assertActive();
+          original = Readable.from(streamPreparedOriginalDownload({ source, signal: exportAbort.signal,
+            check: async (expected, signal) => { await authorize(expected, signal); assertActive(); } }), { objectMode: false, highWaterMark: 1 });
+        } else {
+          if (!blob) throw new Error("export unavailable");
+          original = Readable.fromWeb(blob.stream() as never);
+        }
         members.add(original);
         original.once("close", () => members.delete(original));
         archive.append(original, { name: `originals/${f.id}` });
@@ -643,7 +686,7 @@ export async function GET() {
           row_count: rowCounts.get(f.id) ?? 0,
         })),
         ...(warnings.length > 0 ? { warnings } : {}),
-        note: "Export is free and always will be. This archive contains your original uploaded files, all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+        note: "Export is free and always will be. This archive contains your available original uploaded files (expired originals are identified in warnings), all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",

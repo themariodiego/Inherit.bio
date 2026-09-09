@@ -32,6 +32,38 @@ function setup(text = header + rows.join("\n") + "\n", gzip = false) {
   return { options, objects, artifacts };
 }
 describe("own preparation bounded pipeline", () => {
+  it("uses the detected GRCh38 build when the worker has a configured GRCh37 chain", async () => {
+    const f = setup();
+    const chainBytes = Buffer.from("chain 1 chr1 1000 + 0 10 chr1 1000 + 899 909 1\n10\n");
+    f.options.liftover = { chainBytes, sha256: sha(chainBytes) };
+    const result = await runOwnPreparationPipeline(f.options);
+    expect(result.canonicalRunsReceipt.binding.source.sourceBuild).toBe("GRCh38");
+    expect(result.canonicalRunsReceipt.binding.liftoverSha256).toBeNull();
+    expect(result.canonicalRunsReceipt.canonicalSummary).toMatchObject({
+      variantCount: 1, observedCallCount: 3, attempted: 0, unmapped: 0,
+    });
+    expect(vi.mocked(f.options.checkpoint).mock.calls.at(-1)?.[0].phase).toBe("publication-preflight");
+  });
+  it("keeps a verified configured chain bound to detected GRCh37 publication", async () => {
+    const f = setup(header.replace("GRCh38", "GRCh37") + "1\t1\trs1\tA\tC\t.\tPASS\t.\tGT\t0/1\n");
+    const chainBytes = Buffer.from("chain 1 chr1 1000 + 0 10 chr1 1000 + 899 909 1\n10\n");
+    f.options.liftover = { chainBytes, sha256: sha(chainBytes) };
+    const result = await runOwnPreparationPipeline(f.options);
+    expect(result.canonicalRunsReceipt.binding.source.sourceBuild).toBe("GRCh37");
+    expect(result.canonicalRunsReceipt.binding.liftoverSha256).toBe(sha(chainBytes));
+    expect(result.canonicalRunsReceipt.canonicalSummary).toMatchObject({
+      variantCount: 1, observedCallCount: 1, attempted: 1, unmapped: 0,
+    });
+    expect(vi.mocked(f.options.checkpoint).mock.calls.at(-1)?.[0].phase).toBe("publication-preflight");
+  });
+  it.each(["missing", "wrong-hash"])("refuses a %s GRCh37 chain before publication", async kind => {
+    const f = setup(header.replace("GRCh38", "GRCh37") + "1\t1\trs1\tA\tC\t.\tPASS\t.\tGT\t0/1\n");
+    if (kind === "wrong-hash") f.options.liftover = { chainBytes: Buffer.from("invalid"), sha256: "a".repeat(64) };
+    const result = runOwnPreparationPipeline(f.options);
+    if (kind === "missing") await expect(result).rejects.toThrow();
+    else await expect(result).rejects.toMatchObject({ code: "invalid_receipt" });
+    expect(vi.mocked(f.options.checkpoint).mock.calls.some(([c]) => c.phase === "publication-preflight")).toBe(false);
+  });
   it("runs actual canonical and rsID publication preflight entirely through R2 v2 identities", async () => {
     const f = setup();
     f.options.writeArtifact = vi.fn(async ({ descriptor, bytes }) => {
