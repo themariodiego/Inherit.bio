@@ -39,6 +39,12 @@ export function remainingAccountBytes(limits: OwnUploadLimits): number {
   return Math.max(0, limits.maximumAccountBytes - limits.reservedBytes);
 }
 
+/** How long a finalization holds its lease after recording progress. The route
+ * writes it with every checkpoint; the browser waits it out before retrying a
+ * request that died in flight, because re-entry into a live lease is refused.
+ * One definition so the two cannot drift apart. */
+export const FINALIZATION_LEASE_SECONDS = 60;
+
 export const subjectFinalizationReceipt = z.object({ fileId: uuid, status: z.literal("finalized_ready_for_processing"),
   analysisState: z.literal("ready_for_processing"),
   next: z.object({ routeId: z.literal("api.file-process"), operation: z.literal("process") }).strict(),

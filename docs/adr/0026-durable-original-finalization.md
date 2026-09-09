@@ -1,15 +1,16 @@
 # ADR-0026 — Durable progress for original finalization
 
-- Status: Accepted for the disabled schema slice · 2026-09-09
+- Status: Accepted · 2026-09-09 (schema landed disabled, then enabled the same day)
 - Deciders: Inherit engineering, within the owner's approved WGS scope
 - Extends: ADR-0016 and ADR-0025; no format, limit or public admission change
 
 ## Decision
 
 Record durable progress for one in-flight original finalization, so a failure
-stops costing a person their whole upload. Land the progress record, its
-authority and its retirement first, disabled and unused, as ADR-0025 landed the
-prepared-object authority before its runtime.
+stops costing a person their whole upload. The progress record, its authority
+and its retirement landed first, disabled and unused, as ADR-0025 landed the
+prepared-object authority before its runtime; the route and the browser that
+use them landed after, and are described below.
 
 Finalization today is one HTTP request that validates the staging object,
 copies it, reads the promoted copy back to verify its hash, removes staging and
@@ -85,23 +86,46 @@ storage-authorization test counts exactly which security-definer functions the
 upload role may execute; an unrevoked one is a privilege leak, and that guard
 caught one in this slice before it merged.
 
-## What this slice does not do
+## What a person gets, and what still costs them the file
 
-No route writes a checkpoint. No resumption path is enabled. No limit moves and
-no admission opens. Nothing a person can do changes.
+`finalizeSubjectUpload` reads the checkpoint before it starts, does only what
+the recorded phase says is left, and records each phase as it completes. The
+browser asks again after a finalize request that reached no decision — the
+connection dropped, or the host answered 408, 502 or 504 for an invocation it
+killed — waiting the lease out first, because re-entry into a live lease is
+refused on purpose. Every status the route itself answers is final and is never
+repeated: its 503 has already aborted the upload and removed both objects, so
+there is nothing left to resume.
+
+A kill during validation still costs the whole file. Validation is the first
+phase and records nothing until it finishes, so there is no checkpoint to
+resume from and re-entry is refused exactly as it was before this ADR. That is
+the gzip constraint above, not an oversight, and it is why the phase order puts
+the one unresumable pass first.
+
+No limit moves and no admission opens. The refusals a person can hit are the
+same ones, with the same wording.
 
 ## Consequences and remaining work
 
-- Re-entry is now implemented: `begin_own_upload_finalization_v1` hands the same
+- Re-entry is implemented: `begin_own_upload_finalization_v1` hands the same
   account and session back their own in-flight manifest, but only once the
   previous holder recorded progress and let its lease lapse. A live lease is
   refused, so a duplicate in-flight request cannot race the holder into copying
   or publishing the same object twice, and with no recorded progress there is
   nothing to resume and the lease is refused exactly as before.
-- The route must then read the checkpoint, do what remains within a budget,
-  record progress, and answer a polling contract when the budget is exhausted.
-  Small files must keep completing in one request with the current 200, so the
-  existing browser contract does not change for them.
+- The response contract did not change. A file that finished in one request
+  still finishes in one request and still answers 200 with the same receipt;
+  `docs/route-register.json` is untouched by this slice. Resumption is carried
+  by repeating the same bodyless POST, not by a new polling shape, so there is
+  no second contract to keep in step with the first.
+- The lease is one number, `FINALIZATION_LEASE_SECONDS`, defined in
+  `src/lib/uploads/subject-upload-contract.ts` and read by both the route that
+  writes it and the browser that waits it out, because a browser that waits
+  less than the lease would read its own resumable upload as someone else's.
+- The browser stops after four attempts, or sooner if the next wait would run
+  past the upload session's own expiry, rather than holding a person whose
+  browser simply cannot reach the route.
 - The 30-minute upload-session window still caps total finalization time. That
   is a separate decision and is not changed here.
 - None of this admits a larger file on its own. Admission needs the decoded

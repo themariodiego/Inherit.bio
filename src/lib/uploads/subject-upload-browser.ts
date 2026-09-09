@@ -3,7 +3,7 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
+import { FINALIZATION_LEASE_SECONDS, declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
@@ -67,6 +67,17 @@ async function responseFailure(response: Response): Promise<never> {
   }
   throw new BrowserUploadError(response.status === 401 ? "unauthorized" : "unavailable");
 }
+
+/** Statuses the finalize route never answers with, so they come from the edge
+ * rather than the application: the request reached no decision at all. A host
+ * that kills a long invocation reports it as one of these, or drops the
+ * connection, which makes `fetch` reject. Every status the route does answer —
+ * 200, 401, 403, 404, 413, 415, 422 and 503 — is its decision and is final. */
+const NO_DECISION_STATUSES = new Set([408, 502, 504]);
+/** Enough to finish a resumable finalization that keeps being cut short, and
+ * few enough that a browser which simply cannot reach the route gives up
+ * rather than holding the person for the rest of the upload window. */
+const FINALIZATION_ATTEMPTS = 4;
 
 /** One ephemeral create-only bearer, no normal auth token, persisted resume
  * fingerprint, filename metadata, background retry or implicit analysis. */
@@ -132,10 +143,28 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
     xhr.send(file);
   });
   onProgress({ step: "validating", pct: 0 });
-  const finalized = await fetch(route("api.file-finalize", { id: issued.uploadId }), { method: "POST",
-    credentials: "same-origin", cache: "no-store", redirect: "error" });
-  if (!finalized.ok) await responseFailure(finalized);
-  const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
-  if (!receipt.success) throw new BrowserUploadError("unavailable");
-  return receipt.data;
+  // A finalization killed part-way leaves durable progress behind (ADR-0026),
+  // so asking again resumes from what it finished instead of transferring the
+  // whole object a second time. Only a request that reached no decision is
+  // repeated: an answer is final, and the 503 the route gives has already
+  // aborted the upload and removed both objects, leaving nothing to resume.
+  for (let attempt = 1; ; attempt += 1) {
+    const finalized = await fetch(route("api.file-finalize", { id: issued.uploadId }), { method: "POST",
+      credentials: "same-origin", cache: "no-store", redirect: "error" }).catch(() => null);
+    if (finalized && !NO_DECISION_STATUSES.has(finalized.status)) {
+      if (!finalized.ok) await responseFailure(finalized);
+      const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
+      if (!receipt.success) throw new BrowserUploadError("unavailable");
+      return receipt.data;
+    }
+    // Re-entry is refused while the previous attempt still holds its lease, so
+    // waiting that out is what makes the next request resume rather than read
+    // as an upload someone else is already finalizing. The lease was last
+    // renewed before this attempt died, so the wait is measured from here.
+    const wait = FINALIZATION_LEASE_SECONDS * 1000 + 2000;
+    if (attempt >= FINALIZATION_ATTEMPTS || Date.now() + wait >= Date.parse(issued.expiresAt)) {
+      throw new BrowserUploadError("unavailable");
+    }
+    await new Promise<void>(resolve => setTimeout(resolve, wait));
+  }
 }

@@ -14,11 +14,11 @@ uploads the whole file again. The measurement above says why that matters more
 than it looks: the cost is transfer and round trips, not validation, so the
 work lost is expensive and the compute to redo it is not the problem.
 
-`20260909210000_own_upload_finalization_checkpoints.sql` adds the durable
-progress record, additively and **currently unused**: no route writes a
-checkpoint, no resumption path is enabled, no limit moves and no admission
-opens. It follows the prepared-source precedent of landing authority and
-storage before the runtime that uses them.
+`20260909210000_own_upload_finalization_checkpoints.sql` added the durable
+progress record additively and unused, following the prepared-source precedent
+of landing authority and storage before the runtime that uses them.
+`20260909213000_own_upload_finalization_resume.sql`, the route and the browser
+then turned it on. No limit moves and no admission opens.
 
 The phases are `validated`, `copied`, `verifying`, `verified` and
 `staging-removed`. Only `verifying` carries a byte offset and a resumable
@@ -44,10 +44,25 @@ originating session, exactly as the prepared worker is. Nothing here makes
 finalization session-independent, so no superseding ADR is required; a design
 that outlived the session would need one, and this is not it.
 
-Still unbuilt, and needed before any of this changes what a person experiences:
-the route refactor that reads and writes these checkpoints, the polling
-contract for a finalization that outlives one request, and the browser change
-to follow it. Acceptance stays **19/65**.
+What now happens: `finalizeSubjectUpload` reads the checkpoint, does only what
+the recorded phase leaves, and records each phase as it completes. The browser
+asks again after a finalize request that reached no decision — a dropped
+connection, or the 408, 502 or 504 a host answers for an invocation it killed —
+waiting the lease out first, because re-entry into a live lease is refused on
+purpose. Every status the route itself answers is final and is never repeated;
+its 503 has already aborted the upload and removed both objects. The response
+contract did not change and `docs/route-register.json` is untouched: a file
+that finished in one request still does, with the same 200 and the same
+receipt, so there is no second polling shape to keep in step with the first.
+`FINALIZATION_LEASE_SECONDS` is defined once, in
+`src/lib/uploads/subject-upload-contract.ts`, and read by both sides.
+
+What it still does not do: a kill during validation costs the whole file, since
+validation is the first phase, records nothing until it finishes and therefore
+leaves nothing to resume — the gzip constraint above, not an oversight. The
+30-minute upload-session window still caps total finalization time, and no
+larger file is admitted. Acceptance stays **19/65**: this closes no gate,
+because the screens gate needs its own recorded browser evidence.
 
 ## Upload refusals name the limit they hit · 9 September 2026
 
