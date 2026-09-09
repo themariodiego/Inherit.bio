@@ -1,11 +1,76 @@
 # MVP-first acceptance sequence
 
-Original plan audit: 2026-09-06; current checkpoint: 2026-09-08.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-09.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
 ## Current production checkpoint · 8 September 2026
+
+PR82 merge `6a497adbb75428989725fc6a7d3f1e69ed4fcfda` is production READY as
+`dpl_DP7mGub7E1bW6aLk4qrSavT6Fm1y` at **21:56:39.141 UTC**, on all six aliases.
+Newly computed polygenic scores now withhold conflicting, missing, unsupported or
+filtered calls instead of choosing the last inserted variant. Agreeing allele
+counts contribute once. Saved results are not automatically invalidated or
+recomputed. No real genetic file, schema, signing key, scheduler, limit,
+retention setting or subscription changed.
+
+Exact head `05f762f3110acd82bcea4c522374ef39829f3203` passed CI `34281293710`:
+**3,371 units (206 files), 85 fresh migrations, 2,120 SQL assertions (56 files),
+30 lock checks and 232 browser cases in 14.8 minutes**, including 57 actual
+Storage uploads, zero skips/retries and owned runtime cleanup. The merge and
+reviewed head have identical Git tree `5f71e09cfb9a8af4a82ecf6a7c78a78cdf3d586d`.
+Initial CI `34278270396` had one injected count-audit failure and 231 browser
+passes. Its test allowed fixture insertion and inspection to interleave with
+page updates. Synchronous insertion/audit/exact cleanup preserves all six
+negative assertions; isolated Chromium reproduced the old timing failure and
+passed 12 ordinary/controlled-removal checks. The original CI failure is retained;
+its exact page-detachment event was not logged.
+
+Production smoke finished **21:57:34.326 UTC**: authenticated synthetic-only
+`/files`, `/files/upload` and `/genome/me/reports` returned HTTP 200 with their
+expected headings; the account remained empty and its new session was signed out.
+This is page-availability evidence, not hosted score recomputation. Automatic
+main CI `34283267485` also passed on exact merge `6a497ad` at **22:17:37 UTC**:
+3,371 units, 2,120 SQL assertions, 85 migrations, 30 lock checks and all 232
+browser cases in 15.4 minutes, with 57 actual uploads, zero skips/retries and
+both cleanup steps successful. The formerly failing mutation test passed again.
+Its separate receipt is `work/prs-call-conflict-release/main-ci-review.json` in
+the parent task. No further test run is needed for this unchanged release.
+Whole-plan acceptance stays **19/65**. Evidence: parent task
+`work/prs-call-conflict-release/{release-receipt,ci-corrected-review,production-smoke}.json`.
+
+Larger WGS admission remains inactive. The approved targets remain existing WGS
+results first, FASTQ/BAM/CRAM next, 100 genomes/month, and originals retained for
+one month. Supabase interrupted-write cleanup is unresolved through the available
+project APIs; a support draft awaits permission to send externally. The owner has
+now activated R2, superseding the earlier error10042 activation blocker. Live
+bucket listing on account `165b6ad801f990d009e90b64b39f87dd` succeeded with an
+empty inventory. The original failed preflight remains historical evidence.
+
+A reviewed, pre-registered private Standard R2 trial completed in **23 provider
+calls and 255 aggregate synthetic bytes**, within the newly activated included
+allowance. Both ASCII objects read back exactly; the second was recovered by its
+registered key without consuming its settled PUT receipt. Public managed access
+remained disabled and custom domains absent. Exact-key deletion was followed by
+specific provider error10007 and empty lists. The owned empty trial bucket was
+then deleted; error10006 and an empty bucket inventory confirmed its absence.
+The connector exposed no HTTP status for thrown not-found responses and omitted
+pagination metadata on these small lists; neither is invented in the receipt.
+
+This closes the tiny direct-object recovery/cleanup access prerequisite, not WGS
+delivery. It does not test an interrupted or late write, multipart cleanup,
+arbitrary binary transport, physical media erasure, report composition, full-size
+capacity or scheduled retention. The WEUR location hint used only synthetic data
+and is not an EU residency guarantee. No persistent bucket, credentials, Worker,
+application configuration or admission cap changed. Owner activation does not
+authorize overages. Next: connect a reviewed R2 transport to the existing
+preparation authority and deletion fencing, then verify an actual tiny complete
+application lifecycle before increasing admission. Evidence in parent task:
+`work/wgs-next-backend/r2-trial-{preregistration,complete-events,verification}.json`
+and the independent trial reviews. Whole-plan acceptance remains **19/65**.
+
+### Earlier PR81 preparation/report recovery
 
 PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
 `dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
@@ -34,32 +99,430 @@ test session was signed out. This did not force or observe another hosted report
 failure. Receipt details: parent task `work/wgs-release-pr80/recovery-*`.
 Acceptance remains **19/65**.
 
-### PRS conflict correction · release candidate
+### Local larger-file preparation prototype (not deployed)
 
-New report generation now combines variant and observation evidence without
-letting the last inserted row choose a PRS genotype. Agreeing allele counts
-contribute once; conflicting, missing, unsupported or filtered calls withhold
-that target locus from score matching. Existing dosage arithmetic, score weights,
-coverage denominators, report interpretations and ancestry calculations remain.
+Local engine commit `ba35b15d60f970aa1cfd018faa1107c8143a9720` adds bounded,
+lossless provisional blocks, sorted runs, eight-way merging and grouped immutable
+containers. **139 distinct focused tests** plus 24 existing parser tests passed;
+module lint/type checks and independent run review passed. No application upload,
+job, authorization, index, report or retention integration is implied.
 
-The focused production patch passes **78 helper/PRS/generator tests**, scoped
-TypeScript and lint, independent source review and the secret gate. Full PR CI
-and deployment verification remain pending. It contains no database migration,
-new backend activation, upload-limit, retention, scheduler or subscription change.
-It corrects newly generated or recomputed scores; earlier completed results are
-not automatically invalidated or recomputed. No real genetic file was altered.
-Whole-plan acceptance remains **19/65**. Release evidence is in parent task
-`work/prs-call-conflict-release/`.
+One actual filesystem proof used a synthetic **2,000,000-record VCF** (82,000,210
+decoded / 9,743,598 gzip bytes). Both source hashes verified before terminal
+acceptance. It preserved all **4,000,000 events** exactly, including the sole
+caffeine locus, across **125 → 16 → 2 → 1** runs. Initial preparation took
+49.951 seconds; total merge/readback/cleanup proof took **241.013 seconds**.
+There were 173 container writes and 8,000 filesystem range reads. Peak temporary
+storage was **30,010,188 bytes** and sampled test-process RSS **333,889,536 bytes**.
+All generated artifacts/bytes were removed; the original inode, size and raw hash
+were rechecked. Root independently confirmed the owned directory was absent.
 
-PR82's initial CI run `34278270396` passed the preceding gates and 231 browser
-cases, but its injected count-mutation test expected a missing-class finding and
-received none. The test inserted its fixture and audited it in separate browser
-calls, allowing the page to detach it between them. The correction runs insertion,
-inspection with the unchanged detector, and cleanup synchronously in one browser
-call, preserving every negative assertion. The exact CI timing cause is not
-claimed; the earlier failed run is retained and a new exact-head check is required.
+This repetitive synthetic filesystem result is not hosted Storage performance,
+full-WGS capacity or a 100-genomes/month allowance. Next: integrate current
+source authority, durable jobs, indexes/read adapters and complete lifecycle,
+then verify an actual larger-file application journey. Public limits and
+one-month original-expiry behavior remain unchanged. Receipts: parent task
+`work/wgs-next-backend/disk-integration-attempt-1/` and
+`work/wgs-next-backend/prototype-review-receipt.json`.
 
-### Earlier PR80 hosted preparation and recovery
+### Canonical data and private job authority · local only
+
+Local commits `1d7834f` and `89b6098` add parity with the current canonical
+normalizer, preservation of original evidence, a bounded private Storage range
+reader, and a canonical codec that avoids duplicating unchanged long alleles.
+There are **240 distinct focused engine tests** (139 earlier engine cases plus
+32 canonical, 28 reader and 41 canonical-codec cases); scoped TypeScript/lint and
+independent review passed. The reader's provider boundary is tested with
+synthetic responses, not hosted Storage. The secret gate and its 19 regression
+cases passed with one exact, reviewed synthetic URL fixture.
+
+The disabled private job migration
+`20260908164616_own_preparation_job_authority.sql` passed **67 rollback-only SQL
+assertions** on the existing owned local database. Its exact source and corrected
+fixture hashes are in parent task `work/wgs-next-backend/job-authority-attempt-3/`.
+The first two attempts exposed invalid fixture mutations; neither disabled an
+existing protection. Final verification used real consent expiry and actual
+source deletion preparation in a rolled-back savepoint. After the complete
+migration/test transaction rolled back, original file/object fingerprints,
+row counts, the 117-store runtime registry and absence of all new schema objects
+matched the baseline. No migration was committed to that runtime or a provider.
+
+The draft contract and ADR-0025 preserve originating-session checks and define
+finite job, claim, write and scratch deadlines. Dispatch defaults off. Metadata
+freeze preserves registered outstanding writes and never claims deletion success.
+Concurrency, actual artifact transport/fencing, durable checkpoints, target and
+rsID indexes, backend-aware chosen reports/exports/readers and complete cleanup
+remain integration requirements. The updated 119-store inventory assertion is
+prepared for fresh replay; the complete existing SQL suite was not rerun here.
+The current signed original-download link remains an explicit ADR-0016 gap.
+Original expiry, public limits, production PR81 and **19/65** acceptance are unchanged.
+
+### Canonical ordering and registered writes · local only
+
+Canonical runs and eight-way merging now preserve every original disposition
+while ordering normalized calls by target coordinates, with stable source ties.
+Their **45 focused cases** and independent review pass. Whole-source terminal
+verification remains distinct from a merge receipt; no target/rsID index or
+application publication is implied.
+
+The private Storage adapter reserves a database-generated `prepared/<UUID>` key
+before its create-only upload, checks live job authority, reads and hashes the
+entire stored object through EOF, then acknowledges the exact registered identity.
+Failures close that writer without automatic retry; uncertain reservations remain
+owned by cleanup. **60 mocked transport tests** and **31 range-reader tests**
+pass, including a reviewed cancellation race between response resolution and its
+awaiting continuation. Scoped TypeScript/lint pass. Across the existing engine
+and these additions there are **348 distinct focused cases**, not a full CI run.
+
+The unapplied migration's permanent namespace and rollback-probe commit fence
+passed **85 rollback-only SQL assertions** in `job-authority-attempt-4/`.
+All source/object fingerprints, counts and schema absence again match baseline.
+Storage v1.70.3 source review confirms finalization may outlive client abort and
+failure cleanup may enqueue physical deletion. Metadata refusal is therefore
+insufficient evidence of byte removal. The actual local provider interruption
+proof is next; its synthetic source setup and exact reversal must be complete
+before temporarily installing the draft migration. No provider writes or runtime
+migration commits occurred in this batch. Dispatch and public limits stay unchanged.
+
+Canonical grouped containers and range reads are now connected locally. They
+preserve exact encoded bytes and original/normalized evidence with the same
+1 MiB target, 8 MiB ceiling and 128-block bound as parser containers. The shared
+range transport retains the existing 31 reader cases; 38 canonical-container and
+13 canonical-reader cases pass, with scoped TypeScript/lint and independent review.
+The focused engine inventory is now **399 distinct cases**. These are still
+provisional data adapters: target/rsID indexes, publication and the complete
+application journey remain pending. Actual Storage proof uses a tiny original
+through the existing ephemeral local signing setup, then targets the unchanged
+Storage service for prepared writes and interruption cleanup.
+
+### Actual local Storage write/freeze proof · 8 September 2026
+
+At source `93e5fda24e27ab98952a044ed1ddeb0ff62aed69`, the first actual provider
+attempt passed in **4.823 seconds** (18:01:14.490–18:01:19.313 UTC). A 547-byte
+synthetic VCF used real signing, issuance, structural validation and finalization
+through the existing ephemeral local provider setup. Preparation then used the
+unchanged Storage v1.70.3 service and its existing queue configuration.
+
+The actual registered writer stored a 554-byte provisional container, verified
+the complete readback hash and exact ACK, and matched an independent physical
+file hash. An overwrite returned HTTP 400 and preserved the object/version/hash.
+A second upload was paused after its one-byte physical file appeared. The real
+job freeze occurred with almost 30 seconds remaining on its write lease; after
+the remaining bytes were sent, finalization returned HTTP 400, no object metadata
+remained, and the exact physical version and `.info` companion were absent.
+
+Cleanup removed both prepared memberships and the original through the actual
+file/Storage deletion contracts, settled both test processes, then reversed the
+temporary additive migration without `CASCADE`. Existing file/object fingerprints,
+33-file/33-object counts, upload configuration, registry, migration history and
+Storage triggers matched the baseline. Root independently checked database
+restoration and all eight candidate prepared version/companion paths absent.
+One explicitly declared synthetic Auth/session/consent fixture remains locally;
+this is not an account-deletion proof. Receipts and frozen driver pins are in
+parent task `work/wgs-next-backend/storage-integration-attempt-1/`.
+
+This closes the actual **local file-backend** write/freeze prerequisite. It does
+not establish hosted S3 cleanup, full-size throughput, canonical indexed reads,
+or the complete application lifecycle. Next: durable manifest/index membership,
+target/rsID lookups, backend-aware report/export/download and cleanup integration,
+then the larger synthetic application journey. Production PR81, public limits,
+original expiry, subscriptions and **19/65** acceptance remain unchanged.
+
+### Indexed canonical materialization · local only
+
+The coordinate index derives bounded, inclusive target ranges from fully decoded,
+hash-verified canonical blocks. Original rsID pointers preserve observations,
+duplicates, unmapped and unsupported dispositions; reference events without an
+rsID are not assigned one. Sorted pointer runs and eight-way merging retain
+separate completion evidence. Their 41 coordinate and 36 rsID cases pass.
+
+The materializer now connects sorted canonical output to the registered writer,
+coordinate pages and paged container directories. It checks the exact job,
+attempt, contiguous artifact sequence, unique object identities and byte hashes.
+Directory pages are bounded at 1 MiB; the root receipt at 4 MB. The true canonical
+terminal, separate merge terminal, exact record counts and actual upstream EOF
+are required. All outputs remain provisional pending final index/publication and
+current authority checks. Its 27 cases include real parser → canonical → merge →
+materialized-byte → selected-coordinate and rsID-pointer roundtrips using an
+in-memory transport, plus malformed receipts, cancellation and artifact limits.
+This composition test is not another provider or application proof.
+
+Independent review corrected a mismatch between unique unmapped source positions
+and unmapped record dispositions. Real GRCh37 regressions now preserve these
+separate quantities, including unsupported alleles at an unmapped position. An
+rsID receipt-size check also moved before schema cloning. Scoped TypeScript/lint
+pass; the focused engine inventory is **503 distinct cases**, not full CI.
+
+The first materializer test attempt omitted a required canonicalizer fixture
+option and failed before exercising the materializer; fixing the fixture restored
+the intended checks. No production behavior or assertion was weakened.
+
+Next: validate immutable directory/manifest membership, connect indexed reads to
+chosen reports and exports, persist checkpoints and complete cleanup, then verify
+the larger-file application journey before release. No foundation-only PR or
+runtime activation was made. Production PR81 and **19/65** acceptance remain.
+The approved targets remain existing WGS results first, FASTQ/BAM/CRAM afterward,
+100 genomes/month and one-month original retention; capacity and expiry are not
+enabled or proven, and no additional spending is authorized.
+
+### Verified indexed reads · local only
+
+The new reader follows an exact provisional root through its coordinate pages,
+container directories and selected canonical byte ranges. It verifies object
+membership metadata, hashes and descriptors; preserves all matching normalized
+records across bounded cursors; and performs per-object and final source-authority
+callbacks before returning a page. Missing/corrupt objects and late withdrawal
+fail the response, including empty queries. Reverse-strand GRCh37 tests retain
+original A/C evidence beside the normalized G/T call at its GRCh38 coordinate.
+
+**73 manifest, 17 coordinate-reader and 24 rsID-container cases** pass, as do
+27 existing materializer cases after shared fixture extraction. Independent review
+and scoped TypeScript/lint pass. Review added a cross-directory artifact-sequence
+check and a two-directory regression; metadata preflight rejects getters without
+executing them. The focused engine inventory is now **617 distinct cases**.
+These use synthetic/in-memory range transport, not a newly verified provider or
+application journey. No running source, schema, limits or subscriptions changed.
+
+The report seam is identified: normalized call fields plus original usability,
+with existing source-line/collision behavior preserved. It is **not activated**:
+a real published backend receipt must bind report begin/check/commit, and full
+publication must validate every unseen directory member and total data bytes.
+Next is final index persistence/publication/checkpoints and lifecycle integration,
+then the larger-file application proof and a coherent PR. Production stays PR81;
+acceptance stays **19/65**, with original expiry and larger admission still off.
+
+### Complete final-object verification and publication · local only
+
+The final rsID materializer now persists bounded index containers and directories.
+Full canonical and rsID verifiers read every final object through exact hashes
+and EOF, checking order, actual index bounds, counts and unique membership.
+The publication assembler writes separate canonical/rsID roots and a compact
+combined root through the registered writer, then returns the exact final subset.
+Temporary rsID sorting objects remain registered scratch even when allocated
+between final phases. This corrects an assumption found by independent review.
+
+The four new suites pass **109 focused cases** (31 materializer, 43 complete
+canonical verification, 17 complete rsID verification, 18 publication assembly).
+Scoped TypeScript/lint and independent review pass. The focused engine inventory
+is **726 distinct cases**; only the changed four suites were rerun this batch.
+Transport composition remains synthetic/in-memory, distinct from the earlier
+actual local Storage primitive proof.
+
+The additive disabled publication migration passed **51 rollback-only SQL
+assertions** in `publication-authority-attempt-2/`. Initial publication uses the
+actual originating session and finite claim; subsequent reads and exact replay
+use the current reader's source/store/lifecycle authority. Published membership
+is immutable, ordinary job expiry cannot freeze it, legacy normalization cannot
+steal its file, and current withdrawal denies reading it. Review added exact
+current file-type identity. No legacy normalization rows are fabricated.
+
+The first SQL attempt passed 46 assertions before a synthetic consent withdrawal
+omitted its required reason. The corrected fixture sets the exact captured
+consent's timestamp and reason, then asserts valid withdrawal and the same denial.
+Both transactions fully rolled back: file/object fingerprints, Auth/data counts,
+configuration, migration history and schema absence match baseline. The actual
+runtime registry remains 117; the updated 121-store/24-assertion contract fixture
+is prepared for fresh replay. No provider writes, schema commits or activation.
+
+This closes the local byte-verification and atomic publication prerequisite.
+Next: connect real published membership to indexed report/read/export access,
+complete file/account/scratch deletion with unrelated-file preservation, and
+integrate bounded worker recovery before the larger synthetic application proof.
+The final publication transport and worker are not connected yet. Checkpoint
+adoption, revocable original download and one-month expiry remain open. No new
+PR is opened for this disabled foundation. Production PR81, public limits,
+subscriptions and **19/65** whole-plan acceptance are unchanged.
+
+### Authenticated published-coordinate reads · local only
+
+The published coordinate reader now connects exact actor/file/manifest selection
+to service RPCs and authenticated Storage GET/range transports. It loads the
+actual serialized combined/canonical roots, verifies hashes and source/count
+bindings, and preserves full canonical evidence through bounded cursors. Every
+selected object rechecks exact published membership and the caller's distinct
+current operation. Exhaustive full-source checks at both page boundaries detect
+loss of an unread member during I/O; this was added after independent review.
+
+**17 reader composition and 41 transport tests pass**, with scoped TypeScript,
+lint and independent review. These use real synthetic parser/materializer roots
+and synthetic HTTP responses. The cumulative focused engine inventory is now
+**784 cases**, not a rerun of full CI or a provider journey. Existing application
+report readers remain unchanged until claim/completion bind the same manifest.
+
+The additive member-authorization migration factors the existing source gate
+without changing its source/session/store/file-type predicates. A point check
+uses exact indexed final membership plus actual Storage metadata identity; it
+does not rescan every member. Full source reads retain exhaustive validation.
+**36 rollback-only SQL assertions pass** in `member-authority-attempt-3/`; all
+file/object hashes, counts, config/history and absence of new schema match the
+baseline. One earlier driver attempt stopped during preflight before migration
+execution; the next SQL run found an invalid partial-revision fixture. The final
+fixture preserves that constraint-refusal assertion and separately proves a
+coherent changed revision invalidates the captured source. Earlier outcomes stay
+recorded. No runtime migration, hosted request, admission or retention change.
+
+Next is actual local Storage composition of preparation → publication → current
+indexed read. Report claim/detail/mail binding, complete export, worker recovery
+and exact file/account/scratch deletion are still required before activation.
+The deletion assessment identifies one shared exact-artifact cleanup protocol:
+include all attempts, distinguish published nonmembers from final members, and
+retire members → manifests → artifacts → jobs before the existing file graph.
+Unacknowledged provider writes require durable physical-absence evidence; metadata
+absence alone is insufficient. See parent task `prepared-deletion-integration.md`.
+Production PR81 and whole-plan acceptance **19/65** remain unchanged.
+
+
+### Actual publication composition: RPC transport correction
+
+Two bounded local attempts at `47698d2` completed actual signing/finalization,
+parser and canonical/rsID preparation, registered writes and SQL publication:
+**14 objects, six scratch artifacts and eight final members** per attempt, from
+the same 547-byte synthetic GRCh38 VCF. Neither attempt returned a coordinate
+page. The diagnostic retry identified a runtime defect before any Storage read:
+PostgREST returned HTTP 200 with valid single-result `Content-Range: 0-0/*`,
+which the new scalar RPC transport incorrectly rejected.
+
+The corrected reader accepts absent or exact single-result item-count metadata
+(`0-0/*`, `0-0/1`) with HTTP 200. Partial/byte ranges, multiple results, malformed
+metadata and non-scalar JSON remain refused. **31 focused reader tests pass**;
+scoped TypeScript and lint pass. This adds 14 cases to the cumulative focused
+engine inventory (**798**); it does not establish a successful provider read yet.
+
+Both attempts settled their requests, removed every registered physical version
+and sidecar, retired only their exact synthetic rows, removed the original, and
+reversed all three temporary migrations. Existing 33 files/33 objects and schema,
+config, migration-history and registry fingerprints were preserved. Root checks
+independently confirmed physical absence and removed only the empty synthetic
+prepared namespace. Two synthetic Auth/audit fixtures remain, each with two
+sessions. Earlier failure receipts stay in parent task
+`work/wgs-next-backend/storage-published-integration-attempt-{1,2}/` and diagnosis
+in `storage-published-diagnosis.json`. The next run requires the reviewed fix at
+a new clean source commit. No hosted changes or scale/cleanup-implementation
+claim; production PR81 and full-plan acceptance **19/65** are unchanged.
+
+
+### Actual published Storage composition verified locally
+
+At clean source `95c4a4cbbd64ebc6e5b50c355f7bf1d83cf16c64`, attempt three
+passes the complete tiny local provider composition in **11.685 seconds**:
+actual signing/finalization → parser runs → canonical materialization → rsID
+materialization → registered final publication → current-session coordinate read.
+The 547-byte synthetic original produced **14 registered objects: six scratch
+and eight final members**. The actual reader fetched both serialized roots and
+three authenticated byte ranges and returned exactly the expected two canonical
+records for rs762551, with normalized **A/C** and original observation evidence.
+
+Wrong manifest and scratch-member requests were refused. Expiring the originating
+preparation session refused that session's read while a fresh same-owner session
+returned an identical page, manifest, root and membership digest. Committed file
+deletion preparation then denied reading before any prepared bytes were removed.
+All requests settled; every registered prepared object, staging/original version
+and physical sidecar was verified absent before exact synthetic row retirement
+and temporary-schema reversal. Root independently checked physical absence and
+removed only the empty synthetic namespace. The existing **33 files and 33
+objects**, configuration, migration history, registry and function/trigger/table/
+type fingerprints match baseline. One synthetic Auth/audit fixture with two
+sessions remains from this successful run; the earlier two failed runs remain
+fully recorded. Evidence: parent task
+`work/wgs-next-backend/storage-published-integration-attempt-3/`.
+
+This closes actual local publication/read composition, including the PostgREST
+compatibility defect found by real I/O. It is **not** WGS-scale, hosted S3,
+clinical/report-purpose, browser, durable recovery, scheduled retention or
+production file/account/scratch cleanup evidence. The proof's scoped SQL row
+retirement is test teardown. Current production and admission/retention settings
+remain unchanged. Next: bind report begin/check/complete/detail/mail to the same
+published source and integrate shared cleanup/recovery before enabling the
+backend or running a full-size application journey. Acceptance stays **19/65**.
+
+### Prepared chosen reports share exact source authority · local only
+
+The new report path consumes the actual prepared coordinate reader only when
+its captured claim names the exact manifest, membership digest and root. It
+preserves normalized calls and original observation quality, follows short or
+empty pages until the actual cursor ends, and refuses changed authority or
+partial reads without a database fallback. Existing database-backed report
+claims retain their prior JSON contract. An independent PRS correction removes
+insertion-order-dependent winners at conflicting target loci; agreeing evidence
+counts once and ambiguous, filtered or missing evidence withholds that locus.
+Existing score arithmetic and report/ancestry calculations remain unchanged.
+
+Each prepared report purpose now admits at most **8,192 selected evidence rows,
+8 MiB of serialized evidence and 64 pages**, shared across locus batches and
+both call streams. Exceeding a limit refuses the whole pending page, closes the
+reader and fails that purpose without truncation or readiness. Earlier completed
+independent purposes remain intact. These are selected-evidence refusal limits,
+not a total process-memory, genome-size or monthly-capacity claim.
+
+**118 distinct focused TypeScript tests** pass across the report generator,
+page adapter, evidence budget, PRS lookup and existing PRS calculations. Scoped
+TypeScript, eight-file lint and independent source review pass. Adapter/RPC
+transports in these tests are mocked; the earlier actual Storage publication/read
+proof is separate and does not establish this complete report journey.
+
+The disabled backend's new migration
+`20260908201613_own_prepared_report_authority.sql` passes **73 rollback-only SQL
+assertions** in **7.804 seconds**. Three private helpers and ten compatible
+function replacements bind begin/check/complete, saved detail/ancestry and ready
+mail to the same source. Full final membership is checked at completion and
+saved-read boundaries; mail uses metadata-only membership checks without a
+session genetic-read capability. Actual terminal clocks reject expired running
+claims and completion, including expiry after result mutation. A frozen,
+unpublished attempt can still recover through genuine database normalization;
+invalid published sources cannot fall back. Family access remains closed.
+
+Three earlier fixture failures are retained: absent transactional pgTAP setup,
+owner-only inspection attempted under the service role, and two ambiguous JSON
+subtraction expressions. Corrections changed setup/role scopes/parentheses,
+without relaxing product permissions or any of the 73 assertions. All four
+attempts rolled back; existing **33 files / 33 objects**, 1,000,740 variant rows,
+184 observations, 52 Auth users, analysis journals, schema/ACL catalogs,
+configuration and migration history match baseline. No prototype or pgTAP
+extension remains installed. Receipts and exact source pins are in parent task
+`work/wgs-next-backend/prepared-report-authority-attempt-{1,2,3,4}/`,
+`prepared-report-ts-checkpoint.json` and the independent review receipts.
+
+This closes the local report-authority prerequisite, not full application or
+provider report delivery. Next: verify actual prepared-reader → report completion
+composition, integrate backend readiness and complete file/account/scratch
+cleanup plus durable recovery before activation. Replaced runtime functions need
+an explicit restoration plan for any temporary provider proof; the earlier
+additive-only reversal driver cannot be reused unchanged. Export/revocable
+original download, full-size WGS, raw FASTQ/BAM/CRAM, scheduled one-month retention
+and 100-genomes/month capacity remain pending. Production PR81, admission limits,
+subscriptions and **19/65** acceptance are unchanged.
+
+### Prepared cleanup provider dependency · source verified
+
+The next lifecycle investigation confirmed a boundary that prevents activation:
+standard Storage upload generates a private backend version, while ordinary
+removal derives physical targets from existing metadata. An interrupted upload
+whose metadata commit is rejected can therefore leave a version that the normal
+project API cannot select for removal. A metadata 404 is not deletion evidence.
+Pinned v1.70.3 has a separate operator orphan scanner, but its request is
+bucket-wide, uses a separate server admin key and queues a backup/delete event;
+it does not supply our required exact-object settlement and physical-absence
+receipt. The handler copies S3 orphans to an internal backup key before optional
+original removal; the examined handler does not establish backup expiry.
+No hosted admin access or exact hosted-version parity is claimed.
+
+Exact source findings and acknowledged-artifact/file/account/scratch disposition
+contracts are retained in parent task `work/wgs-next-backend/` as
+`prepared-orphan-lifecycle-review.md` and `prepared-cleanup-contract.md`. Current
+Supabase documentation independently distinguishes inaccessible orphaned bytes
+from deleted metadata. A concrete support question asks for supported exact-key
+inventory, deletion/absence confirmation, late-write settlement and plan/cost
+terms; external sending awaits owner approval. No scan, provider deletion,
+activation, new plan or billing change was performed.
+
+To deliver an independently useful finding correction while this provider
+question is unresolved, the reviewed PRS ambiguity fix was extracted onto
+production base PR81 as PR82 (`277b62b`). It changes newly computed scores only;
+existing saved results are not silently regenerated. Its full CI/release is
+tracked in parent task `work/prs-call-conflict-release/`. Larger-file source work
+is preserved, disabled, at `8e9ed28`; whole-plan acceptance remains **19/65**.
+
+### Earlier PR80 dense preparation and report recovery
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
 `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
@@ -81,8 +544,7 @@ analysis counts were unchanged. Native JavaScript deletion confirmation remains
 unverified because the browser control could not operate its prompt.
 
 This proves hosted preparation plus report recovery, not an uninterrupted pass.
-The confirmed next correction distinguishes report failure from acknowledged
-preparation. Automatic statistics refreshed between failure and retry; that timing
+PR81 now distinguishes report failure from acknowledged preparation. Automatic statistics refreshed between failure and retry; that timing
 is a clue, not proof of the first report failure's cause. Full-size WGS, 100 genomes
 per month and one-month original expiry remain approved, unproved scope. No cap or
 subscription was increased; acceptance remains **19/65**. Receipts: parent task
@@ -148,7 +610,7 @@ Earlier dated release descriptions below are historical, not current blockers.
 
 ## Owner-directed next scope · 8 September 2026
 
-PR80 is deployed. After correcting report-recovery messaging, the next approved work is ordinary full-size existing WGS result
+PR81 is deployed with corrected report-recovery messaging. The next approved work is ordinary full-size existing WGS result
 files, followed by
 raw FASTQ/BAM/CRAM processing. The owner targets **100 genomes per month** and
 **one-month retention of original source files**. These are implementation and

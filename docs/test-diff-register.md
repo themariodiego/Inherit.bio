@@ -1,5 +1,15 @@
 # Test diff register
 
+## Export wording follows actual original availability · 2026-09-09
+
+Full CI at `f31682a` passed 230 browser cases but caught a changed manifest
+promise in the ordinary export journey; its next serial case did not run.
+The route now retains the existing promise when no original has expired and
+uses the qualified wording only when an actual retired original is omitted.
+The browser assertion is unchanged. All 17 export route cases pass, including
+the retired-original archive and its explicit availability note. Full CI must
+pass on the resulting release commit before merge.
+
 ## Health Picture canonical journey and exact-source navigation · 2026-09-07
 
 `e2e/family-health-picture.spec.ts` retains ten serial cases. Actual browser
@@ -882,3 +892,91 @@ The focused unit inventory passes 84 cases; no existing assertion is removed.
 The plain-word registry adds “birth”, “date”, “complete” and “own” for the
 literal account and DNA labels. No jargon entry, readability threshold,
 extractor or legal statement is removed or relaxed.
+
+
+## Private WGS prepared-object integration · 8 September 2026
+
+- `canonical.test.ts` adds source-position duplicate/conflict, all-observation,
+  no-call, actual GRCh37 mapping, long-allele and terminal/EOF parity checks.
+- `canonical-codec.test.ts` adds complete source/disposition round trips,
+  normalized deltas, near-limit alleles, corrupt bindings/bytes and cancellation.
+- `storage-reader.test.ts` adds exact bounded range/EOF validation, pre/post
+  authority refusals, abort/late-body cleanup and private origin configuration.
+  These use synthetic transport responses, not a claimed provider proof.
+- The secret gate's existing adversarial fixture matrix gains one exact URL
+  rejection input under ADR-0006. Detectors and history baseline are unchanged.
+- `own_preparation_jobs.sql` adds 85 rollback-only metadata/authority assertions.
+  Actual upload issuance and finalization RPCs create synthetic source receipts;
+  no normalized completion, provider byte proof or cleanup success is fabricated.
+  The initial invalid original-metadata and consent-clock mutations were corrected
+  to assert the existing immutable guard and use a valid elapsed consent expiry.
+  Guards, expected refusals and existing tests remain intact.
+  The namespace extension adds actual-shaped rollback probes, a deferred
+  no-commit check, immutable final writes and permanent refusal after retirement.
+- `canonical-runs.test.ts` and `canonical-merge.test.ts` add target ordering,
+  collisions and all-disposition preservation, exact terminal/EOF and durable-sink
+  receipt requirements, bounded runs/merges, corrupt late blocks and cancellation.
+- `storage-writer.test.ts` verifies reserve-before-upload, complete readback hash
+  before exact ACK, deadline/lease cancellation and refusal to retry uncertain
+  submissions. Transport responses remain mocks; physical cleanup is not claimed.
+  Reader/writer regressions cover cancellation between response resolution and
+  the awaiting continuation. Reader keys now require the prepared namespace;
+  origin tests also cover the existing local family Kong port 55321.
+- Canonical container/reader tests preserve exact source and normalized bytes,
+  bindings, range offsets and flush acknowledgement under bounded streaming,
+  long blocks, cancellation and current authority refusal. The existing parser
+  reader assertions stay intact while both codecs share the same range transport.
+- `v2_contracts.sql` raises the registered store count from 117 to 119 and adds
+  exact source-working classification assertions for the two new private stores;
+  all previous assertions remain. Fresh full replay remains a release requirement.
+
+
+## Final prepared publication foundation · 8 September 2026
+
+- `materialize-canonical-rsid.test.ts` adds 31 final pointer-order, merge-terminal,
+  zero-ID, exact writer receipt, bounded container/directory and cancellation cases.
+- `verify-canonical-materialization.test.ts` adds 43 complete-artifact checks:
+  actual hashes/EOF/counts, every coordinate bound against decoded records,
+  cross-block order, identity membership, byte sums and authority/time fences.
+- `verify-rsid-materialization.test.ts` adds 17 complete final-index checks,
+  including exact pointer-stream digest and zero-ID behavior. Its real parser,
+  canonical and rsID setup is shared with the publication assembler tests.
+- `prepare-genome-publication.test.ts` adds 18 integration cases for three exact
+  registered roots, full final membership, GRCh37 count units, partial writes,
+  final authority and cancellation. Review found and corrected a cross-phase
+  sequence assumption: registered temporary rsID sorting artifacts may lie between
+  final canonical and rsID members. The test writes those scratch artifacts before
+  the final rsID phase and proves they remain excluded and cleanup-owned.
+- `own_prepared_publication.sql` tests the disabled atomic publication/read/replay
+  transition using actual synthetic consent/issuance/finalization operations and
+  metadata-only Storage rows. It does not prove physical bytes or deletion success.
+  Review added exact current file-type identity and a mutation/refusal regression.
+  The corrected rollback-only run passes 51 assertions. Its first attempt stopped
+  after 46 passes because the synthetic withdrawal omitted its required reason;
+  the exact captured consent now gets both timestamp and reason, with explicit
+  valid-state and unchanged read-denial checks. Both baselines were restored.
+- `v2_contracts.sql` now expects 121 stores (the previous 119 plus immutable
+  manifest and final-member stores), with 24 assertions. Existing classifications
+  and protections remain intact; this registration is not a cleanup executor.
+
+
+## Published source transport and member authority · 8 September 2026
+
+- `storage-artifact-fetch.test.ts` adds 41 authenticated HTTP transport checks:
+  exact registered metadata/headers, body ownership before first iteration,
+  cancellation and late responses, and integration with the existing full
+  hash/EOF/current-authority verifier. Responses remain synthetic.
+- `published-source-reader.test.ts` adds 17 real parser/materializer/root-to-read
+  composition checks through synthetic RPC/Storage responses. It preserves
+  GRCh37 source evidence, bounded cursor continuity and exact published identity;
+  it refuses mismatches, revoked operations, corrupt bytes and loss of an unread
+  member at final exhaustive verification. Initial member-error assertions were
+  corrected to the verified reader's opaque unavailable error and strengthened
+  to require zero Storage reads for the mismatched member. No refusal was relaxed.
+- `own_prepared_member_authorization.sql` uses actual synthetic signed source
+  issuance/finalization/publication plus metadata-only Storage rows. It tests
+  constant-cost exact-member checks separately from exhaustive source integrity,
+  current-session authority and final clocks. The first SQL run's source-revision
+  fixture hit an existing consistency constraint; an explicit constraint-refusal
+  assertion remains, and the stale-source probe changes both revision fields
+  coherently before requiring the same member-gate refusal. No guard is bypassed.

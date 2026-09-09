@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { deleteFileUntilSettled } from "@/lib/uploads/file-delete-browser";
 import { fileDeletionError } from "@/copy/upload/file-deletion";
 import { BrowserPreparationError, prepareSubjectFile } from "@/lib/uploads/subject-upload-browser";
 import { route } from "@/lib/primary-routes";
@@ -21,6 +22,8 @@ export function FileRowActions({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const deletion = useRef<AbortController | null>(null);
+  useEffect(() => () => deletion.current?.abort(), []);
   const [error, setError] = useState<string | null>(null);
   const [preparationError, setPreparationError] = useState<BrowserPreparationError["code"] | null>(null);
 
@@ -82,17 +85,22 @@ export function FileRowActions({
           setError(null);
           setPreparationError(null);
           try {
-            const response = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
-            if (!response.ok) {
-              const result = await response.json().catch(() => null);
-              setError(fileDeletionError(result?.error));
-              return;
+            const controller = new AbortController();
+            deletion.current = controller;
+            const result = await deleteFileUntilSettled(fileId, controller.signal);
+            if (controller.signal.aborted) return;
+            if (result.status === "pending") {
+              setError("Deletion is still pending. You can try Delete again to check progress. The file stays listed until deletion is complete.");
+            } else if (result.status === "failed") {
+              setError(fileDeletionError(result.code));
+            } else {
+              router.refresh();
             }
-            router.refresh();
           } catch {
             setError(fileDeletionError(null));
           } finally {
-            setBusy(false);
+            if (!deletion.current?.signal.aborted) setBusy(false);
+            deletion.current = null;
           }
         }}
       >

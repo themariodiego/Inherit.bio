@@ -16,6 +16,48 @@
     }
   ],
   "policyContracts": {
+    "own-prepared-object-v1": {
+      "decision": "docs/adr/0025-own-prepared-object-backend.md",
+      "status": "private integration candidate; new ingestion disabled by default; operator worker and existing retention scheduler use separate admission and cleanup authority",
+      "scope": "one structurally verified finalized VCF-family source owned by the acting account's active self subject; preparation creates no analytic purpose grant or report",
+      "stores": [
+        "private.own_preparation_jobs",
+        "private.own_preparation_artifacts",
+        "private.own_prepared_manifests",
+        "private.own_prepared_manifest_members",
+        "private.own_preparation_checkpoints",
+        "private.own_prepared_cleanups",
+        "private.own_prepared_cleanup_entries",
+        "private.own_original_retirements"
+      ],
+      "queueCompatibility": "this narrowly registered private preparation protocol does not enqueue or claim generic worker_jobs; all other queued operations retain worker-job-enqueue-v1 and worker-job-dispatch-v1",
+      "limits": {
+        "jobMaximumSeconds": 3600,
+        "claimMaximumSeconds": 300,
+        "writeMaximumSeconds": 30,
+        "maximumAttempts": 3,
+        "maximumArtifactsPerJob": 4096,
+        "maximumReservedArtifactBytesPerJob": 1073741824,
+        "jobDefaultSeconds": 900,
+        "defaultReservedArtifactBytesPerJob": 104857600
+      },
+      "retention": "docs/retention.md id preparation.scratch-2h",
+      "authority": "enqueue captures the actual originating Supabase session and exact account/principal/binding/store artifact revisions; claim, every preparation source or artifact read, reservation, acknowledgement, checkpoint and initial publication re-resolve that same live authority. Published reads use the actual current authenticated session and current store/source/lifecycle authority. Full membership and its digest are checked at both page boundaries; selected objects use indexed exact-member checks plus the caller's distinct current operation/purpose check. Publication creates no analytical purpose grant. Logout, expiry, rotation, store withdrawal, source change or deletion freeze cannot be bypassed by a service key or prior job receipt. Reauthorization requires a real authenticated operation, never a mail-only authority helper",
+      "source": "exact file and subject IDs, immutable original object ID/key, source revision, complete verified raw and decoded hashes, structural single-sample evidence and pinned parser/build/liftover identities; no source key, weaker operation or backend choice supplied by the browser",
+      "deadlines": "job deadline is fixed at creation; claim and write leases are clamped to all earlier job, attempt, originating-session and current consent deadlines. Retry never extends the original job or scratch-retention deadline",
+      "artifacts": "reserve an immutable database-generated artifact identity and key with bounded expected bytes/hash before a create-only write. Supabase v1 receipts retain exact Storage identity; R2 v2 receipts retain actual provider version and ETag. The writer independently verifies complete bytes/hash before SQL acknowledgement. SQL metadata does not prove provider bytes. Unknown acknowledgements remain registered cleanup members",
+      "freeze": "freeze prevents new claims, reservations, acknowledgements and publication. R2 cleanup atomically replaces the payload with a permanent empty marker and independently verifies its exact version and complete empty bytes; the atomic create-only condition fences admitted and replayed writes. Never expire these markers. This proves current payload removal, not key absence or physical media erasure. Supabase unknown physical versions remain unresolved. No frozen receipt is deletion success",
+      "checkpointAndPublication": "same-live-attempt checkpoints bind revision CAS, actual next artifact sequence, exact registered receipts and bounded phase state; current originating authority and deadlines are rechecked. Process loss cannot adopt an expired token or attempt. Final canonical and rsID data is fully verified before exact publication. Published reads use current source/store/session authority and full membership; scratch cleanup retires provisional checkpoints while preserving final members. Never manufacture a database normalization journal",
+      "activation": "keep private dispatch disabled until actual Storage writes/reads, indexed chosen reports, all-call export, revocable original download, file/account/expiry cleanup, bounded failure recovery and unrelated-file preservation are verified together. Public limits and the owner-approved one-month original policy require their own measured compatible activation",
+      "excluded": [
+        "raw FASTQ/BAM/CRAM admission",
+        "other-adult and embryo processing",
+        "automatic report selection",
+        "session-independent genetic reads",
+        "new subscriptions or unapproved overages"
+      ],
+      "originalRetention": "Separately default-disabled and applies only to new prepared publications whose source was created after activation. An immutable exact-source receipt expires one calendar month after file creation. The known-version provider DELETE must return the exact nonempty acknowledgement before completion; unknown outcomes stay unresolved. Verified prepared reports and exports may then use the immutable retired-original provenance. Current original downloads recheck source/session/store authority between bounded ranges and stop at the fixed expiry; no old-source backfill or capacity increase is implied."
+    },
     "genetic-file-ingest-v1": {
       "allowedDataFormats": [
         "consumer-array-text-v1",

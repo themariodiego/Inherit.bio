@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/lib/mail-outbox", () => ({ enqueueAccountMail: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
-    rpc: mocks.rpc,
+    rpc: (...args: unknown[]) => { const result = mocks.rpc(...args); return Object.assign(result, { abortSignal: () => result }); },
     from: () => ({ select: () => ({ or: async () => ({ count: 0 }) }) }),
   }),
 }));
@@ -16,6 +16,9 @@ describe("independent retention queues", () => {
   it("continues invitation, draft and account retention when terminal-contact expiry fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
       if (name === "run_own_report_purge_v1") return { data: null, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
       if (name === "claim_own_upload_purge_v1") return { data: null, error: null };
@@ -37,6 +40,9 @@ describe("independent retention queues", () => {
   it("reaps interrupted preparation even when the upload provider queue fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
       if (name === "run_own_report_purge_v1") return { data: null, error: null };
       if (name === "reap_expired_own_normalizations_v1") return { data: 2, error: null };
       if (name === "claim_own_upload_purge_v1") return { data: null, error: { code: "synthetic" } };

@@ -19,6 +19,7 @@ import type { ParseResult, VariantRecord } from "@/lib/genome/types";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { prepareOwnWgsFile } from "@/lib/uploads/own-preparation";
 import { normalizeSubjectFile } from "@/lib/uploads/subject-normalization";
 import { generateOwnReports } from "@/lib/uploads/own-report-generation";
 import { subjectNormalizationReceipt, subjectReportGenerationFailure } from "@/lib/uploads/subject-upload-contract";
@@ -60,7 +61,7 @@ export async function POST(
   // New sources prepare canonical rows under store consent only. They never
   // enter the legacy all-analysis dispatcher below.
   if (file.single_logical_sample_verified_at !== null) {
-    const prepared = await normalizeSubjectFile(request, id, completionDeadline);
+    const prepared = await prepareOwnWgsFile(request, file) ?? await normalizeSubjectFile(request, id, completionDeadline);
     if (prepared.status !== 200) return prepared;
     const receipt = subjectNormalizationReceipt.safeParse(await prepared.json().catch(() => null));
     if (!receipt.success || receipt.data.fileId !== id) return ownUploadJson({ error: "unavailable" }, 503);

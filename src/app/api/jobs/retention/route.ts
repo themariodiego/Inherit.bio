@@ -8,6 +8,8 @@ import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-cleanup";
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
+import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
+import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
 
 export const maxDuration = 300;
 
@@ -77,6 +79,16 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   let processed = 0;
   let failed = 0;
+  const preparedCleanupSignal = AbortSignal.timeout(150_000);
+  try {
+    const prepared = await drainPreparedScratch(admin, preparedCleanupSignal);
+    processed += prepared.processed; failed += prepared.failed;
+  } catch { failed++; }
+
+  try {
+    const originals = await drainOwnOriginalRetirement(admin, preparedCleanupSignal);
+    processed += originals.processed; failed += originals.failed;
+  } catch { failed++; }
 
   const reportRevocations = await drainOwnReportRevocations(admin);
   processed += reportRevocations.processed; failed += reportRevocations.failed;
@@ -187,6 +199,9 @@ export async function POST(request: Request) {
 
     try {
       if (!claim.database_already_purged) {
+        if (!(await prepareAccountCleanup(admin, claim.deletion_id, claimToken, preparedCleanupSignal))) {
+          throw new Error("prepared_cleanup_pending");
+        }
         const manifest = storageManifest.parse(claim.storage_objects);
         const byBucket = new Map<string, typeof manifest>();
         for (const entry of manifest) {

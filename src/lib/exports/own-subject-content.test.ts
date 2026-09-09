@@ -4,6 +4,8 @@ import { gzipSync } from "node:zlib";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "./own-subject-content";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
+const preparedExport = vi.hoisted(() => vi.fn());
+vi.mock("../genome/prepared-source/export-source", () => ({ exportOwnPreparedRecords: preparedExport }));
 const id = (n: number) => `12345678-1234-4234-8234-${String(n).padStart(12, "0")}`;
 const actor = { accountId: id(1), sessionId: id(2) };
 const digest = (text: Uint8Array | string) => createHash("sha256").update(text).digest("hex");
@@ -204,4 +206,35 @@ describe("own-subject export content", () => {
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 
+});
+
+function preparedSnapshot(): OwnExportSnapshot {
+  return { ...snapshot(), preparedSource: { version: "own-prepared-report-source-v1", backend: "prepared-object-v1",
+    manifestId: id(80), membershipSha256: "c".repeat(64), rootArtifactId: id(81), rootSha256: "d".repeat(64) } };
+}
+describe("prepared-object export snapshot dispatch", () => {
+  it("passes the exact captured source and current export checker to the streaming transport", async () => {
+    preparedExport.mockReset(); const selected = preparedSnapshot(), rpc = db(() => selected), consume = vi.fn();
+    preparedExport.mockImplementation(async (_actor, selection, options) => {
+      expect(selection).toMatchObject({ fileId: selected.file.id, rawSha256: selected.file.sha256,
+        decodedSha256: selected.file.source_sha256, preparedSource: selected.preparedSource });
+      await options.checkOperation(new AbortController().signal);
+      return { recordCount: 3, variantCount: 1 };
+    });
+    expect(await ownSubjectExportContent(rpc, actor).preparedRecords(selected, consume)).toEqual({ recordCount: 3, variantCount: 1 });
+    expect(rpc.mock.calls.map(([, a]) => a.p_operation)).toEqual(["check", "check"]);
+    expect(preparedExport).toHaveBeenCalledWith(actor, expect.any(Object), expect.any(Object), consume);
+  });
+  it("refuses database fallback for prepared variant and observation pages", () => {
+    const selected = preparedSnapshot(), rpc = db(() => []), content = ownSubjectExportContent(rpc, actor);
+    expect(() => content.variants(selected)).toThrow("export unavailable");
+    expect(() => content.observed(selected)).toThrow("export unavailable");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("rejects a changed complete export snapshot before any prepared object request", async () => {
+    preparedExport.mockReset(); const selected = preparedSnapshot();
+    const rpc = db(() => ({ ...selected, preparedSource: { ...selected.preparedSource!, membershipSha256: "e".repeat(64) } }));
+    await expect(ownSubjectExportContent(rpc, actor).preparedRecords(selected, async () => {})).rejects.toThrow("export unavailable");
+    expect(preparedExport).not.toHaveBeenCalled();
+  });
 });

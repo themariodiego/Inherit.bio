@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 import type { ReportTemplate } from "../genome/reports";
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn(), profile: vi.fn() }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(), templates: vi.fn(), profile: vi.fn(), prepared: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: () => ({ select: () => ({ eq: () => ({ single: mocks.profile }) }) }) }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: mocks.templates }));
+vi.mock("@/lib/genome/prepared-source/report-call-pages", async importOriginal => ({
+  ...await importOriginal<typeof import("../genome/prepared-source/report-call-pages")>(),
+  readOwnPreparedReportPages: mocks.prepared,
+}));
 import { generateOwnReports } from "./own-report-generation";
 import { AIMS } from "../genome/admixture";
 import { ownAncestryContentSchema } from "./own-ancestry-content";
@@ -24,7 +28,10 @@ const template = { ...gastrointestinal[0], layer: "estimate", estimate_kind: "si
 let selected: Set<string>, finished: Set<string>;
 const done = (purpose: string) => ({ status: "complete", purpose });
 let ancestryFileType: string;
-const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization,
+const preparedIdentity = { version: "own-prepared-report-source-v1", backend: "prepared-object-v1",
+  manifestId: principal, membershipSha256: "b".repeat(64), rootArtifactId: principal, rootSha256: "c".repeat(64) };
+let prepared: boolean;
+const claim = (purpose: string) => ({ status: "authorized", claim: claimId, purpose, authorization: { ...authorization, ...(prepared ? { preparedSource: preparedIdentity } : {}) },
   ...(purpose === "ancestry" ? { source: { fileId, fileType: ancestryFileType, normalizedBuild: "GRCh38",
     callEncoding: ancestryFileType.startsWith("array_") ? "array-genotype" : "vcf-literal" } } : {}) });
 const sourceCall = { file_id: fileId, rsid: 4988235, chrom: 2, pos: 135851076, ref: "G", alt: "A", genotype: "A/G" };
@@ -41,7 +48,7 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
 }
 beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
-  ancestryFileType = "vcf";
+  ancestryFileType = "vcf"; prepared = false;
   vi.resetAllMocks(); selected = new Set(["reports.polygenic"]); finished = new Set();
   mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
   mocks.getUser.mockResolvedValue({ data: { user: { id: account, email: "ready@e2e.local", email_confirmed_at: "2026-09-06T12:00:00Z" } } });
@@ -51,6 +58,122 @@ beforeEach(() => {
 });
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); });
 describe("independent synchronous own reports", () => {
+  function preparedRpc(implementation = rpc) {
+    mocks.rpc.mockImplementation((name, args) => {
+      const result = Promise.resolve(implementation(name, args));
+      return Object.assign(result, { abortSignal: (signal: AbortSignal) => {
+        if (signal.aborted) return Promise.reject(Error("aborted")); return result;
+      } });
+    });
+  }
+  it("uses only the captured prepared source and preserves the existing selected report result", async () => {
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const baseline = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    finished.clear(); mocks.rpc.mockClear(); prepared = true; preparedRpc();
+    mocks.prepared.mockImplementation(async function* (actor, source, loci, options) {
+      expect(actor).toEqual({ accountId: account, sessionId: session });
+      expect(source).toEqual({ fileId, subjectId: subject, sourceRevision: 1, sourceSha256: authorization.sourceSha256,
+        normalizedAt: authorization.normalizedAt, preparedSource: preparedIdentity });
+      expect(loci.length).toBeLessThanOrEqual(200);
+      await options.checkOperation(new AbortController().signal);
+      yield { variants: [], observations: [] };
+      if (loci.some((p: { chrom: number; pos: number }) => p.chrom === sourceCall.chrom && p.pos === sourceCall.pos))
+        yield { variants: [{ sourceLine: 10, call: sourceCall }], observations: [] };
+      await options.checkOperation(new AbortController().signal);
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    expect(mocks.prepared).toHaveBeenCalled();
+    const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    expect(completed.reports).toEqual(baseline.reports); expect(completed.prs).toEqual(baseline.prs);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+  it.each(["reports.monogenic", "reports.polygenic", "ancestry"])("closes over-budget prepared %s reads without truncating or completing", async purpose => {
+    prepared = true; selected = new Set([purpose]); preparedRpc();
+    let pulled = 0, closed = 0;
+    mocks.prepared.mockImplementation(async function* () {
+      try {
+        for (let page = 0; page < 10; page++) {
+          pulled++;
+          const row = { sourceLine: 10, call: { ...sourceCall, usable: true } };
+          yield { variants: Array(500).fill(row), observations: Array(500).fill(row) };
+        }
+      } finally { closed++; }
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(pulled).toBe(9); expect(closed).toBe(1);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete" || a.p_operation === "ready")).toBe(false);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "fail")).toBe(true);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+  it("bounds empty prepared pages and preserves an earlier independently completed purpose", async () => {
+    prepared = true; selected = new Set(["reports.monogenic", "reports.polygenic"]); preparedRpc();
+    let pulled = 0, closed = 0;
+    mocks.prepared.mockImplementation(async function* () {
+      if (!finished.has("reports.monogenic")) { yield { variants: [], observations: [] }; return; }
+      try {
+        for (let page = 0; page < 70; page++) { pulled++; yield { variants: [], observations: [] }; }
+      } finally { closed++; }
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(pulled).toBe(65); expect(closed).toBe(1);
+    expect(mocks.rpc.mock.calls.filter(([, a]) => a.p_operation === "complete").map(([, a]) => a.p_purpose))
+      .toEqual(["reports.monogenic"]);
+    expect(finished.has("reports.monogenic")).toBe(true);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "ready")).toBe(false);
+  });
+
+  it("refuses changed manifest authority during object reads without committing a partial report", async () => {
+    prepared = true;
+    preparedRpc(async (name, args) => args.p_operation === "check" ? { data: { ...claim(args.p_purpose),
+      authorization: { ...authorization, preparedSource: { ...preparedIdentity, rootSha256: "f".repeat(64) } } }, error: null } : rpc(name, args));
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal); yield { variants: [], observations: [] };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete")).toBe(false);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "fail")).toBe(true);
+  });
+  it("does not fall back to database calls after a partial prepared read fails", async () => {
+    prepared = true; preparedRpc();
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal);
+      yield { variants: [{ sourceLine: 10, call: sourceCall }], observations: [] };
+      throw Error("object unavailable");
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-") || a.p_operation === "complete")).toBe(false);
+  });
+  it("refuses malformed prepared claims before choosing a data reader", async () => {
+    prepared = true;
+    mocks.rpc.mockResolvedValue({ data: { ...claim("reports.monogenic"),
+      authorization: { ...authorization, preparedSource: { ...preparedIdentity, rootSha256: null } } }, error: null });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503); expect(mocks.prepared).not.toHaveBeenCalled();
+  });
+  it("requires an actually cancellable claim-check transport for prepared pages", async () => {
+    prepared = true; // Existing legacy mock is a plain Promise, not a PostgREST builder.
+    mocks.prepared.mockImplementation(async function* (_actor, _source, _loci, options) {
+      await options.checkOperation(new AbortController().signal); yield { variants: [], observations: [] };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(503);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete")).toBe(false);
+  });
+  it("feeds prepared VCF observations into the existing ancestry computation", async () => {
+    prepared = true; selected = new Set(["ancestry"]); preparedRpc();
+    const marker = AIMS[0];
+    mocks.prepared.mockImplementation(async function* (_actor, _source, loci, options) {
+      await options.checkOperation(new AbortController().signal);
+      const observations = loci.some((p: { chrom: number; pos: number }) => p.chrom === marker.chrom && p.pos === marker.pos38)
+        ? [{ sourceLine: 10, call: { file_id: fileId, chrom: marker.chrom, pos: marker.pos38,
+          rsid: null, ref: "A", alt: "C", genotype: "--", usable: false } }] : [];
+      yield { variants: [], observations };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    expect(ownAncestryContentSchema.safeParse(completed.ancestry).success).toBe(true);
+    expect(completed.ancestry.panelPositions.noCall).toBe(1);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+
   it("generates the real MCM6 AG interpretation for only the chosen estimate purpose", async () => {
     const response = await generateOwnReports(request(), fileId);
     expect(await response.json()).toEqual({ fileId, status: "processed", analysisState: "active" });

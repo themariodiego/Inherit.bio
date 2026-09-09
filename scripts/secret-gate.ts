@@ -9,6 +9,7 @@ const GENOME_FIXTURE_ROOTS = ["data/samples", "e2e/fixtures"];
 // ADR 0006 pins [classification, detector value, paths, full source-line SHA].
 // JSON/ADR edits alone cannot approve a different credential or expression.
 const REVIEWED_FIXTURE_BINDINGS: Readonly<Record<string, string>> = {
+  "prepared-storage-credential-refusal": "fd81e706b1ba53372395e79edc9ff8d1c35ee79948a68b65290c7e011c2bf947",
   "browser-origin-credential-refusal": "70081558a9f9b8cba245e7a7b0b71d4f313c76351970e0b60f592d6e6acf1ff7",
   "storage-proxy-credential-refusal": "b22bdf8a20b2ffeb40358291980b624ed57e23c78eded1f9d83c04d4691e3a68",
   "model-endpoint-credential-refusal": "994f05d31bc43286df7f5c4eed3641b6faca7b2031f707dccf56fb0dc30d4f1c",

@@ -25,7 +25,9 @@ export const subjectNormalizationReceipt = z.object({ fileId: uuid,
 export const subjectSynchronousReportReceipt = z.object({ fileId: uuid,
   status: z.enum(["processed", "already_processed"]), analysisState: z.literal("active"),
 }).strict();
-export const subjectProcessingReceipt = z.union([subjectNormalizationReceipt, subjectSynchronousReportReceipt]);
+export const subjectQueuedPreparationReceipt = z.object({ fileId: uuid, jobId: uuid,
+  status: z.literal("preparing"), analysisState: z.literal("not_generated") }).strict();
+export const subjectProcessingReceipt = z.union([subjectNormalizationReceipt, subjectSynchronousReportReceipt, subjectQueuedPreparationReceipt]);
 /** Acknowledges preparation only; some reports or their notice may already exist. */
 export const subjectReportGenerationFailure = z.object({
   error: z.literal("report_generation_unavailable"), fileId: uuid,

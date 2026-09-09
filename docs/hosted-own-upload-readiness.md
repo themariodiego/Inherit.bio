@@ -1,6 +1,51 @@
 # Hosted own-upload rollout prerequisites
 
-## Current checkpoint: PR80 dense preparation and report recovery verified · 8 September 2026
+## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
+
+PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
+`dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF` at **16:19:20.081 UTC**, on all six aliases.
+It distinguishes a confirmed prepared file from a later selected-report failure,
+with a retry path that does not require another upload. No database, environment,
+scheduler, plan or admission-limit changes accompanied this release.
+
+Exact head `36093080` passed **3,346 units (205 files), 85 fresh migrations,
+2,120 SQL assertions (56 files), 30 lock checks and 232 browser cases**, with
+57 actual Storage uploads and zero skipped or automatically retried cases. CI
+`34245372159` attempt one had one pre-response sign-out socket failure, 222 passes
+and nine dependent cases not run. The unchanged whole-job second attempt passed,
+including all those cases; the original failure and unproved cause are retained.
+
+Automatic main CI `34250269387` also passed on the exact production merge:
+3,346 units, 85 fresh migrations, 2,120 SQL assertions, 30 lock checks and all
+232 browser cases in 14.2 minutes, with 57 actual uploads and zero skips or
+automatic retries. The previously affected Health Picture case and both cleanup
+steps passed. No further rerun was requested.
+
+Desktop and mobile inspection used the actual shared recovery component in an
+isolated fixture. Production smoke at **16:20:27.648 UTC** verified authenticated
+synthetic-only `/files` and `/files/upload` HTTP 200 responses and all three new
+recovery strings in the served client asset; the account remained empty and its
+test session was signed out. This did not force or observe another hosted report
+failure. Receipt details: parent task `work/wgs-release-pr80/recovery-*`.
+Acceptance remains **19/65**.
+
+The new compact preparation engine remains local-only. Its exact 82 MB synthetic
+filesystem proof preserved four million events through staged merge and exact
+cleanup in 241.013 seconds. It has no hosted Storage/job/authority/report or
+original-expiry integration, and changes no public limit. Full details and scope
+are in `docs/mvp-acceptance-next.md` and parent task
+`work/wgs-next-backend/disk-integration-attempt-1/`.
+
+The private registered writer/freeze boundary now also has an actual **local**
+Storage v1.70.3 proof at source `93e5fda`: successful complete readback/hash/ACK,
+overwrite refusal without changing bytes, and an admitted partial upload frozen
+before finalization with exact physical cleanup. Its temporary schema was reversed
+and existing data/configuration fingerprints restored; one declared synthetic
+Auth/consent fixture remains. See `storage-integration-attempt-1/` and the acceptance
+ledger for the exact scope. No hosted prepared-object migration, writer dispatch,
+capacity increase or original-expiry policy is activated by this result.
+
+## Earlier PR80 dense preparation and report recovery verified
 
 PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384` is production READY as
 `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ` at **15:12:14.085 UTC**, on all six aliases.
@@ -22,8 +67,7 @@ analysis counts were unchanged. Native JavaScript deletion confirmation remains
 unverified because the browser control could not operate its prompt.
 
 This proves hosted preparation plus report recovery, not an uninterrupted pass.
-The confirmed next correction distinguishes report failure from acknowledged
-preparation. Automatic statistics refreshed between failure and retry; that timing
+PR81 now distinguishes report failure from acknowledged preparation. Automatic statistics refreshed between failure and retry; that timing
 is a clue, not proof of the first report failure's cause. Full-size WGS, 100 genomes
 per month and one-month original expiry remain approved, unproved scope. No cap or
 subscription was increased; acceptance remains **19/65**. Receipts: parent task

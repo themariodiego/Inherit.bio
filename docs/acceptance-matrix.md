@@ -14,10 +14,23 @@ Later work can supersede that behavior without completing the stricter gates.
   document/status/content checks, no skips/retries. The independent review
   confirms the complete gate; see `docs/local-upload-browser-verification.md`.
   G1.16 and broader upload/rights release conditions remain open. Production
-  is PR80 merge `b27ad1acb23abdfeb68e31b2315acb0a41b87384`, deployment
-  `dpl_BxHac7ME2J5Ms8u7KAGL1NsBzAcZ`, READY at 15:12:14.085 UTC on
+  is PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f`, deployment
+  `dpl_BgPP2ibjzYQiHQ7EZ9E9uY4tXUvF`, READY at 16:19:20.081 UTC on
   2026-09-08 across all six aliases. Canonical upload admission is enabled;
   legacy issuance remains paused. See `docs/hosted-own-upload-readiness.md`.
+- PR81 distinguishes acknowledged preparation from selected-report failure.
+  Exact head `36093080` passed 3,346 units, 2,120 SQL assertions, 30 locks and
+  232 browser cases with 57 actual Storage uploads and zero skips/retries.
+  One unchanged full-job rerun passed after a sign-out request socket
+  failure before response headers; the first failure is retained, with no cause asserted.
+  Authenticated empty-account production pages and the deployed recovery asset
+  were verified at 16:20:27 UTC. Desktop/mobile component inspection passed;
+  no hosted report-failure injection or broad gate completion is claimed.
+- Local compact-engine commit `ba35b15` passed a real filesystem proof on an
+  82 MB decoded, two-million-record synthetic source: four million exact events,
+  staged merges, complete readback and zero generated-data residuals. The original
+  remained unchanged. This is a closed local processing prerequisite, not hosted
+  upload/report/job/lifecycle integration or a completed acceptance gate.
 - PR80 CI `34240644001` passed: 3,310 units (204 files), 85 fresh migrations,
   2,120 SQL assertions (56 files), 30 independent lock checks and 232 browser
   cases in 16.0 minutes, 57 actual Storage uploads, zero skips/retries. Both
@@ -30,8 +43,7 @@ Later work can supersede that behavior without completing the stricter gates.
   sources' metadata/counts unchanged. Browser download event was observed; byte
   verification used the authenticated app endpoint. Native deletion confirmation
   remains unverified. This is preparation plus recovery, not an uninterrupted
-  pass. Incorrect preparation-error copy is the next correction; no broad gate
-  closes. Details: `docs/hosted-own-upload-readiness.md` and parent task
+  pass. PR81 corrects the misleading preparation-error copy; no broad gate closes. Details: `docs/hosted-own-upload-readiness.md` and parent task
   `work/wgs-release-pr80/`.
 - Actual abandoned-upload cleanup completed at 12:58:20.741655 UTC, **50.367195
   seconds after its real lease expiry**, with the original 14:27:30.374461 UTC
