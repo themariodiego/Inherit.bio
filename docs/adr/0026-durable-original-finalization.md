@@ -92,11 +92,12 @@ no admission opens. Nothing a person can do changes.
 
 ## Consequences and remaining work
 
-- Finalization spanning more than one request needs `begin_own_upload_
-  finalization_v1` to hand the same account and session back their own in-flight
-  manifest, which it refuses today because the status is already `validating`.
-  The lease column exists for that: re-entry is permitted only once the lease
-  has expired, so two concurrent requests cannot drive one finalization.
+- Re-entry is now implemented: `begin_own_upload_finalization_v1` hands the same
+  account and session back their own in-flight manifest, but only once the
+  previous holder recorded progress and let its lease lapse. A live lease is
+  refused, so a duplicate in-flight request cannot race the holder into copying
+  or publishing the same object twice, and with no recorded progress there is
+  nothing to resume and the lease is refused exactly as before.
 - The route must then read the checkpoint, do what remains within a budget,
   record progress, and answer a polling contract when the budget is exhausted.
   Small files must keep completing in one request with the current 200, so the

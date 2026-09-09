@@ -129,6 +129,28 @@ select is(pg_temp.put(pg_temp.mark('verified',8),4)->>'revision','5','completed 
 select is(pg_temp.get()->'checkpoint'->'digestState','null'::jsonb,'and stores no state it no longer needs');
 select is(pg_temp.put(pg_temp.mark('staging-removed',8),5)->>'revision','6','staging removal is the last recorded phase');
 
+-- Re-entry: the same session may resume its own finalization, and only after
+-- the previous holder's lease has lapsed.
+create function pg_temp.begin_again() returns jsonb language sql as $$
+ select public.begin_own_upload_finalization_v1('76500000-0000-4000-8000-000000000001',
+  '76500000-0000-4000-8000-000000000010',pg_temp.upload_id()); $$;
+select throws_ok($$select pg_temp.begin_again()$$,'42501','not_found',
+ 'a live lease refuses a second request, so two cannot drive one finalization');
+savepoint before_lapse;
+update private.own_upload_finalization_checkpoints
+ set lease_expires_at=clock_timestamp()-interval '1 second' where upload_id=pg_temp.upload_id();
+select is(pg_temp.begin_again()->>'claim',pg_temp.claim()::text,
+ 'a lapsed lease returns the same claim, so recorded progress is still readable');
+select is(pg_temp.begin_again()->>'status','authorized','and the same closed manifest');
+select is(pg_temp.get()->>'revision','6','re-entry adopts the progress already recorded');
+savepoint superseded;
+update private.own_upload_finalization_checkpoints
+ set finalization_claim=gen_random_uuid() where upload_id=pg_temp.upload_id();
+select throws_ok($$select pg_temp.begin_again()$$,'42501','not_found',
+ 'a checkpoint from a superseded claim never authorises re-entry');
+rollback to superseded;
+rollback to before_lapse;
+
 -- The lease never outlives the session it belongs to.
 select ok((select lease_expires_at<=(select expires_at from public.upload_sessions where id=pg_temp.upload_id())
  from private.own_upload_finalization_checkpoints where upload_id=pg_temp.upload_id()),
