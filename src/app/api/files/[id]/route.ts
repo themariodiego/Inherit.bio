@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { prepareFileCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+
+export const maxDuration = 60;
 
 const target = z.object({ token: z.string().uuid(), bucket: z.literal("genomes"), name: z.string().min(1) }).strict();
 const headers = { "Cache-Control": "private, no-store" };
@@ -15,9 +18,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   const admin = createAdminClient();
   const args = { p_account_id: account.user.id, p_session_id: account.sessionId, p_file_id: id };
   try {
-    const prepared = await admin.rpc("prepare_genome_file_deletion_v1", args);
+    const prepared = await prepareFileCleanup(admin, args, request.signal);
     if (prepared.error) {
-      const message = prepared.error.message;
+      const message = typeof prepared.error === "object" && "message" in prepared.error && typeof prepared.error.message === "string"
+        ? prepared.error.message : "file_delete_failed";
       if (message.includes("file_delete_not_found")) return failure("file_delete_not_found", 404);
       if (message.includes("file_delete_unauthorized")) return failure("file_delete_unauthorized", 401);
       if (message.includes("file_delete_processing")) return failure("file_delete_processing", 409);
@@ -26,7 +30,8 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       }
       return failure("file_delete_failed", 503);
     }
-    const manifest = target.safeParse(prepared.data);
+    if (!prepared.complete) return failure("file_delete_pending", 202);
+    const manifest = target.safeParse(prepared.original);
     if (!manifest.success) return failure("file_delete_failed", 503);
     const { data: removed, error } = await admin.storage.from(manifest.data.bucket).remove([manifest.data.name]);
     // A successful empty list is the Storage API's idempotent ACK when a
