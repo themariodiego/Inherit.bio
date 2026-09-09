@@ -37,6 +37,9 @@ create temporary table checkpoint_upload as select public.issue_own_storage_uplo
  '76500000-0000-4000-8000-000000000001','76500000-0000-4000-8000-000000000010',
  (select id from checkpoint_subject),'VCF',8,repeat('a',64)) receipt;
 grant select on checkpoint_upload,checkpoint_subject to service_role;
+-- The storage write guard reads the caller's role from the JWT claims, not from
+-- the PostgreSQL session role, so both have to be set for the fixture insert.
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
 set local role service_role;
 insert into storage.objects(bucket_id,name,owner_id,metadata)
  values('genomes',(select receipt->>'stagingKey' from checkpoint_upload),
