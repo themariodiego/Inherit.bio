@@ -5,6 +5,50 @@ Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+## Durable finalization progress, schema first · 9 September 2026
+
+Finalization is all-or-nothing today. The route validates the staging object,
+copies it, reads the promoted copy back to verify its hash, removes staging and
+publishes — and a failure anywhere discards every completed byte, so the person
+uploads the whole file again. The measurement above says why that matters more
+than it looks: the cost is transfer and round trips, not validation, so the
+work lost is expensive and the compute to redo it is not the problem.
+
+`20260909210000_own_upload_finalization_checkpoints.sql` adds the durable
+progress record, additively and **currently unused**: no route writes a
+checkpoint, no resumption path is enabled, no limit moves and no admission
+opens. It follows the prepared-source precedent of landing authority and
+storage before the runtime that uses them.
+
+The phases are `validated`, `copied`, `verifying`, `verified` and
+`staging-removed`. Only `verifying` carries a byte offset and a resumable
+digest state, because only the copy pass can resume: it reads plain bytes, so
+an offset plus a saved digest resumes it exactly, and a `hash-wasm` SHA-256
+state is 116 bytes. Validation decompresses, and gzip decoder state cannot be
+serialised, so `validated` is recorded once and never re-run rather than
+resumed mid-file.
+
+What the schema refuses: a checkpoint read or written on weaker grounds than
+the finalization itself (it re-derives the same account, session, consent
+revisions, exact claim, `validating` status and unexpired session); a
+superseded claim's progress; a phase or offset that moves backwards; a raw or
+decoded hash that differs from what an earlier pass recorded, which means a
+different source rather than a resumption; a lease outliving the upload
+session; and any key outside the closed set. A terminal status retires the row
+through a trigger, so the hashes it held do not outlive their purpose, and the
+row cascades with its upload session so account deletion and the two-hour
+staging purge need no new manifest entry.
+
+**The authority model is deliberately unchanged.** Progress stays bound to the
+originating session, exactly as the prepared worker is. Nothing here makes
+finalization session-independent, so no superseding ADR is required; a design
+that outlived the session would need one, and this is not it.
+
+Still unbuilt, and needed before any of this changes what a person experiences:
+the route refactor that reads and writes these checkpoints, the polling
+contract for a finalization that outlives one request, and the browser change
+to follow it. Acceptance stays **19/65**.
+
 ## Upload refusals name the limit they hit · 9 September 2026
 
 `private.issue_own_storage_upload_v1` raises one error class (`22023`) for a
