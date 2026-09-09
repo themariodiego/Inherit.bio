@@ -87,8 +87,10 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
     const { claim, actor } = workSchema.parse(raw);
     if (options.expectedFileId && options.expectedFileId !== claim.source.fileId) fail("integrity_mismatch");
     const hardRemaining = Date.parse(claim.jobDeadline) - Date.now();
-    if (hardRemaining <= 0 || hardRemaining > 3_600_000) fail("integrity_mismatch");
-    operationTimer = setTimeout(() => controller.abort(), hardRemaining); operationTimer.unref();
+    if (hardRemaining <= 0) fail("integrity_mismatch");
+    // SQL owns the immutable deadline; a slightly ahead database clock must
+    // not invalidate its legitimate one-hour job. The local timer never grows.
+    operationTimer = setTimeout(() => controller.abort(), Math.min(hardRemaining, 3_600_000)); operationTimer.unref();
     const args = { p_job_id: claim.jobId, p_attempt_id: claim.attemptId, p_claim_token_hash: claimTokenHash };
     function validateClaim(raw: unknown) {
       const current = claimSchema.parse(raw);

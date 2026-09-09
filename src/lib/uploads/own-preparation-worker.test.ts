@@ -141,10 +141,33 @@ describe("actual preparation worker protocol adapter (transport and pipeline moc
     const assertion = expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "aborted" });
     await vi.advanceTimersByTimeAsync(30_001); await assertion;
   });
-  it("refuses an expired claim and a job beyond the one-hour ceiling", async () => {
+  it("accepts a one-hour SQL job when the database clock is 66ms ahead", async () => {
+    vi.useFakeTimers(); const f = fixture();
+    f.claim.jobDeadline = new Date(Date.now() + 3_600_066).toISOString();
+    f.claim.claimExpiresAt = new Date(Date.now() + 300_066).toISOString();
+    await expect(runNextOwnPreparation()).resolves.toMatchObject({ status: "prepared" });
+    expect(called("check_own_preparation_claim_v1")).toHaveLength(1);
+    expect(called("publish_own_prepared_manifest_v1")).toHaveLength(1);
+  });
+  it("still stops at one local hour when a future server deadline exceeds that bound", async () => {
+    vi.useFakeTimers(); const f = fixture();
+    f.claim.jobDeadline = new Date(Date.now() + 3_700_000).toISOString();
+    let pipelineSignal: AbortSignal | undefined;
+    mocks.pipeline.mockImplementation((o: OwnPreparationPipelineOptions) => new Promise((_, reject) => {
+      pipelineSignal = o.signal;
+      o.signal.addEventListener("abort", () => reject(new Error("stopped")), { once: true });
+    }));
+    const assertion = expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "aborted" });
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(pipelineSignal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1); await assertion;
+    expect(pipelineSignal?.aborted).toBe(true);
+    expect(called("publish_own_prepared_manifest_v1")).toHaveLength(0);
+  });
+  it("refuses an expired claim and an elapsed job deadline", async () => {
     const f = fixture(); f.claim.claimExpiresAt = new Date(Date.now() - 1).toISOString();
     await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "unavailable" });
-    f.claim.jobDeadline = new Date(Date.now() + 3_700_000).toISOString();
+    f.claim.jobDeadline = new Date(Date.now() - 1).toISOString();
     await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "integrity_mismatch" });
   });
   it("honors an already aborted invocation before any claim", async () => {
