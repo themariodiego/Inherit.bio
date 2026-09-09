@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -70,5 +70,31 @@ describe("the capability register", () => {
   it("names no capability twice", () => {
     const names = rows().map(row => row.capability);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+/**
+ * The decision index drifted silently: three accepted ADRs existed on disk
+ * without a row in `docs/adr/README.md`, which is where a reader looks for the
+ * decisions a feature must conform to. An unindexed decision is an invisible
+ * one, so make both directions a failure.
+ */
+describe("the decision index", () => {
+  const readme = readFileSync("docs/adr/README.md", "utf8");
+  const indexed = [...readme.matchAll(/^\| \[(\d{4})\]\(\.\/([^)]+)\)/gm)]
+    .map(match => ({ number: match[1]!, file: match[2]! }));
+
+  it("indexes every decision record on disk", () => {
+    const onDisk = readdirSync("docs/adr")
+      .filter(name => /^\d{4}-.*\.md$/.test(name)).sort();
+    expect(onDisk.length).toBeGreaterThan(20);
+    expect(indexed.map(entry => entry.file).sort()).toEqual(onDisk);
+  });
+
+  it("points every index row at a file that exists, under its own number", () => {
+    for (const { number, file } of indexed) {
+      expect(existsSync(`docs/adr/${file}`), `${file} is indexed but missing`).toBe(true);
+      expect(file.startsWith(`${number}-`), `${file} is indexed under ${number}`).toBe(true);
+    }
   });
 });

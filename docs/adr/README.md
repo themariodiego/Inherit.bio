@@ -29,3 +29,6 @@ writing a superseding ADR, not silently drifting.
 | [0021](./0021-pharmacogenomics-per-position-reports.md) | The Medicines category ships as per-position reports from CPIC, dbSNP and PubMed (supersedes 0018) | Accepted |
 | [0022](./0022-accurate-estimate-layer-copy.md) | Accurate estimate-layer definition and unavailable-score count | Accepted |
 | [0023](./0023-upload-only-boolean-permission-check.md) | Private upload-only boolean permission check | Accepted; unreleased |
+| [0024](./0024-own-report-synchronous-generation.md) | Bounded synchronous own-report generation | Implementation decision for review |
+| [0025](./0025-own-prepared-object-backend.md) | Private object backend for existing WGS results | Accepted for disabled private integration |
+| [0026](./0026-durable-original-finalization.md) | Durable progress for original finalization | Accepted for the disabled schema slice |
