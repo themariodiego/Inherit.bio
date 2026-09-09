@@ -31,4 +31,5 @@ writing a superseding ADR, not silently drifting.
 | [0023](./0023-upload-only-boolean-permission-check.md) | Private upload-only boolean permission check | Accepted; unreleased |
 | [0024](./0024-own-report-synchronous-generation.md) | Bounded synchronous own-report generation | Implementation decision for review |
 | [0025](./0025-own-prepared-object-backend.md) | Private object backend for existing WGS results | Accepted for disabled private integration |
-| [0026](./0026-durable-original-finalization.md) | Durable progress for original finalization | Accepted for the disabled schema slice |
+| [0026](./0026-durable-original-finalization.md) | Durable progress for original finalization | Accepted |
+| [0027](./0027-cross-attempt-preparation-recovery.md) | Cross-attempt recovery for preparation: for a large file, resumption is the only recovery that fits its deadline | Proposed |
