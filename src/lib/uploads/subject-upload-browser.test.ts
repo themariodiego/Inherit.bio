@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
+import { finishStagedUpload, prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
 const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const uploadId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -176,6 +176,50 @@ describe("browser-to-Storage own-subject upload", () => {
   });
 });
 
+
+/** The route keeps durable progress for one finalization (ADR-0026), so a
+ * second bodyless POST finishes what an interrupted one left. Nothing asks on
+ * its own: the uploader performs no background retry, so what matters here is
+ * that a person is handed the upload id when, and only when, asking again can
+ * still work. */
+describe("finishing an upload whose bytes are already stored", () => {
+  const finalize = `/api/files/${uploadId}/finalize`;
+  it("finishes with one bodyless POST and returns the receipt", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json(completed));
+    expect(await finishStagedUpload(uploadId)).toEqual(completed);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]).toEqual([finalize, { method: "POST",
+      credentials: "same-origin", cache: "no-store", redirect: "error" }]);
+  });
+  it.each([
+    ["a dropped connection", () => fetchMock.mockRejectedValueOnce(new TypeError("network error"))],
+    ["a killed invocation", () => fetchMock.mockResolvedValueOnce(new Response("", { status: 504 }))],
+    ["a gateway with no answer", () => fetchMock.mockResolvedValueOnce(new Response("", { status: 502 }))],
+    // The bytes stay staged, so asking later still works; this is also what a
+    // live lease on the previous attempt looks like from the browser.
+    ["a refusal naming the upload", () => fetchMock.mockResolvedValueOnce(Response.json({ error: "not_found" }, { status: 404 }))],
+  ])("keeps the upload askable after %s", async (_case, arrange) => {
+    fetchMock.mockReset(); arrange();
+    await expect(finishStagedUpload(uploadId)).rejects.toMatchObject({ code: "unavailable", stagedUploadId: uploadId });
+  });
+  it.each([503, 413, 415, 422, 401])("does not offer to finish an upload the route already refused (%i)", async status => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "unavailable" }, { status }));
+    const refusal = await finishStagedUpload(uploadId).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({ stagedUploadId: undefined });
+  });
+  it("rejects a malformed upload id before any request", async () => {
+    fetchMock.mockReset();
+    await expect(finishStagedUpload("../another-upload")).rejects.toMatchObject({ code: "unavailable" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("hands the whole upload back when its own finalization is interrupted", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
+      .mockRejectedValueOnce(new TypeError("network error"));
+    await expect(uploadSubjectFile(file(), subjectId, vi.fn()))
+      .rejects.toMatchObject({ code: "unavailable", stagedUploadId: uploadId });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("queued preparation polling", () => {
   beforeEach(() => fetchMock.mockReset());

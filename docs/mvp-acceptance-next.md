@@ -51,15 +51,23 @@ bodyless POST for the same upload finishes what the first one left, which
 then finalizes the same `uploadId` to a 200. The response contract did not
 change and `docs/route-register.json` is untouched.
 
-What no person can reach: that second POST. The uploader tells an interrupted
-upload "Please try again", and trying again re-hashes the file, opens a new
-upload session and sends every byte a second time. A resume action has to be
-built for a checkpoint to be worth anything to a person, and it has to be
-visible: `src/lib/uploads/subject-upload-browser.ts` declares that it performs
-no background retry, and the pause spec requires an aborted finalization to
-surface its refusal rather than be repeated out of sight. A background retry
-was written and reverted for those two reasons — CI caught it, on
-`own-upload-pause.spec.ts:146`, with 231 of 232 browser cases passing.
+How a person reaches that second POST: `finishStagedUpload` sends it, and the
+uploader offers it as **Try this upload again** whenever a finalization ended
+without an answer — a dropped connection, the 408, 502 or 504 a host answers
+for an invocation it killed, or the route refusing re-entry while the previous
+attempt still holds its lease. Before this, "try again" re-hashed the file,
+opened a new upload session and sent every byte again. The offer appears only
+where asking again can still work: every other refusal has already aborted the
+upload and removed both objects, so a file refused for its size or contents
+carries no upload id and no button.
+
+It is a visible action rather than a background retry, for two reasons.
+`src/lib/uploads/subject-upload-browser.ts` declares that it performs none, and
+the pause spec requires an aborted finalization to surface its refusal rather
+than be repeated out of sight. A background retry was written and reverted
+after CI caught it on `own-upload-pause.spec.ts:146`, with 231 of 232 browser
+cases passing. The refusal keeps its exact wording and its own alert; the
+button sits outside that alert.
 
 What it still does not do: a kill during validation costs the whole file, since
 validation is the first phase, records nothing until it finishes and therefore

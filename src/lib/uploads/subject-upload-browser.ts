@@ -12,8 +12,13 @@ export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_samp
 export class BrowserUploadError extends Error {
   /** `limitBytes` is set only where the refusing ceiling is known exactly at
    * the throw site. It never crosses the wire; the register forbids unknown
-   * response fields, so a server refusal carries its code alone. */
-  constructor(readonly code: UploadFailureCode, readonly limitBytes?: number) { super(code); }
+   * response fields, so a server refusal carries its code alone.
+   *
+   * `stagedUploadId` is set only where the bytes are already in private storage
+   * and one more finalization can finish them. It is a local handle for
+   * offering that, never a claim that the upload succeeded. */
+  constructor(readonly code: UploadFailureCode, readonly limitBytes?: number,
+    readonly stagedUploadId?: string) { super(code); }
 }
 export class BrowserPreparationError extends Error {
   constructor(readonly code: "build_unknown" | "unavailable" | "report_generation_unavailable") { super(code); }
@@ -132,8 +137,39 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
     xhr.send(file);
   });
   onProgress({ step: "validating", pct: 0 });
-  const finalized = await fetch(route("api.file-finalize", { id: issued.uploadId }), { method: "POST",
-    credentials: "same-origin", cache: "no-store", redirect: "error" });
+  return finishStagedUpload(issued.uploadId);
+}
+
+/** Statuses the finalize route never answers with, so they come from the edge
+ * rather than the application: the request reached no decision at all. A host
+ * that kills a long invocation reports it as one of these, or drops the
+ * connection, which makes `fetch` reject. Every status the route does answer —
+ * 200, 401, 403, 404, 413, 415, 422 and 503 — is its decision and is final,
+ * and its 503 has already aborted the upload and removed both objects. */
+const NO_DECISION_STATUSES = new Set([408, 502, 504]);
+
+/** Finish an upload whose bytes already reached private storage.
+ *
+ * The route keeps durable progress for one finalization (ADR-0026), so asking
+ * again does only what the interrupted attempt left undone rather than
+ * transferring the object a second time. Nothing here decides on its own to
+ * ask: a person does, because this uploader performs no background retry and
+ * an interrupted upload has to surface its refusal rather than be repeated out
+ * of sight.
+ *
+ * A request that arrives while the previous attempt still holds its lease is
+ * refused, deliberately, so that two requests can never drive one
+ * finalization. That refusal carries `stagedUploadId` too: the bytes are still
+ * there and asking later still works. */
+export async function finishStagedUpload(uploadId: string) {
+  if (!directUploadReceipt.shape.uploadId.safeParse(uploadId).success) throw new BrowserUploadError("unavailable");
+  const staged = (code: UploadFailureCode) => new BrowserUploadError(code, undefined, uploadId);
+  const finalized = await fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
+    credentials: "same-origin", cache: "no-store", redirect: "error" }).catch(() => null);
+  if (!finalized || NO_DECISION_STATUSES.has(finalized.status)) throw staged("unavailable");
+  // A refusal that names the upload rather than the file leaves the bytes
+  // where they are; every other refusal has already cleaned them up.
+  if (finalized.status === 404) throw staged("unavailable");
   if (!finalized.ok) await responseFailure(finalized);
   const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
   if (!receipt.success) throw new BrowserUploadError("unavailable");

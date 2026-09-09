@@ -11,16 +11,20 @@ import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { megabytesOf } from "@/lib/genome/ingest-limits";
 import { route } from "@/lib/primary-routes";
 import { remainingAccountBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
-import { BrowserPreparationError, BrowserUploadError, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
+import { BrowserPreparationError, BrowserUploadError, finishStagedUpload, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 import { PreparationRecovery } from "./preparation-recovery";
+import { StagedUploadRecovery } from "./staged-upload-recovery";
 
 type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "making-reports" | "prepared" | "results-ready"; fileId: string }
   | { step: "preparation-error"; fileId: string; code: BrowserPreparationError["code"] }
-  | { step: "error"; message: string; action?: { label: string; href: string } };
+  | { step: "error"; message: string; action?: { label: string; href: string }; stagedUploadId?: string };
 
 function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Phase, { step: "error" }> {
   const code = error instanceof BrowserUploadError ? error.code : "unavailable";
   const limitBytes = error instanceof BrowserUploadError ? error.limitBytes : undefined;
+  // Set only where the bytes are already stored and one more finalization can
+  // finish them, so the offer to finish never appears over a refused file.
+  const stagedUploadId = error instanceof BrowserUploadError ? error.stagedUploadId : undefined;
   if (code === "pdf_not_data") return { step: "error", message: INGEST_REFUSALS.pdf_not_data,
     action: { label: REQUEST_DATA_BUTTON, href: route("embryos.request-data") } };
   if (code === "subject_source_not_single_sample") return { step: "error",
@@ -42,7 +46,7 @@ function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Ph
     uploads_paused: OWN_UPLOAD_COPY.uploadsPaused,
     unavailable: "The upload could not finish. Your existing files are unchanged. Please try again.",
   };
-  return { step: "error", message: messages[code] };
+  return { step: "error", message: messages[code], stagedUploadId };
 }
 
 export function Uploader({ disabled = false, subjectId = "me", limits = null }:
@@ -62,6 +66,19 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
         code: error instanceof BrowserPreparationError ? error.code : "unavailable" });
     }
     router.refresh();
+  }
+  /** The person asks; the uploader never asks for them. The route resumes from
+   * its own durable progress, so this finishes the interrupted attempt instead
+   * of sending the file a second time. */
+  async function finishUpload(uploadId: string) {
+    if (disabled || inFlight.current) return;
+    inFlight.current = true;
+    setPhase({ step: "validating", pct: 0 });
+    try {
+      const receipt = await finishStagedUpload(uploadId);
+      await prepare(receipt.fileId);
+    } catch (error) { setPhase(uploadError(error, limits)); }
+    finally { inFlight.current = false; }
   }
   async function retryPreparation(fileId: string, reportsOnly: boolean) {
     if (disabled || inFlight.current) return;
@@ -118,6 +135,9 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
           onRetry={() => void retryPreparation(phase.fileId, phase.code === "report_generation_unavailable")}
           reportsHref={route("genome.reports", { subject: subjectId === "me" ? "me" : "s-" + subjectId })}
           fileHref={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })} />
+        : phase.step === "error" && phase.stagedUploadId
+          ? <StagedUploadRecovery message={phase.message} disabled={disabled || busy}
+            onFinish={() => void finishUpload(phase.stagedUploadId!)} />
         : phase.step === "error" ? <p role="alert" className="text-danger">{phase.message}
           {phase.action ? <> <Link href={phase.action.href} className="underline underline-offset-2">{phase.action.label}</Link></> : null}
         </p> : null}

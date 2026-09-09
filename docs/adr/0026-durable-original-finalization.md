@@ -86,7 +86,7 @@ storage-authorization test counts exactly which security-definer functions the
 upload role may execute; an unrevoked one is a privilege leak, and that guard
 caught one in this slice before it merged.
 
-## What resumes, and what no person can reach yet
+## What resumes, and what still costs a person the file
 
 `finalizeSubjectUpload` reads the checkpoint before it starts, does only what
 the recorded phase says is left, and records each phase as it completes. A
@@ -94,19 +94,28 @@ second bodyless POST for the same upload therefore finishes what the first one
 left, and `e2e/own-upload-pause.spec.ts` already drives exactly that: it aborts
 one finalization and then finalizes the same `uploadId` to a 200.
 
-**No person can trigger that today.** The uploader tells an interrupted upload
-"Please try again", and trying again runs `uploadSubjectFile` from the top: a
-new hash, a new upload session, and every byte sent a second time. Nothing in
-the browser re-POSTs the finalize of an upload it already staged.
+A person now triggers it. `finishStagedUpload` sends that second bodyless POST
+for an upload whose bytes already reached storage, and the uploader offers it
+as **Try this upload again** whenever a finalization ended without an answer:
+the connection dropped, the host answered 408, 502 or 504 for an invocation it
+killed, or the route refused re-entry because the previous attempt still holds
+its lease. Before this, "try again" meant `uploadSubjectFile` from the top — a
+new hash, a new upload session, every byte sent a second time.
 
-Closing that gap is a visible resume action, not a background retry.
-`src/lib/uploads/subject-upload-browser.ts` states its own contract — one
-ephemeral create-only bearer and no persisted resume fingerprint, filename
-metadata, background retry or implicit analysis — and an automatic repeat
-inside `uploadSubjectFile` breaks it. It also breaks the pause spec, which
-requires an aborted finalization to surface its refusal to the person rather
-than being retried out of sight. A retry was written and reverted for those two
-reasons; the person, not the uploader, decides to ask again.
+The offer appears only where asking again can still work. Every other refusal
+has already aborted the upload and removed both objects, so those carry no
+upload id and no button; a file refused for its size or its contents is not
+presented as something to retry.
+
+This is a visible action, not a background retry. `subject-upload-browser.ts`
+states its own contract — one ephemeral create-only bearer and no persisted
+resume fingerprint, filename metadata, background retry or implicit analysis —
+and an automatic repeat inside `uploadSubjectFile` breaks it. It also breaks
+the pause spec, which requires an aborted finalization to surface its refusal
+rather than be repeated out of sight. A retry was written and reverted for
+those two reasons. The refusal therefore keeps its own wording and its own
+alert, and the button sits outside that alert: the alert is what a screen
+reader announces, the button is what a person presses.
 
 A kill during validation still costs the whole file. Validation is the first
 phase and records nothing until it finishes, so there is no checkpoint to
@@ -135,8 +144,8 @@ same ones, with the same wording.
   `not_found`, on purpose, so that two requests can never drive one
   finalization. A resume action has to say that to the person rather than
   present the refusal as a lost upload.
-- Still unbuilt: the visible resume action described above, and with it any
-  path by which a person benefits from a checkpoint.
+- What a checkpoint is still worth nothing against: a kill during validation,
+  and any file whose admission the ceilings refuse in the first place.
 - The 30-minute upload-session window still caps total finalization time. That
   is a separate decision and is not changed here.
 - None of this admits a larger file on its own. Admission needs the decoded
