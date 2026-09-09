@@ -211,13 +211,19 @@ minutes of it, at whole-genome scale. Genuine cross-attempt resumption would
 have to admit a prior attempt's artifacts under verified hashes, which is an
 authority decision of its own and is not made here.
 
-**Still owed:** a committed pgTAP case for this. The existing fixture builds
-only two source files and spends both on the current retry assertions, and a
-job that has reserved artifacts cannot be re-offered until their write leases
-lapse, so the case needs either its own fixture or a bounded wait. Verified so
-far: the reproduction above before and after, and `own_preparation_jobs.sql`,
-`own_preparation_checkpoints.sql` and `own_prepared_r2_provider.sql` passing
-with the migration applied.
+`supabase/tests/own_preparation_retry_sequence.sql` now guards it, driving one
+job through both states so the refusal is attributable to the consumed
+sequence and nothing else. The write lease is the reason this needed its own
+file: it is immutable by design, so the case shortens `claim_expires_at`
+*before* reserving, which makes `least(now + 30s, claim_expires_at, ...)`
+elapse in about a second, and then asserts that every lease has in fact
+elapsed before claiming — otherwise a live writer, not the predicate, would
+explain the refusal.
+
+Against the pre-fix function the two assertions that matter fail and the five
+that establish the scenario pass; against the fixed function all eight pass.
+The job also keeps its artifacts and its attempt count, so the refusal spends
+no budget and leaves scratch cleanup to do its work.
 
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
