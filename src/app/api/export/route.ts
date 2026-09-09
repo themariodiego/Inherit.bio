@@ -453,6 +453,7 @@ export async function GET() {
 
       const rowCounts = new Map<string, number>();
       const warnings: string[] = [];
+      let expiredOriginals = false;
       const canonicalReports: ExportReportFile[] = [];
       const canonicalPrs: Awaited<ReturnType<ReturnType<typeof ownSubjectExportContent>["prs"]>> = [];
       // Verify, consume and release one original before loading the next source.
@@ -532,6 +533,7 @@ export async function GET() {
           // A deletion/authority failure must not be mistaken for ordinary original expiry.
           await ownContent.check(snapshot); assertActive();
           if (state.retired) {
+            expiredOriginals = true;
             warnings.push(`originals/${f.id} omitted: the original retention period has ended. Prepared records and saved reports remain included.`);
             continue;
           }
@@ -686,7 +688,9 @@ export async function GET() {
           row_count: rowCounts.get(f.id) ?? 0,
         })),
         ...(warnings.length > 0 ? { warnings } : {}),
-        note: "Export is free and always will be. This archive contains your available original uploaded files (expired originals are identified in warnings), all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
+        note: "Export is free and always will be. This archive contains "
+          + (expiredOriginals ? "your available original uploaded files (expired originals are identified in warnings)" : "your original uploaded files")
+          + ", all derived variants, all reports, and your chat history — plus ancestry results, score-panel coverage, and consent history. Unvalidated score numbers are not included. originals/ holds your uploads byte-for-byte; variants/ the normalized GRCh38 variant store; each variants CSV's row count is listed in this manifest and verified against the file's variant_count.",
       };
       archive.append(JSON.stringify(manifest, null, 2), {
         name: "manifest.json",

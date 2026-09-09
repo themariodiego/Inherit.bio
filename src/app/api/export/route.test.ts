@@ -169,6 +169,7 @@ it("omits only a confirmed retired prepared original while preserving records, r
   expect(zip.readAsText("reports.json")).toContain("Stored interpretation");
   expect(zip.readAsText("originals/file-1")).toBe("original-file-1");
   const manifest = JSON.parse(zip.readAsText("manifest.json"));
+  expect(manifest.note).toContain("your available original uploaded files (expired originals are identified in warnings)");
   expect(manifest.warnings).toEqual([`originals/${mocks.preparedId} omitted: the original retention period has ended. Prepared records and saved reports remain included.`]);
   expect(manifest.contents.some((entry: { path: string }) => entry.path === `originals/${mocks.preparedId}`)).toBe(false);
   expect(mocks.originalReads).toEqual(["file-1"]); expect(mocks.streamReads).toBe(0); expect(mocks.authChecks).toBe(0);

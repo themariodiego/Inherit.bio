@@ -1,5 +1,15 @@
 # Test diff register
 
+## Export wording follows actual original availability · 2026-09-09
+
+Full CI at `f31682a` passed 230 browser cases but caught a changed manifest
+promise in the ordinary export journey; its next serial case did not run.
+The route now retains the existing promise when no original has expired and
+uses the qualified wording only when an actual retired original is omitted.
+The browser assertion is unchanged. All 17 export route cases pass, including
+the retired-original archive and its explicit availability note. Full CI must
+pass on the resulting release commit before merge.
+
 ## Health Picture canonical journey and exact-source navigation · 2026-09-07
 
 `e2e/family-health-picture.spec.ts` retains ten serial cases. Actual browser
