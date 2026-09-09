@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+import { createSHA256 } from "hash-wasm";
 import { z } from "zod";
 import { hasEmptyRequestBody } from "../empty-request-body";
 import { createAdminClient } from "../supabase/admin";
@@ -8,6 +8,12 @@ import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { SUBJECT_UPLOAD_FORMATS, subjectFinalizationReceipt as completed } from "./subject-upload-contract";
 import { SubjectStructureError, validateSubjectStructure } from "./subject-structure";
+import { advanceFinalization, finalizationCheckpointReceiptSchema, finalizationPhaseRank,
+  type FinalizationCheckpoint } from "./finalization-progress";
+
+/** Long enough that a working request keeps its lease, short enough that an
+ * ordinary retry after a kill can resume rather than wait out the session. */
+const FINALIZATION_LEASE_SECONDS = 60;
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
@@ -55,8 +61,8 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
       const current = manifestSchema.safeParse(result.data);
       if (result.error || !current.success || JSON.stringify(current.data) !== JSON.stringify(lease)) fail();
     }
-    async function* ranges(key: string) {
-      for (let start = 0; start < lease.expectedSize; start += INGEST_CHUNK_MAXIMUM_BYTES) {
+    async function* ranges(key: string, from = 0) {
+      for (let start = from; start < lease.expectedSize; start += INGEST_CHUNK_MAXIMUM_BYTES) {
         await recheck();
         const end = Math.min(lease.expectedSize, start + INGEST_CHUNK_MAXIMUM_BYTES) - 1;
         const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/authenticated/genomes/${key}`, {
@@ -76,20 +82,77 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
         if (received !== end - start + 1) throw new SubjectStructureError("upload_integrity_mismatch");
       }
     }
-    const evidence = await validateSubjectStructure(ranges(lease.stagingKey), {
-      declaredFormat: lease.declaredFormat, expectedSize: lease.expectedSize,
-      expectedSha256: lease.expectedSha256, maximumDecodedBytes: lease.maximumDecodedBytes,
-    });
-    await recheck();
-    const copied = await storage.copy(lease.stagingKey, lease.finalKey);
-    if (copied.error) fail();
-    // Recompute the complete copy hash; metadata and a copy ACK are insufficient.
-    const copyHash = createHash("sha256");
-    for await (const bytes of ranges(lease.finalKey)) copyHash.update(bytes);
-    if (copyHash.digest("hex") !== evidence.rawSha256) throw new SubjectStructureError("upload_integrity_mismatch");
-    await recheck();
-    const removed = await storage.remove([lease.stagingKey]);
-    if (removed.error) fail();
+    // Durable progress (ADR-0026). A request killed mid-flight — the 300-second
+    // ceiling is the one that bites — leaves what it finished recorded, so a
+    // later retry by the same session resumes instead of transferring the whole
+    // object again. An explicit failure still aborts and cleans up below, which
+    // retires the checkpoint with the session, exactly as before.
+    async function readCheckpoint() {
+      const result = await admin.rpc("read_own_upload_finalization_checkpoint_v1", authorization);
+      const parsed = finalizationCheckpointReceiptSchema.safeParse(result.data);
+      if (result.error || !parsed.success || parsed.data.uploadId !== uploadId) fail();
+      return parsed.data;
+    }
+    async function record(next: FinalizationCheckpoint, revision: number) {
+      const result = await admin.rpc("write_own_upload_finalization_checkpoint_v1", {
+        ...authorization, p_expected_revision: revision, p_checkpoint: next,
+        p_lease_seconds: FINALIZATION_LEASE_SECONDS,
+      });
+      const parsed = finalizationCheckpointReceiptSchema.safeParse(result.data);
+      if (result.error || !parsed.success) fail();
+      return parsed.data.revision;
+    }
+    let { revision, checkpoint } = await readCheckpoint();
+    const reached = () => (checkpoint ? finalizationPhaseRank(checkpoint.phase) : 0);
+    let evidence: { rawSha256: string; decodedSha256: string };
+    if (!checkpoint) {
+      // Validation decompresses, so it cannot resume part-way; it runs whole or
+      // not at all, and what it proved is recorded rather than repeated.
+      evidence = await validateSubjectStructure(ranges(lease.stagingKey), {
+        declaredFormat: lease.declaredFormat, expectedSize: lease.expectedSize,
+        expectedSha256: lease.expectedSha256, maximumDecodedBytes: lease.maximumDecodedBytes,
+      });
+      checkpoint = advanceFinalization(null, { phase: "validated", rawSha256: evidence.rawSha256,
+        decodedSha256: evidence.decodedSha256, expectedSize: lease.expectedSize });
+      revision = await record(checkpoint, revision);
+    } else {
+      evidence = { rawSha256: checkpoint.rawSha256, decodedSha256: checkpoint.decodedSha256 };
+    }
+    const advance = (phase: FinalizationCheckpoint["phase"], verifiedBytes?: number, digestState?: string | null) =>
+      advanceFinalization(checkpoint, { phase, ...evidence, verifiedBytes, digestState, expectedSize: lease.expectedSize });
+
+    if (reached() < finalizationPhaseRank("copied")) {
+      await recheck();
+      const copied = await storage.copy(lease.stagingKey, lease.finalKey);
+      if (copied.error) fail();
+      checkpoint = advance("copied");
+      revision = await record(checkpoint, revision);
+    }
+    if (reached() < finalizationPhaseRank("verified")) {
+      // Recompute the complete copy hash; metadata and a copy ACK are insufficient.
+      // Plain bytes, so an offset and a saved digest resume it exactly.
+      const copyHash = await createSHA256();
+      copyHash.init();
+      let verified = 0;
+      if (checkpoint!.phase === "verifying" && checkpoint!.digestState) {
+        copyHash.load(Buffer.from(checkpoint!.digestState, "base64"));
+        verified = checkpoint!.verifiedBytes;
+      }
+      for await (const bytes of ranges(lease.finalKey, verified)) { copyHash.update(bytes); verified += bytes.length; }
+      if (verified !== lease.expectedSize || copyHash.digest("hex") !== evidence.rawSha256) {
+        throw new SubjectStructureError("upload_integrity_mismatch");
+      }
+      checkpoint = advance("verified", lease.expectedSize);
+      revision = await record(checkpoint, revision);
+    }
+    if (reached() < finalizationPhaseRank("staging-removed")) {
+      await recheck();
+      const removed = await storage.remove([lease.stagingKey]);
+      if (removed.error) fail();
+      checkpoint = advance("staging-removed", lease.expectedSize);
+      // Last phase to record; publication below is the only step after it.
+      await record(checkpoint, revision);
+    }
     await recheck();
     const object = await storage.info(lease.finalKey);
     if (object.error || !uuid.safeParse(object.data?.id).success) fail();
