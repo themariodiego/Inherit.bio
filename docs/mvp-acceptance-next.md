@@ -5,7 +5,80 @@ Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
-## Current production checkpoint · 8 September 2026
+## Current production checkpoint · 9 September 2026
+
+PR83 merge `956880ddf3335131765c4706c6586868dc6389df` is production READY as
+`dpl_E2k41cV9wod51KMkDDEZoviRJcfV` at **01:41:09.640 UTC**, on all six aliases.
+It has the same Git tree `233462f36600511ae2ae08f71b6f1abe6426db39` as reviewed
+head `580334e7335806a550d69d41ff3929b2f2a443c1`. CI `34298348996` passed
+**4,448 units (247 files), 2,511 SQL assertions (65 files), 30 independent-session
+lock checks and all 232 browser cases**, with zero browser skips/retries.
+Nine compatible hosted migrations were applied before deployment; independent
+parity checks matched **90 functions, 11 triggers and 10 tables**, with both
+private activation flags false and prepared-worker environment settings absent.
+The existing four files and four Storage objects remained unchanged. The new
+prepared backend and optional original retirement are deployed but inactive.
+
+Authenticated production smoke finished **01:42:10.199 UTC**: `/files`,
+`/files/upload` and `/genome/me/reports` returned 200 with expected headings.
+The synthetic account remained empty and its new session was signed out. This
+checks page availability, not hosted preparation or a hosted worker invocation.
+Receipts: parent task `work/wgs-next-backend/pr83-production-verification/`,
+`work/wgs-next-backend/hosted-nine-migration-parity-f31682a/` and
+`work/wgs-release-83/ci-6-passed.log`.
+
+The separate tiny-source continuation V4 passed actual prepared reads, saved
+finding and complete canonical export while removing a failed second source.
+Actual original retirement acknowledged deletion at **01:27:55.211111 UTC**, after
+its fixed **00:54:11.763306 UTC** deadline; original authorization then refused
+`original_retired`, while the same prepared read, saved finding and full export
+remained identical. Subsequent file cleanup verified all 92 selected R2 payloads
+as zero-byte protective tombstones, removed tracked original versions and
+restored the local baseline. The fixture age was set before publication; this
+is actual expiry/executor evidence, not a month-long or scheduled-timing proof.
+The earlier account-wide `prepared_source_not_ready` refusal while the second
+source was unfinished was asserted before cleanup; both refusals are expected.
+
+Capacity-only attempt 5 then passed on **144,001 synthetic GRCh38 variants and
+144,001 observations**, from **5,249,921 raw bytes**. The actual worker took
+**71.112 seconds**, preserving **288,002 events** through ten initial runs and
+bounded merging. Full canonical export contained all 288,002 records. Actual
+cleanup verified all 92 registered R2 keys as empty protective tombstones,
+removed the tracked original staging/final versions, and restored the baseline,
+including the other 33 files/objects. The 94 resource samples recorded maximum
+process RSS **480,673,792 bytes** and minimum host free space **1,376,903,168
+bytes**, with no monitor stop. The synthetic Auth fixture remains explicitly
+retained: one user, one identity and two sessions. Receipts and independent
+reviews: parent task `work/wgs-next-backend/prepared-wgs-integration/` under
+`continuation-attempt-3-v4/` and `attempt-5/`. Earlier failed attempts remain
+preserved; attempt 4's obsolete diagnostic-category assertion was a harness
+failure after successful report work, followed by complete cleanup/reversal.
+
+These separate proofs do not establish full-WGS capacity, 100 genomes/month,
+a hosted execution home, automatic original-retention timing or the whole
+account-deletion interface. Empty R2 markers prove payload disposal, not key
+absence. Capacity attempt 5 did not repeat report generation, retirement,
+two-source preservation or browser UI. No public limit or activation follows
+from these measurements. **Whole-plan acceptance remains 19/65.**
+
+After all trial requests settled, the temporary gateway was deleted and verified
+absent. The exact union of 108 earlier and 92 capacity-trial keys matched all
+200 empty markers in the private trial bucket. Exact-key deletion succeeded for
+all 200, followed by an empty object list, bucket deletion and an independent
+bucket listing confirming absence. The ephemeral probe private key was removed.
+Receipt: parent task `work/wgs-release-83/temporary-r2-teardown.json`.
+
+The existing worker bundle passed a credential-free Linux Node 24 import check
+in Vercel Sandbox using existing plan credit; its temporary VM was stopped and
+deleted. No hosted preparation job has run there. The next bounded step is one
+operator-controlled synthetic job with report/export/cleanup verification.
+Automatic operation still needs a deployed dispatcher with durable ownership,
+duplicate-launch protection and recovery. Larger originals additionally need
+an upload/finalization path beyond the current 24 MiB raw/decoded limit and
+five-minute scan/copy/rehash route. These are implementation prerequisites;
+a new hosting subscription alone does not resolve them.
+
+## Earlier PR82 production checkpoint · 8 September 2026
 
 PR82 merge `6a497adbb75428989725fc6a7d3f1e69ed4fcfda` is production READY as
 `dpl_DP7mGub7E1bW6aLk4qrSavT6Fm1y` at **21:56:39.141 UTC**, on all six aliases.
