@@ -8,6 +8,7 @@ import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-cleanup";
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
+import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
 
 export const maxDuration = 300;
@@ -82,6 +83,11 @@ export async function POST(request: Request) {
   try {
     const prepared = await drainPreparedScratch(admin, preparedCleanupSignal);
     processed += prepared.processed; failed += prepared.failed;
+  } catch { failed++; }
+
+  try {
+    const originals = await drainOwnOriginalRetirement(admin, preparedCleanupSignal);
+    processed += originals.processed; failed += originals.failed;
   } catch { failed++; }
 
   const reportRevocations = await drainOwnReportRevocations(admin);

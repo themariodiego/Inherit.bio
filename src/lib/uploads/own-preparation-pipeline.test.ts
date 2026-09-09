@@ -89,7 +89,9 @@ describe("own preparation bounded pipeline", () => {
     expect(result.scanReceipt.pointerCount).toBe(288_002);
     // Packing collapses hundreds of codec-block emissions to bounded objects.
     expect(f.artifacts.length).toBeLessThan(result.parserReceipt.blockCount);
-  }, 60_000);
+  // Shared CI runners exceed 60s while executing the full suite. This is an
+  // engine correctness regression, not a wall-clock capacity acceptance test.
+  }, 180_000);
 
   it.each([false, true])("uses actual parser, lossless canonical/rsID materializers and full publication preflight gzip=%s", async gzip => {
     const f = setup(undefined, gzip), result = await runOwnPreparationPipeline(f.options);

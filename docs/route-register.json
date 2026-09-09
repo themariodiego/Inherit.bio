@@ -18,27 +18,45 @@
   "policyContracts": {
     "own-prepared-object-v1": {
       "decision": "docs/adr/0025-own-prepared-object-backend.md",
-      "status": "private integration only; disabled by default; no machine route, scheduler, public admission change or publication is enabled by the primitive migration",
+      "status": "private integration candidate; new ingestion disabled by default; operator worker and existing retention scheduler use separate admission and cleanup authority",
       "scope": "one structurally verified finalized VCF-family source owned by the acting account's active self subject; preparation creates no analytic purpose grant or report",
-      "stores": ["private.own_preparation_jobs", "private.own_preparation_artifacts", "private.own_prepared_manifests", "private.own_prepared_manifest_members"],
+      "stores": [
+        "private.own_preparation_jobs",
+        "private.own_preparation_artifacts",
+        "private.own_prepared_manifests",
+        "private.own_prepared_manifest_members",
+        "private.own_preparation_checkpoints",
+        "private.own_prepared_cleanups",
+        "private.own_prepared_cleanup_entries",
+        "private.own_original_retirements"
+      ],
       "queueCompatibility": "this narrowly registered private preparation protocol does not enqueue or claim generic worker_jobs; all other queued operations retain worker-job-enqueue-v1 and worker-job-dispatch-v1",
       "limits": {
-        "jobMaximumSeconds": 900,
+        "jobMaximumSeconds": 3600,
         "claimMaximumSeconds": 300,
         "writeMaximumSeconds": 30,
         "maximumAttempts": 3,
         "maximumArtifactsPerJob": 4096,
-        "maximumReservedArtifactBytesPerJob": 104857600
+        "maximumReservedArtifactBytesPerJob": 1073741824,
+        "jobDefaultSeconds": 900,
+        "defaultReservedArtifactBytesPerJob": 104857600
       },
       "retention": "docs/retention.md id preparation.scratch-2h",
       "authority": "enqueue captures the actual originating Supabase session and exact account/principal/binding/store artifact revisions; claim, every preparation source or artifact read, reservation, acknowledgement, checkpoint and initial publication re-resolve that same live authority. Published reads use the actual current authenticated session and current store/source/lifecycle authority. Full membership and its digest are checked at both page boundaries; selected objects use indexed exact-member checks plus the caller's distinct current operation/purpose check. Publication creates no analytical purpose grant. Logout, expiry, rotation, store withdrawal, source change or deletion freeze cannot be bypassed by a service key or prior job receipt. Reauthorization requires a real authenticated operation, never a mail-only authority helper",
       "source": "exact file and subject IDs, immutable original object ID/key, source revision, complete verified raw and decoded hashes, structural single-sample evidence and pinned parser/build/liftover identities; no source key, weaker operation or backend choice supplied by the browser",
       "deadlines": "job deadline is fixed at creation; claim and write leases are clamped to all earlier job, attempt, originating-session and current consent deadlines. Retry never extends the original job or scratch-retention deadline",
-      "artifacts": "reserve an immutable database-generated artifact identity and key with bounded expected bytes/hash before submitting a create-only write. Acknowledgement matches the exact receipt and Storage identity/metadata plus the transport's separately verified complete hash; SQL metadata is not independent proof of provider bytes. Unknown acknowledgements remain owned cleanup members",
-      "freeze": "freeze prevents new claims, reservations, acknowledgements and publication. Outstanding write leases and uncertain submissions remain registered; elapsed lease time alone does not prove a submitted provider write was cancelled. Fence or drain writes before exact removal and independent absence verification. A frozen receipt is never deletion success",
-      "checkpointAndPublication": "the disabled publication foundation fully verifies final canonical and rsID objects before assembling three registered roots and an exact final subset; the atomic service-only publication transaction rechecks originating authority, finite clocks and immutable ACKed membership. Published current-session reads independently recheck source/store/lifecycle authority and exact membership without depending on the expired preparation session. Temporary sorting artifacts remain scratch; published membership follows the source lifecycle. Durable checkpoint adoption and the full cleanup executor remain unimplemented. Never manufacture a database normalization journal to satisfy an existing reader",
+      "artifacts": "reserve an immutable database-generated artifact identity and key with bounded expected bytes/hash before a create-only write. Supabase v1 receipts retain exact Storage identity; R2 v2 receipts retain actual provider version and ETag. The writer independently verifies complete bytes/hash before SQL acknowledgement. SQL metadata does not prove provider bytes. Unknown acknowledgements remain registered cleanup members",
+      "freeze": "freeze prevents new claims, reservations, acknowledgements and publication. R2 cleanup atomically replaces the payload with a permanent empty marker and independently verifies its exact version and complete empty bytes; the atomic create-only condition fences admitted and replayed writes. Never expire these markers. This proves current payload removal, not key absence or physical media erasure. Supabase unknown physical versions remain unresolved. No frozen receipt is deletion success",
+      "checkpointAndPublication": "same-live-attempt checkpoints bind revision CAS, actual next artifact sequence, exact registered receipts and bounded phase state; current originating authority and deadlines are rechecked. Process loss cannot adopt an expired token or attempt. Final canonical and rsID data is fully verified before exact publication. Published reads use current source/store/session authority and full membership; scratch cleanup retires provisional checkpoints while preserving final members. Never manufacture a database normalization journal",
       "activation": "keep private dispatch disabled until actual Storage writes/reads, indexed chosen reports, all-call export, revocable original download, file/account/expiry cleanup, bounded failure recovery and unrelated-file preservation are verified together. Public limits and the owner-approved one-month original policy require their own measured compatible activation",
-      "excluded": ["raw FASTQ/BAM/CRAM admission", "other-adult and embryo processing", "automatic report selection", "session-independent genetic reads", "new subscriptions or unapproved overages"]
+      "excluded": [
+        "raw FASTQ/BAM/CRAM admission",
+        "other-adult and embryo processing",
+        "automatic report selection",
+        "session-independent genetic reads",
+        "new subscriptions or unapproved overages"
+      ],
+      "originalRetention": "Separately default-disabled and applies only to new prepared publications whose source was created after activation. An immutable exact-source receipt expires one calendar month after file creation. The known-version provider DELETE must return the exact nonempty acknowledgement before completion; unknown outcomes stay unresolved. Verified prepared reports and exports may then use the immutable retired-original provenance. Current original downloads recheck source/session/store authority between bounded ranges and stop at the fixed expiry; no old-source backfill or capacity increase is implied."
     },
     "genetic-file-ingest-v1": {
       "allowedDataFormats": [
@@ -467,102 +485,338 @@
       "closedShapes": {
         "rscEmbryoListItem": {
           "kind": "object",
-          "keys": ["id", "cohort_id", "sample_ordinal", "display_label", "status"],
-          "required": ["id", "cohort_id", "sample_ordinal", "display_label", "status"],
+          "keys": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status"
+          ],
+          "required": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "rscEmbryoDetail": {
           "kind": "object",
-          "keys": ["id", "cohort_id", "sample_ordinal", "display_label", "status", "qc", "findings"],
-          "required": ["id", "cohort_id", "sample_ordinal", "display_label", "status", "qc", "findings"],
+          "keys": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc",
+            "findings"
+          ],
+          "required": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc",
+            "findings"
+          ],
           "children": {
-            "qc": {"shape": "qc", "cardinality": "exactly-one"},
-            "findings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array", "itemRule": "every-embryo_label-equals-this-display_label"}
+            "qc": {
+              "shape": "qc",
+              "cardinality": "exactly-one"
+            },
+            "findings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array",
+              "itemRule": "every-embryo_label-equals-this-display_label"
+            }
           },
           "unknownFields": "reject"
         },
         "rscEmbryoComparison": {
           "kind": "object",
-          "keys": ["cohort_id", "context_counts", "embryos", "result_rows", "trade_offs", "standing_statement"],
-          "required": ["cohort_id", "context_counts", "embryos", "result_rows", "trade_offs", "standing_statement"],
+          "keys": [
+            "cohort_id",
+            "context_counts",
+            "embryos",
+            "result_rows",
+            "trade_offs",
+            "standing_statement"
+          ],
+          "required": [
+            "cohort_id",
+            "context_counts",
+            "embryos",
+            "result_rows",
+            "trade_offs",
+            "standing_statement"
+          ],
           "children": {
-            "context_counts": {"shape": "contextCounts", "cardinality": "exactly-one"},
-            "embryos": {"shape": "comparisonEmbryo", "cardinality": "one-or-more-array-in-ascending-sample_ordinal"},
-            "result_rows": {"shape": "comparisonResultRow", "cardinality": "zero-or-more-array"},
-            "trade_offs": {"shape": "tradeOffs", "cardinality": "exactly-one"}
+            "context_counts": {
+              "shape": "contextCounts",
+              "cardinality": "exactly-one"
+            },
+            "embryos": {
+              "shape": "comparisonEmbryo",
+              "cardinality": "one-or-more-array-in-ascending-sample_ordinal"
+            },
+            "result_rows": {
+              "shape": "comparisonResultRow",
+              "cardinality": "zero-or-more-array"
+            },
+            "trade_offs": {
+              "shape": "tradeOffs",
+              "cardinality": "exactly-one"
+            }
           },
-          "scalarConstraints": {"standing_statement": {"copyId": "embryo.standing-statement"}},
+          "scalarConstraints": {
+            "standing_statement": {
+              "copyId": "embryo.standing-statement"
+            }
+          },
           "unknownFields": "reject"
         },
         "contextCounts": {
           "kind": "object",
-          "keys": ["embryos_analysed", "quality_check_passed", "not_measurable"],
-          "required": ["embryos_analysed", "quality_check_passed", "not_measurable"],
+          "keys": [
+            "embryos_analysed",
+            "quality_check_passed",
+            "not_measurable"
+          ],
+          "required": [
+            "embryos_analysed",
+            "quality_check_passed",
+            "not_measurable"
+          ],
           "children": {},
           "scalarConstraints": "nonnegative-integers-derived-only-from-qcProjection.contextStrip-with-no-other-count",
           "unknownFields": "reject"
         },
         "comparisonEmbryo": {
           "kind": "object",
-          "keys": ["id", "sample_ordinal", "display_label", "status", "qc"],
-          "required": ["id", "sample_ordinal", "display_label", "status", "qc"],
-          "children": {"qc": {"shape": "qc", "cardinality": "exactly-one"}},
+          "keys": [
+            "id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc"
+          ],
+          "required": [
+            "id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc"
+          ],
+          "children": {
+            "qc": {
+              "shape": "qc",
+              "cardinality": "exactly-one"
+            }
+          },
           "unknownFields": "reject"
         },
         "comparisonResultRow": {
           "kind": "object",
-          "keys": ["findings"],
-          "required": ["findings"],
-          "children": {"findings": {"shape": "EmbryoFinding", "cardinality": "exactly-one-per-comparisonEmbryo-in-the-identical-ascending-sample_ordinal"}},
+          "keys": [
+            "findings"
+          ],
+          "required": [
+            "findings"
+          ],
+          "children": {
+            "findings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "exactly-one-per-comparisonEmbryo-in-the-identical-ascending-sample_ordinal"
+            }
+          },
           "rowIdentity": "condition_id-condition_name-and-evidence_label-live-only-on-each-EmbryoFinding; every-finding-in-one-row-must-be-byte-identical-for-those-fields-and-no-row-level-duplicate-can-disagree",
           "unknownFields": "reject"
         },
         "tradeOffs": {
           "kind": "object",
-          "keys": ["statement_copy_id", "conflicts"],
-          "required": ["statement_copy_id", "conflicts"],
-          "children": {"conflicts": {"shape": "tradeOffConflict", "cardinality": "one-or-more-array-when-statement_copy_id-is-embryo.tradeoffs.exists-and-exact-empty-array-when-it-is-embryo.tradeoffs.none-measurable"}},
-          "scalarConstraints": {"statement_copy_id": {"enum": ["embryo.tradeoffs.exists", "embryo.tradeoffs.none-measurable"]}},
+          "keys": [
+            "statement_copy_id",
+            "conflicts"
+          ],
+          "required": [
+            "statement_copy_id",
+            "conflicts"
+          ],
+          "children": {
+            "conflicts": {
+              "shape": "tradeOffConflict",
+              "cardinality": "one-or-more-array-when-statement_copy_id-is-embryo.tradeoffs.exists-and-exact-empty-array-when-it-is-embryo.tradeoffs.none-measurable"
+            }
+          },
+          "scalarConstraints": {
+            "statement_copy_id": {
+              "enum": [
+                "embryo.tradeoffs.exists",
+                "embryo.tradeoffs.none-measurable"
+              ]
+            }
+          },
           "conditionalCardinality": "embryo.tradeoffs.exists-is-valid-only-with-at-least-one-real-conflict-derived-from-the-full-current-EmbryoFinding-matrix-and-embryo.tradeoffs.none-measurable-is-valid-only-when-no-such-conflict-exists",
           "forbidden": "per-embryo-lead-count-composite-overall-rank-grade-score-or-recommendation",
           "unknownFields": "reject"
         },
         "tradeOffConflict": {
           "kind": "object",
-          "keys": ["embryo_label", "lowest_condition_id", "highest_condition_id", "copy_id"],
-          "required": ["embryo_label", "lowest_condition_id", "highest_condition_id", "copy_id"],
+          "keys": [
+            "embryo_label",
+            "lowest_condition_id",
+            "highest_condition_id",
+            "copy_id"
+          ],
+          "required": [
+            "embryo_label",
+            "lowest_condition_id",
+            "highest_condition_id",
+            "copy_id"
+          ],
           "children": {},
           "referenceRule": "all-three-identifiers-must-resolve-to-current-values-already-present-in-the-same-comparison-EmbryoFinding-matrix-and-never-create-an-independent-value-or-order",
           "unknownFields": "reject"
         },
         "qc": {
           "kind": "object",
-          "keys": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at", "source_facts"],
-          "required": ["sites_expected", "sites_called", "call_rate", "autosomal_het_rate", "mean_depth", "parent_a_concordance", "parent_b_concordance", "allelic_dropout_estimate", "allelic_dropout_interval_low", "allelic_dropout_interval_high", "allelic_dropout_method", "amplification_method", "source_laboratory", "source_assay", "imputation_performed", "imputation_panel", "contamination_estimate", "qc_verdict", "qc_reasons", "computed_at", "source_facts"],
-          "children": {"source_facts": {"shape": "inputFacts", "cardinality": "exactly-one"}},
+          "keys": [
+            "sites_expected",
+            "sites_called",
+            "call_rate",
+            "autosomal_het_rate",
+            "mean_depth",
+            "parent_a_concordance",
+            "parent_b_concordance",
+            "allelic_dropout_estimate",
+            "allelic_dropout_interval_low",
+            "allelic_dropout_interval_high",
+            "allelic_dropout_method",
+            "amplification_method",
+            "source_laboratory",
+            "source_assay",
+            "imputation_performed",
+            "imputation_panel",
+            "contamination_estimate",
+            "qc_verdict",
+            "qc_reasons",
+            "computed_at",
+            "source_facts"
+          ],
+          "required": [
+            "sites_expected",
+            "sites_called",
+            "call_rate",
+            "autosomal_het_rate",
+            "mean_depth",
+            "parent_a_concordance",
+            "parent_b_concordance",
+            "allelic_dropout_estimate",
+            "allelic_dropout_interval_low",
+            "allelic_dropout_interval_high",
+            "allelic_dropout_method",
+            "amplification_method",
+            "source_laboratory",
+            "source_assay",
+            "imputation_performed",
+            "imputation_panel",
+            "contamination_estimate",
+            "qc_verdict",
+            "qc_reasons",
+            "computed_at",
+            "source_facts"
+          ],
+          "children": {
+            "source_facts": {
+              "shape": "inputFacts",
+              "cardinality": "exactly-one"
+            }
+          },
           "scalarConstraints": "counts-are-nonnegative-call-rate-and-concordance-values-are-null-or-zero-through-one-intervals-are-null-as-one-set-or-strict-low-estimate-high-qc_verdict-is-pass-marginal-or-fail-qc_reasons-contains-only-qcProjection.qcReasonIds-and-source-strings-use-the-registered-bounded-safe-labels",
           "unknownFields": "reject"
         },
         "inputFacts": {
           "kind": "object",
-          "keys": ["coordinate_conversion", "source_origin", "source_imputation", "call_observation"],
-          "required": ["coordinate_conversion", "source_origin", "source_imputation", "call_observation"],
+          "keys": [
+            "coordinate_conversion",
+            "source_origin",
+            "source_imputation",
+            "call_observation"
+          ],
+          "required": [
+            "coordinate_conversion",
+            "source_origin",
+            "source_imputation",
+            "call_observation"
+          ],
           "children": {},
           "scalarConstraints": "coordinate_conversion-is-not-recorded-converted-not-needed-or-mixed-from-exact-published-cohort-and-subject-source-snapshots;source_origin-is-external-unverified;source_imputation-and-call_observation-are-not-recorded",
           "unknownFields": "reject"
         },
         "EmbryoFinding": {
           "kind": "object",
-          "keys": ["embryo_label", "condition_id", "condition_name", "finding", "evidence_label", "coverage_state", "citation_ids", "not_covered_reason"],
-          "required": ["embryo_label", "condition_id", "condition_name", "finding", "evidence_label", "coverage_state", "citation_ids", "not_covered_reason"],
-          "children": {"finding": {"oneOf": [{"shape": "absoluteRiskFinding"}, {"shape": "carrierFinding"}, {"shape": "coverageFailureFinding"}, {"const": null}], "discriminator": "kind"}},
+          "keys": [
+            "embryo_label",
+            "condition_id",
+            "condition_name",
+            "finding",
+            "evidence_label",
+            "coverage_state",
+            "citation_ids",
+            "not_covered_reason"
+          ],
+          "required": [
+            "embryo_label",
+            "condition_id",
+            "condition_name",
+            "finding",
+            "evidence_label",
+            "coverage_state",
+            "citation_ids",
+            "not_covered_reason"
+          ],
+          "children": {
+            "finding": {
+              "oneOf": [
+                {
+                  "shape": "absoluteRiskFinding"
+                },
+                {
+                  "shape": "carrierFinding"
+                },
+                {
+                  "shape": "coverageFailureFinding"
+                },
+                {
+                  "const": null
+                }
+              ],
+              "discriminator": "kind"
+            }
+          },
           "scalarConstraints": {
             "embryo_label": "the-exact-neutral-server-display_label-for-the-current-sample_ordinal",
             "condition_id": "exact-current-data/embryo/allowed_conditions.json-conditions[*].condition_id",
             "condition_name": "byte-equal-to-that-same-registry-entry.condition_name",
-            "evidence_label": {"enum": ["clinical", "established", "emerging", "preliminary"]},
-            "coverage_state": {"enum": ["covered", "partial", "not_covered", "quality_not_measurable"]},
+            "evidence_label": {
+              "enum": [
+                "clinical",
+                "established",
+                "emerging",
+                "preliminary"
+              ]
+            },
+            "coverage_state": {
+              "enum": [
+                "covered",
+                "partial",
+                "not_covered",
+                "quality_not_measurable"
+              ]
+            },
             "citation_ids": "nonempty-deduplicated-array-of-current-data/citations.json-IDs-for-a-reportable-finding-and-empty-only-for-a-registered-not-covered-state",
             "not_covered_reason": "null-exactly-for-an-absoluteRiskFinding-or-carrierFinding-insufficient_coverage-exactly-for-a-coverageFailureFinding-and-otherwise-one-nonnull-qcProjection.resultNotReportableReasonIds-value-when-finding-is-null"
           },
@@ -572,87 +826,301 @@
         },
         "coverageFailureFinding": {
           "kind": "object",
-          "keys": ["kind", "metric", "measured_value", "required_minimum", "display_copy_id"],
-          "required": ["kind", "metric", "measured_value", "required_minimum", "display_copy_id"],
+          "keys": [
+            "kind",
+            "metric",
+            "measured_value",
+            "required_minimum",
+            "display_copy_id"
+          ],
+          "required": [
+            "kind",
+            "metric",
+            "measured_value",
+            "required_minimum",
+            "display_copy_id"
+          ],
           "children": {},
-          "scalarConstraints": {"kind": {"const": "coverage_failure"}, "metric": {"const": "score_coverage"}, "measured_value": "zero-through-less-than-the-authoritys-X10.4-score-coverage-floor", "required_minimum": {"const": 0.8}, "display_copy_id": {"const": "embryo.result.insufficient-coverage"}},
+          "scalarConstraints": {
+            "kind": {
+              "const": "coverage_failure"
+            },
+            "metric": {
+              "const": "score_coverage"
+            },
+            "measured_value": "zero-through-less-than-the-authoritys-X10.4-score-coverage-floor",
+            "required_minimum": {
+              "const": 0.8
+            },
+            "display_copy_id": {
+              "const": "embryo.result.insufficient-coverage"
+            }
+          },
           "semanticRule": "this-is-a-measured-eligibility-metric-and-never-a-risk-figure-score-rank-or-reportable-result",
           "unknownFields": "reject"
         },
         "absoluteRiskFinding": {
           "kind": "object",
-          "keys": ["kind", "risk_model", "score_coverage", "absolute_risk", "interval_low", "interval_high", "matched_baseline", "difference_pp", "natural_frequency", "number_needed_to_select", "comparators", "within_family"],
-          "required": ["kind", "risk_model", "score_coverage", "absolute_risk", "interval_low", "interval_high", "matched_baseline", "difference_pp", "natural_frequency", "number_needed_to_select", "comparators", "within_family"],
+          "keys": [
+            "kind",
+            "risk_model",
+            "score_coverage",
+            "absolute_risk",
+            "interval_low",
+            "interval_high",
+            "matched_baseline",
+            "difference_pp",
+            "natural_frequency",
+            "number_needed_to_select",
+            "comparators",
+            "within_family"
+          ],
+          "required": [
+            "kind",
+            "risk_model",
+            "score_coverage",
+            "absolute_risk",
+            "interval_low",
+            "interval_high",
+            "matched_baseline",
+            "difference_pp",
+            "natural_frequency",
+            "number_needed_to_select",
+            "comparators",
+            "within_family"
+          ],
           "children": {
-            "risk_model": {"shape": "embryoRiskModelBinding", "cardinality": "exactly-one"},
-            "matched_baseline": {"shape": "matchedBaseline", "cardinality": "exactly-one"},
-            "natural_frequency": {"shape": "naturalFrequency", "cardinality": "exactly-one"},
-            "comparators": {"shape": "comparatorFinding", "cardinality": "exactly-four-one-per-enum"},
-            "within_family": {"shape": "withinFamilyValidation", "cardinality": "exactly-one"}
+            "risk_model": {
+              "shape": "embryoRiskModelBinding",
+              "cardinality": "exactly-one"
+            },
+            "matched_baseline": {
+              "shape": "matchedBaseline",
+              "cardinality": "exactly-one"
+            },
+            "natural_frequency": {
+              "shape": "naturalFrequency",
+              "cardinality": "exactly-one"
+            },
+            "comparators": {
+              "shape": "comparatorFinding",
+              "cardinality": "exactly-four-one-per-enum"
+            },
+            "within_family": {
+              "shape": "withinFamilyValidation",
+              "cardinality": "exactly-one"
+            }
           },
           "scalarConstraints": "kind-is-absolute_risk; score_coverage-and-all-probabilities-are-zero-through-one; this-shape-is-permitted-only-when-score_coverage-is-at-least-the-authoritys-X10.4-floor-otherwise-EmbryoFinding.finding-is-null-and-not_covered_reason-is-insufficient_coverage; interval_low-less-than-or-equal-absolute_risk-less-than-or-equal-interval_high-with-low-strictly-less-than-high; difference_pp-equals-the-registered-comparator-difference-rounded-to-two-decimals; number_needed_to_select-equals-ceil-one-over-the-unrounded-absolute-difference-fraction-or-null-when-zero",
           "unknownFields": "reject"
         },
         "embryoRiskModelBinding": {
           "kind": "object",
-          "keys": ["model_id", "model_version", "age_band", "prevalence_basis", "birth_cohort", "calibration_cohort", "calibration_n"],
-          "required": ["model_id", "model_version", "age_band", "prevalence_basis", "birth_cohort", "calibration_cohort", "calibration_n"],
+          "keys": [
+            "model_id",
+            "model_version",
+            "age_band",
+            "prevalence_basis",
+            "birth_cohort",
+            "calibration_cohort",
+            "calibration_n"
+          ],
+          "required": [
+            "model_id",
+            "model_version",
+            "age_band",
+            "prevalence_basis",
+            "birth_cohort",
+            "calibration_cohort",
+            "calibration_n"
+          ],
           "children": {},
-          "scalarConstraints": {"age_band": {"const": "lifetime"}, "prevalence_basis": {"const": "lifetime_risk"}, "birth_cohort": "nonempty-registered-string", "calibration_cohort": "nonempty-registered-string", "calibration_n": "positive-integer"},
+          "scalarConstraints": {
+            "age_band": {
+              "const": "lifetime"
+            },
+            "prevalence_basis": {
+              "const": "lifetime_risk"
+            },
+            "birth_cohort": "nonempty-registered-string",
+            "calibration_cohort": "nonempty-registered-string",
+            "calibration_n": "positive-integer"
+          },
           "registryRule": "model_id-and-version-must-equal-the-current-allowed-condition-risk_model_id-and-public.risk_models-row-whose-private-model-metadata-is-sex-combined-age-lifetime-and-prevalence-basis-lifetime-risk; sex-is-a-model-eligibility-constraint-and-is-never-a-runtime-response-key; no-client-worker-or-renderer-may-substitute-a-model",
           "unknownFields": "reject"
         },
         "matchedBaseline": {
           "kind": "object",
-          "keys": ["absolute_risk", "interval_low", "interval_high", "citation_ids"],
-          "required": ["absolute_risk", "interval_low", "interval_high", "citation_ids"],
+          "keys": [
+            "absolute_risk",
+            "interval_low",
+            "interval_high",
+            "citation_ids"
+          ],
+          "required": [
+            "absolute_risk",
+            "interval_low",
+            "interval_high",
+            "citation_ids"
+          ],
           "children": {},
           "scalarConstraints": "zero-through-one-strict-low-point-high-and-nonempty-deduplicated-registered-citations-from-the-identical-risk-model-row",
           "unknownFields": "reject"
         },
         "naturalFrequency": {
           "kind": "object",
-          "keys": ["subject_numerator", "comparator_numerator", "denominator", "fallback_copy_id"],
-          "required": ["subject_numerator", "comparator_numerator", "denominator", "fallback_copy_id"],
+          "keys": [
+            "subject_numerator",
+            "comparator_numerator",
+            "denominator",
+            "fallback_copy_id"
+          ],
+          "required": [
+            "subject_numerator",
+            "comparator_numerator",
+            "denominator",
+            "fallback_copy_id"
+          ],
           "children": {},
           "scalarConstraints": "subject_numerator-comparator_numerator-denominator-and-null-or-registered-fallback_copy_id-are-exactly-one-output-of-src/lib/figures/natural-frequency.ts-under-canonical-artifacts-X4.1; the-subject-and-matched-comparator-always-use-the-identical-selected-denominator-from-the-100-1000-10000-100000-1000000-ladder-and-when-no-sub-million-denominator-can-produce-two-distinct-positive-integer-counts-both-numerators-are-null-and-the-exact-fallback-copy-ID-is-nonnull; no-local-threshold-or-two-denominator-rendering-is-permitted",
           "unknownFields": "reject"
         },
         "comparatorFinding": {
           "kind": "object",
-          "keys": ["comparator", "relative_difference", "absolute_difference_pp", "number_needed_to_select", "lead"],
-          "required": ["comparator", "relative_difference", "absolute_difference_pp", "number_needed_to_select", "lead"],
+          "keys": [
+            "comparator",
+            "relative_difference",
+            "absolute_difference_pp",
+            "number_needed_to_select",
+            "lead"
+          ],
+          "required": [
+            "comparator",
+            "relative_difference",
+            "absolute_difference_pp",
+            "number_needed_to_select",
+            "lead"
+          ],
           "children": {},
-          "scalarConstraints": {"comparator": {"enum": ["vs_average_embryo", "vs_randomly_selected_embryo", "vs_highest_risk_embryo", "vs_population_baseline"]}, "lead": "true-only-for-vs_randomly_selected_embryo", "number_needed_to_select": "ceil-one-over-unrounded-absolute-difference-fraction-or-null-when-zero"},
+          "scalarConstraints": {
+            "comparator": {
+              "enum": [
+                "vs_average_embryo",
+                "vs_randomly_selected_embryo",
+                "vs_highest_risk_embryo",
+                "vs_population_baseline"
+              ]
+            },
+            "lead": "true-only-for-vs_randomly_selected_embryo",
+            "number_needed_to_select": "ceil-one-over-unrounded-absolute-difference-fraction-or-null-when-zero"
+          },
           "cardinalityRule": "the-array-has-each-enum-exactly-once-one-lead-and-the-smallest-of-the-four-is-marked-for-largest-type-only-inside-the-other-comparisons-disclosure; no-comparator-value-appears-elsewhere-except-the-random-selection-lead",
           "unknownFields": "reject"
         },
         "withinFamilyValidation": {
           "kind": "object",
-          "keys": ["status", "point_estimate", "interval_low", "interval_high", "family_count", "citation_ids", "display_copy_id", "enabled_by_default"],
-          "required": ["status", "point_estimate", "interval_low", "interval_high", "family_count", "citation_ids", "display_copy_id", "enabled_by_default"],
+          "keys": [
+            "status",
+            "point_estimate",
+            "interval_low",
+            "interval_high",
+            "family_count",
+            "citation_ids",
+            "display_copy_id",
+            "enabled_by_default"
+          ],
+          "required": [
+            "status",
+            "point_estimate",
+            "interval_low",
+            "interval_high",
+            "family_count",
+            "citation_ids",
+            "display_copy_id",
+            "enabled_by_default"
+          ],
           "children": {},
-          "scalarConstraints": {"status": {"enum": ["measured", "measured_inconclusive", "not_measured"]}, "measured": "requires-positive-family_count-nonempty-citations-and-a-strict-low-point-high-estimate-produced-by-the-registered-independent-within-family-analysis; numerical-equality-with-the-between-family-value-is-permitted-only-when-that-independent-measurement-and-its-citations-support-it-and-never-by-copying", "measured_inconclusive": "requires-positive-family_count-nonempty-citations-and-a-strict-interval-containing-the-no-attenuation-null-with-no-between-family-value-substitution", "not_measured": "all-four-numeric-fields-null-citation_ids-empty-display_copy_id-embryo.within-family.not-tested-and-enabled_by_default-false"},
+          "scalarConstraints": {
+            "status": {
+              "enum": [
+                "measured",
+                "measured_inconclusive",
+                "not_measured"
+              ]
+            },
+            "measured": "requires-positive-family_count-nonempty-citations-and-a-strict-low-point-high-estimate-produced-by-the-registered-independent-within-family-analysis; numerical-equality-with-the-between-family-value-is-permitted-only-when-that-independent-measurement-and-its-citations-support-it-and-never-by-copying",
+            "measured_inconclusive": "requires-positive-family_count-nonempty-citations-and-a-strict-interval-containing-the-no-attenuation-null-with-no-between-family-value-substitution",
+            "not_measured": "all-four-numeric-fields-null-citation_ids-empty-display_copy_id-embryo.within-family.not-tested-and-enabled_by_default-false"
+          },
           "unknownFields": "reject"
         },
         "carrierFinding": {
           "kind": "object",
-          "keys": ["kind", "carrier_state", "inheritance_mode", "confirmation_required", "display_copy_id"],
-          "required": ["kind", "carrier_state", "inheritance_mode", "confirmation_required", "display_copy_id"],
+          "keys": [
+            "kind",
+            "carrier_state",
+            "inheritance_mode",
+            "confirmation_required",
+            "display_copy_id"
+          ],
+          "required": [
+            "kind",
+            "carrier_state",
+            "inheritance_mode",
+            "confirmation_required",
+            "display_copy_id"
+          ],
           "children": {},
-          "scalarConstraints": {"kind": {"const": "carrier_status"}, "carrier_state": {"enum": ["carrier", "not_detected", "two_variants"]}, "confirmation_required": {"const": true}},
+          "scalarConstraints": {
+            "kind": {
+              "const": "carrier_status"
+            },
+            "carrier_state": {
+              "enum": [
+                "carrier",
+                "not_detected",
+                "two_variants"
+              ]
+            },
+            "confirmation_required": {
+              "const": true
+            }
+          },
           "categoryRule": "permitted-only-for-Having-children-and-never-converted-into-a-disease-risk-rank-or-transfer-recommendation",
           "notReportableRule": "a-not-reportable-carrier-result-is-never-a-carrierFinding; the-parent-EmbryoFinding-must-have-finding-null-and-one-exact-not_covered_reason",
           "unknownFields": "reject"
         },
         "apiCohortCreate": {
           "kind": "object",
-          "keys": ["cohort_id", "status", "embryo_count", "upload_session", "record_key_delivery", "record_key_cards"],
-          "required": ["cohort_id", "status", "embryo_count", "upload_session", "record_key_delivery", "record_key_cards"],
+          "keys": [
+            "cohort_id",
+            "status",
+            "embryo_count",
+            "upload_session",
+            "record_key_delivery",
+            "record_key_cards"
+          ],
+          "required": [
+            "cohort_id",
+            "status",
+            "embryo_count",
+            "upload_session",
+            "record_key_delivery",
+            "record_key_cards"
+          ],
           "children": {
-            "upload_session": {"shape": "embryoUploadSession", "cardinality": "exactly-one"},
-            "record_key_delivery": {"shape": "recordKeyDeliverySnake", "cardinality": "exactly-one"},
-            "record_key_cards": {"shape": "cohortRecordKeyCardSnake", "cardinality": "zero-or-more-array-in-ascending-sample_ordinal"}
+            "upload_session": {
+              "shape": "embryoUploadSession",
+              "cardinality": "exactly-one"
+            },
+            "record_key_delivery": {
+              "shape": "recordKeyDeliverySnake",
+              "cardinality": "exactly-one"
+            },
+            "record_key_cards": {
+              "shape": "cohortRecordKeyCardSnake",
+              "cardinality": "zero-or-more-array-in-ascending-sample_ordinal"
+            }
           },
           "scalarConstraints": "status-is-upload_ready-and-embryo_count-is-the-server-validated-positive-immutable-cohort-count",
           "cardinality": "when-the-caller-is-one-exact-current-embryo-basis-authority-v1.recordKeyRecipient-exactly-one-caller-owned-card-per-created-embryo-in-sample_ordinal-order-and-otherwise-an-exact-empty-array; no-other-recipients-key-is-returned",
@@ -660,89 +1128,231 @@
         },
         "embryoUploadSession": {
           "kind": "object",
-          "keys": ["transport", "uploadId", "session", "chunkBytes", "maximumChunks", "maximumInputBytes", "sampleHandles", "chunkRoute", "completeRoute", "expiresAt"],
-          "required": ["transport", "uploadId", "session", "chunkBytes", "maximumChunks", "maximumInputBytes", "sampleHandles", "chunkRoute", "completeRoute", "expiresAt"],
+          "keys": [
+            "transport",
+            "uploadId",
+            "session",
+            "chunkBytes",
+            "maximumChunks",
+            "maximumInputBytes",
+            "sampleHandles",
+            "chunkRoute",
+            "completeRoute",
+            "expiresAt"
+          ],
+          "required": [
+            "transport",
+            "uploadId",
+            "session",
+            "chunkBytes",
+            "maximumChunks",
+            "maximumInputBytes",
+            "sampleHandles",
+            "chunkRoute",
+            "completeRoute",
+            "expiresAt"
+          ],
           "children": {
-            "sampleHandles": {"shape": "sampleHandle", "cardinality": "exactly-the-immutable-cohort-embryo-count-array-in-ascending-ordinal"},
-            "chunkRoute": {"shape": "embryoChunkRoute", "cardinality": "exactly-one"},
-            "completeRoute": {"shape": "embryoCompleteRoute", "cardinality": "exactly-one"}
+            "sampleHandles": {
+              "shape": "sampleHandle",
+              "cardinality": "exactly-the-immutable-cohort-embryo-count-array-in-ascending-ordinal"
+            },
+            "chunkRoute": {
+              "shape": "embryoChunkRoute",
+              "cardinality": "exactly-one"
+            },
+            "completeRoute": {
+              "shape": "embryoCompleteRoute",
+              "cardinality": "exactly-one"
+            }
           },
           "scalarConstraints": "transport-is-embryo-chunks-and-all-limits-and-expiry-are-server-derived-from-responseContracts.upload-session-v1",
           "unknownFields": "reject"
         },
         "sampleHandle": {
           "kind": "object",
-          "keys": ["ordinal", "handle"],
-          "required": ["ordinal", "handle"],
+          "keys": [
+            "ordinal",
+            "handle"
+          ],
+          "required": [
+            "ordinal",
+            "handle"
+          ],
           "children": {},
           "scalarConstraints": "ordinal-is-each-zero-based-sample-ordinal-exactly-once-and-handle-is-the-session-bound-at-least-128-bit-CSPRNG-base64url-value",
           "unknownFields": "reject"
         },
         "embryoChunkRoute": {
           "kind": "object",
-          "keys": ["routeFrom", "params"],
-          "required": ["routeFrom", "params"],
-          "children": {"params": {"shape": "embryoChunkRouteParams", "cardinality": "exactly-one"}},
-          "scalarConstraints": {"routeFrom": {"const": "api.embryo-ingest-chunk"}},
+          "keys": [
+            "routeFrom",
+            "params"
+          ],
+          "required": [
+            "routeFrom",
+            "params"
+          ],
+          "children": {
+            "params": {
+              "shape": "embryoChunkRouteParams",
+              "cardinality": "exactly-one"
+            }
+          },
+          "scalarConstraints": {
+            "routeFrom": {
+              "const": "api.embryo-ingest-chunk"
+            }
+          },
           "unknownFields": "reject"
         },
         "embryoChunkRouteParams": {
           "kind": "object",
-          "keys": ["session", "sequence"],
-          "required": ["session", "sequence"],
+          "keys": [
+            "session",
+            "sequence"
+          ],
+          "required": [
+            "session",
+            "sequence"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "embryoCompleteRoute": {
           "kind": "object",
-          "keys": ["routeFrom", "params"],
-          "required": ["routeFrom", "params"],
-          "children": {"params": {"shape": "embryoCompleteRouteParams", "cardinality": "exactly-one"}},
-          "scalarConstraints": {"routeFrom": {"const": "api.embryo-ingest-complete"}},
+          "keys": [
+            "routeFrom",
+            "params"
+          ],
+          "required": [
+            "routeFrom",
+            "params"
+          ],
+          "children": {
+            "params": {
+              "shape": "embryoCompleteRouteParams",
+              "cardinality": "exactly-one"
+            }
+          },
+          "scalarConstraints": {
+            "routeFrom": {
+              "const": "api.embryo-ingest-complete"
+            }
+          },
           "unknownFields": "reject"
         },
         "embryoCompleteRouteParams": {
           "kind": "object",
-          "keys": ["session"],
-          "required": ["session"],
+          "keys": [
+            "session"
+          ],
+          "required": [
+            "session"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "recordKeyDeliverySnake": {
           "kind": "object",
-          "keys": ["recipient_set_revision", "caller_state"],
-          "required": ["recipient_set_revision", "caller_state"],
+          "keys": [
+            "recipient_set_revision",
+            "caller_state"
+          ],
+          "required": [
+            "recipient_set_revision",
+            "caller_state"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "cohortRecordKeyCardSnake": {
           "kind": "object",
-          "keys": ["embryo_id", "display_label", "record_key", "claim_url", "closing_date_words", "closing_date_iso", "closing_date_state", "date_revision"],
-          "required": ["embryo_id", "display_label", "record_key", "claim_url", "closing_date_words", "closing_date_iso", "closing_date_state", "date_revision"],
+          "keys": [
+            "embryo_id",
+            "display_label",
+            "record_key",
+            "claim_url",
+            "closing_date_words",
+            "closing_date_iso",
+            "closing_date_state",
+            "date_revision"
+          ],
+          "required": [
+            "embryo_id",
+            "display_label",
+            "record_key",
+            "claim_url",
+            "closing_date_words",
+            "closing_date_iso",
+            "closing_date_state",
+            "date_revision"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "apiRecordKeyCardDelivery": {
           "kind": "object",
-          "keys": ["cohort_id", "recipient_set_revision", "key_revision", "record_key_cards"],
-          "required": ["cohort_id", "recipient_set_revision", "key_revision", "record_key_cards"],
-          "children": {"record_key_cards": {"shape": "deliveryRecordKeyCardSnake", "cardinality": "one-or-more-array-in-ascending-sample_ordinal"}},
+          "keys": [
+            "cohort_id",
+            "recipient_set_revision",
+            "key_revision",
+            "record_key_cards"
+          ],
+          "required": [
+            "cohort_id",
+            "recipient_set_revision",
+            "key_revision",
+            "record_key_cards"
+          ],
+          "children": {
+            "record_key_cards": {
+              "shape": "deliveryRecordKeyCardSnake",
+              "cardinality": "one-or-more-array-in-ascending-sample_ordinal"
+            }
+          },
           "cardinality": "exactly-the-current-unconsumed-print-rights-for-the-acting-recordKeyRecipient-and-never-another-recipient",
           "unknownFields": "reject"
         },
         "deliveryRecordKeyCardSnake": {
           "kind": "object",
-          "keys": ["embryo_id", "display_label", "record_key", "claim_url", "closing_date_words", "closing_date_iso", "closing_date_state", "date_revision", "delivery_kind"],
-          "required": ["embryo_id", "display_label", "record_key", "claim_url", "closing_date_words", "closing_date_iso", "closing_date_state", "date_revision", "delivery_kind"],
+          "keys": [
+            "embryo_id",
+            "display_label",
+            "record_key",
+            "claim_url",
+            "closing_date_words",
+            "closing_date_iso",
+            "closing_date_state",
+            "date_revision",
+            "delivery_kind"
+          ],
+          "required": [
+            "embryo_id",
+            "display_label",
+            "record_key",
+            "claim_url",
+            "closing_date_words",
+            "closing_date_iso",
+            "closing_date_state",
+            "date_revision",
+            "delivery_kind"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "apiEmbryoDisposition": {
           "kind": "union",
           "oneOf": [
-            {"shape": "embryoDispositionAwaiting"},
-            {"shape": "embryoDispositionNontransfer"},
-            {"shape": "embryoDispositionTransfer"}
+            {
+              "shape": "embryoDispositionAwaiting"
+            },
+            {
+              "shape": "embryoDispositionNontransfer"
+            },
+            {
+              "shape": "embryoDispositionTransfer"
+            }
           ],
           "discriminator": "status-or-disposition",
           "unknownFields": "reject",
@@ -759,161 +1369,452 @@
         },
         "embryoDispositionAwaiting": {
           "kind": "object",
-          "keys": ["status", "proposalId", "expiresAt"],
-          "required": ["status", "proposalId", "expiresAt"],
+          "keys": [
+            "status",
+            "proposalId",
+            "expiresAt"
+          ],
+          "required": [
+            "status",
+            "proposalId",
+            "expiresAt"
+          ],
           "children": {},
-          "scalarConstraints": {"status": {"const": "awaiting_other_parent"}},
+          "scalarConstraints": {
+            "status": {
+              "const": "awaiting_other_parent"
+            }
+          },
           "applicability": "only-embryo-basis-authority-v1.true-two-parent-propose",
           "unknownFields": "reject"
         },
         "embryoDispositionNontransfer": {
           "kind": "object",
-          "keys": ["embryoId", "disposition", "effectiveAt", "retentionExpiresAt"],
-          "required": ["embryoId", "disposition", "effectiveAt", "retentionExpiresAt"],
+          "keys": [
+            "embryoId",
+            "disposition",
+            "effectiveAt",
+            "retentionExpiresAt"
+          ],
+          "required": [
+            "embryoId",
+            "disposition",
+            "effectiveAt",
+            "retentionExpiresAt"
+          ],
           "children": {},
-          "scalarConstraints": {"disposition": {"enum": ["stored", "donated", "discarded"]}},
+          "scalarConstraints": {
+            "disposition": {
+              "enum": [
+                "stored",
+                "donated",
+                "discarded"
+              ]
+            }
+          },
           "unknownFields": "reject"
         },
         "embryoDispositionTransfer": {
           "kind": "object",
-          "keys": ["embryoId", "disposition", "effectiveAt", "retentionExpiresAt", "recordKeyDelivery", "recordKeyCard"],
-          "required": ["embryoId", "disposition", "effectiveAt", "retentionExpiresAt", "recordKeyDelivery", "recordKeyCard"],
+          "keys": [
+            "embryoId",
+            "disposition",
+            "effectiveAt",
+            "retentionExpiresAt",
+            "recordKeyDelivery",
+            "recordKeyCard"
+          ],
+          "required": [
+            "embryoId",
+            "disposition",
+            "effectiveAt",
+            "retentionExpiresAt",
+            "recordKeyDelivery",
+            "recordKeyCard"
+          ],
           "children": {
-            "recordKeyDelivery": {"shape": "recordKeyDeliveryCamel", "cardinality": "exactly-one"},
-            "recordKeyCard": {"oneOf": [{"shape": "transferRecordKeyCardCamel"}, {"const": null}]}
+            "recordKeyDelivery": {
+              "shape": "recordKeyDeliveryCamel",
+              "cardinality": "exactly-one"
+            },
+            "recordKeyCard": {
+              "oneOf": [
+                {
+                  "shape": "transferRecordKeyCardCamel"
+                },
+                {
+                  "const": null
+                }
+              ]
+            }
           },
-          "scalarConstraints": {"disposition": {"const": "transferred"}},
+          "scalarConstraints": {
+            "disposition": {
+              "const": "transferred"
+            }
+          },
           "unknownFields": "reject"
         },
         "recordKeyDeliveryCamel": {
           "kind": "object",
-          "keys": ["recipientSetRevision", "callerState"],
-          "required": ["recipientSetRevision", "callerState"],
+          "keys": [
+            "recipientSetRevision",
+            "callerState"
+          ],
+          "required": [
+            "recipientSetRevision",
+            "callerState"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "transferRecordKeyCardCamel": {
           "kind": "object",
-          "keys": ["recordKey", "claimUrl", "closingDateWords", "closingDateIso", "closingDateState"],
-          "required": ["recordKey", "claimUrl", "closingDateWords", "closingDateIso", "closingDateState"],
+          "keys": [
+            "recordKey",
+            "claimUrl",
+            "closingDateWords",
+            "closingDateIso",
+            "closingDateState"
+          ],
+          "required": [
+            "recordKey",
+            "claimUrl",
+            "closingDateWords",
+            "closingDateIso",
+            "closingDateState"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "exportEmbryo": {
           "kind": "object",
-          "keys": ["id", "cohort_id", "sample_ordinal", "display_label", "status", "qc", "findings", "sanitized_variant_file_ids"],
-          "required": ["id", "cohort_id", "sample_ordinal", "display_label", "status", "qc", "findings", "sanitized_variant_file_ids"],
+          "keys": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc",
+            "findings",
+            "sanitized_variant_file_ids"
+          ],
+          "required": [
+            "id",
+            "cohort_id",
+            "sample_ordinal",
+            "display_label",
+            "status",
+            "qc",
+            "findings",
+            "sanitized_variant_file_ids"
+          ],
           "children": {
-            "qc": {"shape": "qc", "cardinality": "exactly-one"},
-            "findings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array", "itemRule": "every-embryo_label-equals-this-display_label"}
+            "qc": {
+              "shape": "qc",
+              "cardinality": "exactly-one"
+            },
+            "findings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array",
+              "itemRule": "every-embryo_label-equals-this-display_label"
+            }
           },
           "scalarConstraints": "sanitized_variant_file_ids-is-a-deduplicated-array-of-safe-file-IDs-with-no-source-object-key-name-label-or-nonautosomal-member",
           "unknownFields": "reject"
         },
         "parentCarrierReportSummary": {
           "kind": "object",
-          "keys": ["subject_safe_label", "condition_id", "carrier_state", "evidence_label", "citation_ids"],
-          "required": ["subject_safe_label", "condition_id", "carrier_state", "evidence_label", "citation_ids"],
+          "keys": [
+            "subject_safe_label",
+            "condition_id",
+            "carrier_state",
+            "evidence_label",
+            "citation_ids"
+          ],
+          "required": [
+            "subject_safe_label",
+            "condition_id",
+            "carrier_state",
+            "evidence_label",
+            "citation_ids"
+          ],
           "children": {},
           "authorizationRule": "include-only-when-the-exact-parent-principal-has-a-current-copilot.local-grant-covering-the-bound-cohort-context-and-never-include-a-genotype-or-source-row",
           "unknownFields": "reject"
         },
         "copilotCohortContext": {
           "kind": "object",
-          "keys": ["cohort_id", "embryos", "findings", "authorized_parent_carrier_reports", "standing_statement"],
-          "required": ["cohort_id", "embryos", "findings", "authorized_parent_carrier_reports", "standing_statement"],
+          "keys": [
+            "cohort_id",
+            "embryos",
+            "findings",
+            "authorized_parent_carrier_reports",
+            "standing_statement"
+          ],
+          "required": [
+            "cohort_id",
+            "embryos",
+            "findings",
+            "authorized_parent_carrier_reports",
+            "standing_statement"
+          ],
           "children": {
-            "embryos": {"shape": "comparisonEmbryo", "cardinality": "one-or-more-array-in-ascending-sample_ordinal"},
-            "findings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array-in-condition-then-sample_ordinal-order"},
-            "authorized_parent_carrier_reports": {"shape": "parentCarrierReportSummary", "cardinality": "zero-or-more-array"}
+            "embryos": {
+              "shape": "comparisonEmbryo",
+              "cardinality": "one-or-more-array-in-ascending-sample_ordinal"
+            },
+            "findings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array-in-condition-then-sample_ordinal-order"
+            },
+            "authorized_parent_carrier_reports": {
+              "shape": "parentCarrierReportSummary",
+              "cardinality": "zero-or-more-array"
+            }
           },
           "unknownFields": "reject"
         },
         "copilotCohortPage": {
           "kind": "object",
-          "keys": ["scope", "context", "messages"],
-          "required": ["scope", "context", "messages"],
+          "keys": [
+            "scope",
+            "context",
+            "messages"
+          ],
+          "required": [
+            "scope",
+            "context",
+            "messages"
+          ],
           "children": {
-            "scope": {"shape": "copilotScope", "cardinality": "exactly-one"},
-            "context": {"shape": "copilotCohortContext", "cardinality": "exactly-one"},
-            "messages": {"shape": "copilotCohortHistoryMessage", "cardinality": "zero-or-more-array"}
+            "scope": {
+              "shape": "copilotScope",
+              "cardinality": "exactly-one"
+            },
+            "context": {
+              "shape": "copilotCohortContext",
+              "cardinality": "exactly-one"
+            },
+            "messages": {
+              "shape": "copilotCohortHistoryMessage",
+              "cardinality": "zero-or-more-array"
+            }
           },
           "unknownFields": "reject"
         },
         "copilotCohortUnavailablePage": {
           "kind": "object",
-          "keys": ["headingCopyId", "plainLanguageReasonCopyId", "localDeploymentRequirementCopyId", "backAction"],
-          "required": ["headingCopyId", "plainLanguageReasonCopyId", "localDeploymentRequirementCopyId", "backAction"],
-          "children": {"backAction": {"shape": "copilotBackAction", "cardinality": "exactly-one"}},
+          "keys": [
+            "headingCopyId",
+            "plainLanguageReasonCopyId",
+            "localDeploymentRequirementCopyId",
+            "backAction"
+          ],
+          "required": [
+            "headingCopyId",
+            "plainLanguageReasonCopyId",
+            "localDeploymentRequirementCopyId",
+            "backAction"
+          ],
+          "children": {
+            "backAction": {
+              "shape": "copilotBackAction",
+              "cardinality": "exactly-one"
+            }
+          },
           "findingRule": "zero-EmbryoFinding-members-and-no-embryo-result-value",
           "unknownFields": "reject"
         },
         "copilotBackAction": {
           "kind": "object",
-          "keys": ["labelCopyId", "routeId"],
-          "required": ["labelCopyId", "routeId"],
+          "keys": [
+            "labelCopyId",
+            "routeId"
+          ],
+          "required": [
+            "labelCopyId",
+            "routeId"
+          ],
           "children": {},
-          "scalarConstraints": {"labelCopyId": {"const": "actions.back"}, "routeId": {"const": "app.overview"}},
+          "scalarConstraints": {
+            "labelCopyId": {
+              "const": "actions.back"
+            },
+            "routeId": {
+              "const": "app.overview"
+            }
+          },
           "unknownFields": "reject"
         },
         "copilotScope": {
           "kind": "object",
-          "keys": ["kind", "displayLabel"],
-          "required": ["kind", "displayLabel"],
+          "keys": [
+            "kind",
+            "displayLabel"
+          ],
+          "required": [
+            "kind",
+            "displayLabel"
+          ],
           "children": {},
-          "scalarConstraints": {"kind": {"enum": ["self", "subject", "family", "cohort", "report"]}},
+          "scalarConstraints": {
+            "kind": {
+              "enum": [
+                "self",
+                "subject",
+                "family",
+                "cohort",
+                "report"
+              ]
+            }
+          },
           "unknownFields": "reject"
         },
         "chatCitation": {
           "kind": "object",
-          "keys": ["id", "label", "href"],
-          "required": ["id", "label", "href"],
+          "keys": [
+            "id",
+            "label",
+            "href"
+          ],
+          "required": [
+            "id",
+            "label",
+            "href"
+          ],
           "children": {},
           "unknownFields": "reject"
         },
         "copilotCohortCompletionMessage": {
           "kind": "object",
-          "keys": ["role", "content", "citations", "embryoFindings"],
-          "required": ["role", "content", "citations", "embryoFindings"],
+          "keys": [
+            "role",
+            "content",
+            "citations",
+            "embryoFindings"
+          ],
+          "required": [
+            "role",
+            "content",
+            "citations",
+            "embryoFindings"
+          ],
           "children": {
-            "citations": {"shape": "chatCitation", "cardinality": "zero-or-more-array"},
-            "embryoFindings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array"}
+            "citations": {
+              "shape": "chatCitation",
+              "cardinality": "zero-or-more-array"
+            },
+            "embryoFindings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array"
+            }
           },
-          "scalarConstraints": {"role": {"const": "assistant"}},
+          "scalarConstraints": {
+            "role": {
+              "const": "assistant"
+            }
+          },
           "unknownFields": "reject"
         },
         "copilotCohortTurnResponse": {
           "kind": "object",
-          "keys": ["chatId", "message"],
-          "required": ["chatId", "message"],
-          "children": {"message": {"shape": "copilotCohortCompletionMessage", "cardinality": "exactly-one"}},
+          "keys": [
+            "chatId",
+            "message"
+          ],
+          "required": [
+            "chatId",
+            "message"
+          ],
+          "children": {
+            "message": {
+              "shape": "copilotCohortCompletionMessage",
+              "cardinality": "exactly-one"
+            }
+          },
           "unknownFields": "reject"
         },
         "copilotCohortHistoryMessage": {
           "kind": "object",
-          "keys": ["id", "role", "content", "citations", "embryoFindings", "createdAt"],
-          "required": ["id", "role", "content", "citations", "embryoFindings", "createdAt"],
+          "keys": [
+            "id",
+            "role",
+            "content",
+            "citations",
+            "embryoFindings",
+            "createdAt"
+          ],
+          "required": [
+            "id",
+            "role",
+            "content",
+            "citations",
+            "embryoFindings",
+            "createdAt"
+          ],
           "children": {
-            "citations": {"shape": "chatCitation", "cardinality": "zero-or-more-array"},
-            "embryoFindings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array"}
+            "citations": {
+              "shape": "chatCitation",
+              "cardinality": "zero-or-more-array"
+            },
+            "embryoFindings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array"
+            }
           },
           "unknownFields": "reject"
         },
         "copilotCohortHistoryResponse": {
           "kind": "object",
-          "keys": ["chatId", "scope", "messages"],
-          "required": ["chatId", "scope", "messages"],
+          "keys": [
+            "chatId",
+            "scope",
+            "messages"
+          ],
+          "required": [
+            "chatId",
+            "scope",
+            "messages"
+          ],
           "children": {
-            "scope": {"shape": "copilotScope", "cardinality": "exactly-one"},
-            "messages": {"shape": "copilotCohortHistoryMessage", "cardinality": "zero-or-more-array"}
+            "scope": {
+              "shape": "copilotScope",
+              "cardinality": "exactly-one"
+            },
+            "messages": {
+              "shape": "copilotCohortHistoryMessage",
+              "cardinality": "zero-or-more-array"
+            }
           },
           "unknownFields": "reject"
         },
         "rightsEmbryoWithdrawal": {
           "kind": "object",
-          "keys": ["cohortSafeLabel", "embryoCount", "safeStatusLabels", "currentPurposeLabels", "retentionMaximumDays", "allowedActionIds", "findings"],
-          "required": ["cohortSafeLabel", "embryoCount", "safeStatusLabels", "currentPurposeLabels", "retentionMaximumDays", "allowedActionIds", "findings"],
-          "children": {"findings": {"shape": "EmbryoFinding", "cardinality": "zero-or-more-array-covered-only-by-current-parent-withdrawal-authority"}},
+          "keys": [
+            "cohortSafeLabel",
+            "embryoCount",
+            "safeStatusLabels",
+            "currentPurposeLabels",
+            "retentionMaximumDays",
+            "allowedActionIds",
+            "findings"
+          ],
+          "required": [
+            "cohortSafeLabel",
+            "embryoCount",
+            "safeStatusLabels",
+            "currentPurposeLabels",
+            "retentionMaximumDays",
+            "allowedActionIds",
+            "findings"
+          ],
+          "children": {
+            "findings": {
+              "shape": "EmbryoFinding",
+              "cardinality": "zero-or-more-array-covered-only-by-current-parent-withdrawal-authority"
+            }
+          },
           "unknownFields": "reject"
         }
       },
@@ -1023,42 +1924,127 @@
       ],
       "shapeBindings": {
         "RSC": {
-          "embryos.index": {"root": "rscEmbryoListItem", "cardinality": "zero-or-more-array"},
-          "embryos.compare": {"root": "rscEmbryoComparison", "cardinality": "exactly-one"},
-          "embryos.detail": {"root": "rscEmbryoDetail", "cardinality": "exactly-one"},
-          "copilot.scope": {"root": "copilotCohortPage", "when": "resolved-scope-kind-is-cohort", "unavailableRoot": "copilotCohortUnavailablePage"},
-          "rights.withdraw": {"root": "rightsEmbryoWithdrawal", "when": "withdrawal-target-v1-purpose-is-embryo-parent-withdrawal"}
+          "embryos.index": {
+            "root": "rscEmbryoListItem",
+            "cardinality": "zero-or-more-array"
+          },
+          "embryos.compare": {
+            "root": "rscEmbryoComparison",
+            "cardinality": "exactly-one"
+          },
+          "embryos.detail": {
+            "root": "rscEmbryoDetail",
+            "cardinality": "exactly-one"
+          },
+          "copilot.scope": {
+            "root": "copilotCohortPage",
+            "when": "resolved-scope-kind-is-cohort",
+            "unavailableRoot": "copilotCohortUnavailablePage"
+          },
+          "rights.withdraw": {
+            "root": "rightsEmbryoWithdrawal",
+            "when": "withdrawal-target-v1-purpose-is-embryo-parent-withdrawal"
+          }
         },
         "API": {
-          "api.embryo-cohorts": {"root": "apiCohortCreate", "findingCardinality": "zero"},
-          "api.embryo-record-key-cards": {"root": "apiRecordKeyCardDelivery", "findingCardinality": "zero"},
-          "api.embryo-record-key-cards-rights": {"root": "apiRecordKeyCardDelivery", "findingCardinality": "zero"},
-          "api.embryo-disposition": {"root": "apiEmbryoDisposition", "findingCardinality": "zero"},
-          "api.chat": {"root": "copilotCohortTurnResponse", "when": "success-response-contract-is-chat-completion-v1-and-server-resolved-scope-kind-is-cohort"},
-          "api.chat-history": {"root": "copilotCohortHistoryResponse", "when": "success-response-contract-is-chat-history-v1-and-server-resolved-scope-kind-is-cohort"}
+          "api.embryo-cohorts": {
+            "root": "apiCohortCreate",
+            "findingCardinality": "zero"
+          },
+          "api.embryo-record-key-cards": {
+            "root": "apiRecordKeyCardDelivery",
+            "findingCardinality": "zero"
+          },
+          "api.embryo-record-key-cards-rights": {
+            "root": "apiRecordKeyCardDelivery",
+            "findingCardinality": "zero"
+          },
+          "api.embryo-disposition": {
+            "root": "apiEmbryoDisposition",
+            "findingCardinality": "zero"
+          },
+          "api.chat": {
+            "root": "copilotCohortTurnResponse",
+            "when": "success-response-contract-is-chat-completion-v1-and-server-resolved-scope-kind-is-cohort"
+          },
+          "api.chat-history": {
+            "root": "copilotCohortHistoryResponse",
+            "when": "success-response-contract-is-chat-history-v1-and-server-resolved-scope-kind-is-cohort"
+          }
         },
         "export": {
-          "account-export-v1": {"root": "exportEmbryo", "cardinality": "zero-or-more-array-per-authorized-cohort-partition"},
-          "subject-export-v1": {"root": "exportEmbryo", "cardinality": "zero-or-more-array-per-authorized-subject-partition"},
-          "token-target-export-v1": {"root": "exportEmbryo", "cardinality": "zero-or-more-array-per-authorized-token-target"},
-          "approved-future-person-export-v1": {"root": "exportEmbryo", "cardinality": "exactly-one-for-the-approved-embryo-subject"}
+          "account-export-v1": {
+            "root": "exportEmbryo",
+            "cardinality": "zero-or-more-array-per-authorized-cohort-partition"
+          },
+          "subject-export-v1": {
+            "root": "exportEmbryo",
+            "cardinality": "zero-or-more-array-per-authorized-subject-partition"
+          },
+          "token-target-export-v1": {
+            "root": "exportEmbryo",
+            "cardinality": "zero-or-more-array-per-authorized-token-target"
+          },
+          "approved-future-person-export-v1": {
+            "root": "exportEmbryo",
+            "cardinality": "exactly-one-for-the-approved-embryo-subject"
+          }
         },
         "chat": {
-          "copilot-context-v1": {"root": "copilotCohortContext", "when": "scope-kind-cohort"},
-          "copilot-output-guard-v1": {"root": "copilotCohortTurnResponse", "when": "validated-success-contract-chat-completion-v1-and-scope-kind-cohort"},
-          "chat-history-projection-v1": {"root": "copilotCohortHistoryResponse", "when": "success-contract-chat-history-v1-and-scope-kind-cohort"}
+          "copilot-context-v1": {
+            "root": "copilotCohortContext",
+            "when": "scope-kind-cohort"
+          },
+          "copilot-output-guard-v1": {
+            "root": "copilotCohortTurnResponse",
+            "when": "validated-success-contract-chat-completion-v1-and-scope-kind-cohort"
+          },
+          "chat-history-projection-v1": {
+            "root": "copilotCohortHistoryResponse",
+            "when": "success-contract-chat-history-v1-and-scope-kind-cohort"
+          }
         },
         "worker": {
-          "embryo.carrier-match": {"root": "EmbryoFinding", "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"},
-          "embryo.single-locus": {"root": "EmbryoFinding", "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"},
-          "embryo.statistical-estimate": {"root": "EmbryoFinding", "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"}
+          "embryo.carrier-match": {
+            "root": "EmbryoFinding",
+            "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"
+          },
+          "embryo.single-locus": {
+            "root": "EmbryoFinding",
+            "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"
+          },
+          "embryo.statistical-estimate": {
+            "root": "EmbryoFinding",
+            "cardinality": "exactly-one-per-authorized-embryo-condition-candidate"
+          }
         },
         "findingBearingConsumerInventory": {
-          "RSC": ["embryos.compare", "embryos.detail", "copilot.scope", "rights.withdraw"],
-          "API": ["api.chat", "api.chat-history"],
-          "export": ["account-export-v1", "subject-export-v1", "token-target-export-v1", "approved-future-person-export-v1"],
-          "chat": ["copilot-context-v1", "copilot-output-guard-v1", "chat-history-projection-v1"],
-          "worker": ["embryo.carrier-match", "embryo.single-locus", "embryo.statistical-estimate"]
+          "RSC": [
+            "embryos.compare",
+            "embryos.detail",
+            "copilot.scope",
+            "rights.withdraw"
+          ],
+          "API": [
+            "api.chat",
+            "api.chat-history"
+          ],
+          "export": [
+            "account-export-v1",
+            "subject-export-v1",
+            "token-target-export-v1",
+            "approved-future-person-export-v1"
+          ],
+          "chat": [
+            "copilot-context-v1",
+            "copilot-output-guard-v1",
+            "chat-history-projection-v1"
+          ],
+          "worker": [
+            "embryo.carrier-match",
+            "embryo.single-locus",
+            "embryo.statistical-estimate"
+          ]
         },
         "inventoryValidation": "the-static-gate-discovers-every-current-source-route-response-export-chat-context-history-and-worker-consumer-capable-of-carrying-an-embryo-finding-and-requires-exact-set-equality-with-findingBearingConsumerInventory-by-class-and-an-explicit-consumer-to-root-binding; missing-extra-or-duplicate-is-a-build-failure",
         "graphValidation": {
@@ -1083,8 +2069,21 @@
           "reason": "these-closed-responses-carry-only-session-upload-build-or-job-metadata-and-their-schemas-have-no-EmbryoFinding-result-qc-variant-or-projection-member"
         },
         "zeroFindingClosedBranches": {
-          "api.chat": ["invalid-request-v1", "resource-not-found-v1", "consent-required-v1", "copilot-transport-unavailable-v1", "copilot-denial-v1", "copilot-refusal-v1", "embryo-closed-schema-v1"],
-          "api.chat-history": ["copilot-transport-unavailable-v1", "embryo-closed-schema-v1", "revoked-resource-v1", "resource-not-found-v1"],
+          "api.chat": [
+            "invalid-request-v1",
+            "resource-not-found-v1",
+            "consent-required-v1",
+            "copilot-transport-unavailable-v1",
+            "copilot-denial-v1",
+            "copilot-refusal-v1",
+            "embryo-closed-schema-v1"
+          ],
+          "api.chat-history": [
+            "copilot-transport-unavailable-v1",
+            "embryo-closed-schema-v1",
+            "revoked-resource-v1",
+            "resource-not-found-v1"
+          ],
           "rule": "each-listed-authoritative-closed-response-contract-is-structurally-incapable-of-carrying-an-EmbryoFinding-and-is-excluded-only-on-that-response-contract-branch-never-merely-because-the-chat-scope-is-cohort"
         },
         "adversarialFixture": {
@@ -1496,16 +2495,16 @@
         "recheck": "re-resolve-and-compare-the-complete-binding-before-every-context-selector-every-retrieved-row-every-citation-read-every-model-call-and-immediately-before-the-paired-turn-commit; any-mismatch-returns-no-context-or-model-bytes-and-invalidates-the-complete-paired-turn-plus-every-dependent-later-message"
       },
       "canonicalOwnImplementation": {
-      "module": "src/lib/copilot/own-chat-route.ts",
-      "authority": "private.own_copilot_authority_v1 plus private.own_copilot_chat_v1; exact current account/session/store/Copilot purpose/recipient snapshot before every tool, pinned connection, commit and response",
-      "readers": "canonical prepared observations and exact completed report-purpose/source journals; explicit legacy processed-file observations remain separately snapshot-bound; historical report/PRS authority is unavailable per source",
-      "scientificMetadata": "only immutable catalogSnapshot captured at completion; no current-template decoration of historical outcomes",
-      "history": "server-owned single-use context or immutable chat ID; no client history; atomic paired messages with captured citations; stale or unverified pairs invalidate the whole dependent chain",
-      "cleanup": "exact-grant frozen purpose-derived manifest before message deletion; selected-file deletion freezes exact dependent message IDs in its Storage-ACK record; successor grants and independent chats excluded",
-      "scopeLimit": "this implementation is self only; legacy ABI remains isolated behind absence of canonical consent/source/chat markers; no canonical RPC error may fall back",
-      "nonceStore": "private.own_copilot_nonces stores only hashes/IDs, is service-only, expires logically after nine minutes, cleans expired rows at next redemption, and cascades on account/session deletion"
-    },
-    "closedProjections": {
+        "module": "src/lib/copilot/own-chat-route.ts",
+        "authority": "private.own_copilot_authority_v1 plus private.own_copilot_chat_v1; exact current account/session/store/Copilot purpose/recipient snapshot before every tool, pinned connection, commit and response",
+        "readers": "canonical prepared observations and exact completed report-purpose/source journals; explicit legacy processed-file observations remain separately snapshot-bound; historical report/PRS authority is unavailable per source",
+        "scientificMetadata": "only immutable catalogSnapshot captured at completion; no current-template decoration of historical outcomes",
+        "history": "server-owned single-use context or immutable chat ID; no client history; atomic paired messages with captured citations; stale or unverified pairs invalidate the whole dependent chain",
+        "cleanup": "exact-grant frozen purpose-derived manifest before message deletion; selected-file deletion freezes exact dependent message IDs in its Storage-ACK record; successor grants and independent chats excluded",
+        "scopeLimit": "this implementation is self only; legacy ABI remains isolated behind absence of canonical consent/source/chat markers; no canonical RPC error may fall back",
+        "nonceStore": "private.own_copilot_nonces stores only hashes/IDs, is service-only, expires logically after nine minutes, cleans expired rows at next redemption, and cascades on account/session deletion"
+      },
+      "closedProjections": {
         "self": [
           "resolved-reports",
           "prs",
@@ -2515,7 +3514,10 @@
       "decision": "docs/adr/0024-own-report-synchronous-generation.md",
       "route": "api.file-process",
       "scope": "only structurally verified, normalized Tier-1 sources bound to the acting account's active self subject",
-      "operations": { "reports.monogenic": "variant_call report templates", "reports.polygenic": "estimate report templates and existing coverage-only PGS computation" },
+      "operations": {
+        "reports.monogenic": "variant_call report templates",
+        "reports.polygenic": "estimate report templates and existing coverage-only PGS computation"
+      },
       "identity": "server selects each operation independently from its current exact self-direction canonical purpose grant; request bodies, filenames and client-selected operation overrides are forbidden",
       "checkpoints": "the identical current grant, artifact, source/hash/normalization revision, principal/binding, jurisdiction and lifecycle authority is checked before every bounded genetic read and in the atomic completion transaction; an incomplete or revoked run exposes no completed-result marker",
       "completion": "private.own_analysis_runs records the exact per-purpose source and grant snapshot and computation revision; completed report interpretations and selected PGS rows commit atomically with that marker; genome_files remains stored and no global annotated flag authorizes another purpose",
@@ -2528,7 +3530,16 @@
         "transition": "old public.own_report_generation_v1 stays service-only and callable for deployed-candidate compatibility; its callers do not queue notices until application replacement. Actual legacy sources retain their annotated-file path; canonical sources cannot use that flag or generic enqueue to bypass readiness"
       },
       "response": "use only file-processing-v1 synchronous processed or already_processed receipts after every selected supported operation is currently complete; no supported selected operation returns the normalization_complete/not_generated receipt",
-      "excluded": ["ancestry generation", "other_adult", "embryo", "family analysis", "outside models", "implicit purpose grants", "worker-job receipts", "validated personal PGS score or risk claims"],
+      "excluded": [
+        "ancestry generation",
+        "other_adult",
+        "embryo",
+        "family analysis",
+        "outside models",
+        "implicit purpose grants",
+        "worker-job receipts",
+        "validated personal PGS score or risk claims"
+      ],
       "queueCompatibility": "worker-job-enqueue-v1 is unchanged and mandatory for its registered queued operations; this explicit synchronous exception creates no worker_jobs row and cannot claim a queued or running job"
     },
     "analysis-eligibility-v1": {
@@ -10155,7 +11166,11 @@
     "account-completion-v1": {
       "status": 200,
       "contentType": "application/json",
-      "body": { "status": { "const": "completed" } },
+      "body": {
+        "status": {
+          "const": "completed"
+        }
+      },
       "unknownFields": "forbidden",
       "birthDateAccountOrSubjectDetails": "forbidden"
     },
@@ -10409,15 +11424,15 @@
               ]
             },
             "content": "validated-display-text",
-          "citations": [
+            "citations": [
               {
                 "id": "committed-authorized-citation-id",
                 "label": "safe-source-label",
-              "href": "same-origin-or-committed-public-source-URL"
-            }
-          ],
-          "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-autosomal-only-v1.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array",
-          "createdAt": "ISO-8601-UTC"
+                "href": "same-origin-or-committed-public-source-URL"
+              }
+            ],
+            "embryoFindings": "when-the-server-resolved-scope-kind-is-cohort-a-zero-or-more-array-of-exact-policyContracts.embryo-autosomal-only-v1.closedShapes.EmbryoFinding-and-otherwise-the-exact-empty-array",
+            "createdAt": "ISO-8601-UTC"
           }
         ]
       },

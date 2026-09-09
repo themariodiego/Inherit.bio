@@ -16,6 +16,7 @@ describe("independent retention queues", () => {
   it("continues invitation, draft and account retention when terminal-contact expiry fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
       if (name === "run_own_report_purge_v1") return { data: null, error: null };
@@ -39,6 +40,7 @@ describe("independent retention queues", () => {
   it("reaps interrupted preparation even when the upload provider queue fails", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "claim_own_original_retirement_v1") return { data: null, error: null };
       if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
       if (name === "claim_own_prepared_cleanup_v1") return { data: null, error: null };
       if (name === "run_own_report_purge_v1") return { data: null, error: null };
