@@ -17,6 +17,36 @@ Implemented today:
   reference labels lack allele/condition/assertion provenance, so personal
   ClinVar hits remain withheld pending a reviewed assertion importer.
 
+## Canonical prepared WGS worker (operator-started)
+
+From the **repository root**, using the existing Node 24 / `tsx` dependencies:
+
+```sh
+pnpm worker:prepared
+# One preparation attempt and one cleanup page, then exit:
+pnpm worker:prepared --once
+```
+
+This separate entry requires `INHERIT_PREPARED_WGS_ENABLED=true`; the database
+`own_preparation_config.enabled` gate and source limits remain independent.
+Supply the existing server environment securely: `NEXT_PUBLIC_SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, and the prepared R2 gateway configuration used by
+`src/lib/genome/prepared-source/r2-transport.ts`. Run from the repository root
+so the pinned liftover data is available. Do not put credentials in command
+arguments or logs.
+
+The loop awaits one real FIFO preparation, then one bounded prepared cleanup
+page, and waits five seconds while idle or after failure. It prints only coded
+outcomes. `SIGINT` / `SIGTERM` abort active work and stop polling. A lost worker
+process does not adopt an expired attempt: registered bytes remain owned by the
+existing freeze/cleanup lifecycle. Cleanup progress does not mean every queued
+job is complete; R2 deletion retains zero-byte fencing objects.
+
+This command creates no deployment, schedule, or Vercel background task. An
+operator must provide an existing long-lived host and start it explicitly. No
+hosted worker availability or full-size WGS capacity is established by adding
+this entry. The older `worker_jobs` annotation consumer below is unchanged.
+
 ## Environment variables
 
 | Variable | Required | Description |

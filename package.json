@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "worker:prepared": "node --conditions=react-server --import tsx scripts/prepared-worker.run.mts",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
     "e2e": "tsx scripts/run-upload-browser.mts --full",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",

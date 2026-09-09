@@ -43,7 +43,7 @@ async function authorize(request, env) {
   return c;
 }
 
-export default {
+const preparedArtifactGateway = {
   async fetch(request, env) {
     let c;
     try {
@@ -94,3 +94,5 @@ export default {
     } catch { return json({ error: "unavailable" }, 503); }
   },
 };
+
+export default preparedArtifactGateway;
