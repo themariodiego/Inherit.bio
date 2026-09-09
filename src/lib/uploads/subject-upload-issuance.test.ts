@@ -172,3 +172,68 @@ describe("canonical upload issuance", () => {
     expect(await response.json()).toEqual({ error: "unavailable" });
   });
 });
+
+/**
+ * The issuer raises one error class for a malformed declaration and for both
+ * ceilings. Collapsing them told a person their account was full when their
+ * file was simply too big, and told someone with a small file the same thing
+ * when the account had no room; the two need opposite actions.
+ */
+describe("naming the limit that actually refused an upload", () => {
+  const limits = { maximumArrayBytes: 52_428_800, maximumVcfBytes: 25_165_824,
+    maximumAccountBytes: 134_217_728, maximumActiveUploads: 2, reservedBytes: 0, activeUploads: 0 };
+  function refuse(message: string, disclosure: unknown = limits) {
+    mocks.rpc.mockImplementation(async (name: string) => name === "own_upload_limits_v1"
+      ? { data: disclosure, error: null }
+      : { data: null, error: { code: "22023", message } });
+  }
+  it("registers the account-allowance refusal as its own closed contract", () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8"));
+    expect(register.responseContracts["upload-account-full-v1"]).toMatchObject({
+      status: 413, body: { error: { const: "account_full" } }, unknownFields: "forbidden",
+    });
+    expect(register.responseContracts["file-too-large-v1"].body.error.const).toBe("too_large");
+    expect(register.responseContractBindings.routes["api.file-upload-session"])
+      .toEqual(expect.arrayContaining(["file-too-large-v1", "upload-account-full-v1"]));
+  });
+  it("reports a malformed declaration as invalid, never as a size", async () => {
+    refuse("invalid_request");
+    const response = await issueSubjectUpload(request());
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "own_upload_limits_v1")).toBe(false);
+  });
+  it("reports a file past its own format ceiling as too large", async () => {
+    refuse("file_too_large", { ...limits, maximumVcfBytes: 100 });
+    const response = await issueSubjectUpload(request());
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "too_large" });
+  });
+  it("reports a file that fits its format ceiling as an exhausted account", async () => {
+    refuse("file_too_large");
+    const response = await issueSubjectUpload(request());
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "account_full" });
+    expect(mocks.rpc).toHaveBeenCalledWith("own_upload_limits_v1",
+      { p_account_id: accountId, p_session_id: sessionId });
+  });
+  it("measures an array declaration against the array ceiling, as the issuer does", async () => {
+    refuse("file_too_large", { ...limits, maximumArrayBytes: 100, maximumVcfBytes: 52_428_800 });
+    const response = await issueSubjectUpload(request({ ...body, declaredFormat: "consumer-array-text-v1" }));
+    expect(await response.json()).toEqual({ error: "too_large" });
+  });
+  it.each([null, { maximumVcfBytes: 1 }, "unusable"])(
+    "keeps the plain size refusal when the ceilings cannot be read (%j)", async disclosure => {
+      refuse("file_too_large", disclosure);
+      const response = await issueSubjectUpload(request());
+      expect(response.status).toBe(413);
+      expect(await response.json()).toEqual({ error: "too_large" });
+    });
+  it("creates no upload session for any of these refusals", async () => {
+    for (const message of ["invalid_request", "file_too_large"]) {
+      refuse(message);
+      await issueSubjectUpload(request());
+      expect(mocks.rpc.mock.calls.every(([name]) => name !== "complete_own_upload_finalization_v1")).toBe(true);
+    }
+  });
+});

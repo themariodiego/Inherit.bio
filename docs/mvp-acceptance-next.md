@@ -5,6 +5,58 @@ Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+## Upload refusals name the limit they hit · 9 September 2026
+
+`private.issue_own_storage_upload_v1` raises one error class (`22023`) for a
+malformed declaration, for a file past its per-format ceiling, and for an
+account with no allowance left. The route collapsed all three into HTTP 413
+`too_large`, which the uploader rendered as "This file exceeds the current
+upload limit for your account." A person whose file was simply too big was
+told their account was full; a person with a small file and a full account was
+told the same thing; and a malformed declaration was reported as a size. The
+first user to write in about WGS uploads asked, reasonably, what the limits
+were and whether his account could be raised — the sentence had sent him to
+the wrong question.
+
+Finalization had the same collapse in the other direction. Structural
+validation raises `too_large` for exactly one cause, decompressed content past
+the session ceiling (`src/lib/uploads/subject-structure.ts:98`), and the stored
+size has already passed at issuance by then. Reporting it as a plain size limit
+invites refiltering a file whose stored size was never the problem.
+
+This release separates them and states the ceiling up front:
+
+- New read-only `public.own_upload_limits_v1` discloses the deployment's
+  per-format ceilings, the account's reserved total and its live lease count,
+  to a live session of that exact account only. Its reservation arithmetic is
+  copied from the issuer so a disclosed remainder and an actual refusal cannot
+  disagree; the pgTAP test asserts that boundary in both directions.
+- Issuance now answers `invalid_request` (422), `too_large` (413) or the new
+  `account_full` (413), resolving the two ceilings against the live limits.
+  Finalization answers `decompressed_too_large` (413).
+- The upload page states the ceiling before a file is chosen, including that a
+  compressed file is measured after it is unpacked, and the browser refuses an
+  over-ceiling file before hashing the whole thing rather than after.
+- An unreadable disclosure states no ceiling rather than a guessed one and
+  never blocks uploading; the server stays the authority in every case.
+- `docs/route-register.json` gains `upload-account-full-v1` and the finalize
+  413 body changes to `decompressed_too_large`; both bodies stay closed.
+
+**No limit changed, and no admission was opened.** The reported 413 MB original
+and its reduced 38.3 MB export are still refused, now with an accurate reason.
+The whole set of ceilings between today and an ordinary WGS result, each with
+the constraint that enforces it, is recorded in
+`docs/hosted-own-upload-readiness.md`.
+
+Verified in this environment: `pnpm typecheck`, `pnpm lint`, the full unit
+suite (4,443 passing) and the legal, template, readability and secret gates.
+**Not verified here:** the pgTAP suite and the 232-case browser suite both need
+a local Supabase and Docker, which this container does not have, so the new
+migration and SQL test have run nowhere yet and CI is their first execution.
+Nothing was deployed, no hosted configuration was read or written, and no
+genetic file was touched. Acceptance stays **19/65**: this closes no gate,
+because the screens gate (G2) needs the browser evidence above.
+
 ## Current production checkpoint · 9 September 2026
 
 PR83 merge `956880ddf3335131765c4706c6586868dc6389df` is production READY as

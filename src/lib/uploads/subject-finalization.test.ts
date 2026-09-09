@@ -158,8 +158,21 @@ describe("finalization failure and cleanup boundaries", () => {
   });
   it("bounds decompression and cleans a refused archive", async () => {
     setSource(gzipSync(Buffer.from(vcf + row)), "VCF.GZ"); manifest.maximumDecodedBytes = 40;
-    expect((await send()).status).toBe(413); expect(mocks.copy).not.toHaveBeenCalled();
+    const response = await send(); expect(response.status).toBe(413);
+    // The stored size already passed at issuance, so this refusal is about the
+    // unpacked measurement alone. Reporting a plain size limit here would send
+    // someone away to filter a file whose stored size was never the problem.
+    expect(await response.json()).toEqual({ error: "decompressed_too_large" });
+    expect(mocks.copy).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledWith([stagingKey, finalKey]);
+  });
+  it("keeps a decompressed refusal distinct from every other finalization refusal", async () => {
+    setSource(Buffer.from(vcf + row + row)); manifest.maximumDecodedBytes = 1;
+    // An uncompressed source is measured the same way, and still must not be
+    // reported as an integrity mismatch or a stored-size refusal.
+    const response = await send(); expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "decompressed_too_large" });
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
   });
   it.each([1, 2, 3, 4, 5])("stops and cleans on authority revocation at recheck %s", async at => {
     let seen = 0;

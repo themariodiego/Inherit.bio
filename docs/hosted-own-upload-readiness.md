@@ -1,5 +1,46 @@
 # Hosted own-upload rollout prerequisites
 
+## Every ceiling between today and an ordinary WGS result · 9 September 2026
+
+Read from the code at `691ea28`, with the exact constraint that enforces each.
+Deployment values are configuration, not constants; the hosted numbers quoted
+below are the dated observation recorded in the PR83/PR84 handoff and were not
+re-queried for this note. Nothing here changes a limit.
+
+| Boundary | Enforced at | Value |
+|---|---|---|
+| Stored size, per file | `20260906123327_subject_upload_finalization.sql` (`issue_own_storage_upload_v1`) | `maximum_vcf_bytes` / `maximum_array_bytes`; hosted `maximum_vcf_bytes` observed 25,165,824 B (24 MiB) |
+| Unpacked size, per file | same issuer stores that number as `upload_sessions.maximum_decoded_bytes`; enforced in `src/lib/uploads/subject-structure.ts:98` | the same number again |
+| Account allowance | same issuer, counting stored files plus every unexpired `issued`/`uploaded`/`validating` session | `maximum_account_bytes`; hosted observed 134,217,728 B (128 MiB) |
+| Concurrent uploads | same issuer | `maximum_active_uploads`; hosted observed 2 |
+| Upload session lifetime | same issuer | `least(clock_timestamp() + interval '30 minutes', auth.sessions.not_after)` |
+| Finalization request | `src/app/api/files/[id]/finalize/route.ts:2` | `maxDuration = 300` seconds |
+| Finalization work inside it | `src/lib/uploads/subject-finalization.ts:79-89` | two complete passes over the object: validate/hash the staging copy, then re-read the promoted copy to verify its hash |
+| Preparation wall clock | `20260908233418_own_preparation_checkpoints.sql:4-5,14` | `max_job_seconds` default 900, CHECK 900–3600; hard `job_deadline <= created_at + interval '1 hour'` |
+| Registered artifact payload | `20260908233337_own_prepared_r2_provider.sql:6,9,129` | `reserved_bytes <= 1 GiB`; deployment `max_artifact_bytes` default 104,857,600 B; `artifact_count < 4096`; per artifact 1–8,388,608 B |
+| Checkpoint size | `20260908233418_own_preparation_checkpoints.sql:21` | `octet_length(checkpoint::text) <= 4,000,000` |
+
+**The per-file ceiling is applied twice.** `issue_own_storage_upload_v1` writes
+the same per-format number into `upload_sessions.maximum_decoded_bytes`, and
+finalization measures decompressed bytes against it. A compressed VCF must
+therefore fit *unpacked* under the stated per-file limit, so the largest
+acceptable `.vcf.gz` is materially smaller than that limit suggests. This
+refusal arrives only after the whole file has been uploaded and streamed.
+
+Against the file a person actually reported (their figures, not ours; we hold
+no copy and have no permission to use it): a 413 MB original exceeds both the
+per-file and the whole-account ceilings on stored size alone, and the reduced
+PASS-only 38.3 MB export exceeds the per-file ceiling on stored size alone.
+Both are refused at issuance today, before any unpacked measurement applies.
+
+What is **not** established, and must be measured rather than scaled from
+capacity attempt 5 (144,001 variants, 71.112 s, 13,980,406 B across 92
+artifacts): whether a few million variants complete inside the one-hour hard
+deadline, and what payload and artifact count they actually register. Merging
+is multi-pass, so a linear projection from attempt 5 is not evidence. Raising
+any admission limit needs that measurement plus a finalization path that does
+not do two complete passes inside a 300-second request.
+
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
 PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as

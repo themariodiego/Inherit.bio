@@ -112,6 +112,11 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
     }
     if (error instanceof SubjectStructureError) {
       const status = error.code === "pdf_not_data" || error.code === "unrecognised_format" ? 415 : error.code === "too_large" ? 413 : 422;
+      // Structural validation raises `too_large` for one cause only: decoded
+      // content past the session ceiling. The stored size already passed at
+      // issuance, so reporting a plain size limit here would name the wrong
+      // measurement and invite pointless refiltering of a valid file.
+      if (error.code === "too_large") return ownUploadJson({ error: "decompressed_too_large" }, status);
       return ownUploadJson(error.code === "subject_source_not_single_sample"
         ? { error: error.code, messageCopyId: "upload.subject.single-sample-required" } : { error: error.code }, status);
     }

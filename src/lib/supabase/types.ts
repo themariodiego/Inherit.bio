@@ -8071,6 +8071,10 @@ export type Database = {
         }
         Returns: Json
       }
+      own_upload_limits_v1: {
+        Args: { p_account_id: string; p_session_id: string }
+        Returns: Json
+      }
       own_report_context_v1: {
         Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
         Returns: Json

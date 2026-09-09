@@ -15,4 +15,25 @@ export const OWN_UPLOAD_COPY = {
   unavailable: "We cannot prepare this upload right now. Your existing files and results have not changed.",
   uploadsPaused: "New uploads are temporarily paused. Please try again later. Your existing files and reports are still available.",
   underage: "Inherit is for adults aged 18 or older.",
+  /**
+   * The size sentences. Each names the measurement that actually refused the
+   * file, because they call for different actions: a file over the per-file
+   * ceiling, an account with no room left, and a small compressed file whose
+   * unpacked contents are too big are three different problems, and only the
+   * first is fixed by choosing a smaller file. Every number is the
+   * deployment's live ceiling read at request time, never a compiled-in
+   * figure, and none of these sentences promises a future limit.
+   */
+  limitStatement: (arrayMegabytes: number, vcfMegabytes: number) =>
+    (arrayMegabytes === vcfMegabytes
+      ? `We can take files up to ${arrayMegabytes} MB.`
+      : `We can take genotype table files up to ${arrayMegabytes} MB, and VCF or gVCF files up to ${vcfMegabytes} MB.`)
+    + " A compressed file is measured after it is unpacked, so the unpacked size has to fit as well.",
+  tooLarge: (megabytes: number) => `This file is bigger than the ${megabytes} MB we can take for this kind of file.`,
+  tooLargeUnknownLimit: "This file is bigger than we can take right now. Your saved files have not changed.",
+  accountFull: (megabytes: number) =>
+    `This file does not fit in the ${megabytes} MB your account can still hold. Delete a file you no longer need, then try again.`,
+  accountFullUnknownLimit: "Your account has no room left for this file. Delete a file you no longer need, then try again.",
+  decompressedTooLarge:
+    "This file unpacks to more than we can take. Compressed files are measured after they are unpacked, not by their stored size. Your saved files have not changed.",
 } as const;

@@ -3,13 +3,17 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadSessionBody } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
-  "too_large" | "upload_integrity_mismatch" | "unauthorized" | "uploads_paused" | "unavailable";
+  "too_large" | "account_full" | "decompressed_too_large" | "upload_integrity_mismatch" | "unauthorized" |
+  "uploads_paused" | "unavailable";
 export class BrowserUploadError extends Error {
-  constructor(readonly code: UploadFailureCode) { super(code); }
+  /** `limitBytes` is set only where the refusing ceiling is known exactly at
+   * the throw site. It never crosses the wire; the register forbids unknown
+   * response fields, so a server refusal carries its code alone. */
+  constructor(readonly code: UploadFailureCode, readonly limitBytes?: number) { super(code); }
 }
 export class BrowserPreparationError extends Error {
   constructor(readonly code: "build_unknown" | "unavailable" | "report_generation_unavailable") { super(code); }
@@ -57,14 +61,17 @@ async function responseFailure(response: Response): Promise<never> {
   const value: unknown = await response.json().catch(() => null);
   const code = value && typeof value === "object" && "error" in value ? value.error : null;
   if (response.status === 503 && code === "uploads_paused") throw new BrowserUploadError("uploads_paused");
-  if (["pdf_not_data", "subject_source_not_single_sample", "unrecognised_format", "too_large",
-    "upload_integrity_mismatch", "unauthorized"].includes(String(code))) throw new BrowserUploadError(code as UploadFailureCode);
+  if (["pdf_not_data", "subject_source_not_single_sample", "unrecognised_format", "too_large", "account_full",
+    "decompressed_too_large", "upload_integrity_mismatch", "unauthorized"].includes(String(code))) {
+    throw new BrowserUploadError(code as UploadFailureCode);
+  }
   throw new BrowserUploadError(response.status === 401 ? "unauthorized" : "unavailable");
 }
 
 /** One ephemeral create-only bearer, no normal auth token, persisted resume
  * fingerprint, filename metadata, background retry or implicit analysis. */
-export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void) {
+export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
+  limits?: OwnUploadLimits | null) {
   onProgress({ step: "checking", pct: 0 });
   const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
   const sniffed = await sniffFileV2(head);
@@ -72,6 +79,11 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
   if (sniffed.kind === "pgt_table" || sniffed.kind === "vcf_multisample") throw new BrowserUploadError("subject_source_not_single_sample");
   const format = sniffed.kind && declaredSubjectFormat(sniffed.kind, head[0] === 0x1f && head[1] === 0x8b);
   if (!format) throw new BrowserUploadError("unrecognised_format");
+  // Refuse a file the deployment cannot accept before reading all of it. The
+  // server stays the authority; this only spares a long local hash of bytes
+  // that issuance would refuse anyway, and is skipped when limits are unknown.
+  const ceiling = limits ? uploadCeilingBytes(format, limits) : undefined;
+  if (ceiling !== undefined && file.size > ceiling) throw new BrowserUploadError("too_large", ceiling);
   const hasher = await createSHA256(); let read = 0;
   onProgress({ step: "hashing", pct: 0 });
   const reader = file.stream().getReader();

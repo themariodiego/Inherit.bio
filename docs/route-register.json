@@ -9915,6 +9915,7 @@
     },
     "file-too-large-v1": {
       "status": 413,
+      "when": "the-declared-size-exceeds-the-deployment-ceiling-for-this-declared-format-only",
       "contentType": "application/json",
       "body": {
         "error": {
@@ -9922,6 +9923,20 @@
         }
       },
       "unknownFields": "forbidden",
+      "effects": "reject-before-upload-session-file-row-object-key-token-or-byte-and-write-nothing"
+    },
+    "upload-account-full-v1": {
+      "status": 413,
+      "when": "the-declared-size-fits-the-format-ceiling-but-not-the-remaining-account-allowance-counting-stored-files-and-every-unexpired-pending-session",
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "account_full"
+        }
+      },
+      "unknownFields": "forbidden",
+      "distinctFrom": "file-too-large-v1; the-two-refusals-call-for-different-actions-and-must-not-share-one-code-or-one-sentence",
+      "limitDisclosure": "public.own_upload_limits_v1-is-the-one-authority-for-both-ceilings-and-the-reserved-total; no-limit-crosses-this-response-body",
       "effects": "reject-before-upload-session-file-row-object-key-token-or-byte-and-write-nothing"
     },
     "file-finalize-v1": {
@@ -10013,10 +10028,10 @@
         },
         {
           "status": 413,
-          "when": "the-server-observed-decoded-input-exceeds-the-authoritative-format-or-upload-session-limit",
+          "when": "the-server-observed-decoded-input-exceeds-the-authoritative-format-or-upload-session-limit; the-stored-size-already-passed-at-issuance-so-this-is-the-unpacked-measurement-only",
           "body": {
             "error": {
-              "const": "too_large"
+              "const": "decompressed_too_large"
             }
           },
           "unknownFields": "forbidden"
@@ -12251,6 +12266,7 @@
         "upload-session-v1",
         "canonical-uploads-paused-v1",
         "file-too-large-v1",
+        "upload-account-full-v1",
         "invalid-request-v1",
         "upload-refusal-v1",
         "living-minor-refusal-v1",
