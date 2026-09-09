@@ -41,6 +41,55 @@ is multi-pass, so a linear projection from attempt 5 is not evidence. Raising
 any admission limit needs that measurement plus a finalization path that does
 not do two complete passes inside a 300-second request.
 
+### Measured: the finalization pass is not the bottleneck · 9 September 2026
+
+Run with `scripts/finalization-capacity.mts` over fixtures from
+`scripts/synthetic-wgs-fixture.mts`, driving the **actual**
+`validateSubjectStructure` the finalizer calls, in the same 4,000,000-byte
+ranges. Linux container, Node 22.22.2, local disk, no network and no authority
+RPC — so every figure below is a **floor on the real cost, never a budget**.
+
+| Variants | Stored (gz) | Decoded | Ranges | Seconds | Decoded B/s | Peak RSS |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100,000 | 3,147,208 | 15,483,774 | 1 | 0.319 | 48,533,012 | 108,937,216 |
+| 1,000,000 | 31,480,481 | 155,837,091 | 8 | 2.376 | 65,597,764 | 120,725,504 |
+| 4,930,321 | 155,194,392 | 772,598,414 | 39 | 10.841 | 71,263,330 | 132,710,400 |
+
+Every row is seed 1 of the committed generator, so re-running it reproduces
+these exact byte counts. The copy-verification pass over the same 155,194,392
+bytes took **0.553 s** with `node:crypto` (280,659,780 B/s). Repeated with
+`hash-wasm`, saving resumable state every ten chunks (236 saves), it took
+1.026 s and produced an identical digest. A `hash-wasm` SHA-256 state is
+**116 bytes**.
+
+Four things follow, and they change the shape of the durable-finalization work:
+
+1. **Throughput is linear and memory is flat.** Peak RSS stays near 120 MB from
+   100,000 to 4,930,321 variants, so the streaming validator holds no genome in
+   memory and never approaches the 512 MiB guard. Size is not a memory problem.
+2. **Total CPU for a full WGS-scale file is under 12 seconds** across both
+   passes. The 300-second request is therefore bounded by input/output, not by
+   validation: two complete transfers of the object in 4 MB ranges (78 round
+   trips at this size), each preceded by an authority recheck RPC, plus the
+   server-side copy. Optimising the parser would buy nothing.
+3. **The decoded ceiling is what refuses a real WGS VCF, not the stored one.**
+   772,598,414 decoded bytes is **30.7×** the hosted `maximum_decoded_bytes`
+   observed at 25,165,824. Raising only the stored per-file limit would move the
+   refusal from issuance to finalization without admitting a single new file.
+4. **The second pass can be checkpointed; the first cannot.** Rehashing the
+   promoted copy is plain bytes, so an offset plus a 116-byte digest state
+   resumes it exactly, well inside the 4,000,000-byte checkpoint budget. The
+   validation pass decompresses, and gzip decoder state cannot be serialised, so
+   it must run as one continuous pass or restart. A durable design has to bound
+   and retry phase one, not resume it mid-file.
+
+Fixture representativeness, stated plainly: decoded volume per record is 157
+bytes against roughly 200 for a real whole-genome export, so the decoded figures
+above are mildly **optimistic**. Stored volume per record is 31.5 bytes against
+the 7.8 implied by the user-reported 38.3 MB / 4,930,321-variant file, so the
+transfer and range-count figures are **conservative**. Neither the real file nor
+any real genome was used, and none is needed to measure this boundary.
+
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
 PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
