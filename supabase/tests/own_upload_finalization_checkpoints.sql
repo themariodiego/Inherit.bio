@@ -158,7 +158,9 @@ select ok((select lease_expires_at<=(select expires_at from public.upload_sessio
 
 -- Reaching a terminal state retires the progress record and its hashes.
 savepoint before_terminal;
-update public.upload_sessions set status='rejected' where id=pg_temp.upload_id();
+-- Reach the terminal state the way the product does, not by writing the column.
+select public.abort_own_upload_finalization_v1('76500000-0000-4000-8000-000000000001',
+ '76500000-0000-4000-8000-000000000010',pg_temp.upload_id(),pg_temp.claim());
 select is((select count(*) from private.own_upload_finalization_checkpoints where upload_id=pg_temp.upload_id()),
  0::bigint,'leaving validation retires the checkpoint and the hashes it held');
 rollback to before_terminal;

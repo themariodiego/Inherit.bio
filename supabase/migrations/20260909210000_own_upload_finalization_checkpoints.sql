@@ -95,7 +95,10 @@ begin
   or (p_checkpoint->>'verifiedBytes')!~'^(0|[1-9][0-9]{0,18})$'
   or jsonb_typeof(p_checkpoint->'digestState') not in('string','null')
   or (jsonb_typeof(p_checkpoint->'digestState')='string'
-   and coalesce(p_checkpoint->>'digestState','')!~'^[A-Za-z0-9+/]{1,4096}={0,2}$') then
+   -- PostgreSQL's regex engine caps a bounded repeat at 255, so the length is
+   -- checked separately rather than written into the pattern.
+   and (coalesce(p_checkpoint->>'digestState','')!~'^[A-Za-z0-9+/]+={0,2}$'
+    or octet_length(p_checkpoint->>'digestState')>4096)) then
   raise exception using errcode='22023',message='invalid_checkpoint'; end if;
  phase_rank:=private.own_upload_finalization_phase_rank_v1(p_checkpoint->>'phase');
  verified:=(p_checkpoint->>'verifiedBytes')::numeric;
