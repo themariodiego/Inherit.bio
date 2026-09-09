@@ -16,8 +16,8 @@ re-queried for this note. Nothing here changes a limit.
 | Upload session lifetime | same issuer | `least(clock_timestamp() + interval '30 minutes', auth.sessions.not_after)` |
 | Finalization request | `src/app/api/files/[id]/finalize/route.ts:2` | `maxDuration = 300` seconds |
 | Finalization work inside it | `src/lib/uploads/subject-finalization.ts:79-89` | two complete passes over the object: validate/hash the staging copy, then re-read the promoted copy to verify its hash |
-| Preparation wall clock | `20260908233418_own_preparation_checkpoints.sql:4-5,14` | `max_job_seconds` default 900, CHECK 900–3600; hard `job_deadline <= created_at + interval '1 hour'` |
-| Registered artifact payload | `20260908233337_own_prepared_r2_provider.sql:6,9,129` | `reserved_bytes <= 1 GiB`; deployment `max_artifact_bytes` default 104,857,600 B; `artifact_count < 4096`; per artifact 1–8,388,608 B |
+| Preparation wall clock | `20260908233418_own_preparation_checkpoints.sql:4-5,14` | `max_job_seconds` default 900, CHECK 900–3600; hard `job_deadline <= created_at + interval '1 hour'`; a whole genome measured 2,745.38 s |
+| Registered artifact payload | `20260908233337_own_prepared_r2_provider.sql:6,9,129` | `reserved_bytes <= 1 GiB`; deployment `max_artifact_bytes` default 104,857,600 B; `artifact_count < 4096`; per artifact 1–8,388,608 B. A whole genome measured 922,056,859 B across 2,289 artifacts, so this cap refuses it first |
 | Checkpoint size | `20260908233418_own_preparation_checkpoints.sql:21` | `octet_length(checkpoint::text) <= 4,000,000` |
 
 **The per-file ceiling is applied twice.** `issue_own_storage_upload_v1` writes
@@ -33,13 +33,16 @@ per-file and the whole-account ceilings on stored size alone, and the reduced
 PASS-only 38.3 MB export exceeds the per-file ceiling on stored size alone.
 Both are refused at issuance today, before any unpacked measurement applies.
 
-What is **not** established, and must be measured rather than scaled from
-capacity attempt 5 (144,001 variants, 71.112 s, 13,980,406 B across 92
-artifacts): whether a few million variants complete inside the one-hour hard
-deadline, and what payload and artifact count they actually register. Merging
-is multi-pass, so a linear projection from attempt 5 is not evidence. Raising
-any admission limit needs that measurement plus a finalization path that does
-not do two complete passes inside a 300-second request.
+This is now measured, in "Measured: preparation, not finalization, is what a
+whole genome cannot pass" below. A 4,930,321-variant file prepares in
+2,745.38 s and registers 922,056,859 B across 2,289 artifacts, so it exceeds
+`max_artifact_bytes` by 8.79× and `max_job_seconds` by 3.05× while using only
+55.9% of the artifact-count ceiling. The caution above was justified: scaling
+attempt 5 linearly under-states both the payload and the time.
+
+Raising any admission limit still needs the hosted execution home for that
+work, and the storage and compute cost of those two ceilings, on their own
+evidence.
 
 ### Measured: the finalization pass is not the bottleneck · 9 September 2026
 
@@ -89,6 +92,108 @@ above are mildly **optimistic**. Stored volume per record is 31.5 bytes against
 the 7.8 implied by the user-reported 38.3 MB / 4,930,321-variant file, so the
 transfer and range-count figures are **conservative**. Neither the real file nor
 any real genome was used, and none is needed to measure this boundary.
+
+### Measured: preparation, not finalization, is what a whole genome cannot pass · 9 September 2026
+
+Run with `scripts/preparation-capacity.mts` over the same seed-1 fixtures,
+driving the **actual** `runOwnPreparationPipeline` the prepared worker runs,
+with artifacts spooled to local disk and an in-memory checkpoint. Same
+container as the finalization measurement above. It answers the question this
+document left open — whether a few million variants complete inside the hard
+deadline, and what payload and artifact count they actually register — and it
+answers it by running the pipeline rather than scaling attempt 5.
+
+| Variants | Seconds | Artifacts | Artifact bytes | Largest artifact | Artifact reads | Peak RSS |
+|---:|---:|---:|---:|---:|---:|---:|
+| 20,000 | 9.782 | 16 | 1,692,538 | 475,459 | 15 | 243,781,632 |
+| 1,000,000 | 502.871 | 448 | 159,586,882 | 1,047,140 | 487 | 351,870,976 |
+| 4,930,321 | 2,745.380 | 2,289 | 922,056,859 | 1,048,555 | 2,495 | 388,284,416 |
+
+**The pipeline itself completes.** The whole-genome row reached
+`publication-preflight` with no refusal, 4,930,321 variants and 2,713,235
+observed calls, in 45 minutes 45 seconds at a peak of 370 MB. Nothing here is
+a memory problem and nothing exhausts the artifact **count** ceiling: 2,289 of
+4,096 is 55.9%, and the largest single artifact is 12.5% of its 8,388,608-byte
+limit.
+
+**Three configured ceilings refuse it anyway, and the tightest is one this
+document had not named.** Against the deployment values in
+`private.own_preparation_config`:
+
+| Ceiling | Enforced at | Whole-genome demand | Verdict |
+|---|---|---:|---|
+| `max_artifact_bytes` = 104,857,600 | `20260908233337_own_prepared_r2_provider.sql:129`, against the job's cumulative `reserved_bytes` | 922,056,859 B | **8.79× over**; 85.9% of the 1,073,741,824 schema maximum |
+| `max_job_seconds` = 900 | `20260908233418_own_preparation_checkpoints.sql:4-5`, via `enqueue_own_preparation_v1` | 2,745.38 s | **3.05× over**; 76.3% of the 3,600 schema maximum |
+| `artifact_count` < 4096 | `20260908164616_own_preparation_job_authority.sql:246` | 2,289 | fits, 55.9% |
+
+The artifact-payload cap bites first and bites hardest. It is already exceeded
+at **1,000,000 variants**, which demanded 159,586,882 B — 1.52× the cap — so
+the refusal arrives well below whole-genome scale, part-way through a run, as
+`artifact_limit_or_sequence`.
+
+**Scaling is not linear, so do not extrapolate these rows.** From 1,000,000 to
+4,930,321 variants (4.93×), time grew 5.46×, artifact payload 5.78× and
+artifact reads 5.12×. Density rose from 159.6 to 187.0 artifact bytes per
+variant. A linear projection from the 1,000,000 row would have under-stated the
+whole-genome payload by about 17%, which is why the row above is measured.
+
+**Where the time goes.** `canonical-runs` (932.6 s) and
+`canonical-materialization` (1,117.5 s) are 74.7% of the run between them. The
+pipeline read the original in only **78 ranges** but read its own intermediate
+artifacts **2,495 times**: this is an external merge sort, and its cost is
+dominated by re-reading what it wrote.
+
+**Every figure is a floor.** The harness writes artifacts to local disk and
+does not enforce the database ceilings — it measures what the pipeline
+*demands*, not what a deployment would *supply*, which is exactly why it can
+state the requirement. A hosted worker turns those 2,495 artifact reads and 78
+original ranges into Storage round trips and adds a reservation, an
+acknowledgement and lease renewals around each artifact. That makes a real run
+slower, never faster.
+
+**A 45-minute job also has to outlive its own authority.** `job_deadline` is
+`least(now + max_job_seconds, authorityDeadline)` and the job stays bound to
+the originating `auth.sessions` row, which `renew_own_preparation_claim_v1`
+re-resolves on every renewal. A whole-genome preparation therefore needs a live
+session of that exact account for the full 45 minutes; logout, expiry or a
+refresh-token rotation stops it. That is a lifecycle constraint on its own,
+separate from the three ceilings above.
+
+None of this moves a limit. The decoded ceiling still refuses these files at
+issuance, 30.7× under, long before preparation is reached. What the numbers add
+is the price of admitting one: `max_artifact_bytes` would need to rise about
+8.8×, to at least 922,056,859 B, leaving 14% headroom under its schema
+maximum, and
+`max_job_seconds` would need most of its remaining range. Both are storage and
+compute cost, and neither is a change this evidence authorises on its own.
+
+### Reproduced: the three-attempt retry budget cannot rescue a job that wrote anything · 9 September 2026
+
+`claim_next_own_preparation_v1` re-claims a job whose lease lapsed, up to three
+attempts with exponential backoff, and pgTAP already pins that
+(`supabase/tests/own_preparation_jobs.sql:408`). The worker then refuses the
+re-claim: `src/lib/uploads/own-preparation-worker.ts:131` requires a newly
+claimed attempt to start empty, and `read_own_preparation_checkpoint_v1`
+returns `nextArtifactSequence` as the job-wide `artifact_count`, which a
+trigger keeps monotonic (`20260908164616_own_preparation_job_authority.sql:84`).
+
+Reproduced against a local database, reserving one artifact and letting the
+30-second write lease elapse rather than rewriting it:
+
+```
+after reserve   attempts 1   artifact_count 1
+reclaimed       t
+after reclaim   attempts 2   artifact_count 1   nextArtifactSequence 1
+```
+
+The existing pgTAP reclaim case never sees this because its job has
+`artifact_count = 0`. So attempts two and three re-claim successfully and then
+fail immediately with `integrity_mismatch`, spending the retry budget and its
+backoff without doing any work. Recovery in practice is
+`unpublished-scratch` cleanup deleting the job row
+(`20260908234525_own_prepared_cleanup.sql:240`), after which preparation must
+be requested again and redone from the original — 45 minutes of it, at
+whole-genome scale.
 
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 

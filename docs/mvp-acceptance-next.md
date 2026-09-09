@@ -76,6 +76,47 @@ leaves nothing to resume — the gzip constraint above, not an oversight. The
 larger file is admitted. Acceptance stays **19/65**: this closes no gate,
 because the screens gate needs its own recorded browser evidence.
 
+## Preparation is what a whole genome cannot pass · 9 September 2026
+
+`scripts/preparation-capacity.mts` drives the actual `runOwnPreparationPipeline`
+over the seed-1 synthetic fixtures. A 4,930,321-variant single-sample GRCh38
+VCF **prepares successfully** in 2,745.38 s at a 388,284,416-byte peak, over
+2,289 artifacts and 922,056,859 artifact bytes. The pipeline is not the
+problem; three configured ceilings are, and the tightest was not previously
+named:
+
+- `max_artifact_bytes` 104,857,600 — **8.79× over**, and already 1.52× over at
+  1,000,000 variants, so the refusal lands well below whole-genome scale.
+- `max_job_seconds` 900 — **3.05× over**, using 76.3% of the 3,600 schema
+  maximum.
+- `artifact_count` 4,096 — fits, at 55.9%.
+
+Scaling is mildly super-linear: 4.93× the variants cost 5.46× the time and
+5.78× the payload, so the whole-genome row is measured rather than projected.
+`canonical-runs` and `canonical-materialization` are 74.7% of the run, and the
+pipeline reads its own intermediate artifacts 2,495 times against only 78
+reads of the original — an external merge sort, whose cost is re-reading what
+it wrote. Every figure is a floor: the harness spools artifacts to local disk
+and enforces none of the database ceilings, and a hosted worker turns each of
+those reads into a Storage round trip.
+
+A 45-minute job must also outlive its own authority. `job_deadline` is
+`least(now + max_job_seconds, authorityDeadline)` and every renewal re-resolves
+the originating `auth.sessions` row, so the account must stay signed in
+throughout.
+
+Separately, and reproduced against a local database: the three-attempt retry
+budget cannot rescue a job that reserved even one artifact. The re-claim
+succeeds, then `own-preparation-worker.ts:131` refuses it because
+`nextArtifactSequence` is the job-wide monotonic `artifact_count`. Attempts two
+and three burn their backoff and do no work; real recovery is scratch cleanup
+deleting the job and redoing everything from the original.
+
+No limit moved. Acceptance stays **19/65**; this closes no gate, because
+capacity evidence is not a working journey. What it changes is the price of
+admitting a whole genome, which is now a number rather than an unknown.
+`docs/hosted-own-upload-readiness.md` holds the full tables.
+
 ## Upload refusals name the limit they hit · 9 September 2026
 
 `private.issue_own_storage_upload_v1` raises one error class (`22023`) for a
