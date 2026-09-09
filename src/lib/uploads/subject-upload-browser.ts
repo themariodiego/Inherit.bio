@@ -17,23 +17,41 @@ export class BrowserPreparationError extends Error {
 
 /** Preparation is covered by storage consent, not an extra analysis choice.
  * Retry this exact file without uploading its bytes again. */
-export async function prepareSubjectFile(fileId: string) {
+export async function prepareSubjectFile(fileId: string, options: { signal?: AbortSignal } = {}) {
   if (!subjectNormalizationReceipt.shape.fileId.safeParse(fileId).success) throw new BrowserPreparationError("unavailable");
-  const response = await fetch(route("api.file-process", { id: fileId }), {
-    method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-  }).catch(() => { throw new BrowserPreparationError("unavailable"); });
-  const value: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const reportFailure = subjectReportGenerationFailure.safeParse(value);
-    if (response.status === 503 && reportFailure.success && reportFailure.data.fileId === fileId) {
-      throw new BrowserPreparationError("report_generation_unavailable");
+  const deadline = Date.now() + 3_600_000;
+  let jobId: string | undefined;
+  for (;;) {
+    if (options.signal?.aborted || Date.now() >= deadline) throw new BrowserPreparationError("unavailable");
+    const response = await fetch(route("api.file-process", { id: fileId }), {
+      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal: options.signal,
+    }).catch(() => { throw new BrowserPreparationError("unavailable"); });
+    const value: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const reportFailure = subjectReportGenerationFailure.safeParse(value);
+      if (response.status === 503 && reportFailure.success && reportFailure.data.fileId === fileId) {
+        throw new BrowserPreparationError("report_generation_unavailable");
+      }
+      const code = value && typeof value === "object" && "error" in value ? value.error : null;
+      throw new BrowserPreparationError(code === "build_unknown" ? "build_unknown" : "unavailable");
     }
-    const code = value && typeof value === "object" && "error" in value ? value.error : null;
-    throw new BrowserPreparationError(code === "build_unknown" ? "build_unknown" : "unavailable");
+    const receipt = subjectProcessingReceipt.safeParse(value);
+    if (!receipt.success || receipt.data.fileId !== fileId) throw new BrowserPreparationError("unavailable");
+    if (receipt.data.status !== "preparing") {
+      if (response.status !== 200) throw new BrowserPreparationError("unavailable");
+      return receipt.data;
+    }
+    if (response.status !== 202 || (jobId && receipt.data.jobId !== jobId)) throw new BrowserPreparationError("unavailable");
+    jobId = receipt.data.jobId;
+    // Idempotent same-file POST reads current job status; it does not claim a
+    // worker or infer success from elapsed time. A queued file is never Prepared.
+    await new Promise<void>((resolve, reject) => {
+      const abort = () => { clearTimeout(timer); reject(new BrowserPreparationError("unavailable")); };
+      const timer = setTimeout(() => { options.signal?.removeEventListener("abort", abort); resolve(); }, 2000);
+      options.signal?.addEventListener("abort", abort, { once: true });
+      if (options.signal?.aborted) abort();
+    });
   }
-  const receipt = subjectProcessingReceipt.safeParse(value);
-  if (!receipt.success || receipt.data.fileId !== fileId) throw new BrowserPreparationError("unavailable");
-  return receipt.data;
 }
 async function responseFailure(response: Response): Promise<never> {
   const value: unknown = await response.json().catch(() => null);

@@ -1,7 +1,7 @@
+import { preparedStoredArtifactSchema } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
-import { z } from "zod";
-import { preparedArtifactReceiptSchema, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedStoredArtifact } from "./storage-writer";
 
 export type VerifiedArtifactReadOptions = {
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
@@ -13,8 +13,7 @@ export class VerifiedArtifactReadError extends Error {
     super(code); this.name = "VerifiedArtifactReadError";
   }
 }
-const schema = z.object({ receipt: preparedArtifactReceiptSchema,
-  storageObjectId: z.uuid().regex(/^[0-9a-f-]+$/) }).strict();
+const schema = preparedStoredArtifactSchema;
 // This is a tiny JSON metadata envelope, never genetic content. Inspect data
 // descriptors before schema access; bound enumerable width before own-key
 // enumeration (JavaScript has no lazy hidden-own-key enumeration).

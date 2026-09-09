@@ -1,4 +1,3 @@
-import { preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual as equal } from "node:util";
@@ -6,70 +5,54 @@ import { validateCanonicalMaterializationReceipt, decodeCanonicalContainerDirect
 import { decodeCanonicalBlock } from "./canonical-codec";
 import { canonicalRecordOrderKey, countCanonicalRecord, emptyCanonicalCounts, type CanonicalOrderKey } from "./canonical-runs";
 import type { CanonicalCoordinate, CanonicalCoordinateEntry, CanonicalCoordinateIndex } from "./canonical-coordinate-index";
-import type { CanonicalBinding, CanonicalSummary } from "./canonical-schema";
+import type { CanonicalBinding, CanonicalRecord } from "./canonical-schema";
 import type { CanonicalMaterializationReceipt } from "./materialize-canonical";
-import type { PreparedStoredArtifact } from "./storage-writer";
+import { preparedArtifactObjectIdentity, type PreparedStoredArtifact } from "./artifact-identity";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
 
-export const CANONICAL_VERIFICATION_DEADLINE_MS = 300_000;
+export const PREPARED_EXPORT_DEADLINE_MS = 300_000;
 const MAX_ARTIFACTS = 4096;
-export type VerifiedCanonicalMaterialization = {
-  version: "verified-canonical-materialization-v1"; state: "provisional"; binding: CanonicalBinding;
-  jobId: string; attemptId: string; manifestSha256: string; artifactCount: number; blockCount: number;
-  containerCount: number; recordCount: number; byteCount: number; counts: ReturnType<typeof emptyCanonicalCounts>;
-  canonicalSummary: CanonicalSummary; artifacts: PreparedStoredArtifact[];
-};
-export type CanonicalVerificationOptions = {
+export type PreparedExportReadOptions = {
   readArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => AsyncIterable<Uint8Array> | Promise<AsyncIterable<Uint8Array>>;
   check: (manifest: CanonicalMaterializationReceipt, artifact: PreparedStoredArtifact | null, signal: AbortSignal) => Promise<void>;
   signal?: AbortSignal;
 };
-export class CanonicalVerificationError extends Error {
+export class PreparedExportReadError extends Error {
   constructor(readonly code: "invalid_manifest" | "integrity_mismatch" | "unavailable" | "aborted") {
-    super(code); this.name = "CanonicalVerificationError";
+    super(code); this.name = "PreparedExportReadError";
   }
 }
 const sha = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
-function requireValid(condition: unknown): asserts condition { if (!condition) throw new CanonicalVerificationError("integrity_mismatch"); }
+function requireValid(condition: unknown): asserts condition { if (!condition) throw new PreparedExportReadError("integrity_mismatch"); }
 function compare(a: CanonicalOrderKey, b: CanonicalOrderKey) {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
   return 0;
 }
 
-/** FULL provisional byte/membership verification, NOT SQL publication or an
- * authorization token. The check callback must independently resolve the exact
- * current root/source/job/attempt and each registered artifact. A subsequent
- * publication transaction must still atomically recheck authority/membership.
+/** Complete bounded canonical export. Each block is authenticated, fully decoded
+ * and current-operation checked before release. All original records and
+ * dispositions are retained, including duplicates, unmapped/no-call evidence.
+ * End-of-stream is successful only after the full manifest/index/count fence.
+ * A late failure requires the caller to abort its archive; already delivered
+ * blocks cannot be recalled. No complete-source array is allocated.
  *
- * Reads every referenced directory, coordinate page and data container through
- * actual EOF. Counts every retained record and checks the actual normalized
- * bounds against the index (including source-only tails and boundary collisions).
- * Canonical attempted/unmapped counts are UNIQUE SOURCE LOCI, unlike disposition
- * counts; their existing source-normalization receipt is retained, not recomputed
- * from target order or mislabeled as record counts.
- *
- * Holds one directory, one coordinate page, one <=8MiB container and one decoded
- * codec block, plus bounded root/<=4096 membership metadata. No call/block map.
- * All provider reads are serial. Callbacks must honor signal and own any late
- * I/O. The verifier closes acquired/late iterators best-effort without allowing
- * cleanup failures to replace the original result; it never retries a read.
- * The complete pass has a finite 300s maximum (each artifact at most 30s);
- * current claim/consent deadlines can expire sooner and are never renewed.
- * manifestSha256 hashes validated JSON serialization, not a later combined
- * root Storage object; publication must bind that actual object hash separately.
+ * Uses the same full directory/index/byte verification as publication, with
+ * one <=8MiB container and one decoded block plus <=4096 identities. The caller
+ * must resolve the CURRENT exact published source and export operation at every
+ * check; this helper does not turn a stored descriptor into authority.
  */
-export async function verifyCanonicalMaterialization(rawManifest: unknown,
+export async function* streamPreparedExportRecords(rawManifest: unknown,
   expected: { binding: CanonicalBinding; jobId: string; attemptId: string },
-  options: CanonicalVerificationOptions): Promise<VerifiedCanonicalMaterialization> {
+  options: PreparedExportReadOptions): AsyncGenerator<CanonicalRecord[], void, unknown> {
   const deadline = new AbortController();
   const signal = options.signal ? AbortSignal.any([options.signal, deadline.signal]) : deadline.signal;
-  const timer = setTimeout(() => deadline.abort(), CANONICAL_VERIFICATION_DEADLINE_MS); timer.unref();
-  const active = () => { if (signal.aborted) throw new CanonicalVerificationError("aborted"); };
+  const timer = setTimeout(() => deadline.abort(), PREPARED_EXPORT_DEADLINE_MS); timer.unref();
+  const active = () => { if (signal.aborted) throw new PreparedExportReadError("aborted"); };
   async function wait<T>(pending: Promise<T>): Promise<T> {
     if (signal.aborted) { void pending.catch(() => {}); active(); }
     let abort = () => {};
     const cancelled = new Promise<never>((_, reject) => {
-      abort = () => reject(new CanonicalVerificationError("aborted")); signal.addEventListener("abort", abort, { once: true });
+      abort = () => reject(new PreparedExportReadError("aborted")); signal.addEventListener("abort", abort, { once: true });
     });
     try { const value = await Promise.race([pending, cancelled]); active(); return value; }
     finally { signal.removeEventListener("abort", abort); }
@@ -78,8 +61,7 @@ export async function verifyCanonicalMaterialization(rawManifest: unknown,
     active();
     let manifest: CanonicalMaterializationReceipt;
     try { manifest = validateCanonicalMaterializationReceipt(rawManifest, expected); }
-    catch { throw new CanonicalVerificationError("invalid_manifest"); }
-    const manifestSha256 = sha(JSON.stringify(manifest));
+    catch { throw new PreparedExportReadError("invalid_manifest"); }
     async function check(artifact: PreparedStoredArtifact | null) {
       active();
       await wait(options.check(structuredClone(manifest), artifact ? structuredClone(artifact) : null, signal));
@@ -145,6 +127,10 @@ export async function verifyCanonicalMaterialization(rawManifest: unknown,
           requireValid(equal(entry, { descriptor: range.descriptor, normalizedFirst, normalizedLast, normalizedCount,
             firstKey: canonicalRecordOrderKey(decoded.records[0]), lastKey: canonicalRecordOrderKey(decoded.records.at(-1)!) }));
           blockCount++;
+          await check(null); active();
+          yield decoded.records;
+          // Consumer suspension is inside the same finite export lifetime.
+          active();
         }
       }
     }
@@ -154,14 +140,12 @@ export async function verifyCanonicalMaterialization(rawManifest: unknown,
     for (let sequence = manifest.firstArtifactSequence; sequence < manifest.nextArtifactSequence; sequence++) requireValid(sequences.has(sequence));
     artifacts.sort((a, b) => a.receipt.sequence - b.receipt.sequence);
     await check(null); active();
-    return { version: "verified-canonical-materialization-v1", state: "provisional", binding: manifest.binding,
-      jobId: manifest.jobId, attemptId: manifest.attemptId, manifestSha256, artifactCount: artifacts.length,
-      blockCount, containerCount, recordCount, byteCount, counts, canonicalSummary: manifest.canonicalSummary, artifacts };
+
   } catch (error) {
-    if (signal.aborted) throw new CanonicalVerificationError("aborted");
-    if (error instanceof CanonicalVerificationError) throw error;
+    if (signal.aborted) throw new PreparedExportReadError("aborted");
+    if (error instanceof PreparedExportReadError) throw error;
     // Callback/provider diagnostics can contain private URLs or identifiers.
     // Keep them out of public errors; callers retain their own safe diagnostics.
-    throw new CanonicalVerificationError("unavailable");
+    throw new PreparedExportReadError("unavailable");
   } finally { clearTimeout(timer); deadline.abort(); }
 }

@@ -131,7 +131,7 @@ describe("canonical provisional manifest integrity", () => {
   });
   it.each(["sequence", "artifactId", "objectKey", "storageObjectId"])("rejects root reference identity aliasing by %s", key => {
     const root = copy(fixture.root), a = root.directories[0].artifact, b = root.coordinatePages[0].artifact;
-    if (key === "storageObjectId") b.storageObjectId = a.storageObjectId;
+    if (key === "storageObjectId") Reflect.set(b, "storageObjectId", Reflect.get(a, "storageObjectId"));
     else Reflect.set(b.receipt, key, Reflect.get(a.receipt, key));
     expect(() => validateCanonicalMaterializationReceipt(root, expected(fixture))).toThrow("integrity_mismatch");
   });

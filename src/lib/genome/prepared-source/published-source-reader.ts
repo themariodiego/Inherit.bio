@@ -5,15 +5,16 @@ import { canonicalBindingSchema } from "./canonical-schema";
 import { assertPreparedMetadataBounds, validateCanonicalMaterializationReceipt } from "./canonical-manifest";
 import { readCanonicalCoordinates, type CanonicalCoordinateCursor } from "./canonical-coordinate-reader";
 import type { CanonicalCoordinate } from "./canonical-coordinate-index";
-import { preparedArtifactReceiptSchema, type PreparedStoredArtifact } from "./storage-writer";
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity, type PreparedStoredArtifact } from "./artifact-identity";
 import { preparedStorageConfig } from "./storage-common";
 import { createPreparedRangeFetch } from "./storage-reader";
 import { createPreparedArtifactFetch } from "./storage-artifact-fetch";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
+import type { CanonicalMaterializationReceipt } from "./materialize-canonical";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const count = z.number().int().nonnegative().safe();
-const stored = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: uuid }).strict();
+const stored = preparedStoredArtifactSchema;
 const summarySchema = z.object({ version: z.literal("own-prepared-summary-v1"), sourceBuild: z.enum(["GRCh37", "GRCh38"]),
   parserRevision: z.string().min(1).max(128), canonicalRevision: z.literal("prepared-canonical-v1"),
   sourceVariantCount: count, sourceObservedCount: count, sourceReferenceCount: count,
@@ -40,36 +41,32 @@ export class PublishedSourceReadError extends Error {
   }
 }
 
-/** Actual server transport; actor must come from the current authenticated
- * request. expectedManifestId must be the exact published source selected by
- * that operation. No browser-supplied receipts, object paths or backend choice.
- *
- * checkOperation is mandatory and must recheck the caller's exact report/purpose
- * or other registered read operation. Store authority alone is not an analytic
- * grant. The callback runs before source discovery, around every object read,
- * and before returning; the SQL member check independently resolves current
- * session/store/source/deletion authority. Both are required.
- *
- * Full immutable membership is checked at both page boundaries; selected objects use
- * indexed exact-member checks. No genome-wide data scan or per-file call cache.
- * This connects the reader to actual RPC/Storage endpoints but does not enable
- * dispatch or change legacy report readers. Report claim/completion binding must
- * be integrated before callers activate this backend. Returns full canonical
- * evidence/order; callers must preserve existing report collision semantics.
- */
-export function createOwnPreparedCoordinateReader(rawActor: { accountId: string; sessionId: string }) {
+export type OwnPreparedSourceAccess = {
+  source: OwnPreparedSource;
+  canonical: CanonicalMaterializationReceipt;
+  readArtifact: ReturnType<typeof createPreparedArtifactFetch>;
+  checkArtifact: (artifact: PreparedStoredArtifact, signal: AbortSignal) => Promise<void>;
+  checkSource: () => Promise<void>;
+  signal: AbortSignal;
+};
+type ReadOptions = { checkOperation: (signal: AbortSignal) => Promise<void>; signal?: AbortSignal };
+type SourceRequest = { fileId: string; expectedManifestId: string };
+
+/** Scoped server access only. The caller must supply current authenticated actor
+ * and exact operation-bound manifest identity. Artifact descriptors are integrity
+ * metadata, never authority. Access callbacks cannot outlive the awaited consume
+ * callback: closing the scope aborts its signal and denies all later checks. */
+function createPublishedSourceAccess(rawActor: { accountId: string; sessionId: string }, durationMs: number) {
   let actor: { accountId: string; sessionId: string }, origin: string, key: string;
   try { assertPreparedMetadataBounds(rawActor, 512); actor = z.object({ accountId: uuid, sessionId: uuid }).strict().parse(rawActor); }
   catch { throw new PublishedSourceReadError("invalid_request"); }
   try { ({ origin, key } = preparedStorageConfig()); }
   catch { throw new PublishedSourceReadError("unavailable"); }
-  const readArtifact = createPreparedArtifactFetch(), fetchRange = createPreparedRangeFetch();
-  return async (rawRequest: { fileId: string; expectedManifestId: string; loci: readonly CanonicalCoordinate[];
-    cursor?: CanonicalCoordinateCursor | null }, options: {
-    checkOperation: (signal: AbortSignal) => Promise<void>; signal?: AbortSignal;
-  }) => {
+  const readArtifact = createPreparedArtifactFetch();
+  return async <T>(rawRequest: SourceRequest, options: ReadOptions,
+    consume: (access: OwnPreparedSourceAccess) => Promise<T>): Promise<T> => {
     const deadline = new AbortController(), signal = options.signal ? AbortSignal.any([options.signal, deadline.signal]) : deadline.signal;
-    const timer = setTimeout(() => deadline.abort(), 30_000); timer.unref();
+    const timer = setTimeout(() => deadline.abort(), durationMs); timer.unref();
     const active = () => { if (signal.aborted) throw new PublishedSourceReadError("aborted"); };
     function requireValid(condition: unknown): asserts condition { if (!condition) throw new PublishedSourceReadError("integrity_mismatch"); }
     async function wait<T>(pending: Promise<T>): Promise<T> {
@@ -115,13 +112,8 @@ export function createOwnPreparedCoordinateReader(rawActor: { accountId: string;
       active();
       // Own bounded request metadata before the first external callback.
       assertPreparedMetadataBounds(rawRequest, 16_384);
-      const request = z.object({ fileId: uuid, expectedManifestId: uuid,
-        loci: z.array(z.object({ chrom: count.positive().max(25), pos: count.positive() }).strict()).max(200),
-        cursor: z.object({ version: z.literal("canonical-coordinate-cursor-v1"), manifestSha256: hash,
-          querySha256: hash, blockSequence: count, recordOffset: count.max(1999) }).strict().nullable().optional(),
-      }).strict().parse(rawRequest);
-      if (typeof options.checkOperation !== "function") throw new PublishedSourceReadError("invalid_request");
-      requireValid(new Set(request.loci.map(l => `${l.chrom}:${l.pos}`)).size === request.loci.length);
+      const request = z.object({ fileId: uuid, expectedManifestId: uuid }).strict().parse(rawRequest);
+      if (typeof options.checkOperation !== "function" || typeof consume !== "function") throw new PublishedSourceReadError("invalid_request");
       await operation();
       const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_file_id: request.fileId,
         p_expected_manifest_id: request.expectedManifestId };
@@ -146,7 +138,7 @@ export function createOwnPreparedCoordinateReader(rawActor: { accountId: string;
       requireValid(roots.every(a => a.receipt.jobId === source.root.receipt.jobId && a.receipt.attemptId === source.root.receipt.attemptId)
         && root.canonical.receipt.byteCount <= 4_000_000 && root.rsid.receipt.byteCount <= 4_000_000
         && roots.every((a, i) => a.receipt.sequence === root.canonical.receipt.sequence + i));
-      for (const get of [(a: PreparedStoredArtifact) => a.receipt.artifactId, (a: PreparedStoredArtifact) => a.storageObjectId,
+      for (const get of [(a: PreparedStoredArtifact) => a.receipt.artifactId, (a: PreparedStoredArtifact) => preparedArtifactObjectIdentity(a),
         (a: PreparedStoredArtifact) => a.receipt.objectKey]) requireValid(new Set(roots.map(get)).size === 3);
       // The rsID root is not read for a coordinate query, but its declared
       // identity must still be an exact published member of this source.
@@ -158,20 +150,64 @@ export function createOwnPreparedCoordinateReader(rawActor: { accountId: string;
         && c.sourceVariantCount === s.sourceVariantCount && c.sourceObservedCount === s.sourceObservedCount && c.sourceReferenceCount === s.sourceReferenceCount
         && c.normalizedVariantCount === s.variantCount && c.normalizedObservedCount === s.observedCallCount && c.usableObservedCount === s.usableObservedCount
         && canonical.canonicalSummary.attempted === s.attempted && canonical.canonicalSummary.unmapped === s.unmapped);
-      const result = await readCanonicalCoordinates({ manifest: canonical, expected, loci: request.loci, cursor: request.cursor }, {
-        signal, fetchRange, check: ({ artifact }, current) => check(artifact ?? source.root, current),
-      });
-      // An unread final member may disappear during selected I/O. Recheck the
-      // complete source at the page boundary, not only the selected root member.
-      const finalSource = await rpc("read_own_prepared_manifest_v1", args);
-      assertPreparedMetadataBounds(finalSource, 16_384);
-      requireValid(equal(sourceSchema.parse(finalSource), source));
-      await operation(); active();
-      return { source, records: result.records, nextCursor: result.nextCursor };
+      async function checkSource() {
+        active(); await operation();
+        const finalSource = await rpc("read_own_prepared_manifest_v1", args);
+        assertPreparedMetadataBounds(finalSource, 16_384);
+        requireValid(equal(sourceSchema.parse(finalSource), source));
+        await operation(); active();
+      }
+      const result = await wait(consume({ source: structuredClone(source), canonical: structuredClone(canonical),
+        readArtifact: (artifact, current) => {
+          active(); return readArtifact(artifact, AbortSignal.any([signal, current]));
+        }, checkArtifact: check, checkSource, signal }));
+      // Unread final members are checked as well as every selected object.
+      await checkSource(); active();
+      return result;
     } catch (error) {
       if (signal.aborted) throw new PublishedSourceReadError("aborted");
       if (error instanceof PublishedSourceReadError) throw error;
       throw new PublishedSourceReadError("unavailable");
     } finally { clearTimeout(timer); deadline.abort(); }
+  };
+}
+
+/** Run a bounded complete source operation with the same root/member/source
+ * checks as coordinate lookup. The caller's own export authority remains
+ * mandatory around I/O. A finite 300s scope includes consumer backpressure;
+ * each actual artifact read still has its existing 30s transport deadline. */
+export function withOwnPreparedSource<T>(actor: { accountId: string; sessionId: string },
+  request: SourceRequest, options: ReadOptions, consume: (access: OwnPreparedSourceAccess) => Promise<T>): Promise<T> {
+  return createPublishedSourceAccess(actor, 300_000)(request, options, consume);
+}
+
+/** Actual indexed coordinate reader. Caller owns the current report/purpose
+ * operation; exact current source and membership are checked around its page. */
+export function createOwnPreparedCoordinateReader(actor: { accountId: string; sessionId: string }) {
+  const access = createPublishedSourceAccess(actor, 30_000), fetchRange = createPreparedRangeFetch();
+  return async (rawRequest: SourceRequest & { loci: readonly CanonicalCoordinate[]; cursor?: CanonicalCoordinateCursor | null }, options: ReadOptions) => {
+    try {
+      assertPreparedMetadataBounds(rawRequest, 16_384);
+      const request = z.object({ fileId: uuid, expectedManifestId: uuid,
+        loci: z.array(z.object({ chrom: count.positive().max(25), pos: count.positive() }).strict()).max(200),
+        cursor: z.object({ version: z.literal("canonical-coordinate-cursor-v1"), manifestSha256: hash,
+          querySha256: hash, blockSequence: count, recordOffset: count.max(1999) }).strict().nullable().optional(),
+      }).strict().parse(rawRequest);
+      if (new Set(request.loci.map(l => `${l.chrom}:${l.pos}`)).size !== request.loci.length)
+        throw new PublishedSourceReadError("integrity_mismatch");
+      return await access({ fileId: request.fileId, expectedManifestId: request.expectedManifestId }, options,
+        async ({ source, canonical, checkArtifact, signal }) => {
+          const result = await readCanonicalCoordinates({ manifest: canonical,
+            expected: { binding: canonical.binding, jobId: canonical.jobId, attemptId: canonical.attemptId },
+            loci: request.loci, cursor: request.cursor }, {
+            signal, fetchRange, check: ({ artifact }, current) => checkArtifact(artifact ?? source.root, current),
+          });
+          return { source, records: result.records, nextCursor: result.nextCursor };
+        });
+    } catch (error) {
+      if (options.signal?.aborted) throw new PublishedSourceReadError("aborted");
+      if (error instanceof PublishedSourceReadError) throw error;
+      throw new PublishedSourceReadError("unavailable");
+    }
   };
 }

@@ -1,3 +1,4 @@
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual as equal } from "node:util";
@@ -5,7 +6,7 @@ import { z } from "zod";
 import { canonicalBindingSchema, canonicalSummarySchema, type CanonicalBinding } from "./canonical-schema";
 import { validateCanonicalContainerDescriptor } from "./canonical-containers";
 import { describeCanonicalCoordinateIndex, validateCanonicalCoordinateIndex, type CanonicalCoordinateIndex } from "./canonical-coordinate-index";
-import { preparedArtifactReceiptSchema, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedStoredArtifact } from "./storage-writer";
 import type { CanonicalContainerDirectory, CanonicalCoordinateReference, CanonicalDirectoryReference,
   CanonicalMaterializationReceipt } from "./materialize-canonical";
 
@@ -13,7 +14,7 @@ export type { CanonicalContainerDirectory, CanonicalCoordinateReference, Canonic
 const ROOT_MAX_BYTES = 4_000_000, PAGE_MAX_BYTES = 1_048_576, MAX_ARTIFACTS = 4096;
 const n = z.number().int().nonnegative().safe(), positive = n.positive();
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
-const storedSchema = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: uuid }).strict();
+const storedSchema = preparedStoredArtifactSchema;
 const coordinate = z.object({ chrom: positive.max(25), pos: positive }).strict();
 const orderKey = z.tuple([n.max(1), n.max(25), n, positive.max(25), positive, positive, n.max(2)])
   .refine(k => k[0] === 0 ? k[1] > 0 && k[2] > 0 && k[6] !== 1 : k[1] === 0 && k[2] === 0);
@@ -113,7 +114,7 @@ function identities() {
   const ids = new Set<string>();
   return (artifact: PreparedStoredArtifact) => {
     for (const key of [`sequence:${artifact.receipt.sequence}`, `artifact:${artifact.receipt.artifactId}`,
-      `object:${artifact.storageObjectId}`, `key:${artifact.receipt.objectKey}`]) {
+      `object:${preparedArtifactObjectIdentity(artifact)}`, `key:${artifact.receipt.objectKey}`]) {
       requireValid(!ids.has(key)); ids.add(key);
     }
   };

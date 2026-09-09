@@ -96,7 +96,7 @@ describe("published canonical source reader (synthetic HTTP, not hosted proof)",
       const target = mode === "root-member" ? f.source.root : f.publication.canonicalRoot;
       f.state.override = (url, init) => {
         if (url.endsWith("check_own_prepared_member_v1") && JSON.parse(init.body as string).p_artifact_id === target.receipt.artifactId) {
-          const wrong = structuredClone(f.member(target)); wrong.member.storageObjectId = "99999999-9999-4999-8999-999999999999";
+          const wrong = structuredClone(f.member(target)); Reflect.set(wrong.member, "storageObjectId", "99999999-9999-4999-8999-999999999999");
           return Response.json(wrong);
         }
       };

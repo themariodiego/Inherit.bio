@@ -1,3 +1,4 @@
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -11,7 +12,7 @@ import { canonicalBindingSchema, canonicalRecordSchema, canonicalSummarySchema,
 import { canonicalRecordOrderKey, countCanonicalRecord, emptyCanonicalCounts,
   CANONICAL_RUN_MAX_RECORD_BYTES, type CanonicalOrderKey } from "./canonical-runs";
 import type { CanonicalMergeSummary } from "./canonical-merge";
-import { preparedArtifactReceiptSchema, type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
 
 const integer = z.number().int().nonnegative().safe();
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
@@ -101,14 +102,14 @@ export async function materializeCanonicalMerge(records: AsyncIterable<Canonical
     const descriptor: PreparedArtifactDescriptor = { kind: "container", sequence: artifactSequence, byteCount: bytes.byteLength, sha256: sha(bytes) };
     const response = await wait(options.writeArtifact({ descriptor: { ...descriptor }, bytes }, signal));
     active();
-    const parsed = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: uuid }).strict().safeParse(response);
+    const parsed = preparedStoredArtifactSchema.safeParse(response);
     if (!parsed.success) throw new CanonicalMaterializationError("ack_mismatch");
     const stored = parsed.data, receipt = stored.receipt;
     if (receipt.jobId !== jobId || receipt.attemptId !== attemptId || receipt.sequence !== artifactSequence
       || receipt.byteCount !== descriptor.byteCount || receipt.sha256 !== descriptor.sha256 || sha(bytes) !== descriptor.sha256) {
       throw new CanonicalMaterializationError("ack_mismatch");
     }
-    for (const identity of [`artifact:${receipt.artifactId}`, `object:${stored.storageObjectId}`, `key:${receipt.objectKey}`]) {
+    for (const identity of [`artifact:${receipt.artifactId}`, `object:${preparedArtifactObjectIdentity(stored)}`, `key:${receipt.objectKey}`]) {
       if (identities.has(identity)) throw new CanonicalMaterializationError("ack_mismatch");
       identities.add(identity);
     }

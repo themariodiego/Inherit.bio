@@ -6,6 +6,9 @@ import { createGunzip } from "node:zlib";
 import { serializePrsCoverage } from "../genome/prs-output";
 import { reportCatalogSnapshotSchema } from "../genome/report-catalog-snapshot";
 import { isFixtureSlug } from "../../components/reports/library";
+import { preparedReportSourceSchema } from "../genome/prepared-source/report-call-pages";
+import { exportOwnPreparedRecords, type OwnPreparedExportHeader } from "../genome/prepared-source/export-source";
+import type { CanonicalRecord } from "../genome/prepared-source/canonical-schema";
 import { ownAncestryContentSchema } from "../uploads/own-ancestry-content";
 
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
@@ -19,7 +22,7 @@ export const ownExportSnapshotSchema = z.object({
     sessionRevision: revision, subjectBindingRevision: revision, lifecycleRevision: revision,
     accountBindingId: uuid, accountBindingRevision: revision, subjectPrincipalId: uuid, subjectPrincipalRevision: revision,
     accountPrincipalId: uuid, accountPrincipalRevision: revision, normalizedAt: z.string().nullable() }).strict(),
-  normalized: z.boolean(),
+  normalized: z.boolean(), preparedSource: preparedReportSourceSchema.optional(),
 }).strict();
 export type OwnExportSnapshot = z.infer<typeof ownExportSnapshotSchema>;
 type Operation = "list" | "check" | "variants" | "observed" | "reports" | "prs" | "ancestry";
@@ -52,7 +55,7 @@ const ancestrySchema = z.array(z.object({ purpose: z.literal("ancestry"), comple
 /** A content reader for the own-subject slice. This neither creates an export
  * capability nor implements the nonce/worker/chunk delivery contract. Every
  * page rechecks the exact originating session, binding and source snapshot. */
-export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: string; sessionId: string }, assertActive: () => void = () => {}) {
+export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: string; sessionId: string }, assertActive: () => void = () => {}, options: { signal?: AbortSignal } = {}) {
   async function call(operation: Operation, snapshot: OwnExportSnapshot | null, offset = 0) {
     assertActive();
     if (snapshot && (snapshot.binding.accountId !== actor.accountId || snapshot.binding.sessionId !== actor.sessionId)) throw unavailable();
@@ -109,8 +112,29 @@ export function ownSubjectExportContent(rpc: OwnExportRpc, actor: { accountId: s
       return rows.map(row => ({ file_id: snapshot.file.id, subject_id: snapshot.file.subject_id,
         purpose: row.purpose, completed_at: row.completed_at, result: row.result }));
     },
-    variants: (snapshot: OwnExportSnapshot) => pages("variants", snapshot, variantSchema),
-    observed: (snapshot: OwnExportSnapshot) => pages("observed", snapshot, observationSchema),
+    variants: (snapshot: OwnExportSnapshot) => {
+      if (snapshot.preparedSource) throw unavailable();
+      return pages("variants", snapshot, variantSchema);
+    },
+    observed: (snapshot: OwnExportSnapshot) => {
+      if (snapshot.preparedSource) throw unavailable();
+      return pages("observed", snapshot, observationSchema);
+    },
+    async preparedRecords(snapshot: OwnExportSnapshot,
+      consume: (records: readonly CanonicalRecord[], signal: AbortSignal, header: OwnPreparedExportHeader) => Promise<void>) {
+      const selected = ownExportSnapshotSchema.parse(snapshot);
+      if (!selected.preparedSource || !selected.normalized || !selected.binding.normalizedAt) throw unavailable();
+      await check(selected);
+      return exportOwnPreparedRecords(actor, { fileId: selected.file.id, subjectId: selected.file.subject_id,
+        sourceRevision: selected.file.upload_revision, rawSha256: selected.file.sha256,
+        decodedSha256: selected.file.source_sha256, preparedAt: selected.binding.normalizedAt,
+        preparedSource: selected.preparedSource }, {
+        signal: options.signal, checkOperation: async signal => {
+          assertActive(); if (signal.aborted) throw unavailable(); await check(selected); assertActive();
+          if (signal.aborted) throw unavailable();
+        },
+      }, consume);
+    },
     async reports(snapshot: OwnExportSnapshot) {
       const reports = [];
       for await (const page of pages("reports", snapshot, resultSchema)) for (const row of page) {

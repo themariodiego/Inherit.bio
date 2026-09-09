@@ -58,6 +58,26 @@ function signingKey() {
   return { kid: value.kid, key: crypto.createPrivateKey({ key: value, format: "jwk" }) };
 }
 
+/** Internal prepared-object capability. Separate audience; never an Auth token.
+ * Callers must have checked the exact registered claim/member/disposition. */
+export function mintPreparedObjectCapability(claim: {
+  operation: "put" | "get" | "tombstone"; bucket: string; objectKey: string;
+  byteCount: number; sha256: string; expiresAt: string;
+  providerVersion?: string; etag?: string; start?: number; end?: number;
+}): string {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const exp = Math.min(now + 30, Math.floor(Date.parse(claim.expiresAt) / 1000));
+    if (!Number.isSafeInteger(exp) || exp <= now) throw new UploadTokenUnavailable();
+    const { kid, key } = signingKey();
+    const header = Buffer.from(JSON.stringify({ alg: "ES256", kid, typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ ...claim, iss: issuer(), aud: "inherit-prepared-object-v1",
+      iat: now, nbf: now, exp })).toString("base64url");
+    const input = header + "." + payload;
+    return input + "." + crypto.sign("sha256", Buffer.from(input), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  } catch { throw new UploadTokenUnavailable(); }
+}
+
 /** Check deployment readiness before the database commits an upload lease. */
 export function assertStorageUploadSignerAvailable(): void {
   try { signingKey(); issuer(); } catch { throw new UploadTokenUnavailable(); }

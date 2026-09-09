@@ -1,3 +1,5 @@
+import { preparedStoredArtifactSchema, type PreparedStoredArtifact } from "./artifact-identity";
+import { fetchPreparedR2 } from "./r2-transport";
 import "server-only";
 import { z } from "zod";
 import { decodePreparedBlock } from "./codec";
@@ -11,7 +13,7 @@ export class PreparedStorageReadError extends Error {
     super(code); this.name = "PreparedStorageReadError";
   }
 }
-export type PreparedRangeRequest = { objectKey: string; start: number; end: number; signal: AbortSignal };
+export type PreparedRangeRequest = { artifact?: PreparedStoredArtifact; objectKey: string; start: number; end: number; signal: AbortSignal };
 export type PreparedRangeFetch = (request: PreparedRangeRequest) => Promise<Response>;
 export type PreparedStorageReadOptions = {
   check: (signal: AbortSignal) => Promise<void>; fetchRange: PreparedRangeFetch; signal?: AbortSignal;
@@ -24,10 +26,16 @@ export function createPreparedRangeFetch(): PreparedRangeFetch {
   let origin: string, key: string;
   try { ({ origin, key } = preparedStorageConfig()); }
   catch { throw new PreparedStorageReadError("unavailable"); }
-  return async ({ objectKey, start, end, signal }) => {
+  return async ({ artifact: rawArtifact, objectKey, start, end, signal }) => {
     if (!objectKeySchema.safeParse(objectKey).success || !sequenceSchema.safeParse(start).success
       || !sequenceSchema.safeParse(end).success || end < start
       || end - start + 1 > PREPARED_BLOCK_MAX_COMPRESSED_BYTES) throw new PreparedStorageReadError("invalid_selection");
+    if (rawArtifact) {
+      const artifact = preparedStoredArtifactSchema.parse(rawArtifact);
+      if (artifact.receipt.objectKey !== objectKey || end >= artifact.receipt.byteCount) throw new PreparedStorageReadError("invalid_selection");
+      if (artifact.receipt.version === "own-preparation-artifact-v2") return fetchPreparedR2({ receipt: artifact.receipt,
+        stored: artifact, operation: "get", start, end, signal });
+    }
     return fetch(`${origin}/storage/v1/object/authenticated/genomes/${objectKey}`, {
       headers: { Authorization: `Bearer ${key}`, Range: `bytes=${start}-${end}`, "Accept-Encoding": "identity" },
       cache: "no-store", redirect: "error", signal,

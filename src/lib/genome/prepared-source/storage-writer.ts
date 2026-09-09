@@ -3,7 +3,9 @@ import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { PREPARED_CONTAINER_MAX_BYTES } from "./containers";
-import { preparedObjectKeySchema, preparedStorageConfig } from "./storage-common";
+import { preparedStorageConfig } from "./storage-common";
+
+import { fetchPreparedR2 } from "./r2-transport";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const hash = z.string().regex(/^[0-9a-f]{64}$/);
@@ -11,15 +13,9 @@ const claimSchema = z.object({ jobId: uuid, attemptId: uuid, claimTokenHash: has
 const descriptorSchema = z.object({ kind: z.literal("container"),
   sequence: z.number().int().min(0).max(4095),
   byteCount: z.number().int().min(1).max(PREPARED_CONTAINER_MAX_BYTES), sha256: hash }).strict();
-const receiptSchema = z.object({ version: z.literal("own-preparation-artifact-v1"),
-  artifactId: uuid, jobId: uuid, attemptId: uuid, sequence: descriptorSchema.shape.sequence,
-  bucket: z.literal("genomes"), objectKey: preparedObjectKeySchema,
-  byteCount: descriptorSchema.shape.byteCount, sha256: hash,
-  writeExpiresAt: z.iso.datetime({ offset: true }),
-}).strict();
-export type PreparedArtifactReceipt = z.infer<typeof receiptSchema>;
-export { receiptSchema as preparedArtifactReceiptSchema };
-export type PreparedStoredArtifact = { receipt: PreparedArtifactReceipt; storageObjectId: string };
+import { preparedArtifactReceiptSchema as receiptSchema, preparedStoredArtifactSchema, type PreparedStoredArtifact } from "./artifact-identity";
+export { preparedArtifactReceiptSchema } from "./artifact-identity";
+export type { PreparedArtifactReceipt, PreparedStoredArtifact } from "./artifact-identity";
 export type PreparedArtifactDescriptor = z.infer<typeof descriptorSchema>;
 export class PreparedStorageWriteError extends Error {
   constructor(readonly code: "invalid_request" | "invalid_state" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -134,15 +130,27 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       const remaining = Date.parse(receipt.writeExpiresAt) - Date.now();
       if (remaining <= 0) throw new PreparedStorageWriteError("unavailable");
       leaseTimer = setTimeout(() => deadline.abort(), Math.min(remaining, 30_000)); leaseTimer.unref();
-      const uploaded = z.object({ Id: uuid, Key: z.literal(`genomes/${receipt.objectKey}`) }).strict().parse(
-        await json(await request(`/storage/v1/object/genomes/${receipt.objectKey}`, { method: "POST",
-          headers: { "Content-Type": "application/octet-stream", "Content-Length": String(owned.length),
-            "Cache-Control": "max-age=0", "x-upsert": "false" }, body: owned as BodyInit })),
-      );
+      let stored: PreparedStoredArtifact;
+      if (receipt.version === "own-preparation-artifact-v2") {
+        const uploadResponse = await wait(fetchPreparedR2({ receipt, operation: "put", bytes: owned, signal }), signal);
+        if (uploadResponse.status !== 200) { void uploadResponse.body?.cancel(); throw new PreparedStorageWriteError("unavailable"); }
+        const uploaded = z.object({ providerVersion: z.string().regex(/^[0-9a-f]{32}$/), etag: z.string().regex(/^[0-9a-f]{32}$/),
+          byteCount: z.literal(receipt.byteCount) }).strict().parse(await json(uploadResponse));
+        stored = { receipt, providerVersion: uploaded.providerVersion, etag: uploaded.etag };
+      } else {
+        const uploaded = z.object({ Id: uuid, Key: z.literal(`genomes/${receipt.objectKey}`) }).strict().parse(
+          await json(await request(`/storage/v1/object/genomes/${receipt.objectKey}`, { method: "POST",
+            headers: { "Content-Type": "application/octet-stream", "Content-Length": String(owned.length),
+              "Cache-Control": "max-age=0", "x-upsert": "false" }, body: owned as BodyInit })),
+        );
+        stored = { receipt, storageObjectId: uploaded.Id };
+      }
       z.object({ version: z.literal("own-preparation-claim-v1"),
         jobId: z.literal(claim.jobId), attemptId: z.literal(claim.attemptId) }).passthrough().parse(
         await rpc("check_own_preparation_claim_v1", claimArgs));
-      const response = await request(`/storage/v1/object/authenticated/genomes/${receipt.objectKey}`, {
+      const response = receipt.version === "own-preparation-artifact-v2"
+        ? await wait(fetchPreparedR2({ receipt, stored, operation: "get", signal }), signal)
+        : await request(`/storage/v1/object/authenticated/genomes/${receipt.objectKey}`, {
         headers: { "Accept-Encoding": "identity" },
       });
       if (response.status !== 200 || response.headers.has("content-range")
@@ -154,13 +162,21 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
       const observed = await body(response, descriptor.byteCount, signal);
       if (observed.byteLength !== descriptor.byteCount || sha(observed) !== descriptor.sha256)
         throw new PreparedStorageWriteError("integrity_mismatch");
-      const acknowledged = receiptSchema.parse(await rpc("ack_own_preparation_artifact_v1", {
-        ...claimArgs, p_artifact_id: receipt.artifactId, p_storage_object_id: uploaded.Id,
-        p_expected_receipt: receipt, p_observed_sha256: sha(observed),
-      }));
-      if (!isDeepStrictEqual(receipt, acknowledged)) throw new PreparedStorageWriteError("integrity_mismatch");
+      if ("storageObjectId" in stored) {
+        const acknowledged = receiptSchema.parse(await rpc("ack_own_preparation_artifact_v1", {
+          ...claimArgs, p_artifact_id: receipt.artifactId, p_storage_object_id: stored.storageObjectId,
+          p_expected_receipt: receipt, p_observed_sha256: sha(observed),
+        }));
+        if (!isDeepStrictEqual(receipt, acknowledged)) throw new PreparedStorageWriteError("integrity_mismatch");
+      } else {
+        const acknowledged = preparedStoredArtifactSchema.parse(await rpc("ack_own_preparation_r2_artifact_v1", {
+          ...claimArgs, p_artifact_id: receipt.artifactId, p_expected_receipt: receipt,
+          p_provider_version: stored.providerVersion, p_etag: stored.etag, p_observed_sha256: sha(observed),
+        }));
+        if (!isDeepStrictEqual(stored, acknowledged)) throw new PreparedStorageWriteError("integrity_mismatch");
+      }
       active(signal);
-      return { receipt, storageObjectId: uploaded.Id };
+      return stored;
     } catch (error) {
       failed = true;
       if (signal.aborted) throw new PreparedStorageWriteError("aborted");

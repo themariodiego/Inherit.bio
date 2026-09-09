@@ -146,7 +146,7 @@ describe("full canonical materialization verification", () => {
   });
   it.each(["artifactId", "storageObjectId", "objectKey", "sequence"])("rejects cross-directory data %s aliasing with all outer hashes updated", async key => {
     const f = fresh(multiple), a = directory(f).containers[0].artifact, d = directory(f, 1), b = d.containers[0].artifact;
-    if (key === "storageObjectId") b.storageObjectId = a.storageObjectId; else Reflect.set(b.receipt, key, Reflect.get(a.receipt, key));
+    if (key === "storageObjectId") Reflect.set(b, "storageObjectId", Reflect.get(a, "storageObjectId")); else Reflect.set(b.receipt, key, Reflect.get(a.receipt, key));
     updateObject(f, f.manifest.directories[1].artifact, json(d));
     expect(validateCanonicalMaterializationReceipt(f.manifest, f.expected)).toBeDefined();
     await expect(run(f)).rejects.toMatchObject({ code: "integrity_mismatch" });

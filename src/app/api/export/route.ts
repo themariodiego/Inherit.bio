@@ -374,13 +374,14 @@ export async function GET() {
 
   const admin = createAdminClient();
   let stopped = false;
+  const exportAbort = new AbortController();
   const assertActive = () => { if (stopped) throw new Error("export unavailable"); };
   const { data: claimsData } = await supabase.auth.getClaims();
   if (claimsData?.claims?.sub !== user.id || typeof claimsData.claims.session_id !== "string") {
     return new Response("Unauthorized", { status: 401 });
   }
   const ownContent = ownSubjectExportContent(admin.rpc.bind(admin) as unknown as OwnExportRpc,
-    { accountId: user.id, sessionId: claimsData.claims.session_id }, assertActive);
+    { accountId: user.id, sessionId: claimsData.claims.session_id }, assertActive, { signal: exportAbort.signal });
   let canonical: OwnExportSnapshot[];
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
@@ -410,6 +411,7 @@ export async function GET() {
   const stop = () => {
     if (stopped) return;
     stopped = true;
+    exportAbort.abort();
     for (const stream of members) stream.destroy();
     archive.abort(); archive.destroy();
   };
@@ -456,6 +458,36 @@ export async function GET() {
         canonicalReports.push(await ownContent.reports(snapshot)); assertActive();
         canonicalPrs.push(...await ownContent.prs(snapshot)); assertActive();
         await ownContent.check(snapshot); assertActive();
+        if (snapshot.preparedSource) {
+          const records = member();
+          archive.append(records, { name: `canonical/${f.id}.jsonl` });
+          let wroteHeader = false;
+          const counts = await ownContent.preparedRecords(snapshot, async (page, signal, header) => {
+            // Recheck after each backpressure pause, immediately before the next
+            // bounded delivery chunk. A long codec-valid allele stays one record.
+            let lines: string[] = [], bytes = 0;
+            const flush = async () => {
+              if (!lines.length) return;
+              const chunk = lines.join(""); lines = []; bytes = 0;
+              await ownContent.check(snapshot); assertActive();
+              if (signal.aborted) throw new Error("export unavailable");
+              await writeChunk(records, chunk);
+            };
+            if (!wroteHeader) { const line = `${JSON.stringify(header)}\n`; lines.push(line); bytes += Buffer.byteLength(line); wroteHeader = true; }
+            for (const record of page) {
+              assertActive(); if (signal.aborted) throw new Error("export unavailable");
+              const line = `${JSON.stringify(record)}\n`, size = Buffer.byteLength(line);
+              if (bytes && bytes + size > 1_048_576) await flush();
+              lines.push(line); bytes += size;
+            }
+            await flush();
+          });
+          if (f.variant_count !== null && counts.variantCount !== f.variant_count) throw new Error("export unavailable");
+          records.end(); rowCounts.set(f.id, counts.variantCount);
+          contents.push({ path: `canonical/${f.id}.jsonl`,
+            description: "Source-bound header followed by complete prepared-canonical-v1 records: original source evidence and normalized dispositions, including duplicates and unmapped calls.",
+            count: counts.recordCount });
+        } else {
         let count = 0;
         const variants = member();
         archive.append(variants, { name: `variants/${f.id}.csv` });
@@ -476,6 +508,7 @@ export async function GET() {
         }
         await writeChunk(observations, "]"); observations.end();
         contents.push({ path: `observed/${f.id}.json`, description: "Literal source records, including reference and no-call observations.", count: observedCount });
+        }
         await ownContent.check(snapshot); assertActive();
         const original = Readable.fromWeb(blob.stream() as never);
         members.add(original);

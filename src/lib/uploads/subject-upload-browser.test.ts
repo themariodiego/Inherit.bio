@@ -175,3 +175,40 @@ describe("browser-to-Storage own-subject upload", () => {
     await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "unavailable" });
   });
 });
+
+
+describe("queued preparation polling", () => {
+  beforeEach(() => fetchMock.mockReset());
+  it("keeps202 pending and requires actual200 completion for the exact file", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValueOnce(Response.json({ fileId, jobId: uploadId, status: "preparing", analysisState: "not_generated" }, { status: 202 }))
+        .mockResolvedValueOnce(Response.json({ fileId, status: "normalization_complete", analysisState: "not_generated" }));
+      let finished = false;
+      const pending = prepareSubjectFile(fileId).then(value => { finished = true; return value; });
+      await vi.advanceTimersByTimeAsync(0); expect(finished).toBe(false); expect(fetchMock).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(await pending).toEqual({ fileId, status: "normalization_complete", analysisState: "not_generated" });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+  it("rejects a replacementjob during same-file polling", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValueOnce(Response.json({ fileId, jobId: uploadId, status: "preparing", analysisState: "not_generated" }, { status: 202 }))
+        .mockResolvedValueOnce(Response.json({ fileId, jobId: subjectId, status: "preparing", analysisState: "not_generated" }, { status: 202 }));
+      const pending = expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable" });
+      await vi.advanceTimersByTimeAsync(2000); await pending;
+    } finally { vi.useRealTimers(); }
+  });
+  it("stops polling on caller cancellation", async () => {
+    vi.useFakeTimers();
+    try {
+      const controller = new AbortController();
+      fetchMock.mockResolvedValueOnce(Response.json({ fileId, jobId: uploadId, status: "preparing", analysisState: "not_generated" }, { status: 202 }));
+      const pending = expect(prepareSubjectFile(fileId, { signal: controller.signal })).rejects.toMatchObject({ code: "unavailable" });
+      await vi.advanceTimersByTimeAsync(0); controller.abort(); await pending;
+      await vi.advanceTimersByTimeAsync(5000); expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
+});

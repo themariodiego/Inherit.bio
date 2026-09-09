@@ -1,3 +1,4 @@
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual as equal } from "node:util";
@@ -7,11 +8,11 @@ import { assertPreparedMetadataBounds } from "./canonical-manifest";
 import { canonicalRsidPointerSchema, compareCanonicalRsidPointers, decodeCanonicalRsidBlock, type CanonicalRsidPointer } from "./canonical-rsid-index";
 import { validateCanonicalRsidContainerDescriptor, verifyCanonicalRsidContainerBytes } from "./canonical-rsid-containers";
 import type { CanonicalRsidMaterializationReceipt } from "./materialize-canonical-rsid";
-import { preparedArtifactReceiptSchema, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedStoredArtifact } from "./storage-writer";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
 
 const n = z.number().int().nonnegative().safe(), uuid = z.uuid().regex(/^[0-9a-f-]+$/);
-const stored = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: uuid }).strict();
+const stored = preparedStoredArtifactSchema;
 const scan = z.object({ version: z.literal("canonical-rsid-scan-v1"), state: z.literal("provisional"), binding: canonicalBindingSchema,
   canonicalBlockCount: n.positive(), canonicalRecordCount: n.positive(), pointerCount: n, runCount: n, indexBlockCount: n }).strict();
 const merge = z.object({ type: z.literal("rsid-merge-summary"), version: z.literal("canonical-rsid-merge-v1"), state: z.literal("provisional"),
@@ -34,7 +35,7 @@ export class CanonicalRsidVerificationError extends Error {
 function valid(condition: unknown): asserts condition { if (!condition) throw new CanonicalRsidVerificationError("integrity_mismatch"); }
 function addIdentity(set: Set<string>, artifact: PreparedStoredArtifact) {
   for (const value of [`sequence:${artifact.receipt.sequence}`, `artifact:${artifact.receipt.artifactId}`,
-    `object:${artifact.storageObjectId}`, `key:${artifact.receipt.objectKey}`]) { valid(!set.has(value)); set.add(value); }
+    `object:${preparedArtifactObjectIdentity(artifact)}`, `key:${artifact.receipt.objectKey}`]) { valid(!set.has(value)); set.add(value); }
 }
 function member(artifact: PreparedStoredArtifact, root: CanonicalRsidMaterializationReceipt) {
   valid(artifact.receipt.jobId === root.jobId && artifact.receipt.attemptId === root.attemptId

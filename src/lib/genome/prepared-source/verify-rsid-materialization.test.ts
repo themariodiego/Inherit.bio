@@ -62,7 +62,7 @@ describe("full final rsID byte verification", () => {
   it("rejects a directory whose hash matches but whose data object identity is reused", async () => {
     const f = await setup(), root = structuredClone(f.root), ref = root.directories[0];
     const page = JSON.parse(Buffer.from(f.objects.get(ref.artifact.receipt.objectKey)!).toString());
-    page.containers[0].artifact.storageObjectId = ref.artifact.storageObjectId;
+    Reflect.set(page.containers[0].artifact, "storageObjectId", Reflect.get(ref.artifact, "storageObjectId"));
     const bytes = Buffer.from(JSON.stringify(page));
     ref.artifact.receipt.byteCount = bytes.length; ref.artifact.receipt.sha256 = createHash("sha256").update(bytes).digest("hex");
     f.objects.set(ref.artifact.receipt.objectKey, bytes);

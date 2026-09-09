@@ -125,7 +125,7 @@ describe("canonical materialization into registered objects", () => {
       if (mode === "sequence") ack.receipt.sequence++;
       if (mode === "hash") ack.receipt.sha256 = "f".repeat(64);
       if (mode === "bytes") ack.receipt.byteCount++;
-      if (mode === "object") ack.storageObjectId = "invalid";
+      if (mode === "object") Reflect.set(ack, "storageObjectId", "invalid");
       if (mode === "mutation") input.bytes[0] ^= 1;
       if (mode === "unknown-field") Object.assign(ack, { public: true });
       return ack;
@@ -141,7 +141,7 @@ describe("canonical materialization into registered objects", () => {
       const ack = await actual(input, signal);
       if (first) {
         if (mode === "artifact") ack.receipt.artifactId = first.receipt.artifactId;
-        if (mode === "object") ack.storageObjectId = first.storageObjectId;
+        if (mode === "object") Reflect.set(ack, "storageObjectId", Reflect.get(first, "storageObjectId"));
         if (mode === "key") ack.receipt.objectKey = first.receipt.objectKey;
       } else first = structuredClone(ack);
       return ack;

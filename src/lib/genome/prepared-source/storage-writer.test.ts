@@ -162,7 +162,7 @@ describe("prepared artifact write protocol (mock provider, not durability proof)
     } })) : undefined);
     const result = f.writer(f.input); await entered.promise;
     await new Promise(resolve => setTimeout(resolve, 0)); expect(f.order).not.toContain("ack");
-    controller.close(); expect((await result).storageObjectId).toBe(storageObjectId);
+    controller.close(); expect(Reflect.get(await result, "storageObjectId")).toBe(storageObjectId);
   });
   it("rejects concurrent calls without cancelling the active valid operation; permits the next serial write", async () => {
     const gate = Promise.withResolvers<Response>(), entered = Promise.withResolvers<void>();

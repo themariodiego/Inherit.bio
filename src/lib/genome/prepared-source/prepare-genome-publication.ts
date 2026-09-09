@@ -1,10 +1,10 @@
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
-import { z } from "zod";
 import { validateCanonicalMaterializationReceipt } from "./canonical-manifest";
 import { validateCanonicalRsidMaterialization, verifyCanonicalRsidMaterialization } from "./verify-rsid-materialization";
 import { verifyCanonicalMaterialization } from "./verify-canonical-materialization";
-import { preparedArtifactReceiptSchema, type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
 import type { CanonicalBinding } from "./canonical-schema";
 
 export type PreparedPublicationSummary = { version: "own-prepared-summary-v1"; sourceBuild: "GRCh37" | "GRCh38";
@@ -84,7 +84,7 @@ export async function prepareGenomePublication(input: { canonical: unknown; rsid
     const members: PreparedStoredArtifact[] = [], identities = new Set<string>();
     function append(artifact: PreparedStoredArtifact) {
       valid(members.length < 4096 && artifact.receipt.jobId === expected.jobId && artifact.receipt.attemptId === expected.attemptId);
-      for (const identity of [`artifact:${artifact.receipt.artifactId}`, `object:${artifact.storageObjectId}`,
+      for (const identity of [`artifact:${artifact.receipt.artifactId}`, `object:${preparedArtifactObjectIdentity(artifact)}`,
         `key:${artifact.receipt.objectKey}`, `sequence:${artifact.receipt.sequence}`]) { valid(!identities.has(identity)); identities.add(identity); }
       members.push(artifact);
     }
@@ -95,7 +95,7 @@ export async function prepareGenomePublication(input: { canonical: unknown; rsid
       await check(null);
       const descriptor: PreparedArtifactDescriptor = { kind: "container", sequence, byteCount: bytes.length, sha256: sha(bytes) };
       const raw = await wait(options.writeArtifact({ descriptor: { ...descriptor }, bytes }, signal));
-      const ack = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: z.uuid().regex(/^[0-9a-f-]+$/) }).strict().safeParse(raw);
+      const ack = preparedStoredArtifactSchema.safeParse(raw);
       valid(ack.success); if (!ack.success) throw new PreparedPublicationError("integrity_mismatch");
       const artifact = ack.data;
       valid(artifact.receipt.sequence === sequence && artifact.receipt.byteCount === bytes.length

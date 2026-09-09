@@ -1,3 +1,4 @@
+import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -6,7 +7,7 @@ import { canonicalBindingSchema, type CanonicalBinding } from "./canonical-schem
 import { canonicalRsidPointerSchema, compareCanonicalRsidPointers, encodeCanonicalRsidBlock,
   type CanonicalRsidPointer, type CanonicalRsidMergeSummary, type createCanonicalRsidRuns } from "./canonical-rsid-index";
 import { createCanonicalRsidContainerPacker, type CanonicalRsidContainerDescriptor } from "./canonical-rsid-containers";
-import { preparedArtifactReceiptSchema, type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedArtifactDescriptor, type PreparedStoredArtifact } from "./storage-writer";
 
 const integer = z.number().int().nonnegative().safe();
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
@@ -89,11 +90,11 @@ export async function materializeCanonicalRsidMerge(stream: AsyncIterable<Canoni
     active(); if (artifactSequence >= MAX_ARTIFACTS) fail("too_large");
     const descriptor: PreparedArtifactDescriptor = { kind: "container", sequence: artifactSequence, byteCount: bytes.byteLength, sha256: sha(bytes) };
     const response = await wait(options.writeArtifact({ descriptor: { ...descriptor }, bytes }, signal));
-    const parsed = z.object({ receipt: preparedArtifactReceiptSchema, storageObjectId: uuid }).strict().safeParse(response);
+    const parsed = preparedStoredArtifactSchema.safeParse(response);
     if (!parsed.success) fail("ack_mismatch"); const stored = parsed.data, receipt = stored.receipt;
     if (receipt.jobId !== jobId || receipt.attemptId !== attemptId || receipt.sequence !== artifactSequence
       || receipt.byteCount !== descriptor.byteCount || receipt.sha256 !== descriptor.sha256 || sha(bytes) !== descriptor.sha256) fail("ack_mismatch");
-    for (const identity of [`artifact:${receipt.artifactId}`, `object:${stored.storageObjectId}`, `key:${receipt.objectKey}`]) {
+    for (const identity of [`artifact:${receipt.artifactId}`, `object:${preparedArtifactObjectIdentity(stored)}`, `key:${receipt.objectKey}`]) {
       if (identities.has(identity)) fail("ack_mismatch"); identities.add(identity);
     }
     artifactSequence++; return stored;

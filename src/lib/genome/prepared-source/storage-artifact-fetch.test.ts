@@ -61,7 +61,7 @@ describe("authenticated full prepared-artifact transport", () => {
     if (kind === "URL key") raw.receipt.objectKey = "https://elsewhere.example.test/object";
     if (kind === "traversal") raw.receipt.objectKey = "prepared/../original";
     if (kind === "original key") raw.receipt.objectKey = raw.receipt.objectKey.slice(9);
-    if (kind === "wrong object ID") raw.storageObjectId = "invalid";
+    if (kind === "wrong object ID") Reflect.set(raw, "storageObjectId", "invalid");
     if (kind === "zero bytes") raw.receipt.byteCount = 0;
     if (kind === "too many bytes") raw.receipt.byteCount = 8_388_609;
     if (kind === "huge string") raw.receipt.sha256 = "a".repeat(10_000);

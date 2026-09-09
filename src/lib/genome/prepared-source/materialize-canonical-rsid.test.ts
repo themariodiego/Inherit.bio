@@ -122,7 +122,7 @@ describe("final canonical rsID materialization", () => {
       if (mode === "extra") Object.assign(result, { extra: true });
       if (previous) {
         if (mode === "artifact") result.receipt.artifactId = previous.receipt.artifactId;
-        if (mode === "object") result.storageObjectId = previous.storageObjectId;
+        if (mode === "object") Reflect.set(result, "storageObjectId", Reflect.get(previous, "storageObjectId"));
         if (mode === "key") result.receipt.objectKey = previous.receipt.objectKey;
       }
       previous = structuredClone(result); return result;

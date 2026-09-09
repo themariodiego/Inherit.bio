@@ -1,3 +1,4 @@
+import { preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -96,7 +97,7 @@ export async function readCanonicalCoordinates(request: {
     async function object<T>(artifact: PreparedStoredArtifact, decode: (bytes: Uint8Array) => T): Promise<T> {
       return readPreparedStorageRange({ objectKey: artifact.receipt.objectKey, offset: 0,
         length: artifact.receipt.byteCount, total: artifact.receipt.byteCount }, {
-        signal, fetchRange: options.fetchRange, check: current => check(artifact, current), decode: async bytes => decode(bytes),
+        signal, fetchRange: args => options.fetchRange({ ...args, artifact }), check: current => check(artifact, current), decode: async bytes => decode(bytes),
       });
     }
     const matches = (record: CanonicalRecord) => record.normalization.status === "normalized"
@@ -123,7 +124,7 @@ export async function readCanonicalCoordinates(request: {
           }));
           if (!visitedDirectories.has(directoryRef.sequence)) {
             for (const container of directory.containers) for (const identity of [
-              `artifact:${container.artifact.receipt.artifactId}`, `object:${container.artifact.storageObjectId}`, `key:${container.artifact.receipt.objectKey}`,
+              `artifact:${container.artifact.receipt.artifactId}`, `object:${preparedArtifactObjectIdentity(container.artifact)}`, `key:${container.artifact.receipt.objectKey}`,
               `sequence:${container.artifact.receipt.sequence}`,
             ]) {
               if (dataIdentities.has(identity)) throw new CanonicalCoordinateReadError("integrity_mismatch");
@@ -138,7 +139,7 @@ export async function readCanonicalCoordinates(request: {
         if (!container || !range || !isDeepStrictEqual(range.descriptor, descriptor)) throw new CanonicalCoordinateReadError("integrity_mismatch");
         const decoded = await readCanonicalStorageBlock({ objectKey: container.artifact.receipt.objectKey,
           container: container.descriptor, blockSequence: descriptor.sequence }, {
-          signal, fetchRange: options.fetchRange, check: current => check(container.artifact, current),
+          signal, fetchRange: args => options.fetchRange({ ...args, artifact: container.artifact }), check: current => check(container.artifact, current),
         });
         if (cursor && descriptor.sequence === cursor.blockSequence) {
           if (!decoded.records[cursor.recordOffset] || !matches(decoded.records[cursor.recordOffset])) throw new CanonicalCoordinateReadError("invalid_request");

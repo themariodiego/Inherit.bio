@@ -1,15 +1,15 @@
+import { fetchPreparedR2 } from "./r2-transport";
+import { preparedStoredArtifactSchema } from "./artifact-identity";
 import "server-only";
-import { z } from "zod";
 import { preparedStorageConfig } from "./storage-common";
-import { preparedArtifactReceiptSchema, type PreparedStoredArtifact } from "./storage-writer";
+import { type PreparedStoredArtifact } from "./storage-writer";
 
 export class PreparedArtifactFetchError extends Error {
   constructor(readonly code: "invalid_artifact" | "integrity_mismatch" | "unavailable" | "aborted") {
     super(code); this.name = "PreparedArtifactFetchError";
   }
 }
-const schema = z.object({ receipt: preparedArtifactReceiptSchema,
-  storageObjectId: z.uuid().regex(/^[0-9a-f-]+$/) }).strict();
+const schema = preparedStoredArtifactSchema;
 // Inspect bounded data properties before Zod clones this tiny metadata envelope.
 function preflight(value: unknown, depth = 0): void {
   const invalid = () => { throw new PreparedArtifactFetchError("invalid_artifact"); };
@@ -76,7 +76,9 @@ export function createPreparedArtifactFetch():
       const parsed = schema.safeParse(rawArtifact);
       if (!parsed.success) throw new PreparedArtifactFetchError("invalid_artifact");
       const artifact = parsed.data;
-      const pending = fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${artifact.receipt.objectKey}`, {
+      const pending = artifact.receipt.version === "own-preparation-artifact-v2"
+        ? fetchPreparedR2({ receipt: artifact.receipt, stored: artifact, operation: "get", signal })
+        : fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${artifact.receipt.objectKey}`, {
         method: "GET", signal, cache: "no-store", redirect: "error",
         headers: { Authorization: `Bearer ${config.key}`, apikey: config.key, "Accept-Encoding": "identity" },
       });

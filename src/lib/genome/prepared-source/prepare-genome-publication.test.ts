@@ -87,7 +87,7 @@ describe("verified genome publication input", () => {
       if (mode === "attempt") ack.receipt.attemptId = "99999999-9999-4999-8999-999999999999";
       if (mode === "sequence") ack.receipt.sequence++;
       if (mode === "hash") ack.receipt.sha256 = "f".repeat(64);
-      if (mode === "object") ack.storageObjectId = f.canonical.directories[0].artifact.storageObjectId;
+      if (mode === "object") Reflect.set(ack, "storageObjectId", Reflect.get(f.canonical.directories[0].artifact, "storageObjectId"));
       if (mode === "bytes") input.bytes[0] ^= 1;
       return ack;
     });
