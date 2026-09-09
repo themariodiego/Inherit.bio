@@ -86,16 +86,27 @@ storage-authorization test counts exactly which security-definer functions the
 upload role may execute; an unrevoked one is a privilege leak, and that guard
 caught one in this slice before it merged.
 
-## What a person gets, and what still costs them the file
+## What resumes, and what no person can reach yet
 
 `finalizeSubjectUpload` reads the checkpoint before it starts, does only what
-the recorded phase says is left, and records each phase as it completes. The
-browser asks again after a finalize request that reached no decision — the
-connection dropped, or the host answered 408, 502 or 504 for an invocation it
-killed — waiting the lease out first, because re-entry into a live lease is
-refused on purpose. Every status the route itself answers is final and is never
-repeated: its 503 has already aborted the upload and removed both objects, so
-there is nothing left to resume.
+the recorded phase says is left, and records each phase as it completes. A
+second bodyless POST for the same upload therefore finishes what the first one
+left, and `e2e/own-upload-pause.spec.ts` already drives exactly that: it aborts
+one finalization and then finalizes the same `uploadId` to a 200.
+
+**No person can trigger that today.** The uploader tells an interrupted upload
+"Please try again", and trying again runs `uploadSubjectFile` from the top: a
+new hash, a new upload session, and every byte sent a second time. Nothing in
+the browser re-POSTs the finalize of an upload it already staged.
+
+Closing that gap is a visible resume action, not a background retry.
+`src/lib/uploads/subject-upload-browser.ts` states its own contract — one
+ephemeral create-only bearer and no persisted resume fingerprint, filename
+metadata, background retry or implicit analysis — and an automatic repeat
+inside `uploadSubjectFile` breaks it. It also breaks the pause spec, which
+requires an aborted finalization to surface its refusal to the person rather
+than being retried out of sight. A retry was written and reverted for those two
+reasons; the person, not the uploader, decides to ask again.
 
 A kill during validation still costs the whole file. Validation is the first
 phase and records nothing until it finishes, so there is no checkpoint to
@@ -119,13 +130,13 @@ same ones, with the same wording.
   `docs/route-register.json` is untouched by this slice. Resumption is carried
   by repeating the same bodyless POST, not by a new polling shape, so there is
   no second contract to keep in step with the first.
-- The lease is one number, `FINALIZATION_LEASE_SECONDS`, defined in
-  `src/lib/uploads/subject-upload-contract.ts` and read by both the route that
-  writes it and the browser that waits it out, because a browser that waits
-  less than the lease would read its own resumable upload as someone else's.
-- The browser stops after four attempts, or sooner if the next wait would run
-  past the upload session's own expiry, rather than holding a person whose
-  browser simply cannot reach the route.
+- Whatever asks again must wait out `FINALIZATION_LEASE_SECONDS` first: a
+  request arriving while the previous holder's lease is live is refused as
+  `not_found`, on purpose, so that two requests can never drive one
+  finalization. A resume action has to say that to the person rather than
+  present the refusal as a lost upload.
+- Still unbuilt: the visible resume action described above, and with it any
+  path by which a person benefits from a checkpoint.
 - The 30-minute upload-session window still caps total finalization time. That
   is a separate decision and is not changed here.
 - None of this admits a larger file on its own. Admission needs the decoded

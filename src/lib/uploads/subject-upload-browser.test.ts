@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
-import { FINALIZATION_LEASE_SECONDS } from "./subject-upload-contract";
 const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const uploadId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -174,70 +173,6 @@ describe("browser-to-Storage own-subject upload", () => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
       .mockResolvedValueOnce(Response.json({ ...completed, status: "reports_ready" }));
     await expect(uploadSubjectFile(file(), "me", vi.fn())).rejects.toMatchObject({ code: "unavailable" });
-  });
-});
-
-/** The route records durable progress and re-enters its own finalization once
- * the previous attempt's lease lapses (ADR-0026). None of that reaches a person
- * unless the browser asks again after a request that never reached a decision,
- * and waits the lease out first. */
-describe("finishing a finalization the host cut short", () => {
-  const wait = FINALIZATION_LEASE_SECONDS * 1000 + 2000;
-  /** Advance past several lease waits, flushing the awaits between them. */
-  async function settle() { for (let i = 0; i < 6; i += 1) await vi.advanceTimersByTimeAsync(wait); }
-  it("asks again after no decision and returns the resumed receipt", async () => {
-    vi.useFakeTimers();
-    try {
-      fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
-        // A host that kills the invocation answers for it; one that drops the
-        // connection makes the request reject. Both mean the same thing.
-        .mockResolvedValueOnce(new Response("", { status: 504 }))
-        .mockRejectedValueOnce(new TypeError("network error"))
-        .mockResolvedValueOnce(Response.json(completed));
-      const upload = uploadSubjectFile(file(), subjectId, vi.fn());
-      await settle();
-      expect(await upload).toEqual(completed);
-      expect(fetchMock).toHaveBeenCalledTimes(4);
-      expect(fetchMock.mock.calls.slice(1).every(([url]) => url === `/api/files/${uploadId}/finalize`)).toBe(true);
-    } finally { vi.useRealTimers(); }
-  });
-  it("waits the lease out before asking, because a live lease is refused", async () => {
-    vi.useFakeTimers();
-    try {
-      fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
-        .mockRejectedValueOnce(new TypeError("network error"))
-        .mockResolvedValueOnce(Response.json(completed));
-      const upload = uploadSubjectFile(file(), subjectId, vi.fn());
-      await vi.advanceTimersByTimeAsync(FINALIZATION_LEASE_SECONDS * 1000 - 1);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      await settle();
-      expect(await upload).toEqual(completed);
-    } finally { vi.useRealTimers(); }
-  });
-  it.each([503, 413, 422, 404])("never repeats the decision the route already gave (%i)", async status => {
-    fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
-      .mockResolvedValueOnce(Response.json({ error: "unavailable" }, { status }));
-    await expect(uploadSubjectFile(file(), subjectId, vi.fn())).rejects.toBeInstanceOf(Error);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
-  it("stops after a bounded number of attempts rather than holding the person", async () => {
-    vi.useFakeTimers();
-    try {
-      fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
-        .mockRejectedValue(new TypeError("network error"));
-      const upload = uploadSubjectFile(file(), subjectId, vi.fn());
-      const refused = expect(upload).rejects.toMatchObject({ code: "unavailable" });
-      await settle();
-      await refused;
-      expect(fetchMock).toHaveBeenCalledTimes(5);
-    } finally { vi.useRealTimers(); }
-  });
-  it("gives up rather than waiting past the window the upload session allows", async () => {
-    fetchMock.mockReset()
-      .mockResolvedValueOnce(Response.json({ ...receipt, expiresAt: new Date(Date.now() + 30_000).toISOString() }, { status: 201 }))
-      .mockRejectedValueOnce(new TypeError("network error"));
-    await expect(uploadSubjectFile(file(), subjectId, vi.fn())).rejects.toMatchObject({ code: "unavailable" });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

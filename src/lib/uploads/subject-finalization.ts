@@ -6,11 +6,14 @@ import { hasEmptyRequestBody } from "../empty-request-body";
 import { createAdminClient } from "../supabase/admin";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
-import { FINALIZATION_LEASE_SECONDS, SUBJECT_UPLOAD_FORMATS,
-  subjectFinalizationReceipt as completed } from "./subject-upload-contract";
+import { SUBJECT_UPLOAD_FORMATS, subjectFinalizationReceipt as completed } from "./subject-upload-contract";
 import { SubjectStructureError, validateSubjectStructure } from "./subject-structure";
 import { advanceFinalization, finalizationCheckpointReceiptSchema, finalizationPhaseRank,
   type FinalizationCheckpoint } from "./finalization-progress";
+
+/** Long enough that a working request keeps its lease, short enough that an
+ * ordinary retry after a kill can resume rather than wait out the session. */
+const FINALIZATION_LEASE_SECONDS = 60;
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();

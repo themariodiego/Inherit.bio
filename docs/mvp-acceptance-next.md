@@ -45,17 +45,21 @@ finalization session-independent, so no superseding ADR is required; a design
 that outlived the session would need one, and this is not it.
 
 What now happens: `finalizeSubjectUpload` reads the checkpoint, does only what
-the recorded phase leaves, and records each phase as it completes. The browser
-asks again after a finalize request that reached no decision — a dropped
-connection, or the 408, 502 or 504 a host answers for an invocation it killed —
-waiting the lease out first, because re-entry into a live lease is refused on
-purpose. Every status the route itself answers is final and is never repeated;
-its 503 has already aborted the upload and removed both objects. The response
-contract did not change and `docs/route-register.json` is untouched: a file
-that finished in one request still does, with the same 200 and the same
-receipt, so there is no second polling shape to keep in step with the first.
-`FINALIZATION_LEASE_SECONDS` is defined once, in
-`src/lib/uploads/subject-upload-contract.ts`, and read by both sides.
+the recorded phase leaves, and records each phase as it completes. A second
+bodyless POST for the same upload finishes what the first one left, which
+`e2e/own-upload-pause.spec.ts` already drives — it aborts one finalization and
+then finalizes the same `uploadId` to a 200. The response contract did not
+change and `docs/route-register.json` is untouched.
+
+What no person can reach: that second POST. The uploader tells an interrupted
+upload "Please try again", and trying again re-hashes the file, opens a new
+upload session and sends every byte a second time. A resume action has to be
+built for a checkpoint to be worth anything to a person, and it has to be
+visible: `src/lib/uploads/subject-upload-browser.ts` declares that it performs
+no background retry, and the pause spec requires an aborted finalization to
+surface its refusal rather than be repeated out of sight. A background retry
+was written and reverted for those two reasons — CI caught it, on
+`own-upload-pause.spec.ts:146`, with 231 of 232 browser cases passing.
 
 What it still does not do: a kill during validation costs the whole file, since
 validation is the first phase, records nothing until it finishes and therefore
