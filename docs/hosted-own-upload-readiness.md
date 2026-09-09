@@ -187,13 +187,37 @@ after reclaim   attempts 2   artifact_count 1   nextArtifactSequence 1
 ```
 
 The existing pgTAP reclaim case never sees this because its job has
-`artifact_count = 0`. So attempts two and three re-claim successfully and then
-fail immediately with `integrity_mismatch`, spending the retry budget and its
-backoff without doing any work. Recovery in practice is
-`unpublished-scratch` cleanup deleting the job row
-(`20260908234525_own_prepared_cleanup.sql:240`), after which preparation must
-be requested again and redone from the original — 45 minutes of it, at
-whole-genome scale.
+`artifact_count = 0` — its own comment says the second source "exercises
+bounded retry without reading/adopting any artifact from the first attempt".
+So attempts two and three re-claimed successfully and then failed immediately
+with `integrity_mismatch`, spending the retry budget and its backoff without
+doing any work, and raising an error that reads like tampering where a real
+integrity failure would then arrive amid routine noise.
+
+`20260909230000_own_preparation_retry_requires_empty_sequence.sql` narrows the
+candidate predicate to match what the worker already required: a claimed job is
+re-offered only while it has consumed none of its sequence. The same
+reproduction now reports `reclaimed f` rather than `t`. This restores nothing
+and admits nothing; it stops the system offering a retry no attempt can take.
+
+**Why a job cannot resume where it stopped, by design.**
+`own_preparation_artifacts` is `unique(job_id,sequence)`, so one job owns one
+artifact sequence namespace and a second attempt cannot restart at sequence 0
+while the first attempt's rows exist. That is why `artifact_count` is
+monotonic. Recovery for a job that did write remains what the design provides:
+scratch cleanup retires the job (`20260908234525_own_prepared_cleanup.sql:240`)
+and preparation is requested again, redoing everything from the original — 45
+minutes of it, at whole-genome scale. Genuine cross-attempt resumption would
+have to admit a prior attempt's artifacts under verified hashes, which is an
+authority decision of its own and is not made here.
+
+**Still owed:** a committed pgTAP case for this. The existing fixture builds
+only two source files and spends both on the current retry assertions, and a
+job that has reserved artifacts cannot be re-offered until their write leases
+lapse, so the case needs either its own fixture or a bounded wait. Verified so
+far: the reproduction above before and after, and `own_preparation_jobs.sql`,
+`own_preparation_checkpoints.sql` and `own_prepared_r2_provider.sql` passing
+with the migration applied.
 
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
