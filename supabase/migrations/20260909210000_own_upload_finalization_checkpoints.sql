@@ -34,6 +34,8 @@ create function private.own_upload_finalization_phase_rank_v1(p_phase text) retu
 language sql immutable set search_path=pg_catalog as $function$
  select array_position(array['validated','copied','verifying','verified','staging-removed'],p_phase);
 $function$;
+revoke all on function private.own_upload_finalization_phase_rank_v1(text)
+ from public,anon,authenticated,inherit_upload_only;
 
 create function private.own_upload_finalization_checkpoint_receipt_v1(
  p_upload_id uuid,c private.own_upload_finalization_checkpoints)
@@ -42,6 +44,8 @@ returns jsonb language sql immutable set search_path=pg_catalog as $function$
   'uploadId',p_upload_id,'revision',coalesce(c.revision,0),
   'leaseExpiresAt',c.lease_expires_at,'checkpoint',c.checkpoint);
 $function$;
+revoke all on function private.own_upload_finalization_checkpoint_receipt_v1(
+ uuid,private.own_upload_finalization_checkpoints) from public,anon,authenticated,inherit_upload_only;
 
 create function private.read_own_upload_finalization_checkpoint_v1(p_account_id uuid,p_session_id uuid,
  p_upload_id uuid,p_claim uuid)
@@ -159,6 +163,11 @@ begin
  return new;
 end;
 $function$;
+-- Security definer, so it must be unreachable from the upload role: the
+-- storage-authorization test counts exactly which definer functions that role
+-- may execute, and an unrevoked one is a privilege leak, not a detail.
+revoke all on function private.retire_own_upload_finalization_checkpoint_v1()
+ from public,anon,authenticated,inherit_upload_only;
 create trigger retire_own_upload_finalization_checkpoint
  after update of status on public.upload_sessions
  for each row when (old.status='validating' and new.status is distinct from 'validating')
