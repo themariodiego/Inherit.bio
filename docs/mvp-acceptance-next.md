@@ -48,14 +48,22 @@ The whole set of ceilings between today and an ordinary WGS result, each with
 the constraint that enforces it, is recorded in
 `docs/hosted-own-upload-readiness.md`.
 
-Verified in this environment: `pnpm typecheck`, `pnpm lint`, the full unit
-suite (4,443 passing) and the legal, template, readability and secret gates.
-**Not verified here:** the pgTAP suite and the 232-case browser suite both need
-a local Supabase and Docker, which this container does not have, so the new
-migration and SQL test have run nowhere yet and CI is their first execution.
+CI `34397159200` passed on exact head `1fb934756e6cf7ede547c79eb5e1b3a8c62ceeec`
+at **20:10:47 UTC**: **4,497 units in 248 files**, **2,527 SQL assertions in 66
+files** (`Result: PASS`, `All tests successful`), 30 independent-session lock
+checks and all **232 browser cases in 16.0 minutes**, with 57 actual Storage
+uploads, zero skips or automatic retries, and both owned browser cleanup and
+local Supabase stop successful. That run was the first execution anywhere of
+`20260909193000_own_upload_limit_disclosure.sql` and its
+`own_upload_limit_disclosure.sql` pgTAP test, which reported `ok`; the
+authoring environment had no Docker and could not run either suite. Against the
+PR83 baseline of 4,448 units in 247 files and 2,511 SQL assertions in 65 files,
+this adds 49 units in one new file and 16 SQL assertions in one new file.
+
 Nothing was deployed, no hosted configuration was read or written, and no
 genetic file was touched. Acceptance stays **19/65**: this closes no gate,
-because the screens gate (G2) needs the browser evidence above.
+because the screens gate (G2) needs its own recorded browser evidence, and a
+passing regression suite is not that evidence.
 
 ## Current production checkpoint · 9 September 2026
 
