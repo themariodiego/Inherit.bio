@@ -167,6 +167,43 @@ maximum, and
 `max_job_seconds` would need most of its remaining range. Both are storage and
 compute cost, and neither is a change this evidence authorises on its own.
 
+### What the measurement says about 100 genomes a month · 9 September 2026
+
+The target is 100 genomes a month, which is **3.29 a day**. At the measured
+2,745.38 s each, that is **2.51 worker-hours a day**.
+
+`runOwnPreparationWorkerLoop` is deliberately sequential — "each iteration runs
+at most one FIFO preparation and one cleanup page" — so one worker is the unit
+of capacity. One worker running continuously covers **31.5 whole genomes a
+day**, about 957 a month, so the target needs roughly 8% of a single worker.
+Even if hosted execution is three times slower than this local run, one worker
+still covers about 319 a month:
+
+| Hosted slowdown vs local | Worker-hours a day at the target | One worker's capacity |
+|---:|---:|---:|
+| 1× (measured, local) | 2.51 | 957/month |
+| 2× | 5.01 | 479/month |
+| 3× | 7.52 | 319/month |
+| 5× | 12.54 | 191/month |
+
+**Throughput is therefore not what blocks 100 genomes a month.** The ceilings
+above are, and they refuse the first one.
+
+Scratch storage follows from the same two facts. A job holds at most
+922,056,859 B (0.86 GiB, and the schema caps `reserved_bytes` at 1 GiB), only
+one job is in flight at a time, and `cleanup_deadline` is fixed at
+`created_at + interval '2 hours'`. At 3.29 arrivals a day, well under one
+further job completes inside any two-hour window, so peak scratch sits near
+**one to two gigabytes**, not a figure that scales with the monthly total.
+
+Stated assumptions, because they are what the numbers rest on: one worker,
+running continuously; the local run as the base rate; and no concurrency
+beyond the sequential loop. A deployment that runs several workers multiplies
+both throughput and peak scratch. None of this is a hosted measurement, and it
+does not authorise a limit change on its own — it bounds what the target
+costs, so the remaining question is the two ceilings and the execution home,
+not the arithmetic of the target itself.
+
 ### Reproduced: the three-attempt retry budget cannot rescue a job that wrote anything · 9 September 2026
 
 `claim_next_own_preparation_v1` re-claims a job whose lease lapsed, up to three
