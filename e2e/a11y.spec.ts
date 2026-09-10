@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn } from "./helpers";
+import { assertNoThirdParty, AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 // A16 — axe accessibility checks over key surfaces in BOTH themes, plus
@@ -44,9 +44,15 @@ for (const route of PUBLIC_ROUTES) {
   for (const theme of ["light", "dark"] as const) {
     test(`axe: ${route} (${theme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme });
+      // G1.7 rides on this navigation rather than paying for a second one.
+      // "No third-party origin is contacted by a page carrying genome data" was
+      // proven on eight surfaces; the register-derived sweep already loads all
+      // 62 kept pages in both themes, so a request listener is the whole cost.
+      const observed = watchRequests(page);
       await page.goto(route);
       await page.waitForLoadState("networkidle");
       expect(await axeViolations(page, theme), `${route} (${theme})`).toEqual([]);
+      await assertNoThirdParty(page, observed, `${route} (${theme})`);
     });
   }
 }
@@ -130,12 +136,14 @@ for (const [route, url] of Object.entries(DOCUMENTS)) {
   for (const theme of ["light", "dark"] as const) {
     test(`axe: ${route} (${theme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme });
+      const observed = watchRequests(page);
       const response = await page.goto(url);
       // A 404 would make the audit meaningless, and quietly: an empty
       // not-found page has no violations.
       expect(response?.status(), `${url} resolves to a document`).toBe(200);
       await page.waitForLoadState("networkidle");
       expect(await axeViolations(page, theme), `${route} (${theme})`).toEqual([]);
+      await assertNoThirdParty(page, observed, `${route} (${theme})`);
     });
   }
 }
@@ -213,13 +221,21 @@ test("axe: every registered authenticated page, both themes", async ({ page }) =
   await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), TINY_FIXTURE),
     { fileType: "vcf", purposes: ["reports.polygenic"] });
 
+  // One listener for the whole sweep, cleared per route: attaching a fresh one
+  // each time would leave 44 of them on the same page by the end.
+  const observed = watchRequests(page);
   for (const route of registered.filter(entry => entry in VISIT)) {
     for (const theme of ["light", "dark"] as const) {
       await page.emulateMedia({ colorScheme: theme });
+      observed.origins.clear();
+      observed.urls.length = 0;
       await page.goto(VISIT[route]);
       await page.waitForLoadState("networkidle");
       // Soft, so one run names every page that fails rather than the first.
       expect.soft(await axeViolations(page, theme), `${route} (${theme})`).toEqual([]);
+      // G1.7's authenticated half: these are the pages that actually carry
+      // genome data, and they were the ones the origin audit reached least.
+      await assertNoThirdParty(page, observed, `${route} (${theme})`);
     }
   }
 });
