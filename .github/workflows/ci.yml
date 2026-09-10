@@ -53,6 +53,8 @@ jobs:
         run: pnpm test
       - name: Legal placeholder gate
         run: pnpm gate:legal
+      - name: First-glance heading gate
+        run: pnpm gate:first-glance
       - name: No-comparator name gate
         run: pnpm gate:names
       - name: Template integrity gate

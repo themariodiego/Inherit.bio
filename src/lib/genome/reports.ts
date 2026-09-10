@@ -72,6 +72,22 @@ function complement(seq: string): string | null {
 }
 
 /** 'A/G' | 'G/A' | 'A' -> sorted key 'AG' / 'A'; null for no-calls. */
+/**
+ * The report name is the title up to its gene suffix (`Caffeine metabolism ·
+ * CYP1A2` → `Caffeine metabolism`); the whole title when there is none. The
+ * gene suffix is provenance, rendered in "Where this comes from", never a
+ * heading.
+ *
+ * Lives here rather than in the page because G3.5 is a rule about the rendered
+ * heading, and `scripts/first-glance-gate.ts` checks every template against it
+ * without a browser. Two copies of this would let the gate pass while the page
+ * rendered something else.
+ */
+export function reportNameOf(title: string): string {
+  const index = title.indexOf(" · ");
+  return index === -1 ? title : title.slice(0, index);
+}
+
 export function genotypeKey(genotype: string): string | null {
   const alleles = genotype.split("/").filter((a) => a.length > 0);
   if (alleles.length === 0) return null;
