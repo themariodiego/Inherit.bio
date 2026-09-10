@@ -1434,3 +1434,32 @@ Decisions:
   `docs/route-divergence.json` so whoever takes it does not have to rediscover
   it. `scripts/route-register-correspondence.test.ts` holds the divergence in
   place meanwhile, so it cannot grow or be silently closed.
+
+## 2026-09-10 — revoking an analysis purpose does not empty the subject's own export
+
+- Question: `docs/retention.md` registered `purpose.derived-60s` as "delete
+  within 60 seconds" for derived rows attributable to the revoked
+  subject-and-purpose tuple. Revoking `ancestry` deletes no
+  `public.ancestry_results` row, so either the product or the rule was wrong.
+- Measured first. Only two database functions mention that table — a
+  schema-shape assertion and `purge_account_deletion_database_v1` — and the
+  only other removal is the reprocess path in `POST /api/files/[id]/process`.
+  Reads are correctly denied: `loadAncestryResultSnapshot` gates canonical and
+  legacy rows through `filterOwnAnalysisFiles(subject, 'ancestry', …)` and
+  re-confirms after every read. So this was retention, never access.
+- What decided it: `POST /api/export` reads those rows filtered only by
+  `user_id`, under the subject's own export permission rather than the
+  analysis grant. The brief requires storage, analysis, sharing and AI
+  permissions to stay separate, so revoking analysis withdrawing the subject's
+  own copy of already-derived data would collapse two permissions into one.
+- Decision (owner): keep the rows. The rule was over-broad, and
+  `docs/retention.md` now states the exception — derived rows a separate live
+  permission independently consumes are not deleted by purpose revocation,
+  while access under the revoked purpose still ends immediately under
+  `purpose.access-immediate`. Account deletion and source replacement remain
+  the paths that remove them. D-096 is closed by this decision, not by code.
+- Checked in the same pass and never a defect: `public.report_observed_calls`
+  is read by `own_copilot_chat_v1`, `own_report_generation_v1` and
+  `own_subject_export_content_v1`, so it is shared across live purposes and the
+  rule already forbade deleting it on one revocation.
+
