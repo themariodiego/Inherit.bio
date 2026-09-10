@@ -223,9 +223,13 @@ async function grantPurpose(page: Page, recipientSubjectId: string, purpose: Gra
   const row = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
     .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: new RegExp(`^${label}$`) }) });
   await expect(row.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  const control = row.getByRole("button", { name: /^Turn on / });
+  // A settable column can still lock one row and print the reason instead of a
+  // control, so say which row had none rather than waiting out the timeout.
+  await expect(control, `${purpose}: this row offers no control in this session`).toBeVisible({ timeout: 30_000 });
   const signed = page.waitForResponse(response => response.request().method() === "POST"
     && response.url().endsWith("/api/consents"));
-  await row.getByRole("button", { name: /^Turn on / }).click();
+  await control.click();
   expect((await signed).status()).toBe(201);
   await expect(row.locator('[data-slot="permission-state"]')).toHaveText("On");
 }
@@ -309,11 +313,18 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   expect(representative.error).toBeNull();
   expect(representative.data).toEqual({ subject_class: "other_adult", subject_account_id: accountTwo });
 
-  // Still the invitee's session: they grant toward the inviter's own self.
-  for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, selfOne, purpose);
+  // Each direction is signed from its own account's own session, in a session
+  // opened after the acceptance rather than the one that accepted: the
+  // acceptance session is the invitee proving the invitation, and the Family
+  // specs sign every permission from a plain sign-in.
   await page.request.post("/auth/sign-out");
   await signIn(page, one.email, one.password);
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, representativeTwo, purpose);
+  await page.request.post("/auth/sign-out");
+  await signIn(page, two.email, two.password);
+  for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, selfOne, purpose);
+  await page.request.post("/auth/sign-out");
+  await signIn(page, one.email, one.password);
 
   await page.goto(HEALTH_PICTURE);
   await page.getByRole("checkbox").check();
