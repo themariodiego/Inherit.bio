@@ -1,7 +1,7 @@
 # MVP-first acceptance sequence
 
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-10.
-Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
+Full-plan acceptance is **22/65**; G2.7 flips on its CI proof.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
@@ -53,18 +53,52 @@ G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
   `provider_recipient_grants` belong in the archive, plus the unbuilt
   `/api/subjects/[id]/export`. Attribution itself is proven by an executed
   export (`e2e/export-subject-scope.spec.ts`).
-- **G2.7** needs the 25 authenticated pages in both themes. The public half is
-  done and derived from the register — 29 routes, both themes, zero axe
-  violations — so the pattern to copy already exists in `e2e/a11y.spec.ts`.
-- **G8.3 is the one worth doing next**, because G8.2 rule (a) waits on it and
-  on nothing else, and because it is the brief's own detection for "a beautiful
-  surface over an unimplemented pipeline". It is nearer than its one-line row
-  implied: `src/lib/figures/contract.ts` declares 11 kinds and exactly two
-  places emit `data-figure-kind`, so `docs/figures-register.json` is derivable
-  rather than hand-kept, and `e2e/fixtures/` already holds seven synthetic VCFs
-  with different values. What is missing is a figure collector — 
-  `src/lib/claims/collect-dom.ts` is the nearest precedent but reads claims —
-  and a spec that renders a surface under two seeds and differences them.
+- **G2.7 is done pending its CI proof.** All 62 kept pages in the register are
+  audited in both themes at zero WCAG 2.1 A/AA violations of any impact: 29
+  public, 6 legal documents, 21 authenticated in `e2e/a11y.spec.ts`, and 6 in
+  the specs that can build their state. One assertion is unverified locally —
+  `e2e/copilot-refusal.spec.ts` needs the isolated CI browser runtime, which
+  asserts an unprivileged uid — so the row flips on the run that proves it.
+- **G8.3's remaining work is two surfaces, not four.** Five are differenced:
+  `/genome/me/ancestry`, the caffeine report, `/genome/me/reports`,
+  `/genome/me/data` and `/genome/me/data/browser?q=rs762551`. What remains is
+  `/family/health-picture` and `/family/portrait/[pairId]`. **The two Embryo
+  surfaces cannot be differenced and that is not a gap in this gate**: embryo
+  ingest is `not shipped` in `docs/capability-register.md`, no ingest path
+  creates a cohort or a quality row, so `/embryos/compare` and
+  `/embryos/[embryoId]` have no reachable result state to render a figure in.
+  They become differenceable when the Embryos workstream lands, not before.
+- **The Family half has a shape to copy and one thing to build.**
+  `e2e/figures-two-seed.spec.ts` holds the mechanism: `figuresFor` uploads one
+  genome and reads several surfaces, `bothSeeds` runs two isolated accounts,
+  and `assertEveryFigureMoved` compares them softly so one run names every
+  surface. What it needs is a seed-B carrier pair.
+  `e2e/fixtures/carrier-pair-fixture.ts` is already a plain data module with
+  `buildRows()` and a `verify()` that runs the real parser and the real runs
+  measure, so parameterising it the way `generate-aims-vcf.ts` was
+  parameterised is the same move: the four `TINY_ROWS` carry the genotypes the
+  side-by-side table reads, so seed B's copy of them (and a different run
+  length, if the runs measure renders a figure) is what has to move. The cost
+  is the setup, not the fixture: both Family surfaces need two accounts, an
+  accepted invitation and a mail drain, so a two-seed run builds four
+  accounts. Extracting that setup out of `e2e/family-health-picture.spec.ts`
+  into a helper is the first step.
+- **Running the Family, Portrait and Embryo specs locally needs the CI
+  environment**, which is not obvious from the runner: `JOBS_SECRET`,
+  `CRON_SECRET`, `EMAIL_FROM`, `RESEND_API_KEY`, `RESEND_BASE_URL`
+  (`http://127.0.0.1:8124`, where each spec binds its own loopback capture),
+  `INHERIT_TEST_JURISDICTION=1` and `BYOK_ENCRYPTION_KEY`, exactly as
+  `.github/workflows/ci.yml` sets them. They also need a *drained* mail
+  outbox: the worker claims one row per call, oldest first, so a local stack
+  carrying stale `claimed` rows from earlier runs starves every new
+  invitation and the specs fail on "the invitation must reach the mail
+  provider" — a local artifact CI never sees, because CI starts empty. Walking
+  the shipped worker over the backlog clears it.
+- **`e2e/copilot*.spec.ts` cannot run in a root container at all.**
+  `scripts/ci-browser-runtime.ts` asserts a non-root uid before it starts the
+  isolated HTTPS fixture daemon that provides `CANONICAL_COPILOT_CONTROL_URL`,
+  so those specs, and `scripts/ci-browser-runtime.test.ts`, fail locally for
+  the environment rather than the code.
 - **G2.5** needs the density harness rebuilt inside the E2E suite.
   `scripts/density-baseline/capture.mjs` cannot be pointed at the current build:
   it takes its routes from the baseline document and authenticates against a
@@ -73,8 +107,23 @@ G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
 - **G4.7's remaining work is not engineering.** 189 of 221 citations carry no
   access date; a date records when a person read the source and cannot be
   invented. `UNDATED_CITATION_BACKLOG` holds the count so it can only shrink.
-- **G1.13a/b, G8.6, G1.12, G2.4's task-depth half** still need browser
-  instrumentation and are untouched.
+- **G8.6 has its mechanism and its register for the My Genome domain.**
+  `docs/figures-register.json` carries a `crossSurface` section and
+  `e2e/figures-cross-surface.spec.ts` enforces it: one genome, every surface,
+  and every repeated figure must hold still. It found a live divergence — the
+  report list and the report page computed `read N of the M positions this
+  needs` by different rules — now fixed in one `reportCoverage`. What remains
+  is the same set G8.3 waits on: Family and Embryo surfaces are not collected
+  yet, so "every figure that appears on more than one surface" is not yet a
+  whole-product claim.
+- **G1.12 is the largest unbuilt gate here.** `pnpm gate:routes` must prove
+  every register entry answers with its recorded disposition *and* that every
+  (route, state) pair not marked `n/a` has a passing Playwright test whose
+  title contains both the route path and the state id. The register carries
+  161 routes and eight state ids, so the second half is a suite-wide titling
+  and coverage effort, not a script.
+- **G1.13a/b and G2.4's task-depth half** still need browser instrumentation
+  and are untouched.
 
 ## Durable finalization progress, schema first · 9 September 2026
 
