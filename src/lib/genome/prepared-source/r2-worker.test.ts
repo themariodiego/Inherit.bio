@@ -41,9 +41,18 @@ describe("prepared R2 gateway", () => {
   it.each([
     { aud: "authenticated" }, { iss: "https://wrong.example" }, { operation: "delete" }, { bucket: "other" },
     { objectKey: "prepared/../../original" }, { byteCount: 8388609 }, { byteCount: 0 }, { sha256: "invalid" },
-    { exp: 1 }, { exp: Math.floor(Date.now() / 1000) + 31 }, { extra: true }, { start: 0 },
+    { exp: 1 }, { exp: "over-max-ttl" }, { extra: true }, { start: 0 },
   ])("refuses malformed or cross-purpose capability before provider I/O: %j", async change => {
-    const f = fixture(); expect((await f.request({ ...f.claim, ...change })).status).toBe(404);
+    const f = fixture();
+    // "over-max-ttl" is resolved here, against this fixture's own iat. Written
+    // as Date.now() + 31 in the table above it froze at collection time, while
+    // iat and expiresAt come from a fresh clock when the body runs. One second
+    // of drift and exp - iat falls back to 30, so the claim aged into validity
+    // and the gateway correctly answered 200 — the assertion failed for a real
+    // reason that had nothing to do with the gateway.
+    const claim = { ...f.claim, ...change,
+      ...(change.exp === "over-max-ttl" ? { exp: f.claim.iat + 31 } : {}) };
+    expect((await f.request(claim)).status).toBe(404);
     expect(f.put).not.toHaveBeenCalled(); expect(f.get).not.toHaveBeenCalled();
   });
   it("requires exact signature and method", async () => {
