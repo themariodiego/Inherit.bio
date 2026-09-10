@@ -86,6 +86,10 @@ describe("canonical export ZIP integration", () => {
     expect(zip.readAsText("reports.txt")).toContain(json[0].reports[0].variants[0].interpretation);
     expect(zip.readAsText("reports.txt")).toContain("No catalog snapshot was captured.");
     expect(JSON.parse(zip.readAsText("manifest.json")).files.map((f: { row_count: number }) => f.row_count)).toEqual([1, 1]);
+    // Every file says whose data it is, so an account holding more than its
+    // own subject can tell the archive's files apart.
+    expect(JSON.parse(zip.readAsText("manifest.json")).files
+      .map((f: { subject_id: string }) => f.subject_id)).toEqual(["subject", "subject"]);
   });
   it("terminates the response when a page fails with an open archive member", async () => {
     mocks.fail = true; mocks.count = 1;
