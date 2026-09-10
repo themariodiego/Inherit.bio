@@ -66,11 +66,22 @@ record that was wrong, or established that a thing recorded as blocked was not.
 - **The (route, state) matrix at 5 of 288.** This is now the single thing
   between G1.7 and YES, and it holds G1.12, G2.2 and G8.5 back too. Biggest
   single lever left.
-- **`webhooks.resend`** is the one endpoint of 88 whose auth mode, success
-  status and body exist only in the handler — a transcription gap, not an
-  authority one.
-- **`legal-evidence`** is declared, fenced by a migration, removed from by live
-  code, and created by nothing.
+**Two items this list previously named here were wrong, corrected 2026-09-10
+after reading rather than skimming. Neither is pickup work:**
+
+- **`webhooks.resend` is not a transcription gap.** The brief mentions resend
+  only as a dependency and its API key in the secret allowlist; it describes no
+  webhook endpoint and no contract for one. Transcribing the handler into the
+  register would document an endpoint the brief never authorised — making the
+  register agree with the code by abandoning what gives it authority. The
+  handler itself is sound (svix verification, 503 without its secret, key
+  declared). This needs the brief to describe the endpoint, which is an
+  author's decision.
+- **`legal-evidence` is correctly left uncreated.** Nothing writes evidence
+  while embryo ingest is unshipped, so creating the bucket would add an unused
+  resource ahead of the claim and appeal surfaces it serves, against "add
+  infrastructure only for demonstrated blockers".
+  `docs/register-contract-divergence.json` already records it accurately.
 
 ### Two decisions that are an owner's, not an engineer's
 
@@ -84,11 +95,24 @@ record that was wrong, or established that a thing recorded as blocked was not.
 
 ### Environment facts worth an hour
 
-- The local test baseline is **two** files: `scripts/ci-browser-runtime.test.ts`
-  (asserts a non-root uid) and `src/lib/claims/capture-emails.test.ts` (refuses
-  to run against an uncommitted tree). A third failing file is real. Read the
-  names, never the count — matching the count is how a real failure was missed
-  once already.
+- The local **unit** baseline is **two** files:
+  `scripts/ci-browser-runtime.test.ts` (asserts a non-root uid) and
+  `src/lib/claims/capture-emails.test.ts` (refuses to run against an
+  uncommitted tree). A third failing file is real. Read the names, never the
+  count — matching the count is how a real failure was missed once already.
+- **The full browser suite has a separate local baseline, and it is not two.**
+  Several specs require `INHERIT_DISPOSABLE_LOCAL_E2E=true` and mean it:
+  `e2e/account-deletion-purge.spec.ts` asserts it with the reason "Composite
+  retention requires a clean disposable stack; never preserved local sequence
+  fixtures". CI sets it on a stack it created seconds earlier. A container that
+  has been running specs all session is not that, so those specs refuse — which
+  is the guard working. **Do not set that flag to make them pass**: it asserts
+  a dirty database is clean, on a deletion guarantee, which is exactly what it
+  exists to stop. A full local run in a used container produced 7 such failures
+  against a CI run that was green on the identical commit; CI on a fresh stack
+  is the authority, and the local suite is only a valid cross-check on a fresh
+  one. `JOBS_SECRET` and the other synthetic values must also be set from
+  `.github/workflows/ci.yml` or the mail-fixture specs throw at import.
 - **`pnpm e2e -- <spec>` swallows the `--`.** Invoke the runner directly:
   `npx tsx scripts/run-upload-browser.mts --full -- e2e/<spec> --grep '...'`.
 - **Only one browser suite can run at a time.** A second one waits on the port.
