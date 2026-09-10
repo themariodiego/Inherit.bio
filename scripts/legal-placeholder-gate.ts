@@ -196,12 +196,25 @@ async function main() {
 
   if (serverUrl) {
     for (const route of ROUTES) {
-      const res = await fetch(`${serverUrl}${route}`);
-      if (!res.ok) {
-        failures.push(`${route}: HTTP ${res.status} — legal page missing`);
+      // An unreachable server, a refused connection or a read that dies
+      // part-way is a gate failure, not an unhandled throw. Without this the
+      // process exits on the first bad route with a stack trace and no report,
+      // which reads as a broken gate rather than a broken page — and rendered
+      // mode is exactly where that happens, because it depends on a server
+      // someone else started.
+      let res: Response;
+      let html: string;
+      try {
+        res = await fetch(`${serverUrl}${route}`);
+        if (!res.ok) {
+          failures.push(`${route}: HTTP ${res.status} — legal page missing`);
+          continue;
+        }
+        html = await res.text();
+      } catch (error) {
+        failures.push(`${route}: unreachable — ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
-      const html = await res.text();
       // Strip tags/scripts so we test the rendered text, not code.
       const text = html
         .replace(/<script[\s\S]*?<\/script>/g, "")
