@@ -106,15 +106,37 @@ const RENDERED_ONLY_PATTERNS: [RegExp, string][] = [
   [/\[\s*\]/, "empty brackets"],
 ];
 
-const ROUTES = [
-  "/about",
-  "/privacy",
-  "/terms",
-  "/legal/research-consent",
-  "/legal/law-enforcement",
-  "/legal/deceased",
-  "/legal/gina",
-];
+/**
+ * G1.8 wants every legal, consent and disclosure route, "including new ones".
+ * A hand-kept list cannot honour that clause — this one had drifted to four of
+ * the fourteen legal routes that exist — so the list is derived from the
+ * filesystem and a new page is covered the day it lands.
+ *
+ * Dynamic segments are skipped: `/legal/[artifact]` and `/legal/consent/[key]`
+ * have no fetchable URL without knowing valid parameter values, and inventing
+ * one would test a 404 rather than a document. Their prose is still checked in
+ * source mode, which walks the whole directory.
+ */
+const FIXED_ROUTES = ["/about", "/privacy", "/terms"];
+
+function legalRoutes(): string[] {
+  const root = "src/app/(marketing)/legal";
+  const routes: string[] = [];
+  const walk = (directory: string, segments: string[]) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (!entry.isDirectory()) {
+        if (/^page\.(tsx|ts|jsx|js)$/.test(entry.name)) routes.push(`/legal${segments.map(s => `/${s}`).join("")}`);
+        continue;
+      }
+      if (entry.name.startsWith("[") || entry.name.startsWith("@") || entry.name.startsWith("_")) continue;
+      walk(path.join(directory, entry.name), [...segments, entry.name]);
+    }
+  };
+  walk(root, []);
+  return routes.sort();
+}
+
+const ROUTES = [...FIXED_ROUTES, ...legalRoutes()];
 
 const SOURCE_DIRS = [
   "src/app/(marketing)/about",
@@ -188,6 +210,9 @@ async function main() {
       check(route, text, failures, true);
     }
     console.log(`checked ${ROUTES.length} rendered routes`);
+    if (ROUTES.length < 12) {
+      failures.push(`route discovery found only ${ROUTES.length} legal routes — the walker is broken, not the product`);
+    }
   } else {
     let count = 0;
     for (const dir of SOURCE_DIRS) {
