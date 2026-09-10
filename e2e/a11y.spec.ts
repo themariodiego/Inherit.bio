@@ -753,6 +753,7 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         if (root.scrollWidth <= root.clientWidth) return null;
         const limit = root.clientWidth;
         const wide: Element[] = [];
+        const caught: Element[] = [];
         for (const element of document.querySelectorAll("*")) {
           const rect = element.getBoundingClientRect();
           if (rect.width === 0 && rect.height === 0) continue;
@@ -766,14 +767,42 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
             // child, so the child cannot be what widened the page.
             if (getComputedStyle(parent).overflowX !== "visible") { clipped = true; break; }
           }
-          if (clipped) continue;
+          if (clipped) { caught.push(element); continue; }
           wide.push(element);
         }
         // The outermost element of each subtree: a too-wide child of a
         // too-wide row is the symptom, the row is the cause.
         const causes = wide.filter(element =>
           !wide.some(other => other !== element && other.contains(element)));
+        // When every candidate sits inside something that scrolls, `causes` is
+        // empty and the report says nothing useful — which is exactly what
+        // happened on the variant browser. What actually carries width upward
+        // is an element wider than itself that does not clip, so name those
+        // too: overflow-x visible, content wider than the box. The outermost
+        // one is where the width escapes.
+        const leaking: Element[] = [];
+        for (const element of document.querySelectorAll("*")) {
+          if (element.scrollWidth <= element.clientWidth + 1) continue;
+          if (getComputedStyle(element).overflowX !== "visible") continue;
+          if (element.clientWidth === 0) continue;
+          leaking.push(element);
+        }
+        const escapes = leaking.filter(element =>
+          !leaking.some(other => other !== element && other.contains(element)));
         return {
+          // What has a box past the edge and what was supposed to be clipping
+          // it. When `widest` is empty this is the only thing that says why.
+          escaped: caught.slice(0, 6).map(element => {
+            let clipper: Element | null = element.parentElement;
+            while (clipper && getComputedStyle(clipper).overflowX === "visible") {
+              clipper = clipper.parentElement;
+            }
+            return `${probe.describe(element)} reaches ${Math.round(element.getBoundingClientRect().right)}px`
+              + `, inside ${clipper ? probe.describe(clipper) : "(nothing)"}`
+              + ` which is ${clipper ? Math.round(clipper.getBoundingClientRect().width) : 0}px wide`;
+          }),
+          leaks: escapes.slice(0, 6).map(element =>
+            `${probe.describe(element)} holds ${element.scrollWidth}px in a ${element.clientWidth}px box`),
           scrollWidth: root.scrollWidth,
           clientWidth: root.clientWidth,
           // Empty when nothing has a box past the edge — a margin, a
