@@ -81,6 +81,20 @@ export function headingFailures(source: string, heading: string, jargon: readonl
   return failures;
 }
 
+/**
+ * Result surfaces whose heading is a copy constant. Not every `<h1>` in the
+ * app: Settings, My files and the domain landings are not result pages, and
+ * G3.5 is a rule about the page that shows someone a finding.
+ */
+const COPY_HEADINGS: readonly [string, string][] = [
+  ["src/copy/ancestry.ts", "H1"],
+  ["src/copy/family/portrait.ts", "PORTRAIT_H1"],
+  ["src/copy/family/health-picture.ts", "HEALTH_PICTURE_H1"],
+  ["src/copy/embryos/compare.ts", "COMPARE_H1"],
+  ["src/copy/genome/data.ts", "DATA_H1"],
+  ["src/copy/genome/data.ts", "BROWSER_H1"],
+];
+
 /** Every result heading the product commits, with where it came from. */
 export function resultHeadings(): { source: string; heading: string }[] {
   const headings: { source: string; heading: string }[] = [];
@@ -94,11 +108,18 @@ export function resultHeadings(): { source: string; heading: string }[] {
       headings.push({ source: `${name}:${template.slug}`, heading: reportNameOf(template.title) });
     }
   }
-  // The ancestry result surface names its heading in copy rather than in a
-  // template. Read, not retyped, so renaming it here fails rather than drifts.
-  const ancestry = /export const H1 = "([^"]+)"/.exec(fs.readFileSync("src/copy/ancestry.ts", "utf8"));
-  if (!ancestry) throw new Error("src/copy/ancestry.ts no longer exports an H1 heading to check");
-  headings.push({ source: "src/copy/ancestry.ts:H1", heading: ancestry[1]! });
+  // Result surfaces that name their heading in copy rather than in a template.
+  // Read from source, never retyped, so renaming one fails here instead of
+  // drifting. The report catalogue alone is not "every result page": these six
+  // were outside the gate until a check of `<h1>` across `src/app/(app)` found
+  // them, which is why the list is declared rather than inferred — a surface
+  // that renders a result has to be named here to be covered.
+  for (const [file, constant] of COPY_HEADINGS) {
+    const source = fs.readFileSync(file, "utf8");
+    const found = new RegExp(`export const ${constant} = "([^"]+)"`).exec(source);
+    if (!found) throw new Error(`${file} no longer exports ${constant} for the first-glance gate to check`);
+    headings.push({ source: `${file}:${constant}`, heading: found[1]! });
+  }
   return headings;
 }
 
