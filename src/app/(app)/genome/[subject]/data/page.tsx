@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClaimBlock } from "@/components/figures/claim-block";
 import { InputProvenance } from "@/components/reports/input-provenance";
+import { ScorePanelResult } from "@/components/results/polygenic/score-panel-result";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,9 @@ import {
   scoreInputLabel,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
-import type { CoverageSpec } from "@/lib/figures/spec";
 import { getSubjectFileCount } from "@/lib/genome/load";
 import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
+import { scorePanel } from "@/lib/genome/prs-panel";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
@@ -55,6 +55,9 @@ export default async function GenomeDataPage(
   // No percentile renders anywhere: every shipped score can only be scored
   // against a global fallback panel, so nothing numeric about risk is shown
   // (§4 §2.5, X4.2).
+  // No version column is selected because `prs_scores` has none; the panel
+  // facts are built by `scorePanel` and the surface states the absence of a
+  // version in words rather than implying one (G4.4, src/lib/genome/prs-panel.ts).
   const { data: prsRows } = files.length > 0
     ? await supabase
         .from("user_prs")
@@ -112,38 +115,22 @@ export default async function GenomeDataPage(
           <p className="max-w-prose text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
         ) : (
           <ul className="space-y-3">
-            {scores.map(({ row, meta }) => {
-              const coverage: CoverageSpec = {
-                kind: "coverage",
-                class: "estimate",
-                basis: "observed",
-                provenance: { kind: "computed", module: "genome/prs" },
-                read: row.matched,
-                needed: meta.n_variants,
-              };
-              return (
-                <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
-                  <ClaimBlock subject={{ subjectId: subject.id }} figures={[coverage]}>
-                    <p className="mt-2 max-w-prose text-sm text-ink">
-                      <span className="font-medium">{meta.name}</span>{" "}
-                      <span className="font-mono text-sm text-ink-muted">{row.pgs_id}</span>
-                      {" · "}
-                      <span className="text-ink-muted">{meta.trait}</span>
-                    </p>
-                    {/* inherit-figure-exempt: the score's seeded ancestry-portability
-                        statement names the composition of its source cohort (provenance
-                        from the score catalogue), not a result about the subject */}
-                    <p data-slot="ancestry-note" className="mt-1 max-w-prose text-sm text-ink-muted">
-                      {meta.ancestry_note}
-                    </p>
-                  </ClaimBlock>
-                  {/* inherit-figure-exempt: a source-record label, not a genetic quantity */}
-                  <p data-slot="score-input-label" className="mt-2 text-sm text-ink-muted">
-                    {scoreInputLabel(inputSources.findIndex((source) => source.fileId === row.file_id) + 1)}
-                  </p>
-                </li>
-              );
-            })}
+            {scores.map(({ row, meta }) => (
+              <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
+                <ScorePanelResult
+                  subjectId={subject.id}
+                  panel={scorePanel(meta)}
+                  trait={meta.trait}
+                  ancestryNote={meta.ancestry_note}
+                  read={row.matched}
+                  needed={meta.n_variants}
+                />
+                {/* inherit-figure-exempt: a source-record label, not a genetic quantity */}
+                <p data-slot="score-input-label" className="mt-2 text-sm text-ink-muted">
+                  {scoreInputLabel(inputSources.findIndex((source) => source.fileId === row.file_id) + 1)}
+                </p>
+              </li>
+            ))}
           </ul>
         )}
       </section>

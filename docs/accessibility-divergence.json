@@ -1,0 +1,115 @@
+{
+  "purpose": "Every accessibility finding G1.13b measures and the product has not answered yet. e2e/a11y.spec.ts makes the four measurements axe cannot make \u2014 reflow at a 320 CSS px viewport, target size at 390x844, keyboard traversal at 390x844 and 1280x800, and the equivalent list and text behind every chart \u2014 over the same reachable pages the axe sweeps cover, derived from docs/route-register.json so a new page joins all four the day it lands. Two of the four are hard assertions and stay hard: reflow and the text alternatives, for the reasons the notes at the bottom of this file give. The other two compare what they find against the matching group here in both directions: a finding that is not listed fails, and a listed finding that no longer occurs fails too, so a control that reaches 44px or a widget that stops trapping focus has to bring its entry down with it, and neither list can grow without a person writing the entry that admits it.",
+  "notAnApproval": "Listing a finding records it; it does not bless it. Every entry below is an open WCAG failure measured exactly, not an accepted state \u2014 acceptance is a line in docs/acceptance-matrix.md and G1.13b stands at NO there. A 32x32 control is exactly as far from the brief's 44px as it was before it was written down, and a keyboard trap is a Level A failure whether or not this file mentions it. What the ledger buys is that the distance is exact, that it names the decision or the dependency holding it open, and that it can only shrink.",
+  "howEntriesAreMatched": "The two groups hold fields, not sentences, and e2e/a11y.spec.ts rebuilds the sentence from them through the same two functions the measurements themselves use \u2014 undersizedControlFinding and keyboardFinding \u2014 so a recorded finding and a present one are the same sentence or they are not the same finding. What the ledger deliberately does not hold is the per-page evidence: which route, which element, the box it measured, the exact order violations. The failing test prints all of it, in full, for every finding that is not recorded, and prints the paste-ready object beside it. Keeping that evidence here would produce a file that churned on every page added while recording nothing a person needs in order to decide anything.",
+  "granularity": "The target-size group is recorded per component, not per (page, control). One theme toggle at 32x32 is one row here and one finding on every swept route; identical rows repeated once per page would be a worse document than one row that says so \u2014 the same decision docs/claims-divergence.json takes when it records 675 unregistered prose blocks as 16 per-file rows, and docs/figures-register.json takes when it records one shape-level invariant instead of 298 identical figure rows. The component is derived from the element's own attributes and nothing else: tag, data-slot, data-variant, data-size, input type, role, and failing all of those the nearest ancestor carrying a data-slot. So it is exactly as precise as the DOM allows and never guesses at a React component, and it is never the accessible name \u2014 Save and Delete are two labels on one component, and a per-label ledger would be a per-instance ledger with extra steps. Where the nearest slotted ancestor differs between pages, one logical control lands in two rows rather than one: the grouping errs toward more rows, never toward a row that swallows a finding. Nothing is rounded away by grouping. Every undersized (page, control) pair is still measured and still counted, by UNDERSIZED_CONTROL_OCCURRENCES in e2e/a11y.spec.ts, which is an exact ratchet on the volume these rows collapse \u2014 so a component fixed lowers it, a control shrunk or a page added raises it, and the collapse can never hide growth. The keyboard group needs no collapsing: its natural unit is already one (route, viewport, assertion), and there are four.",
+  "reflow": [
+    {
+      "route": "/genome/[subject]/data/browser",
+      "scrollWidth": 446,
+      "clientWidth": 320,
+      "why": "The last of the 33 routes that scrolled sideways at 320 CSS px when this sweep was written. Thirty-one were the marketing header laying the wordmark, the theme toggle and two auth controls in one non-wrapping row needing 344px; one was the /files action row at 370px. Both wrap now. This route was 485px and is 446px after its igv container was made a horizontal scroller. **What remains is diagnosed but not fixed, and the diagnosis rules out the obvious suspects.** The results table does reach 593px, and it is correctly clipped: its `section[data-slot=claim-block]` scroll container measures 288px, which is the 320px viewport minus the page gutters, so the table scrolls inside it and contributes nothing to the document width. No element on the page has a box past the viewport edge without a scrolling ancestor - that is what an empty `widest` means - and the only thing holding 446px in a 320px box is the root itself. So the width is not coming from an element with a box, which leaves a margin, a pseudo-element, a fixed-width rule in igv's injected stylesheet, or a positioned node whose containing block is outside its scroll container.",
+      "closing": "Bisect it in a browser rather than by reading, and the sweep's own output now narrows where to look: it names every element with a box past the edge together with the ancestor that clips it, so anything it does name is accounted for. Two things were tried and are recorded as not the cause, to save repeating them: constraining `.igv-circview-container`, which igv creates at `width: fit-content`, changed nothing (the rule was reverted rather than left in place doing nothing); and the results table is already clipped. The blunt fix - `html { overflow-x: hidden }` - is refused on purpose: it would make this measurement pass by making every future reflow failure invisible.",
+      "blocker": "none - a defect with an unidentified cause, not a decision waiting on anyone"
+    }
+  ],
+  "measuredNotGuessed": "Every number in this file came from a sweep, never from a guess. targetSize carries 22 components measured across 56 routes, collapsing 990 undersized (page, control) pairs, and UNDERSIZED_CONTROL_OCCURRENCES in e2e/a11y.spec.ts holds that 990 as an exact-equality ratchet so the per-component collapse cannot hide growth. keyboardTraversal carries six rows. Its `reached`, `expected` and `violations` fields are evidence rather than the compared key: they move between runs on unchanged code, because the count of certainly-tabbable elements depends on what the swept account holds. The reflow group carries one route by exact width, which does not move.",
+  "targetSize": [
+    {
+      "component": "a",
+      "smallestWidth": 39,
+      "smallestHeight": 15,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "a inside [data-slot=availability-line]",
+      "smallestWidth": 133,
+      "smallestHeight": 17,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "a inside [data-slot=breadcrumbs]",
+      "smallestWidth": 30,
+      "smallestHeight": 20,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "a inside [data-slot=chip-row]",
+      "smallestWidth": 80,
+      "smallestHeight": 26,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "a inside [data-slot=embryo-tile]",
+      "smallestWidth": 54,
+      "smallestHeight": 20,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "a[data-slot=subject-files]",
+      "smallestWidth": 29,
+      "smallestHeight": 20,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    },
+    {
+      "component": "input[type=checkbox]",
+      "smallestWidth": 100,
+      "smallestHeight": 20,
+      "source": "src/components/ui/input.tsx",
+      "why": "A form control on the same scale question as the buttons: the shipped input height is 36px against the brief's 44. The checkbox row is the union of the control and its label, which is how the sweep measures a labelled control, because clicking the label activates it - so its width is the label's and only its height is the finding.",
+      "closing": "The same 44px step, applied to the input and checkbox scales.",
+      "blocker": "first-viewport budget - raising the control scale changes the rendered height of every surface, which is measured against the G2.5/X6.x first-viewport interactive and ink budgets. NOT an owner decision and NOT a collision with G2.7, both re-checked 2026-09-10: the brief already decided the value - line 553 pins `--size-control: 44px` for 'every button, input, switch, tap target' and line 706 says of the Action component 'One size: 44px. The 36px size is deleted rather than carved out' - and G2.7's frozen identity pins no size at all. `src/lib/design/tokens.test.ts` pins exactly `--card`, `--paper`, the eight `--subject-N` and `--color-subject-*` colours, and the Fraunces/Inter pairing: zero height, size or spacing tokens. `--size-control` does not exist in `src/app/globals.css` at all, so the brief's control scale was never implemented rather than implemented and then frozen. What is left to establish is only whether the density budgets survive it, which is a measurement."
+    },
+    {
+      "component": "summary",
+      "smallestWidth": 274,
+      "smallestHeight": 20,
+      "source": "the surfaces that render it; not one component file",
+      "why": "A disclosure summary is the control that opens its own section, and it is a line of text with no box. Same open question as the text links, and it moves with them.",
+      "closing": "Moves with the text-link decision above.",
+      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+    }
+  ],
+  "keyboardTraversal": [
+    {
+      "kind": "exit",
+      "route": "/genome/[subject]/data/browser",
+      "viewport": "1280x800",
+      "last": "div \"Interactive genome browser\"",
+      "outcome": "trapped",
+      "why": "WCAG 2.1 SC 2.1.2 No Keyboard Trap, Level A. Tab past the last control does not hand focus out of the page: it returns to a stop the traversal has already visited. The last stop is the container itself - src/components/browse/genome-browser.tsx renders a role=region div named by IGV_CONTROL_LABELS.region ('Interactive genome browser') and hands its DOM to igv; it is a horizontal scroller (overflow-x-auto), which is there so the browser reflows at the 320px support floor instead of widening the document to 485px. Everything that holds focus after it belongs to igv. The test is careful about what it can and cannot tell apart here: focus leaving the document and a headless wrap to the first stop both count as leaving, and only a return to something that is not the first stop counts as a trap. This is the second kind. The Level A criterion is now met, and this entry is the tab-order defect that remains, not a conformance failure. SC 2.1.2 does not require Tab to be the key. It requires that focus can be moved away using only the keyboard, and that where the key is not an unmodified arrow or Tab, the reader is told which key it is. Both are shipped: the container binds Escape in the capture phase on our own element - never by reaching into igv's DOM - and moves focus to the next thing a Tab would have reached after the region, so the traversal continues forwards rather than restarting; and BROWSER_KEYBOARD_ESCAPE is rendered above the region and referenced by it through aria-describedby, so a reader arriving by Tab is told on entry rather than only if they happened to look. What stays recorded here is the thing that is still wrong: Tab alone should have been enough, and inside this widget it is not.",
+      "closing": "Upstream, a fork, or a replacement, as with the row above - the tab order inside the widget is igv.js 3.8.5's. The interim this entry used to ask for is built rather than described, and the sweep now enforces it rather than trusting it: a traversal that ends trapped is additionally required to escape, and that check is a plain failure, not a ledger entry, because an unescapable trap has no honest interim. It reads the key from the component's own accessible description rather than assuming Escape, so a page that advertises a different key is checked against what it advertises and a page that advertises nothing fails on that alone; it then requires focus to land outside the region and forwards of it, because moving focus backwards would satisfy the letter and strand the reader before the widget they just left. A floor asserts the check ran at least once, so it cannot quietly stop running and leave this entry as the only thing saying the trap exists.",
+      "blocker": "third party - the focus order inside the widget is igv.js 3.8.5's, and the container is the last element of ours that the traversal reaches. Not a blocker on SC 2.1.2, which the shipped escape meets."
+    },
+    {
+      "kind": "order",
+      "route": "/genome/[subject]/data/browser",
+      "viewport": "1280x800",
+      "violations": 3,
+      "why": "Three order violations on the variant browser at desktop width. One of the three is the trap's own entry \u2014 a traversal that ends trapped records 'focus returned to ...' before it stops \u2014 so two are order breaks in their own right. The markup they walk is not ours: everything inside the container is built by igv.js 3.8.5 (package.json), which renders part of its navbar into a shadow root, and src/components/browse/genome-browser.tsx can only post-process what igv builds, attaching accessible names and button roles after createBrowser resolves, best effort inside try/catch so an igv upgrade that renames a class degrades rather than crashes. DOM order inside a widget we do not author is not something a post-processing pass can rewrite without taking ownership of the widget's layout.",
+      "closing": "A fix upstream in igv.js, a fork, or replacing the widget. A fourth option that would close it here \u2014 rebuilding the navbar ourselves from igv's API and hiding its own \u2014 is a larger change than it sounds, because the navbar igv renders into a shadow root is the same DOM its zoom and locus behaviour is bound to.",
+      "blocker": "third party \u2014 igv.js 3.8.5 builds and owns this subtree, shadow root included"
+    }
+  ],
+  "reflowNote": "Reflow at 320 CSS px is a hard assertion in e2e/a11y.spec.ts for every route but one, and stays one. It failed on 33 routes when the sweep was first written and 32 of those were fixed rather than recorded: the marketing header, which alone accounted for 31 because it laid the wordmark, the theme toggle and two auth controls in a row needing 344px against a 320px viewport, and the /files action row at 370px. Both wrap now. The `reflow` group above holds the single remainder, by exact measured width, so that route can only get narrower and a second one joining it fails as an unrecorded finding rather than sliding in under the first. An earlier revision of this note said the number was zero; it was written before the last sweep and was wrong.",
+  "textAlternativesNote": "Not a group either, and for the better reason: it passes. The ancestry map and every chart the sweep finds carry an equivalent list and text \u2014 inside the figure, on the far end of its own aria-describedby, or beside it in the container that holds them both \u2014 reachable without a pointer, in zero activations. It stays a hard assertion so that stays true, and it is the one of the four measurements that needs nothing from this file.",
+  "keyboardTraversalNote": "Two kinds of finding were recorded here and one of them was never real. The stop shortfalls - eight on the report library at both widths, one on /copilot/[scope] - were the sweep counting controls that sit inside a closed `details`. Chromium still gives those descendants client rects, so the counter said they were rendered and expected Tab to reach them; Tab is right not to, because the summary that opens the disclosure is itself a tab stop and is counted and reached. The report library's eight are its category jump links, behind the collapsed filter strip that the first-viewport interactive budget requires. Naming the elements rather than counting them is what showed this: 'eight stops missing' reads like eight controls a keyboard cannot reach, and 'never reached: a \"Everyday traits\", a \"Cancer\", ...' reads like a disclosure. The counter excludes closed-disclosure descendants now, and no stop shortfall survives it. What remains below is the genome browser, where the findings are real."
+}

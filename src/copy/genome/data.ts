@@ -150,6 +150,20 @@ export const BROWSER_LOADING = "Loading the genome browser…";
 export const BROWSER_FAILED =
   "The genome browser could not load. Your variants are still listed above.";
 
+/**
+ * The genome browser's keyboard escape, stated on the page because WCAG 2.1
+ * SC 2.1.2 requires the method to be stated whenever it is not an unmodified
+ * arrow or Tab key. It is not: Tab past the browser's last control returns
+ * inside it, and the focus order in there belongs to igv.js, not to us.
+ * Escape is the key we bind on our own container, so the criterion is met by
+ * the second half of its own wording rather than by silence.
+ */
+export const BROWSER_KEYBOARD_ESCAPE =
+  "Keyboard: press Escape to move focus out of the genome browser.";
+
+/** Announced where focus lands when Escape is pressed and nothing follows. */
+export const BROWSER_KEYBOARD_ESCAPED = "End of the genome browser.";
+
 export const BROWSER_EMPTY_REGION =
   "Your file has no variants in this region, so the track above is empty. That reflects your file’s coverage, not an error.";
 

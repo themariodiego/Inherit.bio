@@ -575,6 +575,14 @@ test("the carrier panel withholds unbound clinical labels and explicitly states 
 });
 
 test("the page keeps its budgets and is clean in both themes", async ({ page }) => {
+  // The audit is eight passes now, not two: three pinned viewports plus
+  // reduced motion, in each theme, over the widest table the product renders
+  // (660 figures, and the one surface allowed 24 interactive elements). At the
+  // suite's 120-second default it timed out inside axe on CI run 341. The work
+  // is the brief's, not a regression, so the budget moves rather than the
+  // matrix: 600 seconds is what e2e/a11y.spec.ts already allows its own
+  // multi-page sweeps.
+  test.setTimeout(600_000);
   await signIn(page, A.email, A.password);
   await passGate(page);
   await page.setViewportSize({ width: 1280, height: 800 });

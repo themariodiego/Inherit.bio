@@ -83,7 +83,7 @@ export function LegalPage({
               id={s.id}
               className="scroll-mt-24 border-t border-line py-8 first:border-t-0 first:pt-0 last:pb-0"
             >
-              <h2 className="display text-2xl">{s.heading}</h2>
+              <h2 id={`${s.id}-heading`} className="display text-2xl">{s.heading}</h2>
               <div className="mt-4 space-y-4 text-sm leading-relaxed text-ink-muted [&_a:hover]:text-ink [&_a]:underline [&_a]:underline-offset-2 [&_h3]:pt-2 [&_h3]:font-medium [&_h3]:text-ink [&_li]:pl-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
                 {s.body}
               </div>

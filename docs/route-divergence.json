@@ -159,9 +159,12 @@
   "provenRouteStatesNote": "The (route, state) pairs a browser test title proves today, out of the 288 the register requires. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction, and UNPROVEN_ROUTE_STATE_PAIRS in that script holds the remainder. A title proves a pair when it names the registered route path and the state id as separate, non-overlapping, whole tokens, so \"empty-history\" does not prove \"empty\" and a state id appearing only inside the path proves nothing.",
   "provenRouteStates": [
     "/embryos empty",
+    "/embryos/[embryoId] consent-required",
     "/embryos/compare consent-required",
     "/family/invite complete",
     "/genome/[subject]/reports empty",
-    "/genome/[subject]/reports partial-coverage"
+    "/genome/[subject]/reports partial-coverage",
+    "/genome/[subject]/reports/[slug] complete",
+    "/genome/[subject]/reports/[slug] not-covered"
   ]
 }

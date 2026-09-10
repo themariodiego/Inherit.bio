@@ -97,7 +97,10 @@ export default async function UploadsPage() {
                   <p className="mt-1 text-xs text-danger">{f.error}</p>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2">
+              {/* Wraps at the 320px support floor: the badge, the reports link
+                  and the row actions need 370px side by side, which scrolled
+                  the whole page sideways (WCAG 2.1 SC 1.4.10). */}
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge
                   variant={f.status === "failed" ? "destructive" : "secondary"}
                 >

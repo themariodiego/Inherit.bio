@@ -110,7 +110,8 @@ function depthTip(depth: string): string {
 // fade appears only while there is more table to the right — a swipe
 // affordance on narrow screens. The fade is a decorative, pointer-inert,
 // aria-hidden overlay, so it is invisible to axe.
-function ScrollableTable({ children }: { children: ReactNode }) {
+function ScrollableTable({ children, labelledBy }:
+  { children: ReactNode; labelledBy: string }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState(false);
 
@@ -134,7 +135,18 @@ function ScrollableTable({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative mt-4">
-      <div ref={scrollerRef} className="overflow-x-auto">
+      {/* Focusable and named: the table is wider than a phone, and a
+          scrolling container nothing can focus is unreachable by keyboard
+          (axe `scrollable-region-focusable`, sixteen of them on this page at
+          320x568 and 390x844). It borrows the provider heading above it
+          rather than carrying a second copy of the name. */}
+      <div
+        ref={scrollerRef}
+        className="overflow-x-auto"
+        role="region"
+        aria-labelledby={labelledBy}
+        tabIndex={0}
+      >
         {children}
       </div>
       {fade ? (
@@ -295,7 +307,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="font-medium">{p.name}</h2>
+                <h2 id={`provider-${p.slug}-name`} className="font-medium">{p.name}</h2>
                 <p className="mt-0.5 text-xs text-ink-muted">
                   Ships to: {p.ships_to}
                   {p.shipping.note ? ` (${p.shipping.note})` : ""}
@@ -356,7 +368,7 @@ export function ProviderDirectory({ providers }: { providers: Provider[] }) {
             {/* "Works with Inherit" is the decision column, so it sits
                 second — right after the product name — where it stays
                 visible on narrow screens instead of far off to the right. */}
-            <ScrollableTable>
+            <ScrollableTable labelledBy={`provider-${p.slug}-name`}>
               <table className="w-full min-w-[44rem] text-left text-sm">
                 <thead>
                   <tr className="text-xs text-ink-muted">

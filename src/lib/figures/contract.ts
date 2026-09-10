@@ -41,10 +41,36 @@ export type FigureClass = (typeof FIGURE_CLASSES)[number];
 export const FIGURE_BASES = ["observed", "modelled", "exact"] as const;
 export type FigureBasis = (typeof FIGURE_BASES)[number];
 
+/**
+ * The modules a `computed:` provenance may name. Every entry resolves to a
+ * file that exists under src/lib — `genome/reports` is
+ * src/lib/genome/reports.ts, `embryos/policy` is src/lib/embryos/policy.ts —
+ * so a figure cannot claim a number came from a module that was never
+ * written. Adding a computing module means adding it here; anything else is
+ * a type error rather than a false sentence on the page.
+ *
+ * Two entries name their file by path (`src/lib/genome/admixture.ts`); both
+ * spellings resolve, and a rename is a separate change from this one.
+ */
+export const COMPUTED_MODULES = [
+  "embryos/policy",
+  "family/carrier-pair",
+  "family/distribution",
+  "family/mendel",
+  "family/portrait",
+  "genome/browser",
+  "genome/input-provenance",
+  "genome/prs",
+  "genome/reports",
+  "src/lib/genome/admixture.ts",
+  "src/lib/genome/haplogroups.ts",
+] as const;
+export type ComputedModule = (typeof COMPUTED_MODULES)[number];
+
 export type FigureProvenance =
   | { kind: "citation"; id: string }
   | { kind: "seed"; table: string; id: string }
-  | { kind: "computed"; module: string };
+  | { kind: "computed"; module: ComputedModule };
 
 /** Serialises provenance to `citation:<id>`, `seed:<table>/<id>` or `computed:<module>`. */
 export function provenanceAttribute(provenance: FigureProvenance): string {

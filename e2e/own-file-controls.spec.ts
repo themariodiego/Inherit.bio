@@ -29,6 +29,29 @@ test("canonical two-file controls retain the other source and its useful finding
   const retainedId = await uploadOwnFileWithChosenReports(page, retainedFixture, options);
   expect(removedId).not.toBe(retainedId);
 
+  // Discoverability, the half nothing required before. `own-report-helpers.ts`
+  // drives this control only when it happens to be there
+  // (`if (await selectedFile.count())`), and the component defaults to the
+  // newest file — which is the one each upload then generates against. So a
+  // regression that dropped the control entirely would have generated against
+  // the right file anyway and passed in silence, leaving an account with two
+  // files no way to choose between them. Requiring it is what closes that; the
+  // deletion half below already requires its absence once one file remains, so
+  // the control is now pinned in both directions.
+  await page.goto(LIBRARY);
+  const sourceChoice = page.getByRole("combobox", { name: /^File to use\b/ });
+  await expect(sourceChoice, "two stored files must both be offered as the source").toBeVisible();
+  await expect(sourceChoice.locator("option")).toHaveCount(2);
+  await expect(sourceChoice.locator(`option[value="${removedId}"]`),
+    "the older file must be offered, not only the newest").toHaveCount(1);
+  await expect(sourceChoice.locator(`option[value="${retainedId}"]`)).toHaveCount(1);
+  // Offered is not the same as told apart: two options a reader cannot
+  // distinguish are a choice they cannot make.
+  const sourceLabels = await sourceChoice.locator("option").allTextContents();
+  expect(new Set(sourceLabels.map(label => label.trim())).size,
+    `the two sources must be distinguishable, not two identical labels: ${sourceLabels.join(" / ")}`)
+    .toBe(2);
+
   const admin = adminClient();
   const sources = await admin.from("genome_files").select("id,bucket_path,subject_id,status")
     .eq("user_id", accountId).order("id");

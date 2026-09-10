@@ -65,6 +65,22 @@ export interface HealthPictureCellProps {
   href: string | null;
   /** The table caption, which carries the layer definition once. */
   captionId: string;
+  /**
+   * What this cell is a claim about, in the page's own terms: one report,
+   * for one person, in one layer (`health-picture-table.tsx` composes it).
+   *
+   * It is emitted as `data-cell` so that anything reading the rendered page
+   * can say which report and which person a figure inside this cell belongs
+   * to. Without it every cell on the surface is the same shape as every
+   * other, and the only thing separating one person's coverage figure from
+   * another's is its position in the document — the pairing that made the
+   * first two-seed ancestry run compare one region against a different one
+   * and call both unchanged (G8.3, `e2e/figure-collector.ts`).
+   *
+   * Optional so that a caller rendering a single cell outside the table need
+   * not invent one; the table always passes it.
+   */
+  cellId?: string;
 }
 
 function figuresFor(
@@ -115,8 +131,9 @@ export function HealthPictureCell({
   state,
   href,
   captionId,
+  cellId,
 }: HealthPictureCellProps) {
-  if (state.kind === "sources") return <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
+  if (state.kind === "sources") return <td data-slot="health-picture-cell" data-cell={cellId} className="min-w-80 align-top p-2">
     {state.entries.map(entry => <div key={entry.fileId} data-source-file-id={entry.fileId} className="space-y-2 py-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figuresFor(entry.state, layer, personName)} className="space-y-2 p-3">
         <p data-slot="saved-result-person" className="text-sm font-medium text-ink">{personName}</p>
@@ -132,7 +149,7 @@ export function HealthPictureCell({
   const figures = figuresFor(state, layer, personName);
   const absent = absenceWord(state, personName);
   return (
-    <td data-slot="health-picture-cell" className="min-w-80 align-top p-2">
+    <td data-slot="health-picture-cell" data-cell={cellId} className="min-w-80 align-top p-2">
       <ClaimBlock subject={{ subjectId: dataSubjectId }} figures={figures} className="space-y-2 p-3">
         {absent ? (
           <p data-slot="cell-absence" className="text-sm leading-relaxed text-ink">

@@ -1,0 +1,437 @@
+{
+  "purpose": "Every place where the product and G1.11's claims and provenance rules disagree today. scripts/claims-gate.ts (pnpm gate:claims) runs ten checks: the citation register's schema, the local snapshot of every non-permanent source, the claim register's evidence, the surfaces claims name, every provenance expression built in src/, the provenance attribute on every claim or figure element, the exempt-numeral rule, report-body registration, template citation registration, and the seven designated surfaces. Each check compares what it finds against the matching group here in both directions: an unlisted divergence fails, and a listed one that no longer exists fails too, so a fix has to bring the ledger down with it and nothing can quietly give a registration back.",
+  "notAnApproval": "Listing a divergence records it; it does not bless it. Every entry below is an open finding measured exactly, not an accepted state \u2014 acceptance is a line in docs/acceptance-matrix.md, and G1.11 stands at NO there. The point of the ledger is that the distance from the rule is written down and can only shrink.",
+  "howEntriesAreMatched": "The seven checks whose findings name a single record hold the finding sentence verbatim, because there is nothing in it to recount. The three that carry counts \u2014 report-body registration, template citation registration and the designated surfaces \u2014 hold the counts, and scripts/claims-gate.ts rebuilds the sentence from them through the same function the check itself uses. So one prose block gaining a registration moves a number, and a number that moves fails in both directions rather than matching a stale sentence.",
+  "granularity": "The report-body backlog is 675 unregistered prose blocks. It is recorded as 16 entries, one per template file, each carrying its own counts, and that is deliberate: 675 rows would be 675 copies of one sentence and would hide the shape of the work rather than show it. docs/figures-register.json takes the same decision where it records one shape-level invariant instead of 298 identical figure rows. The per-file counts are still exact, and the check still reads every one of the 746 blocks: nothing is rounded, only grouped.",
+  "citationSchema": [],
+  "citationSchemaNote": "Empty, and checked in both directions so it cannot stay empty through a regression. All 19 entries in data/citations.json carry the eight fields G1.11 names, a type inside pmid|doi|statute|registry|regulator|dataset, a resolvable https URL, a real calendar access date and a supporting quotation of 25 words or fewer.",
+  "sourceSnapshot": [],
+  "sourceSnapshotNote": "Empty for the same reason. Seven of the 19 sources are Ensembl records, which are live web pages rather than permanent identifiers, and all seven carry a local snapshot under docs/sources/ensembl/ that exists on disk. The other twelve are PMIDs and one DOI, which C4 exempts because they resolve to a fixed record.",
+  "claimEvidence": [],
+  "claimEvidenceNote": "Empty: every one of the 71 canonical claims carries verbatim text, at least one surface, and at least one piece of evidence whose citation is in data/citations.json with an accessed_on equal to that source's access_date. This is the half of G1.11 that is finished, over the eight reports it covers.",
+  "claimSurface": [],
+  "claimSurfaceNote": "Empty: every surface the 71 claims name resolves \u2014 a page route in docs/route-register.json, the export:account-export-v1 contract, or the research-digest mail fixture \u2014 and every report slug named is one a template in data/templates publishes.",
+  "figureProvenance": [
+    {
+      "finding": "src/components/embryo/compare/compare-cell.tsx builds a citation provenance whose id is the expression withinFamily.citation_ids[0], which no static reader can resolve",
+      "why": "The four other findings in this group were defects and are fixed: three named modules nobody had written, and one could emit `citation:` with an empty id through a `?? \"\"`. This one is not a defect and cannot be made into a literal. A within-family figure's citation is the publication the stored numbers were measured under, and it arrives on the `embryo_scores.finding` row with them; which citation it is depends on the row, so the id is a runtime value by construction. The closed eight-key finding carries no score-row id either, so there is no `seed:` target to name in its place. The correctness the check was protecting is now enforced by types rather than by the string: `citedWithinFamily` in src/lib/embryos/policy.ts is the only way to those numbers and returns the row only when it carries both its numbers and its citation, so a figure that claims a citation cannot render without one.",
+      "closing": "Nothing to close in src/. Closing it in the gate means teaching the reader to resolve a citation id that comes from a named database column - checking that the column exists and that every id any row of it holds is in data/citations.json, which is a database-backed check rather than a static one and belongs with the rendered-DOM half in src/lib/claims/collect-dom.ts. Until then this entry is the record, and because the ledger is matched on the sentence verbatim, changing the expression makes it stale and fails.",
+      "blocker": "none - an accepted divergence, not a defect and not a backlog item"
+    }
+  ],
+  "figureProvenanceNote": "What this check reports are usually correctness bugs, not divergences: a provenance attribute rendering the name of a module nobody wrote is a provenance string, not provenance, so recording one here would file a defect as a measurement and let it sit. Four such bugs were found and fixed in src/ rather than listed. The one entry below is the other kind, and the reason it is accepted is written into it: a citation chosen by a database row cannot be a literal in the source, and the correctness the check was reaching for is now carried by the type instead. An entry belongs here only on those terms.",
+  "claimAttribute": [],
+  "claimAttributeNote": "Empty: exactly three components in this repository emit data-claim, data-claim-id or data-figure-kind \u2014 Claim, Figure and RelativeFigure \u2014 and all three carry data-provenance on the same element.",
+  "exemptNumeral": [],
+  "exemptNumeralNote": "Empty: every element claiming the UI-chrome exemption names one of G1.11's six kinds as a literal, and none of them also carries a claim or figure marker.",
+  "reportBodyRegistrationNote": "746 prose blocks are rendered by the 162 report templates; 71 are registered canonical claims and 675 are not. src/lib/claims/presentation.ts returns a claim only when data/claims.json holds the key it looks up (report.<slug>.summary, report.<slug>.interpretation.rs<rsid>.<sorted genotype>, report.<slug>.study.<identifier>.<field>) and the canonical text_verbatim matches the template string character for character; anything else renders as bare prose with no numbered source link behind it. Closing an entry therefore means, per block: read the source, record it in data/citations.json with its access date and a supporting quotation of 25 words or fewer, and add the claim with text_verbatim identical to the template string and evidence whose accessed_on equals that source's access_date. That is a source review per statement, not a data-entry pass. The two batches that produced today's 71 statements each read the underlying publications and wrote up what they support \u2014 docs/sources/reviews and docs/sources/everyday/review.md \u2014 and between them covered eight reports out of 162.",
+  "reportBodyRegistration": [
+    {
+      "file": "data/templates/addiction.json",
+      "unregisteredBlocks": 39,
+      "totalBlocks": 44,
+      "reports": 10,
+      "summaries": 9,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "One report here is registered: problem-substance-use-faah-rs324420, from the first review batch, whose summary and four study-context paragraphs are canonical claims. Its three genotype interpretations are not \u2014 the first batch registered summaries and study contexts only, and genotype interpretations arrived with the everyday-trait batch \u2014 so the file still reports nine of ten summaries and all thirty interpretations. The other nine reports have never been reviewed.",
+      "closing": "Three interpretation claims for the FAAH report, whose sources are already in the register and are the cheapest registration in the catalogue; then nine reports of source review for the rest.",
+      "blocker": "review \u2014 39 statements need a source read and an access date recorded before they can be registered, and no code change can produce that honestly."
+    },
+    {
+      "file": "data/templates/aesthetic-cosmetic.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "No report in this file has been through source review. Its ten reports carry no study-context prose at all, so the whole body is ten summaries and thirty genotype interpretations, three per report, every one of them rendered bare.",
+      "closing": "Ten reports of source review, then 40 claim entries.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/autoimmune.json",
+      "unregisteredBlocks": 46,
+      "totalBlocks": 46,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 36,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Thirty-six interpretations across ten reports because two of them read two variants rather than one, which is also why this file is the second largest body of unregistered prose after gastrointestinal.",
+      "closing": "Ten reports of source review, then 46 claim entries.",
+      "blocker": "review \u2014 46 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/basic-traits.json",
+      "unregisteredBlocks": 31,
+      "totalBlocks": 63,
+      "reports": 6,
+      "summaries": 6,
+      "interpretations": 21,
+      "studyContexts": 4,
+      "why": "The four everyday-trait reports released by PR72 \u2014 cilantro soapy taste, asparagus odour detection, photic sneeze reflex and earwax type \u2014 are the only fully registered reports in the catalogue, eight blocks each and 32 in all. What is left is the other six reports, plus the four study-context paragraphs of bitter-taste-tas2r38, the fifth report here that carries study prose and was not in the batch. This file also holds the catalogue's only registered DOI source.",
+      "closing": "Six reports of source review, then 31 claim entries. This is the file where the smallest amount of work would produce the first fully registered template.",
+      "blocker": "review \u2014 31 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/brain-health.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
+      "closing": "Ten reports of source review, then 40 claim entries.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/cancer-risk.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed, and this is the category where an unsourced sentence costs a reader the most: every summary and every genotype interpretation about cancer risk currently renders with no citation bound to it.",
+      "closing": "Ten reports of source review, then 40 claim entries. Highest priority of the sixteen on reader harm, not on size.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/environmental-sensitivity.json",
+      "unregisteredBlocks": 49,
+      "totalBlocks": 62,
+      "reports": 11,
+      "summaries": 10,
+      "interpretations": 39,
+      "studyContexts": 0,
+      "why": "skin-uv-sensitivity-slc45a2 is registered from the first review batch \u2014 its summary and twelve study-context paragraphs \u2014 and, as with the rest of that batch, its three genotype interpretations are not. The other ten reports are unreviewed, and eleven reports are affected because the registered one still has interpretations outstanding.",
+      "closing": "Three interpretation claims for the SLC45A2 report against sources already in the register; then ten reports of source review.",
+      "blocker": "review \u2014 49 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/gastrointestinal.json",
+      "unregisteredBlocks": 58,
+      "totalBlocks": 58,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 33,
+      "studyContexts": 15,
+      "why": "Nothing here has been reviewed, and it is the largest single body of unregistered prose in the catalogue: fifteen study-context paragraphs across two reports on top of ten summaries and thirty-three interpretations. Study-context prose is the most citation-bound kind of block there is \u2014 each paragraph describes what a specific study measured \u2014 so unregistered study contexts are the sharpest form of this gap.",
+      "closing": "Ten reports of source review, then 58 claim entries.",
+      "blocker": "review \u2014 58 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/heart-cardiovascular.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
+      "closing": "Ten reports of source review, then 40 claim entries.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/lifestyle-wellness.json",
+      "unregisteredBlocks": 44,
+      "totalBlocks": 44,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 4,
+      "why": "Nothing here has been reviewed. One of the ten reports carries four study-context paragraphs; the rest of the body is ten summaries and thirty interpretations.",
+      "closing": "Ten reports of source review, then 44 claim entries.",
+      "blocker": "review \u2014 44 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/longevity.json",
+      "unregisteredBlocks": 43,
+      "totalBlocks": 43,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 33,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Thirty-three interpretations because one of the ten reports reads two variants rather than one.",
+      "closing": "Ten reports of source review, then 43 claim entries.",
+      "blocker": "review \u2014 43 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/medicines.json",
+      "unregisteredBlocks": 44,
+      "totalBlocks": 44,
+      "reports": 11,
+      "summaries": 11,
+      "interpretations": 33,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Eleven reports, the largest count in any one file, each with a summary and three interpretations. Medicines prose describes how a genotype relates to a drug response, which is the class of statement a reader is most likely to act on, and none of it currently carries a citation.",
+      "closing": "Eleven reports of source review, then 44 claim entries.",
+      "blocker": "review \u2014 44 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/mental-health.json",
+      "unregisteredBlocks": 38,
+      "totalBlocks": 59,
+      "reports": 10,
+      "summaries": 8,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "The two first-batch reports live here: stress-anxiety-comt-rs4680 and mood-stress-resilience-bdnf-rs6265, whose summaries and nineteen study-context paragraphs are registered. Their six genotype interpretations are not, which is why all thirty interpretations still report while only eight of ten summaries do.",
+      "closing": "Six interpretation claims for COMT and BDNF against sources already in the register; then eight reports of source review.",
+      "blocker": "review \u2014 38 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/metabolic-obesity.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
+      "closing": "Ten reports of source review, then 40 claim entries.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/neurodegenerative.json",
+      "unregisteredBlocks": 43,
+      "totalBlocks": 43,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 33,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Thirty-three interpretations because one of the ten reports reads two variants. This file also cites the most distinct sources of any template file, which is the matching entry in templateCitationRegistration below.",
+      "closing": "Ten reports of source review, then 43 claim entries.",
+      "blocker": "review \u2014 43 statements need a source read and an access date recorded."
+    },
+    {
+      "file": "data/templates/reproductive-family.json",
+      "unregisteredBlocks": 40,
+      "totalBlocks": 40,
+      "reports": 10,
+      "summaries": 10,
+      "interpretations": 30,
+      "studyContexts": 0,
+      "why": "Nothing here has been reviewed. Ten summaries and thirty interpretations, three per report, with no study-context prose in the file.",
+      "closing": "Ten reports of source review, then 40 claim entries.",
+      "blocker": "review \u2014 40 statements need a source read and an access date recorded."
+    }
+  ],
+  "templateCitationRegistrationNote": "The 162 templates carry 221 citation references; 20 resolve to an entry in data/citations.json and 201 do not. Across the whole catalogue those 201 references are 177 distinct sources, almost all PMIDs. A reference the register does not hold is a study the product names to a reader with no recorded access date, no supporting quotation and nothing in the repository showing the source was ever opened, which is exactly what C4 exists to prevent. Closing an entry means adding one data/citations.json record per distinct source: id, type, identifier, a URL an independent reader can resolve, the exact access date, a verbatim quotation of 25 words or fewer that supports what the report says, and the claim it supports. A PMID is a permanent identifier, so C4 needs no docs/sources snapshot for it; the quote and the access date still require the record to be opened and read. This group and the report-body group are the same work seen from two sides \u2014 the sources have to exist before the prose above them can be registered \u2014 so the two shrink together.",
+  "templateCitationRegistration": [
+    {
+      "file": "data/templates/addiction.json",
+      "absentSources": 11,
+      "citedSources": 12,
+      "why": "Eleven of twelve references are absent; 11 distinct sources. The one that resolves is the FAAH review batch's own source.",
+      "closing": "11 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/aesthetic-cosmetic.json",
+      "absentSources": 13,
+      "citedSources": 14,
+      "why": "Thirteen of fourteen references are absent; 11 distinct sources, so two of them are cited by more than one report.",
+      "closing": "11 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/autoimmune.json",
+      "absentSources": 14,
+      "citedSources": 14,
+      "why": "Every reference in the file is absent; 13 distinct sources.",
+      "closing": "13 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/basic-traits.json",
+      "absentSources": 11,
+      "citedSources": 15,
+      "why": "Four references resolve \u2014 the everyday-trait batch's sources, including the catalogue's only registered DOI \u2014 and eleven do not; 11 distinct sources outstanding.",
+      "closing": "11 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/brain-health.json",
+      "absentSources": 9,
+      "citedSources": 11,
+      "why": "Nine of eleven references are absent; 9 distinct sources. Two resolve because they are shared with an already reviewed report.",
+      "closing": "9 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/cancer-risk.json",
+      "absentSources": 15,
+      "citedSources": 15,
+      "why": "Every reference in the file is absent, and all fifteen are distinct sources: no cancer-risk report shares a source with another.",
+      "closing": "15 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/environmental-sensitivity.json",
+      "absentSources": 12,
+      "citedSources": 19,
+      "why": "Seven references resolve, all of them the SLC45A2 report's, and twelve do not; 12 distinct sources outstanding.",
+      "closing": "12 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/gastrointestinal.json",
+      "absentSources": 15,
+      "citedSources": 15,
+      "why": "Every reference in the file is absent; 13 distinct sources. This is also the file with fifteen unregistered study-context paragraphs, and those paragraphs describe these very studies.",
+      "closing": "13 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/heart-cardiovascular.json",
+      "absentSources": 11,
+      "citedSources": 11,
+      "why": "Every reference in the file is absent; 10 distinct sources.",
+      "closing": "10 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/lifestyle-wellness.json",
+      "absentSources": 11,
+      "citedSources": 11,
+      "why": "Every reference in the file is absent; 11 distinct sources.",
+      "closing": "11 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/longevity.json",
+      "absentSources": 14,
+      "citedSources": 14,
+      "why": "Every reference in the file is absent; 13 distinct sources.",
+      "closing": "13 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/medicines.json",
+      "absentSources": 13,
+      "citedSources": 13,
+      "why": "Every reference in the file is absent, but only 7 distinct sources: the eleven medicines reports lean on a small shared set, so this is the cheapest file in the group to close and one of the highest-stakes to leave open.",
+      "closing": "7 publications opened, quoted and dated \u2014 the best ratio of registered references to reading in the catalogue.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/mental-health.json",
+      "absentSources": 9,
+      "citedSources": 14,
+      "why": "Five references resolve, from the COMT and BDNF review batch, and nine do not; 8 distinct sources outstanding.",
+      "closing": "8 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/metabolic-obesity.json",
+      "absentSources": 11,
+      "citedSources": 11,
+      "why": "Every reference in the file is absent; 11 distinct sources.",
+      "closing": "11 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/neurodegenerative.json",
+      "absentSources": 17,
+      "citedSources": 17,
+      "why": "Every reference in the file is absent, and all seventeen are distinct sources \u2014 the most of any template file.",
+      "closing": "17 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    },
+    {
+      "file": "data/templates/reproductive-family.json",
+      "absentSources": 15,
+      "citedSources": 15,
+      "why": "Every reference in the file is absent, and all fifteen are distinct sources.",
+      "closing": "15 publications opened, quoted and dated.",
+      "blocker": "review \u2014 a fabricated quotation or access date would be worse than the gap."
+    }
+  ],
+  "designatedSurfaceNote": "G1.11 names seven surfaces whose string blocks must be emitted through the shared claim component with a mandatory citationId. Six of them diverge, in two ways the gate reports separately: a page whose module graph never reaches src/components/claims/claim.tsx cannot be emitting anything through it, and a surface no claim in data/claims.json is bound to has nothing registered to emit. Report bodies are the one designated surface that reaches the component and carries bound claims, which is why they appear in the two groups above rather than this one. All 71 claims name report routes, the account export contract and one mail fixture, so every other surface is unbound by construction.",
+  "designatedSurface": [
+    {
+      "surface": "consent summaries",
+      "kind": "outside-claim-component",
+      "pageModulesOutsideComponent": 5,
+      "pageModules": 5,
+      "why": "The five registered page routes that are this surface \u2014 legal.consents, legal.consent, legal.consent-version, legal.consent-diff and settings.consents \u2014 render their prose from the versioned artifacts in content/legal/** and from src/copy/upload/consent.ts, through the legal page components. No module on any of those five import graphs reaches src/components/claims/claim.tsx, so no consent summary sentence has a citation bound to it. Four of the five are also counted by the legal-pages entry below; the brief designates both surfaces and the overlap is real, not double counting.",
+      "closing": "Route the summary blocks through Claim, which needs each summary to be a canonical claim first. A consent summary's evidence is not a publication: it is the artifact itself and the statute or regulator text behind it, which data/citations.json admits as types statute, registry and regulator \u2014 each of which is a live web page and so needs a local snapshot under docs/sources/ as well.",
+      "blocker": "owner decision \u2014 whether a consent summary sentence is a claim in G1.11's sense, and what a statute or regulator citation looks like for one. Nothing in the tree answers it yet: data/citations.json holds no entry of type statute, registry or regulator at all."
+    },
+    {
+      "surface": "consent summaries",
+      "kind": "unbound",
+      "why": "No claim in data/claims.json names any of the five consent routes. All 71 claims name /genome/[subject]/reports/<slug>, export:account-export-v1, and for eight of them the research-digest mail fixture, so this surface has nothing registered to render.",
+      "closing": "Follows the entry above: the binding exists once the summaries are registered claims. It is listed separately because the two are separately observable \u2014 a surface can reach the component and still have nothing bound to it, and vice versa.",
+      "blocker": "owner decision \u2014 the same one; a claim cannot be bound to a surface before it is decided that its prose is a claim."
+    },
+    {
+      "surface": "glossary definitions",
+      "kind": "unlocatable",
+      "modules": [
+        "src/copy/glossary"
+      ],
+      "why": "This designated surface does not exist in any form. The brief specifies it in three places \u2014 X7.1 makes src/copy/glossary/** its own readability corpus at FK 9.0, line 825 caps src/copy/glossary/allow-list.ts at 60 entries with a named owner in docs/copy-review.md, and line 884 says every glossed term renders as a GlossaryTerm expanding a Disclosure in place \u2014 and the tree has no src/copy/glossary directory, no /glossary route in docs/route-register.json and no file whose name contains glossar. The gate reports it as unlocatable rather than passing it, because a surface with nothing on it is not a clean surface: reading absence as compliance is the exact failure this check exists to prevent.",
+      "closing": "Either build the surface the brief designates \u2014 the corpus under src/copy/glossary/**, the capped allow-list with its named owner, and the route that renders definitions, each definition a registered claim with a citation \u2014 or record the glossary as withheld with the dossier the brief requires for a withheld item.",
+      "blocker": "owner decision \u2014 build it or record it as withheld. The gate cannot choose, and this entry is the placeholder for that decision rather than a coding task waiting to be picked up."
+    },
+    {
+      "surface": "legal pages",
+      "kind": "outside-claim-component",
+      "pageModulesOutsideComponent": 22,
+      "pageModules": 22,
+      "why": "All 22 registered legal page routes render prose written inline in the page modules under src/app/(marketing)/legal/** \u2014 src/app/(marketing)/legal/gina/page.tsx passes whole paragraphs of GINA explanation straight to LegalPage \u2014 or from the versioned artifacts in content/legal/**. None of the 22 import graphs reaches the shared claim component. These pages state what a statute protects and what it leaves out, which is precisely the class of external fact C4 requires a citation, an access date and a supporting quotation for.",
+      "closing": "Split each page's prose into what is Inherit's own policy, which needs no external citation, and what is a statement about law, which needs one of type statute or regulator with a snapshot under docs/sources/. Then render the second kind through Claim.",
+      "blocker": "owner decision \u2014 whether quoted statutory and regulator text should be a registered claim at all. The brief's other half of the answer is a verbatim region: X7.1 and line 1669 exclude text inside data-legal-verbatim from readability scoring entirely, and line 1855 allows controlled medical tokens inside one. No data-legal-verbatim region exists anywhere in src or content today, so the two mechanisms have never been reconciled. It matters concretely, because G1.11 caps a citation quote at 25 words and a quoted statutory passage will exceed that \u2014 a verbatim region and a registered claim cannot both be the answer for the same sentence."
+    },
+    {
+      "surface": "legal pages",
+      "kind": "unbound",
+      "why": "No claim in data/claims.json names any legal route, so there is nothing registered for these 22 pages to emit.",
+      "closing": "Follows the entry above and the decision it names.",
+      "blocker": "owner decision \u2014 the same verbatim-region question decides how much of these pages should ever be bound claims."
+    },
+    {
+      "surface": "Copilot system prompts",
+      "kind": "unbound",
+      "why": "The prompt the brief designates is the SYSTEM_PROMPT template literal in src/app/api/chat/route.ts, sent as the model's system message by src/lib/copilot/own-chat-route.ts. It states hard rules about what the model may assert \u2014 informational never diagnostic, association and probability shift with effect sizes \u2014 which are claims about how genetics works, phrased as instructions. The surface is not markup, so the only question the gate can ask is whether that prose is registered, and no claim is bound to it. It also cannot be bound as things stand: a claim surface locator is a page route path, export:<contract> or email:<file>, and a system prompt is none of the three, so there is no locator that names it.",
+      "closing": "Two decisions before any code: whether a system prompt's rules are claims in G1.11's sense, and, if so, what locator form names a prompt so data/claims.json can bind to one. Then the prompt prose moves somewhere registered \u2014 src/copy/copilot/ already holds the refusal strings that ship character for character \u2014 and each rule becomes a claim with its source.",
+      "blocker": "owner decision \u2014 is a system prompt's prose a claim, and what surface locator names it? Neither the brief nor docs/route-register.json gives one, and inventing a locator grammar to make a gate go green would be the wrong order of work."
+    },
+    {
+      "surface": "the embryo comparison",
+      "kind": "outside-claim-component",
+      "pageModulesOutsideComponent": 1,
+      "pageModules": 1,
+      "why": "/embryos/compare renders from src/copy/embryos/compare.ts and the components under src/components/embryo/compare/, and neither reaches the shared claim component. The copy module already names its blocks with ids in the shape a claim_id takes \u2014 embryo.standing-statement, embryo.within-family.not-tested \u2014 and no claim of either name exists in data/claims.json, so the naming is a convention rather than a binding. The prose is claim-shaped in the strongest sense the product has: the standing statement asserts that no child has been born and followed up after embryos were compared this way, and the within-family sentences assert what has and has not been measured between siblings. docs/capability-register.md carries embryo comparison as not shipped and no ingest path creates a cohort, which is why the gap has not been felt by a reader yet.",
+      "closing": "Register the fixed sentences as canonical claims with their sources and render them through Claim. The mandated strings ship character for character already, so the text_verbatim match is the easy half; the evidence is the work.",
+      "blocker": "review \u2014 the standing statement is an assertion about the absence of outcome data, and citing an absence needs a source read and an owner willing to say which source establishes it."
+    },
+    {
+      "surface": "the embryo comparison",
+      "kind": "unbound",
+      "why": "No claim in data/claims.json names /embryos/compare.",
+      "closing": "Follows the entry above.",
+      "blocker": "review \u2014 the same source work; the binding is the last step of it, not a separate one."
+    },
+    {
+      "surface": "the future-child preview",
+      "kind": "outside-claim-component",
+      "pageModulesOutsideComponent": 1,
+      "pageModules": 1,
+      "why": "/family/portrait/[pairId] renders from src/copy/family/portrait.ts through the components under src/components/family/portrait/, none of which reaches the shared claim component. Two of its mandated strings are clinical statements about the world with no citation bound to them: the anti-D sentence, which tells a reader that an RhD-negative pregnant parent with an RhD-positive partner may need an injection and that this is routine care, and the sentence saying a blood test at any clinic can determine RhD where the file cannot. The trait cards are the honest counter-case and should not be read as part of this gap: every entry in the allowlist is unregistered today precisely because no accuracy figure can be cited, and each card says so and renders no figure and no claim block.",
+      "closing": "Register the clinical sentences as canonical claims against a registry or regulator source for routine anti-D prophylaxis, and render them through Claim. The trait cards need nothing until a genotype-to-phenotype table with a citable accuracy figure exists, at which point they need both.",
+      "blocker": "review \u2014 the anti-D sentence needs a human to choose and read a clinical guideline, record its access date and quote 25 words or fewer of it. It is the one place in this ledger where the missing citation is about immediate physical care."
+    },
+    {
+      "surface": "the future-child preview",
+      "kind": "unbound",
+      "why": "No claim in data/claims.json names /family/portrait/[pairId].",
+      "closing": "Follows the entry above.",
+      "blocker": "review \u2014 the same source work."
+    }
+  ]
+}

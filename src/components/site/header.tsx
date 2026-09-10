@@ -20,7 +20,14 @@ export async function SiteHeader() {
     // Solid bg-paper (not /90 + blur): content scrolling under the sticky
     // header must never bleed through, especially at high zoom levels.
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3.5">
+      {/* Wraps rather than scrolls. At a 320 CSS px viewport - the brief's
+          support floor - the wordmark, the theme toggle and the two auth
+          controls need 344px, so every marketing page scrolled sideways by
+          24px and failed WCAG 2.1 SC 1.4.10 (measured: 31 routes, all this one
+          element). Hiding a control would have fixed the measurement by
+          hiding a destination, which is what the mobile nav below already
+          refuses to do; wrapping keeps every destination reachable. */}
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3.5">
         <div className="flex items-baseline gap-3">
           <Wordmark />
           {/* Tagline only when there is genuinely room for one line: at

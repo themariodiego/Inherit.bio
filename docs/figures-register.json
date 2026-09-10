@@ -5,7 +5,9 @@
     "A": "e2e/fixtures/aims-mixed-grch38.vcf (ancestry)",
     "B": "e2e/fixtures/aims-mixed-b-grch38.vcf (ancestry)",
     "report-A": "e2e/fixtures/tiny-grch38.vcf",
-    "report-B": "e2e/fixtures/tiny-b-grch38.vcf"
+    "report-B": "e2e/fixtures/tiny-b-grch38.vcf",
+    "family-pair-A": "e2e/fixtures/carrier-pair-grch38.vcf (both adults of pair A)",
+    "family-pair-B": "e2e/fixtures/carrier-pair-b-grch38.vcf (both adults of pair B)"
   },
   "seedInvariant": [
     {
@@ -33,6 +35,31 @@
       "reason": "`searchRsid` builds a one-element `hits` array, so `needed` is 1 on the rsID path for every genome, and the row it builds comes from a `user_variants` record — a called difference — so `read` is 1 as well. The two states that would lower it, a no-call and files that disagree, cannot arise here: a `./.` line never becomes a `user_variants` row, and disagreement needs a second file. A region search does move this figure, because its window can hold any number of rows; that path is not what this surface is compared on. Registered rather than dropped from collection because a `needed` other than 1 would mean the rsID path had stopped returning a single row."
     }
   ],
+  "seedInvariantShapeValues": [
+    {
+      "surface": "/family/health-picture",
+      "shape": "coverage|quality|observed|computed:genome/reports",
+      "name": "a report's own position coverage, once per cell of the side-by-side table",
+      "spec": "e2e/figures-two-seed.spec.ts",
+      "seeds": [
+        "e2e/fixtures/carrier-pair-grch38.vcf",
+        "e2e/fixtures/carrier-pair-b-grch38.vcf"
+      ],
+      "figures": 324,
+      "values": {
+        "read 0 of the 1 positions this needs": 298,
+        "read 1 of the 1 positions this needs": 10,
+        "read 0 of the 2 positions this needs": 14,
+        "read 1 of the 2 positions this needs": 2
+      },
+      "reason": "This shape is one report's position coverage, rendered once in every cell of the two tables: 162 reports by 2 people. It is the one figure this surface carries that two files describing two different people cannot move, and the reason is structural rather than a property of these two pairs. A cell renders exactly one `genotype` figure per position the report read as a genotype (`src/components/family/health-picture-cell.tsx`, `figuresFor`), while `read` counts those positions plus any position read as unrecognised (`src/lib/family/health-picture-projection.ts`: `read` counts `genotyped` or `unrecognized`, `genotypes` counts `genotyped` alone). This gate requires both seeds to render the same figures, which fixes how many genotype figures a cell holds and therefore how many of its positions were read as genotypes; `read` can then differ between two seeds only through the unrecognised term — a file whose letters at a report position that report has no interpretation for. That is a defect in one file, not a second person, and writing 298 of them into a fixture to make this figure move would be inventing a broken file to make a gate green. The other way to move it — giving one pair's files positions the other pair's files do not cover — changes which cells render letters and so which genotype figures exist at all: a structural difference between two surfaces rather than a different value on one, which is the difference this gate explicitly is not about. `needed` cannot move either: it is the report template's own variant count.",
+      "whyShapeLevel": "Once every cell carries its own identity (`data-cell`, so a figure can say which report and which person it is a claim about), each of these 324 figures has a distinct key, and the per-figure `seedInvariant` list above would need 324 rows saying the same sentence. The reason is a property of the shape on this surface, not of any one cell, so it is recorded once. This is a different record from `seedInvariantShapes` in `e2e/figure-differencing.ts`, which matches a shape *including* its identifying ancestor and therefore cannot express \"every figure of this kind here\" now that the ancestor is unique per cell.",
+      "howAnOverBroadEntryShows": "`figures` is what the surface renders of this shape and the counts under `values` are what this entry excuses, so the record reads 324 of 324 — the whole shape — and says so in the open instead of hiding it behind 324 separate rows. Nothing is exempted by shape alone: a figure is exempt only if it reads one of the exact strings listed, under both seeds. Anything else of this shape must move like any other figure.",
+      "bothDirections": "`e2e/figures-two-seed.spec.ts` compares the measured histogram of what this shape reads under both seeds against `values` with an equality assertion, so a value no figure reads any more fails as loudly as a figure reading a value not listed, and `figures` is asserted against the count the surface actually renders. Removing the underlying reason — a fixture that covers a different set of reports, a cell that stops rendering one genotype figure per genotyped position — forces this record to be rewritten rather than quietly widening it (the convention of docs/route-divergence.json, docs/claims-divergence.json and docs/accessibility-divergence.json).",
+      "measured": "2026-09-10, by the run in `e2e/figures-two-seed.spec.ts`. 298 of the 324 read `read 0 of the 1 positions this needs`: 149 of the 154 one-position reports are covered by neither pair's files. The 10 reading `read 1 of the 1` are the five one-position reports both pairs do cover (alcohol-dependence and alcohol-flush at rs671, sprint-power and muscle-composition at rs1815739, caffeine-metabolism at rs762551), and the 16 two-position figures are the eight two-position reports, of which only lactase-persistence is covered at all, at one of its two positions."
+    }
+  ],
+  "seedInvariantShapeRule": "A whole shape of figure on one surface, recorded with the exact strings every figure of that shape reads under both seeds and how many read each. It exists because a surface can render hundreds of figures of one shape for one structural reason, and 324 identical per-figure rows would state that reason 324 times while making it harder, not easier, to see how much of the surface is excused. Each entry must name the shape's own reason, declare how many figures of that shape the surface renders, and list every value it excuses with a count; the spec holds all of it in both directions.",
   "crossSurface": {
     "rule": "G8.6: every figure that appears on more than one surface is listed here with its single source of truth, and the gate fails when the same figure key renders two different values in one run.",
     "spec": "e2e/figures-cross-surface.spec.ts",

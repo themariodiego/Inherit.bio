@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { createConfirmedUser, signIn } from "./helpers";
+import { createConfirmedUser, expectAxeClean, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 // Sensitive-report gate — reports in life-altering categories (cancer-risk,
@@ -144,6 +144,47 @@ test("'Not now' returns to the library at the report's category section", async 
   await page.getByRole("link", { name: "Not now" }).click();
   await page.waitForURL(/\/genome\/me\/reports\?layer=estimate#cancer$/);
   await expect(page.locator("#cancer")).toBeVisible();
+});
+
+/**
+ * G1.13a asks for "every gated result in both gated and revealed states", and
+ * this is where those two states are already driven, so the audit lives here
+ * rather than in `e2e/a11y.spec.ts`, whose sweep can only reach the ungated
+ * shape of a report page.
+ *
+ * Every gated *result* is not every gated template: thirty templates are
+ * gated, and they render two shapes between them. The gated shape is the
+ * `SensitiveGate` interstitial, whose only per-template variation is the
+ * category it names ("applies to all Neurodegenerative reports"), so one
+ * report from each of the three gated categories covers every gate a person
+ * can meet. The revealed shape is the ordinary report body, which the a11y
+ * sweep already audits at `/genome/[subject]/reports/[slug]`; it is audited
+ * again here because the revealed page also carries the support panel, which
+ * exists only after a reveal and appears on no ungated report.
+ *
+ * `expectAxeClean` is the same bar as everywhere else: both themes, the three
+ * pinned viewports, reduced motion, zero violations of any impact.
+ */
+const GATED_BY_CATEGORY: Record<string, string> = {
+  neurodegenerative: "apoe-e4-alzheimers-risk",
+  "cancer-risk": FGFR2_SLUG,
+  "mental-health": "stress-response-fkbp5-rs1360780",
+};
+
+test("every gated category is accessible gated and revealed", async ({ page }) => {
+  test.setTimeout(600_000);
+  await signIn(page, USER.email, USER.password);
+  for (const [category, slug] of Object.entries(GATED_BY_CATEGORY)) {
+    // A report that stopped gating would make this audit measure an ordinary
+    // page and report a pass, so the state is asserted before it is audited.
+    await page.goto(`/genome/me/reports/${slug}`);
+    await expect(page.getByTestId("sensitive-gate"), `${category} gates its result`).toBeVisible();
+    await expectAxeClean(page);
+    await page.goto(`/genome/me/reports/${slug}?reveal=1`);
+    await expect(page.getByTestId("sensitive-gate"), `${category} reveals`).toHaveCount(0);
+    await expect(page.getByTestId("support-panel"), `${category} offers support`).toBeVisible();
+    await expectAxeClean(page);
+  }
 });
 
 test("non-sensitive report shows its result directly, with no gate", async ({
