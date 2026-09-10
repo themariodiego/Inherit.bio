@@ -19,6 +19,18 @@
       "key": "coverage|quality|observed|computed:genome/reports|-|1",
       "name": "the report's own position coverage",
       "reason": "This report reads one position. While it renders at all that position is covered, so the figure is 'read 1 of the 1 positions this needs' for every genome; an uncovered position does not produce a lower number, it produces the not-covered state and no genotype figure to compare. Registered rather than dropped from collection because a number other than 1 of 1 would mean the report had changed which positions it reads."
+    },
+    {
+      "surface": "/genome/me/reports",
+      "key": "coverage|quality|observed|computed:genome/reports|-|1",
+      "name": "the alcohol-flush preview's position coverage",
+      "reason": "This block renders once per report that produced a personal preview, and a preview exists only when that report's one trait position was read. `alcohol-flush-aldh2-rs671` reads a single position, so while its preview is on the page the figure is 'read 1 of the 1 positions this needs' for every genome; an unread position does not lower the number, it removes the preview and this figure with it. Ordinal 1 is that report because the library is ordered by category then title and 'Alcohol flush reaction · ALDH2' sorts before 'Lactose tolerance · LCT/MCM6' within gastrointestinal. Registered rather than dropped from collection because a number other than 1 of 1 would mean the report had changed which positions it reads. The other block on this surface, ordinal 2, is the lactase report's coverage and does move: 'read 1 of the 2' under seed A against 'read 2 of the 2' under seed B, which carries rs182549."
+    },
+    {
+      "surface": "/genome/me/data/browser?q=rs762551",
+      "key": "coverage|quality|observed|computed:genome/browser|-|1",
+      "name": "the search result's own coverage",
+      "reason": "`searchRsid` builds a one-element `hits` array, so `needed` is 1 on the rsID path for every genome, and the row it builds comes from a `user_variants` record — a called difference — so `read` is 1 as well. The two states that would lower it, a no-call and files that disagree, cannot arise here: a `./.` line never becomes a `user_variants` row, and disagreement needs a second file. A region search does move this figure, because its window can hold any number of rows; that path is not what this surface is compared on. Registered rather than dropped from collection because a `needed` other than 1 would mean the rsID path had stopped returning a single row."
     }
   ]
 }

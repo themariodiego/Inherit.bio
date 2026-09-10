@@ -77,25 +77,54 @@ personal genome data.
   G8.3's two-seed differencing on the report surface. It describes no real
   person, and describes a different one from `tiny-grch38.vcf`: it carries the
   same four positions with genotypes chosen here by hand so that every figure
-  the report surface renders has to move, plus one further record so the file's
-  own record count differs too. No genotype was read from any person or sample.
+  the report surfaces render has to move, plus thirteen further positions whose
+  coordinates are read from the committed report and score panels. Every
+  genotype in the file is invented here; none was read from any person or
+  sample.
 - Against seed A: `rs4988235` 0/1 where A is 1/1, `rs1815739` 1/1 where A is
   0/1, and `rs762551` 1/1 where A is 0/1.
-- The fifth row is an unnamed SNV at chr11:66561000, a position no report
-  template uses. It is here so the input-provenance figure — which counts the
-  file's own supported records — differs between the seeds. That figure
-  describes the upload rather than the science, and two people's files
-  legitimately carry different record counts, so a differencing gate should see
-  it move; registering it as seed-invariant would have recorded a limitation of
-  these fixtures as a property of the product.
-- `rs671` is 0/0 in both, and that is deliberate rather than an oversight. The
-  VCF parser drops homozygous-reference rows, so the position is uncovered
-  under either seed and renders no figure to compare. Giving it a called
-  genotype under one seed only would make the two surfaces differ in which
-  figures exist, which is a structural difference and not the value difference
-  this gate is about.
+- The further position is `rs182549` at chr2:135859184, the second position
+  the lactase-persistence report reads. Seed A does not carry it, so this one
+  row moves two figures at once. The input-provenance figure counts the file's
+  own supported records and reads four against five: that figure describes the
+  upload rather than the science, two people's files legitimately carry
+  different record counts, and a differencing gate should see it move. And the
+  lactase report's own coverage figure moves with it, from "read 1 of the 2
+  positions this needs" under seed A to "read 2 of the 2" here.
+- It replaced an unnamed SNV at chr11:66561000 that no template used. That row
+  moved the record count and nothing else, leaving the lactase coverage figure
+  identical under both seeds; registering it as seed-invariant would have
+  recorded a limitation of these fixtures as a property of the product.
+- The remaining twelve positions are drawn from the three PGS panels shipped
+  under `data/prs/`: three from PGS000011 (rs515135, rs2028900, rs2252641),
+  four from PGS000115 (rs11553746, rs1367117, rs17189743, rs1062062) and five
+  from PGS004602 (rs10188334, rs11680058, rs7558413, rs34845373, rs72803684).
+  Each row takes its chromosome, GRCh38 position and the two alleles from that
+  panel's own entry — REF is the panel's other allele and ALT its effect
+  allele — and is called 0/1 here, so each counts once towards that panel's
+  matched positions. Seed A carries none of them, so `/genome/me/data` reads
+  "read 0 of the 50", "read 0 of the 223" and "read 0 of the 424" under seed A
+  against 3, 4 and 5 here. Without them all three figures were identical under
+  both genomes, and no honest register entry covers that: panel coverage can
+  move, these two files simply never made it. The twelve are chosen to be
+  unambiguous and disjoint — no palindromic effect/other pair, since the score
+  engine skips those; no position used by a report template, a personal-preview
+  trait or another of the three panels; and at least 50 kb from every other
+  position in the file, so no locus window in the variant browser holds two of
+  them.
+- `rs671` is 0/0 in both, and that is deliberate rather than an oversight. It
+  is read rather than dropped: `user_variants` holds no homozygous-reference
+  row, but the report surfaces read the canonical prepared source, which keeps
+  reference calls, so both seeds read `rs671` as G/G. It therefore renders the
+  same alcohol-flush preview and the same "read 1 of the 1 positions this
+  needs" under either seed. That figure is listed in `docs/figures-register.json`
+  for the reason it cannot move — a one-position report's coverage is 1 of 1
+  whenever it renders at all, because an unread position removes the preview and
+  the figure with it — not because these two fixtures happen to agree. Giving
+  `rs671` a called genotype under one seed only would change that report's prose
+  without moving any figure.
 - Repository SHA-256:
-  `964643cb6ec643c1e4d948cb998ff4f46394b79aa968b1c8946bb9f413aa8fc8`.
+  `6f1ea0c90496530e772b50b9291fd77ea1dde3d55a84196e080bdfc4b2156a5a`.
 
 ## aims-mixed-grch38.vcf
 
