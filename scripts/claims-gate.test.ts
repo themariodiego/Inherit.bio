@@ -149,15 +149,38 @@ describe("the claims gate holds the registers to the product", () => {
     expect(result.failures.filter((line) => /expected over/.test(line))).toEqual([]);
   });
 
-  it("runs green against the committed ledger, outside the provenance defects being fixed", () => {
+  it("runs green against the committed ledger", () => {
     // The whole point of the ledger: every divergence this repository carries
     // is recorded, in both directions, so nothing but a real regression can
-    // fail this gate. Figure provenance is excluded deliberately — the
-    // findings there are correctness bugs under repair in src/, not accepted
-    // divergences, and docs/claims-divergence.json says so and lists none.
+    // fail this gate.
     const { failures } = runClaimsGate(REPOSITORY_ROOT);
-    expect(failures.filter((line) => !line.startsWith("figure provenance:"))).toEqual([]);
-    expect(readClaimsLedger(REPOSITORY_ROOT)["figure provenance"]).toEqual([]);
+    expect(failures).toEqual([]);
+  });
+
+  it("keeps figure provenance a group of accepted divergences, never of defects", () => {
+    // This group is the one that must not become a parking bay. Four of its
+    // five original findings named modules nobody had written, or could emit an
+    // empty citation id; those are correctness bugs and were fixed in src/
+    // rather than listed, because a provenance attribute rendering the name of
+    // a module that does not exist is a provenance string, not provenance.
+    //
+    // Exactly one entry is accepted, and only because it cannot be otherwise: a
+    // within-family figure's citation is the publication its stored numbers
+    // were measured under, so the id comes from the row and can never be a
+    // literal. Its `why` has to say that, so a later entry cannot be added
+    // silently on weaker grounds - this assertion is what makes someone write
+    // the reason down.
+    // readClaimsLedger returns the rebuilt finding sentences; the reasons live
+    // only in the file, and it is the reasons this test is really guarding.
+    const recorded = readClaimsLedger(REPOSITORY_ROOT)["figure provenance"];
+    expect(recorded).toHaveLength(1);
+    expect(recorded[0]).toContain("compare-cell.tsx");
+    const entries = JSON.parse(
+      readFileSync(path.join(REPOSITORY_ROOT, "docs/claims-divergence.json"), "utf8"),
+    ).figureProvenance as { why: string; closing: string }[];
+    expect(entries).toHaveLength(1);
+    expect(entries[0].why).toMatch(/runtime value by construction|comes on the|cannot be a literal/);
+    expect(entries[0].closing).toMatch(/Nothing to close in src\//);
   });
 
   it("records every divergence the ten checks report, and nothing else", () => {
