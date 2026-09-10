@@ -215,8 +215,26 @@ async function main() {
         failures.push(`${route}: unreachable — ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
+      // Scope to the <main> landmark. The site header and footer are on every
+      // page, so the nav's "Get started" link would otherwise be reported as a
+      // call to action on all seventeen legal routes at once — seventeen copies
+      // of one finding about the chrome, saying nothing about the legal text
+      // underneath it. X6.1 excludes persistent navigation from its budgets for
+      // the same reason.
+      //
+      // A missing landmark fails rather than falling back to the whole
+      // document. The fallback is the tempting version and it is the wrong one:
+      // it would quietly restore the header-matching behaviour on exactly the
+      // page that lost its landmark, and the gate would go green while checking
+      // the wrong text.
+      const start = html.indexOf("<main");
+      const end = html.lastIndexOf("</main>");
+      if (start === -1 || end === -1 || end < start) {
+        failures.push(`${route}: no <main> landmark — cannot separate the document from the site chrome`);
+        continue;
+      }
       // Strip tags/scripts so we test the rendered text, not code.
-      const text = html
+      const text = html.slice(start, end)
         .replace(/<script[\s\S]*?<\/script>/g, "")
         .replace(/<style[\s\S]*?<\/style>/g, "")
         .replace(/<[^>]+>/g, " ");
