@@ -1,6 +1,5 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { adminClient, createConfirmedUser, firstViewportInteractives, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, expectAxeClean, firstViewportInteractives, signIn } from "./helpers";
 import { NO_COHORT_SENTENCE, STANDING_STATEMENT } from "@/copy/embryos/compare";
 import {
   EMPTY_HEADING,
@@ -109,20 +108,6 @@ async function expectNoSexOrRank(page: Page) {
   expect(await page.locator("main").innerHTML()).not.toMatch(NO_SEX);
 }
 
-async function expectAxeClean(page: Page) {
-  for (const theme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme: theme });
-    await page.reload();
-    await page.waitForLoadState("networkidle");
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, theme, help: violation.help })),
-    ).toEqual([]);
-  }
-  await page.emulateMedia({ colorScheme: "light" });
-}
 
 async function expectEveryLinkAnswers(page: Page) {
   const hrefs = await page.locator("main a[href^='/']").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")!));

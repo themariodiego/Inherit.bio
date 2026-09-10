@@ -1,4 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -8,6 +7,7 @@ import path from "node:path";
 import {
   adminClient,
   createConfirmedUser,
+  expectAxeClean,
   firstViewportInteractives,
   signIn,
 } from "./helpers";
@@ -189,20 +189,6 @@ async function passGate(page: Page) {
 }
 
 /** Axe in both themes, each on a fresh load in that theme (D-025). */
-async function expectAxeClean(page: Page) {
-  for (const theme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme: theme });
-    await page.reload();
-    await page.waitForLoadState("networkidle");
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, theme, help: violation.help })),
-    ).toEqual([]);
-  }
-  await page.emulateMedia({ colorScheme: "light" });
-}
 
 /** The finding texts of the page: every `[data-finding]` node, in document order. */
 async function findingTexts(page: Page): Promise<string[]> {

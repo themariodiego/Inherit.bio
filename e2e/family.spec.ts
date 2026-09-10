@@ -1,4 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
@@ -8,6 +7,7 @@ import {
   JOBS_SECRET,
   adminClient,
   createConfirmedUser,
+  expectAxeClean,
   firstViewportInteractives,
   signIn,
 } from "./helpers";
@@ -154,27 +154,6 @@ async function expectNoResults(page: Page) {
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
 }
 
-/**
- * Axe in both themes, each on a fresh load in that theme, as every other
- * spec does: the theme provider flips the class on the live page and the
- * chrome animates its colours, so an audit taken on a page that was loaded
- * in the other theme samples mid-transition colours.
- */
-async function expectAxeClean(page: Page) {
-  for (const theme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme: theme });
-    await page.reload();
-    await page.waitForLoadState("networkidle");
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, theme, help: violation.help })),
-    ).toEqual([]);
-  }
-  await page.emulateMedia({ colorScheme: "light" });
-}
-
 test("/family signed out keeps the two required panels ahead of any sign-in wall", async ({
   page,
 }) => {
@@ -311,6 +290,11 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   // B accepts through their own account.
   await page.request.post("/auth/sign-out");
   await page.goto(invitationUrl!);
+  // `/withdraw/[token]` is a registered page whose only real URL is the one an
+  // invitation issues, so `e2e/a11y.spec.ts` cannot reach it and its audit is
+  // here, at the same bar. Read-only: the raw token is consumed by
+  // `api.rights-activate`, never by a page load.
+  await expectAxeClean(page);
   await page.getByRole("link", { name: "Sign in to accept" }).click();
   await page.getByLabel("Email").fill(B.email);
   await page.getByLabel("Password").fill(B.password);
@@ -420,6 +404,13 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   expect(grantsAfter.map(row => row.purpose)).toEqual(["family.portrait", "reports.polygenic"]);
   expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
   await expectOwnSourceAndGrantPreserved();
+
+  // The permissions page in both themes, on the state a person actually
+  // reaches it in: both columns populated, one row settable and one locked.
+  // `/family/[person]/permissions` is a registered authenticated page and
+  // `e2e/a11y.spec.ts` cannot build two accounts and an accepted invitation,
+  // so its coverage is here, at the same bar.
+  await expectAxeClean(page);
 });
 
 test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's own subject", async ({
@@ -480,6 +471,13 @@ test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's ow
   }
   // The layer B did not share is absent, and said once.
   await expect(page.getByText(`${B_AS_SEEN_BY_A} has not shared Specific variants with you.`)).toBeVisible();
+  await expect(page.getByText(BASELINE_ABSENT, { exact: true })).toHaveCount(1);
+
+  // The person page in both themes, past the gate and showing the shared
+  // layer — the other registered authenticated page `e2e/a11y.spec.ts` cannot
+  // reach. The Tier-2 acknowledgement is session-scoped, so it survives the
+  // reload each theme takes.
+  await expectAxeClean(page);
   await expect(page.getByText(BASELINE_ABSENT, { exact: true })).toHaveCount(1);
 
   for (const viewport of VIEWPORTS) {

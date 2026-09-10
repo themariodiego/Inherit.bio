@@ -67,8 +67,9 @@ test("every figure that appears on more than one surface shows one value, from o
 
   // Every surface's figure count is registered, so a surface that gains a
   // figure has to be looked at rather than silently joining the comparison.
-  // `/genome/me` is registered at zero: the overview renders no figure at all,
-  // which is a product gap recorded in the register, not a broken collector.
+  // `/genome/me` is registered at zero because the brief makes it a three-tile
+  // router rather than a result surface, so a figure appearing there is a
+  // change worth seeing rather than a collector fault.
   expect.soft(CROSS.surfaces.map(({ surface }) => [surface, collected.get(surface)!.length]),
     "each surface renders the number of figures docs/figures-register.json records")
     .toEqual(CROSS.surfaces.map(({ surface, figures }) => [surface, figures]));

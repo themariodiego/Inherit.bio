@@ -1,9 +1,8 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { createConfirmedUser, signIn } from "./helpers";
+import { axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
 // Ancestry surface (`/genome/[subject]/ancestry`; brief §4.6, A.8, G4.4,
@@ -254,12 +253,7 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
     await page.emulateMedia({ colorScheme: theme });
     await page.goto(ANCESTRY);
     await page.waitForLoadState("networkidle");
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, impact: violation.impact, theme, help: violation.help })),
-    ).toEqual([]);
+    expect(await axeViolations(page, theme), `${ANCESTRY} (${theme})`).toEqual([]);
   }
 });
 

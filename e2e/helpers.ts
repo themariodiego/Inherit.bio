@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import assert from "node:assert/strict";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -253,4 +254,41 @@ export async function firstViewportInteractives(page: Page): Promise<string[]> {
     }
     return found;
   });
+}
+
+export type AxeTheme = "light" | "dark";
+
+/**
+ * Every WCAG 2.1 A/AA violation on the page as it stands, in the shape the
+ * assertions print.
+ *
+ * One definition, because five specs each carried their own copy of the audit
+ * and four of them filtered it down to `serious` and `critical`. That filter
+ * is not a smaller version of the same check: a `moderate` violation is still
+ * a WCAG failure, and the public-route sweep in `e2e/a11y.spec.ts` has always
+ * required zero of any impact. So the Family, Portrait, Embryo and Copilot
+ * surfaces were held to a lower bar than every marketing page, silently,
+ * because the bar lived in each spec rather than in one place.
+ */
+export async function axeViolations(page: Page, theme: AxeTheme) {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  return results.violations.map(violation => ({
+    id: violation.id, theme, nodes: violation.nodes.length, help: violation.help,
+  }));
+}
+
+/**
+ * Axe in both themes, each on a fresh load in that theme: the theme provider
+ * flips the class on the live page and the chrome animates its colours, so an
+ * audit taken on a page loaded in the other theme samples mid-transition
+ * colours. Leaves the page in light, as it found it.
+ */
+export async function expectAxeClean(page: Page) {
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page, theme), `${new URL(page.url()).pathname} (${theme})`).toEqual([]);
+  }
+  await page.emulateMedia({ colorScheme: "light" });
 }
