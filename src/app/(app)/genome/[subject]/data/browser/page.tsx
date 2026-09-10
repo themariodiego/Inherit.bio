@@ -432,6 +432,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
                 figures={specs}
                 aria-label={resultsLabel(q)}
                 className="overflow-x-auto p-0"
+                scrollable
                 renderFigures={(nodes) => (
                   <table className="w-full min-w-[36rem] text-left text-sm">
                     <thead>

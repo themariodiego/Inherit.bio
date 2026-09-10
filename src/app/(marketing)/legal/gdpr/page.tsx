@@ -77,7 +77,17 @@ export default function GdprPage() {
                 genome-derived data. A grant for one row does not enable any
                 other row.
               </p>
-              <div className="overflow-x-auto">
+              {/* The table is wider than a phone, so this container scrolls.
+                  A scrolling container that nothing can focus is unreachable
+                  by keyboard: axe `scrollable-region-focusable`, found at
+                  320x568 and 390x844 once the audit gained the viewports the
+                  brief pins. Focusable and named by its own section heading. */}
+              <div
+                className="overflow-x-auto"
+                role="region"
+                aria-labelledby="purpose-table-heading"
+                tabIndex={0}
+              >
                 <table className="w-full border-collapse text-left">
                   <thead>
                     <tr className="border-b border-line">

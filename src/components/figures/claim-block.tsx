@@ -58,6 +58,16 @@ export interface ClaimBlockProps {
   denominator?: ForcedDenominator;
   children?: ReactNode;
   className?: string;
+  /**
+   * The block is itself the horizontally scrolling container (its className
+   * carries `overflow-x-auto`), so it has to be reachable by keyboard: a
+   * scrolling region nothing can focus cannot be scrolled without a pointer
+   * (axe `scrollable-region-focusable`). Opt-in rather than automatic,
+   * because an ordinary claim block is not a scroller and would become a tab
+   * stop for nothing. Requires `aria-label`, which makes the section a named
+   * region rather than an unlabelled one.
+   */
+  scrollable?: boolean;
 }
 
 export function ClaimBlock({
@@ -69,6 +79,7 @@ export function ClaimBlock({
   denominator,
   children,
   className,
+  scrollable,
 }: ClaimBlockProps) {
   const summary = claimBlock(figures, denominator === undefined ? {} : { denominator });
   const nodes = figures.map((spec, index) => (
@@ -82,6 +93,7 @@ export function ClaimBlock({
       {...subjectAttributes(subject)}
       data-density-primary-claim={densityPrimaryClaim ? "true" : undefined}
       aria-label={ariaLabel}
+      tabIndex={scrollable ? 0 : undefined}
       className={cn("rounded-2xl border border-line bg-card p-4 text-ink", className)}
     >
       {renderFigures ? (
