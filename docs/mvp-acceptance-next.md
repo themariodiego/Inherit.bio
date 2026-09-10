@@ -5,6 +5,101 @@ Full-plan acceptance is **23/65**, after G2.7 closed on CI run 334.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+## Resumption handoff · 10 September 2026, evening
+
+Acceptance is **23/65** and did not move. Five gates gained real enforcement or
+real measurement, and every one of them stayed NO for a reason now written into
+its row. That is the honest outcome of the stretch, not a shortfall to explain
+away: the work closed defects and built the instruments that measure the
+distance, and the distance is still there.
+
+### What landed, verified
+
+- **`pnpm gate:routes`** (CI run 339). The register was binding for 160 routes
+  and nothing enforced it. Five checks now do: declared against exported
+  methods, registered against emitted redirect status, registered against built
+  kind at 101 concrete paths, declared against created storage buckets, and the
+  288-pair (route, state) matrix as a ratchet at 5 proven. Found and fixed
+  `/signup` and `/login` emitting 307 against a registered 308.
+- **`pnpm gate:claims`** with `docs/claims-divergence.json`. Ten checks; six
+  find nothing, which is the registers being sound rather than the gate being
+  weak. Records 675 of 746 report-body prose blocks unregistered, 201 template
+  citations absent (177 distinct sources), six of seven designated surfaces not
+  reaching the shared claim component.
+- **`TRUNCATE` revoked from the browser roles** (CI run 343). `anon` and
+  `authenticated` each held it on 15 tables including `user_variants`,
+  `profiles` and `consent_grants`. Row-level security never sees TRUNCATE, so a
+  role that could not read one row could empty the table. Reproduced, fixed,
+  and 172 pgTAP assertions across four new attack files now hold the boundary.
+- **The accessibility matrix the brief pins** (CI run 343): six tag sets against
+  two, three viewports against one, reduced motion, both gated states. Found
+  four auth pages with no landmarks and three tables unreachable by keyboard at
+  phone widths; both fixed.
+- **G1.13b's four measurements**, all passing. Reflow 33 routes to 1. Target
+  size and keyboard traversal recorded as ratchets against
+  `docs/accessibility-divergence.json`.
+- **Four provenance attributes that named modules nobody had written**, now
+  compile errors repo-wide.
+
+### The two decisions that are not engineering
+
+Neither can be settled by anyone reading this file; both need the owner.
+
+1. **The control scale.** 990 undersized (page, control) pairs across 22
+   components, measured. `src/components/ui/button.tsx` has no 44px step -
+   default 36, sm 32, lg 40, icon 36, icon-xs 24 - against a brief that pins
+   `--size-control: 44px` at line 553 and deletes the 36px size at line 706.
+   Raising it changes the rendered height of every surface, which collides with
+   G2.7's frozen visual identity and with the first-viewport interactive and ink
+   budgets in G2.5 and X6.x. Until it is decided, G1.13b cannot close.
+2. **Whether verbatim legal text is a registered claim.** `data/citations.json`
+   holds no `statute`, `registry` or `regulator` entry, `data-legal-verbatim`
+   exists nowhere in the tree, and a quoted statute would exceed the 25-word
+   quote cap. So how much of 22 legal pages should ever be a bound claim is
+   unanswerable today, and it blocks two of the ten claims-gate groups. The
+   glossary the brief specifies in three places does not exist at all: build it
+   or record it as withheld.
+
+### What to pick up first, in order, none of it blocked
+
+1. **The report library loses eight tab stops** at both widths
+   (`/genome/[subject]/reports`, recorded in
+   `docs/accessibility-divergence.json`). Eight controls a keyboard cannot
+   reach, on the surface a person uses to open their own results. No decision
+   needed; the diagnosis is unfinished, not the authority. Usual causes: a
+   control inside a closed disclosure, a click handler on a div, a control
+   rendered after the element that takes focus back.
+2. **G1.7's second half.** `assertNoThirdParty` is extracted and verified in
+   `e2e/helpers.ts`; wiring it into the a11y sweep's existing navigations takes
+   the no-third-party promise from 8 surfaces to 62 in both themes, at the cost
+   of a request listener rather than a second suite. The row's own reasoning
+   about cost was wrong twice over and is corrected.
+3. **G1.13a's auth dimension.** The public sweep visits 36 pages signed out and
+   the authenticated sweep 25 signed in; no route is audited in both, and the
+   chrome differs. That is the only dimension of four still open.
+4. **The variant browser's remaining reflow**, 446px at a 320px viewport,
+   recorded by exact width. Its cause is unidentified because every candidate
+   element has a scrolling ancestor. Measure it in a browser rather than by
+   reading; the usual cause is a flex or grid item whose default
+   `min-width: auto` stops an inner scroll container from ever shrinking.
+5. **The keyboard trap in the genome browser** (WCAG 2.1.2 Level A, igv.js
+   3.8.5). Third-party, so the honest interim is a stated keyboard escape on our
+   own element, which does not remove the ledger entry.
+
+### Two environment facts that will otherwise cost an hour
+
+- `scripts/ci-browser-runtime.test.ts` (6 tests) and
+  `src/lib/claims/capture-emails.test.ts` fail locally and pass in CI. The first
+  asserts a non-root uid this container cannot provide; the second refuses to
+  run against an uncommitted tree. **That is the whole local baseline** - a
+  third failing file means something real, so read the names rather than
+  counting.
+- The local `mail_outbox` carries stale `claimed` rows that starve new
+  invitations, so `e2e/family-health-picture.spec.ts` and `e2e/portrait.spec.ts`
+  fail in their mail fixture here and pass in CI, which builds a fresh database.
+  Draining it needs the shipped worker behind the harness, not a hand-rolled
+  server.
+
 ## What is blocked, and on whom · 10 September 2026
 
 Written because the next person should not have to rediscover which of these
