@@ -58,6 +58,52 @@ function callerScopedTables(source: string): string[] {
   return [...tables].sort();
 }
 
+/**
+ * The other half of the same question: row-level security is bypassed by
+ * `service_role`, which is what the admin client uses. So for the tables that
+ * are closed by having no policy, the protection is not the database's — it is
+ * that every read goes through a security-definer function that checks
+ * authority first, and no route reaches the table directly.
+ *
+ * The list is read out of `supabase/tests/rls_deny_all_tables.sql` rather than
+ * copied, so the two cannot drift apart. Reference tables in that list are
+ * skipped: they are closed today but hold no one's data, and a direct read of
+ * one is not the risk this guards.
+ */
+const CLOSED_LIST = "supabase/tests/rls_deny_all_tables.sql";
+const REFERENCE_ONLY = new Set(["ancestry_regions", "research_releases"]);
+function closedTables(): string[] {
+  const source = readFileSync(CLOSED_LIST, "utf8");
+  const block = source.slice(source.indexOf("insert into closed_tables"));
+  return [...block.slice(0, block.indexOf(";")).matchAll(/'([a-z_]+)'/g)]
+    .map(match => match[1]!).filter(table => !REFERENCE_ONLY.has(table));
+}
+function productionSources(): { file: string; source: string }[] {
+  const walk = (directory: string): string[] =>
+    readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) return walk(full);
+      return /\.(ts|tsx)$/.test(entry.name) && !/\.(test|spec)\.tsx?$/.test(entry.name) ? [full] : [];
+    });
+  return walk("src").map(file => ({ file, source: readFileSync(file, "utf8") }));
+}
+
+describe("tables closed by having no policy", () => {
+  const closed = closedTables();
+  it("reads its list from the pgTAP file, so the two cannot drift", () => {
+    expect(closed.length).toBeGreaterThanOrEqual(10);
+    expect(closed).toContain("generated_exports");
+    expect(closed).toContain("audit_principal_link_keys");
+  });
+  it("is reached by no route directly, only through an authority-checked function", () => {
+    const sources = productionSources();
+    const direct = sources.flatMap(({ file, source }) => closed
+      .filter(table => source.includes(`from("${table}")`) || source.includes(`from('${table}')`))
+      .map(table => `${file} reads ${table}`));
+    expect(direct).toEqual([]);
+  });
+});
+
 describe("row-level policies that read the caller's identity", () => {
   const source = migrations();
   const scoped = callerScopedTables(source);
