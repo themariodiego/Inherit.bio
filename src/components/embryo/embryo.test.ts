@@ -159,6 +159,14 @@ describe("CompareCell", () => {
     expect(html).not.toContain(MODELLED_MARKER);
   });
 
+  // The carrier state is the worker's, validated and passed on by
+  // src/lib/embryos/policy.ts; no src/lib/embryos/carrier.ts has ever existed.
+  it("attributes the carrier state to the module that gives it its value", () => {
+    const html = renderToStaticMarkup(h(CompareCell, { finding: syntheticCarrierFinding("Embryo 1", "c-x", "two_variants"), subjectId: S(1) }));
+    expect(html).toMatch(/data-figure-kind="carrier-status"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(html).not.toContain("embryos/carrier");
+  });
+
   it("renders the closed words for every no-number state, and a tie without an ordinal", () => {
     const reasons: [string, string][] = [
       ["embryo_call_rate", CELL_WORDS.notMeasurable],
@@ -232,6 +240,37 @@ describe("CompareCell captions and the three within-family statuses (R3, R4)", (
     expect(measured).not.toContain(NOT_MEASURED_COMPARISON);
     expect(measured).not.toContain('data-slot="within-family"');
     expect(measured.match(/data-figure-kind="interval"/g)).toHaveLength(2);
+  });
+
+  /** The same measured row, with the citation ids the register would have refused. */
+  const withCitations = (citation_ids: string[]) =>
+    ({
+      ...finding,
+      finding: {
+        ...body,
+        within_family: {
+          status: "measured",
+          point_estimate: 0.5,
+          interval_low: 0.2,
+          interval_high: 1.1,
+          family_count: 40,
+          citation_ids,
+          display_copy_id: null,
+          enabled_by_default: true,
+        },
+      },
+    }) as EmbryoFinding;
+
+  it("names the sibling-validation citation on the within-family figure, and never an empty one", () => {
+    const cited = renderToStaticMarkup(h(CompareCell, { finding: withCitations(["cite-sib-1", "cite-sib-2"]), subjectId: S(1) }));
+    expect(cited).toContain('data-provenance="citation:cite-sib-1"');
+    expect(cited.match(/data-figure-kind="interval"/g)).toHaveLength(2);
+    // A measured row with no citation is unregistrable, and unrenderable as a
+    // figure: the cell says untested rather than claiming a citation with no id.
+    const uncited = renderToStaticMarkup(h(CompareCell, { finding: withCitations([]), subjectId: S(1) }));
+    expect(uncited).not.toContain('data-provenance="citation:');
+    expect(uncited.match(/data-figure-kind="interval"/g)).toHaveLength(1);
+    expect(uncited).toContain(WITHIN_FAMILY_NOT_TESTED);
   });
 
   it("emits data-reason only as a registered id, never the raw value (R1)", () => {
@@ -332,6 +371,28 @@ describe("QcTable and QcBlock", () => {
     expect(table).toContain(EMBRYO_LAYER_DEFINITIONS.estimate);
     // The reader is addressed ("What you see"); the embryo's file is never "your DNA" (X13.1).
     expect(table).not.toMatch(/your DNA|your file|spots in your|effects from your/i);
+  });
+
+  // Every QC number is a stored laboratory field handed on by
+  // src/lib/embryos/policy.ts (`displayedFigure`); qc-policy.ts holds the
+  // thresholds and never produces one, and no src/lib/embryos/qc.ts exists.
+  it("attributes every QC figure to the module its value passes through, and the dropout interval to its row", () => {
+    const qc = syntheticQc({
+      mean_depth: 31.26,
+      allelic_dropout_estimate: 0.02,
+      allelic_dropout_interval_low: 0.01,
+      allelic_dropout_interval_high: 0.03,
+    });
+    const html = renderToStaticMarkup(h(QcBlock, { qc, embryoId: E(1), subjectId: S(1) }));
+    expect(html).toMatch(/data-figure-kind="coverage"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(html).toMatch(/data-figure-kind="natural-frequency"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(html).toMatch(new RegExp(`data-figure-kind="interval"[^>]*data-provenance="seed:embryo_qc/${E(1)}"`));
+    expect(html).not.toContain("embryos/qc");
+    const rows = embryos();
+    rows[0] = { ...rows[0], qc };
+    const table = renderToStaticMarkup(h(QcTable, { embryos: rows, subjectIds }));
+    expect(table).toMatch(/data-figure-kind="measure"[^>]*data-provenance="computed:embryos\/policy"/);
+    expect(table).not.toContain("embryos/qc");
   });
 
   it("renders one attributed block on the detail page with the coverage figure and the dropout sentence", () => {

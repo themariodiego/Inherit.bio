@@ -1,6 +1,10 @@
-import { isValidElement, type ReactNode } from "react";
+import { createElement, isValidElement, type ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { InputProvenance } from "@/components/reports/input-provenance";
+import { ClaimBlock } from "@/components/figures/claim-block";
+import { InputProvenance, type CoverageModule } from "@/components/reports/input-provenance";
+import { provenanceAttribute } from "@/lib/figures/contract";
+import type { FigureSpec } from "@/lib/figures/spec";
 import type { InputSourceView } from "./input-sources";
 
 const mocks = vi.hoisted(() => ({
@@ -19,12 +23,23 @@ vi.mock("@/components/browse/genome-browser", () => ({ GenomeBrowser: () => null
 import GenomeDataPage from "@/app/(app)/genome/[subject]/data/page";
 import BrowserPage from "@/app/(app)/genome/[subject]/data/browser/page";
 
-type ProvenanceProps = { sources: InputSourceView[]; state?: string; coverage?: { read: number; needed: number } };
+type ProvenanceProps = {
+  sources: InputSourceView[];
+  state?: string;
+  coverage?: { read: number; needed: number; module?: CoverageModule };
+};
 function provenance(node: ReactNode): ProvenanceProps[] {
   if (Array.isArray(node)) return node.flatMap(provenance);
   if (!isValidElement<{ children?: ReactNode }>(node)) return [];
   if (node.type === InputProvenance) return [node.props as ProvenanceProps];
   return provenance(node.props.children);
+}
+/** Every figure the page hands to a <ClaimBlock>, in render order. */
+function figures(node: ReactNode): FigureSpec[] {
+  if (Array.isArray(node)) return node.flatMap(figures);
+  if (!isValidElement<{ children?: ReactNode; figures?: FigureSpec[] }>(node)) return [];
+  const own = node.type === ClaimBlock ? (node.props.figures ?? []) : [];
+  return [...own, ...figures(node.props.children)];
 }
 function scoreLabels(node: ReactNode): ReactNode[] {
   if (Array.isArray(node)) return node.flatMap(scoreLabels);
@@ -85,6 +100,25 @@ describe("expert result input composition", () => {
     expect(table.coverage).toEqual({ read: 1, needed: 1, module: "genome/browser" });
     expect(track.sources.map((s) => s.fileId)).toEqual(["newest"]);
     expect(mocks.sources.mock.calls[0][1]).toBe("subject");
+  });
+
+  // src/lib/genome/browser.ts resolves the letters of all three searches and
+  // counts the coverage pair; both figures name it, and it exists.
+  it("names the module that produced the letters on the genotype and coverage figures", async () => {
+    const tree = await browser("rs762551");
+    expect(figures(tree).map((spec) => [spec.kind, provenanceAttribute(spec.provenance)])).toEqual([
+      ["genotype", "computed:genome/browser"],
+    ]);
+    const [table] = provenance(tree);
+    const html = renderToStaticMarkup(createElement(InputProvenance, {
+      subject: { subjectId: "subject" }, sources: table.sources, coverage: table.coverage,
+    }));
+    expect(html).toContain('data-figure-kind="coverage"');
+    expect(html).toContain('data-provenance="computed:genome/browser"');
+
+    mocks.from.mockImplementation((table_: string) => rowsFor(table_, [{ ...reference, pos: 74749576, genotype: "A/C" }]));
+    const region = figures(await browser("chr15:74749500-74749600"));
+    expect(region.map((spec) => provenanceAttribute(spec.provenance))).toEqual(["computed:genome/browser"]);
   });
 
   it("keeps file-quality context when a requested rsID is absent", async () => {

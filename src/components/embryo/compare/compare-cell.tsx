@@ -26,7 +26,7 @@ import {
   embryoGroup,
   withinFamilyInconclusive,
 } from "@/copy/embryos/compare";
-import { displayedFigure, type EmbryoFinding } from "@/lib/embryos/policy";
+import { citedWithinFamily, displayedFigure, type EmbryoFinding } from "@/lib/embryos/policy";
 import { QC_REASON_IDS, RESULT_NOT_REPORTABLE_REASON_IDS, mapQcReason } from "@/lib/embryos/qc-policy";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 
@@ -99,7 +99,14 @@ export function CompareCell({
       kind: "carrier-status",
       class: "variant-call",
       basis: "observed",
-      provenance: { kind: "computed", module: "embryos/carrier" },
+      // The carrier state is not computed here or anywhere else in the app:
+      // the worker writes it into `embryo_scores.finding`, and
+      // src/lib/embryos/policy.ts is the module that gives it its value —
+      // it owns CARRIER_STATES, validates the stored state against them
+      // (`carrierFinding`) and hands the finding on unchanged. The closed
+      // eight-key finding carries no score-row id, so there is no seed row
+      // to name instead.
+      provenance: { kind: "computed", module: "embryos/policy" },
       status: CARRIER_WORDS[body.carrier_state],
     };
     return <ClaimBlock subject={subject} figures={[spec]} className={CELL_BLOCK_CLASS} />;
@@ -138,26 +145,27 @@ export function CompareCell({
       comparatorGroup: GENERAL_POPULATION_GROUP,
     },
   ];
-  const withinFamily = body.within_family;
-  const hasInterval =
-    withinFamily.point_estimate !== null &&
-    withinFamily.interval_low !== null &&
-    withinFamily.interval_high !== null;
-  const measured = withinFamily.status === "measured" && hasInterval;
+  // A within-family figure is rendered only from a row that carries both its
+  // numbers and the citation they were published under: `citedWithinFamily`
+  // is the only way to those numbers, so the figure cannot claim a citation
+  // that does not exist, and a row missing either is untested as far as this
+  // cell is concerned.
+  const withinFamily = citedWithinFamily(body.within_family);
+  const measured = withinFamily?.status === "measured";
   // The register's third status: tested between siblings, and the test could
   // not tell (an interval containing the no-attenuation null). Its own true
   // sentence with the citation, and the brief-1318 comparison sentence the
   // register requires beside any score not shown to hold up (R4).
-  const inconclusive = withinFamily.status === "measured_inconclusive" && hasInterval;
-  if (measured || inconclusive) {
+  const inconclusive = withinFamily?.status === "measured_inconclusive";
+  if (withinFamily) {
     figures.push({
       kind: "interval",
       class: "estimate",
       basis: "modelled",
-      provenance: { kind: "citation", id: withinFamily.citation_ids[0] ?? "" },
-      point: displayedFigure(withinFamily.point_estimate!),
-      low: displayedFigure(withinFamily.interval_low!),
-      high: displayedFigure(withinFamily.interval_high!),
+      provenance: { kind: "citation", id: withinFamily.citation_ids[0] },
+      point: displayedFigure(withinFamily.point_estimate),
+      low: displayedFigure(withinFamily.interval_low),
+      high: displayedFigure(withinFamily.interval_high),
     });
   }
   return (
@@ -165,10 +173,10 @@ export function CompareCell({
       {finding.coverage_state === "partial" ? (
         <Word word={CELL_WORDS.partlyRead} reason={null} />
       ) : null}
-      {measured ? null : inconclusive ? (
+      {measured ? null : inconclusive && withinFamily ? (
         <>
           <p data-slot="within-family" data-within-family="measured_inconclusive" className="mt-2 text-sm text-ink">
-            {withinFamilyInconclusive(withinFamily.citation_ids[0] ?? "")}
+            {withinFamilyInconclusive(withinFamily.citation_ids[0])}
           </p>
           <p data-slot="within-family-comparison" className="mt-2 text-sm text-ink">
             {NOT_MEASURED_COMPARISON}

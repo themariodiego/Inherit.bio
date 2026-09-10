@@ -1,14 +1,34 @@
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { INPUT_PROVENANCE_COPY as COPY, inputLabel } from "@/copy/reports/input-provenance";
 import type { InputSourceView } from "@/lib/genome/input-sources";
-import type { SubjectAttribution } from "@/lib/figures/contract";
+import type { ComputedModule, FigureProvenance, SubjectAttribution } from "@/lib/figures/contract";
+
+/**
+ * Every provenance the coverage pair can carry, spelled out. A surface says
+ * which module counted its pair by name and cannot introduce a third: the
+ * whole set of `data-provenance` values this component can emit is readable
+ * here, by a person or by a static reader, and each names a real module.
+ */
+export const COVERAGE_PROVENANCE = {
+  "genome/reports": { kind: "computed", module: "genome/reports" },
+  "genome/browser": { kind: "computed", module: "genome/browser" },
+} as const satisfies Partial<Record<ComputedModule, FigureProvenance>>;
+
+/** The modules that count a coverage pair for this component. */
+export type CoverageModule = keyof typeof COVERAGE_PROVENANCE;
 
 export function InputProvenance({ sources, sourceLabels, subject, coverage, state = "recorded", nested = false }: {
   sources: readonly InputSourceView[];
   /** Display identities for only the supplied authorized sources; omitted labels retain local numbering. */
   sourceLabels?: Readonly<Record<string, string>>;
   subject: SubjectAttribution;
-  coverage?: { read: number; needed: number; module?: string };
+  /**
+   * The coverage pair and the module that counted it, never free text: a
+   * caller cannot put a string of its own into the rendered
+   * `data-provenance`. Omitted, the pair is the report's own
+   * (`genome/reports`), which is what every report surface passes.
+   */
+  coverage?: { read: number; needed: number; module?: CoverageModule };
   state?: "recorded" | "noCall" | "conflict" | "absent";
   nested?: boolean;
 }) {
@@ -18,7 +38,7 @@ export function InputProvenance({ sources, sourceLabels, subject, coverage, stat
     <p>{COPY.noImputation}</p>
     <p>{sources.length ? COPY[state] : COPY.noFiles}</p>
     {sources.length > 0 && coverage && coverage.needed > 0 ? <ClaimBlock subject={subject} className="border-0 bg-transparent p-0" figures={[{
-      kind: "coverage", class: "quality", basis: "observed", provenance: { kind: "computed", module: coverage.module ?? "genome/reports" },
+      kind: "coverage", class: "quality", basis: "observed", provenance: COVERAGE_PROVENANCE[coverage.module ?? "genome/reports"],
       read: coverage.read, needed: coverage.needed,
     }]} /> : null}
     {sources.map((source, index) => <div key={source.fileId} data-slot="input-source" className="space-y-2">

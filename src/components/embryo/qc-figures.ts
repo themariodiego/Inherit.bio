@@ -9,7 +9,14 @@
 import { displayedFigure, type QcDto } from "@/lib/embryos/policy";
 import type { CoverageSpec, IntervalSpec, MeasureSpec, NaturalFrequencySpec } from "@/lib/figures/spec";
 
-const QC_PROVENANCE = { kind: "computed", module: "embryos/qc" } as const;
+/**
+ * `src/lib/embryos/policy.ts`, not `qc-policy.ts`: every value below is a
+ * laboratory-reported QC field of the `QcDto` that policy.ts shapes and
+ * validates, passed through its `displayedFigure` (displayed === stored).
+ * qc-policy.ts holds the thresholds, bands and reason ids that decide what
+ * a figure *means*; it never produces one of these numbers.
+ */
+const QC_PROVENANCE = { kind: "computed", module: "embryos/policy" } as const;
 
 export function coverageSpec(qc: Pick<QcDto, "sites_called" | "sites_expected">): CoverageSpec {
   return {

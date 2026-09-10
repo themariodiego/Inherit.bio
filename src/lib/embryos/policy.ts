@@ -327,6 +327,42 @@ export interface WithinFamilyValidation {
   enabled_by_default: boolean;
 }
 
+/**
+ * A within-family row that carries figures. The validator refuses a measured
+ * row with no citation and a not_measured row with any, and
+ * `allowed-conditions` refuses to register a measured model without a
+ * published sibling-validation citation — so a rendered within-family
+ * interval always has one to name. Stating that in the type is what keeps
+ * `citation:` with an empty id unrepresentable: a caller cannot reach these
+ * numbers without also holding the citation id they were published under.
+ */
+export interface CitedWithinFamily extends WithinFamilyValidation {
+  status: "measured" | "measured_inconclusive";
+  point_estimate: number;
+  interval_low: number;
+  interval_high: number;
+  citation_ids: [string, ...string[]];
+}
+
+/**
+ * The row as `CitedWithinFamily`, or null when it carries no figures — the
+ * one place the three within-family statuses are told apart for rendering.
+ */
+export function citedWithinFamily(within: WithinFamilyValidation): CitedWithinFamily | null {
+  const [citation, ...rest] = within.citation_ids;
+  if (within.status === "not_measured" || citation === undefined) return null;
+  const { point_estimate, interval_low, interval_high } = within;
+  if (point_estimate === null || interval_low === null || interval_high === null) return null;
+  return {
+    ...within,
+    status: within.status,
+    point_estimate,
+    interval_low,
+    interval_high,
+    citation_ids: [citation, ...rest],
+  };
+}
+
 export interface AbsoluteRiskFinding {
   kind: "absolute_risk";
   risk_model: EmbryoRiskModelBinding;
