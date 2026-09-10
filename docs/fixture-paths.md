@@ -14,19 +14,18 @@ matches. It runs in CI under `pnpm test`.
 
 | Path | Input | Authentication |
 |---|---|---|
-| `src/app/api/jobs/research-refresh/route.ts` (POST) | An optional `fixture` body carrying a source, release key and associations, so the E2E suite drives the live refresh path deterministically instead of a copy of it | `Authorization: Bearer <secret>` matching `JOBS_SECRET` or `CRON_SECRET`; an unmatched or absent header answers 401 before the body is read |
+| `src/app/api/jobs/research-refresh/route.ts` (POST) | An optional `fixture` body carrying a source, release key and associations, so the E2E suite drives the live refresh path deterministically instead of a copy of it | `Authorization: Bearer <secret>` matching **`JOBS_SECRET`**. An unmatched or absent header answers 401 before the body is read; a body carrying a fixture then answers 401 unless the secret is the operator's |
 
 The same route's `GET` is the Vercel Cron entry point and is live-only — it
-passes `null` where `POST` passes the fixture — under the same authentication.
+passes `null` where `POST` passes the fixture — and it accepts `JOBS_SECRET` or
+`CRON_SECRET`, as does a `POST` with no fixture in it.
 
-**One deviation from the brief, recorded rather than smoothed over.** G8.2(b)
-says the path is "authenticated by `JOBS_SECRET`". It accepts `JOBS_SECRET` or
-`CRON_SECRET`; both are server-side secrets and neither reaches a browser, but
-the set is wider than the sentence. Narrowing the fixture body to `JOBS_SECRET`
-alone, and leaving `CRON_SECRET` for the live GET, would match the brief
-exactly and is a small change — it is not made here because it alters an
-authenticated job route's contract, which deserves its own review rather than
-riding along with a documentation slice.
+That split is the point: fixture input is an operator's, so it takes the
+operator secret, while the schedule's secret drives the live path and nothing
+else. Both are server-side and neither reaches a browser, so this narrows an
+unnecessary credential path rather than closing an open one. Every existing
+`POST` caller already used `JOBS_SECRET`. `route.test.ts` pins all four cases,
+and the first of them fails if the narrowing is removed.
 
 ## Paths that exclude fixture data
 

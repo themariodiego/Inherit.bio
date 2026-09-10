@@ -60,12 +60,15 @@ describe("mock and fixture tokens in production source", () => {
     }
     expect(new Set(listed).size).toBe(allowlist.allowed.length);
   });
-  // The one production path that takes fixture input must stay authenticated,
-  // and must stay described where an operator would look for it.
-  it("keeps the fixture-input path authenticated and recorded", () => {
+  // The one production path that takes fixture input must stay described where
+  // an operator would look for it, and must still gate that input on the
+  // operator secret. How it behaves is proven by its own route.test.ts, which
+  // fails if the narrowing is removed; this only pins that the record and the
+  // secret have not quietly parted company.
+  it("keeps the fixture-input path recorded and gated on the operator secret", () => {
     const route = readFileSync("src/app/api/jobs/research-refresh/route.ts", "utf8");
     expect(route).toContain("process.env.JOBS_SECRET");
-    expect(route).toMatch(/if \(!authorized\(request\)\) \{\s*return new Response\("Unauthorized", \{ status: 401 \}\);/);
+    expect(route).toMatch(/body\?\.fixture && !authorized\(request, \[process\.env\.JOBS_SECRET\]\)/);
     const record = readFileSync("docs/fixture-paths.md", "utf8");
     expect(record).toContain("src/app/api/jobs/research-refresh/route.ts");
     expect(record).toContain("JOBS_SECRET");

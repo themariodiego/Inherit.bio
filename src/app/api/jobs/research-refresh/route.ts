@@ -17,18 +17,19 @@ interface FixturePayload {
   associations: AssociationInput[];
 }
 
-function authorized(request: Request): boolean {
+function authorized(request: Request, secrets: (string | undefined)[]): boolean {
   const auth = request.headers.get("authorization");
-  // Manual/operator calls use JOBS_SECRET; Vercel Cron sends CRON_SECRET.
-  for (const secret of [process.env.JOBS_SECRET, process.env.CRON_SECRET]) {
+  for (const secret of secrets) {
     if (secret && auth === `Bearer ${secret}`) return true;
   }
   return false;
 }
+// Manual/operator calls use JOBS_SECRET; Vercel Cron sends CRON_SECRET.
+const liveSecrets = () => [process.env.JOBS_SECRET, process.env.CRON_SECRET];
 
 // Vercel Cron invokes with GET; live mode only (no fixture body).
 export async function GET(request: Request) {
-  if (!authorized(request)) {
+  if (!authorized(request, liveSecrets())) {
     return new Response("Unauthorized", { status: 401 });
   }
   return runRefresh(null);
@@ -39,12 +40,19 @@ export async function GET(request: Request) {
 // report templates into the review queue. A fixture body lets the E2E suite
 // drive the same code path deterministically.
 export async function POST(request: Request) {
-  if (!authorized(request)) {
+  // Unauthenticated callers are refused before the body is read at all.
+  if (!authorized(request, liveSecrets())) {
     return new Response("Unauthorized", { status: 401 });
   }
   const body = (await request.json().catch(() => null)) as
     | { fixture?: FixturePayload }
     | null;
+  // A fixture body is operator input, not a schedule's, so it needs the
+  // operator secret specifically (brief G8.2(b), `docs/fixture-paths.md`).
+  // The cron secret drives the live path and nothing else.
+  if (body?.fixture && !authorized(request, [process.env.JOBS_SECRET])) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   return runRefresh(body?.fixture ?? null);
 }
 
