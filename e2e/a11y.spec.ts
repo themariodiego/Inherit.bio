@@ -613,6 +613,8 @@ type ElementProbe = {
 declare global {
   interface Window {
     __g113b?: ElementProbe;
+    /** The component a trapped traversal ended inside, for the escape check. */
+    __g113bTrap?: Element;
   }
 }
 
@@ -1063,6 +1065,10 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     // instead of the bottom bar, which is a different order over the same DOM.
     const viewports = AXE_VIEWPORTS.filter(viewport => viewport.width !== 320);
     let stops = 0;
+    // Traps that ship no working, advertised escape. Not a ledger: SC 2.1.2
+    // has no honest interim for one, so it fails outright.
+    const unescapable: string[] = [];
+    let escapesProven = 0;
     const present = new Map<string, string>();
     const record = (entry: KeyboardDivergence, evidence: string) =>
       present.set(keyboardFinding(entry), `${evidence}\n${howToRecord("keyboardTraversal", entry)}`);
@@ -1083,6 +1089,15 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
           record({ kind: "exit", ...at, last: pass.last, outcome: pass.exit },
             `    Tab past the last control (${pass.last}) must leave the page, not loop inside it;`
             + ` the traversal ended ${pass.exit} after ${pass.stops} stops`);
+          // A trap is recorded above as the tab-order defect it is, and
+          // separately required to be escapable here. The two are different
+          // claims: the first is about Tab, the second is what SC 2.1.2
+          // actually demands, and only the second has no acceptable interim.
+          if (pass.exit === "trapped") {
+            const unescaped = await escapeLeavesTheTrap(page);
+            if (unescaped) unescapable.push(`  ${route} at ${viewport.label}\n${unescaped}`);
+            else escapesProven++;
+          }
         }
         if (pass.stops < pass.expected) {
           record({ kind: "stops", ...at, reached: pass.stops, expected: pass.expected },
@@ -1097,6 +1112,18 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     // than as a ledger full of findings that "no longer occur".
     expect(visited, "the keyboard sweep visited every reachable page").toBeGreaterThan(MIN_SWEPT_ROUTES);
     expect(stops, "the keyboard sweep reached tab stops rather than nothing").toBeGreaterThan(MIN_TAB_STOPS);
+    expect(unescapable.join("\n\n"),
+      "WCAG 2.1 SC 2.1.2: focus that Tab cannot carry out of a component must be movable out by a"
+      + " key the component's own description names")
+      .toBe("");
+    // A floor on the escape check itself. The ledger records a trap on the
+    // variant browser, so this sweep must have exercised at least one escape;
+    // zero would mean the check silently stopped running rather than that the
+    // product stopped trapping — and the ledger comparison below would then
+    // be the only thing left saying the trap exists.
+    expect(escapesProven,
+      "the escape check ran on the trap the ledger records, rather than on nothing")
+      .toBeGreaterThan(0);
     expect(compareToLedger("keyboard traversal", present, accessibilityLedger().keyboard).join("\n\n"),
       `keyboard traversal: the sweep and ${ACCESSIBILITY_LEDGER} must say the same thing, in both directions`)
       .toBe("");
@@ -1377,4 +1404,76 @@ async function tabThrough(page: Page): Promise<TabPass> {
     };
   });
   return { ...log, expected, exit };
+}
+
+/**
+ * WCAG 2.1 SC 2.1.2 in the half that the Tab traversal above cannot see.
+ *
+ * The criterion is not "Tab always leaves". It is that focus can be moved
+ * away using only the keyboard, and that if the key is not an unmodified
+ * arrow or Tab, the reader is told which key it is. So a page whose Tab order
+ * loops inside a widget still conforms — but only if it ships a working
+ * escape AND says so on the page. This checks both, on whatever page the
+ * traversal ended trapped, and it is a plain failure rather than a ledger
+ * entry: an unescapable trap is a Level A failure with no honest interim.
+ *
+ * "Told which key" is read from the accessible description of the component
+ * focus is stuck in, because that is what a reader arriving by Tab actually
+ * hears; a sentence rendered somewhere on the page that the component does
+ * not reference would pass a text search and help nobody.
+ */
+async function escapeLeavesTheTrap(page: Page): Promise<string | null> {
+  const trapped = await page.evaluate(() => {
+    const probe = window.__g113b;
+    if (!probe) throw new Error("element probe not installed");
+    const active = document.activeElement;
+    if (!active || active === document.body) return null;
+    // The component, not the control: the region, dialog or application the
+    // stuck control sits in, which is the thing SC 2.1.2 talks about.
+    const region = active.closest('[role="region"],[role="application"],[role="dialog"],[role="group"]')
+      ?? active;
+    window.__g113bTrap = region;
+    const described = (region.getAttribute("aria-describedby") ?? "")
+      .split(/\s+/).filter(Boolean)
+      .map(id => document.getElementById(id)?.textContent ?? "")
+      .join(" ");
+    return { region: probe.describe(region), described };
+  });
+  if (!trapped) return null;
+  // Named, not inferred from a key list: if the page advertises a different
+  // key this reads it and presses that instead, so the check follows the
+  // page's own statement rather than assuming Escape.
+  const advertised = /\b(Escape|Esc)\b/i.test(trapped.described) ? "Escape" : null;
+  if (!advertised) {
+    return `    ${trapped.region} traps focus and its accessible description does not name a key`
+      + ` that moves focus out of it. WCAG 2.1 SC 2.1.2 needs both: a working escape, and the`
+      + ` reader told which key it is.\n      described as: ${trapped.described || "(nothing)"}`;
+  }
+  await page.keyboard.press(advertised);
+  const left = await page.evaluate(() => {
+    const probe = window.__g113b;
+    const region = window.__g113bTrap;
+    if (!probe || !region) throw new Error("trap probe not installed");
+    const active = document.activeElement;
+    if (!active || active === document.body || active === document.documentElement) {
+      return { out: true, where: "(left the page)" };
+    }
+    return {
+      out: !region.contains(active),
+      where: probe.describe(active),
+      // Moving focus BACKWARDS out of the trap would satisfy the letter and
+      // strand the reader before the widget they just left, so where it lands
+      // is reported rather than only whether it left.
+      forward: (region.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    };
+  });
+  if (!left.out) {
+    return `    ${trapped.region} advertises ${advertised} as its escape and pressing it left focus`
+      + ` inside the trap, at ${left.where}`;
+  }
+  if (left.forward === false) {
+    return `    ${trapped.region} advertises ${advertised} as its escape and pressing it moved focus`
+      + ` BACKWARDS, to ${left.where}, stranding the reader before the widget they left`;
+  }
+  return null;
 }

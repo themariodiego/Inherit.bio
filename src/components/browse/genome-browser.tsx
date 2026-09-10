@@ -4,11 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   BROWSER_EMPTY_REGION,
   BROWSER_FAILED,
+  BROWSER_KEYBOARD_ESCAPE,
+  BROWSER_KEYBOARD_ESCAPED,
   BROWSER_LOADING,
   IGV_CONTROL_LABELS,
   TRACK_NAME,
 } from "@/copy/genome/data";
 import { chromToName } from "@/lib/genome/types";
+
+/** Ties the region to the sentence naming its escape key. */
+const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
 
 interface RegionVariant {
   rsid: number | null;
@@ -205,6 +210,7 @@ export function GenomeBrowser({
   locus: { chrom: number; start: number; end: number };
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const escapedRef = useRef<HTMLDivElement>(null);
   // Outcome keyed by the mounted region: while the key doesn't match the
   // current props the browser is (re)initializing, so "loading" is derived
   // rather than reset via setState inside the effect.
@@ -329,6 +335,45 @@ export function GenomeBrowser({
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);
 
+  /**
+   * The keyboard escape WCAG 2.1 SC 2.1.2 asks for.
+   *
+   * Tab past this browser's last control does not hand focus out of the
+   * region — it returns to a stop already visited. Everything holding focus
+   * in there is built by igv.js 3.8.5, shadow root included, so the tab order
+   * is not ours to rewrite without owning the widget. SC 2.1.2 is met by the
+   * second half of its own wording instead: focus can be moved away using
+   * only the keyboard, and the reader is told which key does it
+   * (BROWSER_KEYBOARD_ESCAPE, rendered above the region and referenced by it
+   * through aria-describedby, so it is announced on entry rather than only
+   * read by someone who happened to look).
+   *
+   * Bound in the capture phase on our own element, so it runs before anything
+   * igv binds inside and needs no reach into igv's DOM.
+   *
+   * Focus goes to the next thing a Tab would have reached after the region,
+   * so the traversal continues forwards from where it was rather than
+   * restarting; the marker after the container is the fallback for a region
+   * that is the last thing on the page.
+   */
+  function leaveOnEscape(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Escape") return;
+    const region = containerRef.current;
+    if (!region) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const next = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'a[href],button,input,select,textarea,summary,[tabindex="0"]'),
+    ).find(candidate =>
+      !region.contains(candidate)
+      && (region.compareDocumentPosition(candidate) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      && candidate.tabIndex >= 0
+      && !candidate.matches(":disabled")
+      && candidate.getClientRects().length > 0);
+    (next ?? escapedRef.current)?.focus();
+  }
+
   if (status === "error") {
     return (
       <div
@@ -342,6 +387,12 @@ export function GenomeBrowser({
 
   return (
     <div>
+      {/* Before the region in reading order, so a keyboard reader meets the
+          escape before the thing it escapes; `aria-describedby` on the region
+          repeats it on entry for a reader who arrives by Tab. */}
+      <p id={ESCAPE_HINT_ID} className="mb-2 text-xs text-ink-muted">
+        {BROWSER_KEYBOARD_ESCAPE}
+      </p>
       <div className="relative">
         {/* igv owns this element's DOM (we clear it before handing it over),
             so React must never render children into it — states render as
@@ -351,6 +402,8 @@ export function GenomeBrowser({
           data-testid="genome-browser"
           role="region"
           aria-label={IGV_CONTROL_LABELS.region}
+          aria-describedby={ESCAPE_HINT_ID}
+          onKeyDownCapture={leaveOnEscape}
           // igv renders its own navbar and tracks at whatever width it wants,
           // and at the 320px support floor that widened the whole document to
           // 485px rather than reflowing (WCAG 2.1 SC 1.4.10). Scrolling inside
@@ -368,6 +421,10 @@ export function GenomeBrowser({
           </div>
         ) : null}
       </div>
+      {/* Where Escape lands when the region is the last thing on the page.
+          tabindex="-1" adds no tab stop, so it changes nothing for a reader
+          who never presses Escape. */}
+      <div ref={escapedRef} tabIndex={-1} aria-label={BROWSER_KEYBOARD_ESCAPED} />
       {status === "ready" && variantCount === 0 ? (
         <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
           {BROWSER_EMPTY_REGION}
