@@ -1,0 +1,75 @@
+{
+  "contract": "mock-token-allowlist-v1",
+  "scope": "Production source under src/ and worker/src/, excluding *.test.* and *.spec.*. Test configuration and the e2e/ tree are out of scope by construction, not by exclusion.",
+  "rule": "Every production file containing a demonstration, mock, fixture or dummy token must be listed here with one line of justification. An addition requires an ADR (brief G8.2(c)). A listed file that no longer matches is a stale entry and fails the gate.",
+  "allowed": [
+    {
+      "path": "src/app/(app)/genome/[subject]/reports/page.tsx",
+      "reason": "Comment only, and protective: records that test fixtures never reach the user-facing library."
+    },
+    {
+      "path": "src/app/api/export/route.ts",
+      "reason": "Excludes fixture-seeded report templates from an export by their auto-e2e- prefix. Protective: the token names data the export must never contain."
+    },
+    {
+      "path": "src/app/api/jobs/research-refresh/route.ts",
+      "reason": "Accepts a fixture body so the E2E suite drives the live code path; POST and GET both require Bearer JOBS_SECRET or CRON_SECRET. Recorded in docs/fixture-paths.md."
+    },
+    {
+      "path": "src/app/api/search/route.ts",
+      "reason": "Comment only: search matches the published, non-fixture library."
+    },
+    {
+      "path": "src/components/reports/library.ts",
+      "reason": "Comment only: names the templates the research pipeline E2E publishes."
+    },
+    {
+      "path": "src/lib/claims/capture-emails.ts",
+      "reason": "Claims-capture tooling: renders code-owned synthetic email fixtures for the corpus. Imported by tests only; no route or component reaches it."
+    },
+    {
+      "path": "src/lib/claims/capture-plan.ts",
+      "reason": "Claims-capture tooling: plans which fixtures the capture renders. Imported by tests only."
+    },
+    {
+      "path": "src/lib/claims/email-fixtures.ts",
+      "reason": "The synthetic email fixtures themselves, with no recipients or keys. Imported by tests only."
+    },
+    {
+      "path": "src/lib/claims/email-inventory.ts",
+      "reason": "Claims-capture tooling: enumerates the fixture inventory for the audit. Imported by tests only."
+    },
+    {
+      "path": "src/lib/embryos/guards.ts",
+      "reason": "Comment only: records that embryo_analysis is enabled for the TEST-LOCAL fixture in E0."
+    },
+    {
+      "path": "src/lib/embryos/synthetic.ts",
+      "reason": "Synthetic embryo fixtures for the unit suite, describing no one (C7). Imported by tests only."
+    },
+    {
+      "path": "src/lib/family/carrier-pair.ts",
+      "reason": "Comment only: explains that verified fixtures exist while the production reader stays withheld pending review."
+    },
+    {
+      "path": "src/lib/family/roh.ts",
+      "reason": "Comment only: explains that the browser-fixture generator checks a fixture with the real measure rather than a copy."
+    },
+    {
+      "path": "src/lib/genome/prepared-source/materialize-canonical.fixtures.ts",
+      "reason": "Synthetic prepared-source fixtures for the canonical materialization tests. Imported by tests only."
+    },
+    {
+      "path": "src/lib/genome/prepared-source/prepare-genome-publication.fixtures.ts",
+      "reason": "Synthetic prepared-source fixtures for the publication tests. Imported by tests only."
+    },
+    {
+      "path": "src/lib/legal/jurisdictions.ts",
+      "reason": "Comment only: documents the flag that enables the isolated TEST-LOCAL acceptance fixture."
+    },
+    {
+      "path": "worker/src/annotate.ts",
+      "reason": "Comment only: notes a minimal query surface so tests can mock pg without depending on it."
+    }
+  ]
+}
