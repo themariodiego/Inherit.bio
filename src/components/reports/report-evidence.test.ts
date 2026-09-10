@@ -39,8 +39,15 @@ describe("report evidence rendering", () => {
     expect(page).toContain("let callSummary: ReportCallSummary | null = null");
     expect(page).toContain("{callSummary ? <ReportCallCoverage summary={callSummary} /> : null}");
     expect(page).not.toContain("supportingStudies(template.citations.length)");
-    expect(page).toContain("coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)");
-    expect(page).not.toContain("coverageSentence(coveredPositions, template.variants.length)");
+    // The coverage sentence and the coverage figure read one pair, and the
+    // pair is `reportCoverage`'s, so this page cannot drift from the report
+    // list (G8.6). The denominator rule it carries — distinct positions, so a
+    // template naming one position twice cannot inflate it — is pinned where
+    // it now lives, in src/lib/genome/report-evidence.test.ts.
+    expect(page).toContain("coverage = reportCoverage(template, resolved, conflicts)");
+    expect(page).toContain("coverageSentence(coverage.read, coverage.needed)");
+    expect(page).toContain("coverage={coverage}");
+    expect(page).not.toContain("template.variants.length)");
   });
   it("keeps new explanatory copy within the sentence cap and avoids ASCII apostrophes", () => {
     const strings = [

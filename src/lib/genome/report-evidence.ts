@@ -55,6 +55,35 @@ export function summarizeReportCalls(
   return summary;
 }
 
+/**
+ * The one coverage figure a report shows, wherever it is shown (G8.6).
+ *
+ * Both surfaces that render `read N of the M positions this needs` for a
+ * report declare `computed:genome/reports` as its provenance, and they used
+ * to compute it separately. `needed` was the same expression written twice;
+ * `read` was not the same rule at all. The report page counted
+ * `summarizeReportCalls(...).interpreted`, which gives a position whose files
+ * disagree the state `conflicting`; the report list counted every outcome
+ * whose status is `genotyped`, which counts that position as read. So an
+ * account whose two files disagree at a report position saw the list claim a
+ * position the report itself did not, and each surface was individually
+ * defensible.
+ *
+ * `interpreted` is the rule that survives: a position two files disagree
+ * about has not been read, it has been contested, and a coverage figure that
+ * counts it is telling the reader something the report will not repeat.
+ */
+export function reportCoverage(
+  template: ReportTemplate,
+  resolved: ResolvedReport,
+  conflicts: ReadonlySet<number>,
+): { read: number; needed: number } {
+  return {
+    read: summarizeReportCalls(resolved, conflicts).interpreted,
+    needed: new Set(template.variants.map((variant) => variant.rsid)).size,
+  };
+}
+
 /** Never fabricate a source-read date from a build, deployment or current date. */
 export function validSourceReadDate(value: string | undefined): string | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;

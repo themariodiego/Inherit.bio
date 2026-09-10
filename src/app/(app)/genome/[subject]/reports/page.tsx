@@ -34,7 +34,7 @@ import { loadPersonalPreviews } from "@/lib/genome/report-previews";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { ClaimBlock } from "@/components/figures/claim-block";
-import { unavailablePolygenicCount } from "@/lib/genome/report-evidence";
+import { reportCoverage, unavailablePolygenicCount } from "@/lib/genome/report-evidence";
 import {
   CATEGORY_TAXONOMY,
   LAYERS,
@@ -347,16 +347,21 @@ export default async function ReportsPage(
       {previews.size > 0 ? <section id="preview-input-provenance" data-slot="preview-input-provenance" className="space-y-4">
         <InputProvenance sources={previewInputs} subject={{ subjectId: dataSubjectId }} />
         <ul className="space-y-2 text-sm text-ink-muted">
-          {[...previewContributors].map(([slug, ids]) => <li key={slug} id={`preview-input-${slug}`}>
-            {templates.find((template) => template.slug === slug)?.title}
-            {/* inherit-figure-exempt: input labels identify records, not genetic quantities */}
-            {` — ${ids.map((id) => `File ${previewInputs.findIndex((source) => source.fileId === id) + 1}`).join(", ")}`}
-            <ClaimBlock subject={{ subjectId: dataSubjectId }} className="border-0 bg-transparent p-0" figures={[{
-              kind: "coverage", class: "quality", basis: "observed", provenance: { kind: "computed", module: "genome/reports" },
-              read: new Set(resolved.find((report) => report.template.slug === slug)?.variants.filter((entry) => entry.outcome.status === "genotyped").map((entry) => entry.variant.rsid)).size,
-              needed: new Set(templates.find((template) => template.slug === slug)?.variants.map((variant) => variant.rsid)).size,
-            }]} />
-          </li>)}
+          {[...previewContributors].map(([slug, ids]) => {
+            // A preview exists only for a template this page resolved, so the
+            // lookup cannot miss; the coverage numbers come from the one
+            // function the report page uses, so the two cannot disagree.
+            const report = resolved.find((entry) => entry.template.slug === slug)!;
+            return <li key={slug} id={`preview-input-${slug}`}>
+              {report.template.title}
+              {/* inherit-figure-exempt: input labels identify records, not genetic quantities */}
+              {` — ${ids.map((id) => `File ${previewInputs.findIndex((source) => source.fileId === id) + 1}`).join(", ")}`}
+              <ClaimBlock subject={{ subjectId: dataSubjectId }} className="border-0 bg-transparent p-0" figures={[{
+                kind: "coverage", class: "quality", basis: "observed", provenance: { kind: "computed", module: "genome/reports" },
+                ...reportCoverage(report.template, report, layerCalls.get("estimate")?.conflicts ?? new Set()),
+              }]} />
+            </li>;
+          })}
         </ul>
       </section> : null}
     </div>

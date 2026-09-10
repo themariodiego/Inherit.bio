@@ -10,9 +10,9 @@
   "seedInvariant": [
     {
       "surface": "/genome/me/ancestry",
-      "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/admixture.ts|-|1",
+      "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/admixture.ts|unassignable|1",
       "name": "the unassignable chip",
-      "reason": "estimateAdmixture returns five proportions that sum to 1, and src/lib/ancestry/present.ts computes this chip as max(0, 1 - assigned), so it is 0.0% for every genome. It is registered rather than dropped from collection because a non-zero value would mean the estimator had begun leaving mass unattributed, which is worth seeing."
+      "reason": "estimateAdmixture returns five proportions that sum to 1, and src/lib/ancestry/present.ts computes this chip as max(0, 1 - assigned), so it is 0.0% for every genome. It is registered rather than dropped from collection because a non-zero value would mean the estimator had begun leaving mass unattributed, which is worth seeing. The key names the chip through its `data-chip` attribute rather than its position among the shares: the surface renders a second chip, hidden, that carries no region either, and an ordinal would have moved this entry onto it if their order changed."
     },
     {
       "surface": "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551",
@@ -32,5 +32,68 @@
       "name": "the search result's own coverage",
       "reason": "`searchRsid` builds a one-element `hits` array, so `needed` is 1 on the rsID path for every genome, and the row it builds comes from a `user_variants` record — a called difference — so `read` is 1 as well. The two states that would lower it, a no-call and files that disagree, cannot arise here: a `./.` line never becomes a `user_variants` row, and disagreement needs a second file. A region search does move this figure, because its window can hold any number of rows; that path is not what this surface is compared on. Registered rather than dropped from collection because a `needed` other than 1 would mean the rsID path had stopped returning a single row."
     }
-  ]
+  ],
+  "crossSurface": {
+    "rule": "G8.6: every figure that appears on more than one surface is listed here with its single source of truth, and the gate fails when the same figure key renders two different values in one run.",
+    "spec": "e2e/figures-cross-surface.spec.ts",
+    "fixture": "e2e/fixtures/aims-mixed-grch38.vcf",
+    "purposes": [
+      "ancestry",
+      "reports.polygenic"
+    ],
+    "surfaces": [
+      {
+        "surface": "/genome/me",
+        "figures": 0,
+        "note": "The My Genome overview renders no figure at all. That is recorded here rather than excluded, so the day it shows one the gate asks whether it repeats a figure another surface already owns. It is a product gap, not a collector fault."
+      },
+      {
+        "surface": "/genome/me/ancestry",
+        "figures": 9
+      },
+      {
+        "surface": "/genome/me/reports",
+        "figures": 2
+      },
+      {
+        "surface": "/genome/me/reports/alcohol-flush-aldh2-rs671",
+        "figures": 3,
+        "note": "alcohol-flush is the report this fixture covers: the AIMs panel carries rs671 and no other report position."
+      },
+      {
+        "surface": "/genome/me/data",
+        "figures": 4
+      },
+      {
+        "surface": "/genome/me/data/browser?q=rs671",
+        "figures": 2,
+        "note": "The variant browser answers nothing without a search."
+      }
+    ],
+    "repeated": [
+      {
+        "key": "coverage|quality|observed|computed:genome/input-provenance|-",
+        "name": "the source file's own call count",
+        "surfaces": [
+          "/genome/me/ancestry",
+          "/genome/me/reports",
+          "/genome/me/reports/alcohol-flush-aldh2-rs671",
+          "/genome/me/data",
+          "/genome/me/data/browser?q=rs671"
+        ],
+        "sourceOfTruth": "src/components/reports/input-provenance.tsx",
+        "note": "Every surface that reads a file states what that file recorded, and all of them state it through one component reading one snapshot, so the count cannot differ between them. The variant browser renders it twice on one page — once for the search's inputs and once for the region track — and those two must agree as well."
+      },
+      {
+        "key": "coverage|quality|observed|computed:genome/reports|-",
+        "name": "a report's position coverage",
+        "surfaces": [
+          "/genome/me/reports",
+          "/genome/me/reports/alcohol-flush-aldh2-rs671"
+        ],
+        "sourceOfTruth": "src/lib/genome/report-evidence.ts",
+        "note": "The report list and the report page both show `read N of the M positions this needs` for the same report and both declare `computed:genome/reports`. They computed it separately until this gate was written, and not by the same rule: the page counted `summarizeReportCalls(...).interpreted`, which gives a position whose files disagree the state `conflicting`, while the list counted every outcome whose status is `genotyped` and so counted that position as read. An account whose two files disagree at a report position saw the list claim a position the report itself did not. Both now call `reportCoverage` in this module."
+      }
+    ]
+  }
 }

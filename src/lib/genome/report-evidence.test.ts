@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reportMethod, summarizeReportCalls, unavailablePolygenicCount, validSourceReadDate } from "./report-evidence";
+import { reportCoverage, reportMethod, summarizeReportCalls, unavailablePolygenicCount, validSourceReadDate } from "./report-evidence";
 import { resolveTemplate, type ReportTemplate } from "./reports";
 
 const template: ReportTemplate = {
@@ -66,6 +66,25 @@ describe("report call accounting", () => {
     const repeated = { ...report, variants: [report.variants[0], { ...report.variants[0], outcome: { status: "unrecognized" as const, genotype: "AA" } }] };
     expect(summarizeReportCalls(repeated, new Set())).toEqual({ interpreted: 1, conflicting: 0, "no-call": 0, unrecognized: 0, unavailable: 0 });
     expect(summarizeReportCalls(repeated, new Set([1]))).toEqual({ interpreted: 0, conflicting: 1, "no-call": 0, unrecognized: 0, unavailable: 0 });
+  });
+});
+
+describe("one coverage figure for a report, wherever it is shown", () => {
+  it("does not count a position the subject's files disagree about as read", () => {
+    const report = resolveTemplate(template, () => "A/A");
+    // The outcome the surfaces used to count is still `genotyped`: the
+    // disagreement lives in the conflict set, not in the resolved outcome, so
+    // a rule that reads only the outcome counts this position as read. The
+    // report page never showed it, and the list did.
+    expect(report.variants.every((entry) => entry.outcome.status === "genotyped")).toBe(true);
+    expect(reportCoverage(template, report, new Set([2, 3]))).toEqual({ read: 3, needed: 5 });
+    expect(reportCoverage(template, report, new Set())).toEqual({ read: 5, needed: 5 });
+  });
+  it("counts a position once however many template entries name it", () => {
+    const report = resolveTemplate(template, () => "A/A");
+    const twice = { ...template, variants: [template.variants[0], { ...template.variants[0] }] };
+    expect(reportCoverage(twice, { ...report, variants: [report.variants[0], report.variants[0]] }, new Set()))
+      .toEqual({ read: 1, needed: 1 });
   });
 });
 
