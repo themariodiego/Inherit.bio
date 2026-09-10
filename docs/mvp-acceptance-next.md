@@ -68,7 +68,19 @@ G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
   creates a cohort or a quality row, so `/embryos/compare` and
   `/embryos/[embryoId]` have no reachable result state to render a figure in.
   They become differenceable when the Embryos workstream lands, not before.
-- **The Family half has a shape to copy and one thing to build.**
+- **`/family/health-picture` was measured, and it needs two things before it
+  can be differenced.** Under the real two-account setup it renders **660**
+  figures in three shapes: 324 report-coverage, 324 input-provenance and 12
+  genotype. None of the 660 carries an identifying ancestor, so pairing across
+  seeds would be by position among figures of identical shape — the failure
+  that made the first ancestry run compare one region against another. And
+  **298 of the 324 coverage figures read `read 0 of the 1 positions this
+  needs`**: a report the pair's files do not cover reads 0 of its N positions
+  under any genome, and making those move would need fixtures covering
+  disjoint report sets, which changes *which* genotype figures exist rather
+  than what they say. So that shape is seed-invariant, and registering it
+  needs a shape-level entry rather than 298 per-figure ones.
+- **The Family half has a shape to copy and three things to build.**
   `e2e/figures-two-seed.spec.ts` holds the mechanism: `figuresFor` uploads one
   genome and reads several surfaces, `bothSeeds` runs two isolated accounts,
   and `assertEveryFigureMoved` compares them softly so one run names every
@@ -82,7 +94,8 @@ G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
   is the setup, not the fixture: both Family surfaces need two accounts, an
   accepted invitation and a mail drain, so a two-seed run builds four
   accounts. Extracting that setup out of `e2e/family-health-picture.spec.ts`
-  into a helper is the first step.
+  into a helper is the first step; cell identity and the shape-level register
+  entry are the other two.
 - **Running the Family, Portrait and Embryo specs locally needs the CI
   environment**, which is not obvious from the runner: `JOBS_SECRET`,
   `CRON_SECRET`, `EMAIL_FROM`, `RESEND_API_KEY`, `RESEND_BASE_URL`
