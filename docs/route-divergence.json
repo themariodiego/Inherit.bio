@@ -5,37 +5,46 @@
     {
       "path": "/api/uploads",
       "file": "src/app/api/uploads/route.ts",
-      "methods": ["POST"],
+      "methods": [
+        "POST"
+      ],
       "handler": "issueSubjectUpload",
       "live": "e2e/tier2-upload.spec.ts and e2e/own-upload-pause.spec.ts drive it alongside /api/files/upload-session",
-      "why": "The subject-upload journey was added beside the own-file journey and never registered. The register covers the own-file surface (api.file-upload-session, api.file-finalize, api.file-process, api.file-download) and has no entry for this parallel path.",
-      "priority": "Priority 1 — upload",
-      "closing": "A register entry stating auth mode, request contract and success response contract, derived from the handler rather than invented."
+      "why": "The brief states the opposite of the tree, which is why no register entry was ever written. docs/inherit-v2-brief.md line 2194: \"ADR-0001 sends every upload browser to Storage over TUS, so no upload transits a function and a POST /api/uploads rejection is unreachable \u2014 there is no such route.\" There is such a route. It is not an upload route though: src/lib/uploads/subject-upload-issuance.ts reads at most 4096 bytes of JSON (subjectId, declaredFormat, sizeBytes, sha256), never the file or a filename, and mints the direct-to-Storage bearer. So the brief's safety conclusion is untouched \u2014 bytes still go browser to Storage, and byte-level refusal genuinely cannot live here, which is why it lives in sniffFile and POST /api/files/[id]/process. Only the existence claim is wrong.",
+      "priority": "Priority 1 \u2014 upload",
+      "closing": "Not a transcription. The register is derived from the brief and pinned to briefSha256, and the brief denies this route exists, so an entry cannot be written without first correcting the brief. That is an owner decision, not an implementation one. The correction is narrow: the sentence should say the route carries a declaration rather than bytes, so a byte rejection is unreachable \u2014 which is what makes the surrounding argument true.",
+      "blocker": "authority \u2014 the brief must be corrected before the register can describe this route"
     },
     {
       "path": "/api/uploads/[id]/complete",
       "file": "src/app/api/uploads/[id]/complete/route.ts",
-      "methods": ["POST"],
+      "methods": [
+        "POST"
+      ],
       "handler": "finalizeSubjectUpload",
       "live": "the completion half of the same subject-upload journey",
       "why": "Same gap as /api/uploads. This is also the route carrying maxDuration = 300, so the finalization bottleneck named in the brief sits on an unregistered surface.",
-      "priority": "Priority 1 — upload, durable preparation",
+      "priority": "Priority 1 \u2014 upload, durable preparation",
       "closing": "A register entry as above; the duration ceiling belongs in it."
     },
     {
       "path": "/api/files/[id]",
       "file": "src/app/api/files/[id]/route.ts",
-      "methods": ["DELETE"],
+      "methods": [
+        "DELETE"
+      ],
       "handler": "inline DELETE",
       "live": "src/lib/uploads/file-delete-browser.ts fetches it with method DELETE",
       "why": "The register holds four /api/files/[id]/* children but no entry for the bare [id] path, so the deletion verb itself is undeclared. Deletion is bound by registered deadlines, which makes an undeclared contract here worse than an ordinary gap.",
-      "priority": "Priority 1 — deletion",
+      "priority": "Priority 1 \u2014 deletion",
       "closing": "A register entry for the DELETE verb naming its authority check and its six failure codes."
     },
     {
       "path": "/api/withdraw",
       "file": "src/app/api/withdraw/route.ts",
-      "methods": ["POST"],
+      "methods": [
+        "POST"
+      ],
       "handler": "inline POST",
       "live": "posted by the form in src/app/(marketing)/withdraw/[token]/page.tsx",
       "why": "The legacy adult-subject invitation response surface. api.withdraw is registered at /api/withdraw/[token] with token pinned to the literal \"session\", which src/app/api/withdraw/session/route.ts already implements. This bare path is the pre-migration form and is defect D-081.",
@@ -49,7 +58,10 @@
       "path": "/withdraw/[token]",
       "file": "src/app/(marketing)/withdraw/[token]/page.tsx",
       "segment": "token",
-      "pinnedTo": ["request", "session"],
+      "pinnedTo": [
+        "request",
+        "session"
+      ],
       "why": "The register pins this segment to two literals and marks raw-bearer forbidden. Both literals are built (withdraw/request/route.ts, withdraw/session/page.tsx), but the [token] directory is built too, so /withdraw/<any raw token> resolves and the adult invitation mail links straight at it. That is defect D-081: the token reaches the server in the URL path, and so reaches access logs and browser history, while the co-parent mail for the same class of token uses the fragment form /withdraw/request#<token>.",
       "priority": "defect D-081",
       "closing": "Delete this directory once the adult flow activates through api.rights-activate like the co-parent flow does."

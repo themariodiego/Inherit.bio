@@ -1406,3 +1406,31 @@ Decisions:
   production-browser tests pass, including both real seeded layers and both
   viewport sizes. G4.3 remains NO until the reviewed full PR run supplies the
   remaining acceptance evidence; component correctness alone is insufficient.
+
+## 2026-09-10 — `POST /api/uploads` exists, and the brief says it does not
+
+- Finding: `docs/inherit-v2-brief.md` line 2194 reads "ADR-0001 sends every
+  upload browser → Storage over TUS, so no upload transits a function and a
+  `POST /api/uploads` rejection is unreachable — there is no such route."
+  `src/app/api/uploads/route.ts` exists and exports
+  `issueSubjectUpload as POST`.
+- The safety argument the sentence carries is unaffected, and was checked
+  rather than assumed. `src/lib/uploads/subject-upload-issuance.ts` reads at
+  most 4096 bytes of JSON — `subjectId`, `declaredFormat`, `sizeBytes`,
+  `sha256` — never the file or a filename, and mints the direct-to-Storage
+  bearer. Bytes still go browser → Storage, so a byte-level rejection here is
+  genuinely unreachable, and PDF refusal correctly lives in `sniffFile` and
+  `POST /api/files/[id]/process`. Only the existence claim is false.
+- Consequence, and the reason this is written down rather than fixed: the
+  route register is derived from the brief and pinned by `briefSha256`. A
+  specification that denies a route exists cannot be transcribed into an entry
+  for it, so `/api/uploads` has no declared auth mode, request contract or
+  response contract, and neither do `POST /api/uploads/[id]/complete` or the
+  `DELETE` verb on `/api/files/[id]`, which the brief does not mention at all.
+- Decision: record it, do not invent the entries. Deriving contracts from the
+  handlers would put implementation-shaped authority into the file that is
+  supposed to constrain the implementation. Correcting the brief is an owner
+  decision; the correction is narrow, and is stated in
+  `docs/route-divergence.json` so whoever takes it does not have to rediscover
+  it. `scripts/route-register-correspondence.test.ts` holds the divergence in
+  place meanwhile, so it cannot grow or be silently closed.
