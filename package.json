@@ -17,6 +17,7 @@
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
     "gate:names": "tsx scripts/name-gate.ts",
     "gate:readability": "tsx scripts/readability-gate.ts",
+    "gate:routes": "tsx scripts/route-gate.ts",
     "gate:secrets": "tsx scripts/secret-gate.ts",
     "gate:templates": "tsx scripts/validate-templates.ts",
     "seed": "tsx scripts/seed.ts"

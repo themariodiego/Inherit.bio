@@ -1,5 +1,5 @@
 {
-  "purpose": "Every place where the live App Router surface and docs/route-register.json disagree. scripts/route-register-correspondence.test.ts fails when a divergence appears that is not listed here, and fails when a listed one is fixed or misdescribed, so this file cannot quietly drift from reality in either direction.",
+  "purpose": "Every place where the live App Router surface and docs/route-register.json disagree. scripts/route-register-correspondence.test.ts checks which routes exist; scripts/route-gate.ts (pnpm gate:routes) checks the methods they export, the status their redirects emit, the storage buckets their prefixes name and the (route, state) pairs a browser test proves. Both fail when a divergence appears that is not listed here, and fail when a listed one is fixed or misdescribed, so this file cannot quietly drift from reality in either direction.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. The register is the binding response-contract authority, so an unregistered live endpoint has no declared auth mode, response contract or policy. Each entry names what is missing and what closing it needs.",
   "builtButNotRegistered": [
     {
@@ -66,5 +66,102 @@
       "priority": "defect D-081",
       "closing": "Delete this directory once the adult flow activates through api.rights-activate like the co-parent flow does."
     }
+  ],
+  "methodDivergence": [
+    {
+      "routeId": "api.account-delete",
+      "path": "/api/account/delete",
+      "file": "src/app/api/account/delete/route.ts",
+      "declared": [
+        "POST"
+      ],
+      "exported": [
+        "GET",
+        "POST"
+      ],
+      "why": "The registered POST body requires \"required-recent-one-time-operation-nonce\", and the register never says where that nonce comes from. The code answers with an undeclared GET on the same path that mints it: it checks same-origin and a sensitive account context, then calls issue_account_operation_nonce_v1 through the service role. So the mint is real, needed and load-bearing for account deletion, and it is the one verb on this path with no declared auth mode, no rate-limit binding and no response contract.",
+      "priority": "Priority 1 \u2014 deletion",
+      "closing": "A register entry for the GET verb naming its auth requirements, its rate limit and the nonce response contract. Not a transcription: docs/inherit-v2-brief.md describes no issuance surface for the account operation nonce at all, and the register is derived from the brief and pinned to briefSha256, so the brief has to describe the mint before the register can.",
+      "blocker": "authority \u2014 the brief must describe the operation-nonce mint before the register can declare it"
+    },
+    {
+      "routeId": "api.export",
+      "path": "/api/export",
+      "file": "src/app/api/export/route.ts",
+      "declared": [
+        "GET",
+        "POST"
+      ],
+      "exported": [
+        "GET"
+      ],
+      "why": "The register describes the asynchronous large-export delivery contract: POST create or open-ready with a session-bound one-time nonce, and a GET that polls status with zero enqueue and zero credential. The code ships the older synchronous route, whose own comment says so \u2014 one GET that streams the whole ZIP inline under maxDuration 300. The POST half is unbuilt, and the built GET is a different operation from the registered GET, so the verb count understates the gap rather than overstating it.",
+      "priority": "Priority 1 \u2014 complete download/export",
+      "closing": "Build largeExportDeliveryContract: the enqueue and open-ready POST, the polling GET, the principal-bound HttpOnly export cookie and the exports bucket below. Until then the synchronous GET is what exists, and it is the same 300-second finalization ceiling the brief already names as the bottleneck."
+    }
+  ],
+  "redirectStatusDivergence": [],
+  "redirectStatusDivergenceNote": "Empty on purpose, and checked in both directions so it cannot stay empty through a regression. The register pins all ten legacy aliases to expectedStatus 308. Eight are pages calling permanentRedirect. /signup and /login were next.config.ts entries with permanent: false, which emits 307 \u2014 a 307 asks the browser back to the dead path every time, so the alias never retires. Both now read permanent: true.",
+  "kindDivergence": [
+    {
+      "routeId": "rights.withdraw",
+      "path": "/withdraw/request",
+      "file": "src/app/(marketing)/withdraw/request/route.ts",
+      "declaredKind": "page",
+      "builtKind": "endpoint",
+      "why": "The register pins /withdraw/[token] to the literals request and session and calls the route a page. /withdraw/session is a page; /withdraw/request is a route.ts that builds an HTML document as a template string and returns it with its own Content-Security-Policy, nonce and Set-Cookie. It reads as a page to a person, and to the codebase it is not one: it is outside the app layout and navigation, outside pageAuthContract, and invisible to the registered-page sweep in e2e/a11y.spec.ts, which enumerates pages. Its markup is hand-written, so nothing checks its headings, landmarks, contrast or focus order the way every other public page is checked.",
+      "priority": "defect D-081 \u2014 adjacent",
+      "closing": "It is a route.ts on purpose: it mints a rights-activation candidate and sets a cookie before any markup, which a React page cannot do in the same response. Closing it means either registering the request literal as an endpoint in its own right, with the interstitial contract written down, or moving the mint into a middleware or action so the interstitial can be a page and re-enter the accessibility sweep. The second is the better shape and the larger change."
+    }
+  ],
+  "storageBucketDivergence": [
+    {
+      "bucket": "genomes-staging",
+      "direction": "created-not-declared",
+      "createdBy": "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
+      "why": "A real bucket holding real uploaded genome bytes: genome_files.storage_bucket defaults to it, storage RLS policies name bucket_id = 'genomes-staging', and an upload lands there before single-logical-sample verification moves it. It has no entry in storagePrefixes, so the bytes users upload sit under no declared prefix shape, no filenameContract, no retentionId and no disposition. This is the sharpest of the five.",
+      "priority": "Priority 1 \u2014 upload, durable preparation, deletion",
+      "closing": "A storagePrefixes entry mirroring storage.subject-v2 with the staging disposition and the retention id that governs an unverified upload, so the pre-verification window has a written deadline like everything else."
+    },
+    {
+      "bucket": "generated-artifacts",
+      "direction": "created-not-declared",
+      "createdBy": "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
+      "why": "Created as a Storage bucket, and nothing in src writes an object to it. The same literal is used elsewhere as a retention disposition target class over database rows (public.report_artifacts, public.generated_exports, public.download_sessions, public.model_contexts), so the name carries two meanings and only the row meaning is exercised. An empty private bucket is not a leak, but an undeclared one is a place for a later write to land unnoticed.",
+      "priority": "Priority 2 \u2014 saved results",
+      "closing": "Decide which it is. If derived artifacts are meant to be objects, write the prefix entry; if they are rows only, drop the bucket so the retention target class is the only thing wearing the name."
+    },
+    {
+      "bucket": "exports",
+      "direction": "declared-not-created",
+      "declaredBy": "storage.export-v1",
+      "why": "The bucket the large-export delivery contract writes archives into. It does not exist, which is consistent with POST /api/export being unbuilt above: the whole asynchronous export path is backlog, not a half-built one. The declared access rules \u2014 worker-write-only, authenticated list and select denied, bounded range reads only after api.download-chunk authorization \u2014 therefore protect nothing yet.",
+      "priority": "Priority 1 \u2014 complete download/export",
+      "closing": "Created with those policies as part of building largeExportDeliveryContract."
+    },
+    {
+      "bucket": "legal-evidence",
+      "direction": "declared-not-created",
+      "declaredBy": "storage.legal-evidence-v1",
+      "why": "Evidence for claim and appeal review, declared with service-only access and application envelope encryption on top of provider at-rest encryption. Nothing creates it because the claim and appeal surfaces it serves are unbuilt.",
+      "priority": "Priority 5 \u2014 future-person and claims",
+      "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
+    },
+    {
+      "bucket": "future-person-identity",
+      "direction": "declared-not-created",
+      "declaredBy": "storage.future-person-identity-v1",
+      "why": "Documentary review for Record-Key, claimant-Recovery-Key and keyless future-person claims, declared with named-human-reviewer-assignment access only and four retention ids. Unbuilt for the same reason.",
+      "priority": "Priority 5 \u2014 future-person and claims",
+      "closing": "Created with the declared policies and the claim-specific data key when future-person claim review is built."
+    }
+  ],
+  "provenRouteStatesNote": "The (route, state) pairs a browser test title proves today, out of the 288 the register requires. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction, and UNPROVEN_ROUTE_STATE_PAIRS in that script holds the remainder. A title proves a pair when it names the registered route path and the state id as separate, non-overlapping, whole tokens, so \"empty-history\" does not prove \"empty\" and a state id appearing only inside the path proves nothing.",
+  "provenRouteStates": [
+    "/embryos empty",
+    "/embryos/compare consent-required",
+    "/family/invite complete",
+    "/genome/[subject]/reports empty",
+    "/genome/[subject]/reports partial-coverage"
   ]
 }
