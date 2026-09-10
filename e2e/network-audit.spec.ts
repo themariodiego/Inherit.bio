@@ -68,6 +68,12 @@ async function assertClean(
   expect(fbq, `${label}: window.fbq must be undefined`).toBe("undefined");
   const gtag = await page.evaluate(() => typeof (window as never as { gtag?: unknown }).gtag);
   expect(gtag, `${label}: window.gtag must be undefined`).toBe("undefined");
+  // G1.7 names three globals and this one was not checked. dataLayer is how
+  // Tag Manager arrives, and it is the one that appears without a visible
+  // script tag, pushed by an inlined snippet before anything else loads.
+  const dataLayer = await page.evaluate(() =>
+    typeof (window as never as { dataLayer?: unknown }).dataLayer);
+  expect(dataLayer, `${label}: window.dataLayer must be undefined`).toBe("undefined");
 }
 
 test("landing page contacts no third-party origin", async ({ page }) => {
