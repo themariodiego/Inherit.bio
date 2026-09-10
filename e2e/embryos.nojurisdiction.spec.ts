@@ -54,7 +54,7 @@ test("the flag is off: the server resolves a real jurisdiction, not TEST-LOCAL",
   expect(await page.content()).not.toContain("test-local");
 });
 
-test("/embryos renders the register's copy, blocks every tile and fetches no private row", async ({ page }) => {
+test("/embryos jurisdiction-unavailable: the register's copy, every tile blocked and no private row fetched", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/embryos");
   await expect(page.locator('[data-slot="jurisdiction-line"]')).toContainText(UNREVIEWED_COPY);
@@ -67,7 +67,7 @@ test("/embryos renders the register's copy, blocks every tile and fetches no pri
   await expectNothingPrivate(page);
 });
 
-test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/{id} render the unset decision's copy and nothing private", async ({
+test("/embryos/upload, /embryos/request-data, /embryos/compare and /embryos/[embryoId] jurisdiction-unavailable: the unset decision's copy and nothing private", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
