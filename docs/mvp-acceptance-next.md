@@ -39,20 +39,42 @@ The brief's safety argument survives untouched: `issueSubjectUpload` reads at
 most 4096 bytes of JSON and never the file, so a byte-level rejection there
 really is unreachable. Only the existence claim is false.
 
-**Not blocked, and the shortest paths from here.**
+**Not blocked, and the shortest paths from here.** Updated 10 September after
+G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
 
-- **G1.8** needs one workflow change and nothing else: invoke `gate:legal` a
-  second time after the production build with `SERVER_URL` set. The gate's
-  route list is now derived from the filesystem (17 routes) and its fetch loop
-  reports an unreachable server instead of throwing, so both prerequisites are
-  done.
-- **G5.2** needs E2E over a rendered consent document — version, effective
-  date, summary, permalink, stored signed version, forced re-consent and the
-  change summary. Everything it would assert already exists and is enforced in
-  the database; only the browser proof is missing.
-- **G1.13a/b, G2.5, G8.3, G8.6, G1.12, G2.4's task-depth half** all need
-  browser or baseline instrumentation. `docs/density-baseline.json` already
-  exists, so G2.5 is nearer than the others.
+- **G5.3a** needs one thing and it is an owner call, not code. The access and
+  delete halves are proven in a browser for the canonical path
+  (`e2e/ancestry-revocation.spec.ts`), and the delete half is enforced by
+  `revoke_directional_purpose_v1` calling `execute_own_report_purge_v1`. What
+  remains is legacy `public.ancestry_results`: gated on read, never deleted,
+  against a registered 60-second deadline. D-097 decides it.
+- **G5.6** needs the rights decision on whether `subjects`, `subject_consents`,
+  `subject_account_bindings`, `subject_principals` and
+  `provider_recipient_grants` belong in the archive, plus the unbuilt
+  `/api/subjects/[id]/export`. Attribution itself is proven by an executed
+  export (`e2e/export-subject-scope.spec.ts`).
+- **G2.7** needs the 25 authenticated pages in both themes. The public half is
+  done and derived from the register — 29 routes, both themes, zero axe
+  violations — so the pattern to copy already exists in `e2e/a11y.spec.ts`.
+- **G8.3 is the one worth doing next**, because G8.2 rule (a) waits on it and
+  on nothing else, and because it is the brief's own detection for "a beautiful
+  surface over an unimplemented pipeline". It is nearer than its one-line row
+  implied: `src/lib/figures/contract.ts` declares 11 kinds and exactly two
+  places emit `data-figure-kind`, so `docs/figures-register.json` is derivable
+  rather than hand-kept, and `e2e/fixtures/` already holds seven synthetic VCFs
+  with different values. What is missing is a figure collector — 
+  `src/lib/claims/collect-dom.ts` is the nearest precedent but reads claims —
+  and a spec that renders a surface under two seeds and differences them.
+- **G2.5** needs the density harness rebuilt inside the E2E suite.
+  `scripts/density-baseline/capture.mjs` cannot be pointed at the current build:
+  it takes its routes from the baseline document and authenticates against a
+  stub shaped for the old app. The register carries 62 page routes, 29 of which
+  have a baseline predecessor and 33 of which do not.
+- **G4.7's remaining work is not engineering.** 189 of 221 citations carry no
+  access date; a date records when a person read the source and cannot be
+  invented. `UNDATED_CITATION_BACKLOG` holds the count so it can only shrink.
+- **G1.13a/b, G8.6, G1.12, G2.4's task-depth half** still need browser
+  instrumentation and are untouched.
 
 ## Durable finalization progress, schema first · 9 September 2026
 
