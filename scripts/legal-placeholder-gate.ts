@@ -55,6 +55,31 @@ const FEE_PATTERNS: [RegExp, string][] = [
 const PAYMENT_ORIGINS = /\b(?:js|api|checkout|connect)?\.?(?:stripe|paypal|paddle|lemonsqueezy|braintreegateway|adyen|razorpay|klarna|squareup|mollie|worldpay)\.com\b/i;
 const PAYMENT_PACKAGES = /^(?:@?(?:stripe|paddle|lemonsqueezy|braintree|adyen|razorpay|klarna|square|mollie)\b|paypal-|react-stripe)/i;
 
+/**
+ * G5.8: the eight protective statements, checked by anchor id rather than by
+ * prose, which is what the brief asks for. A statement recorded as present
+ * must still carry its anchor — that is the regression this catches, a clause
+ * quietly dropped in an edit. One recorded as absent must still be absent, so
+ * adding the missing clause fails here until the record is updated, rather
+ * than the record silently going stale.
+ */
+type AnchorRequirement = { requirement: string; anchorId: string; status: string };
+function legalAnchorFailures(): string[] {
+  const record = JSON.parse(fs.readFileSync("scripts/legal-anchor-requirements.json", "utf8"));
+  const source = fs.readFileSync(record.surface, "utf8");
+  const found: string[] = [];
+  for (const statement of record.statements as AnchorRequirement[]) {
+    const anchored = source.includes(`"${statement.anchorId}"`);
+    if (statement.status.startsWith("present") && !anchored) {
+      found.push(`${record.surface}: anchor "${statement.anchorId}" is gone — ${statement.requirement}`);
+    }
+    if (statement.status === "absent" && anchored) {
+      found.push(`scripts/legal-anchor-requirements.json: "${statement.anchorId}" now exists on the page; record it as present — ${statement.requirement}`);
+    }
+  }
+  return found;
+}
+
 function paymentProcessorFailures(): string[] {
   const found: string[] = [];
   const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
@@ -143,8 +168,9 @@ function check(
 async function main() {
   const failures: string[] = [];
   const serverUrl = process.env.SERVER_URL;
-  // Repository-wide, so it runs identically in both modes.
+  // Repository-wide, so both run identically in either mode.
   failures.push(...paymentProcessorFailures());
+  failures.push(...legalAnchorFailures());
 
   if (serverUrl) {
     for (const route of ROUTES) {
