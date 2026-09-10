@@ -71,6 +71,32 @@ personal genome data.
 - The caffeine row uses forward GRCh38 REF C / ALT A, correcting swapped
   labels while preserving the invented heterozygous A/C call.
 
+## tiny-b-grch38.vcf
+
+- Classification: synthetic single-sample GRCh38 VCF, the second seed for
+  G8.3's two-seed differencing on the report surface. It describes no real
+  person, and describes a different one from `tiny-grch38.vcf`: it carries the
+  same four positions with genotypes chosen here by hand so that every figure
+  the report surface renders has to move, plus one further record so the file's
+  own record count differs too. No genotype was read from any person or sample.
+- Against seed A: `rs4988235` 0/1 where A is 1/1, `rs1815739` 1/1 where A is
+  0/1, and `rs762551` 1/1 where A is 0/1.
+- The fifth row is an unnamed SNV at chr11:66561000, a position no report
+  template uses. It is here so the input-provenance figure — which counts the
+  file's own supported records — differs between the seeds. That figure
+  describes the upload rather than the science, and two people's files
+  legitimately carry different record counts, so a differencing gate should see
+  it move; registering it as seed-invariant would have recorded a limitation of
+  these fixtures as a property of the product.
+- `rs671` is 0/0 in both, and that is deliberate rather than an oversight. The
+  VCF parser drops homozygous-reference rows, so the position is uncovered
+  under either seed and renders no figure to compare. Giving it a called
+  genotype under one seed only would make the two surfaces differ in which
+  figures exist, which is a structural difference and not the value difference
+  this gate is about.
+- Repository SHA-256:
+  `964643cb6ec643c1e4d948cb998ff4f46394b79aa968b1c8946bb9f413aa8fc8`.
+
 ## aims-mixed-grch38.vcf
 
 - Classification: synthetic single-sample GRCh38 VCF with one row at every

@@ -2,8 +2,10 @@
   "schemaVersion": 1,
   "rule": "G8.3: every figure asserted on a result surface must differ between seed A and seed B, or be listed here with the reason it cannot.",
   "seeds": {
-    "A": "e2e/fixtures/aims-mixed-grch38.vcf",
-    "B": "e2e/fixtures/aims-mixed-b-grch38.vcf"
+    "A": "e2e/fixtures/aims-mixed-grch38.vcf (ancestry)",
+    "B": "e2e/fixtures/aims-mixed-b-grch38.vcf (ancestry)",
+    "report-A": "e2e/fixtures/tiny-grch38.vcf",
+    "report-B": "e2e/fixtures/tiny-b-grch38.vcf"
   },
   "seedInvariant": [
     {
@@ -11,6 +13,12 @@
       "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/admixture.ts|-|1",
       "name": "the unassignable chip",
       "reason": "estimateAdmixture returns five proportions that sum to 1, and src/lib/ancestry/present.ts computes this chip as max(0, 1 - assigned), so it is 0.0% for every genome. It is registered rather than dropped from collection because a non-zero value would mean the estimator had begun leaving mass unattributed, which is worth seeing."
+    },
+    {
+      "surface": "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551",
+      "key": "coverage|quality|observed|computed:genome/reports|-|1",
+      "name": "the report's own position coverage",
+      "reason": "This report reads one position. While it renders at all that position is covered, so the figure is 'read 1 of the 1 positions this needs' for every genome; an uncovered position does not produce a lower number, it produces the not-covered state and no genotype figure to compare. Registered rather than dropped from collection because a number other than 1 of 1 would mean the report had changed which positions it reads."
     }
   ]
 }
