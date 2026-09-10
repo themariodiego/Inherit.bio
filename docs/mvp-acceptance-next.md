@@ -1,9 +1,58 @@
 # MVP-first acceptance sequence
 
-Original plan audit: 2026-09-06; current checkpoint: 2026-09-09.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-10.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
+
+## What is blocked, and on whom · 10 September 2026
+
+Written because the next person should not have to rediscover which of these
+is waiting on a decision and which is waiting on work. Nothing here is a
+suggestion about priority; it is a statement of what cannot proceed without
+someone else acting.
+
+**Waiting on the owner.** Each is a decision, not an implementation.
+
+| Ref | Question | Why it cannot be settled in code |
+|---|---|---|
+| D-097 | Revoking `ancestry` leaves the legacy rows in the subject's export but the canonical half withholds them, deliberately and with stated reasoning. Which half is right? | The two directions are not symmetric. Matching legacy to canonical withholds data a person can retrieve today; matching canonical to legacy relaxes a withdrawal protection someone wrote on purpose. |
+| G5.8 | Three protective clauses are absent: an uploader indemnity, a reproductive no-reliance statement, and a statement that Inherit sells nothing and takes no payment for sequencing. | Drafting them is legal work. The same reasoning kept the terms page's US$100 damages cap unedited under G5.7. |
+| G5.5 | No jurisdiction is reviewed: `realJurisdictions` holds zero entries against a 249-code catalog, so every declaration resolves to `unreviewed`. | A signed review under `signedReviewContract` is a human legal act, and simulating one is precisely what the structural review gate exists to prevent. |
+| D-098 | `NEXT_PUBLIC_APP_URL` falls back to the hosted origin. Should it fail loudly instead? | The answer turns on what the production deployment actually sets, which is not readable from this repository. |
+
+**Waiting on spending or hosted access.** Unchanged from the 9 September
+measurement; `docs/hosted-own-upload-readiness.md` carries the figures.
+
+- `max_artifact_bytes` at **8.79×** under a whole genome, and `max_job_seconds`
+  at **3.05×** under. Raising either is storage and compute cost.
+- The hosted worker canary, and controlled activation of the prepared-object
+  backend. Both need a deployment nobody here can make.
+
+**Waiting on the brief itself.** `POST /api/uploads` exists; brief line 2194
+says "there is no such route". The register is derived from the brief and
+pinned by `briefSha256`, so three Priority 1 endpoints — `/api/uploads`,
+`/api/uploads/[id]/complete` and the `DELETE` verb on `/api/files/[id]` —
+cannot be given register entries until that sentence is corrected. The
+correction needed is narrow and is written out in `docs/route-divergence.json`.
+The brief's safety argument survives untouched: `issueSubjectUpload` reads at
+most 4096 bytes of JSON and never the file, so a byte-level rejection there
+really is unreachable. Only the existence claim is false.
+
+**Not blocked, and the shortest paths from here.**
+
+- **G1.8** needs one workflow change and nothing else: invoke `gate:legal` a
+  second time after the production build with `SERVER_URL` set. The gate's
+  route list is now derived from the filesystem (17 routes) and its fetch loop
+  reports an unreachable server instead of throwing, so both prerequisites are
+  done.
+- **G5.2** needs E2E over a rendered consent document — version, effective
+  date, summary, permalink, stored signed version, forced re-consent and the
+  change summary. Everything it would assert already exists and is enforced in
+  the database; only the browser proof is missing.
+- **G1.13a/b, G2.5, G8.3, G8.6, G1.12, G2.4's task-depth half** all need
+  browser or baseline instrumentation. `docs/density-baseline.json` already
+  exists, so G2.5 is nearer than the others.
 
 ## Durable finalization progress, schema first · 9 September 2026
 
