@@ -40,6 +40,27 @@ describe("no production demonstration-result path", () => {
     expect(productionFiles.length).toBeGreaterThan(100);
   });
 
+  /**
+   * This bans `example` and `sample` segments as well as `demo`, which is the
+   * stricter of two readings the brief supports, and the reading is recorded
+   * here because the next person to hit this failure deserves to know it was a
+   * choice.
+   *
+   * X1.3 says "`/example/*` is permitted and required; `/demo` is not built",
+   * under conditions: its own namespace, no user data queried, a persistent
+   * "Example data" ribbon, a subject chip reading "Example", and registration
+   * in `docs/figures-register.json` as seed-invariant. Anti-pattern 2 says a
+   * demonstration or example-results surface is "Forbidden outright", calls the
+   * permission a draft position that "collided with the no-fixture rule", and
+   * then names a detection that fires only on routes tagged `demo`.
+   *
+   * They cannot both be the last word. Until that is resolved, this takes the
+   * stricter one: no such surface exists today, so banning it costs nothing,
+   * while allowing it would remove a protection before the ribbon, the chip and
+   * the seed-invariant registration exist to replace it. Building `/example/*`
+   * means resolving the contradiction first, in an ADR, and narrowing this
+   * assertion deliberately rather than deleting it to get past a red run.
+   */
   it("offers no route segment that presents a demonstration", () => {
     const offending = new Set<string>();
     for (const file of routeFiles) {
