@@ -67,6 +67,8 @@ jobs:
         run: pnpm gate:routes
       - name: Claims and provenance gate
         run: pnpm gate:claims
+      - name: Environment template gate
+        run: pnpm gate:env
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys
