@@ -1465,3 +1465,26 @@ Decisions:
   `own_subject_export_content_v1`, so it is shared across live purposes and the
   rule already forbade deleting it on one revocation.
 
+### Follow-up, same day — the canonical export path does the opposite
+
+Found after the decision above was taken, and it qualifies it rather than
+overturning it.
+
+- The decision was put and answered on the legacy behaviour: `POST /api/export`
+  reads `public.ancestry_results` with no purpose check, so revoking `ancestry`
+  leaves those rows in the archive. That description was accurate.
+- The canonical half of the same `ancestry.json` does the opposite, on purpose.
+  `private.own_subject_export_content_v1` filters `purpose='ancestry'` against
+  `purpose_grants`, and `src/lib/exports/own-subject-content.ts` reads twice
+  around its authority check and refuses if the reads differ, commenting:
+  "Unlike raw export permission, ancestry permission may disappear while the
+  source remains. Do not release a buffered result after withdrawal,
+  replacement generation or a different grant, including an empty page."
+- So after revocation an export contains the person's legacy ancestry and not
+  their canonical ancestry, in one file. Both cannot be right, and the
+  retention rule now records an exception that only half the product follows.
+- Not resolved here, and deliberately not resolved by me. The two directions
+  are not symmetric: making legacy match canonical withholds data a person can
+  retrieve today, while making canonical match legacy relaxes a withdrawal
+  protection someone wrote deliberately. Recorded as D-097.
+
