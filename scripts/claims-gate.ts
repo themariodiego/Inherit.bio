@@ -61,13 +61,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *    reach `src/components/claims/claim.tsx` cannot be emitting anything
  *    through the shared claim component.
  *
- * Every check compares its findings against KNOWN_CLAIMS_DIVERGENCE in both
- * directions: an unrecorded finding fails, and a recorded finding that no
- * longer holds fails too, so registering one claim forces the ledger down
- * with it and nothing can quietly give a registration back. The ledger is
- * committed empty because no claims or provenance divergence has been
- * accepted; an entry belongs there only with the acceptance-matrix line that
- * accepted it.
+ * Every check compares its findings against `docs/claims-divergence.json` in
+ * both directions: an unrecorded finding fails, and a recorded finding that no
+ * longer holds fails too, so registering one claim forces the ledger down with
+ * it and nothing can quietly give a registration back. The ledger is read from
+ * disk at run time, exactly as `scripts/route-gate.ts` reads
+ * `docs/route-divergence.json`, and each entry carries what it is, where it
+ * is, why it exists, what closing it needs, and — where something outside code
+ * is in the way — the blocker.
+ *
+ * Recording a divergence measures it; it does not bless it. Acceptance is a
+ * line in `docs/acceptance-matrix.md`, not an entry here. The three checks
+ * whose findings carry counts rebuild their sentence from the numbers the
+ * ledger holds rather than from a copied string, so a single prose block
+ * gaining or losing its registration moves the count and fails in both
+ * directions instead of matching a stale sentence.
  *
  * The gate starts no server and needs no database. It belongs in the static
  * half of CI beside the other gates and costs seconds.
@@ -82,7 +90,7 @@ const MIGRATIONS = "supabase/migrations";
 const SOURCE_TREE = "src";
 const APP = "src/app";
 const CLAIM_COMPONENT = "src/components/claims/claim.tsx";
-const LEDGER = "the claims ledger (scripts/claims-gate.ts)";
+const LEDGER = "docs/claims-divergence.json";
 
 /** The `type` enum, verbatim from G1.11. */
 const CITATION_TYPES = ["pmid", "doi", "statute", "registry", "regulator", "dataset"] as const;
@@ -189,23 +197,115 @@ const DESIGNATED_SURFACES: DesignatedSurface[] = [
 export type ClaimsLedger = Record<string, string[]>;
 
 /**
- * Accepted divergences, compared in both directions. Empty: nothing about
- * claims or provenance has been accepted as a permanent divergence, so every
- * finding below is an open finding, and an entry belongs here only with the
- * acceptance-matrix line that accepted it.
+ * A recorded divergence for the seven checks whose findings are one-off
+ * sentences about a single record — a citation, a claim, a provenance
+ * expression, an element. There is nothing to recount, so the sentence itself
+ * is what the ledger holds and what the comparison matches.
  */
-export const KNOWN_CLAIMS_DIVERGENCE: ClaimsLedger = {
-  "citation schema": [],
-  "source snapshot": [],
-  "claim evidence": [],
-  "claim surface": [],
-  "figure provenance": [],
-  "claim attribute": [],
-  "exempt numeral": [],
-  "report body registration": [],
-  "template citation registration": [],
-  "designated surface": [],
-};
+interface RecordedFinding {
+  finding: string;
+}
+
+/** One template file's unregistered report-body prose, by count. */
+interface ReportBodyDivergence {
+  file: string;
+  unregisteredBlocks: number;
+  totalBlocks: number;
+  reports: number;
+  summaries: number;
+  interpretations: number;
+  studyContexts: number;
+}
+
+/** One template file's cited sources that the citation register does not hold. */
+interface TemplateCitationDivergence {
+  file: string;
+  absentSources: number;
+  citedSources: number;
+}
+
+/** One designated surface, in the one of three shapes its finding takes. */
+interface DesignatedSurfaceDivergence {
+  surface: string;
+  kind: "unlocatable" | "outside-claim-component" | "unbound";
+  /** `unlocatable` only: the modules the gate looked for and did not find. */
+  modules?: string[];
+  /** `outside-claim-component` only. */
+  pageModulesOutsideComponent?: number;
+  pageModules?: number;
+}
+
+interface ClaimsDivergenceFile {
+  citationSchema?: RecordedFinding[];
+  sourceSnapshot?: RecordedFinding[];
+  claimEvidence?: RecordedFinding[];
+  claimSurface?: RecordedFinding[];
+  figureProvenance?: RecordedFinding[];
+  claimAttribute?: RecordedFinding[];
+  exemptNumeral?: RecordedFinding[];
+  reportBodyRegistration?: ReportBodyDivergence[];
+  templateCitationRegistration?: TemplateCitationDivergence[];
+  designatedSurface?: DesignatedSurfaceDivergence[];
+}
+
+/**
+ * One template file's report-body finding. Both the check and the ledger
+ * reader build it here, so a recorded divergence and a present one are the
+ * same sentence or they are not the same divergence.
+ */
+export function reportBodyFinding(entry: ReportBodyDivergence): string {
+  return (
+    `${entry.file}: ${entry.unregisteredBlocks} of ${entry.totalBlocks} report-body prose blocks across ` +
+    `${entry.reports} reports are not registered canonical claims (${entry.summaries} summaries, ` +
+    `${entry.interpretations} genotype interpretations, ${entry.studyContexts} study contexts)`
+  );
+}
+
+/** One template file's unregistered cited sources, built in one place for the same reason. */
+export function templateCitationFinding(entry: TemplateCitationDivergence): string {
+  return `${entry.file}: ${entry.absentSources} of ${entry.citedSources} cited sources are absent from ${CITATIONS}`;
+}
+
+/** One designated surface's finding, in the one of three shapes its `kind` names. */
+export function designatedSurfaceFinding(entry: DesignatedSurfaceDivergence): string {
+  if (entry.kind === "unlocatable") {
+    return (
+      `${entry.surface}: no page route in ${REGISTER} and none of ${entry.modules?.join(", ") || "its modules"} ` +
+      `exists, so this gate is checking nothing on a surface the brief designates`
+    );
+  }
+  if (entry.kind === "outside-claim-component") {
+    return (
+      `${entry.surface}: ${entry.pageModulesOutsideComponent} of ${entry.pageModules} page modules never reach ` +
+      `the shared claim component (${CLAIM_COMPONENT}), so their prose is rendered outside it`
+    );
+  }
+  return `${entry.surface}: no claim in ${CLAIMS} is bound to it`;
+}
+
+/**
+ * The committed ledger, as the label-keyed finding lists the comparison reads.
+ * A group the file omits is an empty group, which fails on its first finding
+ * rather than passing silently.
+ */
+export function readClaimsLedger(repositoryRoot: string): ClaimsLedger {
+  const file = JSON.parse(
+    readFileSync(path.join(repositoryRoot, LEDGER), "utf8"),
+  ) as ClaimsDivergenceFile;
+  const verbatim = (entries?: RecordedFinding[]) => (entries ?? []).map((entry) => entry.finding);
+  return {
+    "citation schema": verbatim(file.citationSchema),
+    "source snapshot": verbatim(file.sourceSnapshot),
+    "claim evidence": verbatim(file.claimEvidence),
+    "claim surface": verbatim(file.claimSurface),
+    "figure provenance": verbatim(file.figureProvenance),
+    "claim attribute": verbatim(file.claimAttribute),
+    "exempt numeral": verbatim(file.exemptNumeral),
+    "report body registration": (file.reportBodyRegistration ?? []).map(reportBodyFinding),
+    "template citation registration": (file.templateCitationRegistration ?? []).map(templateCitationFinding),
+    "designated surface": (file.designatedSurface ?? []).map(designatedSurfaceFinding),
+  };
+}
 
 interface Citation {
   id: string;
@@ -604,12 +704,13 @@ function compareLedger(
 }
 
 /**
- * `ledger` exists so the both-directions comparison is testable; the gate
- * itself always runs against the committed ledger above.
+ * `ledger` exists so the both-directions comparison is testable against a
+ * ledger the test controls; the gate itself always runs against the committed
+ * `docs/claims-divergence.json` of the repository it is pointed at.
  */
 export function runClaimsGate(
   repositoryRoot: string,
-  ledger: ClaimsLedger = KNOWN_CLAIMS_DIVERGENCE,
+  ledger: ClaimsLedger = readClaimsLedger(repositoryRoot),
 ): ClaimsGateResult {
   const failures: string[] = [];
   const compare = (label: string, present: string[]) =>
@@ -929,14 +1030,20 @@ export function runClaimsGate(
     const missingProse = unregistered.summary + unregistered.interpretation + unregistered["study-context"];
     if (missingProse > 0) {
       registrationFindings.push(
-        `${file}: ${missingProse} of ${total} report-body prose blocks across ${slugsAffected.size} reports are ` +
-          `not registered canonical claims (${unregistered.summary} summaries, ` +
-          `${unregistered.interpretation} genotype interpretations, ${unregistered["study-context"]} study contexts)`,
+        reportBodyFinding({
+          file,
+          unregisteredBlocks: missingProse,
+          totalBlocks: total,
+          reports: slugsAffected.size,
+          summaries: unregistered.summary,
+          interpretations: unregistered.interpretation,
+          studyContexts: unregistered["study-context"],
+        }),
       );
     }
     if (missingCitations > 0) {
       templateCitationFindings.push(
-        `${file}: ${missingCitations} of ${fileCitations} cited sources are absent from ${CITATIONS}`,
+        templateCitationFinding({ file, absentSources: missingCitations, citedSources: fileCitations }),
       );
     }
   }
@@ -953,8 +1060,11 @@ export function runClaimsGate(
     const rendered = routes.map((route) => pageFiles.get(route.path)).filter((file): file is string => !!file);
     if (rendered.length === 0 && modules.length === 0) {
       surfaceStatus.push(
-        `${surface.name}: no page route in ${REGISTER} and none of ${surface.modules.join(", ") || "its modules"} ` +
-          `exists, so this gate is checking nothing on a surface the brief designates`,
+        designatedSurfaceFinding({
+          surface: surface.name,
+          kind: "unlocatable",
+          modules: surface.modules,
+        }),
       );
       continue;
     }
@@ -962,8 +1072,12 @@ export function runClaimsGate(
       const unreached = rendered.filter((file) => !importsReach(repositoryRoot, file, claimComponent));
       if (unreached.length > 0) {
         surfaceStatus.push(
-          `${surface.name}: ${unreached.length} of ${rendered.length} page modules never reach the shared ` +
-            `claim component (${CLAIM_COMPONENT}), so their prose is rendered outside it`,
+          designatedSurfaceFinding({
+            surface: surface.name,
+            kind: "outside-claim-component",
+            pageModulesOutsideComponent: unreached.length,
+            pageModules: rendered.length,
+          }),
         );
       }
     }
@@ -974,7 +1088,7 @@ export function runClaimsGate(
       }),
     );
     if (bound.length === 0) {
-      surfaceStatus.push(`${surface.name}: no claim in ${CLAIMS} is bound to it`);
+      surfaceStatus.push(designatedSurfaceFinding({ surface: surface.name, kind: "unbound" }));
     }
   }
   compare("designated surface", surfaceStatus);

@@ -65,6 +65,8 @@ jobs:
         run: pnpm gate:secrets
       - name: Route register gate
         run: pnpm gate:routes
+      - name: Claims and provenance gate
+        run: pnpm gate:claims
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys

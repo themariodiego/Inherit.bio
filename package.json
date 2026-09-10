@@ -13,6 +13,7 @@
     "worker:prepared": "node --conditions=react-server --import tsx scripts/prepared-worker.run.mts",
     "test:invitation-locks": "node scripts/invitation-transition-locks.mjs",
     "e2e": "tsx scripts/run-upload-browser.mts --full",
+    "gate:claims": "tsx scripts/claims-gate.ts",
     "gate:first-glance": "tsx scripts/first-glance-gate.ts",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
     "gate:names": "tsx scripts/name-gate.ts",

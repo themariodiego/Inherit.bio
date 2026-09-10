@@ -10,10 +10,10 @@ import {
   pathMatchesRoute,
   provenanceLiterals,
   quoteWordCount,
+  readClaimsLedger,
   reportProseBlocks,
   runClaimsGate,
   withoutComments,
-  type ClaimsLedger,
 } from "./claims-gate";
 
 /**
@@ -23,13 +23,16 @@ import {
  * sources, the migrations — are symlinked from this repository so the floor
  * guards see their true size, and only the input under test is rewritten.
  *
- * The gate currently fails on this repository (the claims ledger is empty and
- * the registers are incomplete), so a test cannot assert an empty failure
- * list. Each test instead asserts the exact failure line its own defect
- * causes, and the tests that need a clean baseline for one check hand the
- * gate a ledger recording that check's existing findings.
+ * Every divergence this repository carries today is recorded in
+ * `docs/claims-divergence.json`, so a planted repository starts from a real
+ * ledger and the one defect the test plants is the only unrecorded finding.
+ * The ledger is compared in both directions, which is itself planted below:
+ * a divergence missing from the ledger fails, and a ledger entry whose
+ * divergence no longer exists fails too — including when only one of its
+ * counts has moved.
  */
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const LEDGER = "docs/claims-divergence.json";
 const temporaryRoots: string[] = [];
 
 afterAll(() => {
@@ -53,7 +56,15 @@ interface Overrides {
   templates?: (templatesRoot: string) => void;
   /** Receives a writable copy of `src` at `<root>/src`. */
   source?: (sourceRoot: string) => void;
+  /** Receives the parsed `docs/claims-divergence.json` before it is written. */
+  ledger?: (ledger: LedgerFile) => void;
 }
+
+/** Only the two groups the tests plant into are named; the rest travel as they are. */
+type LedgerFile = Record<string, unknown> & {
+  reportBodyRegistration: { file: string; unregisteredBlocks: number }[];
+  designatedSurface: { surface: string; kind: string }[];
+};
 
 const realCitations = () =>
   JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "data/citations.json"), "utf8")) as Citation[];
@@ -99,20 +110,20 @@ function plant(overrides: Overrides): string {
   ) as Record<string, unknown>;
   overrides.register?.(register);
   writeFileSync(path.join(root, "docs/route-register.json"), JSON.stringify(register));
+
+  const ledger = JSON.parse(
+    readFileSync(path.join(REPOSITORY_ROOT, LEDGER), "utf8"),
+  ) as LedgerFile;
+  overrides.ledger?.(ledger);
+  writeFileSync(path.join(root, LEDGER), JSON.stringify(ledger));
   return root;
 }
 
-/** The findings a label already carries on this repository, as a clean baseline for it. */
-function baselineLedger(label: string): ClaimsLedger {
-  const prefix = `${label}: not recorded in the claims ledger (scripts/claims-gate.ts): `;
-  const { failures } = runClaimsGate(REPOSITORY_ROOT);
-  return {
-    [label]: failures.filter((line) => line.startsWith(prefix)).map((line) => line.slice(prefix.length)),
-  };
-}
-
 const unrecorded = (label: string, finding: string) =>
-  `${label}: not recorded in the claims ledger (scripts/claims-gate.ts): ${finding}`;
+  `${label}: not recorded in ${LEDGER}: ${finding}`;
+
+const stale = (label: string, finding: string) =>
+  `${label}: recorded in ${LEDGER} but no longer present: ${finding}`;
 
 describe("the claims gate holds the registers to the product", () => {
   it("reads every input on this repository, and no floor guard fires", () => {
@@ -136,6 +147,31 @@ describe("the claims gate holds the registers to the product", () => {
     // Every failure is a finding about the product, never a floor guard
     // reporting that the gate read nothing.
     expect(result.failures.filter((line) => /expected over/.test(line))).toEqual([]);
+  });
+
+  it("runs green against the committed ledger, outside the provenance defects being fixed", () => {
+    // The whole point of the ledger: every divergence this repository carries
+    // is recorded, in both directions, so nothing but a real regression can
+    // fail this gate. Figure provenance is excluded deliberately — the
+    // findings there are correctness bugs under repair in src/, not accepted
+    // divergences, and docs/claims-divergence.json says so and lists none.
+    const { failures } = runClaimsGate(REPOSITORY_ROOT);
+    expect(failures.filter((line) => !line.startsWith("figure provenance:"))).toEqual([]);
+    expect(readClaimsLedger(REPOSITORY_ROOT)["figure provenance"]).toEqual([]);
+  });
+
+  it("records every divergence the ten checks report, and nothing else", () => {
+    const ledger = readClaimsLedger(REPOSITORY_ROOT);
+    // 675 unregistered prose blocks are 16 entries, one per template file
+    // carrying its counts; 201 unregistered template citations are 16 more.
+    expect(ledger["report body registration"]).toHaveLength(16);
+    expect(ledger["template citation registration"]).toHaveLength(16);
+    expect(ledger["designated surface"]).toHaveLength(10);
+    // The seven checks with nothing to record are recorded as having nothing,
+    // which is what makes a regression in them fail.
+    for (const label of ["citation schema", "source snapshot", "claim evidence", "claim surface", "claim attribute", "exempt numeral"]) {
+      expect(ledger[label]).toEqual([]);
+    }
   });
 
   it("fails when a citation quote runs past the 25-word limit", () => {
@@ -393,8 +429,10 @@ describe("the claims gate holds the registers to the product", () => {
   });
 
   it("fails a report body harder when one more of its prose blocks loses its registration", () => {
-    const before = runClaimsGate(REPOSITORY_ROOT).failures.join("\n");
-    expect(before).toContain("data/templates/basic-traits.json: 31 of 63 report-body prose blocks");
+    // The ledger records 31 of 63 for this file. Losing one registration
+    // makes it 32, and the gate fails twice for the one change: the 32 is
+    // unrecorded, and the recorded 31 is no longer true. A count cannot go
+    // stale in either direction.
     const root = plant({
       claims: (claims) => {
         const at = claims.findIndex((claim) => claim.claim_id === "report.earwax-type-abcc11.summary");
@@ -402,8 +440,13 @@ describe("the claims gate holds the registers to the product", () => {
       },
     });
     const { failures, registeredProseCount } = runClaimsGate(root);
-    expect(failures.join("\n")).toContain("data/templates/basic-traits.json: 32 of 63 report-body prose blocks");
-    expect(failures.join("\n")).not.toContain("data/templates/basic-traits.json: 31 of 63");
+    const joined = failures.join("\n");
+    expect(joined).toContain(
+      unrecorded("report body registration", "data/templates/basic-traits.json: 32 of 63 report-body prose blocks"),
+    );
+    expect(joined).toContain(
+      stale("report body registration", "data/templates/basic-traits.json: 31 of 63 report-body prose blocks"),
+    );
     expect(registeredProseCount).toBe(70);
   });
 
@@ -434,12 +477,13 @@ describe("the claims gate holds the registers to the product", () => {
 
   it("fails when a designated surface renders its prose outside the shared claim component", () => {
     const label = "designated surface";
-    const ledger = baselineLedger(label);
+    const ledger = readClaimsLedger(REPOSITORY_ROOT);
     expect(ledger[label]).toContain(
       "legal pages: 22 of 22 page modules never reach the shared claim component " +
         "(src/components/claims/claim.tsx), so their prose is rendered outside it",
     );
-    // Report bodies are the one designated surface that does reach it today.
+    // Report bodies are the one designated surface that does reach it today,
+    // so the ledger records nothing about them and losing that is a failure.
     expect(ledger[label].join("\n")).not.toContain("report bodies:");
     const root = plant({
       source: (sourceRoot) => {
@@ -452,7 +496,7 @@ describe("the claims gate holds the registers to the product", () => {
         }
       },
     });
-    const { failures } = runClaimsGate(root, ledger);
+    const { failures } = runClaimsGate(root);
     expect(failures).toContain(
       unrecorded(
         label,
@@ -462,24 +506,63 @@ describe("the claims gate holds the registers to the product", () => {
     );
   });
 
-  it("stops reporting a designated surface as unbound once a claim is bound to it", () => {
+  it("fails when a divergence is fixed and its ledger entry is left behind", () => {
+    // Binding a claim to the embryo comparison closes a recorded divergence.
+    // The gate then fails on the stale entry, so the fix cannot land without
+    // taking its line out of docs/claims-divergence.json.
     const unbound = "the embryo comparison: no claim in data/claims.json is bound to it";
-    expect(runClaimsGate(REPOSITORY_ROOT).failures.join("\n")).toContain(unbound);
+    expect(readClaimsLedger(REPOSITORY_ROOT)["designated surface"]).toContain(unbound);
     const root = plant({
       claims: (claims) => {
         claims.push({ ...claims[0], claim_id: "embryo.compare.planted", surfaces: ["/embryos/compare#state=complete"] });
       },
     });
-    expect(runClaimsGate(root).failures.join("\n")).not.toContain(unbound);
+    const { failures } = runClaimsGate(root);
+    expect(failures).toContain(stale("designated surface", unbound));
+    expect(failures.join("\n")).not.toContain(unrecorded("designated surface", unbound));
   });
 
-  it("reports a designated surface it cannot locate rather than passing it as clean", () => {
-    const { failures } = runClaimsGate(REPOSITORY_ROOT);
+  it("fails when a divergence the checks report is missing from the ledger", () => {
+    const finding =
+      "glossary definitions: no page route in docs/route-register.json and none of src/copy/glossary " +
+      "exists, so this gate is checking nothing on a surface the brief designates";
+    // Recorded today, because the brief designates a glossary surface that
+    // this repository does not have anywhere.
+    expect(readClaimsLedger(REPOSITORY_ROOT)["designated surface"]).toContain(finding);
+    const root = plant({
+      ledger: (ledger) => {
+        ledger.designatedSurface = ledger.designatedSurface.filter(
+          (entry) => !(entry.surface === "glossary definitions" && entry.kind === "unlocatable"),
+        );
+      },
+    });
+    expect(runClaimsGate(root).failures).toContain(unrecorded("designated surface", finding));
+  });
+
+  it("fails on a ledger entry whose counts no longer match the divergence it records", () => {
+    // The sharpest half of the both-directions rule: the entry still names a
+    // real file and a real divergence, and one number in it has gone stale.
+    const root = plant({
+      ledger: (ledger) => {
+        const entry = ledger.reportBodyRegistration.find(
+          (recorded) => recorded.file === "data/templates/gastrointestinal.json",
+        )!;
+        entry.unregisteredBlocks = 57;
+      },
+    });
+    const { failures } = runClaimsGate(root);
     expect(failures).toContain(
       unrecorded(
-        "designated surface",
-        "glossary definitions: no page route in docs/route-register.json and none of src/copy/glossary " +
-          "exists, so this gate is checking nothing on a surface the brief designates",
+        "report body registration",
+        "data/templates/gastrointestinal.json: 58 of 58 report-body prose blocks across 10 reports are not " +
+          "registered canonical claims (10 summaries, 33 genotype interpretations, 15 study contexts)",
+      ),
+    );
+    expect(failures).toContain(
+      stale(
+        "report body registration",
+        "data/templates/gastrointestinal.json: 57 of 58 report-body prose blocks across 10 reports are not " +
+          "registered canonical claims (10 summaries, 33 genotype interpretations, 15 study contexts)",
       ),
     );
   });
@@ -489,8 +572,7 @@ describe("the claims gate holds the registers to the product", () => {
       "citation schema": ["pmid:12553913 quote is 40 words, over the 25-word limit"],
     });
     expect(failures).toContain(
-      "citation schema: recorded in the claims ledger (scripts/claims-gate.ts) but no longer present: " +
-        "pmid:12553913 quote is 40 words, over the 25-word limit",
+      stale("citation schema", "pmid:12553913 quote is 40 words, over the 25-word limit"),
     );
   });
 
@@ -507,6 +589,9 @@ describe("the claims gate holds the registers to the product", () => {
       path.join(root, "docs/route-register.json"),
       JSON.stringify({ routes: [], stateIds: [], exportContracts: {} }),
     );
+    // A ledger recording nothing, which is what an empty repository would
+    // honestly have: the floor guards are what must fail here, not the read.
+    writeFileSync(path.join(root, LEDGER), "{}");
     const { failures } = runClaimsGate(root);
     // An empty scan reports nothing wrong with the product, which is exactly
     // the failure mode the floor guards exist to catch.
