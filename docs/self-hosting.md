@@ -42,6 +42,7 @@ Then edit `.env.local`:
 | `SUPABASE_SERVICE_ROLE_KEY` | the `SERVICE_ROLE_KEY` printed by `supabase start` |
 | `DATABASE_URL` | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` — **set this.** It builds the links inside outbound mail: invitations, rights and withdrawal links, and the cancel/export links in an account-deletion notice. It falls back to the hosted deployment rather than to localhost, so leaving it unset sends your users' mail links, and the rights tokens they carry, to a site you do not run. |
 | `BYOK_ENCRYPTION_KEY` | output of `openssl rand -base64 32` |
 | `JOBS_SECRET` | output of `openssl rand -hex 32` |
 | `RESEND_API_KEY` | leave unset locally — auth emails land in Mailpit (http://127.0.0.1:54324); app emails no-op with a console note |
