@@ -1447,9 +1447,11 @@ Decisions:
   Reads are correctly denied: `loadAncestryResultSnapshot` gates canonical and
   legacy rows through `filterOwnAnalysisFiles(subject, 'ancestry', …)` and
   re-confirms after every read. So this was retention, never access.
-- What decided it: `POST /api/export` reads those rows filtered only by
-  `user_id`, under the subject's own export permission rather than the
-  analysis grant. The brief requires storage, analysis, sharing and AI
+- What decided it: `POST /api/export` reads those rows under the subject's own
+  export permission rather than the analysis grant. The query selects by
+  `user_id` and the result is then narrowed to the account's own legacy files
+  (`legacyIds`), so the scoping is correct and nothing leaks; what is absent is
+  any *ancestry-purpose* check, which is the whole point here. The brief requires storage, analysis, sharing and AI
   permissions to stay separate, so revoking analysis withdrawing the subject's
   own copy of already-derived data would collapse two permissions into one.
 - Decision (owner): keep the rows. The rule was over-broad, and
