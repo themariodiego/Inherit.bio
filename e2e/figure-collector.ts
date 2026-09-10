@@ -13,7 +13,7 @@ export type CollectedFigure = {
   basis: string | null;
   provenance: string | null;
   /**
-   * The nearest identifying ancestor — a region code or a claim id.
+   * The nearest identifying ancestor — a region code, a chip name or a claim id.
    *
    * Without this, figures are paired by their position among figures of the
    * same shape, and ancestry shares render in descending order, so position
@@ -21,6 +21,12 @@ export type CollectedFigure = {
    * unchanged at "0.0%": seed A's SAS against seed B's EUR, two different
    * regions that happened to round to the same string. Pairing on that would
    * have put a meaningless entry in the register and hidden a real comparison.
+   *
+   * `data-chip` is here for the same reason one step later: the ancestry
+   * surface renders two chips, unassignable and hidden, which carry no region
+   * and so were separated only by document order — the register entry for the
+   * unassignable chip named an ordinal and would have silently moved to the
+   * other chip if their order ever changed.
    */
   context: string | null;
   value: string;
@@ -30,14 +36,15 @@ export function collectFigures(): CollectedFigure[] {
   const nodes = document.querySelectorAll<HTMLElement>("[data-figure-kind]");
   return [...nodes].map((node) => {
     const valueNode = node.querySelector<HTMLElement>('[data-slot="figure-value"]');
-    const identified = node.closest<HTMLElement>("[data-region], [data-claim-id]");
+    const identified = node.closest<HTMLElement>("[data-region], [data-chip], [data-claim-id]");
     return {
       kind: node.getAttribute("data-figure-kind") ?? "",
       figureClass: node.getAttribute("data-figure-class"),
       basis: node.getAttribute("data-figure-basis"),
       provenance: node.getAttribute("data-provenance"),
       context: identified
-        ? identified.getAttribute("data-region") ?? identified.getAttribute("data-claim-id")
+        ? identified.getAttribute("data-region") ?? identified.getAttribute("data-chip")
+          ?? identified.getAttribute("data-claim-id")
         : null,
       value: (valueNode ?? node).innerText.replace(/\s+/g, " ").trim(),
     };

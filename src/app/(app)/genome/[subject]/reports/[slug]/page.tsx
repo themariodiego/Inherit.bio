@@ -48,7 +48,7 @@ import {
   whatYouCanDo,
 } from "@/copy/reports/strings";
 import { REPORT_METHOD_COPY, REPORT_SOURCES_SCOPE, SCORE_METHOD_LABEL, SOURCE_READ_SCOPE, citedSources } from "@/copy/reports/basis";
-import { reportMethod, summarizeReportCalls, type ReportCallSummary } from "@/lib/genome/report-evidence";
+import { reportCoverage, reportMethod, summarizeReportCalls, type ReportCallSummary } from "@/lib/genome/report-evidence";
 import type { FigureClass } from "@/lib/figures/contract";
 import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
@@ -380,7 +380,9 @@ export default async function ReportDetailPage(
   const existingSourceIds = template.citations.map(legacySourceId);
   const summarySourceIds = reportSourceIds(template);
   let yourResult: ReactNode;
-  let coveredPositions = 0;
+  // The one coverage pair this report shows, shared with the report list
+  // so the two surfaces cannot disagree about it (G8.6).
+  let coverage = { read: 0, needed: 0 };
   let callSummary: ReportCallSummary | null = null;
   let anyNotCovered = false;
   let inputSources: InputSourceView[] = [];
@@ -404,7 +406,7 @@ export default async function ReportDetailPage(
     const resolved = sharedReport ? resolveStoredSharedReport(sharedReport) : resolveTemplate(template, (rsid) => genotypes.get(rsid));
     if (!resolved) notFound();
     callSummary = hasData && resolved.variants.length > 0 ? summarizeReportCalls(resolved, conflicts) : null;
-    coveredPositions = callSummary?.interpreted ?? 0;
+    coverage = reportCoverage(template, resolved, conflicts);
     anyNotCovered =
       hasData && resolved.variants.some((item) => item.outcome.status === "not-covered");
     // The first claim block on the page is the density measurement's primary
@@ -461,7 +463,7 @@ export default async function ReportDetailPage(
   // renders on that layer only, and only with a shown result.
   const coverageLine =
     showResults && hasData && layer === "estimate" && template.variants.length > 0
-      ? coverageSentence(coveredPositions, new Set(template.variants.map((variant) => variant.rsid)).size)
+      ? coverageSentence(coverage.read, coverage.needed)
       : null;
 
   const annotatedCitations = annotateReportSources(summarySourceIds, template.citations);
@@ -646,7 +648,7 @@ export default async function ReportDetailPage(
             </ul>
             <p className="text-ink-muted">{PROVENANCE_LINE}</p>
             {showResults ? <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }}
-              state={inputState} coverage={{ read: coveredPositions, needed: new Set(template.variants.map((variant) => variant.rsid)).size }} /> : null}
+              state={inputState} coverage={coverage} /> : null}
           </div>
         }
       />
