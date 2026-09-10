@@ -84,6 +84,8 @@ export interface RouteGateResult {
   declaredBucketCount: number;
   requiredStateCount: number;
   provenStateCount: number;
+  /** Test titles built by interpolation, which a static reader cannot resolve. */
+  unresolvableTitleCount: number;
   browserTestTitleCount: number;
 }
 
@@ -432,6 +434,17 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     }
   }
   const titles = browserTestTitles(path.join(repositoryRoot, BROWSER_TESTS));
+  // What this scan cannot see, counted rather than left to inflate the ratchet.
+  // A title built with a template interpolation resolves at run time to
+  // something this static reader never holds: `legal page ${route} is complete`
+  // is one source title that Playwright turns into twelve, each naming a real
+  // route this suite really drives. Guessing at the resolved text would mean a
+  // gate inferring what runs, so the number is reported instead - a reader who
+  // sees 283 unproven pairs can tell how much of it is the product and how much
+  // is this reader's own blindness. Measured 2026-09-10: 9 of 161 titles, and
+  // only the legal one carries both a path and a state word, so the ratchet is
+  // overwhelmingly a real gap rather than an artefact of this scan.
+  const unresolvableTitles = titles.filter((title) => title.includes("${"));
   const proven = new Set<string>();
   for (const title of titles) {
     for (const entry of register.routes) {
@@ -471,6 +484,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     declaredBucketCount: declaredBuckets.size,
     requiredStateCount: required.size,
     provenStateCount: proven.size,
+    unresolvableTitleCount: unresolvableTitles.length,
     browserTestTitleCount: titles.length,
   };
 }
@@ -490,7 +504,9 @@ async function main() {
       `${result.registeredRedirectCount} registered redirects, ${result.checkedKindCount} route kinds, ` +
       `${result.declaredBucketCount} declared ` +
       `storage buckets, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
-      `by ${result.browserTestTitleCount} browser tests`,
+      `by ${result.browserTestTitleCount} browser tests ` +
+      `(${result.unresolvableTitleCount} of them built by interpolation, which this static ` +
+      `reader cannot resolve and does not guess at)`,
   );
 }
 
