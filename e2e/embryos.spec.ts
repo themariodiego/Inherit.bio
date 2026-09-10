@@ -373,7 +373,7 @@ test("/embryos with no cohort: the four-part empty state, one primary action, th
   await expectAxeClean(page);
 });
 
-test("/embryos/compare with no cohort: the zero-cohort blocking state, and unknown cohorts answer 404", async ({ page }) => {
+test("/embryos/compare empty: the zero-cohort blocking state with no cohort, and unknown cohorts answer 404", async ({ page }) => {
   await signIn(page, C.email, C.password);
   await page.goto("/embryos/compare");
   await expect(page.getByRole("heading", { level: 1, name: "Compare embryos" })).toBeVisible();

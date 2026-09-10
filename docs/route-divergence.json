@@ -163,6 +163,7 @@
     "/embryos/[embryoId] consent-required",
     "/embryos/[embryoId] jurisdiction-unavailable",
     "/embryos/compare consent-required",
+    "/embryos/compare empty",
     "/embryos/compare jurisdiction-unavailable",
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
