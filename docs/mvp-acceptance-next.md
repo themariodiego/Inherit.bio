@@ -62,13 +62,16 @@ Neither can be settled by anyone reading this file; both need the owner.
 
 ### What to pick up first, in order, none of it blocked
 
-1. **The report library loses eight tab stops** at both widths
-   (`/genome/[subject]/reports`, recorded in
-   `docs/accessibility-divergence.json`). Eight controls a keyboard cannot
-   reach, on the surface a person uses to open their own results. No decision
-   needed; the diagnosis is unfinished, not the authority. Usual causes: a
-   control inside a closed disclosure, a click handler on a div, a control
-   rendered after the element that takes focus back.
+1. ~~The report library loses eight tab stops~~ — **withdrawn, it was never
+   real.** Finished the diagnosis rather than leaving it: the eight are the
+   category jump links behind the collapsed filter strip, and the sweep was
+   counting controls inside a closed `details` because Chromium still gives
+   those descendants client rects. Tab is right to skip them; the summary that
+   opens the disclosure is a tab stop and is reached. The same artifact
+   produced the `/copilot/[scope]` shortfalls. The counter excludes
+   closed-disclosure descendants now, no stop shortfall survives it, and the
+   four false rows are out of the ledger. What made this findable was changing
+   the failure to **name** the elements instead of counting them.
 2. **G1.7's second half.** `assertNoThirdParty` is extracted and verified in
    `e2e/helpers.ts`; wiring it into the a11y sweep's existing navigations takes
    the no-third-party promise from 8 surfaces to 62 in both themes, at the cost

@@ -537,7 +537,7 @@ type ElementProbe = {
   /** Everything a person can operate: `e2e/helpers.ts`'s list plus the widget roles. */
   interactive: string;
   /** Scratch space for one keyboard pass, reset before each. */
-  tab: { elements: Element[]; names: string[]; violations: string[] };
+  tab: { elements: Element[]; names: string[]; violations: string[]; counted: Element[] };
 };
 
 declare global {
@@ -605,7 +605,7 @@ async function installProbes(page: Page) {
         const style = getComputedStyle(element);
         return style.visibility !== "hidden" && style.display !== "none";
       },
-      tab: { elements: [], names: [], violations: [] },
+      tab: { elements: [], names: [], violations: [], counted: [] },
     };
   });
 }
@@ -987,7 +987,8 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         }
         if (pass.stops < pass.expected) {
           record({ kind: "stops", ...at, reached: pass.stops, expected: pass.expected },
-            `    ${pass.expected - pass.stops} of this page's certainly-tabbable elements were never`
+            `    never reached: ${pass.unreached.slice(0, 12).join(", ") || "(none named)"}\n`
+            + `    ${pass.expected - pass.stops} of this page's certainly-tabbable elements were never`
             + ` reached (${pass.stops} of ${pass.expected}); the traversal ended ${pass.exit} at`
             + ` ${pass.last}`);
         }
@@ -1173,7 +1174,8 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
 
 /** How one traversal ended, as seen from inside the document. */
 type TabExit = "left-document" | "wrapped" | "trapped" | "exhausted";
-type TabPass = { stops: number; expected: number; exit: TabExit; violations: string[]; last: string };
+type TabPass = { stops: number; expected: number; exit: TabExit; violations: string[]; last: string;
+  unreached: string[] };
 
 /**
  * A hang guard, not a measurement: a traversal ends by itself at the body or
@@ -1187,7 +1189,7 @@ async function tabThrough(page: Page): Promise<TabPass> {
   const expected = await page.evaluate(() => {
     const probe = window.__g113b;
     if (!probe) throw new Error("element probe not installed");
-    probe.tab = { elements: [], names: [], violations: [] };
+    probe.tab = { elements: [], names: [], violations: [], counted: [] };
     // A floor, not a census. Radio inputs are left out (exactly one of a group
     // is tabbable and which one depends on which is checked), so is anything
     // carrying tabindex="-1" (the roving chip strip parks its other chips
@@ -1204,7 +1206,17 @@ async function tabThrough(page: Page): Promise<TabPass> {
       // Only the first summary of a <details> is a tab stop.
       if (element.tagName === "SUMMARY" && !(element.parentElement?.tagName === "DETAILS"
         && element.parentElement.firstElementChild === element)) continue;
+      // A control inside a closed <details> is correctly not a tab stop: the
+      // summary that opens it is one, and it is counted and reached. Chromium
+      // still hands these descendants client rects, so `rendered` says yes and
+      // the count came out eight too high on the report library, whose eight
+      // category jump links live behind exactly such a disclosure. That read as
+      // eight controls a keyboard could not reach; they are reachable, one Tab
+      // and one Enter away. Counting them was the bug, not the page.
+      const closed = element.closest("details:not([open])");
+      if (closed && !(element.tagName === "SUMMARY" && element.parentElement === closed)) continue;
       count++;
+      probe.tab.counted.push(element);
     }
     // Where the next Tab starts from. tabindex="-1" adds no tab stop, but
     // focusing the root resets Chromium's sequential-navigation starting
@@ -1256,6 +1268,13 @@ async function tabThrough(page: Page): Promise<TabPass> {
       stops: probe.tab.elements.length,
       violations: probe.tab.violations,
       last: probe.tab.names[probe.tab.names.length - 1] ?? "(no tab stop at all)",
+      // A shortfall is only worth recording if it can be acted on, and "eight
+      // stops missing" cannot. These are the counted elements Tab never landed
+      // on, named, so the next person reads which controls a keyboard cannot
+      // reach rather than how many.
+      unreached: probe.tab.counted
+        .filter(element => !probe.tab.elements.includes(element))
+        .map(element => probe.describe(element)),
     };
   });
   return { ...log, expected, exit };

@@ -217,24 +217,6 @@
   ],
   "keyboardTraversal": [
     {
-      "kind": "stops",
-      "route": "/copilot/[scope]",
-      "viewport": "1280x800",
-      "reached": 15,
-      "expected": 16,
-      "why": "The same control, at the width where the app chrome shows its sidebar instead of its bottom bar: two more certainly-tabbable elements, the same shortfall of one. Two widths missing the same single stop is what says the cause is in the page rather than in either chrome.",
-      "closing": "Closed by the same fix as the row above, and the two must come down together."
-    },
-    {
-      "kind": "stops",
-      "route": "/copilot/[scope]",
-      "viewport": "390x844",
-      "reached": 13,
-      "expected": 14,
-      "why": "The expected number is a deliberate floor, not a census: radio inputs, anything carrying tabindex=-1 and every ARIA-role widget that is not natively focusable are left out of it precisely so it can only come out lower than the truth. A shortfall against a floor therefore means one rendered, enabled, natively focusable control on this page is not in the sequential order \u2014 the count cannot be too high by construction. The same page is exactly one short at both widths while its totals differ by two (14 here, 16 at 1280x800), so what is missed is on the page itself and not in the chrome that changes between them.",
-      "closing": "Find the control the traversal never reaches and put it back in the order. There is no owner decision and no third party behind this one: it is an ordinary defect, recorded only because the traversal test is a ratchet as a whole, and it should be the first of these four rows to come down."
-    },
-    {
       "kind": "exit",
       "route": "/genome/[subject]/data/browser",
       "viewport": "1280x800",
@@ -252,26 +234,9 @@
       "why": "Three order violations on the variant browser at desktop width. One of the three is the trap's own entry \u2014 a traversal that ends trapped records 'focus returned to ...' before it stops \u2014 so two are order breaks in their own right. The markup they walk is not ours: everything inside the container is built by igv.js 3.8.5 (package.json), which renders part of its navbar into a shadow root, and src/components/browse/genome-browser.tsx can only post-process what igv builds, attaching accessible names and button roles after createBrowser resolves, best effort inside try/catch so an igv upgrade that renames a class degrades rather than crashes. DOM order inside a widget we do not author is not something a post-processing pass can rewrite without taking ownership of the widget's layout.",
       "closing": "A fix upstream in igv.js, a fork, or replacing the widget. A fourth option that would close it here \u2014 rebuilding the navbar ourselves from igv's API and hiding its own \u2014 is a larger change than it sounds, because the navbar igv renders into a shadow root is the same DOM its zoom and locus behaviour is bound to.",
       "blocker": "third party \u2014 igv.js 3.8.5 builds and owns this subtree, shadow root included"
-    },
-    {
-      "kind": "stops",
-      "route": "/genome/[subject]/reports",
-      "viewport": "1280x800",
-      "reached": 117,
-      "expected": 125,
-      "why": "The report library loses eight tab stops at both widths - 117 of 125 certainly-tabbable elements at 1280x800 and 115 of 123 at 390x844. The expected number is a floor by construction: the sweep counts only elements it is sure are tabbable and excludes radios and roving tabindex, so a shortfall is a control a keyboard cannot reach, not a counting artefact. Eight of them, on the surface a person uses to open their own results. The exact numbers move with the account's report list, which is why they are evidence here and not the compared key.",
-      "closing": "Walk the page with the keyboard and find which eight. The usual causes are a control inside a closed disclosure that the count reaches but Tab does not, a click handler on a div, and a control rendered after the element that steals focus back. None of those needs a decision from anyone; this is a defect with an unfinished diagnosis, and it should be the first row in this group to come down."
-    },
-    {
-      "kind": "stops",
-      "route": "/genome/[subject]/reports",
-      "viewport": "390x844",
-      "reached": 115,
-      "expected": 123,
-      "why": "The report library loses eight tab stops at both widths - 117 of 125 certainly-tabbable elements at 1280x800 and 115 of 123 at 390x844. The expected number is a floor by construction: the sweep counts only elements it is sure are tabbable and excludes radios and roving tabindex, so a shortfall is a control a keyboard cannot reach, not a counting artefact. Eight of them, on the surface a person uses to open their own results. The exact numbers move with the account's report list, which is why they are evidence here and not the compared key.",
-      "closing": "Walk the page with the keyboard and find which eight. The usual causes are a control inside a closed disclosure that the count reaches but Tab does not, a click handler on a div, and a control rendered after the element that steals focus back. None of those needs a decision from anyone; this is a defect with an unfinished diagnosis, and it should be the first row in this group to come down."
     }
   ],
   "reflowNote": "Reflow at 320 CSS px is a hard assertion in e2e/a11y.spec.ts for every route but one, and stays one. It failed on 33 routes when the sweep was first written and 32 of those were fixed rather than recorded: the marketing header, which alone accounted for 31 because it laid the wordmark, the theme toggle and two auth controls in a row needing 344px against a 320px viewport, and the /files action row at 370px. Both wrap now. The `reflow` group above holds the single remainder, by exact measured width, so that route can only get narrower and a second one joining it fails as an unrecorded finding rather than sliding in under the first. An earlier revision of this note said the number was zero; it was written before the last sweep and was wrong.",
-  "textAlternativesNote": "Not a group either, and for the better reason: it passes. The ancestry map and every chart the sweep finds carry an equivalent list and text \u2014 inside the figure, on the far end of its own aria-describedby, or beside it in the container that holds them both \u2014 reachable without a pointer, in zero activations. It stays a hard assertion so that stays true, and it is the one of the four measurements that needs nothing from this file."
+  "textAlternativesNote": "Not a group either, and for the better reason: it passes. The ancestry map and every chart the sweep finds carry an equivalent list and text \u2014 inside the figure, on the far end of its own aria-describedby, or beside it in the container that holds them both \u2014 reachable without a pointer, in zero activations. It stays a hard assertion so that stays true, and it is the one of the four measurements that needs nothing from this file.",
+  "keyboardTraversalNote": "Two kinds of finding were recorded here and one of them was never real. The stop shortfalls - eight on the report library at both widths, one on /copilot/[scope] - were the sweep counting controls that sit inside a closed `details`. Chromium still gives those descendants client rects, so the counter said they were rendered and expected Tab to reach them; Tab is right not to, because the summary that opens the disclosure is itself a tab stop and is counted and reached. The report library's eight are its category jump links, behind the collapsed filter strip that the first-viewport interactive budget requires. Naming the elements rather than counting them is what showed this: 'eight stops missing' reads like eight controls a keyboard cannot reach, and 'never reached: a \"Everyday traits\", a \"Cancer\", ...' reads like a disclosure. The counter excludes closed-disclosure descendants now, and no stop shortfall survives it. What remains below is the genome browser, where the findings are real."
 }
