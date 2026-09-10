@@ -45,7 +45,7 @@
       {
         "surface": "/genome/me",
         "figures": 0,
-        "note": "The My Genome overview renders no figure at all. That is recorded here rather than excluded, so the day it shows one the gate asks whether it repeats a figure another surface already owns. It is a product gap, not a collector fault."
+        "note": "The My Genome hub renders no figure, and that is its design rather than a gap: brief §4.0 specifies /genome/[subject] as the three-tile router — Reports, Ancestry, Ask Copilot — and e2e/report-skeleton.spec.ts pins exactly that shape. It is listed here rather than dropped so that a figure appearing on it is noticed and asked the cross-surface question. The surface the brief means by findings first is /overview, which does render them: metric lines under §3.1 and the starter reports under §7.2."
       },
       {
         "surface": "/genome/me/ancestry",
