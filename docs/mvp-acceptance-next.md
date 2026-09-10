@@ -5,6 +5,98 @@ Full-plan acceptance is **23/65**, after G2.7 closed on CI run 334.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+## Resumption handoff · 10 September 2026, night
+
+Acceptance is **24/65**. G1.13a moved, on CI run 353 rather than on an
+assertion about it. Everything else below either closed a defect, corrected a
+record that was wrong, or established that a thing recorded as blocked was not.
+
+### What landed, verified
+
+- **G1.13a turns YES.** CI run 353 on `b828c58` is the green run the row was
+  waiting on: six tag sets, every registered kept page, both themes, three
+  viewports, reduced motion, both gated report states, both auth modes.
+- **The genome browser's focus trap is escapable, and the sweep enforces it.**
+  WCAG 2.1 SC 2.1.2 does not require Tab to be the key — it requires that focus
+  can be moved away with the keyboard and that the reader is told which key.
+  Escape is bound in the capture phase on our own element, never inside igv's
+  DOM, and the sentence naming it is referenced by the region through
+  `aria-describedby`. A traversal that ends trapped is now additionally
+  required to escape, as a plain failure rather than a ledger entry, reading
+  the key from the component's own description rather than assuming Escape.
+- **The brief's control scale is implemented.** 990 undersized (page, control)
+  pairs fell to **807**; fourteen of twenty-two components left the ledger.
+- **`pnpm gate:env`** exists, and the count G7.2 was measured by was wrong in
+  both numbers. 34 variables are read under `src/`, not 20; the template
+  declared 19, not 17; and the two keys the row said are unread under `src/`
+  are read, through an `env` parameter a `process.env.X` grep cannot see.
+- **The register's contracts and prefixes are checked**, not only its paths:
+  auth modes, success contracts, bindings, 279 policy references, 43
+  per-method keys, and every storage prefix against the code that writes bytes.
+- **The polygenic surface carries its three G4.4 base requirements**, including
+  the honest "no version is recorded for this panel, and Inherit will not guess
+  one" — `prs_scores` has no version column and no seed carries one.
+- **The two-file source selector is required**, not merely used when present.
+
+### Three records that were wrong, corrected
+
+1. **Target size was never an owner decision.** G2.7's frozen identity pins
+   colours and fonts and **no size token at all**, and `--size-control` did not
+   exist. The brief had already decided 44px twice over (lines 553 and 706),
+   and 24 files were hand-patching `min-h-11` onto call sites to compensate.
+2. **G5.3a's opening reads as open work and is superseded by its own later
+   paragraph.** Acting on the first half means deleting a person's derived
+   ancestry against an explicit decision to keep it; `docs/retention.md` now
+   carries the exception inside `purpose.derived-60s` itself. I dispatched that
+   work before reading the row through, and the guardrails on the task caught
+   it rather than my own reading. The row now warns at the point a reader acts.
+3. **D-081's blocker was stale** and its surface list short by two. See below.
+
+### What to pick up first, blocked on nothing
+
+- **D-081, the rights-token transport.** Verified this session: the page runs a
+  live availability oracle on a plain GET, so a link prefetcher can probe
+  whether a token is live; and the server itself mints two more URLs carrying
+  the raw token, one of them a query string on `/auth/sign-in`. Not fixed here
+  because closing it spans a migration, the mail-minting line, the session
+  pages, and a 30-day `invitation.pending-30d` window during which the old path
+  must keep working. The closing order is written into the D-081 entry. What is
+  *not* a defect, checked rather than assumed: `refuse` and `delete` take no
+  account or session, and that is deliberate — G5.4 requires accountless rights.
+- **The (route, state) matrix at 5 of 288.** This is now the single thing
+  between G1.7 and YES, and it holds G1.12, G2.2 and G8.5 back too. Biggest
+  single lever left.
+- **`webhooks.resend`** is the one endpoint of 88 whose auth mode, success
+  status and body exist only in the handler — a transcription gap, not an
+  authority one.
+- **`legal-evidence`** is declared, fenced by a migration, removed from by live
+  code, and created by nothing.
+
+### Two decisions that are an owner's, not an engineer's
+
+- **Whether a text link is a "tap target" under brief line 553.** Seven ledger
+  entries turn on it, and the answer sets the line height of running text
+  across the product.
+- **D-097**: whether the legacy or the canonical half of `ancestry.json` is
+  right after revocation. The two directions are not symmetric — one withholds
+  data a person can retrieve today, the other relaxes a withdrawal protection
+  someone wrote on purpose.
+
+### Environment facts worth an hour
+
+- The local test baseline is **two** files: `scripts/ci-browser-runtime.test.ts`
+  (asserts a non-root uid) and `src/lib/claims/capture-emails.test.ts` (refuses
+  to run against an uncommitted tree). A third failing file is real. Read the
+  names, never the count — matching the count is how a real failure was missed
+  once already.
+- **`pnpm e2e -- <spec>` swallows the `--`.** Invoke the runner directly:
+  `npx tsx scripts/run-upload-browser.mts --full -- e2e/<spec> --grep '...'`.
+- **Only one browser suite can run at a time.** A second one waits on the port.
+- `docs/density-baseline.json` is a per-commit capture pinned to `8647369`, is
+  not wired into CI, and its reproduce script is macOS-specific. It is stale
+  with respect to HEAD after the control-scale change, and nothing in this
+  session claims it passes.
+
 ## Resumption handoff · 10 September 2026, evening
 
 Acceptance is **23/65** and did not move. Five gates gained real enforcement or
