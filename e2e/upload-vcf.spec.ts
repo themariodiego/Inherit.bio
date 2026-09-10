@@ -56,11 +56,16 @@ test("GIAB window: real hashed upload → preparation → explicit ancestry gene
 
 test("GIAB locus and first-party track preserve benchmark calls; rsID search uses the distinct synthetic source", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
+  // The parameters must be in the body and the URL must carry none of them:
+  // a query string reaches server logs, referrers and traces, and this request
+  // names both a person's file and where in their genome they are reading.
   const region = page.waitForResponse(response => {
     const url = new URL(response.url());
-    return url.pathname === "/api/browse/region" && url.searchParams.get("file") === giabFileId
-      && url.searchParams.get("chrom") === "chr20" && url.searchParams.get("start") === "1000000"
-      && url.searchParams.get("end") === "1100000";
+    if (url.pathname !== "/api/browse/region" || url.search !== "") return false;
+    if (response.request().method() !== "POST") return false;
+    const body = JSON.parse(response.request().postData() ?? "{}") as Record<string, unknown>;
+    return body.file === giabFileId && body.chromosome === "chr20"
+      && body.start === 1_000_000 && body.end === 1_100_000;
   });
   void region.catch(() => {});
   await page.goto("/genome/me/data/browser?q=chr20:1000000-1100000");

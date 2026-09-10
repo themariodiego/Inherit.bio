@@ -20,7 +20,7 @@ import { describe, expect, it } from "vitest";
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 56 of them are unbuilt today and that is a backlog, not a defect. The
+ * yet; 53 of them are unbuilt today and that is a backlog, not a defect. The
  * count is asserted loosely below only so a broken walker cannot pass.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
