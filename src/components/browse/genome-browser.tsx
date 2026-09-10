@@ -351,7 +351,13 @@ export function GenomeBrowser({
           data-testid="genome-browser"
           role="region"
           aria-label={IGV_CONTROL_LABELS.region}
-          className="min-h-64 rounded-xl border border-line bg-white p-2 dark:bg-card"
+          // igv renders its own navbar and tracks at whatever width it wants,
+          // and at the 320px support floor that widened the whole document to
+          // 485px rather than reflowing (WCAG 2.1 SC 1.4.10). Scrolling inside
+          // this container keeps the page itself reflowed; the container needs
+          // no tabindex because igv's own controls are focusable, so a
+          // keyboard reaches its contents already.
+          className="min-h-64 overflow-x-auto rounded-xl border border-line bg-white p-2 dark:bg-card"
         />
         {status === "loading" ? (
           <div
