@@ -38,6 +38,18 @@ function ReportChoice({ choice, subjectId, onSaved }: {
       <summary className="min-h-11 cursor-pointer py-3 underline underline-offset-2">Permission details · version {choice.artifact.version}</summary>
       <div className="whitespace-pre-wrap leading-relaxed">{choice.artifact.body}</div>
     </details>
+    {!choice.granted && choice.reconsent ? <div data-testid="reconsent-notice"
+      data-purpose={choice.purposeKey} data-signed-version={choice.reconsent.signedVersion}
+      className="space-y-2 rounded-lg border border-line bg-tint p-3 text-sm">
+      <p className="font-medium">You agreed to version {choice.reconsent.signedVersion}. This permission has changed since then, so it is off until you agree again.</p>
+      {choice.reconsent.changes.map(change => <p key={change.version} data-testid="reconsent-change" data-version={change.version}>
+        <span className="text-ink-muted">What changed in version {change.version}:</span> {change.summary}
+      </p>)}
+      <a data-testid="reconsent-previous" className="inline-block min-h-11 py-3 underline underline-offset-2"
+        href={`/legal/consent/${choice.artifact.key}/v/${choice.reconsent.signedVersion}`}>
+        Read version {choice.reconsent.signedVersion} in full
+      </a>
+    </div> : null}
     {!choice.granted ? <label className="flex min-h-11 items-center gap-3 text-sm">
       <input type="checkbox" className="size-5" aria-label={choice.label} checked={affirmed} disabled={pending}
         onChange={event => setAffirmed(event.target.checked)} />

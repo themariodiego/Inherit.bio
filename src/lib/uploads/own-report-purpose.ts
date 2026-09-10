@@ -17,5 +17,17 @@ export type OwnReportChoicesView = { kind: "unavailable" } | {
   kind: "ready"; subjectId: string; choices: Array<{
     purposeKey: OwnReportPurpose; label: string; description: string; granted: boolean; grantId: string | null;
     artifact: { key: string; version: number; body: string }; token: string; statementKeys: string[];
+    /**
+     * Present only when this person already agreed to an earlier version of
+     * this document and that signature no longer resolves. G5.2 requires the
+     * re-consent surface to say what changed, in the same block as the accept
+     * control, and to link the full version they signed.
+     *
+     * `changes` carries every version after the one they signed, each with its
+     * own summary, rather than only the newest. Someone two versions behind is
+     * owed both, and the alternative — showing the newest summary alone —
+     * describes the span incompletely while looking complete.
+     */
+    reconsent: { signedVersion: number; changes: Array<{ version: number; summary: string }> } | null;
   }>;
 };

@@ -27,13 +27,19 @@ beforeEach(() => {
   mocks.target.mockResolvedValue({ id: subjectId, subjectAccountId: accountId, subjectClass: "self" });
   mocks.rpc.mockResolvedValue({ data: snapshot, error: null });
   results = { consent_artifacts: { data: artifacts, error: null }, purpose_grants: { data: [], error: null },
-    directional_grants: { data: [], error: null } };
+    directional_grants: { data: [], error: null }, consent_artifact_changes: { data: [], error: null } };
   mocks.from.mockImplementation((table: string) => {
     const query: Record<string, unknown> = {};
-    for (const method of ["select", "eq", "in", "is", "lte", "or"]) query[method] = (...args: unknown[]) => {
-      calls.push([table, method, ...args]); return query;
+    const used: string[] = [];
+    for (const method of ["select", "eq", "in", "is", "lte", "or", "gt"]) query[method] = (...args: unknown[]) => {
+      used.push(method); calls.push([table, method, ...args]); return query;
     };
-    query.then = (resolve: (v: unknown) => unknown) => Promise.resolve(results[table]).then(resolve);
+    // Two reads hit consent_artifacts: the live documents, and the superseding
+    // versions whose change summaries explain a re-consent. Only the second
+    // narrows with gt("version", 1), so that is what tells them apart here.
+    query.then = (resolve: (v: unknown) => unknown) => Promise.resolve(
+      results[table === "consent_artifacts" && used.includes("gt") ? "consent_artifact_changes" : table],
+    ).then(resolve);
     return query;
   });
 });
@@ -64,7 +70,7 @@ describe("own report choices presentation", () => {
     expect(view.kind === "ready" && view.choices.map(c => c.granted)).toEqual([true, false, false]);
     expect(view.kind === "ready" && view.choices[0].grantId).toBe(subjectId);
   });
-  it.each(["consent_artifacts", "purpose_grants", "directional_grants"])("does not present false defaults when %s fails", async table => {
+  it.each(["consent_artifacts", "purpose_grants", "directional_grants", "consent_artifact_changes"])("does not present false defaults when %s fails", async table => {
     results[table] = { data: null, error: { message: "private detail" } };
     expect(await prepareOwnReportChoices()).toEqual({ kind: "unavailable" });
   });
@@ -76,5 +82,63 @@ describe("own report choices presentation", () => {
     { id: subjectId, subjectAccountId: accountId, subjectClass: "embryo" }])("rejects a foreign or unsupported target before admin access", async target => {
     mocks.target.mockResolvedValue(target); expect(await prepareOwnReportChoices()).toEqual({ kind: "unavailable" });
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  /**
+   * G5.2's re-consent half. The signature that no longer resolves is invisible
+   * to the `granted` lookup, which matches on the current version — so this is
+   * derived from the same grant rows by looking for a lower version.
+   */
+  describe("a signature left behind by a superseded document", () => {
+    /** Monogenic moves to v2; the other two stay at v1 and must be unaffected. */
+    function supersedeMonogenic(signedVersion: number, changes: Array<{ version: number; summary: string }>) {
+      results.consent_artifacts.data = artifacts.map((a, i) => i === 0 ? { ...a, version: 2 } : a);
+      results.purpose_grants.data = [{ grant_id: subjectId, grant_revision: 1, purpose: "reports.monogenic",
+        artifact_key: artifacts[0].artifact_key, artifact_version: signedVersion, artifact_body_sha256: artifacts[0].body_sha256 }];
+      results.directional_grants.data = [{ grant_id: subjectId, grant_revision: 1 }];
+      results.consent_artifact_changes.data = changes.map(change => ({
+        artifact_key: artifacts[0].artifact_key, version: change.version, summary_of_changes: change.summary }));
+    }
+    it("reports the version signed and the changes since, and leaves the choice off", async () => {
+      supersedeMonogenic(1, [{ version: 2, summary: "Clarifies the scope." }]);
+      const view = await prepareOwnReportChoices();
+      if (view.kind !== "ready") throw Error("expected ready");
+      expect(view.choices[0].granted).toBe(false);
+      expect(view.choices[0].reconsent).toEqual({ signedVersion: 1, changes: [{ version: 2, summary: "Clarifies the scope." }] });
+      // The purposes whose document did not move must not claim a change.
+      expect(view.choices.slice(1).map(c => c.reconsent)).toEqual([null, null]);
+    });
+    it("carries every version after the one signed, in order, and nothing at or below it", async () => {
+      results.consent_artifacts.data = artifacts.map((a, i) => i === 0 ? { ...a, version: 4 } : a);
+      results.purpose_grants.data = [{ grant_id: subjectId, grant_revision: 1, purpose: "reports.monogenic",
+        artifact_key: artifacts[0].artifact_key, artifact_version: 2, artifact_body_sha256: artifacts[0].body_sha256 }];
+      results.directional_grants.data = [{ grant_id: subjectId, grant_revision: 1 }];
+      results.consent_artifact_changes.data = [
+        { artifact_key: artifacts[0].artifact_key, version: 4, summary_of_changes: "Fourth" },
+        { artifact_key: artifacts[0].artifact_key, version: 2, summary_of_changes: "Second — already agreed to" },
+        { artifact_key: artifacts[0].artifact_key, version: 3, summary_of_changes: "Third" },
+        { artifact_key: artifacts[1].artifact_key, version: 3, summary_of_changes: "A different document" },
+      ];
+      const view = await prepareOwnReportChoices();
+      if (view.kind !== "ready") throw Error("expected ready");
+      expect(view.choices[0].reconsent?.changes).toEqual([
+        { version: 3, summary: "Third" }, { version: 4, summary: "Fourth" }]);
+    });
+    it("says nothing about a change when the current version is the one signed", async () => {
+      supersedeMonogenic(2, [{ version: 2, summary: "Clarifies the scope." }]);
+      const view = await prepareOwnReportChoices();
+      if (view.kind !== "ready") throw Error("expected ready");
+      expect(view.choices[0].granted).toBe(true);
+      expect(view.choices.map(c => c.reconsent)).toEqual([null, null, null]);
+    });
+    it("says nothing to someone who never agreed", async () => {
+      const view = await prepareOwnReportChoices();
+      if (view.kind !== "ready") throw Error("expected ready");
+      expect(view.choices.map(c => c.reconsent)).toEqual([null, null, null]);
+    });
+    it("reads only superseding versions, never version 1, which introduces a document", async () => {
+      await prepareOwnReportChoices();
+      expect(calls).toContainEqual(["consent_artifacts", "gt", "version", 1]);
+    });
   });
 });
