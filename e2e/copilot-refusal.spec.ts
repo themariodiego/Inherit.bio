@@ -1,8 +1,7 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { adminClient, axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { ADVERSARIAL_NUMBER } from "./mock-llm";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, expectClosedCompletion,
@@ -109,12 +108,7 @@ async function expectAxeClean(page: Page) {
     const response = await ask(page, AXE_PROMPTS[index]);
     expect(response.headers()["x-copilot-refusal"]).toBeDefined();
     await expect(page.getByText(index === 0 ? REFUSAL_DIAGNOSIS : REFUSAL_PROGNOSIS, { exact: true })).toBeVisible();
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, theme, help: violation.help })),
-    ).toEqual([]);
+    expect(await axeViolations(page, theme), `refusal (${theme})`).toEqual([]);
   }
   await page.emulateMedia({ colorScheme: "light" });
 }

@@ -96,6 +96,24 @@ function installFirstPartyXhrGuard() {
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
 
 /**
+ * Every root igv's markup can be in: the container it was handed, and any
+ * shadow root it opened underneath.
+ *
+ * igv 3.8.5 renders its navbar into a shadow root, and `querySelector` does
+ * not cross that boundary, so labelling the container alone silently matched
+ * nothing — the zoom slider reached the page as a bare `<input type="range">`
+ * and `e2e/a11y.spec.ts` caught it as the one violation on the variant
+ * browser once that sweep covered the registered authenticated pages.
+ */
+function igvRoots(container: HTMLElement): ParentNode[] {
+  const roots: ParentNode[] = [container];
+  for (const element of [container, ...container.querySelectorAll<HTMLElement>("*")]) {
+    if (element.shadowRoot) roots.push(element.shadowRoot);
+  }
+  return roots;
+}
+
+/**
  * igv.js (3.8.5) ships its navbar controls unlabeled: a bare <select> of
  * chromosomes, an unnamed zoom slider, and icon-only <div>s acting as
  * buttons. After createBrowser resolves we post-process the DOM igv built
@@ -106,8 +124,18 @@ const CREATE_BROWSER_TIMEOUT_MS = 30_000;
  * upgrade that renames a class must degrade to the old unlabeled state,
  * never crash the page.
  */
-function labelIgvControls(root: HTMLElement) {
+function labelIgvControls(container: HTMLElement) {
   try {
+    const roots = igvRoots(container);
+    const find = (selector: string): Element | null => {
+      for (const root of roots) {
+        const found = root.querySelector(selector);
+        if (found) return found;
+      }
+      return null;
+    };
+    const findAll = (selector: string): Element[] =>
+      roots.flatMap((root) => [...root.querySelectorAll(selector)]);
     const label = (el: Element | null, name: string, asButton = false) => {
       if (!el || el.hasAttribute("aria-label")) return;
       el.setAttribute("aria-label", name);
@@ -119,17 +147,17 @@ function labelIgvControls(root: HTMLElement) {
     // Chromosome picker: a bare 26-option <select> with no name. Hidden by
     // the config below, but named in case a config change shows it again.
     label(
-      root.querySelector(".igv-chromosome-select-widget-container select"),
+      find(".igv-chromosome-select-widget-container select"),
       IGV_CONTROL_LABELS.chromosome,
     );
 
     // Locus search box (placeholder-only otherwise) and its icon "button".
-    label(root.querySelector("input.igv-search-input"), IGV_CONTROL_LABELS.locusSearch);
-    label(root.querySelector(".igv-search-icon-container"), IGV_CONTROL_LABELS.locusSubmit, true);
+    label(find("input.igv-search-input"), IGV_CONTROL_LABELS.locusSearch);
+    label(find(".igv-search-icon-container"), IGV_CONTROL_LABELS.locusSubmit, true);
 
     // Zoom widget: [zoom-out div] [slider] [zoom-in div], per ZoomWidget's
     // construction order in the igv dist.
-    const zoom = root.querySelector(".igv-zoom-widget");
+    const zoom = find(".igv-zoom-widget");
     if (zoom) {
       label(zoom.querySelector("input[type='range']"), IGV_CONTROL_LABELS.zoomSlider);
       label(zoom.firstElementChild, IGV_CONTROL_LABELS.zoomOut, true);
@@ -138,15 +166,13 @@ function labelIgvControls(root: HTMLElement) {
 
     // Navbar toggle buttons (cursor guide, center line, track labels, …)
     // are divs carrying only a title tooltip; promote it to a real name.
-    for (const btn of root.querySelectorAll(
-      ".igv-navbar-text-button, .igv-navbar-icon-button",
-    )) {
+    for (const btn of findAll(".igv-navbar-text-button, .igv-navbar-icon-button")) {
       const title = btn.getAttribute("title");
       if (title) label(btn, title, true);
     }
 
     // The igv logo is decorative.
-    root.querySelector(".igv-logo")?.setAttribute("aria-hidden", "true");
+    find(".igv-logo")?.setAttribute("aria-hidden", "true");
   } catch {
     // Labeling is progressive enhancement over igv internals — never fatal.
   }

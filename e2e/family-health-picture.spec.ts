@@ -1,4 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -9,6 +8,7 @@ import path from "node:path";
 import {
   adminClient,
   createConfirmedUser,
+  expectAxeClean,
   firstViewportInteractives,
   signIn,
 } from "./helpers";
@@ -248,20 +248,6 @@ async function passGate(page: Page) {
  * and the chrome animates its colours, so an audit taken on a page that was
  * loaded in the other theme samples mid-transition colours.
  */
-async function expectAxeClean(page: Page) {
-  for (const theme of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme: theme });
-    await page.reload();
-    await page.waitForLoadState("networkidle");
-    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
-    expect(
-      results.violations
-        .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
-        .map((violation) => ({ id: violation.id, theme, help: violation.help })),
-    ).toEqual([]);
-  }
-  await page.emulateMedia({ colorScheme: "light" });
-}
 
 test.beforeAll(async () => {
   const admin = adminClient();
