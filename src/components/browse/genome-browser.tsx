@@ -228,9 +228,17 @@ export function GenomeBrowser({
       if (!el) return;
 
       const chromName = `chr${chromToName(locus.chrom) === "MT" ? "M" : chromToName(locus.chrom)}`;
-      const res = await fetch(
-        `/api/browse/region?file=${fileId}&chrom=${chromName}&start=${locus.start}&end=${locus.end}`,
-      );
+      // The file identifier and the stretch of genome being read travel in the
+      // body, never the URL: a query string is written to server logs,
+      // referrers and traces, and this request names both a person's file and
+      // exactly where in their genome they are looking.
+      const res = await fetch("/api/browse/region", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          file: fileId, chromosome: chromName, start: locus.start, end: locus.end,
+        }),
+      });
       if (!res.ok) {
         throw new Error(`region API responded ${res.status}`);
       }

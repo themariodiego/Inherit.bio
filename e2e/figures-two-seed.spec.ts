@@ -1,10 +1,10 @@
-import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { test, type Browser, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
 import { collectFigures, keyed, type CollectedFigure } from "./figure-collector";
+import { assertEveryFigureMoved } from "./figure-differencing";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 
 /**
@@ -29,16 +29,6 @@ const DATA = "/genome/me/data";
 /** The browser answers nothing without a search, so this one names a position
  * both seeds carry and call differently. */
 const BROWSER = "/genome/me/data/browser?q=rs762551";
-
-type Register = {
-  seedInvariant: { surface: string; key: string; reason: string }[];
-};
-const REGISTER: Register = JSON.parse(fs.readFileSync("docs/figures-register.json", "utf8"));
-
-function invariant(surface: string, key: string): string | null {
-  const entry = REGISTER.seedInvariant.find(row => row.surface === surface && row.key === key);
-  return entry ? entry.reason : null;
-}
 
 /**
  * Sign a fresh account in, prepare its genome, choose its reports, and read
@@ -73,42 +63,6 @@ async function bothSeeds(browser: Browser, surfaces: readonly string[],
   } finally {
     for (const context of contexts) await context.close();
   }
-}
-
-/**
- * The comparison itself, identical for every surface.
- *
- * Soft, so one run names every surface that carries a constant. A hard
- * assertion stops the loop at the first failing surface and reports the rest
- * as passing when they were never read — which is exactly how the first pass
- * over these four came to be described as three greens and one failure.
- */
-function assertEveryFigureMoved(surface: string,
-  a: Map<string, CollectedFigure>, b: Map<string, CollectedFigure>) {
-  // The surface must actually carry figures, or "all of them differ" is vacuous.
-  expect.soft(a.size, `${surface}: seed A renders figures at all`).toBeGreaterThan(0);
-  expect.soft([...b.keys()].sort(), `${surface}: both seeds render the same figures, so pairing is by shape`)
-    .toEqual([...a.keys()].sort());
-
-  const unchanged: string[] = [];
-  for (const [key, figureA] of a) {
-    const figureB = b.get(key);
-    // A figure only one seed renders is the assertion above, not this one.
-    if (!figureB || figureA.value !== figureB.value) continue;
-    if (invariant(surface, key)) continue;
-    unchanged.push(`${key} = "${figureA.value}" under both seeds`);
-  }
-  expect.soft(unchanged,
-    `${surface}: a figure identical under two different genomes is a constant, not a result; `
-    + "register it in docs/figures-register.json with the reason it cannot move")
-    .toEqual([]);
-
-  // A register entry that has started moving is stale and must not stay.
-  const stale = REGISTER.seedInvariant
-    .filter(row => row.surface === surface)
-    .filter(row => a.has(row.key) && b.has(row.key) && a.get(row.key)!.value !== b.get(row.key)!.value)
-    .map(row => row.key);
-  expect.soft(stale, `${surface}: registered seed-invariant but they do differ; remove them`).toEqual([]);
 }
 
 test("every figure on the ancestry surface moves between two seeds", async ({ browser }) => {

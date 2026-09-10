@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { axeViolations, createConfirmedUser, signIn } from "./helpers";
+import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
 // Ancestry surface (`/genome/[subject]/ancestry`; brief §4.6, A.8, G4.4,
@@ -305,6 +306,36 @@ test("synthetic marker fixture: the shown state — figure contract, sum rule, t
     expect(unit === NO_RANGE_YET || RANGE_UNIT.test(unit), `unit ${JSON.stringify(unit)}`).toBe(true);
   }
   expect(await percentTextNodes(page, { visibleOnly: false, outside: '[data-figure-kind="ancestry-share"]' })).toEqual([]);
+
+  // G4.2, on a rendered surface rather than in a component test. The rule is
+  // per block, not per figure: a block of nine modelled numbers carries the
+  // sentence once. Nothing asserted that on a page until now — the marker was
+  // pinned only in `src/components/figures/figures.test.ts`, over HTML the
+  // test itself rendered, so a surface could drop it and stay green.
+  const blocks = page.locator("[data-claim-block]");
+  const blockCount = await blocks.count();
+  expect(blockCount, "the surface renders claim blocks at all").toBeGreaterThan(0);
+  let modelledBlocks = 0;
+  for (let index = 0; index < blockCount; index++) {
+    const block = blocks.nth(index);
+    const modelled = await block.locator('[data-figure-basis="modelled"]').count();
+    const markers = block.locator("[data-modelled-marker]");
+    if (modelled > 0) {
+      modelledBlocks++;
+      await expect(markers, `block ${index} holds ${modelled} modelled figures`).toHaveCount(1);
+      await expect(markers).toHaveText(MODELLED_MARKER);
+    } else {
+      await expect(markers, `block ${index} holds no modelled figure`).toHaveCount(0);
+    }
+  }
+  expect(modelledBlocks, "this surface is the one that renders modelled figures").toBeGreaterThan(0);
+  // The marker never appears outside a block, and never more than once per one.
+  expect(await page.locator("[data-modelled-marker]").count()).toBe(modelledBlocks);
+  // Every figure on the page declares a basis from the contract's own list.
+  const bases = await page.locator("[data-figure-kind]").evaluateAll(nodes =>
+    nodes.map(node => node.getAttribute("data-figure-basis")));
+  expect(bases.length).toBeGreaterThan(0);
+  expect(bases.filter(basis => !basis || !FIGURE_BASES.includes(basis as never))).toEqual([]);
   await expect(page.locator('[data-testid="admixture"] [data-claim-block][data-subject-id]').filter({ has: page.locator('[data-figure-kind="ancestry-share"]') })).toHaveCount(1);
   // One computed region result has source facts. Uncomputed parent lines
   // must not imply that their markers were analyzed by repeating that block.

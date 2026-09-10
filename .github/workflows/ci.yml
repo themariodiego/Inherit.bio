@@ -63,6 +63,8 @@ jobs:
         run: pnpm gate:readability
       - name: Repository and history secret gate
         run: pnpm gate:secrets
+      - name: Route register gate
+        run: pnpm gate:routes
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys

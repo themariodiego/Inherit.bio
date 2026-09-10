@@ -110,6 +110,32 @@ G1.8, G5.2, G3.5 and G2.7 closed; acceptance is **23 of 65**.
   isolated HTTPS fixture daemon that provides `CANONICAL_COPILOT_CONTROL_URL`,
   so those specs, and `scripts/ci-browser-runtime.test.ts`, fail locally for
   the environment rather than the code.
+- **The Family half of G8.3 has a diagnosis, not just a plan.** A first spec was
+  written and run and does not yet pass; it is not committed, because a spec
+  that hangs is worse than none. What was learned: the seed-B carrier pair must
+  cover *exactly* the positions seed A covers — the health picture renders one
+  `genotype` figure per genotype in a cell, so an extra covered position adds a
+  figure rather than changing one — and must move its record count through the
+  length of its run of homozygosity instead. All four shared calls have to move,
+  `rs671` included, because these surfaces read the canonical prepared source,
+  which keeps reference calls, so 0/0 renders `G/G`. The setup helper must sign
+  the invited adult in **again, in their own session, after acceptance**: that
+  sign-in is what stamps the independent-login marker, and without it the
+  permission rows render their locked reason with no control, so a click waits
+  out the whole test timeout. The remaining unknown is that the first pair then
+  reached `/family/health-picture` and stalled before the surface rendered — the
+  next step is to check whether the inviter must also share with the invited
+  adult before that surface answers, which `e2e/family-health-picture.spec.ts`
+  does and the helper did not.
+- **Nothing checks the register beyond paths.** HTTP methods, route kinds and
+  storage prefixes are unchecked by any gate, and the first hand comparison
+  found a live privacy defect on `/api/browse/region` (now fixed), three open
+  divergences and four storage mismatches — all recorded in the G8.5 row. A
+  method-and-kind correspondence check is a small script and would have caught
+  the browse defect the day it landed.
+- **`briefSha256` does not verify and nothing reads it.** The register claims to
+  be pinned to the brief; the recorded digest and the file's actual digest
+  differ, and `gate:canon` does not exist. See the G8.5 row.
 - **G2.5** needs the density harness rebuilt inside the E2E suite.
   `scripts/density-baseline/capture.mjs` cannot be pointed at the current build:
   it takes its routes from the baseline document and authenticates against a
