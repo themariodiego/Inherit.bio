@@ -272,6 +272,82 @@ export type AxeTheme = "light" | "dark";
  */
 
 /**
+ * The first-party origin audit, lifted out of `e2e/network-audit.spec.ts` so
+ * more than that file's eight surfaces can run it.
+ *
+ * "No third-party origin is contacted by a page carrying genome data" is one of
+ * the product's load-bearing promises, and it was proven on the landing page,
+ * the providers page, the dashboard, a report and the genome browser - eight
+ * surfaces of the register's 62 kept pages. G1.7 asks for every registered
+ * route. The population is 62 pages, not 113 routes: 88 register entries are
+ * endpoints, which render nothing and contact nothing. The a11y sweep already
+ * navigates all 62 in both themes under a coverage assertion, so the audit can
+ * ride on navigations that are already paid for rather than doubling them.
+ *
+ * Fonts are self-hosted through next/font, so not even Google Fonts appears at
+ * runtime, which is why the allowlist is two entries and not a policy.
+ */
+export const ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
+  "http://localhost:3100", // the app itself
+  "http://127.0.0.1:54321", // this deployment's own Supabase API
+]);
+
+/** Hosts whose mere appearance is the finding, whatever the request was for. */
+export const TRACKER_HOST_FRAGMENTS: readonly string[] = [
+  "facebook", "fbcdn", "doubleclick", "google-analytics", "googletagmanager",
+  "googleadservices", "googlesyndication", "clarity.ms", "hotjar", "segment",
+  "mixpanel", "amplitude", "sentry", "datadog", "fullstory", "intercom",
+  "hubspot", "linkedin", "tiktok", "snapchat", "pinterest", "criteo",
+  "adsrvr", "taboola", "outbrain", "quantserve", "scorecardresearch",
+];
+
+export type ObservedRequests = { origins: Set<string>; urls: string[] };
+
+/** Attach before the navigation whose requests are being judged. */
+export function watchRequests(page: Page): ObservedRequests {
+  const origins = new Set<string>();
+  const urls: string[] = [];
+  page.on("request", request => {
+    const url = new URL(request.url());
+    // data: and blob: are the page's own bytes; they reach no network.
+    if (url.protocol === "data:" || url.protocol === "blob:") return;
+    origins.add(url.origin);
+    urls.push(request.url());
+  });
+  return { origins, urls };
+}
+
+/**
+ * Three things the brief names, in one place so no caller can check two of
+ * them: the origin set, the tracker hosts, and the three globals a tag manager
+ * arrives through. `dataLayer` is the one that appears without a visible script
+ * tag, pushed by an inlined snippet before anything else loads.
+ */
+export async function assertNoThirdParty(
+  page: Page,
+  observed: ObservedRequests,
+  label: string,
+): Promise<void> {
+  const offenders = [...observed.origins].filter(origin => !ALLOWED_ORIGINS.has(origin));
+  expect(offenders, `${label}: unexpected third-party origins: ${offenders.join(", ")}\nURLs: `
+    + observed.urls.filter(url => offenders.some(origin => url.startsWith(origin))).slice(0, 10).join("\n"))
+    .toHaveLength(0);
+
+  for (const url of observed.urls) {
+    const host = new URL(url).hostname;
+    for (const fragment of TRACKER_HOST_FRAGMENTS) {
+      expect(host.includes(fragment), `${label}: tracker-like host ${host}`).toBe(false);
+    }
+  }
+
+  for (const global of ["fbq", "gtag", "dataLayer"] as const) {
+    const seen = await page.evaluate(
+      name => typeof (window as never as Record<string, unknown>)[name], global);
+    expect(seen, `${label}: window.${global} must be undefined`).toBe("undefined");
+  }
+}
+
+/**
  * The tag matrix `docs/inherit-v2-brief.md` pins for the accessibility gate:
  * "axe with tags wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa, best-practice".
  * It used to read `["wcag2a", "wcag2aa"]`, two of the six, so WCAG 2.1 and 2.2
