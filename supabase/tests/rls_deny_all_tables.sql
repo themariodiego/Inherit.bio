@@ -60,5 +60,16 @@ select is((select coalesce(string_agg(rolname,', ' order by rolname),'') from pg
  'no browser or upload role bypasses row-level security');
 select ok((select rolbypassrls from pg_roles where rolname='service_role'),
  'service_role does bypass it, which is why a route using the admin client reaches these tables by design');
+
+-- A view runs with its owner's rights unless it is security_invoker, so a view
+-- over a closed table would read it for a caller who cannot. `public` holds no
+-- view at all today, which makes this assertion vacuous and cheap; it is here
+-- because the first view added is exactly when nobody is thinking about it.
+select is((select coalesce(string_agg(c.relname,', ' order by c.relname),'') from pg_class c
+ join pg_namespace n on n.oid=c.relnamespace and n.nspname='public'
+ where c.relkind in('v','m')
+  and coalesce((select option_value from pg_options_to_table(c.reloptions)
+   where option_name='security_invoker'),'off') not in('on','true')),'',
+ 'every public view reads with the caller''s rights, so none reads past row-level security');
 select * from finish();
 rollback;
