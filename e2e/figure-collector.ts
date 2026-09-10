@@ -27,6 +27,14 @@ export type CollectedFigure = {
    * and so were separated only by document order — the register entry for the
    * unassignable chip named an ordinal and would have silently moved to the
    * other chip if their order ever changed.
+   *
+   * `data-cell` is the Family side-by-side surface's own: one table cell is
+   * one report for one person, and 660 of them render figures of just three
+   * shapes, so without it 324 report-coverage figures are separated by
+   * nothing but document order. It is deliberately not `data-claim-id`,
+   * which in this repository marks a citation-backed claim and is held to
+   * `scripts/claims-gate.ts`; a cell is a reading of one person's file, not
+   * a cited statement.
    */
   context: string | null;
   value: string;
@@ -36,7 +44,7 @@ export function collectFigures(): CollectedFigure[] {
   const nodes = document.querySelectorAll<HTMLElement>("[data-figure-kind]");
   return [...nodes].map((node) => {
     const valueNode = node.querySelector<HTMLElement>('[data-slot="figure-value"]');
-    const identified = node.closest<HTMLElement>("[data-region], [data-chip], [data-claim-id]");
+    const identified = node.closest<HTMLElement>("[data-region], [data-chip], [data-claim-id], [data-cell]");
     return {
       kind: node.getAttribute("data-figure-kind") ?? "",
       figureClass: node.getAttribute("data-figure-class"),
@@ -44,7 +52,7 @@ export function collectFigures(): CollectedFigure[] {
       provenance: node.getAttribute("data-provenance"),
       context: identified
         ? identified.getAttribute("data-region") ?? identified.getAttribute("data-chip")
-          ?? identified.getAttribute("data-claim-id")
+          ?? identified.getAttribute("data-claim-id") ?? identified.getAttribute("data-cell")
         : null,
       value: (valueNode ?? node).innerText.replace(/\s+/g, " ").trim(),
     };

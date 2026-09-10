@@ -105,6 +105,28 @@ export function SubjectChip({
   );
 }
 
+/**
+ * What one cell is a claim about, in the page's own terms: one layer, one
+ * report, one person (`data-cell`, read by `e2e/figure-collector.ts`).
+ *
+ * The person is named the way the reader tells the columns apart — the kind
+ * chip above the column and the name beside it — and never by the subject id,
+ * which is a fresh uuid on every account and so says nothing when the same
+ * journey is walked twice. Two columns that produce the same key are two
+ * columns the reader cannot tell apart either, and the same holds for two
+ * rows carrying one report slug; the two-seed spec asserts these keys are
+ * unique on the page rather than quietly falling back to document order.
+ */
+export function healthPictureCellId(
+  layer: FindingLayer,
+  reportKey: string,
+  column: HealthPictureColumn,
+  viewerAccountId: string,
+): string {
+  const kind = subjectKind(column.subject, viewerAccountId) ?? "person";
+  return `${layer}/${reportKey}/${kind}:${column.displayLabel}`;
+}
+
 export function HealthPictureTable({
   layer,
   columns,
@@ -146,7 +168,8 @@ export function HealthPictureTable({
           <th scope="row" className="border-b border-line p-2 align-top text-base font-normal">{SAVED_REPORTS_LABEL}</th>
           {columns.map((column, index) => <HealthPictureCell key={column.dataSubjectId}
             dataSubjectId={column.dataSubjectId} personName={column.displayLabel} reportTitle={SAVED_REPORTS_LABEL}
-            layer={layer} state={states[index]} href={null} captionId={captionId} />)}
+            layer={layer} state={states[index]} href={null} captionId={captionId}
+            cellId={healthPictureCellId(layer, "saved-reports", column, viewerAccountId)} />)}
         </tr></tbody> : null}
         {categories.map((category) => (
           <tbody key={category ?? "saved-reports"}>
@@ -179,6 +202,7 @@ export function HealthPictureTable({
                       state={row.cells[index]}
                       href={row.hrefs[index]}
                       captionId={captionId}
+                      cellId={healthPictureCellId(layer, row.slug, column, viewerAccountId)}
                     />
                   ))}
                 </tr>

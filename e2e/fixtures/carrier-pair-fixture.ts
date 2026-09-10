@@ -24,6 +24,7 @@ import {
   CARRIER_OTHER_ALT,
   CARRIER_REF,
   parsedGenotype,
+  type FixtureGenotype,
 } from "./carrier-pair-positions";
 
 export const FIXTURE_NAME = "carrier-pair-grch38.vcf";
@@ -127,21 +128,37 @@ export interface FixtureCheck {
 
 /** The properties the browser spec depends on, checked with the real code. */
 export async function verify(lines: readonly string[]): Promise<FixtureCheck> {
+  return verifyAgainst(lines, CARRIER_FIXTURE_POSITIONS);
+}
+
+/**
+ * The same check against a stated set of classified positions, so a second
+ * carrier pair can be held to it without restating the parser, the runs
+ * measure or the build rule. `verify` is this with pair A's own positions.
+ *
+ * The expectation is passed in rather than read from the file: a check that
+ * derives what it expects from the thing it is checking would pass for any
+ * fixture, including one whose calls never reached the parser.
+ */
+export async function verifyAgainst(
+  lines: readonly string[],
+  expected: readonly { rsid: number; gt: FixtureGenotype }[],
+): Promise<FixtureCheck> {
   const parsed = await parseVcf(asLines(lines));
   // The same calls the processing route measures: the variant records and
   // the reference calls the parser kept, in the file's own build.
   const measure = measureRunsOfHomozygosity(rohCallsFromParse(parsed));
   const byRsid = new Map(parsed.records.map((record) => [record.rsid, record.genotype]));
   const carrierGenotypes = Object.fromEntries(
-    CARRIER_FIXTURE_POSITIONS.map((entry) => [entry.rsid, byRsid.get(entry.rsid)]),
+    expected.map((entry) => [entry.rsid, byRsid.get(entry.rsid)]),
   );
   const reasons: string[] = [];
   if (parsed.build !== "GRCh38") reasons.push(`the parser read build ${parsed.build}, not GRCh38`);
-  for (const entry of CARRIER_FIXTURE_POSITIONS) {
+  for (const entry of expected) {
     const genotype = byRsid.get(entry.rsid);
-    const expected = parsedGenotype(entry.gt);
-    if (genotype !== expected) {
-      reasons.push(`rs${entry.rsid} parsed as ${String(genotype)}, not ${expected} (GT ${entry.gt})`);
+    const expectedGenotype = parsedGenotype(entry.gt);
+    if (genotype !== expectedGenotype) {
+      reasons.push(`rs${entry.rsid} parsed as ${String(genotype)}, not ${expectedGenotype} (GT ${entry.gt})`);
     }
   }
   if (!belowRohThreshold(measure)) {
