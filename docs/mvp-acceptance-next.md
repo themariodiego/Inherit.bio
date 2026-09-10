@@ -1,7 +1,7 @@
 # MVP-first acceptance sequence
 
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-10.
-Full-plan acceptance is **22/65**; G2.7 flips on its CI proof.
+Full-plan acceptance is **23/65**, after G2.7 closed on CI run 334.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
@@ -40,7 +40,7 @@ most 4096 bytes of JSON and never the file, so a byte-level rejection there
 really is unreachable. Only the existence claim is false.
 
 **Not blocked, and the shortest paths from here.** Updated 10 September after
-G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
+G1.8, G5.2, G3.5 and G2.7 closed; acceptance is **23 of 65**.
 
 - **G5.3a** needs one thing and it is an owner call, not code. The access and
   delete halves are proven in a browser for the canonical path
@@ -53,12 +53,10 @@ G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
   `provider_recipient_grants` belong in the archive, plus the unbuilt
   `/api/subjects/[id]/export`. Attribution itself is proven by an executed
   export (`e2e/export-subject-scope.spec.ts`).
-- **G2.7 is done pending its CI proof.** All 62 kept pages in the register are
+- **G2.7 is closed** on CI run 334. All 62 kept pages in the register are
   audited in both themes at zero WCAG 2.1 A/AA violations of any impact: 29
   public, 6 legal documents, 21 authenticated in `e2e/a11y.spec.ts`, and 6 in
-  the specs that can build their state. One assertion is unverified locally —
-  `e2e/copilot-refusal.spec.ts` needs the isolated CI browser runtime, which
-  asserts an unprivileged uid — so the row flips on the run that proves it.
+  the specs that can build their state.
 - **G8.3's remaining work is two surfaces, not four.** Five are differenced:
   `/genome/me/ancestry`, the caffeine report, `/genome/me/reports`,
   `/genome/me/data` and `/genome/me/data/browser?q=rs762551`. What remains is
