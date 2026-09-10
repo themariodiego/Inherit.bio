@@ -1406,3 +1406,85 @@ Decisions:
   production-browser tests pass, including both real seeded layers and both
   viewport sizes. G4.3 remains NO until the reviewed full PR run supplies the
   remaining acceptance evidence; component correctness alone is insufficient.
+
+## 2026-09-10 — `POST /api/uploads` exists, and the brief says it does not
+
+- Finding: `docs/inherit-v2-brief.md` line 2194 reads "ADR-0001 sends every
+  upload browser → Storage over TUS, so no upload transits a function and a
+  `POST /api/uploads` rejection is unreachable — there is no such route."
+  `src/app/api/uploads/route.ts` exists and exports
+  `issueSubjectUpload as POST`.
+- The safety argument the sentence carries is unaffected, and was checked
+  rather than assumed. `src/lib/uploads/subject-upload-issuance.ts` reads at
+  most 4096 bytes of JSON — `subjectId`, `declaredFormat`, `sizeBytes`,
+  `sha256` — never the file or a filename, and mints the direct-to-Storage
+  bearer. Bytes still go browser → Storage, so a byte-level rejection here is
+  genuinely unreachable, and PDF refusal correctly lives in `sniffFile` and
+  `POST /api/files/[id]/process`. Only the existence claim is false.
+- Consequence, and the reason this is written down rather than fixed: the
+  route register is derived from the brief and pinned by `briefSha256`. A
+  specification that denies a route exists cannot be transcribed into an entry
+  for it, so `/api/uploads` has no declared auth mode, request contract or
+  response contract, and neither do `POST /api/uploads/[id]/complete` or the
+  `DELETE` verb on `/api/files/[id]`, which the brief does not mention at all.
+- Decision: record it, do not invent the entries. Deriving contracts from the
+  handlers would put implementation-shaped authority into the file that is
+  supposed to constrain the implementation. Correcting the brief is an owner
+  decision; the correction is narrow, and is stated in
+  `docs/route-divergence.json` so whoever takes it does not have to rediscover
+  it. `scripts/route-register-correspondence.test.ts` holds the divergence in
+  place meanwhile, so it cannot grow or be silently closed.
+
+## 2026-09-10 — revoking an analysis purpose does not empty the subject's own export
+
+- Question: `docs/retention.md` registered `purpose.derived-60s` as "delete
+  within 60 seconds" for derived rows attributable to the revoked
+  subject-and-purpose tuple. Revoking `ancestry` deletes no
+  `public.ancestry_results` row, so either the product or the rule was wrong.
+- Measured first. Only two database functions mention that table — a
+  schema-shape assertion and `purge_account_deletion_database_v1` — and the
+  only other removal is the reprocess path in `POST /api/files/[id]/process`.
+  Reads are correctly denied: `loadAncestryResultSnapshot` gates canonical and
+  legacy rows through `filterOwnAnalysisFiles(subject, 'ancestry', …)` and
+  re-confirms after every read. So this was retention, never access.
+- What decided it: `POST /api/export` reads those rows under the subject's own
+  export permission rather than the analysis grant. The query selects by
+  `user_id` and the result is then narrowed to the account's own legacy files
+  (`legacyIds`), so the scoping is correct and nothing leaks; what is absent is
+  any *ancestry-purpose* check, which is the whole point here. The brief requires storage, analysis, sharing and AI
+  permissions to stay separate, so revoking analysis withdrawing the subject's
+  own copy of already-derived data would collapse two permissions into one.
+- Decision (owner): keep the rows. The rule was over-broad, and
+  `docs/retention.md` now states the exception — derived rows a separate live
+  permission independently consumes are not deleted by purpose revocation,
+  while access under the revoked purpose still ends immediately under
+  `purpose.access-immediate`. Account deletion and source replacement remain
+  the paths that remove them. D-096 is closed by this decision, not by code.
+- Checked in the same pass and never a defect: `public.report_observed_calls`
+  is read by `own_copilot_chat_v1`, `own_report_generation_v1` and
+  `own_subject_export_content_v1`, so it is shared across live purposes and the
+  rule already forbade deleting it on one revocation.
+
+### Follow-up, same day — the canonical export path does the opposite
+
+Found after the decision above was taken, and it qualifies it rather than
+overturning it.
+
+- The decision was put and answered on the legacy behaviour: `POST /api/export`
+  reads `public.ancestry_results` with no purpose check, so revoking `ancestry`
+  leaves those rows in the archive. That description was accurate.
+- The canonical half of the same `ancestry.json` does the opposite, on purpose.
+  `private.own_subject_export_content_v1` filters `purpose='ancestry'` against
+  `purpose_grants`, and `src/lib/exports/own-subject-content.ts` reads twice
+  around its authority check and refuses if the reads differ, commenting:
+  "Unlike raw export permission, ancestry permission may disappear while the
+  source remains. Do not release a buffered result after withdrawal,
+  replacement generation or a different grant, including an empty page."
+- So after revocation an export contains the person's legacy ancestry and not
+  their canonical ancestry, in one file. Both cannot be right, and the
+  retention rule now records an exception that only half the product follows.
+- Not resolved here, and deliberately not resolved by me. The two directions
+  are not symmetric: making legacy match canonical withholds data a person can
+  retrieve today, while making canonical match legacy relaxes a withdrawal
+  protection someone wrote deliberately. Recorded as D-097.
+

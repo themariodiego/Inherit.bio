@@ -5,7 +5,7 @@ const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const choice = { purposeKey: "reports.polygenic" as const, label: "Trait reports and estimates", description: "Traits",
   granted: false, grantId: null, artifact: { key: "consent.own-polygenic", version: 2, body: "The permission" },
-  token: "presentation-token", statementKeys: ["make-this-result-for-me"] };
+  token: "presentation-token", statementKeys: ["make-this-result-for-me"], reconsent: null };
 const receipt = { recordKind: "purpose_grant", recordId: otherId, artifactKey: choice.artifact.key,
   artifactVersion: 2, purposeKey: choice.purposeKey, signedAt: "2026-09-06T12:00:00Z" };
 beforeEach(() => { vi.stubGlobal("fetch", fetchMock); fetchMock.mockReset(); });

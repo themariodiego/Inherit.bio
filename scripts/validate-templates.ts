@@ -161,7 +161,15 @@ function genotypeKeys(ref: string, alt: string, chrom: number): string[] {
   return [ref + ref, het, alt + alt];
 }
 
+/**
+ * Citations carrying no `accessedOn`, as measured on 2026-09-10. Lower it when
+ * sources are dated; it may never be raised. See the ratchet in `main`.
+ */
+const UNDATED_CITATION_BACKLOG = 189;
+
 function main() {
+  let totalCitations = 0;
+  let undatedCitations = 0;
   // G3.5: the report title is the first heading on the result page.
   const JARGON_TERMS = jargonTermList(
     JSON.parse(fs.readFileSync(path.join(process.cwd(), "data", "jargon.json"), "utf8")),
@@ -243,6 +251,8 @@ function main() {
       if (!Array.isArray(cites) || cites.length === 0)
         errors.push(`${id}: no citations`);
       for (const c of cites) {
+        totalCitations++;
+        if (c.accessedOn === undefined) undatedCitations++;
         for (const finding of studyContextFindings(c)) errors.push(`${id}: ${finding}`);
         for (const entry of Object.values(readStudyContext(c) ?? {})) {
           if (!entry) continue;
@@ -333,6 +343,24 @@ function main() {
   for (const [cat, n] of [...byCategory.entries()].sort()) {
     console.log(`  ${cat}: ${n}`);
   }
+  // G4.7 wants an access date on every citation. 32 of 221 carry one today —
+  // Medicines and the reviewed estimate templates, which ADR 0021 already
+  // requires — and the rest cannot be filled in from here: an access date
+  // records when a person actually read the source, and inventing one is
+  // exactly the fabrication the brief forbids.
+  //
+  // So this ratchets rather than pretends. The backlog may shrink and may
+  // never grow, which means a new citation has to arrive dated. It fails in
+  // both directions on purpose: a smaller number with a stale record here
+  // would let the count drift back up later without anyone noticing.
+  if (undatedCitations !== UNDATED_CITATION_BACKLOG) {
+    errors.push(undatedCitations > UNDATED_CITATION_BACKLOG
+      ? `${undatedCitations} citations carry no accessedOn, up from ${UNDATED_CITATION_BACKLOG}; `
+        + "a new citation must record the date its source was read"
+      : `${undatedCitations} citations carry no accessedOn, down from ${UNDATED_CITATION_BACKLOG}; `
+        + `lower UNDATED_CITATION_BACKLOG to ${undatedCitations} so the ratchet holds`);
+  }
+  console.log(`citations without an access date: ${undatedCitations} of ${totalCitations}`);
   if (total < 120) errors.push(`only ${total} templates; launch floor is 120`);
   if (byCategory.size < 12)
     errors.push(`only ${byCategory.size} categories; floor is 12`);

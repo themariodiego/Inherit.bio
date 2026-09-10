@@ -1,9 +1,252 @@
 # MVP-first acceptance sequence
 
-Original plan audit: 2026-09-06; current checkpoint: 2026-09-09.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-10.
 Full-plan acceptance is **19/65**, after exact-route Lighthouse gate G1.14.
 The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
+
+## What is blocked, and on whom · 10 September 2026
+
+Written because the next person should not have to rediscover which of these
+is waiting on a decision and which is waiting on work. Nothing here is a
+suggestion about priority; it is a statement of what cannot proceed without
+someone else acting.
+
+**Waiting on the owner.** Each is a decision, not an implementation.
+
+| Ref | Question | Why it cannot be settled in code |
+|---|---|---|
+| D-097 | Revoking `ancestry` leaves the legacy rows in the subject's export but the canonical half withholds them, deliberately and with stated reasoning. Which half is right? | The two directions are not symmetric. Matching legacy to canonical withholds data a person can retrieve today; matching canonical to legacy relaxes a withdrawal protection someone wrote on purpose. |
+| G5.8 | Three protective clauses are absent: an uploader indemnity, a reproductive no-reliance statement, and a statement that Inherit sells nothing and takes no payment for sequencing. | Drafting them is legal work. The same reasoning kept the terms page's US$100 damages cap unedited under G5.7. |
+| G5.5 | No jurisdiction is reviewed: `realJurisdictions` holds zero entries against a 249-code catalog, so every declaration resolves to `unreviewed`. | A signed review under `signedReviewContract` is a human legal act, and simulating one is precisely what the structural review gate exists to prevent. |
+| D-098 | `NEXT_PUBLIC_APP_URL` falls back to the hosted origin. Should it fail loudly instead? | The answer turns on what the production deployment actually sets, which is not readable from this repository. |
+
+**Waiting on spending or hosted access.** Unchanged from the 9 September
+measurement; `docs/hosted-own-upload-readiness.md` carries the figures.
+
+- `max_artifact_bytes` at **8.79×** under a whole genome, and `max_job_seconds`
+  at **3.05×** under. Raising either is storage and compute cost.
+- The hosted worker canary, and controlled activation of the prepared-object
+  backend. Both need a deployment nobody here can make.
+
+**Waiting on the brief itself.** `POST /api/uploads` exists; brief line 2194
+says "there is no such route". The register is derived from the brief and
+pinned by `briefSha256`, so three Priority 1 endpoints — `/api/uploads`,
+`/api/uploads/[id]/complete` and the `DELETE` verb on `/api/files/[id]` —
+cannot be given register entries until that sentence is corrected. The
+correction needed is narrow and is written out in `docs/route-divergence.json`.
+The brief's safety argument survives untouched: `issueSubjectUpload` reads at
+most 4096 bytes of JSON and never the file, so a byte-level rejection there
+really is unreachable. Only the existence claim is false.
+
+**Not blocked, and the shortest paths from here.** Updated 10 September after
+G1.8, G5.2 and G3.5 closed; acceptance is **22 of 65**.
+
+- **G5.3a** needs one thing and it is an owner call, not code. The access and
+  delete halves are proven in a browser for the canonical path
+  (`e2e/ancestry-revocation.spec.ts`), and the delete half is enforced by
+  `revoke_directional_purpose_v1` calling `execute_own_report_purge_v1`. What
+  remains is legacy `public.ancestry_results`: gated on read, never deleted,
+  against a registered 60-second deadline. D-097 decides it.
+- **G5.6** needs the rights decision on whether `subjects`, `subject_consents`,
+  `subject_account_bindings`, `subject_principals` and
+  `provider_recipient_grants` belong in the archive, plus the unbuilt
+  `/api/subjects/[id]/export`. Attribution itself is proven by an executed
+  export (`e2e/export-subject-scope.spec.ts`).
+- **G2.7** needs the 25 authenticated pages in both themes. The public half is
+  done and derived from the register — 29 routes, both themes, zero axe
+  violations — so the pattern to copy already exists in `e2e/a11y.spec.ts`.
+- **G8.3 is the one worth doing next**, because G8.2 rule (a) waits on it and
+  on nothing else, and because it is the brief's own detection for "a beautiful
+  surface over an unimplemented pipeline". It is nearer than its one-line row
+  implied: `src/lib/figures/contract.ts` declares 11 kinds and exactly two
+  places emit `data-figure-kind`, so `docs/figures-register.json` is derivable
+  rather than hand-kept, and `e2e/fixtures/` already holds seven synthetic VCFs
+  with different values. What is missing is a figure collector — 
+  `src/lib/claims/collect-dom.ts` is the nearest precedent but reads claims —
+  and a spec that renders a surface under two seeds and differences them.
+- **G2.5** needs the density harness rebuilt inside the E2E suite.
+  `scripts/density-baseline/capture.mjs` cannot be pointed at the current build:
+  it takes its routes from the baseline document and authenticates against a
+  stub shaped for the old app. The register carries 62 page routes, 29 of which
+  have a baseline predecessor and 33 of which do not.
+- **G4.7's remaining work is not engineering.** 189 of 221 citations carry no
+  access date; a date records when a person read the source and cannot be
+  invented. `UNDATED_CITATION_BACKLOG` holds the count so it can only shrink.
+- **G1.13a/b, G8.6, G1.12, G2.4's task-depth half** still need browser
+  instrumentation and are untouched.
+
+## Durable finalization progress, schema first · 9 September 2026
+
+Finalization is all-or-nothing today. The route validates the staging object,
+copies it, reads the promoted copy back to verify its hash, removes staging and
+publishes — and a failure anywhere discards every completed byte, so the person
+uploads the whole file again. The measurement above says why that matters more
+than it looks: the cost is transfer and round trips, not validation, so the
+work lost is expensive and the compute to redo it is not the problem.
+
+`20260909210000_own_upload_finalization_checkpoints.sql` added the durable
+progress record additively and unused, following the prepared-source precedent
+of landing authority and storage before the runtime that uses them.
+`20260909213000_own_upload_finalization_resume.sql`, the route and the browser
+then turned it on. No limit moves and no admission opens.
+
+The phases are `validated`, `copied`, `verifying`, `verified` and
+`staging-removed`. Only `verifying` carries a byte offset and a resumable
+digest state, because only the copy pass can resume: it reads plain bytes, so
+an offset plus a saved digest resumes it exactly, and a `hash-wasm` SHA-256
+state is 116 bytes. Validation decompresses, and gzip decoder state cannot be
+serialised, so `validated` is recorded once and never re-run rather than
+resumed mid-file.
+
+What the schema refuses: a checkpoint read or written on weaker grounds than
+the finalization itself (it re-derives the same account, session, consent
+revisions, exact claim, `validating` status and unexpired session); a
+superseded claim's progress; a phase or offset that moves backwards; a raw or
+decoded hash that differs from what an earlier pass recorded, which means a
+different source rather than a resumption; a lease outliving the upload
+session; and any key outside the closed set. A terminal status retires the row
+through a trigger, so the hashes it held do not outlive their purpose, and the
+row cascades with its upload session so account deletion and the two-hour
+staging purge need no new manifest entry.
+
+**The authority model is deliberately unchanged.** Progress stays bound to the
+originating session, exactly as the prepared worker is. Nothing here makes
+finalization session-independent, so no superseding ADR is required; a design
+that outlived the session would need one, and this is not it.
+
+What now happens: `finalizeSubjectUpload` reads the checkpoint, does only what
+the recorded phase leaves, and records each phase as it completes. A second
+bodyless POST for the same upload finishes what the first one left, which
+`e2e/own-upload-pause.spec.ts` already drives — it aborts one finalization and
+then finalizes the same `uploadId` to a 200. The response contract did not
+change and `docs/route-register.json` is untouched.
+
+How a person reaches that second POST: `finishStagedUpload` sends it, and the
+uploader offers it as **Try this upload again** whenever a finalization ended
+without an answer — a dropped connection, the 408, 502 or 504 a host answers
+for an invocation it killed, or the route refusing re-entry while the previous
+attempt still holds its lease. Before this, "try again" re-hashed the file,
+opened a new upload session and sent every byte again. The offer appears only
+where asking again can still work: every other refusal has already aborted the
+upload and removed both objects, so a file refused for its size or contents
+carries no upload id and no button.
+
+It is a visible action rather than a background retry, for two reasons.
+`src/lib/uploads/subject-upload-browser.ts` declares that it performs none, and
+the pause spec requires an aborted finalization to surface its refusal rather
+than be repeated out of sight. A background retry was written and reverted
+after CI caught it on `own-upload-pause.spec.ts:146`, with 231 of 232 browser
+cases passing. The refusal keeps its exact wording and its own alert; the
+button sits outside that alert.
+
+What it still does not do: a kill during validation costs the whole file, since
+validation is the first phase, records nothing until it finishes and therefore
+leaves nothing to resume — the gzip constraint above, not an oversight. The
+30-minute upload-session window still caps total finalization time, and no
+larger file is admitted. Acceptance stays **19/65**: this closes no gate,
+because the screens gate needs its own recorded browser evidence.
+
+## Preparation is what a whole genome cannot pass · 9 September 2026
+
+`scripts/preparation-capacity.mts` drives the actual `runOwnPreparationPipeline`
+over the seed-1 synthetic fixtures. A 4,930,321-variant single-sample GRCh38
+VCF **prepares successfully** in 2,745.38 s at a 388,284,416-byte peak, over
+2,289 artifacts and 922,056,859 artifact bytes. The pipeline is not the
+problem; three configured ceilings are, and the tightest was not previously
+named:
+
+- `max_artifact_bytes` 104,857,600 — **8.79× over**, and already 1.52× over at
+  1,000,000 variants, so the refusal lands well below whole-genome scale.
+- `max_job_seconds` 900 — **3.05× over**, using 76.3% of the 3,600 schema
+  maximum.
+- `artifact_count` 4,096 — fits, at 55.9%.
+
+Scaling is mildly super-linear: 4.93× the variants cost 5.46× the time and
+5.78× the payload, so the whole-genome row is measured rather than projected.
+`canonical-runs` and `canonical-materialization` are 74.7% of the run, and the
+pipeline reads its own intermediate artifacts 2,495 times against only 78
+reads of the original — an external merge sort, whose cost is re-reading what
+it wrote. Every figure is a floor: the harness spools artifacts to local disk
+and enforces none of the database ceilings, and a hosted worker turns each of
+those reads into a Storage round trip.
+
+A 45-minute job must also outlive its own authority. `job_deadline` is
+`least(now + max_job_seconds, authorityDeadline)` and every renewal re-resolves
+the originating `auth.sessions` row, so the account must stay signed in
+throughout.
+
+Separately, and reproduced against a local database: the three-attempt retry
+budget cannot rescue a job that reserved even one artifact. The re-claim
+succeeds, then `own-preparation-worker.ts:131` refuses it because
+`nextArtifactSequence` is the job-wide monotonic `artifact_count`. Attempts two
+and three burn their backoff and do no work; real recovery is scratch cleanup
+deleting the job and redoing everything from the original.
+
+No limit moved. Acceptance stays **19/65**; this closes no gate, because
+capacity evidence is not a working journey. What it changes is the price of
+admitting a whole genome, which is now a number rather than an unknown.
+`docs/hosted-own-upload-readiness.md` holds the full tables.
+
+## Upload refusals name the limit they hit · 9 September 2026
+
+`private.issue_own_storage_upload_v1` raises one error class (`22023`) for a
+malformed declaration, for a file past its per-format ceiling, and for an
+account with no allowance left. The route collapsed all three into HTTP 413
+`too_large`, which the uploader rendered as "This file exceeds the current
+upload limit for your account." A person whose file was simply too big was
+told their account was full; a person with a small file and a full account was
+told the same thing; and a malformed declaration was reported as a size. The
+first user to write in about WGS uploads asked, reasonably, what the limits
+were and whether his account could be raised — the sentence had sent him to
+the wrong question.
+
+Finalization had the same collapse in the other direction. Structural
+validation raises `too_large` for exactly one cause, decompressed content past
+the session ceiling (`src/lib/uploads/subject-structure.ts:98`), and the stored
+size has already passed at issuance by then. Reporting it as a plain size limit
+invites refiltering a file whose stored size was never the problem.
+
+This release separates them and states the ceiling up front:
+
+- New read-only `public.own_upload_limits_v1` discloses the deployment's
+  per-format ceilings, the account's reserved total and its live lease count,
+  to a live session of that exact account only. Its reservation arithmetic is
+  copied from the issuer so a disclosed remainder and an actual refusal cannot
+  disagree; the pgTAP test asserts that boundary in both directions.
+- Issuance now answers `invalid_request` (422), `too_large` (413) or the new
+  `account_full` (413), resolving the two ceilings against the live limits.
+  Finalization answers `decompressed_too_large` (413).
+- The upload page states the ceiling before a file is chosen, including that a
+  compressed file is measured after it is unpacked, and the browser refuses an
+  over-ceiling file before hashing the whole thing rather than after.
+- An unreadable disclosure states no ceiling rather than a guessed one and
+  never blocks uploading; the server stays the authority in every case.
+- `docs/route-register.json` gains `upload-account-full-v1` and the finalize
+  413 body changes to `decompressed_too_large`; both bodies stay closed.
+
+**No limit changed, and no admission was opened.** The reported 413 MB original
+and its reduced 38.3 MB export are still refused, now with an accurate reason.
+The whole set of ceilings between today and an ordinary WGS result, each with
+the constraint that enforces it, is recorded in
+`docs/hosted-own-upload-readiness.md`.
+
+CI `34397159200` passed on exact head `1fb934756e6cf7ede547c79eb5e1b3a8c62ceeec`
+at **20:10:47 UTC**: **4,497 units in 248 files**, **2,527 SQL assertions in 66
+files** (`Result: PASS`, `All tests successful`), 30 independent-session lock
+checks and all **232 browser cases in 16.0 minutes**, with 57 actual Storage
+uploads, zero skips or automatic retries, and both owned browser cleanup and
+local Supabase stop successful. That run was the first execution anywhere of
+`20260909193000_own_upload_limit_disclosure.sql` and its
+`own_upload_limit_disclosure.sql` pgTAP test, which reported `ok`; the
+authoring environment had no Docker and could not run either suite. Against the
+PR83 baseline of 4,448 units in 247 files and 2,511 SQL assertions in 65 files,
+this adds 49 units in one new file and 16 SQL assertions in one new file.
+
+Nothing was deployed, no hosted configuration was read or written, and no
+genetic file was touched. Acceptance stays **19/65**: this closes no gate,
+because the screens gate (G2) needs its own recorded browser evidence, and a
+passing regression suite is not that evidence.
 
 ## Current production checkpoint · 9 September 2026
 

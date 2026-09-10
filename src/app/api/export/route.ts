@@ -676,6 +676,9 @@ export async function GET() {
         contents,
         files: (files ?? []).map((f) => ({
           id: f.id,
+          // Whose data this file is. Without it an account holding more than
+          // its own subject cannot tell the archive's files apart.
+          subject_id: f.subject_id,
           original_name: f.original_name,
           file_type: f.file_type,
           tier: f.tier,

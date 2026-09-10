@@ -8071,6 +8071,21 @@ export type Database = {
         }
         Returns: Json
       }
+      own_upload_limits_v1: {
+        Args: { p_account_id: string; p_session_id: string }
+        Returns: Json
+      }
+      read_own_upload_finalization_checkpoint_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_upload_id: string; p_claim: string }
+        Returns: Json
+      }
+      write_own_upload_finalization_checkpoint_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_upload_id: string; p_claim: string;
+          p_expected_revision: number; p_checkpoint: Json; p_lease_seconds: number;
+        }
+        Returns: Json
+      }
       own_report_context_v1: {
         Args: { p_account_id: string; p_session_id: string; p_subject_id: string }
         Returns: Json

@@ -53,6 +53,8 @@ jobs:
         run: pnpm test
       - name: Legal placeholder gate
         run: pnpm gate:legal
+      - name: First-glance heading gate
+        run: pnpm gate:first-glance
       - name: No-comparator name gate
         run: pnpm gate:names
       - name: Template integrity gate
@@ -83,6 +85,24 @@ jobs:
         run: |
           pnpm build
           pnpm exec tsx scripts/ci-browser-runtime.run.mts record-build
+      - name: Legal placeholder gate, rendered pages
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+        run: |
+          set -euo pipefail
+          pnpm exec next start --port 3199 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          ready=""
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:3199/about; then ready=1; break; fi
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo "::error::built server never answered on 3199; the rendered gate checked nothing"
+            exit 1
+          fi
+          SERVER_URL=http://127.0.0.1:3199 pnpm gate:legal
       - name: Full browser suite with the real local Storage provider
         env:
           INHERIT_DISPOSABLE_LOCAL_E2E: "true"

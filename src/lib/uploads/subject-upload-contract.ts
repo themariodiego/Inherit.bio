@@ -15,6 +15,30 @@ export const directUploadReceipt = z.object({
   uploadToken: z.string().min(1), authorizationHeader: z.literal("Bearer {uploadToken}"),
   maximumBytes: z.number().int().positive().safe(), expiresAt: z.iso.datetime({ offset: true }),
 }).strict();
+const byteCeiling = z.number().int().positive().safe();
+/** The deployment's own-upload ceilings and this account's reserved total, as
+ * `public.own_upload_limits_v1` returns them. Ceilings are deployment capacity,
+ * never a browser assertion; nothing here is a promise about a future limit. */
+export const ownUploadLimitsSchema = z.object({
+  maximumArrayBytes: byteCeiling, maximumVcfBytes: byteCeiling, maximumAccountBytes: byteCeiling,
+  maximumActiveUploads: z.number().int().positive().safe(),
+  reservedBytes: z.number().int().nonnegative().safe(), activeUploads: z.number().int().nonnegative().safe(),
+}).strict();
+export type OwnUploadLimits = z.infer<typeof ownUploadLimitsSchema>;
+
+/** The one ceiling that applies to a declared format, split exactly as
+ * `private.issue_own_storage_upload_v1` splits it. Issuance stores this same
+ * number as the session's `maximum_decoded_bytes`, so a compressed source is
+ * measured against it twice: as stored bytes now, as decompressed bytes later. */
+export function uploadCeilingBytes(format: SubjectUploadFormat, limits: OwnUploadLimits): number {
+  return format.startsWith("consumer-array-text-v") ? limits.maximumArrayBytes : limits.maximumVcfBytes;
+}
+
+/** What this account could still add, never below zero. */
+export function remainingAccountBytes(limits: OwnUploadLimits): number {
+  return Math.max(0, limits.maximumAccountBytes - limits.reservedBytes);
+}
+
 export const subjectFinalizationReceipt = z.object({ fileId: uuid, status: z.literal("finalized_ready_for_processing"),
   analysisState: z.literal("ready_for_processing"),
   next: z.object({ routeId: z.literal("api.file-process"), operation: z.literal("process") }).strict(),

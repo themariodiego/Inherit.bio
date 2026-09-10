@@ -3,8 +3,9 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { assertStorageUploadSignerAvailable, mintStorageUploadToken, storageUploadAuthorizationSchema } from "./storage-upload-token";
-import { directUploadReceipt, uploadSessionBody } from "./subject-upload-contract";
+import { directUploadReceipt, uploadCeilingBytes, uploadSessionBody } from "./subject-upload-contract";
 import { canonicalUploadsPaused } from "./canonical-upload-pause";
+import { readOwnUploadLimits } from "./own-upload-limits";
 
 /** This endpoint accepts a small declaration, never the file or a filename. */
 async function readDeclaration(request: Request): Promise<unknown> {
@@ -49,7 +50,16 @@ export async function issueSubjectUpload(request: Request) {
     });
     if (error) {
       if (error.code === "42501") return ownUploadJson({ error: "not_found" }, 404);
-      if (error.code === "22023") return ownUploadJson({ error: "too_large" }, 413);
+      // The issuer raises one class for a malformed declaration and for both
+      // ceilings. Naming the wrong one sends someone away to shrink a file
+      // that was never the problem, so resolve which limit actually refused.
+      if (error.code === "22023") {
+        if (error.message?.includes("invalid_request")) return ownUploadJson({ error: "invalid_request" }, 422);
+        const limits = await readOwnUploadLimits(actor);
+        const overFormatCeiling = !limits
+          || body.data.sizeBytes > uploadCeilingBytes(body.data.declaredFormat, limits);
+        return ownUploadJson({ error: overFormatCeiling ? "too_large" : "account_full" }, 413);
+      }
       if (error.code === "55000") return ownUploadJson({ error: "upload_unavailable" }, 409);
       return ownUploadJson({ error: "unavailable" }, 503);
     }

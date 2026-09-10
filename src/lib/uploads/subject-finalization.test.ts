@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createSHA256 } from "hash-wasm";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn(),
@@ -35,7 +36,18 @@ function request(body?: string, headers: Record<string, string> = {}) {
     headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", ...headers } });
 }
 function send(req = request()) { return finalizeSubjectUpload(req, uploadId); }
-function rpc(name: string) {
+/** The durable progress record, modelled the way the database keeps it. */
+let stored: { revision: number; checkpoint: unknown };
+function checkpointReceipt() {
+  return { data: { version: "own-upload-finalization-checkpoint-receipt-v1", uploadId,
+    revision: stored.revision, leaseExpiresAt: null, checkpoint: stored.checkpoint }, error: null };
+}
+function rpc(name: string, params?: Record<string, unknown>) {
+  if (name === "read_own_upload_finalization_checkpoint_v1") return checkpointReceipt();
+  if (name === "write_own_upload_finalization_checkpoint_v1") {
+    stored = { revision: (params!.p_expected_revision as number) + 1, checkpoint: params!.p_checkpoint };
+    return checkpointReceipt();
+  }
   if (name === "begin_own_upload_finalization_v1" || name === "authorize_own_upload_finalization_v1") return { data: manifest, error: null };
   if (name === "complete_own_upload_finalization_v1") return { data: receipt, error: null };
   if (name === "abort_own_upload_finalization_v1") return { data: { bucket: "genomes", stagingKey, finalKey }, error: null };
@@ -59,7 +71,8 @@ beforeEach(() => {
   setSource(Buffer.from(vcf + row));
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
   mocks.getClaims.mockResolvedValue({ data: { claims: { sub: accountId, session_id: sessionId } } });
-  mocks.rpc.mockImplementation(async name => rpc(name));
+  stored = { revision: 0, checkpoint: null };
+  mocks.rpc.mockImplementation(async (name, params) => rpc(name, params));
   mocks.copy.mockResolvedValue({ data: {}, error: null });
   mocks.remove.mockResolvedValue({ data: [], error: null });
   mocks.info.mockResolvedValue({ data: { id: objectId }, error: null });
@@ -78,7 +91,8 @@ describe("subject finalization API boundary", () => {
       p_storage_object_id: objectId, p_raw_sha256: hash(source), p_decoded_sha256: hash(source) });
     expect(mocks.fetch).toHaveBeenCalledTimes(2);
     expect(JSON.stringify(mocks.rpc.mock.calls)).not.toContain("PRIVATE_SAMPLE");
-    expect(mocks.rpc.mock.calls.every(([name]) => /^(begin|authorize|complete)_own_upload_finalization_v1$/.test(name))).toBe(true);
+    expect(mocks.rpc.mock.calls.every(([name]) =>
+      /^(begin|authorize|complete)_own_upload_finalization_v1$|^(read|write)_own_upload_finalization_checkpoint_v1$/.test(name))).toBe(true);
   });
   it("uses bounded authenticated ranges for every byte of the source and the fresh copy", async () => {
     setSource(Buffer.from(vcf + row.repeat(Math.ceil(INGEST_CHUNK_MAXIMUM_BYTES / row.length) + 1)));
@@ -158,8 +172,21 @@ describe("finalization failure and cleanup boundaries", () => {
   });
   it("bounds decompression and cleans a refused archive", async () => {
     setSource(gzipSync(Buffer.from(vcf + row)), "VCF.GZ"); manifest.maximumDecodedBytes = 40;
-    expect((await send()).status).toBe(413); expect(mocks.copy).not.toHaveBeenCalled();
+    const response = await send(); expect(response.status).toBe(413);
+    // The stored size already passed at issuance, so this refusal is about the
+    // unpacked measurement alone. Reporting a plain size limit here would send
+    // someone away to filter a file whose stored size was never the problem.
+    expect(await response.json()).toEqual({ error: "decompressed_too_large" });
+    expect(mocks.copy).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledWith([stagingKey, finalKey]);
+  });
+  it("keeps a decompressed refusal distinct from every other finalization refusal", async () => {
+    setSource(Buffer.from(vcf + row + row)); manifest.maximumDecodedBytes = 1;
+    // An uncompressed source is measured the same way, and still must not be
+    // reported as an integrity mismatch or a stored-size refusal.
+    const response = await send(); expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "decompressed_too_large" });
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
   });
   it.each([1, 2, 3, 4, 5])("stops and cleans on authority revocation at recheck %s", async at => {
     let seen = 0;
@@ -202,8 +229,8 @@ describe("finalization failure and cleanup boundaries", () => {
     expect(mocks.rpc.mock.calls.some(([name]) => name === "ack_own_upload_finalization_cleanup_v1")).toBe(false);
   });
   it("never deletes the final file after an uncertain committed response when abort is refused", async () => {
-    mocks.rpc.mockImplementation(async name => ["complete_own_upload_finalization_v1", "abort_own_upload_finalization_v1"].includes(name)
-      ? { error: { code: "XX000", message: "response lost" }, data: null } : rpc(name));
+    mocks.rpc.mockImplementation(async (name, params) => ["complete_own_upload_finalization_v1", "abort_own_upload_finalization_v1"].includes(name)
+      ? { error: { code: "XX000", message: "response lost" }, data: null } : rpc(name, params));
     expect((await send()).status).toBe(503);
     expect(mocks.remove).toHaveBeenCalledExactlyOnceWith([stagingKey]);
   });
@@ -212,5 +239,72 @@ describe("finalization failure and cleanup boundaries", () => {
     mocks.rpc.mockImplementation(async name => name === "abort_own_upload_finalization_v1"
       ? { data: { bucket: "genomes", stagingKey: fileId, finalKey }, error: null } : rpc(name));
     expect((await send()).status).toBe(503); expect(mocks.remove).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Durable progress (ADR-0026). A request killed mid-flight leaves what it
+ * finished recorded, so a later retry by the same session resumes instead of
+ * transferring the whole object again. The 300-second ceiling is the one that
+ * bites, and a kill skips the cleanup path, which is exactly why the record has
+ * to survive it.
+ */
+describe("resuming a finalization that was already part done", () => {
+  function mark(phase: string, verifiedBytes = 0, digestState: string | null = null) {
+    return { version: "own-upload-finalization-checkpoint-v1", phase, rawSha256: hash(source),
+      decodedSha256: hash(source), verifiedBytes, digestState };
+  }
+  const written = () => mocks.rpc.mock.calls
+    .filter(([name]) => name === "write_own_upload_finalization_checkpoint_v1")
+    .map(([, params]) => (params as { p_checkpoint: { phase: string } }).p_checkpoint.phase);
+
+  it("records each phase as it finishes, in order", async () => {
+    expect((await send()).status).toBe(200);
+    expect(written()).toEqual(["validated", "copied", "verified", "staging-removed"]);
+  });
+
+  it("does not validate or copy again once the copy is recorded", async () => {
+    stored = { revision: 2, checkpoint: mark("copied") };
+    expect((await send()).status).toBe(200);
+    expect(mocks.copy).not.toHaveBeenCalled();
+    // Only the promoted copy is read back; the staging object is not re-read.
+    expect(mocks.fetch.mock.calls.every(([url]) => String(url).endsWith(finalKey))).toBe(true);
+    expect(written()).toEqual(["verified", "staging-removed"]);
+  });
+
+  it("carries the recorded hashes into publication rather than re-deriving them", async () => {
+    stored = { revision: 2, checkpoint: mark("copied") };
+    expect((await send()).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("complete_own_upload_finalization_v1", { ...args,
+      p_storage_object_id: objectId, p_raw_sha256: hash(source), p_decoded_sha256: hash(source) });
+  });
+
+  it("resumes partial verification at the exact recorded offset", async () => {
+    const partial = await createSHA256();
+    partial.init(); partial.update(source.subarray(0, 64));
+    stored = { revision: 3, checkpoint: mark("verifying", 64, Buffer.from(partial.save()).toString("base64")) };
+    expect((await send()).status).toBe(200);
+    // The one range asked for starts where the previous attempt stopped, and
+    // the resumed digest still has to equal the whole object's hash.
+    const ranges = mocks.fetch.mock.calls.map(([, options]) => new Headers(options.headers).get("range"));
+    expect(ranges).toEqual([`bytes=64-${source.length - 1}`]);
+    expect(mocks.rpc).toHaveBeenCalledWith("complete_own_upload_finalization_v1",
+      expect.objectContaining({ p_raw_sha256: hash(source) }));
+  });
+
+  it("refuses a resumed copy whose bytes no longer match what validation proved", async () => {
+    stored = { revision: 2, checkpoint: mark("copied") };
+    copiedBytes = Buffer.from(source.toString().replace("opaque", "mutate"));
+    const response = await send(); expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "upload_integrity_mismatch" });
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
+  });
+
+  it("does not remove staging again once its removal is recorded", async () => {
+    stored = { revision: 5, checkpoint: mark("staging-removed", source.length) };
+    expect((await send()).status).toBe(200);
+    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(mocks.copy).not.toHaveBeenCalled();
+    expect(written()).toEqual([]);
   });
 });

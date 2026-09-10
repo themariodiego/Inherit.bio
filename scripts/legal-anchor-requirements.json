@@ -1,0 +1,53 @@
+{
+  "purpose": "G5.8's eight protective statements, each keyed by the stable anchor id the brief requires. scripts/legal-placeholder-gate.ts checks by id, not by prose, exactly as the brief specifies: a statement recorded as present must still carry its anchor, and one recorded as absent must still be absent. Adding a missing clause therefore fails this gate until the record is updated, which is the point.",
+  "scope": "The terms page only. The brief also requires these statements on each consent document shown at the activation point; that surface is not measured yet and no claim is made about it here.",
+  "notDrafted": "The absent clauses are not written by this repository's tooling. Drafting an indemnity, a reproductive no-reliance statement or a governing-law forum is legal work, not engineering work.",
+  "surface": "src/app/(marketing)/terms/page.tsx",
+  "statements": [
+    {
+      "requirement": "Uploader warranty: at least 18 and holds the subject's documented permission",
+      "anchorId": "eligibility",
+      "status": "present"
+    },
+    {
+      "requirement": "Uploader indemnity for claims arising from third-party and embryo uploads",
+      "anchorId": "indemnity",
+      "status": "absent",
+      "note": "No indemnity language anywhere on the page. This is the case the brief names as the one that passes every other gate while leaving the operator unprotected."
+    },
+    {
+      "requirement": "No medical advice and no diagnosis",
+      "anchorId": "not-medical",
+      "status": "present"
+    },
+    {
+      "requirement": "No reliance for reproductive decisions",
+      "anchorId": "no-reproductive-reliance",
+      "status": "absent",
+      "note": "No reproductive, IVF, family-planning or conception wording on the page, despite Embryo Analysis being a shipped surface."
+    },
+    {
+      "requirement": "Limitation of liability",
+      "anchorId": "liability",
+      "status": "present"
+    },
+    {
+      "requirement": "Accuracy and completeness disclaimer covering data Inherit did not generate",
+      "anchorId": "no-warranty",
+      "status": "present-incomplete",
+      "note": "Accuracy and completeness are both disclaimed. The qualifier the brief asks for — that it covers data Inherit did not generate, which is every uploaded file — is not there. Recorded rather than gated, because the brief says to match by id and not by prose."
+    },
+    {
+      "requirement": "Governing law and forum",
+      "anchorId": "governing-law",
+      "status": "present-incomplete",
+      "note": "Governing law is stated; no forum, venue or exclusive-jurisdiction wording appears. Same reason for recording rather than gating."
+    },
+    {
+      "requirement": "Inherit sells nothing and takes no payment for sequencing",
+      "anchorId": "no-sale-no-payment",
+      "status": "absent",
+      "note": "The page says Inherit will not sell the user's data, which is a different promise. Nothing states that Inherit sells nothing and takes no payment for sequencing. G5.7 proves no fee path exists in code; this is the statement of it that the terms owe the reader."
+    }
+  ]
+}

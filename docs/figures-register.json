@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "rule": "G8.3: every figure asserted on a result surface must differ between seed A and seed B, or be listed here with the reason it cannot.",
+  "seeds": {
+    "A": "e2e/fixtures/aims-mixed-grch38.vcf",
+    "B": "e2e/fixtures/aims-mixed-b-grch38.vcf"
+  },
+  "seedInvariant": [
+    {
+      "surface": "/genome/me/ancestry",
+      "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/admixture.ts|-|1",
+      "name": "the unassignable chip",
+      "reason": "estimateAdmixture returns five proportions that sum to 1, and src/lib/ancestry/present.ts computes this chip as max(0, 1 - assigned), so it is 0.0% for every genome. It is registered rather than dropped from collection because a non-zero value would mean the estimator had begun leaving mass unattributed, which is worth seeing."
+    }
+  ]
+}

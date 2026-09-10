@@ -59,6 +59,7 @@ import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import {
+  reportNameOf,
   resolveTemplate,
   type ReportTemplate,
   type TemplateVariant,
@@ -92,17 +93,6 @@ function safeCategoryFor(template: ReportTemplate): CategoryId | null {
   } catch {
     return null;
   }
-}
-
-/**
- * The report name is the title up to its gene suffix (`Caffeine metabolism ·
- * CYP1A2` → `Caffeine metabolism`); the whole title when there is none. The
- * gene suffix is provenance, rendered in "Where this comes from", never a
- * heading.
- */
-function reportNameOf(title: string): string {
-  const index = title.indexOf(" · ");
-  return index === -1 ? title : title.slice(0, index);
 }
 
 /** Sorted genotype key ("AC") → the two letters ("A/C"); longer keys render as stored. */

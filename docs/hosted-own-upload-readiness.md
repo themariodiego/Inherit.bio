@@ -1,5 +1,267 @@
 # Hosted own-upload rollout prerequisites
 
+## Every ceiling between today and an ordinary WGS result · 9 September 2026
+
+Read from the code at `691ea28`, with the exact constraint that enforces each.
+Deployment values are configuration, not constants; the hosted numbers quoted
+below are the dated observation recorded in the PR83/PR84 handoff and were not
+re-queried for this note. Nothing here changes a limit.
+
+| Boundary | Enforced at | Value |
+|---|---|---|
+| Stored size, per file | `20260906123327_subject_upload_finalization.sql` (`issue_own_storage_upload_v1`) | `maximum_vcf_bytes` / `maximum_array_bytes`; hosted `maximum_vcf_bytes` observed 25,165,824 B (24 MiB) |
+| Unpacked size, per file | same issuer stores that number as `upload_sessions.maximum_decoded_bytes`; enforced in `src/lib/uploads/subject-structure.ts:98` | the same number again |
+| Account allowance | same issuer, counting stored files plus every unexpired `issued`/`uploaded`/`validating` session | `maximum_account_bytes`; hosted observed 134,217,728 B (128 MiB) |
+| Concurrent uploads | same issuer | `maximum_active_uploads`; hosted observed 2 |
+| Upload session lifetime | same issuer | `least(clock_timestamp() + interval '30 minutes', auth.sessions.not_after)` |
+| Finalization request | `src/app/api/files/[id]/finalize/route.ts:2` | `maxDuration = 300` seconds |
+| Finalization work inside it | `src/lib/uploads/subject-finalization.ts:79-89` | two complete passes over the object: validate/hash the staging copy, then re-read the promoted copy to verify its hash |
+| Preparation wall clock | `20260908233418_own_preparation_checkpoints.sql:4-5,14` | `max_job_seconds` default 900, CHECK 900–3600; hard `job_deadline <= created_at + interval '1 hour'`; a whole genome measured 2,745.38 s |
+| Registered artifact payload | `20260908233337_own_prepared_r2_provider.sql:6,9,129` | `reserved_bytes <= 1 GiB`; deployment `max_artifact_bytes` default 104,857,600 B; `artifact_count < 4096`; per artifact 1–8,388,608 B. A whole genome measured 922,056,859 B across 2,289 artifacts, so this cap refuses it first |
+| Checkpoint size | `20260908233418_own_preparation_checkpoints.sql:21` | `octet_length(checkpoint::text) <= 4,000,000` |
+
+**The per-file ceiling is applied twice.** `issue_own_storage_upload_v1` writes
+the same per-format number into `upload_sessions.maximum_decoded_bytes`, and
+finalization measures decompressed bytes against it. A compressed VCF must
+therefore fit *unpacked* under the stated per-file limit, so the largest
+acceptable `.vcf.gz` is materially smaller than that limit suggests. This
+refusal arrives only after the whole file has been uploaded and streamed.
+
+Against the file a person actually reported (their figures, not ours; we hold
+no copy and have no permission to use it): a 413 MB original exceeds both the
+per-file and the whole-account ceilings on stored size alone, and the reduced
+PASS-only 38.3 MB export exceeds the per-file ceiling on stored size alone.
+Both are refused at issuance today, before any unpacked measurement applies.
+
+This is now measured, in "Measured: preparation, not finalization, is what a
+whole genome cannot pass" below. A 4,930,321-variant file prepares in
+2,745.38 s and registers 922,056,859 B across 2,289 artifacts, so it exceeds
+`max_artifact_bytes` by 8.79× and `max_job_seconds` by 3.05× while using only
+55.9% of the artifact-count ceiling. The caution above was justified: scaling
+attempt 5 linearly under-states both the payload and the time.
+
+Raising any admission limit still needs the hosted execution home for that
+work, and the storage and compute cost of those two ceilings, on their own
+evidence.
+
+### Measured: the finalization pass is not the bottleneck · 9 September 2026
+
+Run with `scripts/finalization-capacity.mts` over fixtures from
+`scripts/synthetic-wgs-fixture.mts`, driving the **actual**
+`validateSubjectStructure` the finalizer calls, in the same 4,000,000-byte
+ranges. Linux container, Node 22.22.2, local disk, no network and no authority
+RPC — so every figure below is a **floor on the real cost, never a budget**.
+
+| Variants | Stored (gz) | Decoded | Ranges | Seconds | Decoded B/s | Peak RSS |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100,000 | 3,147,208 | 15,483,774 | 1 | 0.319 | 48,533,012 | 108,937,216 |
+| 1,000,000 | 31,480,481 | 155,837,091 | 8 | 2.376 | 65,597,764 | 120,725,504 |
+| 4,930,321 | 155,194,392 | 772,598,414 | 39 | 10.841 | 71,263,330 | 132,710,400 |
+
+Every row is seed 1 of the committed generator, so re-running it reproduces
+these exact byte counts. The copy-verification pass over the same 155,194,392
+bytes took **0.553 s** with `node:crypto` (280,659,780 B/s). Repeated with
+`hash-wasm`, saving resumable state every ten chunks (236 saves), it took
+1.026 s and produced an identical digest. A `hash-wasm` SHA-256 state is
+**116 bytes**.
+
+Four things follow, and they change the shape of the durable-finalization work:
+
+1. **Throughput is linear and memory is flat.** Peak RSS stays near 120 MB from
+   100,000 to 4,930,321 variants, so the streaming validator holds no genome in
+   memory and never approaches the 512 MiB guard. Size is not a memory problem.
+2. **Total CPU for a full WGS-scale file is under 12 seconds** across both
+   passes. The 300-second request is therefore bounded by input/output, not by
+   validation: two complete transfers of the object in 4 MB ranges (78 round
+   trips at this size), each preceded by an authority recheck RPC, plus the
+   server-side copy. Optimising the parser would buy nothing.
+3. **The decoded ceiling is what refuses a real WGS VCF, not the stored one.**
+   772,598,414 decoded bytes is **30.7×** the hosted `maximum_decoded_bytes`
+   observed at 25,165,824. Raising only the stored per-file limit would move the
+   refusal from issuance to finalization without admitting a single new file.
+4. **The second pass can be checkpointed; the first cannot.** Rehashing the
+   promoted copy is plain bytes, so an offset plus a 116-byte digest state
+   resumes it exactly, well inside the 4,000,000-byte checkpoint budget. The
+   validation pass decompresses, and gzip decoder state cannot be serialised, so
+   it must run as one continuous pass or restart. A durable design has to bound
+   and retry phase one, not resume it mid-file.
+
+Fixture representativeness, stated plainly: decoded volume per record is 157
+bytes against roughly 200 for a real whole-genome export, so the decoded figures
+above are mildly **optimistic**. Stored volume per record is 31.5 bytes against
+the 7.8 implied by the user-reported 38.3 MB / 4,930,321-variant file, so the
+transfer and range-count figures are **conservative**. Neither the real file nor
+any real genome was used, and none is needed to measure this boundary.
+
+### Measured: preparation, not finalization, is what a whole genome cannot pass · 9 September 2026
+
+Run with `scripts/preparation-capacity.mts` over the same seed-1 fixtures,
+driving the **actual** `runOwnPreparationPipeline` the prepared worker runs,
+with artifacts spooled to local disk and an in-memory checkpoint. Same
+container as the finalization measurement above. It answers the question this
+document left open — whether a few million variants complete inside the hard
+deadline, and what payload and artifact count they actually register — and it
+answers it by running the pipeline rather than scaling attempt 5.
+
+| Variants | Seconds | Artifacts | Artifact bytes | Largest artifact | Artifact reads | Peak RSS |
+|---:|---:|---:|---:|---:|---:|---:|
+| 20,000 | 9.782 | 16 | 1,692,538 | 475,459 | 15 | 243,781,632 |
+| 1,000,000 | 502.871 | 448 | 159,586,882 | 1,047,140 | 487 | 351,870,976 |
+| 4,930,321 | 2,745.380 | 2,289 | 922,056,859 | 1,048,555 | 2,495 | 388,284,416 |
+
+**The pipeline itself completes.** The whole-genome row reached
+`publication-preflight` with no refusal, 4,930,321 variants and 2,713,235
+observed calls, in 45 minutes 45 seconds at a peak of 370 MB. Nothing here is
+a memory problem and nothing exhausts the artifact **count** ceiling: 2,289 of
+4,096 is 55.9%, and the largest single artifact is 12.5% of its 8,388,608-byte
+limit.
+
+**Three configured ceilings refuse it anyway, and the tightest is one this
+document had not named.** Against the deployment values in
+`private.own_preparation_config`:
+
+| Ceiling | Enforced at | Whole-genome demand | Verdict |
+|---|---|---:|---|
+| `max_artifact_bytes` = 104,857,600 | `20260908233337_own_prepared_r2_provider.sql:129`, against the job's cumulative `reserved_bytes` | 922,056,859 B | **8.79× over**; 85.9% of the 1,073,741,824 schema maximum |
+| `max_job_seconds` = 900 | `20260908233418_own_preparation_checkpoints.sql:4-5`, via `enqueue_own_preparation_v1` | 2,745.38 s | **3.05× over**; 76.3% of the 3,600 schema maximum |
+| `artifact_count` < 4096 | `20260908164616_own_preparation_job_authority.sql:246` | 2,289 | fits, 55.9% |
+
+The artifact-payload cap bites first and bites hardest. It is already exceeded
+at **1,000,000 variants**, which demanded 159,586,882 B — 1.52× the cap — so
+the refusal arrives well below whole-genome scale, part-way through a run, as
+`artifact_limit_or_sequence`.
+
+**Scaling is not linear, so do not extrapolate these rows.** From 1,000,000 to
+4,930,321 variants (4.93×), time grew 5.46×, artifact payload 5.78× and
+artifact reads 5.12×. Density rose from 159.6 to 187.0 artifact bytes per
+variant. A linear projection from the 1,000,000 row would have under-stated the
+whole-genome payload by about 17%, which is why the row above is measured.
+
+**Where the time goes.** `canonical-runs` (932.6 s) and
+`canonical-materialization` (1,117.5 s) are 74.7% of the run between them. The
+pipeline read the original in only **78 ranges** but read its own intermediate
+artifacts **2,495 times**: this is an external merge sort, and its cost is
+dominated by re-reading what it wrote.
+
+**Every figure is a floor.** The harness writes artifacts to local disk and
+does not enforce the database ceilings — it measures what the pipeline
+*demands*, not what a deployment would *supply*, which is exactly why it can
+state the requirement. A hosted worker turns those 2,495 artifact reads and 78
+original ranges into Storage round trips and adds a reservation, an
+acknowledgement and lease renewals around each artifact. That makes a real run
+slower, never faster.
+
+**A 45-minute job also has to outlive its own authority.** `job_deadline` is
+`least(now + max_job_seconds, authorityDeadline)` and the job stays bound to
+the originating `auth.sessions` row, which `renew_own_preparation_claim_v1`
+re-resolves on every renewal. A whole-genome preparation therefore needs a live
+session of that exact account for the full 45 minutes; logout, expiry or a
+refresh-token rotation stops it. That is a lifecycle constraint on its own,
+separate from the three ceilings above.
+
+None of this moves a limit. The decoded ceiling still refuses these files at
+issuance, 30.7× under, long before preparation is reached. What the numbers add
+is the price of admitting one: `max_artifact_bytes` would need to rise about
+8.8×, to at least 922,056,859 B, leaving 14% headroom under its schema
+maximum, and
+`max_job_seconds` would need most of its remaining range. Both are storage and
+compute cost, and neither is a change this evidence authorises on its own.
+
+### What the measurement says about 100 genomes a month · 9 September 2026
+
+The target is 100 genomes a month, which is **3.29 a day**. At the measured
+2,745.38 s each, that is **2.51 worker-hours a day**.
+
+`runOwnPreparationWorkerLoop` is deliberately sequential — "each iteration runs
+at most one FIFO preparation and one cleanup page" — so one worker is the unit
+of capacity. One worker running continuously covers **31.5 whole genomes a
+day**, about 957 a month, so the target needs roughly 8% of a single worker.
+Even if hosted execution is three times slower than this local run, one worker
+still covers about 319 a month:
+
+| Hosted slowdown vs local | Worker-hours a day at the target | One worker's capacity |
+|---:|---:|---:|
+| 1× (measured, local) | 2.51 | 957/month |
+| 2× | 5.01 | 479/month |
+| 3× | 7.52 | 319/month |
+| 5× | 12.54 | 191/month |
+
+**Throughput is therefore not what blocks 100 genomes a month.** The ceilings
+above are, and they refuse the first one.
+
+Scratch storage follows from the same two facts. A job holds at most
+922,056,859 B (0.86 GiB, and the schema caps `reserved_bytes` at 1 GiB), only
+one job is in flight at a time, and `cleanup_deadline` is fixed at
+`created_at + interval '2 hours'`. At 3.29 arrivals a day, well under one
+further job completes inside any two-hour window, so peak scratch sits near
+**one to two gigabytes**, not a figure that scales with the monthly total.
+
+Stated assumptions, because they are what the numbers rest on: one worker,
+running continuously; the local run as the base rate; and no concurrency
+beyond the sequential loop. A deployment that runs several workers multiplies
+both throughput and peak scratch. None of this is a hosted measurement, and it
+does not authorise a limit change on its own — it bounds what the target
+costs, so the remaining question is the two ceilings and the execution home,
+not the arithmetic of the target itself.
+
+### Reproduced: the three-attempt retry budget cannot rescue a job that wrote anything · 9 September 2026
+
+`claim_next_own_preparation_v1` re-claims a job whose lease lapsed, up to three
+attempts with exponential backoff, and pgTAP already pins that
+(`supabase/tests/own_preparation_jobs.sql:408`). The worker then refuses the
+re-claim: `src/lib/uploads/own-preparation-worker.ts:131` requires a newly
+claimed attempt to start empty, and `read_own_preparation_checkpoint_v1`
+returns `nextArtifactSequence` as the job-wide `artifact_count`, which a
+trigger keeps monotonic (`20260908164616_own_preparation_job_authority.sql:84`).
+
+Reproduced against a local database, reserving one artifact and letting the
+30-second write lease elapse rather than rewriting it:
+
+```
+after reserve   attempts 1   artifact_count 1
+reclaimed       t
+after reclaim   attempts 2   artifact_count 1   nextArtifactSequence 1
+```
+
+The existing pgTAP reclaim case never sees this because its job has
+`artifact_count = 0` — its own comment says the second source "exercises
+bounded retry without reading/adopting any artifact from the first attempt".
+So attempts two and three re-claimed successfully and then failed immediately
+with `integrity_mismatch`, spending the retry budget and its backoff without
+doing any work, and raising an error that reads like tampering where a real
+integrity failure would then arrive amid routine noise.
+
+`20260909230000_own_preparation_retry_requires_empty_sequence.sql` narrows the
+candidate predicate to match what the worker already required: a claimed job is
+re-offered only while it has consumed none of its sequence. The same
+reproduction now reports `reclaimed f` rather than `t`. This restores nothing
+and admits nothing; it stops the system offering a retry no attempt can take.
+
+**Why a job cannot resume where it stopped, by design.**
+`own_preparation_artifacts` is `unique(job_id,sequence)`, so one job owns one
+artifact sequence namespace and a second attempt cannot restart at sequence 0
+while the first attempt's rows exist. That is why `artifact_count` is
+monotonic. Recovery for a job that did write remains what the design provides:
+scratch cleanup retires the job (`20260908234525_own_prepared_cleanup.sql:240`)
+and preparation is requested again, redoing everything from the original — 45
+minutes of it, at whole-genome scale. Genuine cross-attempt resumption would
+have to admit a prior attempt's artifacts under verified hashes, which is an
+authority decision of its own and is not made here.
+
+`supabase/tests/own_preparation_retry_sequence.sql` now guards it, driving one
+job through both states so the refusal is attributable to the consumed
+sequence and nothing else. The write lease is the reason this needed its own
+file: it is immutable by design, so the case shortens `claim_expires_at`
+*before* reserving, which makes `least(now + 30s, claim_expires_at, ...)`
+elapse in about a second, and then asserts that every lease has in fact
+elapsed before claiming — otherwise a live writer, not the predicate, would
+explain the refusal.
+
+Against the pre-fix function the two assertions that matter fail and the five
+that establish the scenario pass; against the fixed function all eight pass.
+The job also keeps its artifacts and its attempt count, so the refusal spends
+no budget and leaves scratch cleanup to do its work.
+
 ## Current checkpoint: PR81 recovery guidance deployed · 8 September 2026
 
 PR81 merge `5e642a678cdeb8e3f17343146181d53acf81899f` is production READY as
