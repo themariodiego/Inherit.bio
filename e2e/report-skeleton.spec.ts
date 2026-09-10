@@ -203,7 +203,7 @@ async function expectBaselineSectionGaps(page: Page, selector: string, expectedC
   }
 }
 
-test("a covered estimate report renders the six headings, one attributed genotype figure and no percentile", async ({
+test("/genome/[subject]/reports/[slug] complete: a covered estimate report renders the six headings, one attributed genotype figure and no percentile", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
@@ -323,7 +323,7 @@ test("a covered estimate report renders the six headings, one attributed genotyp
   );
 });
 
-test("a not-covered report keeps the not-covered strings at full ink and every section populated", async ({
+test("/genome/[subject]/reports/[slug] not-covered: a report keeps the not-covered strings at full ink and every section populated", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);

@@ -696,7 +696,7 @@ test("/embryos/compare for the uploader: consent-required withholds every result
   await expectAxeClean(page);
 });
 
-test("/embryos/{id} for the uploader: breadcrumbs, the neutral bar, the ordinal h1 and the consent-required state", async ({ page }) => {
+test("/embryos/[embryoId] for the uploader: breadcrumbs, the neutral bar, the ordinal h1 and the consent-required state", async ({ page }) => {
   await signIn(page, A.email, A.password);
   await page.goto(`/embryos/${embryo1}`);
   // The root layout's template applies: `%s · Inherit`.
