@@ -32,14 +32,34 @@ export function anonClient(): SupabaseClient {
 
 /** Create a confirmed user directly (bypasses the email flow — auth.spec
  * covers that flow itself). Returns the user id. */
+/**
+ * `listUsers` is paginated and returns the first 50 by default, so a lookup
+ * that reads page one only finds a leftover fixture while the database is
+ * nearly empty. That is always true in CI, which starts fresh, and stops
+ * being true on a second local run: with 130 users present, `a11y@e2e.local`
+ * sat past page one, the caller concluded it did not exist, and `createUser`
+ * refused it as already registered — an "idempotent" helper failing on the
+ * one case idempotence is for. Pages until it finds the address or runs out.
+ */
+async function findUserByEmail(admin: SupabaseClient, email: string) {
+  const perPage = 200;
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(`listUsers: ${error.message}`);
+    const found = data?.users.find((u) => u.email === email);
+    if (found) return found;
+    if (!data?.users.length || data.users.length < perPage) return null;
+  }
+  return null;
+}
+
 export async function createConfirmedUser(
   email: string,
   password: string,
 ): Promise<string> {
   const admin = adminClient();
-  // Idempotent: remove any leftover user with this email first.
-  const { data: list } = await admin.auth.admin.listUsers();
-  const existing = list?.users.find((u) => u.email === email);
+  // Idempotent: reuse any leftover user with this email.
+  const existing = await findUserByEmail(admin, email);
   if (existing) {
     const { error } = await admin.auth.admin.updateUserById(existing.id, {
       password,

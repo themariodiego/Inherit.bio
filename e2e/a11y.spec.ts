@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import fs from "node:fs";
 import { expect, test } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 
@@ -11,7 +12,31 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
 
-const PUBLIC_ROUTES = ["/", "/providers", "/privacy", "/auth/sign-in"];
+/**
+ * G2.7 asks that every new route render in both themes under unmodified
+ * assertions. A hand-kept list cannot honour "every": this one held four
+ * routes while the register carried 29 static public pages, so 25 — every
+ * legal page among them — were never checked in either theme.
+ *
+ * Derived from the register instead, so a new public page is covered the day
+ * it lands. Dynamic segments are skipped: they have no fetchable URL without
+ * valid parameter values, and inventing one would test a 404 rather than a
+ * page. Authenticated routes stay with the signed-in test below.
+ */
+function publicRoutes(): string[] {
+  const register = JSON.parse(fs.readFileSync("docs/route-register.json", "utf8")) as {
+    routes: { kind: string; auth: string; path: string }[];
+  };
+  const routes = register.routes
+    .filter(route => route.kind === "page" && route.auth === "public" && !route.path.includes("["))
+    .map(route => route.path)
+    .sort();
+  // A broken filter must fail loudly rather than quietly check four pages.
+  if (routes.length < 20) throw new Error(`route register yielded only ${routes.length} public pages`);
+  return routes;
+}
+
+const PUBLIC_ROUTES = publicRoutes();
 
 for (const route of PUBLIC_ROUTES) {
   for (const theme of ["light", "dark"] as const) {
