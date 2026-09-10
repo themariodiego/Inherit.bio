@@ -32,6 +32,18 @@
   --subject-5: #245c5c;
   --subject-6: #7a3a55;
   --subject-7: #5a6155;
+  /* Control and stroke scale (brief line 553): a separate, closed scale from
+     the layout unit, because 44px targets are not multiples of it and must not
+     be forced into it. Every button, input, switch and tap target is
+     --size-control; line 706 deletes the 36px size outright rather than
+     carving it out, on the grounds that a second size violating the touch
+     minimum is not worth its complexity. These are sizes, not identity: the
+     frozen-identity test (src/lib/design/tokens.test.ts) pins colours and the
+     Fraunces/Inter pairing and no size at all, so this scale is new rather
+     than a change to something G2.7 froze. */
+  --size-control: 44px;
+  --size-row: 56px;
+  --size-navbar: 64px;
 }
 
 .dark {

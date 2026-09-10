@@ -423,8 +423,18 @@ export function GenomeBrowser({
       </div>
       {/* Where Escape lands when the region is the last thing on the page.
           tabindex="-1" adds no tab stop, so it changes nothing for a reader
-          who never presses Escape. */}
-      <div ref={escapedRef} tabIndex={-1} aria-label={BROWSER_KEYBOARD_ESCAPED} />
+          who never presses Escape.
+
+          The name is text content, not aria-label: a bare div has no role, and
+          ARIA forbids naming an element with no role. The first version of
+          this used aria-label and the axe sweep failed it as
+          aria-prohibited-attr on all three viewports - a WCAG violation
+          introduced while fixing one. Content is also the more reliable
+          answer, because a screen reader announces what a focused element
+          contains without depending on role semantics. */}
+      <div ref={escapedRef} tabIndex={-1}>
+        <span className="sr-only">{BROWSER_KEYBOARD_ESCAPED}</span>
+      </div>
       {status === "ready" && variantCount === 0 ? (
         <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
           {BROWSER_EMPTY_REGION}
