@@ -5,7 +5,28 @@ import path from "node:path";
 import { ANON_KEY, adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "./helpers";
 import { directUploadReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 
-test("canonical browser upload stores exact source bytes and prepares them without generating unchosen results", async ({ page }) => {
+/**
+ * `/files/upload complete`. This route's product is a stored, prepared source,
+ * and this test walks the whole of it in one browser: consent, a real
+ * cross-origin Storage PUT with the restricted bearer, server finalization,
+ * normalization, then the terminal success line the uploader renders.
+ *
+ * Why `complete` and not something weaker. The page deliberately stops with
+ * "Reports have not been generated yet" - choosing results is a separate,
+ * separately consented act - so the fullest outcome this route can reach is
+ * exactly the one asserted here, down to byte-for-byte equality with the
+ * original through an unproxied download.
+ *
+ * Worth stating that the uploader has a SECOND success terminal,
+ * `results-ready`, reached only when a purpose grant already existed before
+ * the upload. A reader could argue that one is `complete` and this one is
+ * not. The argument against is that `results-ready` describes another
+ * surface's outcome arriving here, while a route with no purpose grant has no
+ * further state to reach - and if `prepared` were not `complete`, no state id
+ * could ever name this route succeeding. The claim is made on that reasoning
+ * rather than left implicit, so it can be disagreed with on the record.
+ */
+test("/files/upload reaches complete: exact source bytes stored and prepared, with no unchosen results generated", async ({ page }) => {
   const user = { email: `canonical-upload-${randomUUID()}@e2e.local`, password: "synthetic-upload-password" };
   const accountId = await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
