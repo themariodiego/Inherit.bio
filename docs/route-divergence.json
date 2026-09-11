@@ -173,15 +173,23 @@
     "/genome/[subject]/reports partial-coverage",
     "/genome/[subject]/reports/[slug] complete",
     "/genome/[subject]/reports/[slug] not-covered",
+    "/legal complete",
     "/legal/appeals complete",
+    "/legal/consents complete",
     "/legal/deceased complete",
     "/legal/future-person complete",
     "/legal/gdpr complete",
     "/legal/gina complete",
     "/legal/incident-response complete",
+    "/legal/insurance-and-discrimination complete",
     "/legal/law-enforcement complete",
     "/legal/research-consent complete",
+    "/legal/self-hosting complete",
+    "/legal/state-genetic-privacy complete",
     "/privacy complete",
+    "/science complete",
+    "/science/limits complete",
+    "/science/positions complete",
     "/terms complete"
   ]
 }

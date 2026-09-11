@@ -147,6 +147,19 @@ const REQUIRED = [
   },
   { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
+  { route: "/legal", must: [/Legal and policy library/i, /privacy/i] },
+  { route: "/legal/consents", must: [/Granular grants/i, /Revocation/i, /Versioned evidence/i] },
+  {
+    route: "/legal/insurance-and-discrimination",
+    must: [/Protection has gaps/i, /Not legal advice/i],
+  },
+  { route: "/legal/self-hosting", must: [/Operator responsibility/i, /Open source is not approval/i] },
+  { route: "/legal/state-genetic-privacy", must: [/Rule source/i, /Correcting location/i] },
+  {
+    route: "/science/limits",
+    must: [/Coverage is not absence/i, /Association is not destiny/i, /Clinical confirmation/i],
+  },
+  { route: "/science/positions", must: [/Canonical build/i, /Strand handling/i, /Source fidelity/i] },
   {
     // X15 declared gaps, published once with their reason.
     route: "/science",
@@ -240,6 +253,38 @@ test("/legal/gina complete: the committed document renders on-topic and placehol
 
 test("/about complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
   await assertDocumentComplete(page, "/about");
+});
+
+test("/science complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science");
+});
+
+test("/legal complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal");
+});
+
+test("/legal/consents complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/consents");
+});
+
+test("/legal/insurance-and-discrimination complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/insurance-and-discrimination");
+});
+
+test("/legal/self-hosting complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/self-hosting");
+});
+
+test("/legal/state-genetic-privacy complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/state-genetic-privacy");
+});
+
+test("/science/limits complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science/limits");
+});
+
+test("/science/positions complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science/positions");
 });
 
 /**
