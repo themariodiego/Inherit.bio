@@ -14,6 +14,7 @@ import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./
 import { ownReportSnapshot } from "./own-report-token";
 import type { ownReportReadyEnvelope } from "./own-report-ready-envelope";
 import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
+import { lineageLoci } from "../ancestry/lineage-panel";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall } from "./own-ancestry-content";
 
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
@@ -36,7 +37,7 @@ const absentSchema = z.object({ status: z.literal("not_selected") }).strict();
 const callSchema = z.object({ file_id: uuid, rsid: z.number().int().positive().nullable(), chrom: z.number().int().min(1).max(25),
   pos: z.number().int().positive(), ref: z.string().nullable(), alt: z.string().nullable(), genotype: z.string(), usable: z.boolean().optional(),
 }).strict();
-type Operation = "begin" | "check" | "read-variants" | "read-observed" | "complete" | "fail" | "ready";
+type Operation = "begin" | "check" | "read-variants" | "read-observed" | "read-lineage" | "complete" | "fail" | "ready";
 type Rpc = (name: "own_report_generation_with_mail_v1", args: { p_operation: Operation; p_account_id: string;
   p_session_id: string; p_file_id: string; p_purpose: Purpose; p_claim: string | null; p_payload: unknown }) =>
   PromiseLike<{ data: unknown; error: { code?: string } | null }>;
@@ -128,12 +129,41 @@ export async function generateOwnReportResults({ actor, fileId, signal, readyMai
             if (rows.data.length < 1000) break;
           }
         }
+        // The lineage markers are read separately, and from the variant rows
+        // rather than the observed ones. That is not a shortcut: mtDNA and the
+        // Y are haploid, and the haploid genotypes those calls carry are not
+        // what the observed-call extraction decodes, so reading them there
+        // would report every file as unreadable. It is also the honest reader
+        // for this question — at a defining marker, an absent row means the
+        // position was not called, never that the ancestral allele was seen.
+        const lineagePoints = lineageLoci();
+        const lineageCalls: OwnAncestryCall[] = [];
+        for (let index = 0; index < lineagePoints.length; index += 200) {
+          const loci = lineagePoints.slice(index, index + 200);
+          const requested = new Set(loci.map(point => `${point.chrom}:${point.pos}`));
+          if (preparedSource) {
+            for await (const page of preparedPages(loci)) {
+              lineageCalls.push(...page.variants.map(({ call: row }) => ({ file_id: row.file_id,
+                chrom: row.chrom, pos: row.pos, ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable ?? true })));
+            }
+            continue;
+          }
+          for (let offset = 0; ; offset += 1000) {
+            const response = await call("read-lineage", { loci, offset });
+            const rows = z.array(callSchema).max(1000).safeParse(response.data);
+            if (response.error || !rows.success || rows.data.some(row => row.file_id !== fileId
+              || !requested.has(`${row.chrom}:${row.pos}`))) throw new Error("unavailable");
+            lineageCalls.push(...rows.data.map(row => ({ file_id: row.file_id, chrom: row.chrom, pos: row.pos,
+              ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable ?? true })));
+            if (rows.data.length < 1000) break;
+          }
+        }
         const checked = await call("check"), same = claimSchema.safeParse(checked.data);
         if (checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim)) throw new Error("unavailable");
         const ancestry = computeOwnAncestryContent({ source: { fileId, subjectId: claim.authorization.subjectId,
           normalizedBuild: source.normalizedBuild, callEncoding: encoding, sourceRevision: claim.authorization.sourceRevision,
           sourceSha256: claim.authorization.sourceSha256, normalizedAt: claim.authorization.normalizedAt },
-          calls, panel: CURRENT_OWN_ANCESTRY_PANEL });
+          calls, lineageCalls, panel: CURRENT_OWN_ANCESTRY_PANEL });
         const finished = await call("complete", { ancestry, readyMail: await envelope() });
         const done = doneSchema.safeParse(finished.data);
         if (finished.error || !done.success || done.data.purpose !== purpose) throw new Error("unavailable");

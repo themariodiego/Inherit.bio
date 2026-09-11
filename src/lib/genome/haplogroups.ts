@@ -175,3 +175,27 @@ export function classify(lineage: Lineage, getBase: GetBase): HaplogroupCall {
     note: `matched ${won.matched}/${won.tested} defining markers along ${won.path.join(" > ")} (${covered} marker positions covered overall)`,
   };
 }
+
+/**
+ * The one rule for turning a stored genotype into the single base a lineage
+ * marker can be read at. Both readers use it — the legacy process route and
+ * the canonical ancestry content builder — because two rules for the same
+ * quantity is how the same file comes to carry two different haplogroups.
+ *
+ * mtDNA and the Y are haploid, so a readable call is one allele: either a
+ * haploid genotype ("A", which is what the VCF parser writes for `GT 1`) or
+ * a homozygous diploid one ("A/A", which is how many pipelines encode these
+ * chromosomes). A HETEROZYGOUS call is not readable and must not be reduced
+ * to one of its alleles: on a haploid chromosome it means something has gone
+ * wrong upstream — a nuclear mitochondrial insertion, heteroplasmy, or a
+ * pseudoautosomal misalignment — and picking an allele would turn that into
+ * a confident branch. Null here is "not covered", never "ancestral": the
+ * walk treats an absent base as no evidence in either direction.
+ */
+export function lineageBaseFromGenotype(genotype: string | null | undefined): string | null {
+  if (!genotype) return null;
+  const alleles = genotype.split("/");
+  if (!alleles.every((allele) => /^[ACGT]$/.test(allele))) return null;
+  if (alleles.length === 1) return alleles[0];
+  return alleles.every((allele) => allele === alleles[0]) ? alleles[0] : null;
+}
