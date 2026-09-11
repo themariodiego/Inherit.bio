@@ -8,7 +8,7 @@ import { LINEAGE_TREES } from "@/lib/ancestry/panel";
 import { PANEL } from "@/lib/ancestry/panel";
 import { measureRunsOfHomozygosity, rohCallsFromParse, rohColumns } from "@/lib/family/roh";
 import { AIMS, RELIABLE_FRACTION, estimateAdmixture } from "@/lib/genome/admixture";
-import { classify, type HaplogroupCall } from "@/lib/genome/haplogroups";
+import { classify, lineageBaseFromGenotype, type HaplogroupCall } from "@/lib/genome/haplogroups";
 import { buildLiftover, liftSingleBaseVariant } from "@/lib/genome/liftover";
 import { parseArray, type ArrayKind } from "@/lib/genome/parsers/array";
 import { computePrs } from "@/lib/genome/prs";
@@ -251,12 +251,13 @@ export async function POST(
     for (const r of records) byPos.set(`${r.chrom}:${r.pos}`, r);
     const getGenotype = (chrom: number, pos: number) =>
       byPos.get(`${chrom}:${pos}`)?.genotype ?? null;
-    const getBase = (chrom: number, pos: number) => {
-      const g = byPos.get(`${chrom}:${pos}`)?.genotype;
-      if (!g) return null;
-      const alleles = g.split("/");
-      return /^[ACGT]$/.test(alleles[0]) ? alleles[0] : null;
-    };
+    // One shared rule with the canonical builder, so the same file cannot be
+    // given two different haplogroups by two readers. It is stricter than the
+    // line it replaces in exactly one case, and deliberately: a heterozygous
+    // call on a haploid chromosome used to be reduced to its first allele,
+    // which turns an upstream problem into a confident branch.
+    const getBase = (chrom: number, pos: number) =>
+      lineageBaseFromGenotype(byPos.get(`${chrom}:${pos}`)?.genotype);
 
     const { error: ancestryDeleteError } = await admin.from("ancestry_results").delete().eq("file_id", id);
     if (ancestryDeleteError) throw new Error("Ancestry replacement failed");

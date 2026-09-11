@@ -4,6 +4,9 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
+import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
+  LINEAGE_UNREADABLE, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+import { LINEAGE_TREES } from "../src/lib/ancestry/panel";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
 // Ancestry surface (`/genome/[subject]/ancestry`; brief §4.6, A.8, G4.4,
@@ -30,14 +33,25 @@ import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAnc
 const RUN_ID = randomUUID();
 const GREY_USER = { email: `ancestry-grey-${RUN_ID}@e2e.local`, password: "e2e-ancestry-grey-pw" };
 const SHOWN_USER = { email: `ancestry-shown-${RUN_ID}@e2e.local`, password: "e2e-ancestry-shown-pw" };
+const LINEAGE_USER = { email: `ancestry-lineage-${RUN_ID}@e2e.local`, password: "e2e-ancestry-lineage-pw" };
 
 const ANCESTRY = "/genome/me/ancestry";
 const TINY_FIXTURE = "e2e/fixtures/tiny-grch38.vcf";
 const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
+/** A marker-panel readout at the shipped trees' own defining positions,
+ * describing no real person. It carries no AIMs at all, which is the point:
+ * the two halves of this page are read separately and must say so separately. */
+const LINEAGE_FIXTURE = "e2e/fixtures/lineage-grch38.vcf";
 
 test.afterEach(async ({ page }, info) => {
   if (info.status !== "passed") return;
-  await expect(page.locator('[data-slot="maternal-input-provenance"],[data-slot="paternal-input-provenance"]')).toHaveCount(0);
+  // Input provenance qualifies a result, so it appears under a line that was
+  // read and under no other. This used to assert a flat zero, which was the
+  // same rule seen from the only side that existed then: no file the product
+  // created could produce a lineage call at all. Now one can, and the rule is
+  // stated in the form that still holds on both sides of that.
+  const read = await page.locator('[data-slot="haplogroup"]').count();
+  await expect(page.locator('[data-slot="maternal-input-provenance"],[data-slot="paternal-input-provenance"]')).toHaveCount(read);
   for (const viewport of [{ name: "desktop", width: 1280, height: 800 }, { name: "phone", width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.screenshot({ path: info.outputPath(`ancestry-${viewport.name}.png`), fullPage: true });
@@ -78,6 +92,7 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   await createConfirmedUser(GREY_USER.email, GREY_USER.password);
   await createConfirmedUser(SHOWN_USER.email, SHOWN_USER.password);
+  await createConfirmedUser(LINEAGE_USER.email, LINEAGE_USER.password);
 });
 
 /** Real preparation precedes a separate explicit ancestry choice; no annotated
@@ -264,12 +279,17 @@ test("/genome/[subject]/ancestry not-covered: the grey state's exact sentence, n
   await expect(rawList.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(5);
   expect(await percentTextNodes(page, { visibleOnly: true, outside: "details" })).toEqual([]);
 
-  // AIMS-only reads do not prove whole-file Y/MT absence or support a
-  // haplogroup. Retain empty lineage cards with the explicit computation limit.
-  for (const kind of ["mtdna", "ydna"]) {
+  // The lineage markers ARE read now, so these cards no longer say the
+  // computation did not happen - it did, and found none of the positions the
+  // trees are read at in this file. What has not changed is the claim they are
+  // allowed to make: the read asks at defining markers and nowhere else, so
+  // neither card may assert the whole chromosome is absent, and neither may
+  // show a haplogroup.
+  for (const [kind, parent] of [["mtdna", "mother"], ["ydna", "father"]] as const) {
     const lineage = page.getByTestId(kind);
-    await expect(lineage).toContainText("Lineage has not been computed from this file.");
-    await expect(lineage).not.toContainText(/no (?:mitochondrial|Y-chromosome) positions|no Y-chromosome data|without a Y chromosome/i);
+    await expect(lineage).toContainText(LINEAGE_NO_POSITIONS[parent]);
+    await expect(lineage).not.toContainText("Lineage has not been computed from this file.");
+    await expect(lineage).not.toContainText(/(?:^|\s)no (?:mitochondrial|Y-chromosome) positions/i);
     await expect(lineage.locator('[data-slot="haplogroup"],[data-slot="haplogroup-path"]')).toHaveCount(0);
   }
 
@@ -496,5 +516,78 @@ test("/genome/[subject]/ancestry complete: the shown state's figure contract, su
     expect(measured?.lastOpacity).toBe("0");
     expect(measured?.fillOpacity ?? 0).toBeGreaterThanOrEqual(0.15);
     expect(measured?.feather ?? 0).toBeGreaterThanOrEqual(MIN_FEATHER * (measured?.width ?? Infinity) - 1e-6);
+  }
+});
+
+/**
+ * The populated lineage card, seen in a browser for the first time.
+ *
+ * G4.4 has twice recorded this path as "unit-tested and never seen in a
+ * browser". That was true, and not because a test was forgotten: until the
+ * canonical ancestry run learned to read the lineage markers, NO file the
+ * product creates could reach this state, so there was nothing for a browser
+ * test to look at. This drives the whole journey — upload, preparation, an
+ * explicit ancestry choice, the canonical read — and asserts the call on the
+ * page rather than in a captured payload.
+ *
+ * The expected haplogroups are written out rather than derived here. If the
+ * fixture stops classifying, this fails.
+ */
+test("/genome/[subject]/ancestry shown: a file carrying defining markers renders both lines, each with its tree, version, no range and resolution limit", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await signIn(page, LINEAGE_USER.email, LINEAGE_USER.password);
+  await ingestAndWait(page, LINEAGE_FIXTURE);
+  await page.goto(ANCESTRY);
+
+  for (const [kind, haplogroup, path_, matched] of [
+    ["mtdna", "K1", "L3 → N → R → U → K → K1", 17],
+    ["ydna", "I2", "I → I2", 4],
+  ] as const) {
+    const lineage = page.getByTestId(kind);
+    await expect(lineage.locator('[data-slot="haplogroup"]')).toHaveText(haplogroup);
+    await expect(lineage.locator('[data-slot="haplogroup-path"]')).toHaveText(path_);
+
+    // G4.4's four requirements for any quantity read against a reference
+    // panel, on the surface and not merely in the stored content.
+    const provenance = lineage.locator('[data-slot="lineage-provenance"]');
+    await expect(provenance).toContainText(LINEAGE_TREES[kind === "mtdna" ? "mother" : "father"].version);
+    await expect(provenance).toContainText(LINEAGE_NO_RANGE);
+    await expect(provenance).toContainText(LINEAGE_RESOLUTION_LIMIT);
+    await expect(provenance).not.toContainText(UNKNOWN_REFERENCE_TREE);
+
+    // The markers it matched, as a real coverage figure rather than prose.
+    const coverage = lineage.locator('[data-figure-kind="coverage"]');
+    await expect(coverage).toHaveCount(1);
+    await expect(coverage).toContainText(String(matched));
+
+    // Read, so none of the three not-read sentences may appear beside it.
+    for (const sentence of [LINEAGE_NO_POSITIONS.mother, LINEAGE_NO_POSITIONS.father,
+      LINEAGE_UNREADABLE, LINEAGE_NO_BRANCH]) {
+      await expect(lineage).not.toContainText(sentence);
+    }
+    // A name is not a percentage, and nothing here may render as one.
+    await expect(lineage.getByText(PERCENT_TEXT)).toHaveCount(0);
+  }
+
+  // The other half of the page is read separately and is not carried by the
+  // lineage result: a marker-panel readout covers no ancestry markers, and the
+  // regions section says exactly that instead of borrowing the confidence.
+  const admixture = page.getByTestId("admixture");
+  await expect(admixture.locator('[data-slot="grey-state"]')).toHaveText(
+    `Your file covers only 0 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`,
+  );
+  await expect(admixture.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
+  await expect(page.locator('[data-slot="ancestry-chip"]')).toHaveCount(0);
+
+  // A haplogroup name is a term of art, so the page still owes a reader the
+  // inline definition, and still owes axe a clean pass in both themes.
+  await expect(page.getByTestId("mtdna").getByText("Haplogroup", { exact: false }).first()).toBeVisible();
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto(ANCESTRY);
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page, theme), `${ANCESTRY} populated lineage (${theme})`).toEqual([]);
   }
 });

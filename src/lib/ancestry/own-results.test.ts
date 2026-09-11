@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../genome/load";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
+import { LINEAGE_NO_POSITIONS } from "@/copy/ancestry";
 import { loadAncestryResults, loadOwnAncestryRows, UNCOMPUTED_LINEAGE } from "./own-results";
 
 const mocks = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), candidates: vi.fn(), filter: vi.fn() }));
@@ -36,8 +37,29 @@ describe("checked own ancestry result projection", () => {
     expect(rows.map(row => row.kind)).toEqual(["admixture", "mtdna", "ydna"]);
     expect(rows[0].created_at).toBe("2026-09-07T01:00:00Z");
     expect(rows[0].result).toEqual(content().admixture.result);
-    expect(rows.slice(1).every(row => row.result === null && row.support_note === UNCOMPUTED_LINEAGE)).toBe(true);
+    // No lineage rows were read for this file, so both lines say which of the
+    // three reasons applies and neither pretends to a call. The tree is still
+    // named: it is what was consulted either way.
+    expect(rows.slice(1).map(row => [row.kind, row.result, row.support_note, row.model_id])).toEqual([
+      ["mtdna", { haplogroup: null }, LINEAGE_NO_POSITIONS.mother, "inherit-mtdna-curated-subset"],
+      ["ydna", { haplogroup: null }, LINEAGE_NO_POSITIONS.father, "inherit-ydna-curated-subset"],
+    ]);
     expect(JSON.stringify(rows)).not.toMatch(/sourceSha256|sourceRevision|callEncoding|observedPositions|no_supplied_positions/);
+  });
+
+  it("still reads a revision-1 capture, and does not dress it up as a lineage", async () => {
+    // This reader also serves content captured before lineages were computed.
+    // Such a row is a real result whose admixture half is unchanged; its
+    // lineages were never computed and must keep saying exactly that.
+    const v1 = { ...content(), schemaVersion: 1, computationRevision: "own-ancestry-content-v1",
+      lineages: [{ kind: "mtdna", state: "unavailable", reason: "no_supplied_positions", observedPositions: 0 },
+        { kind: "ydna", state: "unavailable", reason: "no_supplied_positions", observedPositions: 0 }] };
+    mocks.rpc.mockResolvedValue({ data: { content: v1, completedAt: "2026-09-07T01:00:00Z" }, error: null });
+    const rows = await loadOwnAncestryRows(db, subjectId, [file]);
+    expect(rows.map(row => row.kind)).toEqual(["admixture", "mtdna", "ydna"]);
+    expect(rows[0].result).toEqual(content().admixture.result);
+    expect(rows.slice(1).every(row => row.result === null && row.support_note === UNCOMPUTED_LINEAGE
+      && row.model_id === null && row.model_version === null)).toBe(true);
   });
 
   it("never queries legacy files through the canonical reader", async () => {

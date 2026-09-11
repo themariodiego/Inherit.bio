@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { MIN_MARKERS, PANEL } from "../ancestry/panel";
+import {
+  LINEAGE_CHROM, LINEAGE_KINDS, LINEAGE_TREE_SHA256,
+  lineageMarkerPositions, treeOf, type LineageKind,
+} from "../ancestry/lineage-panel";
 import { AIMS, estimateAdmixture } from "../genome/admixture";
+import { loadTree } from "../genome/haplogroups";
 import { parseVcf } from "../genome/parsers/vcf";
 import { computeOwnAncestryContent, ownAncestryContentSchema, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall, type OwnAncestrySource } from "./own-ancestry-content";
 
@@ -14,6 +19,31 @@ const compute = (calls: readonly OwnAncestryCall[]) => computeOwnAncestryContent
 function call(index = 0, genotype = `${AIMS[index].ref}/${AIMS[index].alt}`): OwnAncestryCall {
   const m = AIMS[index];
   return { file_id: fileId, chrom: m.chrom, pos: m.pos38, ref: m.ref, alt: m.alt, genotype, usable: true };
+}
+/** A row as the lineage read returns it: at a real defining position of that
+ * tree, on that tree's chromosome. */
+function lineageRow(kind: LineageKind, index: number, genotype: string): OwnAncestryCall {
+  return { file_id: fileId, chrom: LINEAGE_CHROM[kind], pos: lineageMarkerPositions(kind)[index],
+    ref: "A", alt: "G", genotype, usable: true };
+}
+/** A defining position, and a base that is NEITHER of its tree alleles — so a
+ * row carrying it is readable and still cannot enter the branch. Computed from
+ * the shipped tree rather than written down, so an allele edit cannot make it
+ * silently wrong. */
+function foreignAllele(kind: LineageKind): { position: number; foreign: string } {
+  for (const node of loadTree(kind === "mtdna" ? "mtDNA" : "Y")) {
+    for (const marker of node.markers) {
+      const foreign = ["A", "C", "G", "T"].find(base => base !== marker.anc && base !== marker.der);
+      if (foreign) return { position: marker.pos, foreign };
+    }
+  }
+  throw new Error("no tree marker leaves a third base free");
+}
+/** The state of a lineage nothing was read for. */
+function unread(kind: LineageKind) {
+  return { kind, state: "unavailable", reason: "no_supplied_positions", call: null,
+    observedPositions: 0, readablePositions: 0, markerPositions: lineageMarkerPositions(kind).length,
+    tree: { id: treeOf(kind).id, version: treeOf(kind).version, sha256: LINEAGE_TREE_SHA256[kind] } };
 }
 async function fixture(name: string) {
   const bytes = await readFile(`e2e/fixtures/${name}`);
@@ -59,10 +89,7 @@ describe("canonical own ancestry content prerequisite", () => {
     expect(input.calls.find(row => row.chrom === 12 && row.pos === 111803962)?.genotype).toBe("G/G");
     expect(result.admixture).toMatchObject({ result_state: "partial", coverage: 1 / 168, result: { markersUsed: 1 } });
     expect(result.panelPositions).toEqual({ called: 1, missing: 167, noCall: 0, filtered: 0, conflicting: 0, unsupported: 0 });
-    expect(result.lineages).toEqual([
-      { kind: "mtdna", state: "unavailable", reason: "no_supplied_positions", observedPositions: 0 },
-      { kind: "ydna", state: "unavailable", reason: "no_supplied_positions", observedPositions: 0 },
-    ]);
+    expect(result.lineages).toEqual([unread("mtdna"), unread("ydna")]);
   });
 
   it("pins the exact current panel, threshold and a deterministic marker-content fingerprint", () => {
@@ -156,14 +183,66 @@ describe("canonical own ancestry content prerequisite", () => {
       calls: [call()] })).toThrow("ancestry_call_encoding_mismatch");
   });
 
-  it.each([24, 25])("does not take the first allele or invent a lineage for chromosome %i", chrom => {
+  it.each(LINEAGE_KINDS)("reads no lineage from %s rows that arrived on the admixture read", kind => {
+    // The two reads are separate arguments on purpose. A lineage row that came
+    // back from the AIMs read is not a lineage read, and counting it as one
+    // would report positions the lineage panel never asked for.
     for (const genotype of ["A", "A/G", "A/A", "--"]) {
-      const result = compute([{ ...call(), chrom, genotype }]);
-      expect(result.lineages.find(row => row.kind === (chrom === 24 ? "ydna" : "mtdna"))).toEqual({
-        kind: chrom === 24 ? "ydna" : "mtdna", state: "unavailable", reason: "lineage_interpretation_not_supported", observedPositions: 1,
-      });
+      const result = compute([{ ...call(), chrom: LINEAGE_CHROM[kind], pos: lineageMarkerPositions(kind)[0], genotype }]);
+      expect(result.lineages.find(row => row.kind === kind)).toEqual(unread(kind));
       expect(JSON.stringify(result.lineages)).not.toContain("haplogroup");
     }
+  });
+
+  it.each(LINEAGE_KINDS)("tells %s positions it could not read apart from positions it never got", kind => {
+    // A heterozygous or unreadable genotype on a haploid chromosome is a
+    // position the file HAS. Reporting that as "no positions supplied" would
+    // state something false about the person's file, so it has its own reason.
+    for (const genotype of ["A/G", "--", "", "N", "A/", "AA", "./."]) {
+      const result = computeOwnAncestryContent({ source, panel, calls: [],
+        lineageCalls: [lineageRow(kind, 0, genotype)] });
+      expect(result.lineages.find(row => row.kind === kind)).toMatchObject({
+        state: "unavailable", reason: "no_readable_genotypes", observedPositions: 1, readablePositions: 0, call: null,
+      });
+    }
+  });
+
+  it.each(LINEAGE_KINDS)("reads %s bases but enters no branch on an allele the tree does not define", kind => {
+    // Readable and matching nothing is a third fact, distinct from both of the
+    // above: the walk needs positive derived evidence, so an allele that is
+    // neither ancestral nor derived must not enter a branch.
+    const { position, foreign } = foreignAllele(kind);
+    for (const genotype of [foreign, `${foreign}/${foreign}`]) {
+      const result = computeOwnAncestryContent({ source, panel, calls: [],
+        lineageCalls: [{ ...lineageRow(kind, 0, genotype), pos: position }] });
+      expect(result.lineages.find(row => row.kind === kind)).toMatchObject({
+        state: "unavailable", reason: "no_branch_matched", observedPositions: 1, readablePositions: 1, call: null,
+      });
+    }
+  });
+
+  it.each(LINEAGE_KINDS)("refuses a %s row read at a position the tree does not define", kind => {
+    const undefinedPosition = Math.max(...lineageMarkerPositions(kind)) + 1;
+    expect(() => computeOwnAncestryContent({ source, panel, calls: [],
+      lineageCalls: [{ ...lineageRow(kind, 0, "A"), pos: undefinedPosition }] })).toThrow("ancestry_lineage_locus_unexpected");
+    expect(() => computeOwnAncestryContent({ source, panel, calls: [],
+      lineageCalls: [{ ...lineageRow(kind, 0, "A"), chrom: 1, pos: AIMS[0].pos38 }] })).toThrow("ancestry_lineage_locus_unexpected");
+  });
+
+  it("does not let one lineage's rows decide the other's", () => {
+    const result = computeOwnAncestryContent({ source, panel, calls: [], lineageCalls: [lineageRow("mtdna", 0, "A")] });
+    expect(result.lineages.find(row => row.kind === "ydna")).toEqual(unread("ydna"));
+    expect(result.lineages.find(row => row.kind === "mtdna")?.observedPositions).toBe(1);
+  });
+
+  it("drops a position two rows disagree at rather than picking one of them", () => {
+    const { position, foreign } = foreignAllele("mtdna");
+    const both = [{ ...lineageRow("mtdna", 0, foreign), pos: position },
+      { ...lineageRow("mtdna", 0, foreign === "A" ? "C" : "A"), pos: position }];
+    expect(computeOwnAncestryContent({ source, panel, calls: [], lineageCalls: both })
+      .lineages.find(row => row.kind === "mtdna")).toMatchObject({
+      observedPositions: 1, readablePositions: 0, reason: "no_readable_genotypes",
+    });
   });
 
   it("refuses another file even if the foreign row is not a panel marker", () => {
@@ -201,5 +280,71 @@ describe("closed captured ancestry schema", () => {
       { ...content, lineages: [{ ...content.lineages[0], haplogroup: "H" }, content.lineages[1]] },
     ];
     for (const mutation of mutations) expect(ownAncestryContentSchema.safeParse(mutation).success).toBe(false);
+  });
+});
+
+/**
+ * The whole point of the capability, proved from committed bytes rather than
+ * from a hand-built genotype map: a real file, through the real parser, into
+ * the real builder, produces the haplogroup the fixture was constructed to
+ * carry. Before this change the canonical path could not reach a call at all,
+ * so an assertion like this had nothing to assert against.
+ */
+describe("canonical lineage calls from the committed fixture", () => {
+  async function lineageFixture() {
+    const bytes = await readFile("e2e/fixtures/lineage-grch38.vcf");
+    async function* lines() { yield* bytes.toString("utf8").split(/\r?\n/); }
+    const parsed = await parseVcf(lines());
+    expect(parsed.build).toBe("GRCh38");
+    // The lineage read returns VARIANT rows, which is what carries the haploid
+    // genotype. Mapped exactly as src/lib/uploads/own-report-execution.ts does.
+    const lineageCalls: OwnAncestryCall[] = parsed.records
+      .filter(row => row.chrom === 24 || row.chrom === 25)
+      .map(row => ({ file_id: fileId, chrom: row.chrom, pos: row.pos, ref: row.ref, alt: row.alt,
+        genotype: row.genotype, usable: true }));
+    return { lineageCalls, source: { ...source, sourceSha256: createHash("sha256").update(bytes).digest("hex") } };
+  }
+
+  it("calls both lines, names the tree it read them against, and keeps the admixture half honest", async () => {
+    const input = await lineageFixture();
+    expect(input.lineageCalls.length).toBeGreaterThan(0);
+    const result = computeOwnAncestryContent({ source: input.source, panel, calls: [], lineageCalls: input.lineageCalls });
+    expect(result.schemaVersion).toBe(2);
+    expect(result.computationRevision).toBe("own-ancestry-content-v2");
+
+    // The expected calls are written out rather than imported from the
+    // generator, so this fails if the fixture stops classifying.
+    expect(result.lineages.map(row => row.kind)).toEqual(["mtdna", "ydna"]);
+    expect(result.lineages[0]).toMatchObject({ state: "available", reason: null,
+      tree: { id: "inherit-mtdna-curated-subset", version: "Build 17, Forensic Update 1a" },
+      call: { haplogroup: "K1", path: ["L3", "N", "R", "U", "K", "K1"], matched: 17, tested: 17, support: "strong" } });
+    expect(result.lineages[1]).toMatchObject({ state: "available", reason: null,
+      tree: { id: "inherit-ydna-curated-subset", version: "2016 index (4 January 2016)" },
+      call: { haplogroup: "I2", path: ["I", "I2"], matched: 4, tested: 4, support: "strong" } });
+
+    // A file of lineage markers covers no AIMs, and the admixture half says so
+    // rather than borrowing confidence from the lineage half.
+    expect(result.admixture).toMatchObject({ result_state: "not_covered", coverage: 0, result: { markersUsed: 0 } });
+    expect(ownAncestryContentSchema.parse(result)).toEqual(result);
+  });
+
+  it("reads no more positions than the file was asked for, and never more than the trees define", async () => {
+    const input = await lineageFixture();
+    const result = computeOwnAncestryContent({ source: input.source, panel, calls: [], lineageCalls: input.lineageCalls });
+    for (const lineage of result.lineages) {
+      expect(lineage.readablePositions).toBeLessThanOrEqual(lineage.observedPositions);
+      expect(lineage.observedPositions).toBeLessThanOrEqual(lineage.markerPositions);
+      expect(lineage.call?.tested).toBeLessThanOrEqual(lineage.readablePositions);
+    }
+  });
+
+  it("loses the call, and says which line lost it, when the tree beneath it moves", async () => {
+    // The digest is the protection a stored haplogroup cannot get from looking
+    // wrong. Content pinned to one tree must not validate against another.
+    const input = await lineageFixture();
+    const result = computeOwnAncestryContent({ source: input.source, panel, calls: [], lineageCalls: input.lineageCalls });
+    const moved = { ...result, lineages: [{ ...result.lineages[0],
+      tree: { ...result.lineages[0].tree, sha256: "0".repeat(64) } }, result.lineages[1]] };
+    expect(ownAncestryContentSchema.safeParse(moved).success).toBe(false);
   });
 });

@@ -137,6 +137,64 @@ select throws_ok($$select pg_temp.generate('complete','ancestry',jsonb_set((sele
  '22023','invalid_ancestry_content','proportions must remain a normalized bounded mixture');
 select throws_ok($$select pg_temp.generate('complete','ancestry',jsonb_set((select payload from ancestry_output),'{ancestry,lineages,0,haplogroup}','"H"'))$$,
  '22023','invalid_ancestry_content','ancestry result cannot introduce an unsupported lineage finding');
+
+-- ---------------------------------------------------------------------------
+-- The lineage read, and the revision it captures (G4.4).
+-- ---------------------------------------------------------------------------
+-- Two synthetic variant rows for this same file: one at a real mitochondrial
+-- defining position, one autosomal. The lineage read must return the first and
+-- never the second, whatever loci it is handed -- that restriction is the
+-- reason it is a separate operation rather than a relaxation of read-variants.
+insert into public.user_variants(user_id,subject_id,file_id,chrom,pos,ref,alt,genotype) values
+ ('78700000-0000-4000-8000-000000000001',(select id from ancestry_subject),'78700000-0000-4000-8000-000000000040',25,1189,'T','C','C'),
+ ('78700000-0000-4000-8000-000000000001',(select id from ancestry_subject),'78700000-0000-4000-8000-000000000040',2,135851076,'G','A','A/G');
+select is(pg_temp.generate('read-lineage','ancestry','{"loci":[{"chrom":25,"pos":1189}],"offset":0}')->0->>'genotype',
+ 'C','the lineage read returns the haploid genotype a defining position carries');
+select is(pg_temp.generate('read-lineage','ancestry','{"loci":[{"chrom":2,"pos":135851076}],"offset":0}'),'[]'::jsonb,
+ 'the lineage read cannot reach an autosomal row even when asked for one');
+select is(pg_temp.generate('read-observed','ancestry','{"loci":[{"chrom":25,"pos":1189}],"offset":0}'),'[]'::jsonb,
+ 'the panel read is unchanged and still reaches no variant row');
+
+-- The captured revision, checked directly against the validator rather than
+-- through a completion, so each rule is named by the assertion that breaks it.
+create temporary table v2_content as select jsonb_set(jsonb_set(jsonb_set(
+ (select payload->'ancestry' from ancestry_output),'{schemaVersion}','2'),
+ '{computationRevision}','"own-ancestry-content-v2"'),'{lineages}',
+ '[{"kind":"mtdna","state":"available","tree":{"id":"inherit-mtdna-curated-subset","version":"Build 17, Forensic Update 1a","sha256":"fb34d38ac78a900172a398e168b54b786711dbe662c12659db5fd09c6666efd1"},"markerPositions":106,"observedPositions":17,"readablePositions":17,"call":{"haplogroup":"K1","path":["L3","N","R","U","K","K1"],"matched":17,"tested":17,"support":"strong","note":"matched 17/17 defining markers along L3 > N > R > U > K > K1 (17 marker positions covered overall)"},"reason":null},
+   {"kind":"ydna","state":"unavailable","tree":{"id":"inherit-ydna-curated-subset","version":"2016 index (4 January 2016)","sha256":"b5e956ec511dc3c4c3c40e38862c2e5af513be675cacead0b31469b174a168e3"},"markerPositions":31,"observedPositions":0,"readablePositions":0,"call":null,"reason":"no_supplied_positions"}]'::jsonb) c;
+create function pg_temp.check_v2(patch_path text[] default null,patch jsonb default null) returns void language sql as $$
+ select private.validate_own_ancestry_content_v1(
+  case when patch_path is null then (select c from v2_content) else jsonb_set((select c from v2_content),patch_path,patch) end,
+  '78700000-0000-4000-8000-000000000040',(select id from ancestry_subject),
+  (select receipt->'authorization' from claims where purpose='ancestry'),'vcf-literal');
+$$;
+select lives_ok($$select pg_temp.check_v2()$$,'a revision-2 capture with a real call is accepted');
+select lives_ok($$select private.validate_own_ancestry_content_v1((select payload->'ancestry' from ancestry_output),
+ '78700000-0000-4000-8000-000000000040',(select id from ancestry_subject),
+ (select receipt->'authorization' from claims where purpose='ancestry'),'vcf-literal')$$,
+ 'revision 1 keeps validating, because this function also re-checks already stored content');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,tree,sha256}',to_jsonb(repeat('0',64)))$$,
+ '22023','invalid_ancestry_content','a call cannot be stored against a tree that is not the one shipped');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,tree,version}','"Build 18"')$$,
+ '22023','invalid_ancestry_content','a call cannot rename the tree build it was read against');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,markerPositions}','105')$$,
+ '22023','invalid_ancestry_content','a call cannot restate how many positions the tree defines');
+select throws_ok($$select pg_temp.check_v2('{lineages,1,state}','"available"')$$,
+ '22023','invalid_ancestry_content','a line with nothing readable cannot be published as available');
+select throws_ok($$select pg_temp.check_v2('{lineages,1,reason}','"no_readable_genotypes"')$$,
+ '22023','invalid_ancestry_content','a line that got no positions cannot claim it could not read them');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,call,tested}','18')$$,
+ '22023','invalid_ancestry_content','a call cannot test more positions than were readable');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,call,matched}','18')$$,
+ '22023','invalid_ancestry_content','a call cannot match more markers than it tested');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,call,haplogroup}','"H1"')$$,
+ '22023','invalid_ancestry_content','the named haplogroup must be the leaf of the path that produced it');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,readablePositions}','18')$$,
+ '22023','invalid_ancestry_content','more positions cannot be readable than were observed');
+select throws_ok($$select pg_temp.check_v2('{lineages,0,call,support}','"very strong"')$$,
+ '22023','invalid_ancestry_content','support is one of the three labels the classifier produces');
+select throws_ok($$select pg_temp.check_v2('{schemaVersion}','3')$$,
+ '22023','invalid_ancestry_content','an unknown revision is refused rather than read as the newest');
 savepoint withdrawn_in_flight;
 select public.revoke_directional_purpose_v1('78700000-0000-4000-8000-000000000001',
  (select grant_id from public.purpose_grants where target_id=(select id from ancestry_subject) and purpose='ancestry'));

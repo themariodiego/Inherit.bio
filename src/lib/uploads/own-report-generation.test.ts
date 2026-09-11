@@ -10,6 +10,7 @@ vi.mock("@/lib/genome/prepared-source/report-call-pages", async importOriginal =
   readOwnPreparedReportPages: mocks.prepared,
 }));
 import { generateOwnReports } from "./own-report-generation";
+import { lineageLoci } from "../ancestry/lineage-panel";
 import { AIMS } from "../genome/admixture";
 import { ownAncestryContentSchema } from "./own-ancestry-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
@@ -43,6 +44,9 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
   if (op === "check") return { data: finished.has(p) ? done(p) : claim(p), error: null };
   if (op === "read-variants") return { data: args.p_payload.offset === 0 && args.p_payload.loci.some(point => point.pos === sourceCall.pos) ? [sourceCall] : [], error: null };
   if (op === "read-observed") return { data: [], error: null };
+  // A source carrying nothing at the lineage trees' own positions. The
+  // populated case is proved end to end against the committed fixture.
+  if (op === "read-lineage") return { data: [], error: null };
   if (op === "complete") { finished.add(p); return { data: done(p), error: null }; }
   return { data: true, error: null };
 }
@@ -344,9 +348,17 @@ describe("independent synchronous own reports", () => {
 const marker = AIMS[0];
 const ancestryObservation = { file_id: fileId, rsid: Number(marker.rsid.slice(2)), chrom: marker.chrom, pos: marker.pos38,
   ref: marker.ref, alt: marker.alt, genotype: `${marker.ref}/${marker.ref}`, usable: true };
-function withAncestryRows(rows: unknown[]) {
+/**
+ * The ancestry run makes TWO reads now, and they are not interchangeable: the
+ * panel read returns autosomal AIMs positions, the lineage read returns
+ * positions on chromosomes 24 and 25. Serving one set to both would hand the
+ * lineage reader rows it never asked for, which the builder refuses outright —
+ * so the mock keeps them apart exactly as the database does.
+ */
+function withAncestryRows(rows: unknown[], lineageRows: unknown[] = []) {
   mocks.rpc.mockImplementation(async (name, args) => args.p_purpose === "ancestry" && args.p_operation.startsWith("read-")
-    ? { data: args.p_payload.offset === 0 ? rows : [], error: null } : rpc(name, args));
+    ? { data: args.p_payload.offset === 0 ? (args.p_operation === "read-lineage" ? lineageRows : rows) : [], error: null }
+    : rpc(name, args));
 }
 function ancestryPayload() {
   return mocks.rpc.mock.calls.find(call => call[1].p_purpose === "ancestry" && call[1].p_operation === "complete")?.[1].p_payload;
@@ -363,8 +375,13 @@ describe("explicit canonical ancestry generation", () => {
       sourceSha256: authorization.sourceSha256, sourceRevision: 1, normalizedAt: authorization.normalizedAt, callEncoding: "vcf-literal" },
       admixture: { result_state: "partial", result: { markersUsed: 1 }, coverage: 1 / 168 } });
     const reads = mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-"));
-    expect(reads).toHaveLength(1); expect(reads[0][1].p_operation).toBe("read-observed");
+    // Two reads, and each asks for exactly its own panel. The AIMs read must
+    // not drift onto the lineage chromosomes, and the lineage read must ask
+    // only at defining positions of the shipped trees.
+    expect(reads.map(read => read[1].p_operation)).toEqual(["read-observed", "read-lineage"]);
     expect(reads[0][1].p_payload.loci).toEqual(AIMS.map(m => ({ chrom: m.chrom, pos: m.pos38 })));
+    expect(reads[1][1].p_payload.loci).toEqual(lineageLoci().slice(0, 200));
+    expect(reads[1][1].p_payload.loci.every((point: { chrom: number }) => point.chrom === 24 || point.chrom === 25)).toBe(true);
     expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "ready")).toHaveLength(1);
   });
   it("completes honest zero coverage without inferring reference or lineage", async () => {
@@ -377,13 +394,15 @@ describe("explicit canonical ancestry generation", () => {
     withAncestryRows([{ ...ancestryObservation, ref: null, alt: null }]);
     expect((await generateOwnReports(request(), fileId)).status).toBe(200);
     expect(ancestryPayload().ancestry.source.callEncoding).toBe("array-genotype");
-    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation)).toEqual(["read-variants"]);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation))
+      .toEqual(["read-variants", "read-lineage"]);
   });
   it("uses literal observed calls for a checked gVCF source", async () => {
     ancestryFileType = "gvcf"; withAncestryRows([ancestryObservation]);
     expect((await generateOwnReports(request(), fileId)).status).toBe(200);
     expect(ancestryPayload().ancestry.source.callEncoding).toBe("vcf-literal");
-    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation)).toEqual(["read-observed"]);
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1].p_operation))
+      .toEqual(["read-observed", "read-lineage"]);
   });
   it.each([
     { fileType: "unknown" }, { fileId: subject }, { normalizedBuild: "GRCh37" },

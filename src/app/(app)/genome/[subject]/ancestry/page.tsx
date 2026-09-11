@@ -194,8 +194,16 @@ export default async function AncestryPage(
         />
       </div>
 
-      {mt?.result != null ? <div data-slot="maternal-input-provenance"><InputProvenance nested sources={maternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
-      {y?.result != null ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
+      {/* Input quality qualifies a RESULT (G4.6). A row exists now for a line
+          that could not be read as well as for one that could - the canonical
+          path reads the lineage markers and records what it found either way -
+          so the test is the call, not the row. Under "this line could not be
+          read" there is nothing for call rate or coverage to be about, and a
+          provenance block there would be furniture. */}
+      {lineageCall(mt?.result)?.haplogroup != null
+        ? <div data-slot="maternal-input-provenance"><InputProvenance nested sources={maternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
+      {lineageCall(y?.result)?.haplogroup != null
+        ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
 
       <NeanderthalCard />
 
