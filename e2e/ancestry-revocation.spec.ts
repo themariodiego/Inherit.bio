@@ -6,6 +6,7 @@ import { expect, test } from "@playwright/test";
 import { localE2eProject } from "../scripts/local-e2e-project";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
+import { NOTHING_READ } from "../src/copy/ancestry";
 
 /** Aggregate only, and only this file's ancestry journal: no result payload,
  * no genotype, no credential and no other account is read. */
@@ -72,7 +73,32 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
 });
 
-test("revoking ancestry makes the derived result unreadable on the very next load", async ({ page }) => {
+/**
+ * `/genome/[subject]/ancestry empty`, and this pair needs its history stated
+ * because this register REJECTED it earlier. An ancestry title once read
+ * "lineage empty states" and the gate counted this pair by accident; the
+ * claim was withdrawn and the title reworded, because on that page the
+ * ancestry result was present and it was only the lineage cards below it that
+ * had nothing to show. The evidence here is the opposite: after revocation
+ * there is no ancestry result at all - the test asserts the derived rows are
+ * deleted, not hidden - and the page falls back to the component the product
+ * itself calls `NoResult`, a grey map and "Nothing to show until a file has
+ * been processed."
+ *
+ * `empty` rather than `consent-required`, and the distinction is the same one
+ * that separated the Health Picture's empty state: this page names no
+ * outstanding step and offers no way to give consent back. The CAUSE here is
+ * a revoked recorded grant, which is exactly what `consent-required` is made
+ * of - but the register names STATES, not causes, and a page that asks for
+ * nothing is not asking for consent. Compare
+ * `/genome/[subject]/reports consent-required`, where a superseded document
+ * makes the library name the version, say what changed and put the accept
+ * control in the same block. That page asks. This one shows nothing.
+ *
+ * The map mode and the sentence are asserted rather than the slot's presence
+ * alone, so the state is read from the product's own naming of it.
+ */
+test("/genome/[subject]/ancestry empty: revoking ancestry deletes the derived result and the surface falls back to nothing read, on the very next load", async ({ page }) => {
   test.setTimeout(240_000);
   await signIn(page, USER.email, USER.password);
   const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), MIXED_FIXTURE), { fileType: "vcf" });
@@ -103,6 +129,14 @@ test("revoking ancestry makes the derived result unreadable on the very next loa
     "a revoked result must not still be shown").toBe(0);
   expect(await page.locator('[data-slot="nothing-read"]').count(),
     "the surface states that nothing was read").toBe(1);
+  // Read the state from the product's own naming of it: the map drops to its
+  // grey no-result mode and the paragraph is the NoResult sentence verbatim.
+  await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
+  await expect(page.locator('[data-slot="nothing-read"]')).toHaveText(NOTHING_READ);
+  // The sentence is on the page three times, not once: the regions panel and
+  // the two outputs below it each say it for themselves, so every ancestry
+  // output is empty rather than just the one carrying the slot.
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
   expect(await page.locator("main").innerText(),
     "no region share survives the revocation").not.toMatch(/\d\.\d\s*%/);
   expect(await ancestryRunCount(fileId),

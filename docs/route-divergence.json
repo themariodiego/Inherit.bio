@@ -186,6 +186,7 @@
     "/files/upload consent-required",
     "/files/upload processing",
     "/genome/[subject]/ancestry complete",
+    "/genome/[subject]/ancestry empty",
     "/genome/[subject]/ancestry not-covered",
     "/genome/[subject]/data complete",
     "/genome/[subject]/data/browser complete",
