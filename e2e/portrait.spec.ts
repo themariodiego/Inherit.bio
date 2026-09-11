@@ -361,7 +361,21 @@ test("both adults add the synthetic file to their own record", async ({ page, re
   expect(grants.error).toBeNull(); expect(grants.data).toEqual([]);
 });
 
-test("with only A's grant, the page is the blocking screen: it names B's steps, carries the banner pair and shows no figure", async ({
+/**
+ * `/family/portrait/[pairId] consent-required`, and this one needs no
+ * interpretation at all: the product names the state itself. The test asserts
+ * `[data-slot="portrait-blocking"]` carries `data-state="consent-required"`,
+ * which is the register's own id in the page's own markup.
+ *
+ * Worth separating from the Tier-2 gate declined elsewhere in this suite,
+ * because the two look alike and are not. That gate is a session-scoped
+ * acknowledgement never written to device storage. This blocker is a RECORDED
+ * permission: the pair sits `pending` until B turns Portrait on from B's own
+ * account, and the page names whose step is outstanding and links to the
+ * consents page where it is given. A consent someone must grant is what
+ * `consent-required` has meant everywhere this repository has claimed it.
+ */
+test("/family/portrait/[pairId] consent-required: with only A's grant the page is the blocking screen, naming B's steps with the banner pair and no figure", async ({
   page,
 }) => {
   // A turns Portrait on from A's own account; the routine creates the pair.

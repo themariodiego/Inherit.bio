@@ -603,7 +603,22 @@ test("the Overview does not advertise a clinical match from unbound reference la
   await expect(page.locator("main")).not.toContainText("Two people carry a change in the same gene.");
 });
 
-test("without that layer's own grant, the other adult's cells read as not shared while the column and the panel remain", async ({
+/**
+ * `/family/health-picture partial-coverage`, the same both-halves reading used
+ * for `/genome/[subject]/data/browser` and `/family/[person]`: the page shows
+ * some content AND names the rest absent, in one view, and this test asserts
+ * both. B withdraws the estimates layer toward A while the joint grant and the
+ * variant layer stay, so the column still opens, the carrier panel still
+ * opens, A's own cells are untouched - and every one of B's cells in that
+ * layer reads the not-shared sentence with no figure and no link.
+ *
+ * What makes it the right id rather than `not-covered`: nothing here is
+ * uncovered by anyone's file. The data exists and B has withdrawn permission
+ * for one layer of it, which is a coverage of the VIEW rather than of the
+ * genome. A page that dropped the column or the panel along with the cells
+ * would be hiding that a person had chosen to withdraw, and would fail here.
+ */
+test("/family/health-picture partial-coverage: without that layer's own grant, the other adult's cells read as not shared while the column and the panel remain", async ({
   page,
 }) => {
   // B withdraws the estimates layer toward A; the joint grant and the
