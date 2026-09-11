@@ -97,7 +97,26 @@ test.afterAll(async () => {
     .toBe(`0/0/0/${signedVersion}`);
 });
 
-test("a superseded document forces re-consent and says what changed beside the accept control", async ({ page }) => {
+/**
+ * `/genome/[subject]/reports consent-required`, and it is the cleanest example
+ * of that id in the suite because the consent it requires is a RECORDED,
+ * VERSIONED artifact rather than a gesture. A published document is
+ * superseded; the person's grant is NOT revoked and this test asserts that
+ * directly - it simply stops resolving against a version they never agreed
+ * to. The library then withholds the capability, names the version they did
+ * agree to, says what changed, links the exact prior version at a stable
+ * permalink, and puts the accept control in the same block as the change
+ * summary. Agreeing again restores the capability and records the new version.
+ *
+ * Worth separating from two gates this register has already DECLINED under
+ * this id, because all three withhold a result and only this one is a consent
+ * artifact. The Family Tier-2 gate is a session acknowledgement that is never
+ * written anywhere. The APOE-style report gate is a reveal remembered in the
+ * viewer's own device storage, which the leak-regression test proves is not
+ * an authority at all. Neither is a recorded, revocable permission; this is,
+ * and the distinction is the one the product exists to keep.
+ */
+test("/genome/[subject]/reports consent-required: a superseded document withholds the capability against an unrevoked grant, and says what changed beside the accept control", async ({ page }) => {
   const user = { email: `consent-version-${randomUUID()}@e2e.local`, password: "e2e-consent-pw" };
   const userId = await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);

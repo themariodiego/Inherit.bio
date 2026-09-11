@@ -190,6 +190,7 @@
     "/genome/[subject]/data complete",
     "/genome/[subject]/data/browser complete",
     "/genome/[subject]/data/browser partial-coverage",
+    "/genome/[subject]/reports consent-required",
     "/genome/[subject]/reports empty",
     "/genome/[subject]/reports partial-coverage",
     "/genome/[subject]/reports/[slug] complete",
