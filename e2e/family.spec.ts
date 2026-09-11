@@ -171,7 +171,20 @@ test("/family signed out keeps the two required panels ahead of any sign-in wall
   await expectNoResults(page);
 });
 
-test("/family signed in: the hub, its one primary action and the first-viewport budget", async ({
+/**
+ * `/family empty`. The hub for an account that has no family yet, and it says
+ * so in words - "Just you so far." - rather than rendering an absence the
+ * reader has to infer. That is the test this repository applies, and this is
+ * a cleaner case of it than most: the page IS the family, the family holds
+ * one person, and the single primary action is the one that would change
+ * that.
+ *
+ * Ordering carries the claim. This spec is serial and the account is paired
+ * with a second one in a later test, so `empty` here is a real state of a
+ * real account at this point in the run, not an artefact of a fixture that
+ * happens not to have been populated.
+ */
+test("/family empty: the hub says only you are here, with one primary action and the first-viewport budget", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -413,7 +426,26 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await expectAxeClean(page);
 });
 
-test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's own subject", async ({
+/**
+ * `/family/[person] partial-coverage`, on the same reading as
+ * `/genome/[subject]/data/browser partial-coverage`: the page shows both
+ * halves and this test asserts both. Every report of the layer B shared is
+ * listed, and the layer B did NOT share is named absent in B's own terms -
+ * "has not shared Specific variants with you" - exactly once, beside a
+ * baseline-absent sentence also asserted to appear exactly once. A page that
+ * silently omitted the unshared layer would look complete and would fail
+ * here.
+ *
+ * `consent-required` is NOT claimed for the Tier-2 gate this test also
+ * passes, though the shape is tempting: no personal content reaches the
+ * browser until an affirmative checkbox and button. The reason is that the
+ * gate is an acknowledgement - session-scoped, asserted here as never
+ * written to device storage - while every `consent-required` state this
+ * repository has claimed rests on a recorded, revocable consent artifact.
+ * Calling a session acknowledgement a consent would blur a distinction the
+ * product keeps deliberately, so the pair is left unproven.
+ */
+test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer is listed and the unshared one is named absent", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -501,7 +533,30 @@ test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's ow
   }
 });
 
-test("pause, resume and stop take effect on the next request", async ({ page }) => {
+/**
+ * `/family/[person]/permissions complete`, on the reading already recorded
+ * for `/settings complete`: this page has no partial shape. It renders the
+ * whole permission surface for a live relationship - the controls, their
+ * current position, and the confirmed stop with its three-item dialog - and
+ * this test does not merely look at them, it operates all three and checks
+ * what each one does to the next request.
+ *
+ * The tombstone shape is deliberately NOT claimed as a second state. After
+ * the stop, this page renders "Sharing ended on ... N results built from this
+ * pairing were deleted." A reader could call that `empty`, and the argument
+ * against is that a relationship which has ENDED is a different thing from a
+ * page with nothing in it - the tombstone is content, and it is the record
+ * that the deletion happened. Deciding that silently by retitling would be
+ * the wrong way to settle it.
+ *
+ * What makes this test worth more than the pair: it holds the deletion
+ * guarantee. Paused and stopped sharing both deny every derived surface on
+ * the very next request (404, asserted), while B's original bytes, B's own
+ * generation permission and B's own findings are all asserted to survive.
+ * That is the "revoke access immediately, preserve unrelated data" promise,
+ * checked in a browser rather than asserted in prose.
+ */
+test("/family/[person]/permissions complete: pause, resume and stop render and take effect on the next request", async ({ page }) => {
   await signIn(page, A.email, A.password);
   // The prior test's acknowledgement cannot survive this new login/session.
   await page.goto(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`);
