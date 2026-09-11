@@ -93,6 +93,73 @@ the 7.8 implied by the user-reported 38.3 MB / 4,930,321-variant file, so the
 transfer and range-count figures are **conservative**. Neither the real file nor
 any real genome was used, and none is needed to measure this boundary.
 
+### Measured: why the finalization transfer cannot simply use bigger ranges · 11 September 2026
+
+The operator chose, on 2026-09-11, to shorten the transfer rather than widen
+the retry window, and flagged the payoff as uncertain. It is not uncertain, and
+it is also not available: **the lever works and the platform forbids it.**
+
+Measured against the local stack with a 32 MB synthetic object, two passes'
+worth of ranged reads, each preceded by an authority-recheck round trip. The
+recheck itself is **15.5 ms** median over ten.
+
+| Range | Rounds | With recheck | Ranges only | Recheck share |
+|---:|---:|---:|---:|---:|
+| 4 MB | 9 | 1,701 ms | 1,368 ms | 20% |
+| 8 MB | 5 | 827 ms | 732 ms | 12% |
+| 16 MB | 3 | 585 ms | 513 ms | 12% |
+| 34 MB | 1 | 278 ms | 331 ms | — |
+
+**4 MB to 16 MB is a 2.9× speedup, and only a third of it is the rechecks.**
+The rest is per-request overhead — request setup, the storage layer's own
+per-request work — which is why "ranges only" falls from 1,368 ms to 513 ms on
+the same bytes. Fewer, larger requests is a real lever.
+
+**It is closed by `payloadBoundaryContract`.** The register pins
+`serverlessMaximumObservedBodyBytes` at 4,500,000 and states the rule as
+`no-request-or-response-body-larger-than-serverlessMaximumObservedBodyBytes-may-cross-a-Vercel-Function`,
+which `largeDownload` repeats as "no-full-file-body-crosses-a-Vercel-Function"
+and `e2e/function-payload.spec.ts` verifies. `ingestChunkMaximumBytes` is
+4,000,000 because of that ceiling, not by preference, and finalization's ranges
+sit under it deliberately. A 16 MB range is a 16 MB response body crossing a
+Vercel Function. Raising it would trade a contract the product verifies for a
+speedup, and would need hosted capacity evidence this work does not have.
+
+**The contract-safe lever is overlap, and it is smaller.** Keeping every body
+at 4 MB and starting the next recheck-and-fetch while the current range is
+still being consumed, with the per-chunk validation cost modelled at the
+readiness figures' ~71 MB/s:
+
+| | Wall clock | |
+|---|---:|---|
+| Sequential, as built today | 1,951 ms | |
+| Read-ahead, depth 2 | 1,624 ms | 17% faster |
+| Read-ahead, depth 3 | 1,536 ms | 21% faster |
+| Read-ahead, depth 4 | 1,552 ms | 20% faster |
+
+It plateaus at depth 3. **These are loopback numbers, so 21% is a floor rather
+than a ceiling**: read-ahead hides latency, and hosted latency per round trip
+is higher than the near-zero here, so the same change should buy more in
+production than it does on this measurement.
+
+**It is not taken, because it widens an authority window and that is not an
+engineering decision.** `ranges()` rechecks authority before every fetch, so a
+revocation landing mid-transfer stops the next range. At depth 3 the recheck
+for a range happens up to three ranges early, so roughly 12 MB rather than 4 MB
+could be read into the function's memory after a revocation. Nothing reaches a
+reader either way — publication rechecks again at
+`complete_own_upload_finalization_v1` — but the operator's own non-negotiable
+is to "enforce current subject/purpose/jurisdiction authority throughout", and
+quietly lengthening the interval between a revocation and the transfer noticing
+is not something to decide while optimising.
+
+There is a variant worth putting to the operator rather than assuming: recheck
+before **consuming** a range instead of before fetching it. Every range would
+still be authorised at the moment its bytes are used, the overlap would stand,
+and the only thing read speculatively would be bytes the service role already
+holds. Whether that is the same guarantee is a judgement about the contract,
+not about the code.
+
 ### Measured: what a person gets when finalization dies · 11 September 2026
 
 Priority 1 names "the approximately 300-second original-finalization bottleneck
