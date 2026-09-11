@@ -93,6 +93,68 @@ the 7.8 implied by the user-reported 38.3 MB / 4,930,321-variant file, so the
 transfer and range-count figures are **conservative**. Neither the real file nor
 any real genome was used, and none is needed to measure this boundary.
 
+### Measured: what a person gets when finalization dies · 11 September 2026
+
+Priority 1 names "the approximately 300-second original-finalization bottleneck
+and durable dispatch/recovery". The first half is answered above and the answer
+is that the 300-second request is **not** the binding constraint: validation of
+a WGS-scale file costs under 12 seconds of CPU, the pass is I/O-bound, and
+ADR-0026's checkpoints already let one finalization span more than one request.
+This section measures the second half — what recovery actually is — against the
+installed database functions rather than the migration files.
+
+**Three numbers decide it**, all measured 2026-09-11 against the live local
+database, not read:
+
+| | Value | Where |
+|---|---|---|
+| Retry window after an interrupted finalization | **1800 s exactly**, from issuance | `upload_sessions.expires_at`; `least(clock_timestamp()+interval '30 minutes', v_not_after)` |
+| Purge eligibility for the staged bytes | the same moment | live `claim_own_upload_purge_v1` filters `s.expires_at<=clock_timestamp()` |
+| Staging maximum | 2 h from creation, on all 422 sessions | `upload.staging-2h` phase deadline |
+
+Across every one of the **422** upload sessions in the local database the
+lifetime is 1800.000 s and the phase deadline is exactly 02:00:00, and **every
+session in every state has its retention phase row — zero orphans**. So the
+bytes of an abandoned finalization are always reclaimed; none is stranded.
+
+**A correction, because the first reading of this was wrong.** The retention
+sweep appears in two migrations, and the earlier body filters on the two-hour
+`phase_deadline` while the later one filters on the session's own
+`expires_at`. Reading the earlier file gives a confident, wrong answer — a
+ninety-minute window in which bytes exist and nobody can reach them — with
+nothing to signal it is stale. Querying `pg_get_functiondef` for the installed
+function settles it: the sweep starts at authority expiry. Recovery and purge
+are therefore **back to back**, which is the coherent design: while a person
+can still finish, nothing deletes; the moment they cannot, deletion becomes
+eligible. `scripts/finalization-recovery-window.test.ts` pins all of this and
+resolves the *last* migration defining each function, so the same misreading
+fails rather than persuades.
+
+**What is genuinely open, stated precisely:**
+
+1. **The window is measured from issuance, not from the interruption.** A
+   person has 1800 seconds from the moment the session was minted, of which the
+   transfer itself consumes an unbounded share. An upload that takes 25 minutes
+   to reach storage leaves five minutes to notice a failed finalization and act.
+   The window does not widen with file size; it is consumed by it. This is the
+   constraint that tightens as limits rise, and it belongs in the evidence any
+   limit increase rests on.
+2. **Recovery is a button, and nothing dispatches it.** `StagedUploadRecovery`
+   offers "Try this upload again" to a person who is looking at the page. No job
+   route resumes a finalization, and the resume migration says why in terms: it
+   creates "no session-independent finalization", so a background worker holds
+   no authority to finish one. A closed tab ends the upload. That is a
+   deliberate authority decision rather than an oversight, and the cost of it is
+   borne by the person least likely to be watching.
+3. **Phase one cannot resume mid-file.** Recorded above and unchanged: gzip
+   decoder state cannot be serialised, so validation runs whole or restarts. At
+   the hosted decoded ceiling this costs under a second, so it does not bite
+   today; at a raised ceiling a validation that cannot finish inside one request
+   would restart forever, never recording a checkpoint. Any limit increase has
+   to bound phase one first.
+
+Nothing here changes a limit, a deadline, or a line of product code.
+
 ### Measured: preparation, not finalization, is what a whole genome cannot pass · 9 September 2026
 
 Run with `scripts/preparation-capacity.mts` over the same seed-1 fixtures,
