@@ -161,6 +161,8 @@
     "/ complete",
     "/about complete",
     "/changelog complete",
+    "/copilot/[scope] complete",
+    "/copilot/[scope] consent-required",
     "/embryos empty",
     "/embryos jurisdiction-unavailable",
     "/embryos/[embryoId] consent-required",
