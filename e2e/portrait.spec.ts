@@ -7,7 +7,9 @@ import path from "node:path";
 import {
   adminClient,
   createConfirmedUser,
+  drainMailUntil,
   expectAxeClean,
+  findUserByEmail,
   firstViewportInteractives,
   signIn,
 } from "./helpers";
@@ -117,14 +119,11 @@ let sourceBefore: unknown;
 interface CapturedEmail { to: string[] | string; html?: string }
 const captured: CapturedEmail[] = [];
 let resendMock: http.Server;
-const JOBS_SECRET = process.env.JOBS_SECRET;
-if (!JOBS_SECRET) throw new Error("JOBS_SECRET is required for the Portrait mail worker fixture");
 test.use({ trace: "off" }); // Restricted upload and signed grant bearers stay out of traces.
 test.describe.configure({ mode: "serial" });
 
 async function accountIdFor(email: string): Promise<string> {
-  const { data } = await adminClient().auth.admin.listUsers();
-  return data!.users.find((user) => user.email === email)!.id;
+  return (await findUserByEmail(adminClient(), email))!.id;
 }
 
 async function selfSubjectOf(accountId: string): Promise<string> {
@@ -306,18 +305,16 @@ test("both adults add the synthetic file to their own record", async ({ page, re
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
-  const drain = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-  expect(drain.status()).toBe(200);
-  const message = captured.find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email));
-  const invitationUrl = message?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0];
-  expect(invitationUrl).toBeTruthy();
+  const invitationUrl = await drainMailUntil(request, () => captured
+    .find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email))
+    ?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0], "the invitation");
   await page.request.post("/auth/sign-out");
-  await page.goto(invitationUrl!);
+  await page.goto(invitationUrl);
   await page.getByRole("link", { name: "Sign in to accept" }).click();
   await page.getByLabel("Email").fill(B.email);
   await page.getByLabel("Password").fill(B.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl!);
+  await expect(page).toHaveURL(invitationUrl);
   await page.getByRole("button", { name: "Accept through my account" }).click();
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
   // This was B's actual acceptance session. A's Family route names the invited
@@ -361,7 +358,21 @@ test("both adults add the synthetic file to their own record", async ({ page, re
   expect(grants.error).toBeNull(); expect(grants.data).toEqual([]);
 });
 
-test("with only A's grant, the page is the blocking screen: it names B's steps, carries the banner pair and shows no figure", async ({
+/**
+ * `/family/portrait/[pairId] consent-required`, and this one needs no
+ * interpretation at all: the product names the state itself. The test asserts
+ * `[data-slot="portrait-blocking"]` carries `data-state="consent-required"`,
+ * which is the register's own id in the page's own markup.
+ *
+ * Worth separating from the Tier-2 gate declined elsewhere in this suite,
+ * because the two look alike and are not. That gate is a session-scoped
+ * acknowledgement never written to device storage. This blocker is a RECORDED
+ * permission: the pair sits `pending` until B turns Portrait on from B's own
+ * account, and the page names whose step is outstanding and links to the
+ * consents page where it is given. A consent someone must grant is what
+ * `consent-required` has meant everywhere this repository has claimed it.
+ */
+test("/family/portrait/[pairId] consent-required: with only A's grant the page is the blocking screen, naming B's steps with the banner pair and no figure", async ({
   page,
 }) => {
   // A turns Portrait on from A's own account; the routine creates the pair.

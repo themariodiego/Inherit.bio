@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import http from "node:http";
 import {
-  JOBS_SECRET,
+  drainMailUntil,
+  findUserByEmail,
   adminClient,
   createConfirmedUser,
   signIn,
@@ -72,18 +73,18 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
 
-  const drain = await request.post("/api/jobs/mail", {
-    headers: { authorization: `Bearer ${JOBS_SECRET}` },
-  });
-  expect(drain.status()).toBe(200);
-  expect((await drain.json()) as { failed: number }).toMatchObject({ failed: 0 });
-
-  const message = captured.find((email) =>
+  // One drain is not enough on a shared queue: see drainMailUntil. The
+  // `failed: 0` this used to assert went with it, because the worker's failure
+  // count covers every row it claimed, including rows other journeys left
+  // behind - it was a claim about the whole queue standing in for a claim
+  // about this invitation. The check that matters is unchanged and stronger:
+  // this exact message must arrive, and if it does not the drain receipts come
+  // with the failure.
+  const message = await drainMailUntil(request, () => captured.find((email) =>
     (Array.isArray(email.to) ? email.to : [email.to]).includes(RECIPIENT.email),
-  );
-  expect(message, "the invitation must reach the configured mail provider").toBeTruthy();
-  expect(message!.subject).toBe("You were invited to Inherit");
-  const invitationUrl = message!.html?.match(
+  ), "the invitation");
+  expect(message.subject).toBe("You were invited to Inherit");
+  const invitationUrl = message.html?.match(
     /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/,
   )?.[0];
   expect(invitationUrl, "the mail must carry one opaque invitation URL").toBeTruthy();
@@ -118,12 +119,12 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await page.getByRole("button", { name: "Accept through my account" }).click();
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
 
-  const recipientId = (await admin.auth.admin.listUsers()).data.users.find(
-    (user) => user.email === RECIPIENT.email,
-  )!.id;
-  const inviterId = (await admin.auth.admin.listUsers()).data.users.find(
-    (user) => user.email === INVITER.email,
-  )!.id;
+  // Both fixture addresses are fixed, so they age: `listUsers` returns page
+  // one, newest first, and after a few hundred accounts these two sit past it.
+  // `findUserByEmail` pages, and its own comment records the last time this
+  // exact assumption bit.
+  const recipientId = (await findUserByEmail(admin, RECIPIENT.email))!.id;
+  const inviterId = (await findUserByEmail(admin, INVITER.email))!.id;
   const { data: subject } = await admin
     .from("subjects")
     .select("subject_account_id, lifecycle")
