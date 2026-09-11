@@ -250,6 +250,60 @@ affected either way; their absence of a guard is not in question.
 
 ---
 
+## 6. `consent-required` is declared on twenty routes and implemented on none of them
+
+**Measured 2026-09-11, by the same method as item 5**, and the result is
+cleaner than that one.
+
+Exactly three pages render a consent-required state: `/embryos/[embryoId]` and
+`/embryos/compare`, both through `BlockingState` in
+`src/components/embryo/states.tsx`, and `/family/portrait/[pairId]` through
+`src/components/family/portrait/portrait-blocking.tsx`. **All three are already
+proven** in the route-state ledger.
+
+It follows that every route still declaring `consent-required` without a proof
+does not implement it at all: `/embryo-analysis`, `/embryos`,
+`/embryos/request-data`, `/embryos/upload`, `/family`, `/family/[person]`,
+`/family/[person]/permissions`, `/family/health-picture`, `/family/invite`,
+`/genome/[subject]`, `/genome/[subject]/ancestry`, `/genome/[subject]/data`,
+`/genome/[subject]/data/browser`, `/genome/[subject]/reports/[slug]`,
+`/overview`, `/settings`, `/settings/consents`, `/settings/copilot`,
+`/settings/data`, `/settings/people`.
+
+Checked three ways rather than one, because a negative is easy to get wrong:
+the page components themselves, the call sites of both shared blocking
+components, and the absence of any gate above them — there is no
+`src/middleware.ts`, and the `(app)` layout carries no consent check. A route
+that refused by REDIRECTING rather than by rendering a state would not show up
+in the first two checks, which is why the third was done.
+
+### The two authority states together
+
+| state | declared and unproven | implement it | over-declared |
+|---|---|---|---|
+| `jurisdiction-unavailable` | 20 | 9 | 11 |
+| `consent-required` | 20 | 0 | 20 |
+
+**So 31 of the 40 unproven authority pairs are register over-declarations, and
+9 are genuine test work.** That is worth putting beside G2.2's own estimate,
+which places 50 of the remaining pairs in "needing new test-side setup only".
+For these two states the reachable figure is nine, and all nine sit behind one
+paired-family fixture.
+
+**Proposed:** drop `consent-required` from the declared states of those twenty
+routes, on the same signature as item 5.
+
+**What this does NOT say**, and the distinction matters as much here as in item
+5: it does not say those routes should never require consent. `/settings/consents`
+in particular is a page *about* consent, and `/genome/[subject]/reports/[slug]`
+serves genetic findings. The measurement is only that no such refusal exists
+today, so the register currently describes behaviour the product does not have.
+If any of these routes ought to gate on consent, the correction for that route
+is to build the gate rather than to drop the declaration — and that is a
+product decision, not a register tidy-up.
+
+---
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
