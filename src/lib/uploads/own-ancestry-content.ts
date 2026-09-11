@@ -172,7 +172,10 @@ export function computeOwnAncestryContent(input: {
    * Kept separate from `calls` so the admixture accounting cannot be moved by
    * them: the panel tally below is proved against the AIMs alone. */
   lineageCalls?: readonly OwnAncestryCall[];
-}): OwnAncestryContent {
+  // Always the latest revision. The union is what a READER accepts; a writer
+  // has no reason to produce anything but the newest, and saying so here keeps
+  // callers from having to narrow a revision this function never emits.
+}): OwnAncestryContentV2 {
   const parsedSource = sourceSchema.safeParse(input.source);
   const parsedCalls = z.array(callSchema).safeParse(input.calls);
   const parsedLineage = z.array(callSchema).safeParse(input.lineageCalls ?? []);

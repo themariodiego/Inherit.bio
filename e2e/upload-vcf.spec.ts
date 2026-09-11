@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { createConfirmedUser, signIn } from "./helpers";
 import { expectNoOwnAncestryResult, generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 import receipt from "./fixtures/HG001_GRCh38_chr20_1000000-1100000.receipt.json";
+import { LINEAGE_NO_POSITIONS } from "../src/copy/ancestry";
 
 // A5: a byte-verbatim window of the public GIAB benchmark, plus a separate
 // synthetic source for rsID/gene positives (GIAB's original IDs are all '.').
@@ -139,12 +140,16 @@ test("gene search joins the actual synthetic source's call with CYP1A2 reference
   await expectSyntheticCaffeineCall(page);
 });
 
-test("GIAB ancestry has computed zero-marker coverage and explicitly uncomputed lineages", async ({ page }) => {
+test("GIAB ancestry has computed zero-marker coverage and reads the lineage markers without finding one", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/ancestry");
-  for (const kind of ["mtdna", "ydna"]) {
+  // The lineage read happens for this file and returns nothing, which is a
+  // different statement from the computation not having run. Neither card may
+  // put a haplogroup, a path, a tree line or a coverage figure on the page
+  // from a read that found no position to read.
+  for (const [kind, parent] of [["mtdna", "mother"], ["ydna", "father"]] as const) {
     const lineage = page.getByTestId(kind);
-    await expect(lineage).toContainText("Lineage has not been computed from this file.");
+    await expect(lineage).toContainText(LINEAGE_NO_POSITIONS[parent]);
     await expect(lineage.locator('[data-slot="haplogroup"], [data-slot="haplogroup-path"], [data-slot="lineage-provenance"], [data-figure-kind="coverage"]')).toHaveCount(0);
   }
   await expect(page.locator('[data-slot="maternal-input-provenance"], [data-slot="paternal-input-provenance"]')).toHaveCount(0);

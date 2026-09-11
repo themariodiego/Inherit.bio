@@ -185,10 +185,18 @@ export const NO_Y_LEAD =
  * false about someone's own file. None of them implies anything about the
  * person — a line Inherit cannot read is a limit of the file and of this
  * software, and the sentences say so rather than leaving it to be inferred.
+ *
+ * Every one of them is scoped to THE POSITIONS THIS TREE IS READ AT, and that
+ * scope is the whole honesty of the first sentence. The lineage read asks at
+ * the shipped trees' defining markers and nowhere else, so a file can hold
+ * plenty of mitochondrial or Y data and still carry none of them. "Your file
+ * has no mitochondrial positions" would be a claim about the whole chromosome
+ * that this read cannot support — the same error the AIMs-only read used to
+ * make in the other direction.
  */
 export const LINEAGE_NO_POSITIONS: Readonly<Record<"mother" | "father", string>> = {
-  mother: "Your file has no mitochondrial positions, so no mother’s line can be read from it. This says nothing about who your mother was.",
-  father: "Your file has no Y-chromosome positions. This is expected for XX genomes and for many file types, so it says nothing about who your father was.",
+  mother: "Your file carries none of the mitochondrial positions this tree is read at, so no mother’s line can be read from it. This says nothing about who your mother was.",
+  father: "Your file carries none of the Y-chromosome positions this tree is read at. That is expected for XX genomes and for many file types, so it says nothing about who your father was.",
 };
 
 /** The positions were there and none could be read as a single base. */
