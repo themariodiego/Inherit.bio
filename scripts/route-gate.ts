@@ -50,7 +50,7 @@ const BROWSER_TESTS = "e2e";
  * browser test that covers a new (route, state) pair has to bring this number
  * down with it and no later change can quietly give one back.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 280;
+const UNPROVEN_ROUTE_STATE_PAIRS = 274;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
