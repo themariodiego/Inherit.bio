@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "./helpers";
-import { PRIMARY, STATE_B, START_HERE } from "../src/copy/overview";
+import { PREPARED_REPORTS, PRIMARY, STATE_B, START_HERE } from "../src/copy/overview";
 
 /**
  * `/overview processing` - the product's State B (brief §2 §3.3).
@@ -103,22 +103,47 @@ test("/overview processing: the step list names the file in flight, and the timi
     await expect(overview.getByText(START_HERE.heading, { exact: true })).toHaveCount(0);
     await expect(overview.locator("[data-metric-value]")).toHaveCount(0);
     await expect(panel.getByRole("link", { name: PRIMARY.addFile, exact: true })).toBeVisible();
+
+    // The held request was real: releasing it prepares the file for real.
+    releasePreparation();
+    await expect(page.locator('[data-slot="upload-progress"]'))
+      .toContainText("Your file is stored and prepared. Reports have not been generated yet.");
+
+    /**
+     * The panel's own promise, which nothing verified until now: it "re-fetches
+     * every five seconds so the steps advance without a manual reload". So this
+     * asserts the transition on the page that is ALREADY OPEN and never
+     * reloaded - a fresh navigation would pass even if the polling were dead,
+     * which is the weaker test this one replaced.
+     */
+    await expect(panel, "the panel re-fetches on its own and goes once the file is no longer in flight")
+      .toHaveCount(0, { timeout: 30_000 });
+
+    /**
+     * And what the person is left looking at, which had no browser test at all.
+     * `/overview` State A has TWO forms, and `e2e/overview.spec.ts` covers only
+     * the first: the onboarding hub, and - when a prepared source exists but no
+     * report or ancestry does - this panel instead. That second form is exactly
+     * the point in the journey where the next act is a person's explicit choice
+     * of analysis, so sending them back to "I have a DNA file" here would be
+     * telling someone who has just uploaded their genome to upload it again.
+     * It does not: the Start-here strip is replaced rather than kept.
+     */
+    const choose = overview.locator('section[aria-labelledby="prepared-reports-title"]');
+    await expect(choose).toHaveCount(1);
+    await expect(overview.locator("#prepared-reports-title")).toHaveText(PREPARED_REPORTS.title);
+    await expect(choose).toContainText(PREPARED_REPORTS.description);
+    await expect(choose.getByRole("link", { name: PREPARED_REPORTS.action, exact: true }))
+      .toHaveAttribute("href", "/genome/me/reports");
+    await expect(overview.getByText(START_HERE.heading, { exact: true })).toHaveCount(0);
+    await expect(overview.getByRole("link", { name: PRIMARY.haveFile, exact: true })).toHaveCount(0);
   } finally {
     releasePreparation();
+    await overview.close();
   }
 
-  // The held request was real: releasing it prepares the file for real, and
-  // the panel then goes, which is what makes it a report of live state rather
-  // than something the page latches on to.
-  await expect(page.locator('[data-slot="upload-progress"]'))
-    .toContainText("Your file is stored and prepared. Reports have not been generated yet.");
   const prepared = await admin.from("genome_files").select("status,normalization_completed_at").eq("id", fileId).single();
   expect(prepared.error).toBeNull();
   expect(prepared.data!.status).toBe("stored");
   expect(prepared.data!.normalization_completed_at).not.toBeNull();
-
-  const after = await context.newPage();
-  await after.goto("/overview");
-  await expect(after.locator('section[aria-labelledby="processing-title"]')).toHaveCount(0);
-  await after.close();
 });
