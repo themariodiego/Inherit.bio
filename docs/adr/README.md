@@ -33,3 +33,5 @@ writing a superseding ADR, not silently drifting.
 | [0025](./0025-own-prepared-object-backend.md) | Private object backend for existing WGS results | Accepted for disabled private integration |
 | [0026](./0026-durable-original-finalization.md) | Durable progress for original finalization | Accepted |
 | [0027](./0027-cross-attempt-preparation-recovery.md) | Cross-attempt recovery for preparation: for a large file, resumption is the only recovery that fits its deadline | Proposed |
+| [0028](./0028-jurisdiction-gating-mechanism.md) | The jurisdiction gating mechanism: default deny across all 249 codes, and no determination authored by the system that enforces it | Proposed |
+| [0029](./0029-density-contract.md) | The density contract: measured budgets rather than review judgement, and the accessibility rule wins where they conflict | Proposed |
