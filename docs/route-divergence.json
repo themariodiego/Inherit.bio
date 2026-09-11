@@ -194,6 +194,9 @@
     "/science complete",
     "/science/limits complete",
     "/science/positions complete",
+    "/settings complete",
+    "/settings/consents empty",
+    "/settings/people jurisdiction-unavailable",
     "/terms complete"
   ]
 }
