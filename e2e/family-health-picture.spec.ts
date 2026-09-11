@@ -8,6 +8,7 @@ import path from "node:path";
 import {
   adminClient,
   createConfirmedUser,
+  drainMailUntil,
   expectAxeClean,
   firstViewportInteractives,
   signIn,
@@ -154,8 +155,6 @@ let ownGrantsBefore: unknown;
 interface CapturedEmail { to: string[] | string; html?: string }
 const captured: CapturedEmail[] = [];
 let resendMock: http.Server;
-const JOBS_SECRET = process.env.JOBS_SECRET;
-if (!JOBS_SECRET) throw new Error("JOBS_SECRET is required for the Health Picture mail fixture");
 /** Only IDs returned by B's actual permission POSTs. */
 const grantsFromB = new Map<GrantedPurpose, string>();
 /** The fixture as the generator builds it, checked with the real parser and the real runs measure. */
@@ -357,19 +356,17 @@ test("both adults prepare their real source and generate chosen reports before s
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
-  const drain = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-  expect(drain.status()).toBe(200);
-  const message = captured.find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
-    && /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/.test(email.html ?? ""));
-  const invitationUrl = message?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0];
-  expect(invitationUrl).toBeTruthy();
+  const invitationUrl = await drainMailUntil(request, () => captured
+    .find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
+      && /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/.test(email.html ?? ""))
+    ?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0], "the invitation");
   await page.request.post("/auth/sign-out");
-  await page.goto(invitationUrl!);
+  await page.goto(invitationUrl);
   await page.getByRole("link", { name: "Sign in to accept" }).click();
   await page.getByLabel("Email").fill(B.email);
   await page.getByLabel("Password").fill(B.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl!);
+  await expect(page).toHaveURL(invitationUrl);
   await page.getByRole("button", { name: "Accept through my account" }).click();
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
   // This was B's actual acceptance session. A's Family route names the invited

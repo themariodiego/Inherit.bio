@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  JOBS_SECRET,
+  drainMailUntil,
   adminClient,
   createConfirmedUser,
   expectAxeClean,
@@ -280,18 +280,13 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
 
-  const drain = await request.post("/api/jobs/mail", {
-    headers: { authorization: `Bearer ${JOBS_SECRET}` },
-  });
-  expect(drain.status()).toBe(200);
-  const message = captured.find((email) =>
+  const message = await drainMailUntil(request, () => captured.find((email) =>
     (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email),
-  );
-  expect(message, "the invitation must reach the mail provider").toBeTruthy();
+  ), "the invitation");
   // The optional note travels as words, never as a link.
-  expect(message!.html).toContain("This is my note.");
-  expect(message!.html).not.toMatch(/href="[^"]*This is my note/);
-  const invitationUrl = message!.html?.match(
+  expect(message.html).toContain("This is my note.");
+  expect(message.html).not.toMatch(/href="[^"]*This is my note/);
+  const invitationUrl = message.html?.match(
     /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/,
   )?.[0];
   expect(invitationUrl).toBeTruthy();

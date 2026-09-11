@@ -17,6 +17,52 @@ export const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? (localProjec
 export const MAILPIT_URL = localProject.mailpitOrigin;
 export const JOBS_SECRET = "e2e-jobs-secret";
 
+/**
+ * Drain the mail outbox until this journey's message reaches the provider.
+ *
+ * The worker is a batch worker: one POST claims a bounded number of due rows,
+ * OLDEST FIRST, and `claim_mail_outbox` will re-claim a row left `claimed`
+ * more than ten minutes ago. On a database that already holds a queue - other
+ * specs in the same run, or a developer's accumulated fixtures - one drain
+ * spends its whole budget on rows older than the one this journey just wrote
+ * and never reaches it. Measured on a local database: `processed 0, failed 25,
+ * pending 3`, with the fresh invitation among the three still pending. The
+ * three specs that posted a single drain and then looked for their message
+ * failed exactly there, and did so intermittently only because it depends on
+ * how much unsendable backlog earlier specs happened to leave.
+ *
+ * `e2e/figures-two-seed.spec.ts` already diagnosed this and already drains in
+ * a loop; this is that spec's logic, shared so the three that had it wrong use
+ * the one that had it right.
+ *
+ * This is not a poll that papers over a missing message. The loop stops the
+ * moment the worker reports it has nothing left to do (`processed 0` with
+ * `pending 0`), so a row that was never enqueued, or was invalidated, still
+ * fails here - and fails carrying every drain receipt, which names whether the
+ * worker was starved, idle, or failing sends.
+ */
+export async function drainMailUntil<T>(
+  request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<{ status: () => number; json: () => Promise<unknown> }> },
+  found: () => T | undefined,
+  what = "the mail this journey requested",
+): Promise<T> {
+  let value = found();
+  const receipts: string[] = [];
+  for (let attempt = 0; attempt < 40 && value === undefined; attempt++) {
+    const response = await request.post("/api/jobs/mail", {
+      headers: { authorization: `Bearer ${JOBS_SECRET}` },
+    });
+    expect(response.status(), `mail drain ${attempt + 1}`).toBe(200);
+    const receipt = (await response.json()) as { processed?: number; failed?: number; pending?: number };
+    receipts.push(JSON.stringify(receipt));
+    value = found();
+    if (value === undefined && (receipt.processed ?? 0) === 0 && (receipt.pending ?? 0) === 0) break;
+  }
+  expect(value, `${what} must reach the configured mail provider; drains: ${receipts.join(" ")}`)
+    .not.toBeUndefined();
+  return value as T;
+}
+
 export function adminClient(): SupabaseClient {
   assert(SERVICE_KEY, "Selected local project service key requires the provider bootstrap");
   return createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -42,7 +88,7 @@ export function anonClient(): SupabaseClient {
  * refused it as already registered — an "idempotent" helper failing on the
  * one case idempotence is for. Pages until it finds the address or runs out.
  */
-async function findUserByEmail(admin: SupabaseClient, email: string) {
+export async function findUserByEmail(admin: SupabaseClient, email: string) {
   const perPage = 200;
   for (let page = 1; page <= 50; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
