@@ -1,6 +1,7 @@
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
+import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -239,6 +240,44 @@ test("/legal/gina complete: the committed document renders on-topic and placehol
 
 test("/about complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
   await assertDocumentComplete(page, "/about");
+});
+
+/**
+ * An unknown artifact is one of 72 `notFound()` call sites across 19 route
+ * files. Until this change every one of them rendered the framework's built-in
+ * page, because the app had no `not-found.tsx`; this asserts that a real call
+ * site now reaches Inherit's own, not just an unmatched URL.
+ *
+ * Deliberately not titled as a proven route state. The register declares
+ * `empty` supported for `versioned-document` while `static-document` says "a
+ * versioned public document always has committed content", so whether a 404 is
+ * this route's `empty` state is a contradiction in the register itself and an
+ * owner's to settle. Claiming the pair here would be exactly the kind of proof
+ * this repository refuses to manufacture.
+ */
+test("an unknown legal artifact reaches Inherit's own not-found page, not the framework's", async ({
+  page,
+}) => {
+  const res = await page.goto("/legal/definitely-not-a-committed-artifact");
+  expect(res?.status(), "an unknown artifact is a 404").toBe(404);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(NOT_FOUND_HEADING);
+
+  // The regression this test was written badly enough to find. Next renders the
+  // nearest not-found boundary *inside* the layouts above it, and this group's
+  // layout already supplies the one `<main id="main">`. A boundary that brought
+  // its own produced two `main` landmarks and two `id="main"` elements here -
+  // a `landmark-one-main` failure, a duplicate id, and a skip link aimed at an
+  // ambiguous target - while passing an audit that only ever visited an
+  // unmatched URL, which renders under the bare root layout.
+  await expect(page.locator("main"), "exactly one main landmark").toHaveCount(1);
+  await expect(page.locator("#main"), "exactly one skip-link target").toHaveCount(1);
+
+  // The page must not distinguish "no such document" from "not yours any more"
+  // (brief line 477 makes a 404 the response to a revoked request).
+  const body = await page.locator("main").innerText();
+  for (const leak of ["revoked", "deleted", "no longer have", "removed"]) {
+    expect(body.toLowerCase(), `"${leak}" would confirm what the 404 withholds`).not.toContain(leak);
+  }
 });
 
 test("Plus Bio disclosure is accurate (created by, legally separate, no data flow)", async ({

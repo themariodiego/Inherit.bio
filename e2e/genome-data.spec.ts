@@ -8,6 +8,7 @@ import {
   signIn,
 } from "./helpers";
 import { NO_RANGE_YET, RESOLUTION_LIMIT, panelVersionLine } from "../src/copy/genome/polygenic";
+import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 // The expert path (brief §7.3, §1.4–§1.6, §2.2, X4, X6.1, X13) on the tiny
 // GRCh38 fixture (rs762551 0/1 → A/C; rs4988235 1/1 → A/A), over the real
@@ -294,6 +295,32 @@ test("the data page is titled Data and methods with one coverage figure per scor
     ).toBe(panelVersionLine({ id, name, version: null }));
     expect(sentences[1], "the explicit statement that no interval is available").toBe(NO_RANGE_YET);
     expect(sentences[2], "the resolution limit in plain words").toBe(RESOLUTION_LIMIT);
+  }
+});
+
+/**
+ * The third not-found shape: a `notFound()` thrown inside `(app)`, which is
+ * where 12 of the 19 call sites live. It needs a session, which is why it is
+ * here rather than in `e2e/a11y.spec.ts` beside the other two.
+ *
+ * The landmark count is the point. Next renders the nearest boundary inside the
+ * layouts above it, and `AppShell` already supplies the one `<main id="main">`,
+ * so a boundary bringing its own would put two on the page - which is exactly
+ * what the first version of this work did, undetected by an audit that only
+ * visited an unmatched URL.
+ */
+test("an unknown subject reaches the app's not-found body inside the one existing main", async ({
+  page,
+}) => {
+  await signIn(page, USER.email, USER.password);
+  const res = await page.goto("/genome/definitely-not-a-subject");
+  expect(res?.status(), "an unknown subject is a 404").toBe(404);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(NOT_FOUND_HEADING);
+  await expect(page.locator("main"), "exactly one main landmark").toHaveCount(1);
+  await expect(page.locator("#main"), "exactly one skip-link target").toHaveCount(1);
+  const body = await page.locator("main").innerText();
+  for (const leak of ["revoked", "deleted", "no longer have", "removed"]) {
+    expect(body.toLowerCase(), `"${leak}" would confirm what the 404 withholds`).not.toContain(leak);
   }
 });
 

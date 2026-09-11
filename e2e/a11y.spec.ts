@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { assertNoThirdParty, AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 // A16 — axe accessibility checks over key surfaces in BOTH themes, plus
 // design-token presence (Fraunces display, pill CTAs, attribution line).
@@ -188,6 +189,50 @@ for (const [route, url] of Object.entries(ENDPOINT_RENDERED_PAGES)) {
       await assertNoThirdParty(page, observed, `${route} (${theme})`);
     });
   }
+}
+
+/**
+ * The 404 surface. It is not a registered route, so it cannot come from the
+ * register walk — and until this change no sweep could have seen it at all,
+ * because the app had no `not-found.tsx`: all 72 `notFound()` call sites across
+ * 19 route files rendered the framework's own built-in page.
+ *
+ * It is a privacy surface as much as a wayfinding one. Brief line 477 requires
+ * that after revocation, `GET` on `/family/[person]`,
+ * `/family/health-picture`, `/family/portrait/[pairId]`, `/api/export` and the
+ * Copilot history endpoint return 404 to every account that previously had
+ * access — so this page is what a person sees at the moment their access ends,
+ * and it is audited at the same bar as every public page in both themes.
+ */
+/**
+ * Both shapes, because they are different documents and only one of them was
+ * audited at first. An unmatched URL renders under the bare root layout; a
+ * `notFound()` thrown inside a route group renders inside that group's layout,
+ * which already supplies the one `<main>`. Auditing only the first is how a
+ * two-landmark, duplicate-id page passed its own accessibility check.
+ */
+const NOT_FOUND_URLS: Record<string, string> = {
+  "an unmatched URL": "/this-route-does-not-exist-and-never-will",
+  "a notFound() inside a layout": "/legal/definitely-not-a-committed-artifact",
+};
+
+for (const [shape, url] of Object.entries(NOT_FOUND_URLS)) {
+for (const theme of ["light", "dark"] as const) {
+  test(`axe: the not-found surface, ${shape} (${theme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: theme });
+    const observed = watchRequests(page);
+    const response = await page.goto(url);
+    expect(response?.status(), `${shape} must be a 404, never a 200`).toBe(404);
+    await expect(
+      page.getByRole("heading", { level: 1 }),
+      "the app's own not-found page, not the framework's",
+    ).toHaveText(NOT_FOUND_HEADING);
+    await expect(page.locator("main"), "exactly one main landmark").toHaveCount(1);
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page, theme), `not-found, ${shape} (${theme})`).toEqual([]);
+    await assertNoThirdParty(page, observed, `not-found, ${shape} (${theme})`);
+  });
+}
 }
 
 /**
