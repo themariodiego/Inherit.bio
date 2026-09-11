@@ -84,12 +84,12 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
 
   const send = (event: FlowEvent) => dispatch(event);
   const backButton = (
-    <Button type="button" variant="outline" size="lg" className="min-h-11" onClick={() => send({ type: "back" })}>
+    <Button type="button" variant="outline" size="lg" onClick={() => send({ type: "back" })}>
       {BACK_BUTTON}
     </Button>
   );
   const continueButton = (
-    <Button type="button" size="lg" className="min-h-11" disabled={!canContinue(state)} onClick={() => send({ type: "continue" })}>
+    <Button type="button" size="lg" disabled={!canContinue(state)} onClick={() => send({ type: "continue" })}>
       {CONTINUE_BUTTON}
     </Button>
   );
@@ -216,7 +216,7 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
           />
           {chosenSituation === null ? null : (
             <div className="space-y-3">
-              <label data-slot="attestation" className="flex items-start gap-3 text-base leading-relaxed text-ink">
+              <label data-slot="attestation" className="flex min-h-11 items-start gap-3 text-base leading-relaxed text-ink">
                 <input
                   type="checkbox"
                   name="attestation"
@@ -286,7 +286,7 @@ export function UploadFlow({ initial = INITIAL_FLOW }: { initial?: FlowState }) 
           </p>
           <p className="text-base leading-relaxed text-ink">{INGEST_NEXT_STEPS}</p>
           <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg" className="min-h-11">
+            <Button asChild size="lg">
               <Link href={route("embryos.request-data")}>{REQUEST_DATA_BUTTON}</Link>
             </Button>
             {backButton}
@@ -384,11 +384,11 @@ function FlowEnd({
         {children}
       </p>
       <div className="flex flex-wrap gap-3">
-        <Button asChild size="lg" className="min-h-11">
+        <Button asChild size="lg">
           <Link href={action.href}>{action.label}</Link>
         </Button>
         {back ? (
-          <Button type="button" variant="outline" size="lg" className="min-h-11" onClick={back}>
+          <Button type="button" variant="outline" size="lg" onClick={back}>
             {BACK_BUTTON}
           </Button>
         ) : null}

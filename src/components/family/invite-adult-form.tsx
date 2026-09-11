@@ -84,7 +84,7 @@ export function InviteAdultForm() {
         <Textarea id="adult-note" name="note" rows={3} maxLength={500} />
         <p className="text-sm text-ink-muted">{NOTE_HINT}</p>
       </div>
-      <label className="flex items-start gap-3 text-sm leading-relaxed">
+      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
         <input type="checkbox" name="adultAttestation" required className="mt-1 size-4" />
         <span>{ATTESTATION_LABEL}</span>
       </label>

@@ -28,7 +28,7 @@ export interface StateAction {
 
 function ActionLink({ action }: { action: StateAction }) {
   return (
-    <Button asChild size="lg" variant={action.primary ? "default" : "outline"} className="min-h-11">
+    <Button asChild size="lg" variant={action.primary ? "default" : "outline"}>
       <Link href={action.href}>{action.label}</Link>
     </Button>
   );

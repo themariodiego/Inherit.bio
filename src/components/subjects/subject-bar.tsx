@@ -136,7 +136,12 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, classNa
         <Link
           href={route("files.index")}
           data-slot="subject-files"
-          className="shrink-0 text-ink-muted underline-offset-2 hover:underline"
+          // "2 files" measured 29×20: a tap target on every genome surface and
+          // the narrowest link in the bar, so it needs the width step as well
+          // as the height one (brief line 553; line 1053). Free vertically —
+          // the bar is already `h-11`, so a 44px child fills the row it is
+          // centred in and the bar's height does not move.
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-muted underline-offset-2 hover:underline"
         >
           {fileCount(files)}
         </Link>

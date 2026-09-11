@@ -43,7 +43,7 @@ export function EmbryoResultGate({
         {GATE_HEADING}
       </h2>
       <p className="text-base leading-relaxed text-ink">{GATE_BODY}</p>
-      <label className="flex items-start gap-3 text-sm leading-relaxed">
+      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
         <input
           type="checkbox"
           name="tier2"

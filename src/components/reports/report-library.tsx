@@ -241,7 +241,7 @@ export function ReportLibrary({
         />
       </div>
 
-      <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-ink">
+      <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-ink">
         <input
           type="checkbox"
           checked={withResults}
@@ -252,7 +252,7 @@ export function ReportLibrary({
       </label>
 
       {query !== "" || withResults ? (
-        <Button type="button" variant="outline" className="min-h-11" onClick={clearFilters}>
+        <Button type="button" variant="outline" onClick={clearFilters}>
           {CLEAR_REPORT_FILTERS}
         </Button>
       ) : null}

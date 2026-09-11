@@ -24,7 +24,13 @@ export function SkipLink() {
           main.scrollIntoView();
         }
       }}
-      className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-forest"
+      // The target-size sweep measures a control that is 1×1 until focused in
+      // the state a person can actually hit it, so the revealed pill is the
+      // box that counts: at focus:py-2 it was 36px tall, under the 44px
+      // control scale (brief line 553, line 1053). focus:min-h-11 with a flex
+      // box centres the label inside 44px; the parked sr-only box is
+      // untouched, so nothing about the hidden state changes.
+      className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:flex focus:min-h-11 focus:items-center focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-forest"
     >
       Skip to main content
     </a>

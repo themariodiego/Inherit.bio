@@ -51,7 +51,17 @@ export function SiteFooter() {
         {columns.map((col) => (
           <nav key={col.heading} aria-label={col.heading}>
             <h2 className="eyebrow mb-4">{col.heading}</h2>
-            <ul className="space-y-2.5 text-sm">
+            {/* Each entry is a tap target, not a line of prose: SC 2.5.8's
+                Inline exception covers a link inside a sentence, and a footer
+                column is a stack of links with no sentence around them. So
+                every one carries the control scale (`--size-control`, brief
+                line 553; line 1053 "Minimum target 44×44 CSS px with ≥ 8px
+                separation"). `flex` rather than `inline-flex` so the target is
+                the whole column row and not just the glyphs — the widest
+                reading of "tap target" on a phone. `space-y-2` is the 8px
+                separation the same line asks for, and unlike the 10px it
+                replaces it is on the brief's layout scale (§1.1). */}
+            <ul className="space-y-2 text-sm">
               {col.links.map((l) => (
                 <li key={l.href}>
                   {l.href.startsWith("http") ? (
@@ -59,14 +69,14 @@ export function SiteFooter() {
                       href={l.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-ink-muted hover:text-ink"
+                      className="flex min-h-11 items-center text-ink-muted hover:text-ink"
                     >
                       {l.label}
                     </a>
                   ) : (
                     <Link
                       href={l.href}
-                      className="text-ink-muted hover:text-ink"
+                      className="flex min-h-11 items-center text-ink-muted hover:text-ink"
                     >
                       {l.label}
                     </Link>

@@ -16,7 +16,6 @@ export function CopyEmailButton({ text }: { text: string }) {
       <Button
         type="button"
         size="lg"
-        className="min-h-11"
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(text);

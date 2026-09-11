@@ -17,75 +17,39 @@
   "targetSize": [
     {
       "component": "a",
-      "smallestWidth": 39,
+      "smallestWidth": 43,
       "smallestHeight": 15,
       "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. The brief settles that it applies: line 553 names 'every button, input, switch, tap target', and line 1053 states a 44x44 minimum under the heading Touch with no exception for a link, so these findings are real rather than arguable. Recorded rather than fixed because the answer sets the line height of running text across the product.",
       "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+      "blocker": "owner decision - not whether the 44px scale governs text links, which the brief does settle, but whether the product pays what compliance costs. Brief line 1053 reads \"**Touch.** Minimum target 44x44 CSS px with >= 8px separation\" with no carve-out for a link, and line 2575 defines this very gate as \"every interactive element's bounding box >= 44x44 CSS px in both dimensions (deliberately stricter than WCAG 2.2 AA's 24x24)\" - which anticipates and rejects the objection this row was resting on, since WCAG 2.2's Inline exception is exactly what 24x24 buys and the brief declined it on purpose. An earlier version of this row said the brief does not say in either direction; that was wrong, and reading the two lines is what corrected it. What is genuinely open is the cost: giving each of these links a 44px box changes the vertical rhythm of every list and nav they sit in, which is a design decision rather than a compliance one."
     },
     {
       "component": "a inside [data-slot=availability-line]",
       "smallestWidth": 133,
       "smallestHeight": 17,
       "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. The brief settles that it applies: line 553 names 'every button, input, switch, tap target', and line 1053 states a 44x44 minimum under the heading Touch with no exception for a link, so these findings are real rather than arguable. Recorded rather than fixed because the answer sets the line height of running text across the product.",
       "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
-    },
-    {
-      "component": "a inside [data-slot=breadcrumbs]",
-      "smallestWidth": 30,
-      "smallestHeight": 20,
-      "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
-      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+      "blocker": "owner decision - not whether the 44px scale governs text links, which the brief does settle, but whether the product pays what compliance costs. Brief line 1053 reads \"**Touch.** Minimum target 44x44 CSS px with >= 8px separation\" with no carve-out for a link, and line 2575 defines this very gate as \"every interactive element's bounding box >= 44x44 CSS px in both dimensions (deliberately stricter than WCAG 2.2 AA's 24x24)\" - which anticipates and rejects the objection this row was resting on, since WCAG 2.2's Inline exception is exactly what 24x24 buys and the brief declined it on purpose. An earlier version of this row said the brief does not say in either direction; that was wrong, and reading the two lines is what corrected it. What is genuinely open is the cost: giving each of these links a 44px box changes the vertical rhythm of every list and nav they sit in, which is a design decision rather than a compliance one."
     },
     {
       "component": "a inside [data-slot=chip-row]",
       "smallestWidth": 80,
       "smallestHeight": 26,
       "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. The brief settles that it applies: line 553 names 'every button, input, switch, tap target', and line 1053 states a 44x44 minimum under the heading Touch with no exception for a link, so these findings are real rather than arguable. Recorded rather than fixed because the answer sets the line height of running text across the product.",
       "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+      "blocker": "owner decision - not whether the 44px scale governs text links, which the brief does settle, but whether the product pays what compliance costs. Brief line 1053 reads \"**Touch.** Minimum target 44x44 CSS px with >= 8px separation\" with no carve-out for a link, and line 2575 defines this very gate as \"every interactive element's bounding box >= 44x44 CSS px in both dimensions (deliberately stricter than WCAG 2.2 AA's 24x24)\" - which anticipates and rejects the objection this row was resting on, since WCAG 2.2's Inline exception is exactly what 24x24 buys and the brief declined it on purpose. An earlier version of this row said the brief does not say in either direction; that was wrong, and reading the two lines is what corrected it. What is genuinely open is the cost: giving each of these links a 44px box changes the vertical rhythm of every list and nav they sit in, which is a design decision rather than a compliance one."
     },
     {
       "component": "a inside [data-slot=embryo-tile]",
       "smallestWidth": 54,
       "smallestHeight": 20,
       "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
+      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. The brief settles that it applies: line 553 names 'every button, input, switch, tap target', and line 1053 states a 44x44 minimum under the heading Touch with no exception for a link, so these findings are real rather than arguable. Recorded rather than fixed because the answer sets the line height of running text across the product.",
       "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
-    },
-    {
-      "component": "a[data-slot=subject-files]",
-      "smallestWidth": 29,
-      "smallestHeight": 20,
-      "source": "the surfaces that render it; not one component file",
-      "why": "A text link, not a control with a box of its own. SC 2.5.8's Inline exception covers a link inside a sentence and the sweep applies it by rule, so what remains here is links that are their own line - a breadcrumb, a nav item, a tile action, a footer entry. Whether the brief's 44px applies to those is the open question: line 553 names 'every button, input, switch, tap target', and on a phone a breadcrumb is a tap target, so the honest reading is that it does and the finding is real. Recorded rather than fixed because the answer sets the line height of running text across the product.",
-      "closing": "Either a decision that a text link is not a tap target under line 553 - in which case the sweep's exemption rule widens and these rows go - or padding that gives each of these links a 44px box, which changes the vertical rhythm of every list and nav they sit in.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
-    },
-    {
-      "component": "input[type=checkbox]",
-      "smallestWidth": 100,
-      "smallestHeight": 20,
-      "source": "src/components/ui/input.tsx",
-      "why": "A form control on the same scale question as the buttons: the shipped input height is 36px against the brief's 44. The checkbox row is the union of the control and its label, which is how the sweep measures a labelled control, because clicking the label activates it - so its width is the label's and only its height is the finding.",
-      "closing": "The same 44px step, applied to the input and checkbox scales.",
-      "blocker": "first-viewport budget - raising the control scale changes the rendered height of every surface, which is measured against the G2.5/X6.x first-viewport interactive and ink budgets. NOT an owner decision and NOT a collision with G2.7, both re-checked 2026-09-10: the brief already decided the value - line 553 pins `--size-control: 44px` for 'every button, input, switch, tap target' and line 706 says of the Action component 'One size: 44px. The 36px size is deleted rather than carved out' - and G2.7's frozen identity pins no size at all. `src/lib/design/tokens.test.ts` pins exactly `--card`, `--paper`, the eight `--subject-N` and `--color-subject-*` colours, and the Fraunces/Inter pairing: zero height, size or spacing tokens. `--size-control` does not exist in `src/app/globals.css` at all, so the brief's control scale was never implemented rather than implemented and then frozen. What is left to establish is only whether the density budgets survive it, which is a measurement."
-    },
-    {
-      "component": "summary",
-      "smallestWidth": 274,
-      "smallestHeight": 20,
-      "source": "the surfaces that render it; not one component file",
-      "why": "A disclosure summary is the control that opens its own section, and it is a line of text with no box. Same open question as the text links, and it moves with them.",
-      "closing": "Moves with the text-link decision above.",
-      "blocker": "owner decision - whether the 44px control scale governs text links, which the brief does not say in either direction"
+      "blocker": "owner decision - not whether the 44px scale governs text links, which the brief does settle, but whether the product pays what compliance costs. Brief line 1053 reads \"**Touch.** Minimum target 44x44 CSS px with >= 8px separation\" with no carve-out for a link, and line 2575 defines this very gate as \"every interactive element's bounding box >= 44x44 CSS px in both dimensions (deliberately stricter than WCAG 2.2 AA's 24x24)\" - which anticipates and rejects the objection this row was resting on, since WCAG 2.2's Inline exception is exactly what 24x24 buys and the brief declined it on purpose. An earlier version of this row said the brief does not say in either direction; that was wrong, and reading the two lines is what corrected it. What is genuinely open is the cost: giving each of these links a 44px box changes the vertical rhythm of every list and nav they sit in, which is a design decision rather than a compliance one."
     }
   ],
   "keyboardTraversal": [

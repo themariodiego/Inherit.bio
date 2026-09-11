@@ -507,7 +507,7 @@ type KeyboardDivergence =
  * then the test fails saying so, which is the honest state: a guessed number
  * that happened to pass would be a ratchet holding nothing.
  */
-const UNDERSIZED_CONTROL_OCCURRENCES = 807;
+const UNDERSIZED_CONTROL_OCCURRENCES = 201;
 
 /** One component's finding sentence, built in one place for both sides. */
 function undersizedControlFinding(entry: UndersizedControl): string {
