@@ -547,15 +547,19 @@ describe("the claims gate holds the registers to the product", () => {
 
   it("fails when a divergence the checks report is missing from the ledger", () => {
     const finding =
-      "glossary definitions: no page route in docs/route-register.json and none of src/copy/glossary " +
-      "exists, so this gate is checking nothing on a surface the brief designates";
-    // Recorded today, because the brief designates a glossary surface that
-    // this repository does not have anywhere.
+      "glossary definitions: no claim in data/claims.json is bound to it";
+    // A REAL recorded divergence is the example, which makes this fixture
+    // perishable: it was the glossary's `unlocatable` finding until 2026-09-11,
+    // when the corpus and its components were built and the surface moved to
+    // `unbound`. Whoever binds those definitions as claims closes this
+    // divergence too and will have to move this test to another one - the same
+    // hazard `scripts/route-gate.test.ts` hit when a pair it used as an example
+    // was proven.
     expect(readClaimsLedger(REPOSITORY_ROOT)["designated surface"]).toContain(finding);
     const root = plant({
       ledger: (ledger) => {
         ledger.designatedSurface = ledger.designatedSurface.filter(
-          (entry) => !(entry.surface === "glossary definitions" && entry.kind === "unlocatable"),
+          (entry) => !(entry.surface === "glossary definitions" && entry.kind === "unbound"),
         );
       },
     });
