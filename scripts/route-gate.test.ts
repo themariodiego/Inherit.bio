@@ -20,6 +20,8 @@ afterAll(() => {
 });
 
 interface Overrides {
+  /** Receives the real brief text and returns the planted one. */
+  brief?: (source: string) => string;
   register?: (register: Record<string, unknown>) => void;
   ledger?: (ledger: Record<string, unknown>) => void;
   nextConfig?: string;
@@ -43,6 +45,9 @@ function plant(overrides: Overrides): string {
   const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8"));
   overrides.ledger?.(ledger);
   writeFileSync(path.join(root, "docs/route-divergence.json"), JSON.stringify(ledger));
+
+  const brief = readFileSync(path.join(REPOSITORY_ROOT, "docs/inherit-v2-brief.md"), "utf8");
+  writeFileSync(path.join(root, "docs/inherit-v2-brief.md"), overrides.brief?.(brief) ?? brief);
 
   writeFileSync(
     path.join(root, "next.config.ts"),
@@ -261,5 +266,24 @@ describe("the detectors the gate is built from", () => {
     // A state id that appears only inside the path proves nothing about it.
     expect(titleProves("/genome/[subject]/error opens", "/genome/[subject]/error", "error")).toBe(false);
     expect(titleProves("/files: no state named here", "/files", "complete")).toBe(false);
+  });
+
+  it("fails when the brief changes and the register's pin does not follow", async () => {
+    // The pin exists so that editing the brief without revisiting the register
+    // is caught. It had never been compared to anything until 2026-09-11, and
+    // the value it held named no file that has ever existed here.
+    const root = plant({ brief: (source) => `${source}\nA sentence the register was never derived from.\n` });
+    const failures = (await runRouteGate(root)).failures;
+    expect(failures.some((failure) => failure.startsWith("brief pin:"))).toBe(true);
+  });
+
+  it("fails when the pin names a file that does not exist, which is how it shipped", async () => {
+    const root = plant({
+      register: (register) => {
+        register.briefSha256 = "2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe";
+      },
+    });
+    const failures = (await runRouteGate(root)).failures;
+    expect(failures.some((failure) => failure.includes("2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe"))).toBe(true);
   });
 });
