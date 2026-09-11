@@ -43,7 +43,7 @@ export function AcknowledgeForm({
       className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-6"
     >
       <p className="text-base leading-relaxed text-ink">{ACKNOWLEDGE_LEAD}</p>
-      <label className="flex items-start gap-3 text-sm leading-relaxed">
+      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
         <input
           type="checkbox"
           name="portrait-acknowledged"

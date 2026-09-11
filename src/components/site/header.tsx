@@ -37,12 +37,18 @@ export async function SiteHeader() {
             created by Plus Bio for the public good
           </span>
         </div>
+        {/* The md+ twin of the mobile row below, on the same control scale.
+            Free here: the row is already 44px tall because of the buttons
+            beside it, so `min-h-11` moves nothing. Not measured by the
+            390px target-size sweep — this nav is `display:none` at that
+            width — but brief line 1053 is not width-scoped, and one nav
+            should not be two sizes. */}
         <nav aria-label="Main" className="hidden items-center gap-6 md:flex">
           {nav.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm text-ink-muted transition-colors hover:text-ink"
+              className="flex min-h-11 min-w-11 items-center justify-center text-sm text-ink-muted transition-colors hover:text-ink"
             >
               {l.label}
             </Link>
@@ -67,7 +73,13 @@ export async function SiteHeader() {
         </div>
       </div>
       {/* Mobile nav: the primary links move to a wrapping row below md —
-          wrap rather than scroll so no destination hides off-screen. */}
+          wrap rather than scroll so no destination hides off-screen.
+          This is the phone's primary navigation, so every entry is a full
+          44×44 target (`--size-control`, brief line 553; line 1053). Both
+          dimensions: "About" is only ~37px of text at 14px, so `min-w-11`
+          does the work `min-h-11` cannot. The strip grows from 36px to 60px
+          tall below md — the cost of the touch minimum on a row that was
+          never big enough to hit. */}
       <nav
         aria-label="Main (mobile)"
         className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line px-6 py-2 md:hidden"
@@ -76,7 +88,7 @@ export async function SiteHeader() {
           <Link
             key={l.href}
             href={l.href}
-            className="whitespace-nowrap text-sm text-ink-muted hover:text-ink"
+            className="flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap text-sm text-ink-muted hover:text-ink"
           >
             {l.label}
           </Link>

@@ -66,7 +66,7 @@ export function ProcessingPanel({
       <p className="mt-4 max-w-prose text-sm leading-relaxed text-ink-muted">
         {timing ? STATE_B.timing(timing.p50, timing.p95) : STATE_B.notEnough}
       </p>
-      <Button asChild size="lg" className="mt-5 min-h-11">
+      <Button asChild size="lg" className="mt-5">
         <Link href={route("files.upload")}>{PRIMARY.addFile}</Link>
       </Button>
     </section>

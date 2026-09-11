@@ -30,7 +30,7 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
       <summary className="cursor-pointer underline">{artifact.key === purposeArtifact.key ? "Copilot permission text" : "Cloud disclosure permission text"} · version {artifact.version}</summary>
       <p className="mt-2 whitespace-pre-wrap text-ink-muted">{artifact.body}</p>
     </details>)}
-    {view.granted ? <p className="text-sm">Copilot is allowed for this model configuration.</p> : <label className="flex items-start gap-2 text-sm">
+    {view.granted ? <p className="text-sm">Copilot is allowed for this model configuration.</p> : <label className="flex min-h-11 items-start gap-2 text-sm">
       <input type="checkbox" checked={affirmed} onChange={event => setAffirmed(event.target.checked)} />
       <span>I allow this model to use the listed information for my Copilot answers. I can withdraw this permission.</span>
     </label>}

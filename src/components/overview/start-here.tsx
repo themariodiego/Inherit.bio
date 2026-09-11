@@ -21,7 +21,7 @@ export function StartHere() {
         {items.map((item, index) => (
           <li key={item.id} className="max-w-prose">
             {index === 0 ? (
-              <Button asChild size="lg" className="min-h-11">
+              <Button asChild size="lg">
                 <Link href={item.href}>{item.label}</Link>
               </Button>
             ) : (

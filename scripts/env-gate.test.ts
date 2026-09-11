@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { DYNAMIC_ENV_READS, RUNTIME_INJECTED, moduleEnvReads, runEnvGate, templateKeys } from "./env-gate";
+import { DYNAMIC_ENV_READS, GUIDE_FOREIGN_NAMES, GUIDE_OMITTED, RUNTIME_INJECTED, guideNames, moduleEnvReads,
+  runEnvGate, templateKeys } from "./env-gate";
 
 /**
  * The gate is only worth having if a planted defect fails it, so every check
@@ -13,11 +14,15 @@ import { DYNAMIC_ENV_READS, RUNTIME_INJECTED, moduleEnvReads, runEnvGate, templa
  * the real reads, and only the module or the template line under test is
  * written out.
  *
- * Both ledgers are compared in both directions and both directions are
+ * The ledgers are compared in both directions and both directions are
  * planted: an unrecorded finding fails, and a recorded entry whose reason has
  * gone fails too — a runtime-injected variable the code stopped reading, a
- * runtime-injected variable the template started declaring, and a dynamic read
- * site that is no longer dynamic.
+ * runtime-injected variable the template started declaring, a dynamic read
+ * site that is no longer dynamic, and a name the guide no longer writes.
+ *
+ * `docs/self-hosting.md` is planted the same way: it is copied for real and
+ * only the line under test is changed, because a guide that has drifted from
+ * the template is the defect this half of the gate exists to catch.
  */
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GATE = "scripts/env-gate.ts";
@@ -32,6 +37,8 @@ interface Overrides {
   modules?: Record<string, string>;
   /** Receives the real `.env.example` text and returns the planted one. */
   template?: (source: string) => string;
+  /** Receives the real `docs/self-hosting.md` text and returns the planted one. */
+  guide?: (source: string) => string;
 }
 
 /**
@@ -68,11 +75,23 @@ function plant(overrides: Overrides): string {
 
   const template = readFileSync(path.join(REPOSITORY_ROOT, ".env.example"), "utf8");
   writeFileSync(path.join(root, ".env.example"), overrides.template?.(template) ?? template);
+
+  const guide = readFileSync(path.join(REPOSITORY_ROOT, "docs/self-hosting.md"), "utf8");
+  mkdirSync(path.join(root, "docs"), { recursive: true });
+  writeFileSync(path.join(root, "docs/self-hosting.md"), overrides.guide?.(guide) ?? guide);
   return root;
 }
 
 /** The real `src/lib/limits.ts`, for the tests that rewrite only part of it. */
 const realLimits = () => readFileSync(path.join(REPOSITORY_ROOT, "src/lib/limits.ts"), "utf8");
+
+/**
+ * The drift this half of the gate is for: the guide still spells the name in
+ * prose, so a reader-by-eye would swear it is documented, but it no longer
+ * tells anyone to set anything.
+ */
+const unformattedInGuide = (name: string) => (source: string) =>
+  source.split(`\`${name}\``).join(name);
 
 const withoutTemplateLine = (key: string) => (source: string) =>
   source
@@ -95,6 +114,13 @@ describe("the env gate holds .env.example to what the code reads", () => {
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(34);
     expect(result.templateKeyCount).toBe(27);
+    // Every key an operator is told to fill in is named in the guide they
+    // follow, and the ten further names the guide writes as configuration are
+    // the recorded ones: the two labels the Supabase CLI prints, the worker's
+    // own project URL, and the seven nobody should ever set by hand.
+    expect(result.guideDocumentedKeyCount).toBe(27);
+    expect(result.guideNamedCount).toBe(37);
+    expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(7);
   });
 
@@ -247,6 +273,72 @@ describe("the env gate holds .env.example to what the code reads", () => {
     );
   });
 
+  it("fails when a template key is not named in the self-hosting guide", () => {
+    // The gap this half closes: eight variables were added to the template
+    // while the guide never mentioned them. Without the upload signing key an
+    // operator's uploads fail before a byte moves, and the guide is the only
+    // document a self-hoster is told to follow.
+    const root = plant({ guide: unformattedInGuide("INHERIT_UPLOAD_SIGNING_JWK") });
+    expect(runEnvGate(root).failures).toContain(
+      "undocumented in docs/self-hosting.md: not recorded in GUIDE_OMITTED in " +
+        `${GATE}: INHERIT_UPLOAD_SIGNING_JWK`,
+    );
+  });
+
+  it("fails when the guide stops telling an operator to set NEXT_PUBLIC_APP_URL", () => {
+    // D-098 again, from the other side: the template line can survive while
+    // the guide quietly stops mentioning the variable that decides where a
+    // self-hoster's mail links, and the rights tokens in them, point.
+    const root = plant({ guide: unformattedInGuide("NEXT_PUBLIC_APP_URL") });
+    expect(runEnvGate(root).failures).toContain(
+      "undocumented in docs/self-hosting.md: not recorded in GUIDE_OMITTED in " +
+        `${GATE}: NEXT_PUBLIC_APP_URL`,
+    );
+  });
+
+  it("fails when the guide tells an operator to set a variable the template does not declare", () => {
+    const root = plant({
+      guide: (source) => `${source}\nSet \`INHERIT_PLANTED_GUIDE_ONLY\` before starting.\n`,
+    });
+    // A variable only the guide knows about is undocumented in the file the
+    // gate compares the code against, so it is invisible to every other check.
+    expect(runEnvGate(root).failures).toContain(
+      "undeclared name in docs/self-hosting.md: not recorded in GUIDE_FOREIGN_NAMES in " +
+        `${GATE}: INHERIT_PLANTED_GUIDE_ONLY`,
+    );
+  });
+
+  it("reads an assignment inside a fenced block as telling an operator to set it", () => {
+    const root = plant({
+      guide: (source) => `${source}\n\`\`\`bash\nINHERIT_PLANTED_FENCED=1 pnpm dev\n\`\`\`\n`,
+    });
+    expect(runEnvGate(root).failures).toContain(
+      "undeclared name in docs/self-hosting.md: not recorded in GUIDE_FOREIGN_NAMES in " +
+        `${GATE}: INHERIT_PLANTED_FENCED`,
+    );
+  });
+
+  it("fails when a name recorded as foreign to the template has left the guide", () => {
+    // The worker's own variable name is recorded because section 4 warns an
+    // operator not to confuse the two. Take the warning away and the record of
+    // it has to go too, or the ledger starts describing a guide that is gone.
+    const root = plant({ guide: (source) => source.split("`SUPABASE_URL`").join("the project URL") });
+    expect(runEnvGate(root).failures).toContain(
+      "undeclared name in docs/self-hosting.md: recorded in GUIDE_FOREIGN_NAMES in " +
+        `${GATE} but no longer present: SUPABASE_URL`,
+    );
+  });
+
+  it("fails when the template starts declaring a name recorded as foreign to it", () => {
+    const root = plant({ template: (source) => `${source}\nANON_KEY=printed-by-the-cli\n` });
+    // The entry says the name is not one of this template's keys. The moment
+    // the template declares it, the entry is a false statement about the file.
+    expect(runEnvGate(root).failures).toContain(
+      "undeclared name in docs/self-hosting.md: recorded in GUIDE_FOREIGN_NAMES in " +
+        `${GATE} but no longer present: ANON_KEY`,
+    );
+  });
+
   it("fails when the template declares a variable nothing reads", () => {
     const root = plant({ template: (source) => `${source}\nINHERIT_PLANTED_STALE=\n` });
     expect(runEnvGate(root).failures).toContain(
@@ -270,11 +362,16 @@ describe("the env gate holds .env.example to what the code reads", () => {
     expect(text).toContain("source walker found 0 process.env bindings, expected over 4");
     expect(text).toContain("source walker found 0 environment variables, expected over 30");
     expect(text).toContain(".env.example declares 0 variables, expected over 20");
-    expect(failures.length).toBeGreaterThanOrEqual(7);
+    // A guide that cannot be read is a guide that documents nothing, and the
+    // comparison against it would otherwise be vacuously clean.
+    expect(text).toContain("self-hosting guide: docs/self-hosting.md cannot be read");
+    expect(text).toContain("docs/self-hosting.md is 0 characters, expected over 4000");
+    expect(text).toContain("docs/self-hosting.md names 0 variables, expected over 20");
+    expect(failures.length).toBeGreaterThanOrEqual(10);
   });
 });
 
-describe("the two ledgers are exceptions, not silence", () => {
+describe("the ledgers are exceptions, not silence", () => {
   it("gives every runtime-injected variable a name and a stated reason, once", () => {
     const keys = RUNTIME_INJECTED.map((entry) => entry.key);
     expect(keys).toEqual([...new Set(keys)]);
@@ -285,6 +382,24 @@ describe("the two ledgers are exceptions, not silence", () => {
       expect(entry.reason.trim().length).toBeGreaterThan(80);
       expect(entry.reason.trim()).toMatch(/\.$/);
     }
+  });
+
+  it("gives every name the guide writes but the template does not declare a reason, once", () => {
+    const names = GUIDE_FOREIGN_NAMES.map((entry) => entry.name);
+    expect(names).toEqual([...new Set(names)]);
+    for (const entry of GUIDE_FOREIGN_NAMES) {
+      expect(entry.name).toMatch(/^[A-Z][A-Z0-9_]*$/);
+      expect(entry.reason.trim().length).toBeGreaterThan(80);
+      expect(entry.reason.trim()).toMatch(/\.$/);
+    }
+  });
+
+  it("records no guide omission, because the guide names every key in the template", () => {
+    // The ledger is enforced in both directions all the same: an entry for a
+    // key the guide does name fails as no longer present. It is empty because
+    // nothing earned a place in it, not because omissions are tolerated.
+    expect(GUIDE_OMITTED).toEqual([]);
+    for (const entry of GUIDE_OMITTED) expect(entry.reason.trim().length).toBeGreaterThan(80);
   });
 
   it("gives every dynamic read site a module, an expression, keys and a reason", () => {
@@ -310,6 +425,24 @@ describe("the detectors the gate is built from", () => {
     expect(templateKeys("# Separate from INHERIT_PAUSE_LEGACY_UPLOADS.\n")).toEqual([]);
     expect(templateKeys("# * No analytics keys: EMAIL_FROM is set below.\n")).toEqual([]);
     expect(templateKeys('EMAIL_FROM="Inherit <onboarding@resend.dev>"\n')).toEqual(["EMAIL_FROM"]);
+  });
+
+  it("reads a guide's variable names from code, and prose never", () => {
+    expect(guideNames("| `CRON_SECRET` | output of `openssl rand -hex 32` |")).toEqual(["CRON_SECRET"]);
+    expect(guideNames("set `ALLOW_PRIVATE_LLM_ENDPOINTS=true` in `.env.local`")).toEqual([
+      "ALLOW_PRIVATE_LLM_ENDPOINTS",
+    ]);
+    expect(guideNames("```bash\nNEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co \\\n```\n")).toEqual([
+      "NEXT_PUBLIC_SUPABASE_URL",
+    ]);
+    // Prose that spells a name is not an instruction to set one.
+    expect(guideNames("Set CRON_SECRET so Vercel Cron can call the jobs.")).toEqual([]);
+    // A glob names nothing: this is exactly how the guide used to gesture at
+    // three size caps it never actually named.
+    expect(guideNames("Set `NEXT_PUBLIC_MAX_*_BYTES` accordingly.")).toEqual([]);
+    // Placeholders and prose inside a code span are not variables either.
+    expect(guideNames("`https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`")).toEqual([]);
+    expect(guideNames("`pnpm e2e # Playwright: RLS proof, network audit`")).toEqual([]);
   });
 
   it("reads every shape a module reads the environment in", () => {

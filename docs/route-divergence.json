@@ -35,9 +35,9 @@
       ],
       "handler": "inline DELETE",
       "live": "src/lib/uploads/file-delete-browser.ts fetches it with method DELETE",
-      "why": "The register holds four /api/files/[id]/* children but no entry for the bare [id] path, so the deletion verb itself is undeclared. Deletion is bound by registered deadlines, which makes an undeclared contract here worse than an ordinary gap.",
+      "why": "The register holds four /api/files/[id]/* children but no entry for the bare [id] path, so the deletion verb itself is undeclared. Deletion is bound by registered deadlines, which makes an undeclared contract here worse than an ordinary gap. Re-read against the brief 2026-09-10, and this is NOT the POST /api/uploads case. There the brief affirmatively denies the route exists (line 2194), so no contract can be transcribed without contradicting it. Here the capability is authorised twice: line 1073 requires keyboard-only completion of \u201cdelete a file\u201d as one of seven named journeys, and line 2003 lists the existing \u201cdeletion route\u201d among the things v2 extends and never replaces. What the brief never does is enumerate the path: its api list at lines 76\u201377 names /api/files/[id]/download and /api/files/[id]/process but no bare [id] verb, and line 2003 does not say which path it means by \u201cdeletion route\u201d \u2014 /api/account/delete is also a candidate. So the gap is an unenumerated path for an authorised capability, not an unauthorised route, which makes it materially more tractable than the two authority blockers it sits beside.",
       "priority": "Priority 1 \u2014 deletion",
-      "closing": "A register entry for the DELETE verb naming its authority check and its six failure codes."
+      "closing": "An owner says whether line 2003\u2019s \u201cdeletion route\u201d is this path or /api/account/delete, and the path joins the api enumeration at lines 76\u201377. The entry then transcribes from the brief as every other entry does, naming the DELETE verb, its authority check and its six failure codes. That is a smaller decision than it looked: line 1073 already requires the capability, so nothing here waits on whether file deletion should exist."
     },
     {
       "path": "/api/withdraw",
@@ -158,6 +158,9 @@
   ],
   "provenRouteStatesNote": "The (route, state) pairs a browser test title proves today, out of the 288 the register requires. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction, and UNPROVEN_ROUTE_STATE_PAIRS in that script holds the remainder. A title proves a pair when it names the registered route path and the state id as separate, non-overlapping, whole tokens, so \"empty-history\" does not prove \"empty\" and a state id appearing only inside the path proves nothing.",
   "provenRouteStates": [
+    "/ complete",
+    "/about complete",
+    "/changelog complete",
     "/embryos empty",
     "/embryos jurisdiction-unavailable",
     "/embryos/[embryoId] consent-required",
@@ -171,6 +174,26 @@
     "/genome/[subject]/reports empty",
     "/genome/[subject]/reports partial-coverage",
     "/genome/[subject]/reports/[slug] complete",
-    "/genome/[subject]/reports/[slug] not-covered"
+    "/genome/[subject]/reports/[slug] not-covered",
+    "/legal complete",
+    "/legal/appeals complete",
+    "/legal/consents complete",
+    "/legal/deceased complete",
+    "/legal/future-person complete",
+    "/legal/gdpr complete",
+    "/legal/gina complete",
+    "/legal/incident-response complete",
+    "/legal/insurance-and-discrimination complete",
+    "/legal/law-enforcement complete",
+    "/legal/research-consent complete",
+    "/legal/self-hosting complete",
+    "/legal/state-genetic-privacy complete",
+    "/legal/where-inherit-works complete",
+    "/privacy complete",
+    "/providers complete",
+    "/science complete",
+    "/science/limits complete",
+    "/science/positions complete",
+    "/terms complete"
   ]
 }

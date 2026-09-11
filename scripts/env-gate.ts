@@ -36,7 +36,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *     `DYNAMIC_ENV_READS` below with the keys it can produce, and each of
  *     those keys must appear as a string literal in that same module.
  *
- * Two ledgers, both compared in both directions, so that removing the reason
+ * The template is not the only thing a self-hoster reads. `docs/self-hosting.md`
+ * is the guide they follow, and until this gate covered it the two could drift:
+ * eight variables were added to the template while the guide never mentioned
+ * them, so a self-hoster following only the guide would have missed all eight —
+ * `INHERIT_UPLOAD_SIGNING_JWK` among them, without which no upload works at
+ * all. So the guide is compared against the template in both directions too: a
+ * template key the guide never names fails, and a name the guide presents as
+ * configuration that the template does not declare fails.
+ *
+ * Four ledgers, each compared in both directions, so that removing the reason
  * for an entry forces the entry out with it:
  *
  *  - `RUNTIME_INJECTED` is the set of variables that are read under `src/` and
@@ -46,6 +55,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *    to the template fails too, because the entry says it does not belong
  *    there and the template now says it does.
  *  - `DYNAMIC_ENV_READS` is the set of unresolvable read sites, as above.
+ *  - `GUIDE_OMITTED` is the set of template keys the guide deliberately does
+ *    not name, each with the reason it is not an operator's business. It is
+ *    empty: every key in the template is named in the guide, and the ledger
+ *    exists so that deciding otherwise has to be written down rather than
+ *    silently done. An entry for a key the guide does name fails.
+ *  - `GUIDE_FOREIGN_NAMES` is the set of names the guide writes as
+ *    configuration that the template does not declare — the labels the
+ *    Supabase CLI prints, the Tier-3 worker's own variables, and the
+ *    runtime-injected variables the guide names precisely to tell an operator
+ *    not to set them. An entry whose name has left the guide fails, and so
+ *    does one the template starts declaring.
  *
  * Test modules under `src/` are scanned like any other. A `*.test.ts` that
  * reaches for `process.env` is reading the same process environment the
@@ -59,6 +79,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const SOURCE = "src";
 const TEMPLATE = ".env.example";
+const GUIDE = "docs/self-hosting.md";
 const GATE = "scripts/env-gate.ts";
 
 /**
@@ -145,6 +166,94 @@ export const DYNAMIC_ENV_READS: readonly DynamicEnvRead[] = [
   },
 ];
 
+/**
+ * A key `.env.example` declares that `docs/self-hosting.md` deliberately does
+ * not name. Every entry has to say why an operator does not need it; a
+ * variable an operator must set has no reason to be here.
+ */
+export interface GuideOmittedVariable {
+  key: string;
+  reason: string;
+}
+
+export const GUIDE_OMITTED: readonly GuideOmittedVariable[] = [];
+
+/**
+ * A name `docs/self-hosting.md` writes as configuration that `.env.example`
+ * does not declare. Each entry says what the name really is, so that a genuine
+ * guide-only variable — a key an operator is told to set that no template
+ * declares and therefore nothing documents — cannot hide among them.
+ */
+export interface GuideForeignName {
+  name: string;
+  reason: string;
+}
+
+export const GUIDE_FOREIGN_NAMES: readonly GuideForeignName[] = [
+  {
+    name: "ANON_KEY",
+    reason:
+      "Not a variable of this application: it is the label `supabase start` prints for the local " +
+      "project's publishable key. Section 2 names it to say which printed value goes into " +
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+  },
+  {
+    name: "SERVICE_ROLE_KEY",
+    reason:
+      "The other label `supabase start` prints, for the local project's secret key. Section 2 names " +
+      "it to say which printed value goes into SUPABASE_SERVICE_ROLE_KEY.",
+  },
+  {
+    name: "SUPABASE_URL",
+    reason:
+      "The Tier-3 worker's own name for the project URL, declared in worker/.env.example and read " +
+      "only by the worker. Section 4 names it so that an operator does not copy it into .env.local " +
+      "in place of NEXT_PUBLIC_SUPABASE_URL.",
+  },
+  {
+    name: "NODE_ENV",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set, which is the opposite of an instruction to set it.",
+  },
+  {
+    name: "VERCEL",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set: setting the hosted marker by hand asserts a platform the deployment is not on.",
+  },
+  {
+    name: "VERCEL_ENV",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set, for the same reason as VERCEL.",
+  },
+  {
+    name: "VERCEL_URL",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set; the operator-set URLs beside it are NEXT_PUBLIC_SITE_URL and NEXT_PUBLIC_APP_URL.",
+  },
+  {
+    name: "CI",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set: the CI runner sets it, a deployment never does.",
+  },
+  {
+    name: "INHERIT_TEST_JURISDICTION",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set, together with the fact that next.config.ts throws when it is 1 in production.",
+  },
+  {
+    name: "INHERIT_LOCAL_E2E_PROJECT",
+    reason:
+      "Recorded in RUNTIME_INJECTED above, and named in section 5's list of variables an operator " +
+      "must never set: the browser suite sets it to pick which local test stack it targets.",
+  },
+];
+
 const SOURCE_EXTENSIONS = /\.(?:tsx?|mts|cts|jsx?|mjs|cjs)$/;
 
 /** A shell-style environment variable name. */
@@ -160,6 +269,8 @@ export interface EnvGateResult {
   boundBindingCount: number;
   dynamicReadSiteCount: number;
   templateKeyCount: number;
+  guideNamedCount: number;
+  guideDocumentedKeyCount: number;
   runtimeInjectedKeyCount: number;
 }
 
@@ -178,6 +289,37 @@ export function templateKeys(source: string): string[] {
     if (match && ENVIRONMENT_KEY.test(match[1])) keys.add(match[1]);
   }
   return [...keys].sort();
+}
+
+/**
+ * The variable names `docs/self-hosting.md` presents as configuration. A guide
+ * names a variable the way this one already does: as a whole inline code span
+ * (`` `CRON_SECRET` ``, a table cell, a run of prose) or as the left side of an
+ * assignment inside a code span or a fenced block. Prose that merely spells a
+ * name is not an instruction to set one, exactly as in the template, and a
+ * glob such as NEXT_PUBLIC_MAX_*_BYTES names nothing at all — it was the shape
+ * this guide used to gesture at three variables it never actually named.
+ */
+export function guideNames(source: string): string[] {
+  const names = new Set<string>();
+  const spans: string[] = [];
+  for (const fence of source.matchAll(/```[^\n]*\n([\s\S]*?)```/g)) {
+    spans.push(...fence[1].split(/\r?\n/));
+  }
+  const prose = source.replace(/```[^\n]*\n[\s\S]*?```/g, "\n");
+  for (const span of prose.matchAll(/`+([^`\n]+)`+/g)) spans.push(span[1]);
+
+  for (const span of spans) {
+    const whole = span.trim();
+    if (ENVIRONMENT_KEY.test(whole)) {
+      names.add(whole);
+      continue;
+    }
+    for (const assignment of span.matchAll(/(?<![A-Za-z0-9_-])([A-Z][A-Z0-9_]*)=/g)) {
+      if (ENVIRONMENT_KEY.test(assignment[1])) names.add(assignment[1]);
+    }
+  }
+  return [...names].sort();
 }
 
 export interface ModuleEnvReads {
@@ -394,6 +536,44 @@ export function runEnvGate(repositoryRoot: string): EnvGateResult {
     }
   }
 
+  // 4. Every key an operator is told to fill in is in the guide they follow,
+  // and 5. every name the guide presents as configuration is a key of the
+  // template. Without both, the guide and the template drift apart and the
+  // self-hoster reading only one of them is the person who pays for it.
+  let guideSource = "";
+  try {
+    guideSource = readFileSync(path.join(repositoryRoot, GUIDE), "utf8");
+  } catch {
+    failures.push(`self-hosting guide: ${GUIDE} cannot be read`);
+  }
+  const guideNamed = guideNames(guideSource);
+
+  compareLedger(
+    `undocumented in ${GUIDE}`,
+    `GUIDE_OMITTED in ${GATE}`,
+    declared.filter((key) => !guideNamed.includes(key)),
+    GUIDE_OMITTED.map((entry) => entry.key),
+    failures,
+  );
+  for (const entry of GUIDE_OMITTED) {
+    if (entry.reason.trim().length < 40) {
+      failures.push(`undocumented in ${GUIDE}: ${GATE} exempts ${entry.key} without a stated reason`);
+    }
+  }
+
+  compareLedger(
+    `undeclared name in ${GUIDE}`,
+    `GUIDE_FOREIGN_NAMES in ${GATE}`,
+    guideNamed.filter((name) => !declared.includes(name)),
+    GUIDE_FOREIGN_NAMES.map((entry) => entry.name),
+    failures,
+  );
+  for (const entry of GUIDE_FOREIGN_NAMES) {
+    if (entry.reason.trim().length < 40) {
+      failures.push(`undeclared name in ${GUIDE}: ${GATE} exempts ${entry.name} without a stated reason`);
+    }
+  }
+
   // Floor guards. A walker that silently found nothing must not read as a
   // clean product, so each input is required to be roughly the size it is.
   if (files.length < 400) {
@@ -417,6 +597,12 @@ export function runEnvGate(repositoryRoot: string): EnvGateResult {
   if (declared.length < 20) {
     failures.push(`${TEMPLATE} declares ${declared.length} variables, expected over 20`);
   }
+  if (guideSource.length < 4000) {
+    failures.push(`${GUIDE} is ${guideSource.length} characters, expected over 4000`);
+  }
+  if (guideNamed.length < 20) {
+    failures.push(`${GUIDE} names ${guideNamed.length} variables, expected over 20`);
+  }
 
   return {
     failures,
@@ -428,6 +614,8 @@ export function runEnvGate(repositoryRoot: string): EnvGateResult {
     boundBindingCount,
     dynamicReadSiteCount: dynamicSites.length,
     templateKeyCount: declared.length,
+    guideNamedCount: guideNamed.length,
+    guideDocumentedKeyCount: declared.filter((key) => guideNamed.includes(key)).length,
     runtimeInjectedKeyCount: RUNTIME_INJECTED.length,
   };
 }
@@ -449,6 +637,8 @@ function main() {
       `${result.boundBindingCount} process.env bindings, ${result.dynamicReadSiteCount} recorded ` +
       `dynamic read site${result.dynamicReadSiteCount === 1 ? "" : "s"}), ` +
       `${result.templateKeyCount} declared in ${TEMPLATE}, ` +
+      `all ${result.guideDocumentedKeyCount} of them named among the ` +
+      `${result.guideNamedCount} variables ${GUIDE} names, ` +
       `${result.runtimeInjectedKeyCount} recorded as runtime-injected`,
   );
 }

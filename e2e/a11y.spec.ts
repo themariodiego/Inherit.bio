@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { assertNoThirdParty, AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 // A16 — axe accessibility checks over key surfaces in BOTH themes, plus
 // design-token presence (Fraunces display, pill CTAs, attribution line).
@@ -146,6 +147,92 @@ for (const [route, url] of Object.entries(DOCUMENTS)) {
       await assertNoThirdParty(page, observed, `${route} (${theme})`);
     });
   }
+}
+
+/**
+ * The one registered page literal that is not built as a page, and so was
+ * audited by nobody.
+ *
+ * `docs/route-register.json` pins `/withdraw/[token]` to the literals
+ * `request` and `session` and calls the route a page. `/withdraw/session` is a
+ * page and `/withdraw/[token]` is audited by `e2e/family.spec.ts` against a
+ * real issued invitation. `/withdraw/request` is neither: it is a `route.ts`
+ * that builds an HTML document as a template string and returns it with its
+ * own nonce, Content-Security-Policy and Set-Cookie, because it mints a
+ * rights-activation candidate before any markup — which a React page cannot do
+ * in the same response. `docs/route-divergence.json` records that as a
+ * deliberate `kindDivergence`, not an accident.
+ *
+ * The cost of it is what this entry fixes. Being an endpoint puts the page
+ * outside the app layout, outside `pageAuthContract`, and outside the
+ * registered-page sweep above, which enumerates pages — so its headings,
+ * landmarks, contrast and focus order were checked by nothing, on a surface
+ * every withdrawal and invitation mail links a person straight to. Auditing it
+ * here does not close the divergence (that needs the mint moved into
+ * middleware or an action so the interstitial can be a page again) but it does
+ * close the hole the divergence opened, at the same bar as every other public
+ * page.
+ */
+const ENDPOINT_RENDERED_PAGES: Record<string, string> = {
+  "/withdraw/request": "/withdraw/request",
+};
+
+for (const [route, url] of Object.entries(ENDPOINT_RENDERED_PAGES)) {
+  for (const theme of ["light", "dark"] as const) {
+    test(`axe: ${route} (${theme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const observed = watchRequests(page);
+      const response = await page.goto(url);
+      expect(response?.status(), `${url} serves the interstitial`).toBe(200);
+      await page.waitForLoadState("networkidle");
+      expect(await axeViolations(page, theme), `${route} (${theme})`).toEqual([]);
+      await assertNoThirdParty(page, observed, `${route} (${theme})`);
+    });
+  }
+}
+
+/**
+ * The 404 surface. It is not a registered route, so it cannot come from the
+ * register walk — and until this change no sweep could have seen it at all,
+ * because the app had no `not-found.tsx`: all 72 `notFound()` call sites across
+ * 19 route files rendered the framework's own built-in page.
+ *
+ * It is a privacy surface as much as a wayfinding one. Brief line 477 requires
+ * that after revocation, `GET` on `/family/[person]`,
+ * `/family/health-picture`, `/family/portrait/[pairId]`, `/api/export` and the
+ * Copilot history endpoint return 404 to every account that previously had
+ * access — so this page is what a person sees at the moment their access ends,
+ * and it is audited at the same bar as every public page in both themes.
+ */
+/**
+ * Both shapes, because they are different documents and only one of them was
+ * audited at first. An unmatched URL renders under the bare root layout; a
+ * `notFound()` thrown inside a route group renders inside that group's layout,
+ * which already supplies the one `<main>`. Auditing only the first is how a
+ * two-landmark, duplicate-id page passed its own accessibility check.
+ */
+const NOT_FOUND_URLS: Record<string, string> = {
+  "an unmatched URL": "/this-route-does-not-exist-and-never-will",
+  "a notFound() inside a layout": "/legal/definitely-not-a-committed-artifact",
+};
+
+for (const [shape, url] of Object.entries(NOT_FOUND_URLS)) {
+for (const theme of ["light", "dark"] as const) {
+  test(`axe: the not-found surface, ${shape} (${theme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: theme });
+    const observed = watchRequests(page);
+    const response = await page.goto(url);
+    expect(response?.status(), `${shape} must be a 404, never a 200`).toBe(404);
+    await expect(
+      page.getByRole("heading", { level: 1 }),
+      "the app's own not-found page, not the framework's",
+    ).toHaveText(NOT_FOUND_HEADING);
+    await expect(page.locator("main"), "exactly one main landmark").toHaveCount(1);
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page, theme), `not-found, ${shape} (${theme})`).toEqual([]);
+    await assertNoThirdParty(page, observed, `not-found, ${shape} (${theme})`);
+  });
+}
 }
 
 /**
@@ -465,7 +552,7 @@ type KeyboardDivergence =
  * then the test fails saying so, which is the honest state: a guessed number
  * that happened to pass would be a ratchet holding nothing.
  */
-const UNDERSIZED_CONTROL_OCCURRENCES = 807;
+const UNDERSIZED_CONTROL_OCCURRENCES = 201;
 
 /** One component's finding sentence, built in one place for both sides. */
 function undersizedControlFinding(entry: UndersizedControl): string {

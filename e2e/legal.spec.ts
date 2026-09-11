@@ -1,6 +1,7 @@
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
+import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -146,6 +147,34 @@ const REQUIRED = [
   },
   { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
+  // The last four static-document pages, which completes that profile. Two of
+  // their anchors are commitments rather than headings: the home page's "free"
+  // promise and the provider directory's refusal to sell sequencing are what
+  // the brief forbids this product to walk back, so a page that quietly
+  // dropped either should fail here.
+  { route: "/", must: [/Your genome, on your terms/i, /Inherit itself is free/i] },
+  {
+    route: "/changelog",
+    must: [/New reports, continuously/i, /GWAS Catalog/i, /PGS Catalog/i, /ClinVar/i],
+  },
+  { route: "/providers", must: [/Buy sequencing from a real provider/i, /doesn.t sell sequencing/i] },
+  {
+    route: "/legal/where-inherit-works",
+    must: [/Where Inherit works/i, /Current production state/i, /How availability changes/i],
+  },
+  { route: "/legal", must: [/Legal and policy library/i, /privacy/i] },
+  { route: "/legal/consents", must: [/Granular grants/i, /Revocation/i, /Versioned evidence/i] },
+  {
+    route: "/legal/insurance-and-discrimination",
+    must: [/Protection has gaps/i, /Not legal advice/i],
+  },
+  { route: "/legal/self-hosting", must: [/Operator responsibility/i, /Open source is not approval/i] },
+  { route: "/legal/state-genetic-privacy", must: [/Rule source/i, /Correcting location/i] },
+  {
+    route: "/science/limits",
+    must: [/Coverage is not absence/i, /Association is not destiny/i, /Clinical confirmation/i],
+  },
+  { route: "/science/positions", must: [/Canonical build/i, /Strand handling/i, /Source fidelity/i] },
   {
     // X15 declared gaps, published once with their reason.
     route: "/science",
@@ -160,24 +189,172 @@ const REQUIRED = [
 
 const PLACEHOLDERS = /\bTODO\b|\bTBD\b|\bFIXME\b|lorem ipsum|\bN\/A\b|\[[^\]]*specify[^\]]*\]|\bPLACEHOLDER\b/i;
 
-for (const { route, must } of REQUIRED) {
-  test(`legal page ${route} is complete, on-topic, and placeholder-free`, async ({
-    page,
-  }) => {
-    const res = await page.goto(route);
-    expect(res?.status(), `${route} must render`).toBeLessThan(400);
-    const body = await page.locator("main, body").first().innerText();
-    for (const re of must) {
-      expect(body, `${route} must contain ${re}`).toMatch(re);
-    }
-    expect(body, `${route} must not contain placeholders`).not.toMatch(
-      PLACEHOLDERS,
-    );
-    expect(body.length, `${route} must have substantial content`).toBeGreaterThan(
-      800,
-    );
-  });
+/**
+ * One document page in its `complete` state: the committed content rendered,
+ * on-topic, free of placeholder text and of real length.
+ *
+ * The assertions are exactly the ones this file has always made. What changed
+ * is that each route now has its own statically-titled test instead of one
+ * interpolated `test(\`legal page ${route} …\`)` loop. That loop drove all
+ * eleven `complete` states and named none of them that a reader could see:
+ * `scripts/route-gate.ts` reads titles **statically** out of the source, so
+ * `${route}` reached it as the literal five characters and proved nothing —
+ * the gate says so itself, counting these among the titles "built by
+ * interpolation, which this static reader cannot resolve and does not guess
+ * at".
+ *
+ * This is the one honest use of the title convention, and it is worth being
+ * precise about why, because the convention is otherwise exactly how this
+ * ratchet gets faked: nothing here is being renamed into a proof it does not
+ * earn. Each of these tests already navigated to its route and already
+ * asserted that route's committed content; the state was driven and the proof
+ * was merely unreadable. Retitling a test that drives nothing would be the
+ * abuse. Resolving an interpolation the reader cannot evaluate is not.
+ */
+const REQUIRED_CONTENT = new Map(REQUIRED.map(entry => [entry.route, entry.must]));
+
+async function assertDocumentComplete(page: Page, route: string): Promise<void> {
+  const must = REQUIRED_CONTENT.get(route);
+  if (!must) throw new Error(`${route} has no required-content list in REQUIRED`);
+  const res = await page.goto(route);
+  expect(res?.status(), `${route} must render`).toBeLessThan(400);
+  const body = await page.locator("main, body").first().innerText();
+  for (const re of must) {
+    expect(body, `${route} must contain ${re}`).toMatch(re);
+  }
+  expect(body, `${route} must not contain placeholders`).not.toMatch(PLACEHOLDERS);
+  expect(body.length, `${route} must have substantial content`).toBeGreaterThan(800);
 }
+
+test("/privacy complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/privacy");
+});
+
+test("/terms complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/terms");
+});
+
+test("/legal/research-consent complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/research-consent");
+});
+
+test("/legal/law-enforcement complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/law-enforcement");
+});
+
+test("/legal/deceased complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/deceased");
+});
+
+test("/legal/appeals complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/appeals");
+});
+
+test("/legal/future-person complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/future-person");
+});
+
+test("/legal/gdpr complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/gdpr");
+});
+
+test("/legal/incident-response complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/incident-response");
+});
+
+test("/legal/gina complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/gina");
+});
+
+test("/about complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/about");
+});
+
+test("/science complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science");
+});
+
+test("/legal complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal");
+});
+
+test("/legal/consents complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/consents");
+});
+
+test("/legal/insurance-and-discrimination complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/insurance-and-discrimination");
+});
+
+test("/legal/self-hosting complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/self-hosting");
+});
+
+test("/legal/state-genetic-privacy complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/state-genetic-privacy");
+});
+
+test("/science/limits complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science/limits");
+});
+
+test("/science/positions complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/science/positions");
+});
+
+test("/ complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/");
+});
+
+test("/changelog complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/changelog");
+});
+
+test("/providers complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/providers");
+});
+
+test("/legal/where-inherit-works complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/where-inherit-works");
+});
+
+/**
+ * An unknown artifact is one of 72 `notFound()` call sites across 19 route
+ * files. Until this change every one of them rendered the framework's built-in
+ * page, because the app had no `not-found.tsx`; this asserts that a real call
+ * site now reaches Inherit's own, not just an unmatched URL.
+ *
+ * Deliberately not titled as a proven route state. The register declares
+ * `empty` supported for `versioned-document` while `static-document` says "a
+ * versioned public document always has committed content", so whether a 404 is
+ * this route's `empty` state is a contradiction in the register itself and an
+ * owner's to settle. Claiming the pair here would be exactly the kind of proof
+ * this repository refuses to manufacture.
+ */
+test("an unknown legal artifact reaches Inherit's own not-found page, not the framework's", async ({
+  page,
+}) => {
+  const res = await page.goto("/legal/definitely-not-a-committed-artifact");
+  expect(res?.status(), "an unknown artifact is a 404").toBe(404);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(NOT_FOUND_HEADING);
+
+  // The regression this test was written badly enough to find. Next renders the
+  // nearest not-found boundary *inside* the layouts above it, and this group's
+  // layout already supplies the one `<main id="main">`. A boundary that brought
+  // its own produced two `main` landmarks and two `id="main"` elements here -
+  // a `landmark-one-main` failure, a duplicate id, and a skip link aimed at an
+  // ambiguous target - while passing an audit that only ever visited an
+  // unmatched URL, which renders under the bare root layout.
+  await expect(page.locator("main"), "exactly one main landmark").toHaveCount(1);
+  await expect(page.locator("#main"), "exactly one skip-link target").toHaveCount(1);
+
+  // The page must not distinguish "no such document" from "not yours any more"
+  // (brief line 477 makes a 404 the response to a revoked request).
+  const body = await page.locator("main").innerText();
+  for (const leak of ["revoked", "deleted", "no longer have", "removed"]) {
+    expect(body.toLowerCase(), `"${leak}" would confirm what the 404 withholds`).not.toContain(leak);
+  }
+});
 
 test("Plus Bio disclosure is accurate (created by, legally separate, no data flow)", async ({
   page,

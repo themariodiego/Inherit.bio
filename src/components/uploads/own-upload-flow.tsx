@@ -63,7 +63,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
     <p className="text-sm text-ink-muted">Version {view.artifact.version}</p>
     <p data-legal-summary className="text-sm">{view.artifact.summary}</p>
     <div className="whitespace-pre-wrap text-sm leading-relaxed">{view.artifact.body}</div>
-    <label className="flex items-start gap-3"><input type="checkbox" checked={checked}
+    <label className="flex min-h-11 items-start gap-3"><input type="checkbox" checked={checked}
       disabled={pending || saved} className="mt-1 size-5" onChange={event => {
         setChecked(event.target.checked);
         if (own && event.target.checked) void sign();
