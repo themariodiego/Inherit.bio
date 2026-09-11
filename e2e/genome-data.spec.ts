@@ -144,7 +144,26 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   expect(interactives.length, interactives.join(" | ")).toBeLessThanOrEqual(12);
 });
 
-test("a gene search lists every reference position with the covered genotype as a figure and the rest as not covered", async ({
+/**
+ * `/genome/[subject]/data/browser partial-coverage`, and unusually for this
+ * register's vocabulary the mapping needs no argument: the page renders both
+ * halves of partial coverage in one table and this test asserts both. One
+ * position is covered and carries a genotype figure; every other seeded
+ * position in the same gene carries "Not covered by your file" and no figure
+ * at all. The provenance line even says the count is "not a count of all
+ * positions in the gene or region", which is the page refusing to let a
+ * partial view read as a complete one.
+ *
+ * Worth separating from what it is NOT, because a neighbouring test looks
+ * like the same thing and is not. `not-covered` here means YOUR FILE does
+ * not cover this position. The clinical-gene, trait and no-match queries
+ * below say something different - that INHERIT'S REFERENCE has no clinical
+ * variants for a gene, or no reference variants for a word. Those are limits
+ * of the reference and of the query, not of the person's file, and naming
+ * them with a coverage id would collapse a distinction this product exists
+ * to keep.
+ */
+test("/genome/[subject]/data/browser partial-coverage: a gene search lists every reference position, the covered genotype as a figure and the rest as not covered", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);

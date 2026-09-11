@@ -182,6 +182,7 @@
     "/genome/[subject]/ancestry complete",
     "/genome/[subject]/ancestry not-covered",
     "/genome/[subject]/data complete",
+    "/genome/[subject]/data/browser partial-coverage",
     "/genome/[subject]/reports empty",
     "/genome/[subject]/reports partial-coverage",
     "/genome/[subject]/reports/[slug] complete",
