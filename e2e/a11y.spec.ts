@@ -149,6 +149,48 @@ for (const [route, url] of Object.entries(DOCUMENTS)) {
 }
 
 /**
+ * The one registered page literal that is not built as a page, and so was
+ * audited by nobody.
+ *
+ * `docs/route-register.json` pins `/withdraw/[token]` to the literals
+ * `request` and `session` and calls the route a page. `/withdraw/session` is a
+ * page and `/withdraw/[token]` is audited by `e2e/family.spec.ts` against a
+ * real issued invitation. `/withdraw/request` is neither: it is a `route.ts`
+ * that builds an HTML document as a template string and returns it with its
+ * own nonce, Content-Security-Policy and Set-Cookie, because it mints a
+ * rights-activation candidate before any markup — which a React page cannot do
+ * in the same response. `docs/route-divergence.json` records that as a
+ * deliberate `kindDivergence`, not an accident.
+ *
+ * The cost of it is what this entry fixes. Being an endpoint puts the page
+ * outside the app layout, outside `pageAuthContract`, and outside the
+ * registered-page sweep above, which enumerates pages — so its headings,
+ * landmarks, contrast and focus order were checked by nothing, on a surface
+ * every withdrawal and invitation mail links a person straight to. Auditing it
+ * here does not close the divergence (that needs the mint moved into
+ * middleware or an action so the interstitial can be a page again) but it does
+ * close the hole the divergence opened, at the same bar as every other public
+ * page.
+ */
+const ENDPOINT_RENDERED_PAGES: Record<string, string> = {
+  "/withdraw/request": "/withdraw/request",
+};
+
+for (const [route, url] of Object.entries(ENDPOINT_RENDERED_PAGES)) {
+  for (const theme of ["light", "dark"] as const) {
+    test(`axe: ${route} (${theme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      const observed = watchRequests(page);
+      const response = await page.goto(url);
+      expect(response?.status(), `${url} serves the interstitial`).toBe(200);
+      await page.waitForLoadState("networkidle");
+      expect(await axeViolations(page, theme), `${route} (${theme})`).toEqual([]);
+      await assertNoThirdParty(page, observed, `${route} (${theme})`);
+    });
+  }
+}
+
+/**
  * The registered pages audited by another spec instead, because reaching them
  * needs state this spec has no business building — a second confirmed account
  * and an accepted invitation, a granted portrait pair, an ingested cohort.

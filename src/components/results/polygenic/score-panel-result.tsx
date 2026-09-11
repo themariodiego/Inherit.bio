@@ -65,8 +65,8 @@ export function ScorePanelResult({
   return (
     <ClaimBlock subject={{ subjectId }} figures={[coverage]}>
       <p className="mt-2 max-w-prose text-sm text-ink">
-        <span className="font-medium">{panel.name}</span>{" "}
-        <span className="font-mono text-sm text-ink-muted">{panel.id}</span>
+        <span data-slot="score-panel-name" className="font-medium">{panel.name}</span>{" "}
+        <span data-slot="score-panel-id" className="font-mono text-sm text-ink-muted">{panel.id}</span>
         {" · "}
         <span className="text-ink-muted">{trait}</span>
       </p>

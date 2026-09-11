@@ -1,5 +1,5 @@
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -160,24 +160,86 @@ const REQUIRED = [
 
 const PLACEHOLDERS = /\bTODO\b|\bTBD\b|\bFIXME\b|lorem ipsum|\bN\/A\b|\[[^\]]*specify[^\]]*\]|\bPLACEHOLDER\b/i;
 
-for (const { route, must } of REQUIRED) {
-  test(`legal page ${route} is complete, on-topic, and placeholder-free`, async ({
-    page,
-  }) => {
-    const res = await page.goto(route);
-    expect(res?.status(), `${route} must render`).toBeLessThan(400);
-    const body = await page.locator("main, body").first().innerText();
-    for (const re of must) {
-      expect(body, `${route} must contain ${re}`).toMatch(re);
-    }
-    expect(body, `${route} must not contain placeholders`).not.toMatch(
-      PLACEHOLDERS,
-    );
-    expect(body.length, `${route} must have substantial content`).toBeGreaterThan(
-      800,
-    );
-  });
+/**
+ * One document page in its `complete` state: the committed content rendered,
+ * on-topic, free of placeholder text and of real length.
+ *
+ * The assertions are exactly the ones this file has always made. What changed
+ * is that each route now has its own statically-titled test instead of one
+ * interpolated `test(\`legal page ${route} …\`)` loop. That loop drove all
+ * eleven `complete` states and named none of them that a reader could see:
+ * `scripts/route-gate.ts` reads titles **statically** out of the source, so
+ * `${route}` reached it as the literal five characters and proved nothing —
+ * the gate says so itself, counting these among the titles "built by
+ * interpolation, which this static reader cannot resolve and does not guess
+ * at".
+ *
+ * This is the one honest use of the title convention, and it is worth being
+ * precise about why, because the convention is otherwise exactly how this
+ * ratchet gets faked: nothing here is being renamed into a proof it does not
+ * earn. Each of these tests already navigated to its route and already
+ * asserted that route's committed content; the state was driven and the proof
+ * was merely unreadable. Retitling a test that drives nothing would be the
+ * abuse. Resolving an interpolation the reader cannot evaluate is not.
+ */
+const REQUIRED_CONTENT = new Map(REQUIRED.map(entry => [entry.route, entry.must]));
+
+async function assertDocumentComplete(page: Page, route: string): Promise<void> {
+  const must = REQUIRED_CONTENT.get(route);
+  if (!must) throw new Error(`${route} has no required-content list in REQUIRED`);
+  const res = await page.goto(route);
+  expect(res?.status(), `${route} must render`).toBeLessThan(400);
+  const body = await page.locator("main, body").first().innerText();
+  for (const re of must) {
+    expect(body, `${route} must contain ${re}`).toMatch(re);
+  }
+  expect(body, `${route} must not contain placeholders`).not.toMatch(PLACEHOLDERS);
+  expect(body.length, `${route} must have substantial content`).toBeGreaterThan(800);
 }
+
+test("/privacy complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/privacy");
+});
+
+test("/terms complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/terms");
+});
+
+test("/legal/research-consent complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/research-consent");
+});
+
+test("/legal/law-enforcement complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/law-enforcement");
+});
+
+test("/legal/deceased complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/deceased");
+});
+
+test("/legal/appeals complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/appeals");
+});
+
+test("/legal/future-person complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/future-person");
+});
+
+test("/legal/gdpr complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/gdpr");
+});
+
+test("/legal/incident-response complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/incident-response");
+});
+
+test("/legal/gina complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/gina");
+});
+
+test("/about complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/about");
+});
 
 test("Plus Bio disclosure is accurate (created by, legally separate, no data flow)", async ({
   page,
