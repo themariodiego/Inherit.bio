@@ -170,6 +170,7 @@
     "/embryos/compare jurisdiction-unavailable",
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
+    "/family empty",
     "/family/invite complete",
     "/family/invite jurisdiction-unavailable",
     "/files complete",

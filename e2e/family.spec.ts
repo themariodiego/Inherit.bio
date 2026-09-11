@@ -171,7 +171,20 @@ test("/family signed out keeps the two required panels ahead of any sign-in wall
   await expectNoResults(page);
 });
 
-test("/family signed in: the hub, its one primary action and the first-viewport budget", async ({
+/**
+ * `/family empty`. The hub for an account that has no family yet, and it says
+ * so in words - "Just you so far." - rather than rendering an absence the
+ * reader has to infer. That is the test this repository applies, and this is
+ * a cleaner case of it than most: the page IS the family, the family holds
+ * one person, and the single primary action is the one that would change
+ * that.
+ *
+ * Ordering carries the claim. This spec is serial and the account is paired
+ * with a second one in a later test, so `empty` here is a real state of a
+ * real account at this point in the run, not an artefact of a fixture that
+ * happens not to have been populated.
+ */
+test("/family empty: the hub says only you are here, with one primary action and the first-viewport budget", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
