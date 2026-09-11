@@ -54,6 +54,20 @@ editing the brief without revisiting the register is caught. If the intent was
 that the register tracks a specific brief *version*, that is exactly what this
 makes true for the first time.
 
+**DONE, 2026-09-11, and this section is kept only as the record of why.** The
+remedy above was applied in `5410622`: `briefSha256` now holds `2d6bc519…`,
+which is what the brief hashes to, and `scripts/route-gate.ts` reads both files
+and fails when they differ. `gate:routes` runs in the static half of CI, so the
+mechanism this section said did not exist is now the one enforcing the intent.
+The old value survives on purpose at `scripts/route-gate.test.ts:283` as a
+negative fixture, so the check is proved to fail on a wrong pin rather than
+passing vacuously. Nothing in this section is awaiting signature.
+
+Three rows of `docs/acceptance-matrix.md` went on citing the unfixed finding
+for a further day; they were corrected separately. The lesson is worth keeping
+beside the fix: **a written finding goes stale exactly the way a superseded
+migration does**, and both have now cost this project a wrong conclusion.
+
 ---
 
 ## 1. `POST /api/uploads` — the brief denies a route that exists
@@ -173,6 +187,66 @@ obligations, and 22 routes complete immediately — `/`, `/providers`, `/about`,
 `error` as its only gap. The error boundaries keep their unit coverage in
 `src/components/site/error-content.test.ts` and `src/app/boundaries.test.ts`;
 this changes what the register *declares*, not what the product does.
+
+---
+
+## 5. The register declares `jurisdiction-unavailable` on eleven routes that cannot reach it
+
+**Measured 2026-09-11 against the page components, not estimated.** This is the
+same shape as item 4 above and needs the same decision.
+
+`stateProfiles` applies `product-result` (and the settings profile) wholesale,
+so twenty routes declare `jurisdiction-unavailable` with no browser proof.
+Reading what each page actually does splits them cleanly in two.
+
+**Nine implement the refusal.** It is reachable, and proving it needs a paired
+family fixture rather than a register change:
+
+| route | how it refuses |
+|---|---|
+| `/genome/[subject]/ancestry` | `resolveSubjectRoute` -> `kind: "jurisdiction"` -> `CapabilityUnavailable` |
+| `/genome/[subject]/reports` | same |
+| `/genome/[subject]/reports/[slug]` | same |
+| `/family` | `familyCapability` |
+| `/family/[person]/permissions` | jurisdiction guard |
+| `/family/health-picture` | `familyCapability` |
+| `/family/portrait/[pairId]` | `familyCapability` |
+| `/overview` | `familyCapability` |
+| `/embryo-analysis` | jurisdiction guard |
+
+**Eleven cannot reach it**, and for the genome trio the reason is precise and
+worth stating rather than summarising: `/genome/[subject]`,
+`/genome/[subject]/data` and `/genome/[subject]/data/browser` resolve with
+`resolveSubjectForAccount` — the OWN-subject resolver — and never with
+`resolveSubjectRoute`. A family segment does not resolve on those routes at
+all, so the page answers not-found instead of refusing.
+
+**That is not a fail-open.** No family data is served by those routes, so the
+missing refusal withholds nothing it should withhold. It is worth saying
+explicitly because `G5.1` records that "no complete resolver/gate protects
+every data-returning route", and this is one place that sentence could be read
+as a security gap when it is not.
+
+The other eight have no jurisdiction guard at all: `/settings`,
+`/settings/consents`, `/settings/copilot`, `/settings/data`, `/files`,
+`/files/upload`, `/copilot/[scope]`, `/family/[person]`. For `/settings` the
+absence is already deliberate and already tested — `e2e/family-invite.nojurisdiction.spec.ts`
+visits it on the jurisdiction-off server as its control and asserts a 200 with
+the account still signed in, precisely so that a refusal elsewhere cannot be
+confused with a broken session.
+
+**Proposed:** drop `jurisdiction-unavailable` from the declared states of those
+eleven routes, so the register describes the product that exists.
+
+**THE QUESTION THIS TURNS ON, and it is yours rather than mine.** The proposal
+above assumes the product is right and the register over-declares. The opposite
+reading is available for exactly one of the two groups: if `/genome/[subject]/data`
+and `/genome/[subject]/data/browser` are *meant* to serve a family subject's
+data — the brief's §4 does describe viewing a relative's genome — then those
+two routes are missing a capability rather than carrying a surplus declaration,
+and the correction is the opposite one: leave the state declared and build the
+resolver. Nothing here decides that. The settings and files routes are not
+affected either way; their absence of a guard is not in question.
 
 ---
 
