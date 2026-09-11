@@ -533,7 +533,30 @@ test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer 
   }
 });
 
-test("pause, resume and stop take effect on the next request", async ({ page }) => {
+/**
+ * `/family/[person]/permissions complete`, on the reading already recorded
+ * for `/settings complete`: this page has no partial shape. It renders the
+ * whole permission surface for a live relationship - the controls, their
+ * current position, and the confirmed stop with its three-item dialog - and
+ * this test does not merely look at them, it operates all three and checks
+ * what each one does to the next request.
+ *
+ * The tombstone shape is deliberately NOT claimed as a second state. After
+ * the stop, this page renders "Sharing ended on ... N results built from this
+ * pairing were deleted." A reader could call that `empty`, and the argument
+ * against is that a relationship which has ENDED is a different thing from a
+ * page with nothing in it - the tombstone is content, and it is the record
+ * that the deletion happened. Deciding that silently by retitling would be
+ * the wrong way to settle it.
+ *
+ * What makes this test worth more than the pair: it holds the deletion
+ * guarantee. Paused and stopped sharing both deny every derived surface on
+ * the very next request (404, asserted), while B's original bytes, B's own
+ * generation permission and B's own findings are all asserted to survive.
+ * That is the "revoke access immediately, preserve unrelated data" promise,
+ * checked in a browser rather than asserted in prose.
+ */
+test("/family/[person]/permissions complete: pause, resume and stop render and take effect on the next request", async ({ page }) => {
   await signIn(page, A.email, A.password);
   // The prior test's acknowledgement cannot survive this new login/session.
   await page.goto(`/genome/s-${invitedSubjectId}/reports/${COVERED_SLUGS[2]}`);
