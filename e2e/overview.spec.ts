@@ -232,7 +232,25 @@ test("phone navigation: a fixed 64px bottom bar with five labelled 44px items an
   expect((textBox?.y ?? 0) + (textBox?.height ?? 0)).toBeLessThanOrEqual(navBox?.y ?? 0);
 });
 
-test("State C: after one processed file — split count with note, ancestry line, starter list, one primary button and the populated budget", async ({
+/**
+ * `/overview partial-coverage`. The hub is not "the page with a file on it";
+ * it is the page that has to say, in one view, what this file supports and
+ * what it does not. This test already asserted both halves before it was
+ * named: the two count lines are real and populated, and the ancestry line
+ * reads the exact sentence "your file covers too few markers to estimate
+ * regions" - no figure, no hedge, no number standing in for the estimate
+ * that was not computed. `expectNoFiguresOrDashes` holds the second half
+ * shut, since a dash or an empty metric would be the reassurance this state
+ * exists to forbid.
+ *
+ * Not `complete`, and the distinction is the point: a hub that showed the
+ * report counts and simply omitted the ancestry line would look finished and
+ * would be lying by omission. Not `not-covered` either, because the reports
+ * layer is genuinely covered and linked. Partial coverage is the state where
+ * a file answers some questions and not others, and the product's job is to
+ * be legible about which is which.
+ */
+test("/overview partial-coverage — State C: after one prepared file, the split count with its note, the too-few-markers ancestry line, the starter list, one primary button and the populated budget", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);

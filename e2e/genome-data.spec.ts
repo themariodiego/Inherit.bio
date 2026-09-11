@@ -60,7 +60,23 @@ async function subjectName(page: Page): Promise<string> {
   return name!;
 }
 
-test("an rsID search renders one attributed block, one observed genotype figure and the region within the caps", async ({
+/**
+ * `/genome/[subject]/data/browser complete`, and it is the other half of the
+ * pairing the partial-coverage test below sets out. The query names one
+ * position, the file carries that position, and the whole answer is one row
+ * with a real observed genotype in it - no cell in the table says "Not
+ * covered by your file", which is asserted here rather than inferred from
+ * the figure count.
+ *
+ * `complete` on a search surface can only mean the answer is complete for
+ * what was asked, and that is the honest reading: the browser never claims
+ * the file covers the genome, and the provenance line under the table still
+ * refuses to let any count read as a count of everything. What separates
+ * this from the gene search is only the question - one position the file has
+ * against many it mostly has not - so the two tests differ in their query
+ * and in nothing else, which is what makes the contrast worth recording.
+ */
+test("/genome/[subject]/data/browser complete: an rsID search answers from the file with one attributed block, one observed genotype figure and no uncovered cell, inside the region caps", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
@@ -105,6 +121,10 @@ test("an rsID search renders one attributed block, one observed genotype figure 
   await expect(row.locator("td").first()).toHaveText("rs762551");
   await expect(row).toContainText("chr15:74749576");
   await expect(row).toContainText("CYP1A2");
+  // Nothing in this answer is uncovered. The table is asserted whole rather
+  // than row by row, so a second row appearing later with an uncovered cell
+  // would fail here instead of quietly widening what "complete" covers.
+  await expect(page.locator("[data-claim-block] table")).not.toContainText(NOT_COVERED);
 
   // Provenance is below the region, never folded into a closed control.
   await expect(page.locator("main :is(h1, h2, h3, h4, h5, h6)")).toHaveText([
