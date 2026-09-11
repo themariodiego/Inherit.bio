@@ -22,6 +22,27 @@ describe("finishing an upload whose bytes are already stored", () => {
     expect(alert).toBe(interrupted);
     expect(alert).not.toContain("<button");
   });
+  /**
+   * The automatic attempts are the point of the 2026-09-11 change, and the
+   * risk they carry is doing something on a person's behalf without saying so.
+   * So the notice is asserted, and asserted to sit OUTSIDE the alert: the
+   * refusal is still true while a retry is pending, and a screen reader must
+   * hear the refusal rather than a reassurance about it.
+   */
+  it("says an automatic attempt is coming, without softening the refusal", () => {
+    const html = renderToStaticMarkup(createElement(StagedUploadRecovery, { ...props, retrying: true }));
+    expect(html).toContain("Trying again automatically. You can also try now.");
+    expect(html.match(/<p role="alert"[^>]*>(.*?)<\/p>/)?.[1]).toBe(interrupted);
+    // The button never goes away: it is how a person acts sooner.
+    expect(html).toContain("Try this upload again");
+  });
+
+  it("says nothing about retrying once the attempts are spent", () => {
+    const html = renderToStaticMarkup(createElement(StagedUploadRecovery, { ...props, retrying: false }));
+    expect(html).not.toContain("automatically");
+    expect(html).toContain("Try this upload again");
+  });
+
   it("disables the action while the owning uploader is busy", () => {
     const html = renderToStaticMarkup(createElement(StagedUploadRecovery, { ...props, disabled: true }));
     expect(html).toMatch(/<button[^>]*disabled=""/);
