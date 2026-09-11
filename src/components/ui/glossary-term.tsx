@@ -57,6 +57,16 @@ export function GlossaryTerm({
           // Dotted underline, per the brief. `decoration-dotted` rather than a
           // border so the underline follows the text when the line wraps.
           "underline decoration-dotted underline-offset-4 cursor-help",
+          // `inline`, not the browser's default `inline-block` for a button.
+          // A gloss IS a word inside a sentence, and that is precisely what SC
+          // 2.5.8's Inline exception covers - the target-size sweep exempts an
+          // element whose computed display is exactly `inline` and which sits
+          // in surrounding prose. Left as `inline-block` the sweep would
+          // measure a 15px-tall word against the 44px control scale and be
+          // right to fail it. This is the element declaring what it actually
+          // is, not an exemption bought: a gloss cannot be given a 44px box
+          // without destroying the line height of every sentence holding one.
+          "inline",
           "rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
           className,
         )}

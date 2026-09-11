@@ -1,0 +1,495 @@
+{
+  "schemaVersion": 1,
+  "decision": "Owner decision, 2026-09-11: cite only the clinical and statistical terms. A term classed `plain` renders its definition to readers now; a term classed `cited` stays invisible until its definition carries a resolvable citationId under brief line 2570.",
+  "rule": "The class follows the DEFINITION TEXT, never the term's domain, because the definition is what would ship uncited. A definition is `cited` when it does any of three things: names a disease or a disease process, describes clinical practice or a clinical judgement, or defines a quantity or an inference drawn from data. Everything else is vocabulary - it tells a reader what a word means without asserting anything about their health or about what the data shows.",
+  "whyThatLine": "The words this splits on are the ones that decided it. `clinician` and `medical` were argued both ways and are cited, because a reader who mistakes this product for clinical care is the failure the brief cares most about. `cohort`, `population`, `sample` and `study` are plain despite being terms of art in epidemiology: their definitions here name a GROUP or an ACTIVITY and assert no quantity, and gating a word for the company it keeps rather than for what it says would gate most of the genetics vocabulary too. `phenotype` is plain for the same reason - 'shaped by DNA and other factors' is what the word means, not a finding.",
+  "counts": {
+    "total": 110,
+    "cited": 42,
+    "plain": 68
+  },
+  "terms": [
+    {
+      "term": "absolute risk",
+      "class": "cited",
+      "why": "Defines a risk quantity."
+    },
+    {
+      "term": "adiponectin",
+      "class": "plain"
+    },
+    {
+      "term": "admixture",
+      "class": "plain"
+    },
+    {
+      "term": "allele",
+      "class": "plain"
+    },
+    {
+      "term": "analysis",
+      "class": "plain"
+    },
+    {
+      "term": "ancestry",
+      "class": "plain"
+    },
+    {
+      "term": "association",
+      "class": "cited",
+      "why": "Defines an inference, and its limit - that it does not prove cause."
+    },
+    {
+      "term": "autoimmune",
+      "class": "cited",
+      "why": "Names a disease process: the immune system attacking the body's own cells."
+    },
+    {
+      "term": "autosomal",
+      "class": "plain"
+    },
+    {
+      "term": "average",
+      "class": "cited",
+      "why": "Defines a summary statistic."
+    },
+    {
+      "term": "baseline",
+      "class": "cited",
+      "why": "Defines a comparison rate."
+    },
+    {
+      "term": "bilirubin",
+      "class": "plain"
+    },
+    {
+      "term": "call rate",
+      "class": "plain"
+    },
+    {
+      "term": "carrier",
+      "class": "cited",
+      "why": "Asserts penetrance - 'often without having the condition' - which is a claim about how often a change shows, not what the word means."
+    },
+    {
+      "term": "chromosome",
+      "class": "plain"
+    },
+    {
+      "term": "circulating",
+      "class": "plain"
+    },
+    {
+      "term": "classification",
+      "class": "cited",
+      "why": "Describes an external clinical authority's judgement about what causes a condition."
+    },
+    {
+      "term": "clinical",
+      "class": "cited",
+      "why": "Describes clinical practice, the domain the brief most wants a reader not to misread."
+    },
+    {
+      "term": "clinician",
+      "class": "cited",
+      "why": "Describes a clinical role and who is qualified to hold it."
+    },
+    {
+      "term": "cohort",
+      "class": "plain"
+    },
+    {
+      "term": "condition",
+      "class": "cited",
+      "why": "Names a disease: a state that affects health or how the body works."
+    },
+    {
+      "term": "confidence interval",
+      "class": "cited",
+      "why": "Defines an uncertainty interval."
+    },
+    {
+      "term": "consent",
+      "class": "plain"
+    },
+    {
+      "term": "coverage",
+      "class": "plain"
+    },
+    {
+      "term": "data processor",
+      "class": "plain"
+    },
+    {
+      "term": "deidentified",
+      "class": "plain"
+    },
+    {
+      "term": "diagnosis",
+      "class": "cited",
+      "why": "Describes a medical conclusion and the assessment that reaches it."
+    },
+    {
+      "term": "directly genotyped",
+      "class": "plain"
+    },
+    {
+      "term": "disclosure",
+      "class": "plain"
+    },
+    {
+      "term": "dominant",
+      "class": "plain"
+    },
+    {
+      "term": "dopamine",
+      "class": "plain"
+    },
+    {
+      "term": "effect size",
+      "class": "cited",
+      "why": "Defines a measured group-level difference."
+    },
+    {
+      "term": "enzyme",
+      "class": "plain"
+    },
+    {
+      "term": "estimate",
+      "class": "cited",
+      "why": "Defines a calculated value carrying uncertainty."
+    },
+    {
+      "term": "evidence",
+      "class": "plain"
+    },
+    {
+      "term": "exome",
+      "class": "plain"
+    },
+    {
+      "term": "exposure",
+      "class": "plain"
+    },
+    {
+      "term": "expression",
+      "class": "plain"
+    },
+    {
+      "term": "fertility",
+      "class": "plain"
+    },
+    {
+      "term": "frameshift",
+      "class": "plain"
+    },
+    {
+      "term": "gene",
+      "class": "plain"
+    },
+    {
+      "term": "genetic",
+      "class": "plain"
+    },
+    {
+      "term": "genome build",
+      "class": "plain"
+    },
+    {
+      "term": "genome-wide association study",
+      "class": "cited",
+      "why": "Defines a study design and what it infers."
+    },
+    {
+      "term": "genotype",
+      "class": "plain"
+    },
+    {
+      "term": "haplogroup",
+      "class": "plain"
+    },
+    {
+      "term": "haplotype",
+      "class": "plain"
+    },
+    {
+      "term": "hazard ratio",
+      "class": "cited",
+      "why": "Defines a time-to-event ratio."
+    },
+    {
+      "term": "hemoglobin",
+      "class": "plain"
+    },
+    {
+      "term": "heritability",
+      "class": "cited",
+      "why": "Defines a variance share attributed to genes."
+    },
+    {
+      "term": "heterozygous",
+      "class": "plain"
+    },
+    {
+      "term": "homozygous",
+      "class": "plain"
+    },
+    {
+      "term": "imputation",
+      "class": "cited",
+      "why": "Defines statistical filling-in of unmeasured positions."
+    },
+    {
+      "term": "incidence",
+      "class": "cited",
+      "why": "Defines a rate of new cases."
+    },
+    {
+      "term": "inflammation",
+      "class": "cited",
+      "why": "Names a disease process and its causes."
+    },
+    {
+      "term": "inheritance",
+      "class": "plain"
+    },
+    {
+      "term": "insulin",
+      "class": "plain"
+    },
+    {
+      "term": "intronic",
+      "class": "plain"
+    },
+    {
+      "term": "jurisdiction",
+      "class": "plain"
+    },
+    {
+      "term": "laboratory",
+      "class": "plain"
+    },
+    {
+      "term": "liability",
+      "class": "plain"
+    },
+    {
+      "term": "liftover",
+      "class": "plain"
+    },
+    {
+      "term": "linkage disequilibrium",
+      "class": "cited",
+      "why": "Defines co-inheritance measured against chance."
+    },
+    {
+      "term": "locus",
+      "class": "plain"
+    },
+    {
+      "term": "marker",
+      "class": "plain"
+    },
+    {
+      "term": "medical",
+      "class": "cited",
+      "why": "Describes the domain of diagnosis and treatment."
+    },
+    {
+      "term": "medication",
+      "class": "cited",
+      "why": "Describes what a drug or care plan is used to do."
+    },
+    {
+      "term": "meta-analysis",
+      "class": "cited",
+      "why": "Defines a combination of study results."
+    },
+    {
+      "term": "missense",
+      "class": "plain"
+    },
+    {
+      "term": "model",
+      "class": "cited",
+      "why": "Defines an estimate of something not directly observed."
+    },
+    {
+      "term": "odds",
+      "class": "cited",
+      "why": "Defines a ratio of occurrence to non-occurrence."
+    },
+    {
+      "term": "odds ratio",
+      "class": "cited",
+      "why": "Defines a between-group odds comparison."
+    },
+    {
+      "term": "opt-in",
+      "class": "plain"
+    },
+    {
+      "term": "overload",
+      "class": "cited",
+      "why": "Names a disease process, and calls it harmful."
+    },
+    {
+      "term": "pathogenic",
+      "class": "cited",
+      "why": "Describes a clinical review's judgement that a change causes a condition."
+    },
+    {
+      "term": "penetrance",
+      "class": "cited",
+      "why": "Defines how often a change shows as a trait or condition."
+    },
+    {
+      "term": "percentile",
+      "class": "cited",
+      "why": "Defines a position in a comparison distribution."
+    },
+    {
+      "term": "personal data",
+      "class": "plain"
+    },
+    {
+      "term": "phenotype",
+      "class": "plain"
+    },
+    {
+      "term": "pigmentation",
+      "class": "plain"
+    },
+    {
+      "term": "polygenic",
+      "class": "cited",
+      "why": "Asserts many positions with usually small effects, which is a quantitative claim."
+    },
+    {
+      "term": "population",
+      "class": "plain"
+    },
+    {
+      "term": "preliminary",
+      "class": "plain"
+    },
+    {
+      "term": "prevalence",
+      "class": "cited",
+      "why": "Defines how common a condition is."
+    },
+    {
+      "term": "probability",
+      "class": "cited",
+      "why": "Defines likelihood as a number."
+    },
+    {
+      "term": "promoter",
+      "class": "plain"
+    },
+    {
+      "term": "protein",
+      "class": "plain"
+    },
+    {
+      "term": "raw data",
+      "class": "plain"
+    },
+    {
+      "term": "receptor",
+      "class": "plain"
+    },
+    {
+      "term": "recessive",
+      "class": "plain"
+    },
+    {
+      "term": "reference",
+      "class": "plain"
+    },
+    {
+      "term": "reference panel",
+      "class": "cited",
+      "why": "Defines the comparison group an estimate is computed against."
+    },
+    {
+      "term": "regulator",
+      "class": "plain"
+    },
+    {
+      "term": "relative risk",
+      "class": "cited",
+      "why": "Defines a ratio of chances."
+    },
+    {
+      "term": "replication",
+      "class": "cited",
+      "why": "Defines an inferential standard for a finding holding up."
+    },
+    {
+      "term": "research consent",
+      "class": "plain"
+    },
+    {
+      "term": "revocable",
+      "class": "plain"
+    },
+    {
+      "term": "risk allele",
+      "class": "cited",
+      "why": "Defines a DNA version by a group-level difference in chance."
+    },
+    {
+      "term": "sample",
+      "class": "plain"
+    },
+    {
+      "term": "sensitivity",
+      "class": "cited",
+      "why": "Defines how often a test finds what is present."
+    },
+    {
+      "term": "sequencing",
+      "class": "plain"
+    },
+    {
+      "term": "statistical",
+      "class": "cited",
+      "why": "Defines the idea of patterns and uncertainty measured in data."
+    },
+    {
+      "term": "study",
+      "class": "plain"
+    },
+    {
+      "term": "susceptibility",
+      "class": "cited",
+      "why": "A risk concept: a tendency toward an outcome."
+    },
+    {
+      "term": "third party",
+      "class": "plain"
+    },
+    {
+      "term": "transporter",
+      "class": "plain"
+    },
+    {
+      "term": "variant",
+      "class": "plain"
+    },
+    {
+      "term": "whole genome",
+      "class": "plain"
+    },
+    {
+      "term": "x-linked",
+      "class": "plain"
+    },
+    {
+      "term": "z-score",
+      "class": "cited",
+      "why": "Defines distance from an average in units of spread."
+    }
+  ]
+}
