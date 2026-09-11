@@ -7,6 +7,7 @@ import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { CitationItem, ReportCallCoverage } from "@/components/reports/report-evidence";
+import { GlossedText } from "@/components/ui/glossed-text";
 import { ReportInterpretation, ReportSummary, ReportSummarySources } from "@/components/reports/report-summary";
 import { annotateReportSources, legacySourceId, reportSourceIds } from "@/lib/claims/presentation";
 import { SensitiveGate } from "@/components/reports/sensitive-gate";
@@ -263,8 +264,15 @@ function VariantResult({
   } else if (outcome.status === "not-covered") {
     body = (
       <div data-outcome="not-covered" className="space-y-1 text-sm leading-relaxed text-ink">
-        <p {...REQUIRED_ACCURACY}>{notCovered}</p>
-        <p {...REQUIRED_ACCURACY}>{LIMIT_OF_FILE}</p>
+        {/* The sentence a beginner is most likely to misread, so it is the one
+            that gets glosses: it explains an ABSENCE, and leans on "variant",
+            "genotype" and "reference" to do it. Only terms classed `plain`
+            are glossed, so nothing naming a disease, a risk or a statistic
+            reaches this surface uncited. The paragraph's own text is
+            unchanged while the glosses are closed, which is what lets the
+            copy still be asserted exactly. */}
+        <p {...REQUIRED_ACCURACY}><GlossedText>{notCovered}</GlossedText></p>
+        <p {...REQUIRED_ACCURACY}><GlossedText>{LIMIT_OF_FILE}</GlossedText></p>
       </div>
     );
   } else {

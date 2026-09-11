@@ -74,16 +74,27 @@ export function GlossaryTerm({
         {shown}
       </button>
       {/* In place, not floating: the definition pushes the text below it down,
-          which is what makes it survive reflow and zoom. `hidden` rather than
-          unmounting keeps the control's `aria-controls` target present for
-          assistive technology that resolves it before the first open. */}
+          which is what makes it survive reflow and zoom. The ELEMENT is never
+          unmounted, so the control's `aria-controls` target is present for
+          assistive technology that resolves it before the first open.
+          
+          Its TEXT is mounted only while open, and that is not a detail. A
+          gloss sits inside a sentence, so anything reading the containing
+          paragraph reads this span too: with the definition always present,
+          `<p>.textContent` becomes the copy with every definition spliced into
+          it. That broke an exact-copy assertion the first time a real surface
+          was glossed (2026-09-11, e2e/own-report-results), and a broken
+          assertion was the cheap symptom - the expensive one is that any
+          consumer of rendered text, an export or an audit as much as a test,
+          would read the product's copy back wrong. Closed, this contributes no
+          text and the paragraph reads exactly as written. */}
       <span
         id={`${id}-definition`}
         data-slot="glossary-definition"
         hidden={!open}
         className="mt-1 block max-w-prose text-sm text-ink-muted"
       >
-        {entry.definition}
+        {open ? entry.definition : null}
       </span>
     </span>
   );

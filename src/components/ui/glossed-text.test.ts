@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GlossedText } from "./glossed-text";
 import { GlossaryTerm } from "./glossary-term";
+import { glossaryEntry } from "@/copy/glossary";
 
 /**
  * The rules here are the brief's, and each has a reader behind it: first use
@@ -79,6 +80,30 @@ describe("glossing a copy string on first use", () => {
   });
 
   it("carries the definition the readability register holds, not a second copy", () => {
-    expect(glossed("One allele was read.")).toContain("One version of a DNA position.");
+    // Asserted against the register rather than against the rendered markup,
+    // because the definition's TEXT is deliberately absent until the reader
+    // opens it (see below). What this pins is the thing the test was named
+    // for: there is one definition and the component does not keep a copy.
+    expect(glossaryEntry("allele")?.definition).toBe("One version of a DNA position.");
+  });
+
+  /**
+   * The invariant a glossed surface actually depends on. A gloss sits inside a
+   * sentence, so anything reading the containing paragraph reads the
+   * definition span too. With the definition always mounted, a paragraph's
+   * text becomes the copy with every definition spliced into it - which broke
+   * an exact-copy assertion the first time a real surface was glossed, and
+   * would have misread the product's own copy back to any other consumer of
+   * rendered text.
+   */
+  it("leaves the sentence's text exactly as written while closed", () => {
+    const sentence = "One allele was read from the reference.";
+    const html = glossed(sentence);
+    // Strip markup the way a reader's text content is assembled: tags go, the
+    // characters between them stay.
+    expect(html.replace(/<[^>]+>/g, "")).toBe(sentence);
+    // The control and its target still exist; only the definition's text waits.
+    expect(html).toContain('data-slot="glossary-definition"');
+    expect(html).toContain("aria-controls=");
   });
 });
