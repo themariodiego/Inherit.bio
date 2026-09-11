@@ -57,6 +57,16 @@ export function GlossaryTerm({
           // Dotted underline, per the brief. `decoration-dotted` rather than a
           // border so the underline follows the text when the line wraps.
           "underline decoration-dotted underline-offset-4 cursor-help",
+          // `inline`, not the browser's default `inline-block` for a button.
+          // A gloss IS a word inside a sentence, and that is precisely what SC
+          // 2.5.8's Inline exception covers - the target-size sweep exempts an
+          // element whose computed display is exactly `inline` and which sits
+          // in surrounding prose. Left as `inline-block` the sweep would
+          // measure a 15px-tall word against the 44px control scale and be
+          // right to fail it. This is the element declaring what it actually
+          // is, not an exemption bought: a gloss cannot be given a 44px box
+          // without destroying the line height of every sentence holding one.
+          "inline",
           "rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
           className,
         )}
@@ -64,16 +74,27 @@ export function GlossaryTerm({
         {shown}
       </button>
       {/* In place, not floating: the definition pushes the text below it down,
-          which is what makes it survive reflow and zoom. `hidden` rather than
-          unmounting keeps the control's `aria-controls` target present for
-          assistive technology that resolves it before the first open. */}
+          which is what makes it survive reflow and zoom. The ELEMENT is never
+          unmounted, so the control's `aria-controls` target is present for
+          assistive technology that resolves it before the first open.
+          
+          Its TEXT is mounted only while open, and that is not a detail. A
+          gloss sits inside a sentence, so anything reading the containing
+          paragraph reads this span too: with the definition always present,
+          `<p>.textContent` becomes the copy with every definition spliced into
+          it. That broke an exact-copy assertion the first time a real surface
+          was glossed (2026-09-11, e2e/own-report-results), and a broken
+          assertion was the cheap symptom - the expensive one is that any
+          consumer of rendered text, an export or an audit as much as a test,
+          would read the product's copy back wrong. Closed, this contributes no
+          text and the paragraph reads exactly as written. */}
       <span
         id={`${id}-definition`}
         data-slot="glossary-definition"
         hidden={!open}
         className="mt-1 block max-w-prose text-sm text-ink-muted"
       >
-        {entry.definition}
+        {open ? entry.definition : null}
       </span>
     </span>
   );

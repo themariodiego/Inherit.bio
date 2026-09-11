@@ -36,8 +36,8 @@ insert into storage.objects(bucket_id,name,owner_id,metadata)
 create temporary table finalizing_upload as select public.begin_own_upload_finalization_v1(
  '89900000-0000-4000-8000-000000000001','89900000-0000-4000-8000-000000000010',
  (select (receipt->>'uploadId')::uuid from issued_upload)) receipt;
-insert into storage.objects(id,bucket_id,name,metadata) values('89900000-0000-4000-8000-000000000020',
- 'genomes',(select receipt->>'finalKey' from finalizing_upload),'{"size":8}');
+insert into storage.objects(id,bucket_id,name,version,metadata) values('89900000-0000-4000-8000-000000000020',
+ 'genomes',(select receipt->>'finalKey' from finalizing_upload),gen_random_uuid()::text,'{"size":8}');
 set local storage.allow_delete_query='true';
 delete from storage.objects where bucket_id='genomes' and name=(select receipt->>'stagingKey' from issued_upload);
 create temporary table finalized_upload as select public.complete_own_upload_finalization_v1(

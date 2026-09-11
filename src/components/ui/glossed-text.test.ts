@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GlossedText } from "./glossed-text";
 import { GlossaryTerm } from "./glossary-term";
+import { glossaryEntry } from "@/copy/glossary";
 
 /**
  * The rules here are the brief's, and each has a reader behind it: first use
@@ -40,8 +41,29 @@ describe("glossing a copy string on first use", () => {
     expect(html.toLowerCase()).not.toContain("onmouseover");
   });
 
+  /**
+   * The fixture moved on 2026-09-11 and the move is the point. This read
+   * "absolute risk", which stopped being glossed at all when that term was
+   * classed `cited` - so the assertion would have failed for a reason that has
+   * nothing to do with longest-match-first. A fixture has to be a pair that
+   * both still render: "research consent" contains "consent", and both are
+   * plain, so this proves the ordering rather than the classification.
+   */
   it("prefers the longest term, so a phrase is not glossed by its last word", () => {
-    expect(glossed("Read the absolute risk carefully.")).toContain('data-term="absolute risk"');
+    expect(glossed("Read the research consent carefully.")).toContain('data-term="research consent"');
+  });
+
+  it("glosses nothing a reader may not be shown uncited", () => {
+    // The split is only worth having if it actually keeps these out. Whole
+    // sentences of cited vocabulary must come back untouched.
+    // "population" is deliberately absent from these: it is classed plain,
+    // because its definition names a GROUP rather than a quantity. The first
+    // draft of this test used it and failed, which is the classification being
+    // checked rather than assumed.
+    for (const sentence of ["Read the absolute risk carefully.", "The odds ratio is not a diagnosis.",
+      "Heritability is a statistical estimate."]) {
+      expect(glossed(sentence)).toBe(sentence);
+    }
   });
 
   it("leaves a sentence with no registered term completely alone", () => {
@@ -58,6 +80,30 @@ describe("glossing a copy string on first use", () => {
   });
 
   it("carries the definition the readability register holds, not a second copy", () => {
-    expect(glossed("One allele was read.")).toContain("One version of a DNA position.");
+    // Asserted against the register rather than against the rendered markup,
+    // because the definition's TEXT is deliberately absent until the reader
+    // opens it (see below). What this pins is the thing the test was named
+    // for: there is one definition and the component does not keep a copy.
+    expect(glossaryEntry("allele")?.definition).toBe("One version of a DNA position.");
+  });
+
+  /**
+   * The invariant a glossed surface actually depends on. A gloss sits inside a
+   * sentence, so anything reading the containing paragraph reads the
+   * definition span too. With the definition always mounted, a paragraph's
+   * text becomes the copy with every definition spliced into it - which broke
+   * an exact-copy assertion the first time a real surface was glossed, and
+   * would have misread the product's own copy back to any other consumer of
+   * rendered text.
+   */
+  it("leaves the sentence's text exactly as written while closed", () => {
+    const sentence = "One allele was read from the reference.";
+    const html = glossed(sentence);
+    // Strip markup the way a reader's text content is assembled: tags go, the
+    // characters between them stay.
+    expect(html.replace(/<[^>]+>/g, "")).toBe(sentence);
+    // The control and its target still exist; only the definition's text waits.
+    expect(html).toContain('data-slot="glossary-definition"');
+    expect(html).toContain("aria-controls=");
   });
 });

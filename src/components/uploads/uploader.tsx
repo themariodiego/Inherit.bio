@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,10 @@ import { megabytesOf } from "@/lib/genome/ingest-limits";
 import { route } from "@/lib/primary-routes";
 import { remainingAccountBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { BrowserPreparationError, BrowserUploadError, finishStagedUpload, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
+import { AUTO_FINISH_DELAYS_MS } from "@/lib/uploads/finish-retry-policy";
 import { PreparationRecovery } from "./preparation-recovery";
 import { StagedUploadRecovery } from "./staged-upload-recovery";
+
 
 type Phase = UploadProgress | { step: "idle" } | { step: "preparing" | "making-reports" | "prepared" | "results-ready"; fileId: string }
   | { step: "preparation-error"; fileId: string; code: BrowserPreparationError["code"] }
@@ -54,8 +56,21 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
+  /** Attempts already spent on one staged upload. Keyed by the upload, so a
+   * re-render cannot buy more of them and a second interrupted upload starts
+   * with a full budget. State rather than a ref because the page shows whether
+   * an attempt is still coming, and that has to be derived during render. */
+  const [autoFinish, setAutoFinish] = useState<{ uploadId: string; spent: number }>({ uploadId: "", spent: 0 });
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const busy = !["idle", "prepared", "results-ready", "preparation-error", "error"].includes(phase.step);
+  /** The only phase an automatic attempt may act on: `stagedUploadId` is set
+   * only where the bytes are still in private storage and one more
+   * finalization can finish them. Every other refusal has already cleaned up,
+   * so nothing here can retry a file the product refused. */
+  const resumableUploadId = phase.step === "error" ? phase.stagedUploadId : undefined;
+  const autoFinishSpent = resumableUploadId && autoFinish.uploadId === resumableUploadId ? autoFinish.spent : 0;
+  const autoFinishPending = Boolean(resumableUploadId) && !disabled
+    && autoFinishSpent < AUTO_FINISH_DELAYS_MS.length;
   async function prepare(fileId: string, reportsOnly = false) {
     setPhase({ step: reportsOnly ? "making-reports" : "preparing", fileId });
     try {
@@ -67,9 +82,13 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
     }
     router.refresh();
   }
-  /** The person asks; the uploader never asks for them. The route resumes from
-   * its own durable progress, so this finishes the interrupted attempt instead
-   * of sending the file a second time. */
+  /** Finishes an interrupted attempt. The route resumes from its own durable
+   * progress, so this never sends the file a second time; it costs only what
+   * the killed attempt left undone.
+   *
+   * Called both by the person, through the button, and by the automatic
+   * attempts below. The button never goes away: it is what a person uses when
+   * the automatic attempts are spent, and what they use to act sooner. */
   async function finishUpload(uploadId: string) {
     if (disabled || inFlight.current) return;
     inFlight.current = true;
@@ -80,6 +99,35 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
     } catch (error) { setPhase(uploadError(error, limits)); }
     finally { inFlight.current = false; }
   }
+  /**
+   * Finish an interrupted upload without waiting to be asked.
+   *
+   * The delays are measured against the thing that actually refuses an early
+   * retry rather than picked for feel: `FINALIZATION_LEASE_SECONDS` is 60, and
+   * a finalization whose holder died still owns its lease until it lapses, so
+   * a request arriving inside that minute is refused on purpose. The first
+   * attempt is immediate-ish anyway, because a failure that never reached the
+   * server holds no lease and costs nothing to retry; the last one waits past
+   * the lease, which is the first moment a genuinely stalled finalization can
+   * be taken over.
+   *
+   * Only an `error` phase carrying `stagedUploadId` is retried, and that is
+   * set only where the bytes are still in private storage and one more
+   * finalization can finish them - every other refusal has already cleaned up,
+   * so nothing here can retry a file the product refused.
+   */
+  useEffect(() => {
+    if (!autoFinishPending) return;
+    const timer = setTimeout(() => {
+      setAutoFinish({ uploadId: resumableUploadId!, spent: autoFinishSpent + 1 });
+      void finishUpload(resumableUploadId!);
+    }, AUTO_FINISH_DELAYS_MS[autoFinishSpent]);
+    return () => clearTimeout(timer);
+    // `finishUpload` is redeclared every render and guards itself with
+    // `inFlight`; listing it would reschedule the timer on every render and
+    // the attempt would never fire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFinishPending, resumableUploadId, autoFinishSpent]);
   async function retryPreparation(fileId: string, reportsOnly: boolean) {
     if (disabled || inFlight.current) return;
     inFlight.current = true;
@@ -140,6 +188,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
           fileHref={route("genome.data", { subject: subjectId === "me" ? "me" : "s-" + subjectId })} />
         : phase.step === "error" && phase.stagedUploadId
           ? <StagedUploadRecovery message={phase.message} disabled={disabled || busy}
+            retrying={autoFinishPending}
             onFinish={() => void finishUpload(phase.stagedUploadId!)} />
         : phase.step === "error" ? <p role="alert" className="text-danger">{phase.message}
           {phase.action ? <> <Link href={phase.action.href} className="underline underline-offset-2">{phase.action.label}</Link></> : null}

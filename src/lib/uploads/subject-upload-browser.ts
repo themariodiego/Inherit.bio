@@ -152,10 +152,13 @@ const NO_DECISION_STATUSES = new Set([408, 502, 504]);
  *
  * The route keeps durable progress for one finalization (ADR-0026), so asking
  * again does only what the interrupted attempt left undone rather than
- * transferring the object a second time. Nothing here decides on its own to
- * ask: a person does, because this uploader performs no background retry and
- * an interrupted upload has to surface its refusal rather than be repeated out
- * of sight.
+ * transferring the object a second time. This function still decides nothing:
+ * it is called, never self-scheduling. What changed on 2026-09-11 is who calls
+ * it - the uploader now makes three bounded automatic attempts before handing
+ * the decision back to the person (`AUTO_FINISH_DELAYS_MS` in
+ * `src/components/uploads/uploader.tsx`). The refusal is still announced
+ * throughout, so an interrupted upload is never repeated out of sight, and the
+ * button remains the way to act sooner or after the attempts are spent.
  *
  * A request that arrives while the previous attempt still holds its lease is
  * refused, deliberately, so that two requests can never drive one

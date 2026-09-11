@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { glossaryEntries } from "@/copy/glossary";
+import { renderableGlossaryEntries } from "@/copy/glossary";
 import { GlossaryTerm } from "@/components/ui/glossary-term";
 
 /**
@@ -32,7 +32,13 @@ import { GlossaryTerm } from "@/components/ui/glossary-term";
  * rather than having "risk" glossed inside it.
  */
 
-const TERMS: readonly string[] = glossaryEntries()
+/**
+ * Only the terms classified `plain` (operator decision, 2026-09-11). A term
+ * whose definition names a disease, describes clinical practice, or defines a
+ * quantity drawn from data stays out of this pattern entirely, so it is not
+ * merely unstyled - it is never matched, and no reader can open it.
+ */
+const TERMS: readonly string[] = renderableGlossaryEntries()
   .flatMap((entry) => [entry.term, ...entry.aliases])
   .sort((left, right) => right.length - left.length);
 

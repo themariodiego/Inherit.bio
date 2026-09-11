@@ -76,7 +76,10 @@ select throws_ok($$select public.own_upload_normalization_v1('begin','89800000-0
 -- SQL authority/metadata only. Provider deletion is a separate actual service
 -- test. This fixture never claims its synthetic Storage metadata is a blob.
 reset role;
-select is((select enabled from private.own_original_retention_config where singleton),false,'original retirement starts disabled');
+-- Shipped enabled since 20260911160000 (owner decision). The assertion moved
+-- with the default rather than being dropped: what it proves is that the
+-- shipped configuration is the one this suite then exercises.
+select is((select enabled from private.own_original_retention_config where singleton),true,'original retirement ships enabled');
 select is((select count(*) from private.own_original_retirements),0::bigint,'no old-source backfill');
 update private.own_original_retention_config set enabled=true,applies_after=clock_timestamp()-interval '2 months' where singleton;
 set local role service_role;
