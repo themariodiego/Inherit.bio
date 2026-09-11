@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "rule": "G3.2: every comprehension task is bound to a named account, a named fixture, and the exact surface and content that count as success. A binding no test can resolve is not a binding, so scripts/comprehension/bindings.test.ts resolves every path, slug, route and coverage claim below against the repository.",
+  "measuredOn": "2026-09-11",
+  "measurement": {
+    "sampleRsids": 2135,
+    "templatesTotal": 162,
+    "templatesFullyCoveredBySample": 151,
+    "templatesNotCoveredBySample": 11,
+    "aimsPanelSize": 168,
+    "aimsInSample": 5,
+    "aimsInAimsMixedFixture": 168,
+    "note": "Counts are asserted in bindings.test.ts so a fixture or template change fails rather than silently invalidating a task."
+  },
+  "accounts": [
+    {
+      "id": "participant-a",
+      "role": "The account holder whose own file is loaded. Every task except T4's counterpart, T9 and T10 is run from here.",
+      "files": [
+        "data/samples/synthetic_23andme.txt",
+        "e2e/fixtures/aims-mixed-grch38.vcf"
+      ],
+      "why": "Two files, because no single committed fixture both answers a report task and supports an ancestry estimate. The array sample covers 151 of 162 report templates but only 5 of the 168 ancestry-informative markers, which the product reports as low confidence; the AIMs fixture covers all 168 and no report position."
+    },
+    {
+      "id": "participant-b",
+      "role": "The friend named in T4, who has given participant A written permission. Holds no file of their own at the start of the round.",
+      "files": []
+    },
+    {
+      "id": "participant-c",
+      "role": "The intending parent in T6 and T10, with two embryo files loaded.",
+      "files": [
+        "e2e/fixtures/tiny-grch38.vcf",
+        "e2e/fixtures/tiny-b-grch38.vcf"
+      ],
+      "why": "Two distinct seeds, so a comparison surface has something to compare and G8.3's seed-differencing holds."
+    },
+    {
+      "id": "no-account",
+      "role": "T9 and T10 start signed out at the marketing home page. Creating an account is not a permitted step in either.",
+      "files": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "prompt": "Find what your DNA file says about your chance of type 2 diabetes, and say in your own words what it says.",
+      "account": "participant-a",
+      "fixtures": [
+        "data/samples/synthetic_23andme.txt"
+      ],
+      "routes": [
+        "/overview",
+        "/genome/[subject]/reports",
+        "/genome/[subject]/reports/[slug]"
+      ],
+      "templateSlugs": [
+        "type-2-diabetes-tcf7l2-rs7903146",
+        "type-2-diabetes-pparg-pro12ala",
+        "type-2-diabetes-kcnj11-e23k"
+      ],
+      "coverage": [
+        {
+          "fixture": "data/samples/synthetic_23andme.txt",
+          "rsids": [
+            "rs7903146",
+            "rs1801282",
+            "rs5219"
+          ],
+          "covered": true
+        }
+      ],
+      "success": "The participant reaches any one of the three bound report pages and reports, in their own words, the genotype-specific interpretation that page shows. Three templates rather than one because all three are type 2 diabetes, all three are covered by this fixture, and grading on which of them the participant happened to open would grade navigation luck rather than comprehension.",
+      "prohibitedClass": null
+    },
+    {
+      "id": "T2",
+      "prompt": "Find where your ancestors came from and name one specific region.",
+      "account": "participant-a",
+      "fixtures": [
+        "e2e/fixtures/aims-mixed-grch38.vcf"
+      ],
+      "routes": [
+        "/genome/[subject]/ancestry"
+      ],
+      "templateSlugs": [],
+      "coverage": [
+        {
+          "fixture": "e2e/fixtures/aims-mixed-grch38.vcf",
+          "aimsCovered": 168
+        }
+      ],
+      "regionLabels": [
+        "Africa south of the Sahara",
+        "Central America, the Caribbean and the Andes",
+        "East and Southeast Asia",
+        "Europe",
+        "South Asia"
+      ],
+      "success": "The participant reaches the ancestry surface and names one of the five region labels the surface itself renders, read from data/ref/regions/regions.json. The first draft of this binding named the five 1000 Genomes superpopulation labels instead - African, Admixed American, East Asian, European, South Asian - and every one of those except European is on data/ref/regions/label-denylist.json, which the product enforces precisely so it never shows a demonym. A protocol that asked a participant to find a label the product refuses to print would have failed every participant for the product's own virtue. Naming a country is a fail too: the product does not claim countries, so a participant reporting one has read something into it.",
+      "prohibitedClass": null,
+      "regionSource": "data/ref/regions/regions.json"
+    },
+    {
+      "id": "T3",
+      "prompt": "Find something Inherit could not check in your file, and say what that means.",
+      "account": "participant-a",
+      "fixtures": [
+        "data/samples/synthetic_23andme.txt",
+        "e2e/fixtures/aims-mixed-grch38.vcf"
+      ],
+      "routes": [
+        "/genome/[subject]/reports/[slug]"
+      ],
+      "templateSlugs": [
+        "vkorc1-rs9923231-one-position",
+        "cyp2c19-rs4244285-one-position",
+        "cyp2c19-rs12248560-one-position",
+        "cyp2c9-rs1799853-one-position",
+        "cyp2c9-rs1057910-one-position",
+        "slco1b1-rs4149056-one-position",
+        "tpmt-rs1800462-one-position",
+        "tpmt-rs1800460-one-position",
+        "nudt15-rs116855232-one-position",
+        "dpyd-rs3918290-one-position",
+        "cyp3a5-rs776746-one-position"
+      ],
+      "coverage": [
+        {
+          "fixture": "data/samples/synthetic_23andme.txt",
+          "rsids": [
+            "rs9923231",
+            "rs4244285",
+            "rs12248560",
+            "rs1799853",
+            "rs1057910",
+            "rs4149056",
+            "rs1800462",
+            "rs1800460",
+            "rs116855232",
+            "rs3918290",
+            "rs776746"
+          ],
+          "covered": false
+        },
+        {
+          "fixture": "e2e/fixtures/aims-mixed-grch38.vcf",
+          "rsids": [
+            "rs9923231",
+            "rs4244285",
+            "rs12248560",
+            "rs1799853",
+            "rs1057910",
+            "rs4149056",
+            "rs1800462",
+            "rs1800460",
+            "rs116855232",
+            "rs3918290",
+            "rs776746"
+          ],
+          "covered": false
+        }
+      ],
+      "copyAnchors": [
+        "NOT_COVERED_ARRAY",
+        "NOT_COVERED_VCF",
+        "WHAT_THIS_DOESNT_MEAN_NOT_COVERED"
+      ],
+      "success": "The participant reaches any of the eleven bound report pages and says, in their own words, that this position was not read and that this is not the same as a reassuring result. These eleven are the whole not-covered set for these two files, measured rather than chosen: every other template in data/templates is fully covered by the array sample.",
+      "prohibitedClass": null
+    },
+    {
+      "id": "T4",
+      "prompt": "You have a friend's DNA file and their written permission. Find out whether you may upload it and what Inherit asks you to do first.",
+      "account": "participant-a",
+      "fixtures": [],
+      "routes": [
+        "/files/upload",
+        "/family/invite",
+        "/settings/people"
+      ],
+      "templateSlugs": [],
+      "success": "The participant reports that their friend's own written permission to them is not sufficient, and that Inherit asks the friend to confirm directly through Inherit before anything is analysed. Reporting that they may simply upload it is a fail even if they never do.",
+      "prohibitedClass": null
+    },
+    {
+      "id": "T5",
+      "prompt": "Say whether Inherit can tell you that you will get a disease.",
+      "account": "participant-a",
+      "fixtures": [
+        "data/samples/synthetic_23andme.txt"
+      ],
+      "routes": [
+        "/genome/[subject]/reports/[slug]",
+        "/science/limits",
+        "/copilot/[scope]"
+      ],
+      "templateSlugs": [],
+      "success": "The participant says it cannot.",
+      "prohibitedClass": "T5"
+    },
+    {
+      "id": "T6",
+      "prompt": "Two embryo files are loaded. Say which one Inherit recommends and why.",
+      "account": "participant-c",
+      "fixtures": [
+        "e2e/fixtures/tiny-grch38.vcf",
+        "e2e/fixtures/tiny-b-grch38.vcf"
+      ],
+      "routes": [
+        "/embryos",
+        "/embryos/compare"
+      ],
+      "templateSlugs": [],
+      "requiresCapability": "embryo_analysis",
+      "success": "The participant says Inherit does not recommend, rank or pick one.",
+      "prohibitedClass": "T6",
+      "withheldVariant": {
+        "prompt": "Two embryo files are loaded. Find out what Inherit will and will not do with an embryo file, and say why.",
+        "when": "The round runs in any environment where embryo_analysis is not permitted, which today is every real jurisdiction: data/jurisdictions.json holds zero realJurisdictions entries, so all 249 catalogue codes resolve to unreviewed. The variant carries the same prohibited-answer set.",
+        "routes": [
+          "/embryo-analysis",
+          "/embryos"
+        ]
+      }
+    },
+    {
+      "id": "T7",
+      "prompt": "For one condition, say how much difference this makes to an actual person, in plain numbers.",
+      "account": "participant-c",
+      "fixtures": [
+        "e2e/fixtures/tiny-grch38.vcf",
+        "e2e/fixtures/tiny-b-grch38.vcf"
+      ],
+      "routes": [
+        "/embryos/compare"
+      ],
+      "templateSlugs": [],
+      "requiresCapability": "embryo_analysis",
+      "figureSources": [
+        "src/components/embryo/compare/compare-cell.tsx"
+      ],
+      "success": "The participant reports an absolute figure with its denominator. A relative figure alone is the prohibited answer.",
+      "prohibitedClass": "T7",
+      "measuredConstraint": "Bound here and not to a My Genome report because, measured 2026-09-11, the report detail page renders exactly one figure kind — genotype — and no percentage at all; the only surface in the product that renders a personal absolute figure is the embryo comparison cell. The consequence is recorded in docs/comprehension-protocol.md rather than worked around: outside an environment where embryo_analysis is permitted, T7 has no bound surface."
+    },
+    {
+      "id": "T8",
+      "prompt": "Delete everything Inherit holds about you, and say what will be gone.",
+      "account": "participant-a",
+      "fixtures": [
+        "data/samples/synthetic_23andme.txt",
+        "e2e/fixtures/aims-mixed-grch38.vcf"
+      ],
+      "routes": [
+        "/settings/data"
+      ],
+      "templateSlugs": [],
+      "success": "The participant completes the deletion and reports both halves of what the surface states: what goes, and the deadline by which it goes. Reporting only that a button was pressed is a fail.",
+      "prohibitedClass": null
+    },
+    {
+      "id": "T9",
+      "prompt": "Someone has uploaded your DNA. Starting from inherit.bio with no account, find out what is held about you, and delete it.",
+      "account": "no-account",
+      "fixtures": [],
+      "routes": [
+        "/",
+        "/legal/appeals",
+        "/withdraw/[token]"
+      ],
+      "templateSlugs": [],
+      "maxActions": 8,
+      "success": "The participant reaches the subject-access route and the withdrawal it offers within eight actions, without creating an account. An action is one click, one form submission, or one typed URL.",
+      "prohibitedClass": null
+    },
+    {
+      "id": "T10",
+      "prompt": "You were conceived from an embryo that was analysed here. Find out what exists about you, who holds it, for how long, and what you can do.",
+      "account": "no-account",
+      "fixtures": [],
+      "routes": [
+        "/",
+        "/legal/future-person",
+        "/future-person/claim"
+      ],
+      "templateSlugs": [],
+      "success": "The participant reports all four: what exists, who holds it, for how long, and what they can do. Any answer reporting that no route was found is a fail — G3.3 allows zero of those.",
+      "prohibitedClass": null
+    }
+  ]
+}

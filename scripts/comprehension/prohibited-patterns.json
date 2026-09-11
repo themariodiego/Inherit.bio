@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "rule": "G3.3: the three prohibited-answer classes are additionally detected by this committed deterministic pattern list, so at least one detection path is reproducible without a model in the loop. A hit on either path fails the gate. This list is a floor, never a ceiling: a rubric grader who reads a prohibited answer this list does not match still fails it, and the miss is added here.",
+  "matching": {
+    "appliesTo": "The verbatim free-text answer only, lower-cased, with curly apostrophes folded to straight ones and runs of whitespace collapsed to one space. Never the page, the path taken, or the persona.",
+    "flags": "i",
+    "engine": "JavaScript RegExp, so every pattern below must compile with new RegExp(pattern, 'i')."
+  },
+  "classes": [
+    {
+      "id": "T5",
+      "definition": "Any statement that Inherit tells them they will or will not get a disease.",
+      "patterns": [
+        "(?<!\\b(?:whether|if|cannot|can ?not|can.t|not|never|unable|doubt|unsure|doesn.t|does not|won.t)\\b[^.]{0,25})\\bi (?:will|won.t|will not|wont) (?:definitely |certainly |for sure |probably )?(?:get|develop|end up with|have)(?! to\\b)\\b",
+        "(?<!\\b(?:whether|if|cannot|can ?not|can.t|not|never|unable|doubt|unsure|doesn.t|does not|won.t)\\b[^.]{0,25})\\bi am (?:going to|certain to|bound to) (?:get|develop)\\b",
+        "\\b(?:guarantee[sd]?|guaranteed|certainty|for sure|definitely)\\b[^.]{0,40}\\b(?:get|develop|have)\\b[^.]{0,30}\\b(?:disease|diabetes|cancer|condition)\\b",
+        "\\bi (?:don.t|do not|dont) have to worry\\b",
+        "\\bi am (?:safe|in the clear|not at risk)\\b",
+        "\\bit ruled (?:it |this )?out\\b"
+      ],
+      "notProhibited": [
+        "It cannot tell me that.",
+        "It says this position is linked to a higher chance, but it cannot say whether I will get it.",
+        "No. It only reads positions; it does not diagnose."
+      ],
+      "negationGuard": "(?<!\\b(?:whether|if|cannot|can ?not|can.t|not|never|unable|doubt|unsure|doesn.t|does not|won.t)\\b[^.]{0,25})",
+      "whyGuard": "Written without it, the first draft failed its own acceptable example: \"but it cannot say whether I will get it\" contains \"I will get\", and a pattern that only looks for the claim reads the denial as the claim. The guard is a lookbehind for a negation or hedge within 25 characters, and JavaScript allows a variable-length lookbehind.",
+      "prohibitedExamples": [
+        "It tells me I will get diabetes.",
+        "I will definitely develop this.",
+        "It says I am safe.",
+        "It ruled it out, so I don’t have to worry.",
+        "It told me I will have it."
+      ]
+    },
+    {
+      "id": "T6",
+      "definition": "Any statement that Inherit recommends, ranks-as-best, or picks an embryo.",
+      "patterns": [
+        "\\binherit\\b[^.]{0,40}\\b(?:recommends?|recommended|suggests?|suggested|advises?|advised|picks?|picked|chooses?|chose|selects?|selected|prefers?|preferred|favou?rs?|favou?red)\\b",
+        "\\b(?:it|the (?:site|app|tool|comparison|table))\\b[^.]{0,30}\\b(?:recommends?|recommended|suggests?|suggested|advises?|advised|picks?|picked|chooses?|chose|selects?|selected|prefers?|preferred|favou?rs?|favou?red|ranks?|ranked)\\b[^.]{0,40}\\bembryo\\b",
+        "\\bembryo\\b[^.]{0,20}\\b(?:a|b|1|2|one|two)\\b[^.]{0,30}\\bis (?:the )?(?:best|better|healthier|preferred|recommended|stronger|safer)\\b",
+        "\\b(?:best|better|healthiest|strongest|safest|top|winning) embryo\\b",
+        "\\b(?:ranks?|ranked|ranking|scores? (?:them )?(?:higher|lower)|puts? (?:one|them) (?:ahead|first))\\b[^.]{0,30}\\bembryo\\b",
+        "\\bi should (?:pick|choose|transfer|implant|go with)\\b"
+      ],
+      "notProhibited": [
+        "It does not recommend one. It shows the same positions for both and leaves the decision to us and our clinic.",
+        "There is no recommendation anywhere on the page.",
+        "It refuses to say which is better."
+      ],
+      "prohibitedExamples": [
+        "Inherit recommends the second embryo.",
+        "Embryo B is the better one according to the table.",
+        "It picked embryo A because it had fewer findings.",
+        "I should transfer the first one."
+      ]
+    },
+    {
+      "id": "T7",
+      "definition": "Any answer reporting only a relative percentage with no absolute figure.",
+      "detection": "Two-step, because this class is defined by what is absent. An answer hits only when a relative expression matches AND no absolute expression matches. Both lists are applied to the same normalised answer.",
+      "relativePatterns": [
+        "\\b\\d+(?:\\.\\d+)? ?(?:%|per ?cent|percent)[^.]{0,30}\\b(?:more|less|higher|lower|greater|increase[ds]?|decrease[ds]?|reduction|reduced|raised)\\b",
+        "\\b(?:increase[sd]?|decrease[sd]?|raises?|lowers?|reduces?|cuts?)\\b[^.]{0,25}\\bby \\d+(?:\\.\\d+)? ?(?:%|per ?cent|percent)",
+        "\\b\\d+(?:\\.\\d+)? ?(?:x|times|-fold|fold)\\b[^.]{0,25}\\b(?:risk|chance|likely|likelihood|higher|lower)\\b",
+        "\\b(?:relative risk|odds ratio)\\b[^.]{0,15}(?:of |= ?|is )?\\d+(?:\\.\\d+)?\\b",
+        "\\b(?:doubles?|doubled|triples?|tripled|halves|halved)\\b[^.]{0,25}\\b(?:risk|chance)\\b",
+        "\\b(?:twice|double|triple|half|two ?-?fold|three ?-?fold)\\b[^.]{0,25}\\b(?:risk|chance|likely|likelihood)\\b"
+      ],
+      "absolutePatterns": [
+        "\\b\\d+(?:\\.\\d+)? ?(?:in|out of|per|of) ?(?:every )?\\d[\\d,]*\\b",
+        "\\b\\d+(?:\\.\\d+)? ?(?:%|per ?cent|percent)[^.]{0,25}\\b(?:of people|of them|of men|of women|overall|in total|either way|to start with|at baseline|without|absolute)\\b",
+        "\\bfrom \\d+(?:\\.\\d+)? ?(?:%|per ?cent|percent)? ?to \\d+(?:\\.\\d+)? ?(?:%|per ?cent|percent)",
+        "\\b(?:goes|rises|falls|moves|changes) from \\d",
+        "\\b\\d[\\d,]* (?:people|men|women|pregnancies|births|embryos)\\b"
+      ],
+      "notProhibited": [
+        "It goes from 7 in 100 to 9 in 100, so about two more people in a hundred.",
+        "About 7% of people either way, rising to about 9%.",
+        "It is 40% higher, which here means 7 in 100 rather than 5 in 100."
+      ],
+      "prohibitedExamples": [
+        "It increases the risk by 40%.",
+        "Roughly twice the risk.",
+        "The odds ratio is 1.4, so noticeably higher.",
+        "It is 30% higher."
+      ],
+      "whyNoTrailingBoundary": "A percent sign is not a word character, so a trailing \\b after it never matches before a full stop. The first draft carried one and silently failed to fire on \"increases the risk by 40%.\" - which the worked examples caught on the first run."
+    }
+  ]
+}
