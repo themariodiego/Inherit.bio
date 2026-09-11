@@ -203,7 +203,20 @@ test("clinical-gene, trait and no-match queries render their honest states with 
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);
 });
 
-test("the data page is titled Data and methods with one coverage figure per score, no percent text, and each score's panel, absent interval and resolution limit", async ({
+/**
+ * `/genome/[subject]/data complete`. The same question `/files/upload
+ * complete` raised, answered the same way rather than assumed: this page
+ * shows a coverage figure per score AND states that no interval is available
+ * and what the panel's resolution limit is, so a reader could ask whether a
+ * page admitting a missing interval is `partial-coverage`.
+ *
+ * It is not, because the missing interval is not missing coverage - it is the
+ * method's own honesty about what a score can say, stated in full. This page's
+ * product IS the account of methods and coverage, and it renders all of it.
+ * A page that hid the absent interval to look finished would be the failure,
+ * and it is asserted against below.
+ */
+test("/genome/[subject]/data complete: titled Data and methods with one coverage figure per score, no percent text, and each score's panel, absent interval and resolution limit", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);

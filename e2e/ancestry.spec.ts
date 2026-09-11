@@ -197,7 +197,34 @@ async function interiorPoint(path: Locator): Promise<{ x: number; y: number }> {
   });
 }
 
-test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no visible percent outside the disclosure, lineage empty states, #neanderthal, axe in both themes", async ({
+/**
+ * `/genome/[subject]/ancestry not-covered`, and the choice of state id is an
+ * argument rather than a label, so it is made here where it can be disagreed
+ * with.
+ *
+ * The sentence this test pins is itself a coverage statement: the file covers
+ * 1 of the panel's markers, "too few to draw a map. This is a limit of the
+ * file, not a result about you." A reader could fairly say 1-of-N IS partial
+ * coverage and reach for `partial-coverage`. The case against is what the two
+ * ids would mean to a person: `partial-coverage` describes a map drawn with
+ * some regions missing, which this page deliberately does not render - no
+ * chips, no toggle, no map in colour - while `not-covered` describes a result
+ * the file cannot support at all, which is exactly what the grey state says.
+ * The raw numbers stay one activation away and labelled unreliable, which is
+ * the opposite of partial coverage presented as a result.
+ *
+ * The wording of this title is load-bearing in a way that is easy to miss.
+ * It used to read "lineage empty states", and because `empty` is one of the
+ * register's own state ids appearing as a whole word beside this route's
+ * path, the gate read it as a claim that this test drives
+ * `/genome/[subject]/ancestry empty`. It does not: the page HAS an ancestry
+ * result here, and it is the lineage cards below it that have nothing to
+ * show. The ratchet caught the accidental claim, which is the mechanism
+ * working - but the lesson is that an ordinary English word in a test title
+ * can silently become a proof, so state ids belong in a title only where they
+ * are meant.
+ */
+test("/genome/[subject]/ancestry not-covered: the grey state's exact sentence, no chips, no toggle, no visible percent outside the disclosure, the lineage cards' uncomputed note, #neanderthal, axe in both themes", async ({
   page,
 }) => {
   test.setTimeout(240_000);
@@ -258,7 +285,14 @@ test("tiny VCF: the grey state — the exact sentence, no chips, no toggle, no v
   }
 });
 
-test("synthetic marker fixture: the shown state — figure contract, sum rule, toggle, tab order, panel, denylist, gradient, budget and first-party origins", async ({
+/**
+ * `/genome/[subject]/ancestry complete`. The counterpart to the grey state
+ * above: enough markers for the page to render the result it exists to show -
+ * the map in colour, the region chips, the well-supported toggle and the
+ * shares that obey the sum rule. `complete` here is the page showing
+ * everything the file supports, with its limits stated rather than hidden.
+ */
+test("/genome/[subject]/ancestry complete: the shown state's figure contract, sum rule, toggle, tab order, panel, denylist, gradient, budget and first-party origins", async ({
   page,
 }) => {
   test.setTimeout(240_000);
