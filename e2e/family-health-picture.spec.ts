@@ -4,6 +4,7 @@ import fs from "node:fs";
 import http from "node:http";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
+import { EACH_TURNS_IT_ON } from "../src/copy/family/health-picture";
 import path from "node:path";
 import {
   adminClient,
@@ -708,7 +709,29 @@ test("with no classified position at all, the panel says so in words, never a co
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 
-test("revoking one direction empties the panel and the Overview line at once", async ({ page }) => {
+/**
+ * `/family/health-picture empty`, and the product names this state itself:
+ * `src/copy/family/health-picture.ts` groups the sentence under its own
+ * "States" heading and the line beside it is documented as belonging to "the
+ * empty state". The page renders a count of the people who have agreed and
+ * nothing else - no carrier panel, no comparison table, no claim block.
+ *
+ * Worth separating from `consent-required`, which this route also supports and
+ * which looks superficially the same. A `consent-required` page names whose
+ * step is outstanding and links to where it is given - that is what the
+ * Portrait blocker does, and why that one is proven under that id. This page
+ * says the opposite in the product's own words: "Each person turns this on
+ * from their own account. You cannot turn it on for them." Nobody here has a
+ * step to take, so there is no consent to require from this reader; there is
+ * only a page with nothing in it, saying so. That sentence and the absence of
+ * any link in the same panel are now asserted, so the distinction is a claim
+ * rather than an inference.
+ *
+ * The direct sibling is `/family empty`, already proven on "Just you so far."
+ * - the same shape of sentence, a count of who is here rather than an absence
+ * the reader has to infer.
+ */
+test("/family/health-picture empty: revoking one direction leaves the page counting one person, with no panel, no table, and no step anyone can take for another", async ({ page }) => {
   await signIn(page, B.email, B.password);
   await setSharingPurpose(page, selfSubjectA, "family.heritability", false);
   await expectSourcesAndOwnPermissionsPreserved();
@@ -718,6 +741,12 @@ test("revoking one direction empties the panel and the Overview line at once", a
   await signIn(page, A.email, A.password);
   await page.goto("/family/health-picture");
   await expect(page.getByText(NEEDS_TWO, { exact: true })).toBeVisible();
+  // What makes this `empty` and not `consent-required`: the panel states that
+  // no one can act for anyone else, and offers no link to act through.
+  await expect(page.getByText(EACH_TURNS_IT_ON, { exact: true })).toBeVisible();
+  const notEnough = page.locator('section[role="status"]').filter({ hasText: NEEDS_TWO });
+  await expect(notEnough).toHaveCount(1);
+  await expect(notEnough.getByRole("link")).toHaveCount(0);
   await expect(page.locator('[data-slot="carrier-panel"]')).toHaveCount(0);
   await expect(page.locator("[data-compare-surface]")).toHaveCount(0);
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
