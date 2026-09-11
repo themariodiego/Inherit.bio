@@ -17,6 +17,7 @@
     "gate:env": "tsx scripts/env-gate.ts",
     "gate:first-glance": "tsx scripts/first-glance-gate.ts",
     "gate:legal": "tsx scripts/legal-placeholder-gate.ts",
+    "gate:jurisdictions": "tsx scripts/jurisdiction-gate.ts",
     "gate:names": "tsx scripts/name-gate.ts",
     "gate:readability": "tsx scripts/readability-gate.ts",
     "gate:routes": "tsx scripts/route-gate.ts",

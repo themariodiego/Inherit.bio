@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { applicationOrigin } from "@/lib/app-origin";
 import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -85,8 +86,9 @@ const cohortRestrictionNoticePayload = z.object({ embryoCount }).strict();
 const embryoDraftExpiredPayload = z.object({}).strict();
 
 function applicationUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.inherit.bio";
-  return new URL(path, base).toString();
+  // Off the hosted deployment an unset NEXT_PUBLIC_APP_URL throws rather than
+  // mailing a rights token to someone else's origin. See src/lib/app-origin.ts.
+  return new URL(path, applicationOrigin()).toString();
 }
 
 // Embryo-purpose links carry the one-time delivery token in the URL fragment

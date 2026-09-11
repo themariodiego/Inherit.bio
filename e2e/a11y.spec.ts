@@ -552,7 +552,7 @@ type KeyboardDivergence =
  * then the test fails saying so, which is the honest state: a guessed number
  * that happened to pass would be a ratchet holding nothing.
  */
-const UNDERSIZED_CONTROL_OCCURRENCES = 201;
+const UNDERSIZED_CONTROL_OCCURRENCES = 0;
 
 /** One component's finding sentence, built in one place for both sides. */
 function undersizedControlFinding(entry: UndersizedControl): string {
@@ -1040,6 +1040,27 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
               left = Math.min(left, box.left); right = Math.max(right, box.right);
               top = Math.min(top, box.top); bottom = Math.max(bottom, box.bottom);
             }
+          }
+          // A "stretched" link is activated anywhere on the card it sits in:
+          // its own ::before or ::after is absolutely positioned with every
+          // inset at or past the edge, so the pseudo covers the nearest
+          // positioned ancestor and that ancestor is the region a pointer
+          // action reaches. Same principle as the label union above - the
+          // target is what accepts the pointer, not the text box - and read
+          // from the CSS that governs it, exactly as the Inline exemption
+          // reads `display`. Hit-testing would be stronger and is not
+          // available here: elementFromPoint sees only the visible viewport,
+          // and most of a swept page is below the fold.
+          for (const pseudo of ["::before", "::after"]) {
+            const style = getComputedStyle(element, pseudo);
+            if (style.content === "none" || style.position !== "absolute") continue;
+            const insets = [style.top, style.right, style.bottom, style.left];
+            if (!insets.every(value => /^-?\d+(\.\d+)?px$/.test(value) && parseFloat(value) <= 0)) continue;
+            const host = element instanceof HTMLElement ? element.offsetParent : null;
+            if (!(host instanceof HTMLElement)) continue;
+            const box = host.getBoundingClientRect();
+            left = Math.min(left, box.left); right = Math.max(right, box.right);
+            top = Math.min(top, box.top); bottom = Math.max(bottom, box.bottom);
           }
           counted++;
           const width = right - left;

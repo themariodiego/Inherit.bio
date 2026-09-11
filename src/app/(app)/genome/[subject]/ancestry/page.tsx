@@ -227,7 +227,7 @@ export default async function AncestryPage(
       </section>
 
       <footer className="text-sm">
-        <Link href={route("genome.data", subjectParams)} className="underline underline-offset-2">
+        <Link href={route("genome.data", subjectParams)} className="link-target underline underline-offset-2">
           {DATA_AND_METHODS}
         </Link>
       </footer>

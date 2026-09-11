@@ -3,13 +3,16 @@
   "notAnApproval": "Listing a match records it and routes it to legal review; it does not bless it. The alternative was to narrow the pattern until it stopped matching, which would have removed the check for everyone else too.",
   "exceptions": [
     {
-      "surfaces": ["src/app/(marketing)/terms/page.tsx", "/terms"],
+      "surfaces": [
+        "src/app/(marketing)/terms/page.tsx",
+        "/terms"
+      ],
       "label": "a price",
       "match": "US$100",
       "section": "8. Limitation of liability",
       "why": "A standard damages cap: \"the greater of one hundred US dollars (US$100) or the amount you paid us for the service in the twelve months before the claim arose\". It charges nobody and gates nothing, so it is not a fee path, and G5.7's fee-path half is unaffected. It is a price on a legal page, which is what G5.7's copy half forbids.",
-      "openQuestion": "The second branch of the cap — \"the amount you paid us for the service\" — presupposes a payment relationship that the product promises will never exist. It reads as boilerplate carried from a paid-service template. Whether to keep the US$100 floor and drop that branch, or keep both, is a legal decision about the liability cap itself, not an engineering one.",
-      "closing": "Legal review. Rewording it here is out of scope: a limitation-of-liability clause is not copy an engineer should edit on their own reading of an acceptance row."
+      "openQuestion": "The second branch of the cap \u2014 \"the amount you paid us for the service\" \u2014 presupposes a payment relationship that the product promises will never exist. It reads as boilerplate carried from a paid-service template. Whether to keep the US$100 floor and drop that branch, or keep both, is a legal decision about the liability cap itself, not an engineering one.",
+      "closing": "Legal review. Rewording it here is out of scope: a limitation-of-liability clause is not copy an engineer should edit on their own reading of an acceptance row. A wording has now been DRAFTED for that review in docs/protocol/legal-copy-proposed.md and deliberately not applied - it drops the payment branch, keeps the US$100 figure untouched because brief section 12 item 7 reserves that number for counsel, and notes that dropping the branch changes the cap's effect by nothing, since the amount paid is always zero and the clause reads 'the greater of'."
     }
   ]
 }

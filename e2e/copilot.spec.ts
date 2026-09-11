@@ -56,7 +56,33 @@ test("with no provider configured, setup explains reusable permission and the re
   ).toBeVisible();
 });
 
-test("cloud provider requires named disclosure before use; captured report backs the complete answer; withdrawal stops a stale composer", async ({ page }, testInfo) => {
+/**
+ * Two states in one journey, both already asserted here, and naming them costs
+ * nothing this test did not already do.
+ *
+ * `/copilot/[scope] consent-required` is the opening half, and it is the
+ * strictest example of the id in this suite because the withholding is
+ * measured at the provider rather than inferred from the page. A provider is
+ * SAVED and the copilot still refuses: there is no composer at all, the page
+ * says "Choose what Copilot may use before asking about your file. Saving a
+ * provider does not grant that permission.", and the mock provider has
+ * received exactly ZERO calls. The step is named and linked - "Review Copilot
+ * settings" opens a "Copilot permission" region that enumerates what may be
+ * sent and what may not - and the grant it writes is recorded and revocable,
+ * which is the test this register applies to the id. The product draws the
+ * distinction in its own sentence: configuration is not permission.
+ *
+ * `/copilot/[scope] complete` is the closing half. After the permission is
+ * given the same surface answers, and the answer is complete in the only sense
+ * a grounded copilot can be: the captured tool result carries the real
+ * genotype for the asked position, its catalogue snapshot and its citations,
+ * the rendered answer carries those citations, and `unavailable_sources` is
+ * empty - the product stating that nothing it needed was missing.
+ *
+ * The two are the same surface under the one difference that matters, which is
+ * why they are named together rather than split across tests.
+ */
+test("/copilot/[scope] consent-required, then complete: a saved provider grants nothing and the composer is withheld until the named permission is given, after which a captured report backs the whole answer", async ({ page }, testInfo) => {
   await signIn(page, USER.email, USER.password);
   const fileId = await uploadOwnFileWithChosenReports(page,
     path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"),

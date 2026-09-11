@@ -69,6 +69,8 @@ jobs:
         run: pnpm gate:claims
       - name: Environment template gate
         run: pnpm gate:env
+      - name: Jurisdiction review gate
+        run: pnpm gate:jurisdictions
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys

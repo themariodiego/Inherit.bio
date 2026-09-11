@@ -99,18 +99,27 @@ describe("closing date words", () => {
 });
 
 describe("claim link", () => {
-  it("uses the configured public origin, without a trailing slash, and the canonical one by default", () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
-    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
-    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
+  it("uses the configured public origin, without a trailing slash, and the canonical one only where it is correct", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://staging.example.test/");
     expect(canonicalOrigin()).toBe("https://staging.example.test");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", " http://localhost:3000 ");
     expect(canonicalOrigin()).toBe("http://localhost:3000");
+
+    // D-098: the fallback is the hosted deployment's own origin, so it is right
+    // there and wrong anywhere else. A printed card carries a future person's
+    // claim address and cannot be withdrawn once handed over, so off the
+    // platform an unset value is refused rather than guessed at.
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
+    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    expect(canonicalOrigin()).toBe("https://www.inherit.bio");
+    vi.stubEnv("VERCEL", undefined);
+    expect(() => canonicalOrigin()).toThrow(/NEXT_PUBLIC_APP_URL is unset/);
   });
 
   it("points at the future-person claim route on the given or canonical origin", () => {
+    vi.stubEnv("VERCEL", "1");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
     expect(claimUrl()).toBe("https://www.inherit.bio/future-person/claim");
     expect(claimUrl("https://staging.example.test")).toBe("https://staging.example.test/future-person/claim");
@@ -171,7 +180,8 @@ describe("card shapes", () => {
     });
   });
 
-  it("cohortCard drops a delivery kind the RPC may have added and uses the canonical origin by default", () => {
+  it("cohortCard drops a delivery kind the RPC may have added and uses the canonical origin on the hosted deployment", () => {
+    vi.stubEnv("VERCEL", "1");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", undefined);
     const card = cohortCard(CARD_TWO);
     expect(Object.keys(card)).toEqual(COHORT_CARD_KEYS);
@@ -183,9 +193,8 @@ describe("card shapes", () => {
     const card = deliveryCard({ ...CARD_ONE, delivery_kind: "initial" }, "https://staging.example.test");
     expect(Object.keys(card)).toEqual([...COHORT_CARD_KEYS, "delivery_kind"]);
     expect(card.delivery_kind).toBe("initial");
-    expect(deliveryCard(CARD_TWO as RpcCard & { delivery_kind: "transfer_replacement" }).delivery_kind).toBe(
-      "transfer_replacement",
-    );
+    expect(deliveryCard(CARD_TWO as RpcCard & { delivery_kind: "transfer_replacement" },
+      "https://staging.example.test").delivery_kind).toBe("transfer_replacement");
   });
 
   it("transferCard carries exactly the transferRecordKeyCardCamel keys", () => {
@@ -204,9 +213,11 @@ describe("card shapes", () => {
   });
 
   it("refuses to shape a card whose date is not a calendar date", () => {
-    expect(() => cohortCard({ ...CARD_ONE, closing_date_iso: "2028-02-30" })).toThrow(RangeError);
+    expect(() => cohortCard({ ...CARD_ONE, closing_date_iso: "2028-02-30" },
+      "https://staging.example.test")).toThrow(RangeError);
     expect(() =>
-      transferCard({ record_key: FIRST_RECORD, closing_date_iso: "soon", closing_date_state: "definitive_stored_or_unknown" }),
+      transferCard({ record_key: FIRST_RECORD, closing_date_iso: "soon", closing_date_state: "definitive_stored_or_unknown" },
+        "https://staging.example.test"),
     ).toThrow(RangeError);
   });
 });

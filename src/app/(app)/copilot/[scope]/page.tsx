@@ -45,7 +45,7 @@ export default async function ChatPage(
         <p>{ownChat.reason === "consent_required"
           ? "Choose what Copilot may use before asking about your file. Saving a provider does not grant that permission."
           : "This deployment cannot use the selected model endpoint. Review the available options in Copilot settings."}</p>
-        <Link href="/settings/copilot" className="underline underline-offset-2">Review Copilot settings</Link>
+        <Link href="/settings/copilot" className="link-target underline underline-offset-2">Review Copilot settings</Link>
       </div>
     );
   }
@@ -192,7 +192,7 @@ export default async function ChatPage(
           </div>
 
           <p>
-            <Link href="/settings/copilot" className="underline underline-offset-2">
+            <Link href="/settings/copilot" className="link-target underline underline-offset-2">
               Open Settings →
             </Link>
           </p>

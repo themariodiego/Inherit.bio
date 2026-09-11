@@ -370,13 +370,10 @@
     },
     {
       "surface": "glossary definitions",
-      "kind": "unlocatable",
-      "modules": [
-        "src/copy/glossary"
-      ],
-      "why": "This designated surface does not exist in any form. The brief specifies it in three places \u2014 X7.1 makes src/copy/glossary/** its own readability corpus at FK 9.0, line 825 caps src/copy/glossary/allow-list.ts at 60 entries with a named owner in docs/copy-review.md, and line 884 says every glossed term renders as a GlossaryTerm expanding a Disclosure in place \u2014 and the tree has no src/copy/glossary directory, no /glossary route in docs/route-register.json and no file whose name contains glossar. The gate reports it as unlocatable rather than passing it, because a surface with nothing on it is not a clean surface: reading absence as compliance is the exact failure this check exists to prevent.",
-      "closing": "Either build the surface the brief designates \u2014 the corpus under src/copy/glossary/**, the capped allow-list with its named owner, and the route that renders definitions, each definition a registered claim with a citation \u2014 or record the glossary as withheld with the dossier the brief requires for a withheld item.",
-      "blocker": "owner decision \u2014 build it or record it as withheld. The gate cannot choose, and this entry is the placeholder for that decision rather than a coding task waiting to be picked up."
+      "kind": "unbound",
+      "why": "The corpus now exists and the surface is still unbound, which is a different finding from the one this entry used to hold. Built 2026-09-11: src/copy/glossary/index.ts is the readability corpus X7.1 designates, and it reads data/jargon.json rather than restating it, so a definition cannot drift between what a reader sees and what the readability gate scores. src/components/ui/glossary-term.tsx is line 884's GlossaryTerm - dotted underline, keyboard-focusable, expanding in place, never hover-only - and glossed-text.tsx glosses the first occurrence of a registered term in a copy string, which is line 829's 'on first use' and is also what keeps every gloss inside the first-viewport interactive budgets, since each one is a button. What is NOT done is the binding. Line 2570 designates glossary definitions as a surface where every string block must be emitted through the shared claim component with a mandatory citationId, and no claim in data/claims.json is bound to one. The definitions are real and already enforced for length by the readability gate; what is undecided is whether defining a word is a CLAIM that must cite a source.",
+      "closing": "Bind the definitions as claims once it is decided that they are claims, then wire GlossedText onto the surfaces where the 53 registered terms already appear in shipped copy. Until then the components exist and are tested but are deliberately not rendered to a reader, because doing so would put uncited prose on a surface the brief designates - the failure this check exists to catch, not a technicality to route around.",
+      "blocker": "owner decision - the same one the consent-summaries entry names: a claim cannot be bound to a surface before it is decided that its prose is a claim. Put to the operator on 2026-09-11, who chose to build the glossary and left the citation question open; this surface turns out to depend on it."
     },
     {
       "surface": "legal pages",

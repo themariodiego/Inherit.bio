@@ -69,7 +69,7 @@ export default async function EmbryosPage() {
     >
       {allowed ? (
         <p data-slot="availability-line" className="text-sm leading-relaxed text-ink-muted">
-          <Link href={route("legal.where-inherit-works")} className="underline underline-offset-2">
+          <Link href={route("legal.where-inherit-works")} className="link-target underline underline-offset-2">
             {WHERE_THIS_WORKS_LINK}
           </Link>
         </p>
@@ -77,7 +77,7 @@ export default async function EmbryosPage() {
         <div role="status" data-slot="jurisdiction-line" className="max-w-prose space-y-2 text-sm leading-relaxed">
           <p className="text-ink">{decision.userFacingCopy}</p>
           <p>
-            <Link href={route("legal.future-person")} className="underline underline-offset-2">
+            <Link href={route("legal.future-person")} className="link-target underline underline-offset-2">
               {FUTURE_PERSON_LINK}
             </Link>
           </p>
@@ -125,7 +125,7 @@ export default async function EmbryosPage() {
             >
               <p className="font-medium text-ink">
                 {href ? (
-                  <Link href={href} className="underline-offset-4 hover:underline">
+                  <Link href={href} className="link-target underline-offset-4 hover:underline">
                     {tile.label}
                   </Link>
                 ) : (

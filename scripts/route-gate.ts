@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -41,6 +42,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const APP = "src/app";
 const REGISTER = "docs/route-register.json";
 const LEDGER = "docs/route-divergence.json";
+const BRIEF = "docs/inherit-v2-brief.md";
 const MIGRATIONS = "supabase/migrations";
 const BROWSER_TESTS = "e2e";
 
@@ -50,7 +52,7 @@ const BROWSER_TESTS = "e2e";
  * browser test that covers a new (route, state) pair has to bring this number
  * down with it and no later change can quietly give one back.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 222;
+const UNPROVEN_ROUTE_STATE_PAIRS = 217;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -296,10 +298,36 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   const read = (relativePath: string) =>
     readFileSync(path.join(repositoryRoot, relativePath), "utf8");
   const register = JSON.parse(read(REGISTER)) as {
+    briefSha256?: string;
     routes: RegisterEntry[];
     stateProfiles: Record<string, StateProfile>;
     storagePrefixes: { id: string; bucket: string }[];
   };
+
+  // The register says it is derived from the brief and pinned to it, and a
+  // great deal of reasoning in docs/acceptance-matrix.md rests on that pin -
+  // most often to conclude that some entry cannot be written until the brief
+  // changes. Nothing compared the two until 2026-09-11, and when something
+  // finally did, the pinned value turned out to name no file that has ever
+  // existed in this repository: the brief has one commit and one hash, the pin
+  // was introduced later already holding a different value, and no hashing
+  // convention reproduces it. A pin nobody checks is a sentence, not a
+  // mechanism. This is the check that makes it one.
+  // A missing brief is reported rather than thrown: a gate that crashes tells a
+  // reader less than one that names what it could not find.
+  let briefSha: string | null = null;
+  try {
+    briefSha = createHash("sha256").update(readFileSync(path.join(repositoryRoot, BRIEF))).digest("hex");
+  } catch {
+    failures.push(`brief pin: ${BRIEF} is absent, so the register's briefSha256 cannot be checked against it.`);
+  }
+  if (briefSha !== null && register.briefSha256 !== briefSha) {
+    failures.push(
+      `brief pin: ${REGISTER} briefSha256 is ${register.briefSha256 ?? "absent"} and ${BRIEF} hashes to ` +
+        `${briefSha}. The register is derived from the brief, so editing one without revisiting the other is ` +
+        `the drift this pin exists to catch; update the pin in the same change that answers the brief edit.`,
+    );
+  }
   const ledger = JSON.parse(read(LEDGER)) as {
     methodDivergence?: { routeId: string; declared: string[]; exported: string[] }[];
     redirectStatusDivergence?: { routeId: string; expectedStatus: number; emitsStatus: number }[];

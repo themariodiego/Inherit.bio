@@ -43,10 +43,10 @@ export default async function SettingsPage() {
         </section>
       ) : null}
       <footer className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm text-ink-muted">
-        <Link href="/about#accessibility" className="underline underline-offset-4 hover:text-ink">Accessibility</Link>
+        <Link href="/about#accessibility" className="link-target underline underline-offset-4 hover:text-ink">Accessibility</Link>
         {/* The third of the expert path's three entry points (brief §7.3); the
             other two are every report footer and the ancestry page. */}
-        <Link href={route("genome.data", { subject: "me" })} className="underline underline-offset-4 hover:text-ink">
+        <Link href={route("genome.data", { subject: "me" })} className="link-target underline underline-offset-4 hover:text-ink">
           {DATA_AND_METHODS}
         </Link>
       </footer>

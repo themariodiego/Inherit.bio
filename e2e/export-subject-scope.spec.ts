@@ -2,7 +2,7 @@ import AdmZip from "adm-zip";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, findUserByEmail, signIn } from "./helpers";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
 
 /**
@@ -58,9 +58,9 @@ test("every exported file names the subject the database resolved for it", async
   // Scoping, not just presence: every file in the archive is attributed, and
   // to a subject this account actually holds. An archive that named someone
   // else's subject would be a disclosure, not a missing field.
+  const accountId = (await findUserByEmail(adminClient(), USER.email))!.id;
   const held = await adminClient().from("subjects").select("id")
-    .eq("subject_account_id", (await adminClient().auth.admin.listUsers())
-      .data.users.find(user => user.email === USER.email)!.id);
+    .eq("subject_account_id", accountId);
   expect(held.error).toBeNull();
   const ours = new Set((held.data ?? []).map(subject => subject.id));
   expect(ours.size, "the account holds at least its own subject").toBeGreaterThan(0);
@@ -68,4 +68,32 @@ test("every exported file names the subject the database resolved for it", async
     expect(file.subject_id, `${file.id} is attributed`).toBeTruthy();
     expect(ours.has(file.subject_id), `${file.id} names a subject this account holds`).toBe(true);
   }
+
+  // G5.6's rights half, settled by the operator 2026-09-11: the subject record
+  // is in the archive, scoped to the requester. The scoping is the whole safety
+  // argument, so it is checked against the database rather than trusted.
+  const recordEntry = archive.readFile("subject-record.json");
+  expect(recordEntry, "the archive carries the subject record").not.toBeNull();
+  const record = JSON.parse(recordEntry!.toString("utf8"));
+  expect(Object.keys(record).sort()).toEqual([
+    "provider_recipient_grants", "subject_account_bindings", "subject_consents",
+    "subject_principals", "subjects",
+  ]);
+  expect(record.subjects.length, "the person's own subject is in their own record").toBeGreaterThan(0);
+  for (const subject of record.subjects) {
+    expect(subject.subject_account_id, "every exported subject IS this account").toBe(accountId);
+  }
+  for (const table of ["subject_principals", "subject_account_bindings", "subject_consents",
+    "provider_recipient_grants"] as const) {
+    for (const row of record[table]) {
+      expect(row.account_id, `${table} row belongs to this account`).toBe(accountId);
+    }
+  }
+  // The manifest must not understate what the archive carries.
+  const listed = (manifest.contents ?? []).find((entry: { path: string }) => entry.path === "subject-record.json");
+  expect(listed, "the manifest lists the subject record").toBeTruthy();
+  expect(listed.count).toBe(
+    ["subjects", "subject_principals", "subject_account_bindings", "subject_consents",
+      "provider_recipient_grants"].reduce((total, table) => total + record[table].length, 0),
+  );
 });

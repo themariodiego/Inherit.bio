@@ -3,6 +3,7 @@ import { PassThrough, Readable } from "node:stream";
 import { finished } from "node:stream/promises";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
+import { subjectRecordOf, subjectRecordRowCount } from "@/lib/export/subject-record";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
 import {
@@ -393,7 +394,8 @@ export async function GET() {
   let canonical: OwnExportSnapshot[];
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
-  const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents }] =
+  const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents },
+    subjectRecord] =
     await Promise.all([
       fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
         .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
@@ -402,8 +404,10 @@ export async function GET() {
         .from("consent_grants")
         .select("provider_key, data_classes, granted_at, revoked_at")
         .eq("user_id", user.id),
+      subjectRecordOf(admin, user.id),
     ]);
   if (ancestryError) return new Response("Export unavailable", { status: 503 });
+  if (subjectRecord === null) return new Response("Export unavailable", { status: 503 });
 
   const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
   const legacyIds = new Set(legacyFiles.map(file => file.id));
@@ -449,6 +453,19 @@ export async function GET() {
         path: "consents.json",
         description: "Your cloud-LLM consent grant and revocation history.",
         count: (consents ?? []).length,
+      });
+
+      archive.append(JSON.stringify(subjectRecord, null, 2), {
+        name: "subject-record.json",
+      });
+      contents.push({
+        path: "subject-record.json",
+        description:
+          "Who the database says you are and what you agreed to: your own subject rows, "
+          + "the principals and bindings that connect them to this account, your subject-level "
+          + "consent history, and the provider grants recorded against this account. Rows about "
+          + "other people are not here, by construction.",
+        count: subjectRecordRowCount(subjectRecord),
       });
 
       const rowCounts = new Map<string, number>();

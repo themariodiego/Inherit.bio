@@ -60,7 +60,7 @@ function SignInInner() {
         <p>
           <Link
             href="/auth/forgot-password"
-            className="underline underline-offset-2"
+            className="inline-flex min-h-11 items-center underline underline-offset-2"
           >
             Forgot your password?
           </Link>

@@ -66,7 +66,7 @@ export function LegalPage({
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="text-ink-muted hover:text-ink"
+                    className="flex min-h-11 items-center text-ink-muted hover:text-ink"
                   >
                     {s.heading}
                   </a>

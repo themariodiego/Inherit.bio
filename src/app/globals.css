@@ -169,3 +169,28 @@ body {
     align-content: center;
   }
 }
+
+/**
+ * A link that stands alone — a footer entry, a breadcrumb, a back link, a nav
+ * item — is a tap target under brief line 553 ("every button, input, switch,
+ * tap target") and line 1053 ("Minimum target 44x44 CSS px"), so it carries
+ * the control scale. Line 2575 makes the gate "deliberately stricter than
+ * WCAG 2.2 AA's 24x24", which is precisely the bar that buys SC 2.5.8's
+ * Inline exception: the brief declined that exception on purpose.
+ *
+ * `inline-flex` rather than padding because the gate measures the bounding
+ * box, and padding on a non-replaced inline element does not grow its line
+ * box. `min-height` alone would not work either, for the same reason it does
+ * not apply to an inline box.
+ *
+ * NEVER put this on a link inside running prose. Such a link is exempt only
+ * while its computed display is `inline`; blockifying it would REMOVE the
+ * exemption rather than grant one, and would break the sentence it sits in.
+ */
+@layer components {
+  .link-target {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-control);
+  }
+}

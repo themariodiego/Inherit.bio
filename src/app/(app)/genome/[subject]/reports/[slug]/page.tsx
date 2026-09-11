@@ -535,7 +535,7 @@ export default async function ReportDetailPage(
             <Link
               href={route("science.index", { hash: "evidence" })}
               data-chip="evidence"
-              className={`${CHIP} underline-offset-2 hover:underline`}
+              className={`link-target ${CHIP} underline-offset-2 hover:underline`}
             >
               {evidenceLabel}
             </Link>
@@ -656,7 +656,7 @@ export default async function ReportDetailPage(
       {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
 
       <footer className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Link href={route("genome.data", subjectParams)} className="underline underline-offset-2">
+        <Link href={route("genome.data", subjectParams)} className="link-target underline underline-offset-2">
           {DATA_AND_METHODS}
         </Link>
         <Link
@@ -665,11 +665,11 @@ export default async function ReportDetailPage(
             { scope: subject.routeSegment },
             { query: { report: template.slug } },
           )}
-          className="underline underline-offset-2"
+          className="link-target underline underline-offset-2"
         >
           {ASK_ABOUT_THIS}
         </Link>
-        <Link href={reportsHref} className="underline underline-offset-2">
+        <Link href={reportsHref} className="link-target underline underline-offset-2">
           {ALL_REPORTS}
         </Link>
       </footer>
