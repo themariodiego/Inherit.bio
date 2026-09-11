@@ -116,7 +116,10 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
       </div>
       <Button onClick={() => inputRef.current?.click()} disabled={disabled || busy}>Choose file</Button>
     </div>
-    <div aria-live="polite" className="mt-3 text-sm">
+    {/* The app shell carries its own polite live region for global search, so
+        this one is named: a test that meant the uploader's phase must not be
+        able to resolve to the other region, or to both. */}
+    <div data-slot="upload-progress" aria-live="polite" className="mt-3 text-sm">
       {phase.step === "checking" ? <p>Checking the file format…</p>
         : phase.step === "hashing" ? <p>Checking your file locally… {phase.pct}%</p>
         : phase.step === "uploading" ? <p>Uploading to private storage… {phase.pct}%</p>

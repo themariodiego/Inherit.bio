@@ -4,7 +4,22 @@ import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { OWN_UPLOAD_COPY as COPY } from "../src/copy/upload/consent";
 import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "../src/copy/upload/errors";
 
-test("own upload records account details and separate decisions through the real screens", async ({ page }) => {
+/**
+ * `/files/upload consent-required`. The route's own gate, not a component's:
+ * the picker and the file input are absent or disabled until an adult birth
+ * date is recorded and two separate consent artifacts are signed, and each
+ * step is asserted against the database rather than the screen alone.
+ *
+ * This is the one state on this route that needs no interpretation. The page
+ * exists to require consent before it will take a file, and it says so in
+ * those words. Unlike `error`, which this repository has declined across
+ * eleven pairs because the register never defines it, `consent-required`
+ * names exactly what these three screens are for.
+ *
+ * The two refusals at the end of this test run on `/files` after an explicit
+ * navigation, so they are not claimed for this route.
+ */
+test("/files/upload reaches consent-required: account details and two separate decisions gate the picker", async ({ page }) => {
   const email = `own-flow-${randomUUID()}@e2e.local`;
   const password = "synthetic-own-flow-password";
   const userId = await createConfirmedUser(email, password);
