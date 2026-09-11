@@ -128,9 +128,14 @@ export async function clearMailbox() {
 /** Complete current own-upload decisions through the real account screens.
  * Repeated calls retain current signatures; no database consent fixture is
  * manufactured to bypass a user action or the server's presentation nonce.
+ *
+ * `at` names the surface to do it on. Both `/files/upload` and `/files` host
+ * the same `OwnUploadEntry`, and the decisions are the account's rather than
+ * the page's, so either reaches the same gates - but which page a caller
+ * drives is part of what that caller is proving, so it is not assumed here.
  */
-export async function completeOwnUploadConsent(page: Page): Promise<void> {
-  await page.goto("/files/upload");
+export async function completeOwnUploadConsent(page: Page, at = "/files/upload"): Promise<void> {
+  await page.goto(at);
   const account = page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true });
   const insurance = page.getByRole("heading", { name: OWN_UPLOAD_COPY.insuranceHeading, exact: true });
   const own = page.getByRole("heading", { name: OWN_UPLOAD_COPY.ownHeading, exact: true });

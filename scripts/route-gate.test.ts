@@ -186,15 +186,26 @@ describe("the route gate holds the register to the code", () => {
     expect(failures.join("\n")).toContain("unproven, and UNPROVEN_ROUTE_STATE_PAIRS");
   });
 
+  /**
+   * The planted entry names a route the register does not contain, and that is
+   * deliberate. `plant` symlinks the real `e2e/` directory, so the proven set
+   * is computed from this repository's real test titles - which means any real
+   * (route, state) pair used here is a time bomb: it works only until someone
+   * proves that pair, and then this test fails for a reason that has nothing
+   * to do with what it is checking. It happened, with `/files complete`. The
+   * proven set is only ever built from the register's own routes, so a path
+   * that is not in the register can never enter it, whatever anyone proves.
+   */
   it("fails when a proof recorded in the ledger is no longer proven", async () => {
+    const absent = "/no-such-route-in-the-register complete";
     const root = plant({
       ledger: (ledger) => {
-        (ledger.provenRouteStates as string[]).push("/files complete");
+        (ledger.provenRouteStates as string[]).push(absent);
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "proven route state: recorded in docs/route-divergence.json but no longer present: /files complete",
+      `proven route state: recorded in docs/route-divergence.json but no longer present: ${absent}`,
     );
   });
 
