@@ -270,7 +270,7 @@ export function ReportLibrary({
               href={`#${g.id}`}
               aria-describedby={describedBy}
               onClick={(e) => jumpTo(e, g.id)}
-              className="rounded-full border border-line bg-card px-3 py-1 text-sm text-ink-muted transition-colors hover:border-forest hover:text-ink"
+              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 py-1 text-sm text-ink-muted transition-colors hover:border-forest hover:text-ink"
             >
               {g.label}
             </a>

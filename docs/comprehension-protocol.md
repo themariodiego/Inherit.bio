@@ -39,9 +39,12 @@ rotted grades navigation, not comprehension.
 1. **No genetics or medical training.** No degree, qualification or professional
    role in genetics, genomics, medicine, nursing, pharmacy, or genetic
    counselling. Secondary-school biology is expected and fine.
-2. **No prior consumer-genomics purchase.** They have never bought or used
-   23andMe, AncestryDNA, MyHeritage DNA, FamilyTreeDNA, Nebula, Dante, or any
-   comparable service, and have never received a raw genetic data file.
+2. **No prior consumer-genomics purchase.** They have never bought or used a
+   consumer genetic-testing service of any kind — ancestry, health, or
+   whole-genome — and have never received a raw genetic data file. Inherit's
+   own `/providers` page is the list to screen against rather than one written
+   out here, which would be a second list to keep current and would name
+   companies in a document that has no reason to.
 3. **No connection to this project.** Not an employee, contractor, investor,
    friend or family member of anyone who worked on Inherit. A participant who
    wants the product to do well is not a naive participant.

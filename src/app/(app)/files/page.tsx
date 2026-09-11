@@ -109,14 +109,14 @@ export default async function UploadsPage() {
                 {f.status === "annotated" ? (
                   <Link
                     href="/genome/me/reports"
-                    className="whitespace-nowrap text-xs text-forest underline underline-offset-2"
+                    className="link-target whitespace-nowrap text-xs text-forest underline underline-offset-2"
                   >
                     See your reports →
                   </Link>
                 ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
                   <Link
                     href="/genome/me/reports"
-                    className="whitespace-nowrap text-xs text-forest underline underline-offset-2"
+                    className="link-target whitespace-nowrap text-xs text-forest underline underline-offset-2"
                   >
                     Choose reports →
                   </Link>

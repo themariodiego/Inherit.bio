@@ -17,7 +17,7 @@ export default function FileUploadPage() {
       </header>
       <OwnUploadEntry />
       <p className="text-sm">
-        <Link href="/files" className="underline underline-offset-2">← All files</Link>
+        <Link href="/files" className="link-target underline underline-offset-2">← All files</Link>
       </p>
     </div>
   );

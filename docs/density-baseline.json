@@ -2178,11 +2178,146 @@
   },
   "relativeComparison": {
     "rule": "For each successorRouteId above, post-change ink coverage must be no more than 60% of the mapped baseline route at the same viewport and state.",
-    "unmappedNewRoutes": "absolute budgets apply; relative comparison is not applicable because no honest baseline predecessor exists"
+    "unmappedNewRoutes": "absolute budgets apply; relative comparison is not applicable because no honest baseline predecessor exists",
+    "routes": [
+      {
+        "baselineRoute": "/",
+        "successorRouteId": "marketing.home",
+        "successorPath": "/",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/about",
+        "successorRouteId": "marketing.about",
+        "successorPath": "/about",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/ancestry",
+        "successorRouteId": "genome.ancestry",
+        "successorPath": "/genome/[subject]/ancestry",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/auth/forgot-password",
+        "successorRouteId": "auth.forgot-password",
+        "successorPath": "/auth/forgot-password",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/auth/reset-password",
+        "successorRouteId": "auth.reset-password",
+        "successorPath": "/auth/reset-password",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/auth/sign-in",
+        "successorRouteId": "auth.sign-in",
+        "successorPath": "/auth/sign-in",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/auth/sign-up",
+        "successorRouteId": "auth.sign-up",
+        "successorPath": "/auth/sign-up",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/browse",
+        "successorRouteId": "genome.browser",
+        "successorPath": "/genome/[subject]/data/browser",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/changelog",
+        "successorRouteId": "marketing.changelog",
+        "successorPath": "/changelog",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/chat",
+        "successorRouteId": "copilot.scope",
+        "successorPath": "/copilot/[scope]",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/dashboard",
+        "successorRouteId": "app.overview",
+        "successorPath": "/overview",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/legal/deceased",
+        "successorRouteId": "legal.deceased",
+        "successorPath": "/legal/deceased",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/legal/gina",
+        "successorRouteId": "legal.gina",
+        "successorPath": "/legal/gina",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/legal/law-enforcement",
+        "successorRouteId": "legal.law-enforcement",
+        "successorPath": "/legal/law-enforcement",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/legal/research-consent",
+        "successorRouteId": "legal.research-consent",
+        "successorPath": "/legal/research-consent",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/privacy",
+        "successorRouteId": "legal.privacy",
+        "successorPath": "/privacy",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/providers",
+        "successorRouteId": "marketing.providers",
+        "successorPath": "/providers",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/reports",
+        "successorRouteId": "genome.reports",
+        "successorPath": "/genome/[subject]/reports",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/reports/[slug]",
+        "successorRouteId": "genome.report",
+        "successorPath": "/genome/[subject]/reports/[slug]",
+        "basis": "the register's own redirect disposition"
+      },
+      {
+        "baselineRoute": "/settings",
+        "successorRouteId": "settings.index",
+        "successorPath": "/settings",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/terms",
+        "successorRouteId": "legal.terms",
+        "successorPath": "/terms",
+        "basis": "kept at the same path"
+      },
+      {
+        "baselineRoute": "/uploads",
+        "successorRouteId": "files.index",
+        "successorPath": "/files",
+        "basis": "the register's own redirect disposition"
+      }
+    ],
+    "derivation": "Not authored here. Every row is read out of docs/route-register.json: a baseline route the register still carries with a redirect disposition maps to that disposition's target, and one the register keeps maps to itself. scripts/density-successors.test.ts rebuilds this list from the register and compares it, so a rename that moves a successor fails rather than leaving a comparison pointing at the wrong page. Derived 2026-09-11; all 22 baseline routes resolve, so `unmappedNewRoutes` describes no route today."
   },
   "postChange": {
     "status": "pending",
-    "reason": "X0.3 requires the baseline to be frozen before UI edits. Post-change measurements are added after implementation and must be measured before completion.",
+    "reason": "Still pending, and this records exactly what it is pending on rather than restating X0.3. Three facts, measured 2026-09-11. (1) The successor map is no longer empty: relativeComparison.routes now carries all 22 rows, derived from docs/route-register.json's own redirect dispositions and held there by scripts/density-successors.test.ts, so the relative rule finally has something to compare against - until today it compared nothing and read as though it were enforced. (2) The control scale moved to 44px across the product on 2026-09-11, which changes the rendered height of every surface carrying a link, so this capture is owed rather than optional. The first-viewport interactive budgets are unaffected in the direction that matters - they are maxima, and taller controls push elements below the fold - but ink coverage, white-space ratio and section gaps are not. (3) The blocker is environmental and is not a matter of effort: `capture` above records macOS 26.5.1 on arm64 with Google Chrome 151, and ink coverage is a pixel measurement. A capture taken on another platform would compare font rasterisers rather than designs, so a post-change number taken elsewhere and recorded here would be a number that does not mean what this file says it means. Completing it means re-capturing BOTH sides on one machine: scripts/density-baseline/reproduce.sh for the frozen baseline commit, then the same capture.mjs and compute.mjs against a production build of HEAD, with `capture.environment` updated to whatever machine did both. DENSITY_BROWSER_EXECUTABLE and DENSITY_WORKING_ROOT make the script portable; the platform equivalence is the part no environment variable buys.",
     "routes": []
   }
 }
