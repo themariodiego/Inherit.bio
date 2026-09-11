@@ -171,6 +171,7 @@
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
     "/family/invite complete",
+    "/family/invite jurisdiction-unavailable",
     "/files/upload complete",
     "/files/upload consent-required",
     "/files/upload processing",
