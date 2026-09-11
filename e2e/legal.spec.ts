@@ -147,6 +147,21 @@ const REQUIRED = [
   },
   { route: "/legal/gina", must: [/GINA/i, /life insurance/i, /disability/i, /long[- ]term[- ]care/i] },
   { route: "/about", must: [/Plus Bio/i, /separate|independent/i, /no.*(personal|health|genetic).*data.*flow|data.*(does not|never).*flow/i] },
+  // The last four static-document pages, which completes that profile. Two of
+  // their anchors are commitments rather than headings: the home page's "free"
+  // promise and the provider directory's refusal to sell sequencing are what
+  // the brief forbids this product to walk back, so a page that quietly
+  // dropped either should fail here.
+  { route: "/", must: [/Your genome, on your terms/i, /Inherit itself is free/i] },
+  {
+    route: "/changelog",
+    must: [/New reports, continuously/i, /GWAS Catalog/i, /PGS Catalog/i, /ClinVar/i],
+  },
+  { route: "/providers", must: [/Buy sequencing from a real provider/i, /doesn.t sell sequencing/i] },
+  {
+    route: "/legal/where-inherit-works",
+    must: [/Where Inherit works/i, /Current production state/i, /How availability changes/i],
+  },
   { route: "/legal", must: [/Legal and policy library/i, /privacy/i] },
   { route: "/legal/consents", must: [/Granular grants/i, /Revocation/i, /Versioned evidence/i] },
   {
@@ -285,6 +300,22 @@ test("/science/limits complete: the committed document renders on-topic and plac
 
 test("/science/positions complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
   await assertDocumentComplete(page, "/science/positions");
+});
+
+test("/ complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/");
+});
+
+test("/changelog complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/changelog");
+});
+
+test("/providers complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/providers");
+});
+
+test("/legal/where-inherit-works complete: the committed document renders on-topic and placeholder-free", async ({ page }) => {
+  await assertDocumentComplete(page, "/legal/where-inherit-works");
 });
 
 /**

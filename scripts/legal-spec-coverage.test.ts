@@ -34,8 +34,8 @@ const titles = [...source.matchAll(/\btest\(\s*"((?:\\.|[^"\\])*)"/g)].map(match
 describe(`${SPEC} document coverage`, () => {
   it("declares at least the documents this suite has always covered", () => {
     // A floor, so an empty or broken scan cannot read as full agreement.
-    expect(declared.length).toBeGreaterThanOrEqual(19);
-    expect(driven.length).toBeGreaterThanOrEqual(19);
+    expect(declared.length).toBeGreaterThanOrEqual(23);
+    expect(driven.length).toBeGreaterThanOrEqual(23);
   });
 
   it("drives every declared document, and declares every driven one", () => {
