@@ -171,6 +171,7 @@
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
     "/family empty",
+    "/family/[person] partial-coverage",
     "/family/invite complete",
     "/family/invite jurisdiction-unavailable",
     "/files complete",

@@ -426,7 +426,26 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await expectAxeClean(page);
 });
 
-test("A passes one Tier-2 gate, then reads B's shared layer attributed to B's own subject", async ({
+/**
+ * `/family/[person] partial-coverage`, on the same reading as
+ * `/genome/[subject]/data/browser partial-coverage`: the page shows both
+ * halves and this test asserts both. Every report of the layer B shared is
+ * listed, and the layer B did NOT share is named absent in B's own terms -
+ * "has not shared Specific variants with you" - exactly once, beside a
+ * baseline-absent sentence also asserted to appear exactly once. A page that
+ * silently omitted the unshared layer would look complete and would fail
+ * here.
+ *
+ * `consent-required` is NOT claimed for the Tier-2 gate this test also
+ * passes, though the shape is tempting: no personal content reaches the
+ * browser until an affirmative checkbox and button. The reason is that the
+ * gate is an acknowledgement - session-scoped, asserted here as never
+ * written to device storage - while every `consent-required` state this
+ * repository has claimed rests on a recorded, revocable consent artifact.
+ * Calling a session acknowledgement a consent would blur a distinction the
+ * product keeps deliberately, so the pair is left unproven.
+ */
+test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer is listed and the unshared one is named absent", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
