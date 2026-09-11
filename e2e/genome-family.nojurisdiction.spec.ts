@@ -1,0 +1,201 @@
+import { expect, test } from "@playwright/test";
+import http from "node:http";
+import { randomUUID } from "node:crypto";
+import { adminClient, createConfirmedUser, drainMailUntil, signIn } from "./helpers";
+import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
+
+/**
+ * The three My Genome routes that refuse in an unreviewed jurisdiction, proven
+ * against a real pairing: `/genome/[subject]/ancestry`,
+ * `/genome/[subject]/reports` and `/genome/[subject]/reports/[slug]`.
+ *
+ * WHY THIS NEEDS TWO ACCOUNTS, which is the whole reason it did not exist
+ * before. `resolveSubjectRoute` (src/lib/family/subject-route.ts) answers
+ * `kind: "ok"` for an OWN subject BEFORE it asks about jurisdiction at all, so
+ * `/genome/me/...` can never reach the refusal however the jurisdiction is
+ * configured. The `kind: "jurisdiction"` branch is reachable only for a FAMILY
+ * person, and a family person exists only after a real invitation is accepted.
+ * `e2e/family-invite.nojurisdiction.spec.ts` says as much where it explains why
+ * it picked the one route whose guard needs nothing set up.
+ *
+ * WHY THE PAIRING IS BUILT THROUGH THE PRODUCT AND NOT THROUGH THE DATABASE.
+ * Writing the rows directly would be quicker and would prove less than it
+ * appears to: a hand-made pairing can differ from the one the product creates,
+ * and then the refusal asserted here is not the refusal a real person meets.
+ * So the invitation is sent, mailed, opened and accepted exactly as in
+ * `e2e/family.spec.ts` — but against the MAIN server on port 3100, where the
+ * jurisdiction flag is set and the invite route works. The refusal is then read
+ * from the off server on 3101. One database stands behind both, and cookies are
+ * host-scoped rather than port-scoped, so the session carries across.
+ *
+ * WHY THE ORDER IS SAFE. `playwright.config.ts` sets `workers: 1` and
+ * `fullyParallel: false`, so the mail capture on 8124 cannot collide with the
+ * one `e2e/family.spec.ts` binds, and `mode: "serial"` below keeps the pairing
+ * ahead of the tests that depend on it.
+ *
+ * WHAT IS DELIBERATELY NOT CLAIMED. Only these three routes are titled, because
+ * only these three were traced to the branch that renders the refusal. Six more
+ * routes implement a jurisdiction refusal by other means (`familyCapability`
+ * on `/family`, `/family/[person]/permissions`, `/family/health-picture`,
+ * `/family/portrait/[pairId]` and `/overview`, and a separate guard on
+ * `/embryo-analysis`); proving those needs their own tracing, not a wider title
+ * here. A title in this repository IS a claim: `scripts/route-gate.ts` counts a
+ * (route, state) pair as proven when a test title names both as whole tokens.
+ */
+
+const runId = randomUUID();
+const A = { email: `genome-family-a-${runId}@e2e.local`, password: "e2e-genome-family-pw" };
+const B = { email: `genome-family-b-${runId}@e2e.local`, password: "e2e-genome-family-pw" };
+
+/** The jurisdiction-enabled server, where a pairing can still be created. */
+const MAIN = "http://localhost:3100";
+
+const REFUSAL_HEADING = "Not available in this jurisdiction yet";
+const NOT_ABOUT_YOU = "It says nothing about you or anyone else.";
+const NOTHING_RECORDED = "We create no analysis or consent record.";
+
+/** Any registered report; the subject is resolved before the slug is read. */
+const SLUG = "lactase-persistence-lct-rs4988235";
+
+interface CapturedEmail { to: string | string[]; html?: string }
+const captured: CapturedEmail[] = [];
+let mailMock: http.Server;
+let pairedSegment = "";
+
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  mailMock = http.createServer((request, response) => {
+    let body = "";
+    request.on("data", chunk => (body += chunk));
+    request.on("end", () => {
+      if (request.method === "POST" && request.url?.includes("/emails")) {
+        captured.push(JSON.parse(body) as CapturedEmail);
+        response.writeHead(200, { "content-type": "application/json" })
+          .end(JSON.stringify({ id: `genome-family-${captured.length}` }));
+        return;
+      }
+      response.writeHead(200).end("{}");
+    });
+  });
+  await new Promise<void>(resolve => mailMock.listen(8124, "127.0.0.1", resolve));
+  await createConfirmedUser(A.email, A.password);
+  await createConfirmedUser(B.email, B.password);
+});
+
+test.afterAll(async () => {
+  await new Promise<void>(resolve => mailMock.close(() => resolve()));
+});
+
+test("the signed-in account reaches this server and is not signed out by it", async ({ page }) => {
+  // The control, kept from e2e/family-invite.nojurisdiction.spec.ts and worth
+  // repeating for these accounts: a route with no jurisdiction guard answers
+  // 200 with the account's own email on it, so every refusal below is the
+  // guard's answer rather than a broken session, a redirect or a dead server.
+  await signIn(page, A.email, A.password);
+  const response = await page.goto("/settings");
+  expect(response?.status()).toBe(200);
+  await expect(page.locator("main").getByText(A.email, { exact: true })).toBeVisible();
+});
+
+test("a real accepted invitation gives the viewer a family subject to ask about", async ({ page, request }) => {
+  await signIn(page, A.email, A.password);
+
+  // Inviting needs the adult declaration, which is an account fact and not a
+  // DNA permission. Stop at the next disclosure without signing it.
+  await page.goto(`${MAIN}/files/upload`);
+  await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1990-01-01");
+  const completed = page.waitForResponse(response => response.url().endsWith("/api/account/completion")
+    && response.request().method() === "POST");
+  await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
+  expect((await completed).status()).toBe(200);
+
+  await page.goto(`${MAIN}/family/invite`);
+  await page.getByLabel("Their email address").fill(B.email);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Send invitation" }).click();
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
+
+  const message = await drainMailUntil(request, () => captured.find(email =>
+    (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)), "the invitation");
+  // TAKE THE TOKEN, NOT THE HOST, and this is not fussiness. The mail worker
+  // composes the link from the NEXT_PUBLIC_APP_URL of whichever server drains
+  // the queue, and `drainMailUntil` goes through Playwright's `request`
+  // fixture, whose baseURL in this project is the OFF server on 3101. So the
+  // emailed link points at 3101 however the invitation was sent. Pinning the
+  // host here (as e2e/family.spec.ts reasonably does, running against one
+  // server) failed for that reason alone. The token is the invitation; the
+  // host is an artefact of which server happened to send it, and acceptance
+  // belongs on the jurisdiction-enabled server.
+  const token = message.html?.match(/\/withdraw\/([A-Za-z0-9_-]{43})/)?.[1];
+  expect(token, "the invitation email carries a withdraw token").toBeTruthy();
+  const invitationUrl = `${MAIN}/withdraw/${token}`;
+
+  // B accepts in their own session, which is what creates the pairing.
+  await page.request.post(`${MAIN}/auth/sign-out`);
+  await page.goto(invitationUrl!);
+  await page.getByRole("link", { name: "Sign in to accept" }).click();
+  await page.getByLabel("Email").fill(B.email);
+  await page.getByLabel("Password").fill(B.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(invitationUrl!);
+  await page.getByRole("button", { name: "Accept through my account" }).click();
+  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+
+  // The segment the routes below are asked about, read from the accepted
+  // invitation rather than constructed: `graph.ts` forms it as `s-{subject}`.
+  const admin = adminClient();
+  const accountA = await admin.auth.admin.listUsers();
+  const idA = accountA.data.users.find(user => user.email === A.email)?.id;
+  expect(idA).toBeTruthy();
+  const selfA = await admin.from("subjects").select("id")
+    .eq("subject_account_id", idA!).eq("subject_class", "self").eq("lifecycle", "active").single();
+  expect(selfA.error).toBeNull();
+  const principal = await admin.from("subject_principals").select("id")
+    .eq("account_id", idA!).eq("subject_id", selfA.data!.id)
+    .eq("principal_kind", "account_subject").eq("status", "active").single();
+  expect(principal.error).toBeNull();
+  const invitation = await admin.from("subject_invitations").select("target_id")
+    .eq("invitation_kind", "adult_subject").eq("inviter_principal_id", principal.data!.id)
+    .eq("status", "accepted").single();
+  expect(invitation.error).toBeNull();
+  pairedSegment = `s-${invitation.data!.target_id}`;
+});
+
+/** Every refused page is the same shape, so the assertions are one function. */
+async function expectJurisdictionRefusal(page: import("@playwright/test").Page, url: string) {
+  const response = await page.goto(url);
+  expect(response?.status()).toBe(200);
+  const refusal = page.getByRole("status").filter({ hasText: REFUSAL_HEADING });
+  await expect(refusal).toHaveCount(1);
+  await expect(refusal).toContainText(NOTHING_RECORDED);
+  await expect(refusal).toContainText(NOT_ABOUT_YOU);
+  // Nothing of the result survives the refusal. These are the hooks the
+  // populated pages carry, so their absence is the refusal being complete
+  // rather than a page that merely added a banner above its findings.
+  await expect(page.locator('[data-slot="haplogroup"], [data-slot="ancestry-map"], [data-slot="report-skeleton"]'))
+    .toHaveCount(0);
+  await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
+}
+
+test("/genome/[subject]/ancestry jurisdiction-unavailable: the refusal replaces the whole result", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/ancestry`);
+});
+
+test("/genome/[subject]/reports jurisdiction-unavailable: the refusal replaces the whole library", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/reports`);
+  await expect(page.locator("main a[href*='/reports/']")).toHaveCount(0);
+});
+
+test("/genome/[subject]/reports/[slug] jurisdiction-unavailable: the subject is refused before the slug is read", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/reports/${SLUG}`);
+  // The refusal is about the subject, so an unknown slug refuses identically
+  // rather than answering not-found and revealing which reports exist.
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/reports/no-such-report-exists`);
+});
