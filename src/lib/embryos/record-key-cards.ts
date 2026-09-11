@@ -1,3 +1,4 @@
+import { applicationOrigin } from "@/lib/app-origin";
 import { z } from "zod";
 
 /**
@@ -65,9 +66,9 @@ export function closingDateWords(iso: string): string {
 
 /** The deployment's public origin, with no trailing slash. */
 export function canonicalOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_APP_URL;
-  const origin = configured && configured.trim().length > 0 ? configured.trim() : "https://www.inherit.bio";
-  return origin.replace(/\/+$/, "");
+  // A printed card is even less recoverable than a message: it carries the
+  // claim address for a future person and cannot be withdrawn once handed over.
+  return applicationOrigin();
 }
 
 /** The absolute address a printed card carries: `rights.future-person-claim`. */

@@ -106,11 +106,15 @@ describe("the env gate holds .env.example to what the code reads", () => {
     expect(result.scannedFileCount).toBeGreaterThan(700);
     expect(result.readingFileCount).toBeGreaterThan(30);
     // The measurement this gate replaces counted 20 variables by grepping
-    // `process.env.X`. That is exactly the direct half; the rest are only
-    // visible through a binding or a recorded dynamic site.
-    expect(result.directReadKeyCount).toBe(20);
-    expect(result.boundReadKeyCount).toBe(15);
-    expect(result.boundBindingCount).toBe(5);
+    // `process.env.X`, which was the direct half at the time; the rest are only
+    // visible through a binding or a recorded dynamic site. The direct half is
+    // 19 since D-098, which is the shape of the fix rather than a lost read:
+    // `NEXT_PUBLIC_APP_URL` used to be read directly at two call sites and is
+    // now read once, through `applicationOrigin`'s defaulted `env` parameter,
+    // so it moved from the direct column into a sixth binding.
+    expect(result.directReadKeyCount).toBe(19);
+    expect(result.boundReadKeyCount).toBe(16);
+    expect(result.boundBindingCount).toBe(6);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(34);
     expect(result.templateKeyCount).toBe(27);

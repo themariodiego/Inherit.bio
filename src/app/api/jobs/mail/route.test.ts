@@ -18,6 +18,9 @@ describe("independent mail queues", () => {
     vi.resetAllMocks();
     mocks.pending = 0;
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    // Mail links need an origin to be built from, and since D-098 an unset one
+    // is refused off the hosted deployment rather than guessed at.
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
     mocks.terminal.mockResolvedValue({ processed: 0, failed: 0 });
     mocks.invitationTerminal.mockResolvedValue({ processed: 0, failed: 0 });
     mocks.submit.mockResolvedValue("synthetic-provider-id");
