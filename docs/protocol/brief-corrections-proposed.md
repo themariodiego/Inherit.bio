@@ -633,18 +633,39 @@ different at `uploaded` from what it renders with no file at all?**
 | `/embryos/compare` | `case "processing": <BlockingState state="processing">` (`embryos/compare/page.tsx:173`). |
 | `/embryos/[embryoId]` | The same, twice (`embryos/[embryoId]/page.tsx:156`, `:201`). |
 
-### Six that do not
+### Six that did not — five now closed
 
-| Route | What it renders while the file is preparing |
+**Status, added after the reading: five of these six were built in the same
+change and are titled.** The table below records what each rendered when it
+was read, because that is the measurement; the closing note under it says what
+each says now.
+
+| Route | What it rendered while the file was preparing |
 | --- | --- |
-| `/genome/[subject]` | The same tiles. There is no file-status branch anywhere on the page; the only status-aware element is the subject bar's file COUNT, which counts every file "whatever its status" and so reads the same at `uploaded` as at `annotated`. |
-| `/genome/[subject]/reports` | Every card carries the `awaiting` pill, "Awaiting your data" — the identical pill an account with no file sees, because the branch is on `fileCount > 0` for the layer's CALLS, which is zero in both cases (`reports/page.tsx:208`). |
-| `/genome/[subject]/ancestry` | `AncestryRegions` with `result: null` and both lineage cards empty. No branch on file status exists. |
-| `/genome/[subject]/data` | "Add a file to see how much of each score panel it covers." |
-| `/genome/[subject]/data/browser` | "Add a file to look up its positions here." |
-| `/family/portrait/[pairId]` | `noFileYetFor(...)` for whichever side lacks a PREPARED source, so a relative whose file is preparing is reported to the other person as having no file (`portrait/[pairId]/page.tsx:189`). |
+| `/genome/[subject]` | (closed) The same tiles. There is no file-status branch anywhere on the page; the only status-aware element is the subject bar's file COUNT, which counts every file "whatever its status" and so reads the same at `uploaded` as at `annotated`. |
+| `/genome/[subject]/reports` | (closed) Every card carries the `awaiting` pill, "Awaiting your data" — the identical pill an account with no file sees, because the branch is on `fileCount > 0` for the layer's CALLS, which is zero in both cases (`reports/page.tsx:208`). |
+| `/genome/[subject]/ancestry` | (closed) `AncestryRegions` with `result: null` and both lineage cards empty. No branch on file status exists. |
+| `/genome/[subject]/data` | (closed) "Add a file to see how much of each score panel it covers." |
+| `/genome/[subject]/data/browser` | (closed) "Add a file to look up its positions here." |
+| `/family/portrait/[pairId]` | (OPEN) `noFileYetFor(...)` for whichever side lacks a PREPARED source, so a relative whose file is preparing is reported to the other person as having no file (`portrait/[pairId]/page.tsx:189`). |
 
-### The two that are not merely missing but wrong
+**Closed.** The five My Genome routes now carry one sentence each, naming what
+will fill in: `HUB_PREPARING`, `REPORTS_PREPARING` and `ANCESTRY_PREPARING` in
+`src/copy/genome/preparation.ts`, `SCORE_COVERAGE_PREPARING` and
+`BROWSER_PREPARING` in `src/copy/genome/data.ts`. None promises a duration —
+the measured-or-withheld timing sentence belongs to `/overview`, which has the
+sample to decide, and repeating a guess elsewhere would be an invented number.
+All five pairs are proven in `e2e/genome-data-processing.spec.ts`.
+
+**Still open: `/family/portrait/[pairId]`,** and on purpose. It is wrong the
+same way — it reports a preparing file to the other person as an absent one —
+but unlike the five it shows no file count, so a sentence there would tell one
+adult something NEW about another adult's record. The five disclose nothing
+further, because a subject bar already counts every file in the record
+whatever its status. Changing what one person learns about another is the
+operator's call, not a tidy-up.
+
+### The two that were not merely missing but wrong
 
 `/genome/[subject]/data` and `/genome/[subject]/data/browser` do not just fail
 to say the file is being prepared. **They instruct the reader to add a file
@@ -664,9 +685,12 @@ is right to declare it and no not-applicable is proposed. Six of them are
 unbuilt, and six of the seven that are built are still untitled, which is a
 coverage gap rather than a claim.
 
-**What is asked of the operator: nothing to sign.** This item records a
-measurement and names six gaps. The two false instructions are the part worth
-acting on first, and they need product copy rather than a signature.
+**What is asked of the operator: one decision, on one route.** The measurement
+needs no signature and five of the six gaps are closed. The remaining question
+is whether `/family/portrait/[pairId]` may tell one adult that the other's
+file is being prepared, where today it says they have no file. Either answer is
+defensible; the reason it is asked rather than chosen is that it changes what
+one person learns about another.
 
 ## What happens after signature
 

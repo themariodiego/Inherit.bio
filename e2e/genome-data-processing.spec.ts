@@ -8,19 +8,30 @@ import {
   SCORE_COVERAGE_NO_FILE,
   SCORE_COVERAGE_PREPARING,
 } from "../src/copy/genome/data";
+import {
+  ANCESTRY_PREPARING,
+  HUB_PREPARING,
+  REPORTS_PREPARING,
+} from "../src/copy/genome/preparation";
 
 /**
- * `processing` on the two `/genome/[subject]/data*` routes — and until today
- * neither had it.
+ * `processing` on the five My Genome routes — and until today none had it.
  *
  * WHAT WAS WRONG. Corrections item 9 read all thirteen remaining
  * `product-result · processing` routes. Six render, while a file is being
  * prepared, exactly what they render for an account that has uploaded
- * nothing. Two of those six did worse than say nothing: they told the reader
- * to ADD A FILE THEY HAD ALREADY ADDED — at the same moment `/overview` was
- * telling them it was in flight. That is a false instruction on the owner's
- * own record, so it was fixed rather than filed, and these titles are the
- * proof the fix renders.
+ * nothing. Five of those six are My Genome pages — the owner's own record,
+ * the one place where "your file is on its way" is worth saying — and two of
+ * the five did worse than say nothing: they told the reader to ADD A FILE
+ * THEY HAD ALREADY ADDED, at the same moment `/overview` was telling them it
+ * was in flight. All five now say what is happening, and these titles are the
+ * proof it renders.
+ *
+ * The sixth, `/family/portrait/[pairId]`, is deliberately left alone. It
+ * reports a preparing file as an absent one, which is wrong the same way —
+ * but it shows no file count, so a sentence there would tell one adult
+ * something new about another's record. That is the owner's call, and item 9
+ * keeps it open rather than settling it here.
  *
  * ONE DEFINITION OF "IN FLIGHT". The status list lived only in `/overview`,
  * which is why two pages had no notion of it. It now lives in
@@ -76,6 +87,27 @@ test.beforeAll(async ({ browser }: { browser: Browser }) => {
 test.afterAll(async () => {
   release();
   await context?.close();
+});
+
+test("/genome/[subject] processing: the hub says a file is being prepared", async () => {
+  await view.goto("/genome/me");
+
+  await expect(view.getByText(HUB_PREPARING, { exact: true })).toBeVisible();
+  // The tiles are permission-driven and stay put; the sentence is additional
+  // information, not a replacement for the page.
+  await expect(view.getByRole("link", { name: "Open Reports" })).toBeVisible();
+});
+
+test("/genome/[subject]/reports processing: the library says a file is being prepared", async () => {
+  await view.goto("/genome/me/reports");
+
+  await expect(view.getByText(REPORTS_PREPARING, { exact: true })).toBeVisible();
+});
+
+test("/genome/[subject]/ancestry processing: the ancestry page says a file is being prepared", async () => {
+  await view.goto("/genome/me/ancestry");
+
+  await expect(view.getByText(ANCESTRY_PREPARING, { exact: true })).toBeVisible();
 });
 
 test("/genome/[subject]/data processing: coverage says the file is being prepared, not that none was added", async () => {

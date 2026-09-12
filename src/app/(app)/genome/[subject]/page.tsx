@@ -7,7 +7,8 @@ import { SubjectBar } from "@/components/subjects/subject-bar";
 import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { ADD_A_FILE, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
-import { getSubjectFileCount } from "@/lib/genome/load";
+import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
+import { HUB_PREPARING } from "@/copy/genome/preparation";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
@@ -61,7 +62,14 @@ export default async function GenomePage(
   }
   const { user, subject, dataSubjectId, person, domain, displayLabel } = context;
   // The subject bar counts every file in the record, whatever its status.
-  const fileCount = await getSubjectFileCount(createAdminClient(), dataSubjectId);
+  // `preparing` is a narrower question and a different sentence: a rejected
+  // or retired file is counted above and is no reason to say results are
+  // coming.
+  const admin = createAdminClient();
+  const [fileCount, preparing] = await Promise.all([
+    getSubjectFileCount(admin, dataSubjectId),
+    hasFileInPreparation(admin, dataSubjectId),
+  ]);
   const subjectParams = { subject: subject.routeSegment };
 
   // A tile opens only what this record can actually serve THIS viewer. For an
@@ -97,6 +105,9 @@ export default async function GenomePage(
       <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{domain.label}</h1>
+      {preparing ? (
+        <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{HUB_PREPARING}</p>
+      ) : null}
       <section className="grid gap-4 sm:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (
           <article key={tile.href} className="flex flex-col rounded-2xl border border-line bg-card p-5">

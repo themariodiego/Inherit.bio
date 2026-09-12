@@ -169,6 +169,15 @@ const BROWSER_TESTS = "e2e";
  *               had no notion of it; it now lives in `@/lib/genome/load` and
  *               all three read the one list. The other four gaps stay open and
  *               named in item 9.
+ *   117 -> 114  the other three My Genome pages in `processing`: the hub, the
+ *               reports library and ancestry. Same cause and same fix as the
+ *               two above - none of them said anything false, they simply
+ *               said nothing while a file was in flight, on the one record
+ *               where the reader has a right to know. Five of the six gaps
+ *               item 9 named are now closed. The sixth,
+ *               `/family/portrait/[pairId]`, stays open on purpose: it shows
+ *               no file count, so a sentence there would tell one adult
+ *               something new about another's record.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -179,7 +188,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 117;
+const UNPROVEN_ROUTE_STATE_PAIRS = 114;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
