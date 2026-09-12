@@ -2062,3 +2062,15 @@ The general point: an audit asking "is this state reachable?" is also asking
 profile readings today produced one proposed not-applicable, five provable
 pairs, and this — a real gap on a consent withdrawal that no state audit was
 looking for.
+
+## 2026-09-12 — PR #110 merged; the record was rewritten before it became one
+
+Twenty-three commits merged as `27230de`, on run 469 green against the exact
+head. The title and body were rewritten first, because they described only the
+first four commits and nineteen more had landed since. A merge commit is
+permanent, and leaving two-thirds of it wrong would have preserved the wrong
+thing.
+
+The general rule: a PR description written at commit four is a draft, not a
+record. Update it before the merge, or the repository's history documents an
+intention nobody carried out.
