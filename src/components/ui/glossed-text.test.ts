@@ -4,6 +4,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { GlossedText } from "./glossed-text";
 import { GlossaryTerm } from "./glossary-term";
 import { glossaryEntry } from "@/copy/glossary";
+import jargon from "../../../data/jargon.json";
+import classes from "../../../data/glossary-citation-classes.json";
+
+/** The `cited` half of the split, straight from the classes file. */
+const CITED = new Set(
+  (classes as { terms: { term: string; class: string }[] }).terms
+    .filter((entry) => entry.class === "cited")
+    .map((entry) => entry.term),
+);
 
 /**
  * The rules here are the brief's, and each has a reader behind it: first use
@@ -60,9 +69,46 @@ describe("glossing a copy string on first use", () => {
     // because its definition names a GROUP rather than a quantity. The first
     // draft of this test used it and failed, which is the classification being
     // checked rather than assumed.
-    for (const sentence of ["Read the absolute risk carefully.", "The odds ratio is not a diagnosis.",
+    //
+    // "absolute risk" was here until 2026-09-12 and had to leave, because the
+    // register now carries a CDC source for it and it renders. That is the
+    // SECOND time a hand-picked fixture in this file was invalidated by a term
+    // being sourced, so the sweep below was added: every remaining uncited
+    // term is checked, and the next one sourced needs no edit here.
+    for (const sentence of ["A pathogenic classification is not a diagnosis.",
+      // Not "meta-analysis": the hyphen is a word boundary, so the plain term
+      // "analysis" inside it is glossed. That is the uncited PHRASE staying
+      // unglossed while a plain word inside it is explained, which is the
+      // behaviour the sweep below asserts directly.
+      "The odds ratio is not a diagnosis.",
       "Heritability is a statistical estimate."]) {
       expect(glossed(sentence)).toBe(sentence);
+    }
+  });
+
+  it("glosses no cited term that has no source, for every term in the register", () => {
+    // Read from the RAW data files rather than from `@/copy/glossary`, whose
+    // filter is the thing under test: asking the module which terms it thinks
+    // are renderable and then checking it renders those would agree with
+    // itself. `data/jargon.json` and the classes file are the inputs.
+    //
+    // Asserted as "no gloss carries this term", not "the sentence is
+    // unchanged", because an uncited phrase can contain a plain word that
+    // SHOULD be glossed - "risk allele" contains "allele", "reference panel"
+    // contains "reference". Glossing those is correct; glossing the phrase is
+    // not.
+    //
+    // What this does NOT cover, so it is not mistaken for cover: reclassifying
+    // a term from `cited` to `plain` removes it from CITED and so from this
+    // sweep. That route is closed in `src/copy/glossary/glossary-classes.test.ts`,
+    // which pins the plain count against the classes file.
+    const uncited = (jargon as { terms: { term: string; citationId?: string }[] }).terms
+      .filter((entry) => CITED.has(entry.term) && !entry.citationId)
+      .map((entry) => entry.term);
+    expect(uncited.length).toBeGreaterThan(0);
+    for (const term of uncited) {
+      expect(glossed(`This sentence mentions ${term} once.`), `${term} must not be glossed uncited`)
+        .not.toContain(`data-term="${term}"`);
     }
   });
 

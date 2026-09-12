@@ -1,0 +1,13 @@
+{
+  "term": "confidence interval",
+  "url": "https://www.itl.nist.gov/div898/handbook/prc/section1/prc14.htm",
+  "finalUrl": "https://www.itl.nist.gov/div898/handbook/prc/section1/prc14.htm",
+  "fetchedAt": "2026-09-12T10:46:37.910Z",
+  "pageBytes": 7497,
+  "pageSha256": "140af37ee218c3b21330ed65f306075ac90c50cf845d1ad6c821cab69f18d153",
+  "pageTitle": "7.1.4. What are confidence intervals?",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "it provides a range of values which is likely to contain the population parameter of interest"
+}

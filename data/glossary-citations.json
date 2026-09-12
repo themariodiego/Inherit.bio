@@ -22,6 +22,96 @@
       "access_date": "2026-09-12",
       "quote": "surveying the genomes of many people, looking for genomic variants that occur more frequently in those with a specific disease or trait",
       "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "registry:medlineplus-penetrance",
+      "type": "registry",
+      "identifier": "MedlinePlus Genetics: What are reduced penetrance and variable expressivity?",
+      "url": "https://medlineplus.gov/genetics/understanding/inheritance/penetranceexpressivity/",
+      "archived_path": "docs/sources/glossary/penetrance.json",
+      "access_date": "2026-09-12",
+      "quote": "Penetrance refers to the proportion of people with a particular genetic variant (or gene mutation) who exhibit signs and symptoms of a genetic disorder.",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "registry:nhgri-glossary-susceptibility",
+      "type": "registry",
+      "identifier": "NHGRI Talking Glossary of Genomic and Genetic Terms: Susceptibility",
+      "url": "https://www.genome.gov/genetics-glossary/Susceptibility",
+      "archived_path": "docs/sources/glossary/susceptibility.json",
+      "access_date": "2026-09-12",
+      "quote": "refers to the state of being predisposed to, or sensitive to, developing a certain disease",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. \"Predisposed to\" carries Inherit's \"a tendency toward an outcome\"; the definition's \"not a certain result\" is that same fact stated negatively, not an extra claim the page is being read to make. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:nist-confidence-intervals",
+      "type": "handbook",
+      "identifier": "NIST/SEMATECH e-Handbook of Statistical Methods 7.1.4: What are confidence intervals?",
+      "url": "https://www.itl.nist.gov/div898/handbook/prc/section1/prc14.htm",
+      "archived_path": "docs/sources/glossary/confidence-interval.json",
+      "access_date": "2026-09-12",
+      "quote": "it provides a range of values which is likely to contain the population parameter of interest",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:nist-percentiles",
+      "type": "handbook",
+      "identifier": "NIST/SEMATECH e-Handbook of Statistical Methods 7.2.6.2: Percentiles",
+      "url": "https://www.itl.nist.gov/div898/handbook/prc/section2/prc262.htm",
+      "archived_path": "docs/sources/glossary/percentile.json",
+      "access_date": "2026-09-12",
+      "quote": "Percentiles split a set of ordered data into hundredths.",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:nist-measures-of-location",
+      "type": "handbook",
+      "identifier": "NIST/SEMATECH e-Handbook of Statistical Methods 1.3.5.1: Measures of Location",
+      "url": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda351.htm",
+      "archived_path": "docs/sources/glossary/average.json",
+      "access_date": "2026-09-12",
+      "quote": "to find a typical or central value that best describes the data",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:cdc-epidemiology-prevalence",
+      "type": "handbook",
+      "identifier": "CDC Principles of Epidemiology in Public Health Practice, Lesson 3 Section 2: Morbidity Frequency Measures",
+      "url": "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html",
+      "archived_path": "docs/sources/glossary/prevalence.json",
+      "access_date": "2026-09-12",
+      "quote": "the proportion of persons in a population who have a particular disease or attribute at a specified point in time",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:cdc-epidemiology-incidence",
+      "type": "handbook",
+      "identifier": "CDC Principles of Epidemiology in Public Health Practice, Lesson 3 Section 2: Morbidity Frequency Measures",
+      "url": "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html",
+      "archived_path": "docs/sources/glossary/incidence.json",
+      "access_date": "2026-09-12",
+      "quote": "Number of new cases of disease during specified time interval",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The quote is the numerator CDC gives for incidence proportion in Table 3.3; its denominator on the same row is the population at the start of the interval, which is the \"in a group\" half of Inherit's definition. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:cdc-epidemiology-incidence-proportion",
+      "type": "handbook",
+      "identifier": "CDC Principles of Epidemiology in Public Health Practice, Lesson 3 Section 2: Morbidity Frequency Measures",
+      "url": "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section2.html",
+      "archived_path": "docs/sources/glossary/absolute-risk.json",
+      "access_date": "2026-09-12",
+      "quote": "the proportion of an initially disease-free population that develops disease, becomes injured, or dies during a specified (usually limited) period of time",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. CDC names this measure incidence proportion and lists \"risk\" among its synonyms on the same page, which is why it carries Inherit's \"absolute risk\" rather than a page using that exact phrase. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:cdc-epidemiology-risk-ratio",
+      "type": "handbook",
+      "identifier": "CDC Principles of Epidemiology in Public Health Practice, Lesson 3 Section 5: Measures of Association",
+      "url": "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson3/section5.html",
+      "archived_path": "docs/sources/glossary/relative-risk.json",
+      "access_date": "2026-09-12",
+      "quote": "compares the risk of a health event (disease, injury, risk factor, or death) among one group with the risk among another group",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
     }
   ]
 }

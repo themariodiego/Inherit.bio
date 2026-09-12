@@ -1821,3 +1821,42 @@ Inherit" ("raw data" is a registered term) and "Raw genetic data on screen"
 vocabulary). The shipped label is **"Read the letters in Inherit"** — the
 product's own plain word for the same thing, which the consequence lines
 already used. The gate caught both, which is the gate working.
+
+## 2026-09-12 — The NHGRI date finding was wrong, and the correction is worth more
+
+`scripts/glossary/fetch-source.mjs` and `docs/sources/glossary/README.md` both
+recorded that a summarising fetch had FABRICATED a last-updated date for the
+NHGRI polygenic-risk-score page, and that the page carried no such date
+anywhere in its HTML.
+
+Reading the raw bytes disproved it. The page really does carry
+`updated: September 12, 2026`, and so do `Susceptibility`, `Pathogenic Variant`
+and `Polygenic Trait` — three unrelated entries, all dated the day of the
+fetch. NHGRI renders the current date as every glossary entry's update line.
+Nothing was invented. The accusation was mine, and it was wrong.
+
+Both records are corrected rather than quietly dropped, because the corrected
+finding is the more useful one: a summariser cannot warn you about this, since
+the summariser is reading the page correctly. The page is what is unreliable.
+
+The tool now records the date it finds AND a `pageDateIsFetchDate` flag beside
+it, so the tell is visible in the snapshot instead of being hidden by a regex
+that happened not to match. It is `true` on every NHGRI snapshot and `false` on
+the MedlinePlus one, which carries a real 2021 date.
+
+## 2026-09-12 — A fixture invalidated twice by the same cause gets derived
+
+`glossed-text.test.ts` named "absolute risk" as a term that must not be
+glossed. Sourcing it made that false. The same fixture had already been moved
+once on 2026-09-11 for the mirror-image reason.
+
+Two hand-picked fixtures broken by the same mechanism is the signal to stop
+hand-picking. The file now also sweeps EVERY uncited term read from
+`data/jargon.json` and `data/glossary-citation-classes.json` — the raw inputs,
+not the module under test — and asserts no gloss carries it. The next term
+sourced needs no edit here.
+
+The sweep was checked against a mutation before being trusted: breaking
+`renderableGlossaryEntries()` to return everything made it fail on
+`association`. What it does NOT cover is stated in the test itself, because a
+comment claiming cover it does not have is worse than no comment.

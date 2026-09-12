@@ -1,0 +1,13 @@
+{
+  "term": "average",
+  "url": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda351.htm",
+  "finalUrl": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda351.htm",
+  "fetchedAt": "2026-09-12T10:46:38.738Z",
+  "pageBytes": 16636,
+  "pageSha256": "bb3bdf109a8106956edc99bbe5707beb54c6b560e0e0ad9b58b0f1d42a46ba08",
+  "pageTitle": "1.3.5.1. Measures of Location",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "to find a typical or central value that best describes the data"
+}

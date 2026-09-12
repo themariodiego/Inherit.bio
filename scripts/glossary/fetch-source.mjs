@@ -3,23 +3,35 @@
  * Fetch one glossary source and save a snapshot of what it ACTUALLY says.
  *
  * WHY THIS EXISTS RATHER THAN A WEB-FETCH TOOL. On 2026-09-12 a summarising
- * fetch of the NHGRI page for "polygenic risk score" reported
- * "Last Updated: September 12, 2026". That page carries no last-updated date
- * anywhere in its HTML — the model had substituted the current date. The
- * definition it quoted was real; the metadata was not.
+ * fetch of the NHGRI page for "polygenic risk score" reported it as updated
+ * that same day, which was the day of the fetch. Reading the raw bytes later
+ * that day settled where the date came from, and the answer was worse than a
+ * fabrication: the page really does carry `updated: September 12, 2026`, and
+ * so do the pages for `Susceptibility`, `Pathogenic Variant` and
+ * `Polygenic Trait`. NHGRI renders the CURRENT DATE as every entry's update
+ * line. Nothing was invented; the source itself supplies a date that means
+ * nothing.
  *
- * A citation register exists to make provenance checkable, so a fabricated
- * date in it is worse than a missing one: it looks like evidence. This script
- * therefore reads the RAW bytes and records only strings it can point at:
+ * That is the case a summariser cannot warn you about, and it is the reason
+ * this script exists. A citation register makes provenance checkable, so a
+ * meaningless date in it is worse than a missing one: it looks like evidence.
+ * This script therefore reads the RAW bytes and records only strings it can
+ * point at:
  *
- *   - `definition` is a substring of the fetched HTML, matched from the page's
- *     own metadata, never paraphrased and never generated;
+ *   - every recorded string is a substring of the fetched HTML, matched from
+ *     the page's own markup, never paraphrased and never generated;
  *   - `fetchedAt` is this machine's clock at the moment of the request, which
  *     is the one date anybody here can honestly attest to;
  *   - `pageSha256` is over the exact bytes received, so the snapshot can be
  *     shown to correspond to a real response;
  *   - a page date is recorded ONLY when a date string is found in the bytes,
- *     and is `null` otherwise. Absent means absent.
+ *     and is `null` otherwise. Absent means absent. When the date the page
+ *     gives equals the date of the fetch, `pageDateIsFetchDate` says so, so
+ *     the NHGRI tell is visible in the snapshot rather than hidden by a regex
+ *     that happened not to match it;
+ *   - `pageDescription` is the page's own description metadata, which is the
+ *     term's definition on a glossary and the course blurb on a syllabus. It
+ *     is named for what it is, not for what it is hoped to be.
  *
  * Nothing here decides whether a source is appropriate for a term. That is a
  * judgement, made by a person reading the output, and the script prints what
@@ -57,13 +69,23 @@ const title = html.match(/<title[^>]*>([^<]+)<\/title>/i);
 const datePatterns = [
   /<meta[^>]+property=["']article:modified_time["'][^>]+content=["']([^"']+)["']/i,
   /<time[^>]+datetime=["']([^"']+)["']/i,
-  /(?:last\s+updated|last\s+reviewed|last\s+modified)\s*:?\s*([A-Z][a-z]+\s+\d{1,2},\s+\d{4})/i,
+  /(?:last\s+updated|last\s+reviewed|last\s+modified|updated)\s*:?\s*([A-Z][a-z]+\s+\d{1,2},\s+\d{4})/i,
 ];
 let pageDate = null;
 for (const pattern of datePatterns) {
   const found = html.match(pattern);
   if (found) { pageDate = found[1].trim(); break; }
 }
+/**
+ * A page that says it was updated today, on the day you fetched it, is telling
+ * you its template's clock rather than its own history. Recording the match
+ * silently would launder that into the register, and dropping it would hide a
+ * fact about the source, so the snapshot carries both the date and the tell.
+ */
+const parsed = pageDate ? new Date(pageDate) : null;
+const pageDateIsFetchDate = parsed && !Number.isNaN(parsed.valueOf())
+  ? parsed.toISOString().slice(0, 10) === fetchedAt.slice(0, 10)
+  : false;
 
 const slug = term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 // Defaults to the glossary, but the jurisdiction research uses the same tool
@@ -81,7 +103,8 @@ const snapshot = {
   pageSha256,
   pageTitle: title ? unescape(title[1]).trim() : null,
   pageDate,
-  definition: meta ? unescape(meta[1]).trim() : null,
+  pageDateIsFetchDate,
+  pageDescription: meta ? unescape(meta[1]).trim() : null,
   quote: null,
 };
 
@@ -106,7 +129,8 @@ await writeFile(file, `${JSON.stringify(snapshot, null, 2)}\n`);
 
 console.log(`saved ${file}`);
 console.log(`  title      ${snapshot.pageTitle}`);
-console.log(`  page date  ${snapshot.pageDate ?? "(none in the bytes — do not invent one)"}`);
+console.log(`  page date  ${snapshot.pageDate ?? "(none in the bytes — do not invent one)"}${
+  snapshot.pageDateIsFetchDate ? "  <- SAME AS TODAY; the page is dating itself, not recording a change" : ""}`);
 console.log(`  final url  ${snapshot.finalUrl}`);
-console.log(`  definition ${snapshot.definition ?? "(no description metadata — needs a different extraction)"}`);
+console.log(`  page desc  ${snapshot.pageDescription ?? "(no description metadata — the quote is the evidence here)"}`);
 if (snapshot.quote) console.log(`  quote      VERIFIED PRESENT: ${snapshot.quote}`);

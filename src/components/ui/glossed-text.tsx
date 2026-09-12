@@ -33,10 +33,18 @@ import { GlossaryTerm } from "@/components/ui/glossary-term";
  */
 
 /**
- * Only the terms classified `plain` (operator decision, 2026-09-11). A term
- * whose definition names a disease, describes clinical practice, or defines a
- * quantity drawn from data stays out of this pattern entirely, so it is not
- * merely unstyled - it is never matched, and no reader can open it.
+ * Only the terms a reader may be SHOWN: the ones classified `plain` (operator
+ * decision, 2026-09-11), plus any `cited` term whose definition now carries a
+ * citation that resolves in `data/glossary-citations.json` (2026-09-12). A
+ * term whose definition names a disease, describes clinical practice, or
+ * defines a quantity drawn from data, and that has no source yet, stays out of
+ * this pattern entirely - not merely unstyled, but never matched, so no reader
+ * can open it.
+ *
+ * The set therefore GROWS as definitions are sourced, which is what the
+ * register is for. Sourcing a term adds a `<button>` to every sentence that
+ * uses it, and the first-viewport interactive budgets above count buttons, so
+ * a term entering this list is a rendering change and gets checked as one.
  */
 const TERMS: readonly string[] = renderableGlossaryEntries()
   .flatMap((entry) => [entry.term, ...entry.aliases])

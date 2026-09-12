@@ -834,6 +834,39 @@
         "docs/reviews/jurisdictions/research/README.md",
         "docs/reviews/jurisdictions/research/GB.md"
       ]
+    },
+    {
+      "name": "MedlinePlus Genetics",
+      "category": "cited-organisation",
+      "aliases": [
+        "medlineplus",
+        "medlineplus.gov",
+        "www.medlineplus.gov",
+        "medlineplus genetics",
+        "national library of medicine"
+      ],
+      "reason": "Cited by name in the glossary citation register as the source for the definition of penetrance.",
+      "evidence": [
+        "data/glossary-citations.json",
+        "docs/sources/glossary/penetrance.json"
+      ]
+    },
+    {
+      "name": "CDC",
+      "category": "cited-organisation",
+      "aliases": [
+        "cdc",
+        "cdc.gov",
+        "www.cdc.gov",
+        "archive.cdc.gov",
+        "centers for disease control and prevention",
+        "principles of epidemiology in public health practice"
+      ],
+      "reason": "Cited by name in the glossary citation register as the source for the definitions of prevalence, incidence, absolute risk and relative risk.",
+      "evidence": [
+        "data/glossary-citations.json",
+        "docs/sources/glossary/prevalence.json"
+      ]
     }
   ]
 }

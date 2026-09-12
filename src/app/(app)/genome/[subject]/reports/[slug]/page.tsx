@@ -266,9 +266,12 @@ function VariantResult({
       <div data-outcome="not-covered" className="space-y-1 text-sm leading-relaxed text-ink">
         {/* The sentence a beginner is most likely to misread, so it is the one
             that gets glosses: it explains an ABSENCE, and leans on "variant",
-            "genotype" and "reference" to do it. Only terms classed `plain`
-            are glossed, so nothing naming a disease, a risk or a statistic
-            reaches this surface uncited. The paragraph's own text is
+            "genotype" and "reference" to do it. A term naming a disease, a
+            risk or a statistic is glossed here only once its definition
+            carries a source, so nothing reaches this surface uncited. As of
+            2026-09-12 none of the sourced ones appears in these two
+            sentences, and the five glosses are the same plain terms as
+            before. The paragraph's own text is
             unchanged while the glosses are closed, which is what lets the
             copy still be asserted exactly. */}
         <p {...REQUIRED_ACCURACY}><GlossedText>{notCovered}</GlossedText></p>

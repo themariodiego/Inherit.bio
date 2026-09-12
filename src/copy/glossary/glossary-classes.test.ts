@@ -56,14 +56,28 @@ describe("every glossary term is classified on purpose", () => {
     for (const entry of withEvidence) expect(renderable).toContain(entry.term);
   });
 
-  it("keeps every named risk, disease and statistical term out of what renders", () => {
+  it("renders each named risk, disease and statistical term only once it is sourced", () => {
     // Named rather than derived: a rule that recomputed the classification
     // would agree with itself and prove nothing.
+    //
+    // Written on 2026-09-11 as "none of these renders", which was true then
+    // because none of them was sourced. Sourcing `penetrance`, `prevalence`
+    // and the rest on 2026-09-12 is exactly the change the register was built
+    // to allow, so the assertion is now the biconditional it always meant:
+    // each of these terms renders IF AND ONLY IF a citation carries it.
+    //
+    // That is stronger than the original, not weaker. Reclassifying any of
+    // them from `cited` to `plain` to make it render still fails here, because
+    // reclassifying does not give it a `citationId`; and deleting a citation
+    // from the register now has to return its term to invisible too.
     const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
     for (const term of ["absolute risk", "relative risk", "odds ratio", "hazard ratio", "confidence interval",
       "heritability", "penetrance", "polygenic", "risk allele", "susceptibility", "z-score", "percentile",
       "pathogenic", "diagnosis", "condition", "autoimmune", "medication", "clinical"]) {
-      expect(renderable.has(term), `${term} must not render uncited`).toBe(false);
+      const sourced = glossaryEntry(term)?.citationId != null;
+      expect(renderable.has(term), sourced
+        ? `${term} is sourced and must render`
+        : `${term} must not render uncited`).toBe(sourced);
     }
   });
 
