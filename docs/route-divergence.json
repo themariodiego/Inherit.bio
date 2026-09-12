@@ -254,9 +254,11 @@
     "/science/positions complete",
     "/settings complete",
     "/settings processing",
+    "/settings/consents complete",
     "/settings/consents empty",
     "/settings/consents processing",
     "/settings/copilot processing",
+    "/settings/data complete",
     "/settings/data processing",
     "/terms complete"
   ]

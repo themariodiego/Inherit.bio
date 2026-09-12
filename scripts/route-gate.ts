@@ -188,6 +188,17 @@ const BROWSER_TESTS = "e2e";
  *               exist. Both tests check what the sentence CLAIMS - the new
  *               account really is unusable until activated, and the reset
  *               confirmation really does not say whether the address exists.
+ *   112 -> 110  `/settings/data complete` and `/settings/consents complete`.
+ *               `/settings/copilot complete` was written with them and then
+ *               DELETED rather than weakened: its permission section needs an
+ *               own-file permission (`own_copilot_configuration_v1` calls
+ *               `own_report_context_v1`), not merely a saved provider, so a
+ *               provider-only account sees the page's lesser shape and
+ *               titling that would have claimed the fuller one. Its proof
+ *               belongs with the canonical Copilot fixtures, which upload
+ *               first and need the model daemon this container cannot start.
+ *               `/settings/people complete` joins corrections item 10 as
+ *               not-applicable: the page is not built.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -198,7 +209,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 112;
+const UNPROVEN_ROUTE_STATE_PAIRS = 110;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

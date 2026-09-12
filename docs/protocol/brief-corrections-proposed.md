@@ -719,8 +719,28 @@ jurisdiction-unavailable` did before item 4, and the ratchet counted it as
 progress for weeks. Both of these would have been easy to "prove" by asserting
 on `/overview` after signing in, and the assertion would have passed.
 
-**What is asked of the operator: sign or refuse these 2**, taking the count of
-proposed not-applicable pairs to 31 alongside item 8's 29.
+### One more, and one that is only unproven
+
+`/settings/people complete` is proposed not-applicable on the same reading item
+8 used for its `empty` and `processing`: the page renders `FeatureNotBuilt`
+unconditionally. A page that is not built has no complete state.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/settings/people` | `complete` | The route renders `FeatureNotBuilt` and nothing else. Item 8 already proposes its `empty` and `processing` for the same reason. |
+
+`/settings/copilot complete` is NOT proposed. The state is real; it is only
+unproven, and the distinction cost a written-then-deleted test. Its permission
+section needs an own-file permission — `own_copilot_configuration_v1` calls
+`own_report_context_v1` — so an account with a saved provider and no uploaded
+file sees the page's lesser shape, and titling that would have claimed the
+fuller one. The proof belongs beside the canonical Copilot fixtures, which
+upload first; they need the model daemon (`CANONICAL_COPILOT_CONTROL_URL`)
+that this container cannot start, so the title waits for an environment that
+can run it rather than being written unrun.
+
+**What is asked of the operator: sign or refuse these 3**, taking the count of
+proposed not-applicable pairs to 32 alongside item 8's 29.
 
 ## What happens after signature
 

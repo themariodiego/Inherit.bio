@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 
 /**
@@ -31,6 +31,45 @@ const SECTIONS = [
  * Nothing here connects to it; the consent gate refuses before any model step.
  */
 const SYNTHETIC_CLOUD_ENDPOINT = "https://203.0.114.10:8123/v1";
+/** The provider key `providerKeyFor` derives from that endpoint. */
+const SYNTHETIC_PROVIDER_KEY = "203.0.114.10:8123";
+
+/**
+ * Saves a CLOUD provider through the real form. Extracted because three tests
+ * need it and none of them is about the saving.
+ */
+async function saveSyntheticCloudProvider(page: Page) {
+  await page.goto("/settings/copilot");
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
+  await page.getByLabel("Base URL").fill(SYNTHETIC_CLOUD_ENDPOINT);
+  await page.getByLabel("Model", { exact: true }).fill("synthetic-model");
+  await page.getByRole("button", { name: "Save provider", exact: true }).click();
+  await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true }))
+    .toBeVisible();
+}
+
+/**
+ * Walks the only path that writes a `consent_grants` row: ask one question,
+ * meet the cloud consent gate, consent in the dialog it offers. See the header
+ * above the processing test for why no shorter path exists.
+ */
+async function grantCloudModelConsent(page: Page) {
+  await page.goto("/copilot/me");
+  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
+  const refused = page.waitForResponse(r => new URL(r.url()).pathname === "/api/chat");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const refusal = await refused;
+  expect(refusal.status()).toBe(403);
+  expect(await refusal.json()).toEqual({ error: "consent_required", provider_key: SYNTHETIC_PROVIDER_KEY });
+  const review = page.getByRole("button", { name: "Review what would be shared", exact: true });
+  await expect(review, "the cloud consent gate refused before any model step").toBeVisible();
+  await review.click();
+  const granted = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
+  await page.getByTestId("consent-grant").click();
+  expect((await granted).status()).toBe(200);
+}
 
 test.describe.configure({ mode: "serial" });
 
@@ -312,37 +351,12 @@ test("/settings/consents processing: the revoke control says Working while its r
   await createConfirmedUser(email, password);
   await signIn(page, email, password);
 
-  // 1. A cloud provider, saved through the real form.
-  await page.goto("/settings/copilot");
-  await page.getByLabel("Provider", { exact: true }).click();
-  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
-  await page.getByLabel("Base URL").fill(SYNTHETIC_CLOUD_ENDPOINT);
-  await page.getByLabel("Model", { exact: true }).fill("synthetic-model");
-  await page.getByRole("button", { name: "Save provider", exact: true }).click();
-  await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true }))
-    .toBeVisible();
-
-  // 2. One question, refused by the cloud consent gate. The prompt is the
-  //    fixtures' own caffeine question, which the intent classifier allows.
-  await page.goto("/copilot/me");
-  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
-  const refused = page.waitForResponse(r => new URL(r.url()).pathname === "/api/chat");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
-  const refusal = await refused;
-  // Named, not merely observed. A 400 here is what used to happen, and the
-  // panel rendered the same generic failure for it, so asserting only on the
-  // rendered button would have re-proven the bug this test found.
-  expect(refusal.status()).toBe(403);
-  expect(await refusal.json()).toEqual({ error: "consent_required", provider_key: "203.0.114.10:8123" });
-  const review = page.getByRole("button", { name: "Review what would be shared", exact: true });
-  await expect(review, "the cloud consent gate refused before any model step").toBeVisible();
-
-  // 3. The grant, made in the dialog that names the provider and the classes.
-  await review.click();
-  const granted = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
-  await page.getByTestId("consent-grant").click();
-  expect((await granted).status()).toBe(200);
+  // The grant this page needs a row for. Both steps assert the RESPONSE, not
+  // only the rendered control: a 400 from the chat route produced the same
+  // generic failure the panel shows for anything, so asserting the button
+  // alone would have re-proven the bug this fixture found.
+  await saveSyntheticCloudProvider(page);
+  await grantCloudModelConsent(page);
 
   // Now the state under test: one revocable row, and its control held open.
   let release!: () => void;
@@ -375,4 +389,77 @@ test("/settings/consents processing: the revoke control says Working while its r
   // this test's last act is a revocation and it should say what it left.
   await expect(page.getByText(/^revoked /)).toBeVisible();
   await expect(page.getByRole("button", { name: "Revoke", exact: true })).toHaveCount(0);
+});
+
+/**
+ * `/settings/data complete`, on the reading already recorded for `/settings`:
+ * this page has no data-dependent shape. It renders the export section and
+ * the danger zone on every visit, for every account, so `complete` here means
+ * the page showing everything it has.
+ *
+ * The assertion is worth making for one reason: this page is where both of
+ * the reader's exit rights live. An export control or a deletion control
+ * silently disappearing would strand a right, and nothing else would notice.
+ * So the test names both, and names what the export claims to contain —
+ * because that sentence is a promise about scope, and D-097 was about the two
+ * export halves disagreeing.
+ */
+test("/settings/data complete: both exit rights render, and the export names what it contains", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/settings/data");
+
+  await expect(page.locator("main h1")).toHaveText("Your data");
+
+  const exportSection = page.locator("section").filter({ hasText: "Export everything" });
+  await expect(exportSection.getByRole("link", { name: "Download export" }))
+    .toHaveAttribute("href", "/api/export");
+  // Each named class is a promise about the archive's scope, not decoration.
+  for (const claimed of ["your uploads", "DNA variants we found", "results",
+    "consent records", "legal audit records", "saved chats"]) {
+    await expect(exportSection, `the export names ${claimed}`).toContainText(claimed);
+  }
+
+  // The second right. Held here rather than driven: e2e/settings.spec.ts
+  // already schedules one real deletion above, and once is enough.
+  await expect(page.getByTestId("delete-account")).toBeVisible();
+  await expect(page.getByRole("link", { name: "← Settings" })).toHaveAttribute("href", "/settings");
+});
+
+/**
+ * `/settings/consents complete`: the grant list with something in it, which
+ * is this page's whole substance the way its empty list is its `empty` state.
+ *
+ * The fixture is the one described above the processing test — the only path
+ * that writes a `consent_grants` row. What is asserted is every fact the row
+ * carries, because each is a claim about a permission the reader gave: which
+ * recipient, when, how many classes of data, and that it can still be taken
+ * back.
+ */
+test("/settings/consents complete: the grant names its recipient, its date, its scope and its way out", async ({ page }) => {
+  const email = `settings-consents-complete-${randomUUID()}@e2e.local`;
+  const password = "e2e-settings-consents-complete-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  await saveSyntheticCloudProvider(page);
+  await grantCloudModelConsent(page);
+
+  await page.goto("/settings/consents");
+  await expect(page.locator("main h1")).toHaveText("Consents");
+  await expect(page.getByText("No cloud-LLM consent grants. None are needed for local models."))
+    .toHaveCount(0);
+
+  const row = page.getByRole("listitem");
+  await expect(row).toHaveCount(1);
+  await expect(row, "the recipient this permission names").toContainText(SYNTHETIC_PROVIDER_KEY);
+  // A date, not THE date: the row formats it in the browser's locale and this
+  // process need not share it. What matters is that a granted date is stated.
+  await expect(row, "when it was given").toContainText(/Granted \d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4}/);
+  // Five is `LLM_DATA_CLASSES`, pinned as a number rather than a floor: a
+  // class appearing or vanishing changes what the reader agreed to send.
+  await expect(row, "how much it covers").toContainText("5 data classes");
+  // Not yet withdrawn, and withdrawable: the row carries no revoked date and
+  // does carry the control. Both halves, because a row that said "revoked"
+  // and still offered the button would be lying one way or the other.
+  await expect(row, "not already withdrawn").not.toContainText("revoked");
+  await expect(row.getByRole("button", { name: "Revoke", exact: true })).toBeVisible();
 });
