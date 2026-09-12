@@ -1725,3 +1725,82 @@ rather than fixed here — the operator's decision named `ancestry.json`, and
 widening a rights change past what was asked is how a scoped decision becomes
 an unreviewed one. The mechanism takes the purpose as an argument, so applying
 it is a call-site change plus tests whenever they say the word.
+
+## 2026-09-12 — `raw.browse`, and the genome hub moving with its children
+
+Two follow-on decisions from the jurisdiction pivot, both put separately
+because each would otherwise have been me deciding the shape of the Family
+journey while implementing a routing change.
+
+### The hub goes with its children
+
+Corrections item 5 named `/genome/[subject]/data` and
+`/genome/[subject]/data/browser`. `/genome/[subject]`, the hub above them,
+resolved with the same own-subject-only resolver and was named by neither side.
+Converting only the children would have left a person landing on a not-found
+parent above pages that worked.
+
+**Decided: all three move together.** The conversion cost more than a resolver
+swap, and the rest is the part worth remembering:
+
+- every tile was written in the second person — "your file", "your own
+  reports" — and each becomes a false sentence when the record is someone
+  else's;
+- tiles are now built from what the person actually granted, so a relative who
+  shared only ancestry has no Reports tile rather than a Reports link to a
+  not-found page;
+- Copilot stays own-record only, because `/copilot/[scope]` reads the viewer's
+  own subjects and an `s-{person}` scope does not resolve there yet;
+- "Add a file" is gone for a relative's record, because adding a file to
+  someone else's record is not a thing this product does and the button
+  implied it was.
+
+### `raw.browse` — a new directional purpose
+
+The question the routing change could not answer for itself: which grant
+authorises a relative's raw data? `/data` reads `user_prs`; `/data/browser`
+puts variant calls on screen. `DIRECTIONAL_PURPOSES` had no browse purpose, so
+the only candidate was `raw.export`.
+
+**Decided: add `raw.browse`, granted separately.** Using `raw.export` would
+have silently widened every export grant already given into a browsing grant.
+Both release the same bytes, which is an argument for asking rather than a
+reason not to: someone who agreed that a relative may download their file did
+not thereby agree that they may read their variants whenever they open a page,
+and the brief requires storage, analysis, sharing and AI permissions to stay
+separable.
+
+What it touched, and what it did not:
+
+- `purpose_grants_purpose_check`, `grant_directional_purpose_v1` and
+  `respond_adult_subject_invitation_v1` — the last two derived from the
+  installed definitions by one asserted substitution each.
+- **No new consent artifact.** Every directional purpose signs against
+  `consent.share-with-adult`, so this is a row on the permissions page and
+  nothing in the consent library.
+- **`generated_exports.purpose` deliberately not widened**: browsing produces
+  no export artifact, and a `raw.browse` row there would mean an archive
+  nobody asked for.
+- `subject_consents.scope` gains it for NEW acceptances only. That array is
+  descriptive — `grant_directional_purpose_v1` never reads it — so no existing
+  pairing changes and no grant depends on it.
+
+**`/data` needs both permissions, not one.** Panel coverage is built from
+`user_prs`, which is a polygenic RESULT rather than the file. `raw.browse`
+opens the file; the score panel additionally needs `reports.polygenic`, and
+without it the read does not happen at all rather than happening and being
+hidden.
+
+### The label, which took three attempts
+
+`raw.export`'s label is "Raw genetic data", exempt from the registered-term
+rule only because the brief names it verbatim as a §5 §5.3 toggle. This
+permission is new and the brief does not name it, so claiming the same
+exemption would have been claiming the brief says something it does not.
+
+Two drafts were rejected by the copy tests before one passed: "Read raw data in
+Inherit" ("raw data" is a registered term) and "Raw genetic data on screen"
+("genetic" is a registered term, and "screen" is not in the registered
+vocabulary). The shipped label is **"Read the letters in Inherit"** — the
+product's own plain word for the same thing, which the consequence lines
+already used. The gate caught both, which is the gate working.

@@ -18,7 +18,7 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { GenomeBrowser } from "@/components/browse/genome-browser";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -64,9 +64,9 @@ import { loadInputSources } from "@/lib/genome/input-sources";
 import { formatLocus } from "@/lib/genome/locus";
 import { chromToName } from "@/lib/genome/types";
 import { route } from "@/lib/primary-routes";
-import { resolveSubjectForAccount } from "@/lib/subjects";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: BROWSER_H1 };
 
@@ -75,26 +75,38 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   const searchParams = await props.searchParams;
   const q = (typeof searchParams.q === "string" ? searchParams.q : "").trim();
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  if (!subject) notFound();
+  // `raw.browse` and nothing else. This page puts another person's variant
+  // calls on screen, which is the most direct genetic read in the product, so
+  // it takes the permission created for precisely that and never borrows one
+  // named for something else (operator decision, 2026-09-12).
+  const context = await resolveSubjectRoute(segment, { anyOf: ["raw.browse"] });
+  if (context.kind === "not-found") notFound();
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={BROWSER_H1}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, domain, displayLabel } = context;
   const subjectParams = { subject: subject.routeSegment };
 
   const admin = createAdminClient();
   // The search reads the processed files; the subject bar counts every file
   // in the record, whatever its status.
   const [files, fileCount] = await Promise.all([
-    getPreparedSourceFiles(admin, subject.id),
-    getSubjectFileCount(admin, subject.id),
+    getPreparedSourceFiles(admin, dataSubjectId),
+    getSubjectFileCount(admin, dataSubjectId),
   ]);
   let selectedActive: (typeof files)[number] | null = files[0] ?? null;
-  let outcome = q && selectedActive ? await search(admin, subject.id, selectedActive.id, q) : EMPTY;
+  let outcome = q && selectedActive ? await search(admin, dataSubjectId, selectedActive.id, q) : EMPTY;
   if (q && selectedActive) {
-    const currentIds = new Set((await getPreparedSourceFiles(admin, subject.id)).map(file => file.id));
+    const currentIds = new Set((await getPreparedSourceFiles(admin, dataSubjectId)).map(file => file.id));
     if (!currentIds.has(selectedActive.id)) selectedActive = null;
     if (outcome.checkedFileIds.some(id => !currentIds.has(id))) outcome = EMPTY;
   }
@@ -110,7 +122,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   // The search owns its input snapshot. A file can finish processing after
   // the outer read selected the track; never substitute that older set here.
   const checkedIds = outcome.checkedFileIds;
-  const sourceFacts = await loadInputSources(admin, subject.id,
+  const sourceFacts = await loadInputSources(admin, dataSubjectId,
     [...checkedIds, ...(showRegion ? [active.id] : [])], { kind: "prepared" });
   const tableInputs = sourceFacts.filter((source) => checkedIds.includes(source.fileId))
     .map((source) => ({ ...source, hasResultRecord: outcome.inputFileIds.includes(source.fileId) }));
@@ -126,8 +138,8 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
     >
       <Breadcrumbs
         items={[
-          { label: NAV_LABELS["my-genome"], href: route("genome.subject", subjectParams) },
-          { label: subject.displayLabel },
+          { label: domain.label, href: domain.href },
+          { label: displayLabel },
           { label: DATA_CRUMB, href: route("genome.data", subjectParams) },
           { label: BROWSER_H1 },
         ]}
@@ -209,7 +221,7 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
               </h2>
               <p className="max-w-prose text-sm text-ink-muted">{POSITIONS_BUILD}</p>
               <ClaimBlock
-                subject={{ subjectId: subject.id }}
+                subject={{ subjectId: dataSubjectId }}
                 figures={specs}
                 aria-label={resultsLabel(q)}
                 className="overflow-x-auto p-0"
@@ -299,12 +311,12 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
         {outcome.inputScope ? <div data-slot="table-input-provenance" className="space-y-3">
           <p className="text-sm text-ink-muted">{TABLE_INPUT_NOTE}</p>
           {showResults ? <p className="text-sm text-ink-muted">{TABLE_COVERAGE_NOTE}</p> : null}
-          <InputProvenance sources={tableInputs} subject={{ subjectId: subject.id }} state={inputState}
+          <InputProvenance sources={tableInputs} subject={{ subjectId: dataSubjectId }} state={inputState}
             coverage={showResults ? browserCoverage(hits) : undefined} />
         </div> : null}
         {showRegion ? <div data-slot="track-input-provenance" className="space-y-3">
           <p className="text-sm text-ink-muted">{TRACK_INPUT_NOTE}</p>
-          <InputProvenance sources={sourceFacts.filter((source) => source.fileId === active.id)} subject={{ subjectId: subject.id }} />
+          <InputProvenance sources={sourceFacts.filter((source) => source.fileId === active.id)} subject={{ subjectId: dataSubjectId }} />
         </div> : null}
       </div> : null}
     </div>

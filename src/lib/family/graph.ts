@@ -43,6 +43,12 @@ export const DIRECTIONAL_PURPOSES = [
   "family.portrait",
   "export.share-link",
   "raw.export",
+  // Reading someone's coverage and variant calls IN THE APP, separate from
+  // `raw.export` on purpose (operator decision, 2026-09-12). Both release the
+  // same bytes, but agreeing that a relative may download your file is not the
+  // same as agreeing they may read your variants whenever they open a page,
+  // and the brief requires these permissions to stay separable.
+  "raw.browse",
 ] as const;
 
 export type Purpose = (typeof DIRECTIONAL_PURPOSES)[number];

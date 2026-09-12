@@ -13,7 +13,12 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.user }, from: mocks.from }) }));
-vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
+// Both pages moved from `resolveSubjectForAccount` to `resolveSubjectRoute`
+// on 2026-09-12, so a relative resolves under `raw.browse`. These tests are
+// about provenance rather than authority, so the resolver is mocked to the
+// own-subject answer it used to give: `person: null`, the My Genome domain,
+// and the same subject id the reads are asserted against.
+vi.mock("@/lib/family/subject-route", () => ({ resolveSubjectRoute: mocks.subject }));
 vi.mock("@/lib/genome/load", () => ({ getSubjectProcessedFiles: mocks.files, getSubjectFileCount: async () => 2, getSubjectGenotypesByRsid: mocks.genotypes }));
 vi.mock("@/lib/genome/prepared-sources", () => ({ getPreparedSourceFiles: mocks.files, getPreparedSourceGenotypes: mocks.genotypes }));
 vi.mock("@/lib/genome/input-sources", () => ({ loadInputSources: mocks.sources }));
@@ -73,7 +78,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.queries.length = 0;
   mocks.user.mockResolvedValue({ data: { user: { id: "account" } } });
-  mocks.subject.mockResolvedValue({ id: "subject", routeSegment: "me", displayLabel: "Self" });
+  mocks.subject.mockResolvedValue({
+    kind: "ok", user: { id: "account" },
+    subject: { id: "subject", routeSegment: "me", displayLabel: "Self" },
+    dataSubjectId: "subject", person: null,
+    domain: { label: "My Genome", href: "/genome/me" }, displayLabel: "Self",
+  });
   mocks.files.mockResolvedValue([{ id: "newest" }, { id: "older" }]);
   mocks.sources.mockImplementation(async (_db, _subject, ids: string[]) => [...new Set(ids)].map(source));
   mocks.genotypes.mockResolvedValue({ genotypes: new Map([[762551, "A/C"]]), conflicts: new Set(), inputFileIds: ["older"], checkedFileIds: ["newest", "older"], fileCount: 2 });
@@ -161,8 +171,23 @@ describe("expert result input composition", () => {
   });
 
   it("does not read input metadata before subject authorization", async () => {
-    mocks.subject.mockResolvedValue(null);
+    // `null` became `{ kind: "not-found" }` when this page moved to
+    // `resolveSubjectRoute`. The guarantee is unchanged and is the one that
+    // matters most on this page: an unresolved subject reads no genetic data
+    // at all, rather than reading it and then declining to render it.
+    mocks.subject.mockResolvedValue({ kind: "not-found" });
     await expect(browser("rs762551")).rejects.toThrow("not-found");
+    expect(mocks.sources).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("reads nothing when the jurisdiction refuses the record", async () => {
+    // The refusal branch is new here, and it must behave like the not-found
+    // one: refuse before a single genetic read, not after.
+    mocks.subject.mockResolvedValue({ kind: "jurisdiction",
+      decision: { capability: "third_party_adult_analysis", status: "unreviewed",
+        userFacingCopy: "not available", jurisdictionCode: null, source: "unset" } });
+    await browser("rs762551");
     expect(mocks.sources).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
   });

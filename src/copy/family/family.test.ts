@@ -213,12 +213,17 @@ describe("family copy", () => {
     expect(KIND_CHIPS.adult_shared).toBe("Shared with you");
   });
 
-  it("names the six permission rows, one purpose each, all default off", () => {
+  // Seven since 2026-09-12: `raw.browse` was split out of `raw.export` so that
+  // letting a relative DOWNLOAD your file and letting them READ IT ON SCREEN
+  // are two separate choices (operator decision). Pinned as an exact list, not
+  // a count, so a row cannot be added or renamed without saying so here.
+  it("names the seven permission rows, one purpose each, all default off", () => {
     expect(permissions.PERMISSION_ROWS.map((row) => row.id)).toEqual([
       "reports.monogenic",
       "reports.polygenic",
       "ancestry",
       "raw.export",
+      "raw.browse",
       "family.portrait",
       "family.heritability",
     ]);
@@ -227,6 +232,12 @@ describe("family copy", () => {
       "Statistical estimates",
       "Ancestry",
       "Raw genetic data",
+      // Not "Raw genetic data ..." like the row above: that one is exempt only
+      // because the brief names it verbatim. This row is new, so it has to
+      // pass the rules for real — every word in the registered vocabulary, and
+      // no registered term ("genetic" and "raw data" are both terms). Two
+      // drafts were rejected by these tests before this one.
+      "Read the letters in Inherit",
       "Portrait",
       "Health picture",
     ]);

@@ -246,6 +246,11 @@ describe("family people graph", () => {
       "family.portrait",
       "export.share-link",
       "raw.export",
+      // Added 2026-09-12 with the matching change to
+      // `grant_directional_purpose_v1`, which is what this test is for: the
+      // two lists must not drift, or a purpose the product offers is one the
+      // grant transaction rejects.
+      "raw.browse",
     ]);
     expect(isPurpose("reports.polygenic")).toBe(true);
     expect(isPurpose("embryo.analysis")).toBe(false);
