@@ -2,10 +2,11 @@
   "term": "carrier",
   "url": "https://www.genome.gov/genetics-glossary/Carrier",
   "finalUrl": "https://www.genome.gov/genetics-glossary/Carrier",
-  "fetchedAt": "2026-09-12T09:53:44.089Z",
+  "fetchedAt": "2026-09-12T09:56:34.765Z",
   "pageBytes": 199546,
   "pageSha256": "eb9744a7303631cc1793e542b406bc0b5c6c62c0375798ec9d1622047207868b",
   "pageTitle": "Carrier",
   "pageDate": null,
-  "definition": "A carrier is an individual who carries and is capable of passing on a genetic mutation associated with a disease and may or may not display disease symptoms."
+  "definition": "A carrier is an individual who carries and is capable of passing on a genetic mutation associated with a disease and may or may not display disease symptoms.",
+  "quote": "an individual who carries and is capable of passing on a genetic mutation associated with a disease"
 }

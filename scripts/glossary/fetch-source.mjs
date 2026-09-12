@@ -29,9 +29,9 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const [, , term, url] = process.argv;
+const [, , term, url, wantedQuote] = process.argv;
 if (!term || !url) {
-  console.error("usage: fetch-source.mjs <term> <url>");
+  console.error("usage: fetch-source.mjs <term> <url> [quote-that-must-appear-verbatim]");
   process.exit(2);
 }
 
@@ -79,7 +79,26 @@ const snapshot = {
   pageTitle: title ? unescape(title[1]).trim() : null,
   pageDate,
   definition: meta ? unescape(meta[1]).trim() : null,
+  quote: null,
 };
+
+// A quote is recorded only after being FOUND in the bytes. The register's
+// quotes are the part a reader checks first, so one that cannot be located in
+// the page it names is the worst possible entry: it reads as evidence and is
+// not. Typographic apostrophes are folded, because the page serves U+2019 and
+// a caller typing an ASCII quote is not making a different claim.
+if (wantedQuote) {
+  const fold = (value) => unescape(value).replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, " ").trim();
+  const haystack = fold(html.replace(/<[^>]+>/g, " "));
+  if (!haystack.includes(fold(wantedQuote))) {
+    console.error(`QUOTE NOT FOUND in ${response.url}`);
+    console.error(`  wanted: ${wantedQuote}`);
+    console.error("  Nothing was saved. Do not record a quote a page does not carry.");
+    process.exit(1);
+  }
+  snapshot.quote = fold(wantedQuote);
+}
 await writeFile(file, `${JSON.stringify(snapshot, null, 2)}\n`);
 
 console.log(`saved ${file}`);
@@ -87,3 +106,4 @@ console.log(`  title      ${snapshot.pageTitle}`);
 console.log(`  page date  ${snapshot.pageDate ?? "(none in the bytes — do not invent one)"}`);
 console.log(`  final url  ${snapshot.finalUrl}`);
 console.log(`  definition ${snapshot.definition ?? "(no description metadata — needs a different extraction)"}`);
+if (snapshot.quote) console.log(`  quote      VERIFIED PRESENT: ${snapshot.quote}`);

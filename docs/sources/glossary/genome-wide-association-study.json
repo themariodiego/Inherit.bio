@@ -2,10 +2,11 @@
   "term": "genome-wide association study",
   "url": "https://www.genome.gov/genetics-glossary/Genome-Wide-Association-Studies",
   "finalUrl": "https://www.genome.gov/genetics-glossary/Genome-Wide-Association-Studies-GWAS",
-  "fetchedAt": "2026-09-12T09:53:44.486Z",
+  "fetchedAt": "2026-09-12T09:56:43.627Z",
   "pageBytes": 198694,
   "pageSha256": "19bb3f6a77500c83a7e4cb4b699d70d8dbccbf4789a80f774bb1f9aeab3663b4",
   "pageTitle": "Genome-Wide Association Studies (GWAS)",
   "pageDate": null,
-  "definition": "A genome-wide association study (GWAS) is an approach used in genetics research to associate specific genetic variations with particular diseases."
+  "definition": "A genome-wide association study (GWAS) is an approach used in genetics research to associate specific genetic variations with particular diseases.",
+  "quote": "surveying the genomes of many people, looking for genomic variants that occur more frequently in those with a specific disease or trait"
 }

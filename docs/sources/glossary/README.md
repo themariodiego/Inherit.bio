@@ -52,7 +52,56 @@ NHGRI was probed for the other terms and does not have pages for
 authority rather than a genomics one, and the clinical half needs a clinical
 one.
 
-## THE MISSING MECHANISM, and it is not data entry
+## TWO BLOCKERS, both structural, neither of them data entry
+
+### 1. Nothing lets a sourced term render
+
+`renderableGlossaryEntries()` in `src/copy/glossary/index.ts` filters on
+`citationClass === "plain"`. **There is currently no way for a `cited` term to
+become visible by carrying a citation** — the only route is reclassifying it as
+`plain`, which would be false about the term and would defeat the split.
+
+A working mechanism was built and then reverted, for the reason in the next
+section. What it did, so it need not be re-derived: `GlossaryEntry` gained a
+`citationId` resolved against the register (an id naming nothing reads as
+absent, so a typo returns a term to invisible rather than promoting a clinical
+definition behind a dangling reference), and `renderableGlossaryEntries`
+admitted `plain` entries plus any `cited` entry whose id resolved.
+
+One lesson from building it is worth keeping. The first three tests written for
+that guard **proved nothing**: they read `entry.citationId` from
+`glossaryEntries()`, which `index.ts` has already nulled for an unresolvable
+id, so the tests agreed with the code by construction. Pointing a definition at
+a dangling id changed no result at all. The test has to read the RAW field from
+`data/jargon.json` for a typo to fail.
+
+### 2. `data/citations.json` is the CORPUS register, and glossary entries do not fit it
+
+Discovered by appending two and watching `src/lib/claims/registry.ts` reject
+them:
+
+- **`orphan-citation`** — "Citation has no claim using it." The corpus is a
+  closed set in which every citation serves a report claim. A glossary
+  definition is not a corpus claim, so a citation that only a definition uses
+  is an orphan by that model's definition.
+- **`invalid-identifier`** — identifiers must match
+  `^[A-Za-z0-9][A-Za-z0-9 ._:()/+-]*$`, which an em dash in a source title
+  fails.
+- **`future-date`** — access dates are checked against the corpus's content
+  commit date.
+
+None of these is a bug. They are what makes that register trustworthy, and
+they say plainly that it was not built to hold a glossary source.
+
+So the decision this needs, and it is a design decision rather than a
+judgement call I should make while doing the research: **either extend the
+corpus so a glossary definition counts as a citation consumer** — defensible,
+since brief line 2570 designates a definition as a surface needing a citation,
+which implies the corpus should know about it — **or give the glossary its own
+register** with its own rules. Sourcing all 42 is necessary either way and
+changes nothing on screen until one of them exists.
+
+## The original note on the mechanism
 
 `renderableGlossaryEntries()` in `src/copy/glossary/index.ts` filters on
 `citationClass === "plain"`. **There is currently no way for a `cited` term to
