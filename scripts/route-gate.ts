@@ -139,6 +139,17 @@ const BROWSER_TESTS = "e2e";
  *               says so. The product answers with a seven-day notice period
  *               and a cancel path, and `e2e/account-deletion-purge.spec.ts`
  *               already does the same thing.
+ *   122 -> 121  `/settings/consents processing`, and the fixture found a bug
+ *               on the way. The row this page lists can only be written by the
+ *               legacy provider-key consent, which only `ConsentDialog` sends,
+ *               which only appears after the chat route answers
+ *               `consent_required` - and the chat route was answering 400 to
+ *               everything the compatibility panel sent, because its body
+ *               schema admitted `messages` alone while the AI SDK transport
+ *               posts `{ id, messages, trigger }`. The panel blamed the
+ *               reader's provider settings for it. Schema fixed, panel works,
+ *               pair proven; an earlier note claiming the row could come from
+ *               `/settings/copilot` was wrong and is corrected in the spec.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -149,7 +160,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 122;
+const UNPROVEN_ROUTE_STATE_PAIRS = 121;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

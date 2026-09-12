@@ -22,6 +22,16 @@ const SECTIONS = [
   { href: "/settings/consents", title: "Consents" },
 ] as const;
 
+/**
+ * The synthetic cloud endpoint. 203.0.114.10 is the address the browser
+ * runtime already reserves for the synthetic model (`ci-browser-runtime.ts:70`)
+ * — chosen there because `allowedModelAddress` blocks every documentation
+ * range (192.0.2/24, 198.51.100/24, 203.0.113/24) and this one sits just
+ * outside the last of them, so it classifies as a remote cloud recipient.
+ * Nothing here connects to it; the consent gate refuses before any model step.
+ */
+const SYNTHETIC_CLOUD_ENDPOINT = "https://203.0.114.10:8123/v1";
+
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
@@ -241,4 +251,128 @@ test("the People settings page says it is not built, and blames no jurisdiction"
   // on a route that has no jurisdiction guard to justify it.
   await expect(page.getByText("Not available in this jurisdiction yet")).toHaveCount(0);
   await expect(notice.getByRole("link", { name: "Go back" })).toHaveAttribute("href", "/settings");
+});
+
+/**
+ * `/settings/consents processing`, and the fixture is the whole story.
+ *
+ * A NOTE RECORDED EARLIER IN THIS RUN WAS WRONG and is corrected here rather
+ * than quietly dropped. It said the row to revoke could be produced by
+ * granting Copilot permission on `/settings/copilot`. It cannot: that control
+ * writes `purpose_grants` (`grant_own_copilot_v1`), while this page lists
+ * `consent_grants` (`consents/page.tsx:10`). They are different tables, and a
+ * canonical Copilot grant never appears here.
+ *
+ * The one writer of `consent_grants` is `grant_cloud_model_consent`, reached
+ * only through the legacy provider-key body of `POST /api/consents`, which
+ * only `ConsentDialog` sends. So the fixture has to walk the path a reader
+ * would:
+ *
+ *   1. save a CLOUD provider on `/settings/copilot`. The endpoint is an
+ *      ADDRESS, not a name, and that is deliberate: `resolveModelEndpoint`
+ *      skips DNS entirely for an IP literal, which is the only form that
+ *      resolves in both environments this suite runs in. Locally the app
+ *      server runs on the host, where `model.copilot.test` is unknown; in CI
+ *      it runs inside a namespace whose OUTPUT policy DROPS all DNS
+ *      (`scripts/ci-browser/namespace.sh`), where a public name is unknown.
+ *      An OpenAI-compatible provider needs no key, and no model request is
+ *      ever made: saving resolves the endpoint and stops there.
+ *   2. ask one question on `/copilot/me`. The account has uploaded nothing, so
+ *      `hasCanonicalCopilotScope` is false and the route serves the legacy
+ *      panel; the cloud consent gate answers 403 `consent_required` before any
+ *      provider, key or model step.
+ *   3. consent in the dialog it offers. THAT is what writes the row.
+ *
+ * WHICH ALSO SETTLES A QUESTION LEFT OPEN. The empty-state copy above says
+ * "No cloud-LLM consent grants. None are needed for local models", and it was
+ * unclear whether a local grant could land in a list captioned that way. It
+ * cannot: `api/chat/route.ts` consults and requires `consent_grants` only
+ * inside its `if (!local)` branch, and nothing else inserts into that table.
+ * The copy is accurate.
+ *
+ * AND STEP 2 DID NOT WORK, which is the more valuable half of this. Every
+ * question the compatibility panel sent came back 400 `invalid_request`, and
+ * the panel rendered "The copilot request failed. Check your provider
+ * settings" — blaming the reader's configuration for a client/server contract
+ * mismatch. `DefaultChatTransport` posts `{ id, messages, trigger }`; the
+ * route's body schema was `z.object({ messages }).strict()`, so the two
+ * envelope keys the SDK adds made every request unparseable. Nothing tested
+ * that path, so nothing said. The schema now names the transport's own keys
+ * and stays strict, and the assertion below is on the RESPONSE, not only on
+ * the rendered button: a 400 produced the same generic failure, so asserting
+ * the button alone would have re-proven the bug instead of catching it.
+ *
+ * The pending state itself was built earlier today — `consent-list.tsx:32`
+ * holds the revoking row's id and the button reads "Working…" — and this is
+ * the first time anything has driven it.
+ */
+test("/settings/consents processing: the revoke control says Working while its request is in flight", async ({ page }) => {
+  const email = `settings-consents-processing-${randomUUID()}@e2e.local`;
+  const password = "e2e-settings-consents-processing-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+
+  // 1. A cloud provider, saved through the real form.
+  await page.goto("/settings/copilot");
+  await page.getByLabel("Provider", { exact: true }).click();
+  await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
+  await page.getByLabel("Base URL").fill(SYNTHETIC_CLOUD_ENDPOINT);
+  await page.getByLabel("Model", { exact: true }).fill("synthetic-model");
+  await page.getByRole("button", { name: "Save provider", exact: true }).click();
+  await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true }))
+    .toBeVisible();
+
+  // 2. One question, refused by the cloud consent gate. The prompt is the
+  //    fixtures' own caffeine question, which the intent classifier allows.
+  await page.goto("/copilot/me");
+  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
+  const refused = page.waitForResponse(r => new URL(r.url()).pathname === "/api/chat");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const refusal = await refused;
+  // Named, not merely observed. A 400 here is what used to happen, and the
+  // panel rendered the same generic failure for it, so asserting only on the
+  // rendered button would have re-proven the bug this test found.
+  expect(refusal.status()).toBe(403);
+  expect(await refusal.json()).toEqual({ error: "consent_required", provider_key: "203.0.114.10:8123" });
+  const review = page.getByRole("button", { name: "Review what would be shared", exact: true });
+  await expect(review, "the cloud consent gate refused before any model step").toBeVisible();
+
+  // 3. The grant, made in the dialog that names the provider and the classes.
+  await review.click();
+  const granted = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
+  await page.getByTestId("consent-grant").click();
+  expect((await granted).status()).toBe(200);
+
+  // Now the state under test: one revocable row, and its control held open.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/consents/*/revoke", async (route) => {
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/settings/consents");
+    const revoke = page.getByRole("button", { name: "Revoke", exact: true });
+    await expect(revoke).toHaveCount(1);
+    await revoke.click();
+
+    const working = page.getByRole("button", { name: "Working…", exact: true });
+    await expect(working).toBeVisible();
+    await expect(working).toBeDisabled();
+    // Withdrawal is the one action on this page. Nothing may claim it is done
+    // while the request that would do it is still in flight.
+    await expect(page.getByRole("button", { name: "Revoke", exact: true })).toHaveCount(0);
+    expect(intercepted, "the state is held by a real in-flight revocation").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released, so the withdrawal really happened. Stated rather than assumed:
+  // this test's last act is a revocation and it should say what it left.
+  await expect(page.getByText(/^revoked /)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Revoke", exact: true })).toHaveCount(0);
 });

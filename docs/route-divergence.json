@@ -246,6 +246,7 @@
     "/settings complete",
     "/settings processing",
     "/settings/consents empty",
+    "/settings/consents processing",
     "/settings/copilot processing",
     "/settings/data processing",
     "/terms complete"

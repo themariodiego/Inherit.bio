@@ -2074,3 +2074,39 @@ thing.
 The general rule: a PR description written at commit four is a draft, not a
 record. Update it before the merge, or the repository's history documents an
 intention nobody carried out.
+
+## 2026-09-12 — A fixture that could not be built, and the reason it could not
+
+`/settings/consents processing` needed one revocable grant on the page. An
+earlier note in this run recorded the fixture path as VERIFIED: grant Copilot
+permission on `/settings/copilot`, then revoke it here. That note was wrong,
+and the way it was wrong is the lesson.
+
+The verification behind it was real but answered a different question. It read
+`prepareOwnCopilotPermission` and established exactly what makes the GRANT
+CONTROL render. It never asked what makes a ROW APPEAR ON THIS PAGE. Those are
+different tables: the Copilot control writes `purpose_grants`, the page lists
+`consent_grants`, and no canonical grant ever reaches it.
+
+Following the real writer backwards — `grant_cloud_model_consent`, reached only
+from `ConsentDialog`, which appears only after the chat route answers
+`consent_required` — found that the chat route was answering 400 to every
+message the compatibility panel sent. `DefaultChatTransport` posts
+`{ id, messages, trigger }`; the body schema was `z.object({ messages })`
+marked `.strict()`. Two envelope keys the SDK adds made every request
+unparseable, and the panel rendered "Check your provider settings" for it. No
+test drove that panel, so nothing said. It is fixed, and the browser test
+asserts the RESPONSE rather than the rendered control, because a 400 produced
+the same generic failure and an assertion on the button alone would have
+re-proven the bug.
+
+Two general points. First: "verified" has to name the proposition. A reading
+that confirms a precondition is not a reading that confirms the path. Second:
+building a fixture is itself a test of the product. This one walked a reader's
+route through a live feature for the first time and found it broken end to end;
+the register audit that started it was never going to.
+
+It also closed a question left open earlier: whether a LOCAL grant could be
+listed under copy that says the list is about cloud. It cannot. The chat route
+consults `consent_grants` only inside its `if (!local)` branch and nothing else
+inserts into that table, so the empty-state sentence is accurate.
