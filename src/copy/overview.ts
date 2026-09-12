@@ -269,6 +269,15 @@ export const STATE_D = {
   carrierMatches: (n: number) =>
     one(n) ? "1 carrier match to look at" : `${n} carrier matches to look at`,
   carrierMeaning: "Two people carry a change in the same gene.",
+  /**
+   * What stands where the carrier lines would be when the jurisdiction
+   * refuses. Until 2026-09-12 nothing did: the lines were dropped in silence,
+   * so an absence read as "no matches" when it meant "switched off". This line
+   * names only what is withheld and is followed by the register's own
+   * sentence, so the page never invents a jurisdiction reason and never
+   * suggests there was or was not something to see.
+   */
+  carrierUnavailable: "Inherit cannot show carrier matches for your family here.",
 } as const;
 
 export const STATE_E = {

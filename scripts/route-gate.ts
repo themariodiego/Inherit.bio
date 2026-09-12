@@ -61,6 +61,12 @@ const BROWSER_TESTS = "e2e";
  *   152 -> 143  `consent-required` and `jurisdiction-unavailable` off the
  *               `account-management` profile; required 226 -> 216, and proven
  *               74 -> 73 because one of those pairs was a FALSE proof.
+ *   143 -> 139  four real proofs, and the only one of the three moves that
+ *               was: `/embryo-analysis`, `/family`, `/family/health-picture`
+ *               and `/family/[person]/permissions` in their
+ *               jurisdiction-unavailable state, each traced to the branch that
+ *               renders its refusal and each passing in a browser before this
+ *               number moved.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -71,7 +77,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 143;
+const UNPROVEN_ROUTE_STATE_PAIRS = 139;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
