@@ -72,6 +72,8 @@ against the term's name.
 | `clinical` | NCI, *Dictionary of Cancer Terms* | **supports it in part.** "Having to do with the examination and treatment of patients." The word "qualified" is Inherit's own restriction and is not attributed to NCI. |
 | `clinician` | NCI, *Dictionary of Cancer Terms* | **supports it in part.** "A health professional who takes care of patients", with the same note about "qualified". |
 | `sensitivity` | NCI, *Dictionary of Cancer Terms* | **supports it.** Inherit's definition holds two senses and so does the entry. The quote is the test sense; the entry's next sentence carries the other. |
+| `pathogenic` | ACMG/AMP 2015 consensus recommendation (PMC4544753) | **supports it, where NHGRI did not.** Inherit's definition is the classification sense — "a DNA change that a clinical review has judged to cause a condition" — and this is the document that defines that scheme: "a variant classified as pathogenic using the proposed classification scheme has met criteria informed by empirical data". The same page adds that the category "does not imply 100% certainty", which Inherit's definition does not claim either. |
+| `classification` | ACMG/AMP 2015 consensus recommendation (PMC4544753) | **supports it.** "a process for classification of variants into these five categories based on criteria using typical types of variant evidence" is Inherit's "published list that sorts DNA changes by how likely they are to cause a condition". |
 | `estimate` | NIST/SEMATECH e-Handbook 1.3.5.2 | **supports it.** "the estimate of the mean varies from sample to sample" is Inherit's "a calculated value with uncertainty, not a known outcome". |
 
 ## Judged and REJECTED, with the snapshot kept as the evidence
@@ -81,7 +83,7 @@ against the term's name.
 | `polygenic` | NHGRI, *Polygenic Trait*, and *Polygenic Risk Score (PRS)* | Inherit defines the adjective — "influenced by many DNA positions, usually with small effects". The PRS page defines a *score*, not the adjective. The Polygenic Trait page defines the adjective but as "influenced by two or more genes", and searching its body for "small effect", "many variants" and "thousands" finds nothing. Two or more genes is not "many DNA positions … with small effects", so the term stays uncited. |
 | `medication` | NCI, *Dictionary of Cancer Terms* | Inherit's definition is "a drug **or care plan** used to prevent, manage, or treat illness". NCI's entry is about a dosage form and what it is used for; a care plan is not a dosage form, and nothing on the page carries that half. Rather than cite the supported half and quietly widen it, the term stays uncited — and Inherit's own definition is the thing to look at, because "or care plan" may simply be wrong. |
 | `overload` | NCI, *Dictionary of Cancer Terms*, "iron overload" | Inherit defines the generic word — "a harmful buildup beyond what the body can handle well" — and NCI defines the iron-specific condition. Citing the specific for the generic would overstate it, and the term appears in no shipped copy, so nothing is lost by leaving it. |
-| `pathogenic` | NHGRI, *Pathogenic Variant* | Inherit's definition is the ACMG sense — "a DNA change that a **clinical review has judged** to cause a condition" — and the page never mentions classification or review. It defines a pathogenic variant as one that "may increase a person's risk", and adds that carrying one "does not guarantee" the condition. That is a different claim from the one Inherit makes, so citing it would misrepresent both. The right authority is the ACMG/AMP classification guidance or ClinGen; neither has been fetched yet. |
+| `pathogenic` (NHGRI only) | NHGRI, *Pathogenic Variant*, snapshot kept as `pathogenic-rejected-nhgri.json` | Inherit's definition is the ACMG sense — "a DNA change that a **clinical review has judged** to cause a condition" — and the page never mentions classification or review. It defines a pathogenic variant as one that "may increase a person's risk", and adds that carrying one "does not guarantee" the condition. That is a different claim from the one Inherit makes, so citing it would misrepresent both. The right authority was the ACMG/AMP classification guidance, which has since been fetched and is the citation the term now carries. |
 
 ## Authorities probed and what they can carry
 
@@ -118,12 +120,35 @@ against the term's name.
   the choice. The alternative was leaving twelve terms invisible while a real
   authority defined every one of them.
 
-## Still uncited: 18 of 42
+## Still uncited: 16 of 42
 
-`association`, `baseline`, `classification`, `effect size`,
-`imputation`, `medical`, `medication`, `model`, `odds`, `overload`,
-`pathogenic`, `polygenic`, `probability`, `reference panel`,
-`replication`, `risk allele`, `statistical`, `z-score`.
+`association`, `baseline`, `effect size`, `imputation`, `medical`,
+`medication`, `model`, `odds`, `overload`, `polygenic`, `probability`,
+`reference panel`, `replication`, `risk allele`, `statistical`,
+`z-score`.
+
+Grouped by what each actually needs, so the next pass does not re-probe
+authorities already ruled out:
+
+- **A statistics authority that defines primitives.** `probability`,
+  `statistical`, `z-score`, `odds`, `effect size`, `model`, `baseline`,
+  `association`, `replication`. NIST's handbook has no section for any of
+  them (its table of contents was read, not guessed at) and NCI has no entry
+  for any of them either. Both were checked term by term.
+- **A genomics-methods authority.** `imputation`, `reference panel`,
+  `risk allele`. Not in NHGRI's glossary, not in either NCI dictionary; the
+  GWAS Catalog methods page and the PGS Catalog documentation were fetched
+  and define neither. ClinVar uses "risk allele" in the ClinGen sense of a
+  low-penetrance Mendelian variant, which is not the group-level sense
+  Inherit means.
+- **Nothing, because the definition is the problem.** `medication` says "a
+  drug or care plan"; `overload` is generic where every authority is
+  iron-specific; `polygenic` says "usually with small effects" where NHGRI
+  says "two or more genes". Sourcing these means changing what Inherit says
+  first, which is a copy decision rather than a research one.
+- **`medical`.** A word so general that no authority glosses it. Likely
+  belongs in the plain class rather than the cited one, which is a
+  classification question for the operator.
 
 Each stays invisible to readers until a fetched page carries its definition.
 That is the operator's condition working as intended, not a gap to be closed by

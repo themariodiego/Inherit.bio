@@ -242,6 +242,26 @@
       "access_date": "2026-09-12",
       "quote": "Interval estimates are often desirable because the estimate of the mean varies from sample to sample.",
       "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "guideline:acmg-amp-2015-pathogenic",
+      "type": "guideline",
+      "identifier": "Richards et al., Standards and Guidelines for the Interpretation of Sequence Variants (joint consensus recommendation, 2015), PMC4544753",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4544753/",
+      "archived_path": "docs/sources/glossary/pathogenic.json",
+      "access_date": "2026-09-12",
+      "quote": "a variant classified as pathogenic using the proposed classification scheme has met criteria informed by empirical data",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. This is the ACMG/AMP sense Inherit's definition names: pathogenic is a category a laboratory ASSIGNS under a criteria-based scheme, which is the \"a clinical review has judged\" half. The same page states that the category \"does not imply 100% certainty\", which Inherit's definition does not claim either. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "guideline:acmg-amp-2015-classification",
+      "type": "guideline",
+      "identifier": "Richards et al., Standards and Guidelines for the Interpretation of Sequence Variants (joint consensus recommendation, 2015), PMC4544753",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4544753/",
+      "archived_path": "docs/sources/glossary/classification.json",
+      "access_date": "2026-09-12",
+      "quote": "this recommendation describes a process for classification of variants into these five categories based on criteria using typical types of variant evidence",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The five categories and the criteria-based process are together Inherit's \"published list that sorts DNA changes by how likely they are to cause a condition\". Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
     }
   ]
 }
