@@ -2039,3 +2039,26 @@ Two smaller things the run taught, both worth not rediscovering:
   like the other three. `updateUser` refuses client-side when there is no
   session and issues no request, so the pending state never opens. A page
   rendering is not a request being sent.
+
+## 2026-09-12 — Two controls that mutated with no sign anything was happening
+
+Reading `account-management · processing` to decide whether the register
+over-declared it turned up something better than a register answer.
+
+`digest-toggle.tsx` flipped a Switch that awaited a `profiles` write and stayed
+live throughout. `consent-list.tsx` posted a consent REVOCATION from a button
+that never disabled and never changed. In both, a reader got no acknowledgement
+until the page refreshed under them, and could press again meanwhile.
+
+Every comparable control in the product already had a pending state — auth,
+permissions, invitations, account deletion, Copilot settings. These two were
+the exceptions, and the register already said both routes had the state. So the
+answer was not "prove it or drop it" but build what was already promised, which
+is what happened: both now hold a flag and disable, and `consent-list` shows
+"Working…", the word the auth forms already use.
+
+The general point: an audit asking "is this state reachable?" is also asking
+"should it be", and the second question is sometimes the useful one. Three
+profile readings today produced one proposed not-applicable, five provable
+pairs, and this — a real gap on a consent withdrawal that no state audit was
+looking for.

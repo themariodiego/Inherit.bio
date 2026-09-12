@@ -124,6 +124,13 @@ const BROWSER_TESTS = "e2e";
  *               disables the submit control and renders "Working…" while the
  *               request is in flight. A zero in the proven column is the shape
  *               of the question, never the answer.
+ *   125 -> 124  `/settings processing`, and this one was BUILT rather than
+ *               found. The digest switch awaited a write and stayed live, so
+ *               a reader had no sign anything was happening and could flip it
+ *               again mid-request - the register said the state existed and
+ *               the product did not have it. `consent-list.tsx` had the same
+ *               gap on a consent REVOCATION and is fixed in the same change;
+ *               its pair waits on a grant fixture.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -134,7 +141,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 125;
+const UNPROVEN_ROUTE_STATE_PAIRS = 124;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
 
@@ -16,6 +17,19 @@ export function ConsentList({
   }[];
 }) {
   const router = useRouter();
+  /**
+   * The grant currently being revoked, or null. Held per row rather than as
+   * one flag, because revoking one provider is no reason to freeze another.
+   *
+   * Added 2026-09-12: this button posted a revocation and changed nothing
+   * until the refresh landed under the reader, so a person withdrawing a
+   * consent had no acknowledgement that anything had happened and could press
+   * it again meanwhile. Every comparable control in the product — auth,
+   * permissions, invitations, deletion, Copilot settings — shows a pending
+   * state; this one was the exception. "Working…" is the word the auth forms
+   * already use, so a reader meets one vocabulary rather than two.
+   */
+  const [revoking, setRevoking] = useState<string | null>(null);
 
   if (grants.length === 0) {
     return (
@@ -51,12 +65,18 @@ export function ConsentList({
               variant="outline"
               size="sm"
               data-testid={`revoke-${g.provider_key}`}
+              disabled={revoking === g.id}
               onClick={async () => {
-                await fetch(`/api/consents/${g.id}/revoke`, { method: "POST" });
-                router.refresh();
+                setRevoking(g.id);
+                try {
+                  await fetch(`/api/consents/${g.id}/revoke`, { method: "POST" });
+                  router.refresh();
+                } finally {
+                  setRevoking(null);
+                }
               }}
             >
-              Revoke
+              {revoking === g.id ? "Working…" : "Revoke"}
             </Button>
           ) : null}
         </li>
