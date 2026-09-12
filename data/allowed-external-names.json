@@ -820,6 +820,20 @@
         "docs/sources/glossary/README.md",
         "data/glossary-citations.json"
       ]
+    },
+    {
+      "name": "legislation.gov.uk",
+      "category": "cited-organisation",
+      "aliases": [
+        "legislation.gov.uk",
+        "www.legislation.gov.uk",
+        "king's printer of acts of parliament"
+      ],
+      "reason": "Official publisher of United Kingdom legislation. Cited as the primary source for the jurisdiction research under docs/reviews/jurisdictions/research/, where quoting a third-party reproduction instead of the official text would defeat the point of the research.",
+      "evidence": [
+        "docs/reviews/jurisdictions/research/README.md",
+        "docs/reviews/jurisdictions/research/GB.md"
+      ]
     }
   ]
 }

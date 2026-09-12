@@ -29,9 +29,9 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const [, , term, url, wantedQuote] = process.argv;
+const [, , term, url, wantedQuote, outputDirectory] = process.argv;
 if (!term || !url) {
-  console.error("usage: fetch-source.mjs <term> <url> [quote-that-must-appear-verbatim]");
+  console.error("usage: fetch-source.mjs <term> <url> [quote-that-must-appear-verbatim] [output-dir]");
   process.exit(2);
 }
 
@@ -66,7 +66,10 @@ for (const pattern of datePatterns) {
 }
 
 const slug = term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const directory = path.join("docs", "sources", "glossary");
+// Defaults to the glossary, but the jurisdiction research uses the same tool
+// on purpose: one verified-fetch path in this repository, not two that can
+// drift in what they check.
+const directory = outputDirectory ?? path.join("docs", "sources", "glossary");
 await mkdir(directory, { recursive: true });
 const file = path.join(directory, `${slug}.json`);
 const snapshot = {
