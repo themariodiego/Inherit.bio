@@ -115,6 +115,15 @@ const BROWSER_TESTS = "e2e";
  *               already pairs two accounts whose grants all run one way, so
  *               the reverse view has genuinely nothing to show. The state was
  *               implemented and simply never titled.
+ *   129 -> 125  the four `/auth/*` routes in `processing`, and the reason to
+ *               read this line is what it nearly was instead. Grouped by
+ *               profile, `auth-flow · processing` showed four unproven and
+ *               none proven, which is the shape over-declaration takes here
+ *               and the shape that justified the three drops above. The
+ *               component settled it the other way: `auth-form.tsx:63`
+ *               disables the submit control and renders "Working…" while the
+ *               request is in flight. A zero in the proven column is the shape
+ *               of the question, never the answer.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -125,7 +134,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 129;
+const UNPROVEN_ROUTE_STATE_PAIRS = 125;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

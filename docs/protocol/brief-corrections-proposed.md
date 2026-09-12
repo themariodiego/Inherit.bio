@@ -487,8 +487,12 @@ So this item claims exactly two things, and no more.
 
 **Measured, and provable rather than droppable:**
 
-- `auth-flow · processing` — implemented as above. Four titled tests, each
-  holding the auth request open long enough to assert the pending control.
+- `auth-flow · processing` — implemented as above. **Done the same day:**
+  `e2e/auth-processing.spec.ts` holds the `/auth/v1/*` request open with
+  `page.route` and asserts the pending control on all four routes. Ratchet
+  129 → 125. `/auth/reset-password` turned out to need a real session, because
+  `updateUser` refuses client-side with none and never issues a request at all
+  — a page rendering is not a request being sent.
 - `product-result · empty` and `account-management · empty` and
   `own-product-result · processing` — half or more of each is already proven,
   so the state is reachable on that profile by construction. Every remaining

@@ -2012,3 +2012,30 @@ needs State D, two prepared uploads and a mutual grant, so its test went into
 `e2e/family-health-picture.spec.ts`, which already builds that. A
 `.nojurisdiction.spec.ts` of its own would have duplicated the most expensive
 fixture in the suite to assert one sentence.
+
+## 2026-09-12 — A zero in the proven column is the shape of the question
+
+Grouping the 63 remaining `empty` and `processing` pairs by state profile made
+one row look obvious: `auth-flow · processing`, four unproven and none proven.
+That is exactly the shape that justified taking `error` off nine profiles and
+`jurisdiction-unavailable` off three routes, and the pull to write a fourth
+n/a was strong.
+
+The state is fully implemented. `src/components/auth/auth-form.tsx:63` disables
+the submit control and renders "Working…" while the request is in flight, on
+all four routes. Four real pairs, now proven.
+
+So the rule the grouping needs beside it: a profile with no proofs is a
+question, never an answer. The profiles where over-declaration was real were
+established by reading the pages, not by the shape of a table — and the table
+would have argued for the wrong conclusion here on identical evidence.
+
+Two smaller things the run taught, both worth not rediscovering:
+
+- Every Next.js page carries a route announcer with `role="alert"`, so an
+  unscoped `page.getByRole("alert")` resolves to one element on a page with no
+  error at all. Scope alert assertions to the form or region.
+- `/auth/reset-password` renders its form without a session, which made it look
+  like the other three. `updateUser` refuses client-side when there is no
+  session and issues no request, so the pending state never opens. A page
+  rendering is not a request being sent.
