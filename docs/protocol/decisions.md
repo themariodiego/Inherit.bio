@@ -1791,6 +1791,23 @@ opens the file; the score panel additionally needs `reports.polygenic`, and
 without it the read does not happen at all rather than happening and being
 hidden.
 
+### What this change broke, and why the unit suite did not catch it
+
+`e2e/family.spec.ts` pinned the settable permission column at **six** rows.
+Adding a seventh made it seven, and CI failed on it — a real assertion, not a
+transport hiccup.
+
+The unit and component tests were updated for the new row and all passed; the
+browser suite was not run before pushing, because it takes forty minutes. That
+is the whole gap. **A change to a list that renders on a page needs the browser
+suite, or at minimum a grep of `e2e/` for count pins on the slot being changed**
+— `data-slot="permission-row"` in this case. Four other specs locate rows by
+label filter and were unaffected, which is why only one broke and why a quick
+scan would have found it in seconds.
+
+Recorded because the same shape will recur: any register, list or tile set that
+gains an entry has browser tests counting it somewhere.
+
 ### The label, which took three attempts
 
 `raw.export`'s label is "Raw genetic data", exempt from the registered-term

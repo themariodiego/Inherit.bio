@@ -358,7 +358,12 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
 
   const yours = page.locator('[data-slot="permission-column"][data-settable="true"]');
   await expect(yours).toContainText(`What ${A_AS_SEEN_BY_B} will see about you`);
-  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(6);
+  // Seven since 2026-09-12, when `raw.browse` was split from `raw.export` so
+  // that letting a relative DOWNLOAD your file and letting them READ IT ON
+  // SCREEN became separate choices. Pinned exactly, not as a floor: a row
+  // appearing or vanishing on the page a person uses to control what someone
+  // else sees about them should never pass unremarked.
+  await expect(yours.locator('[data-slot="permission-row"]')).toHaveCount(7);
   await expect(yours.locator('[data-permission-state="on"]')).toHaveCount(0);
 
   const estimates = yours
