@@ -150,6 +150,14 @@ const BROWSER_TESTS = "e2e";
  *               reader's provider settings for it. Schema fixed, panel works,
  *               pair proven; an earlier note claiming the row could come from
  *               `/settings/copilot` was wrong and is corrected in the spec.
+ *   121 -> 119  `/family/invite` and `/family/[person]/permissions` in
+ *               `processing`, the last two of the five pairs corrections item
+ *               8 measured as implemented-and-untitled. Both needed the
+ *               two-account family fixture rather than new product code. The
+ *               permissions one turns Ancestry on, proves the state, and turns
+ *               it back off: four tests around it assert exact grant sets, and
+ *               a pending-state proof is not worth widening what one adult can
+ *               see about another.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -160,7 +168,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 121;
+const UNPROVEN_ROUTE_STATE_PAIRS = 119;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

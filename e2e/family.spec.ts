@@ -261,6 +261,65 @@ test("/family/invite states the pre-consent sentence above the form and offers n
   await expect(page.getByText("They can’t use Inherit themselves")).toHaveCount(0);
 });
 
+/**
+ * `/family/invite processing`, measured as implemented in corrections item 8
+ * (`invite-adult-form.tsx:32`) before it was titled: the submit control holds
+ * a `pending` flag, disables, and changes its word to "Requesting…" while the
+ * POST to `/api/subject-drafts` is in flight.
+ *
+ * ON ITS OWN ACCOUNT, deliberately. Releasing the held request sends a real
+ * invitation, which would give A a second invited record — and the hub
+ * assertions in the tests below expect exactly one person, so this would have
+ * broken them from two tests away. A pending-state proof is not worth
+ * perturbing a fixture that four other tests depend on.
+ *
+ * Held the way the rest of this suite holds a transient state: the request is
+ * intercepted and released only after the assertion, so the product sits in a
+ * state it defines rather than a simulated one.
+ */
+test("/family/invite processing: the send control says Requesting while the invitation is in flight", async ({
+  page,
+}) => {
+  const inviter = { email: `family-invite-processing-${randomUUID()}@e2e.local`, password: "e2e-family-invite-pw" };
+  await createConfirmedUser(inviter.email, inviter.password);
+  await signIn(page, inviter.email, inviter.password);
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/subject-drafts", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/family/invite");
+    const form = page.locator("form").filter({ has: page.getByLabel("Their email address") });
+    await form.getByLabel("Their email address").fill(`family-invitee-${randomUUID()}@e2e.local`);
+    await form.getByRole("checkbox").check();
+    const send = form.getByRole("button", { name: "Send invitation", exact: true });
+    await expect(send).toBeEnabled();
+    await send.click();
+
+    const requesting = form.getByRole("button", { name: "Requesting…", exact: true });
+    await expect(requesting).toBeVisible();
+    await expect(requesting).toBeDisabled();
+    // Nothing is decided while the request is open. A confirmation beside a
+    // pending control would be about an invitation that has not been sent.
+    await expect(form.getByRole("alert")).toHaveCount(0);
+    expect(intercepted, "the state is held by a real in-flight request").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released, so an invitation really was requested. Said plainly: this test
+  // sends synthetic mail to a synthetic address, and leaves a record on an
+  // account nothing else in this file touches.
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
+});
+
 test("A invites B, B accepts, adds a file and shares one layer from their own session", async ({
   page,
   request,
@@ -573,6 +632,74 @@ test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: test.info().outputPath(`shared-report-${viewport.name}.png`), fullPage: true });
   }
+});
+
+/**
+ * `/family/[person]/permissions processing`, measured as implemented in
+ * corrections item 8 (`permission-grant-row.tsx:54`, `:93`) before it was
+ * titled: the row control holds a `pending` flag and disables while its
+ * request is in flight.
+ *
+ * THE LABEL DOES NOT CHANGE HERE, unlike the auth forms, the invite form and
+ * the consent revocation. The button keeps saying "Turn on" and only goes
+ * disabled, so the assertion is the disabled state alone — which is the half
+ * that matters anyway: it is what stops a second grant of the same purpose
+ * while the first is still being written.
+ *
+ * IT LEAVES THE FIXTURE WHERE IT FOUND IT, and that is not incidental. This
+ * page's controls make and withdraw real directional grants, and four tests
+ * around this one assert exact grant sets and exact shared-layer lists. So the
+ * test turns Ancestry on, proves the state on the way, and then turns it back
+ * off — chosen because no other test in this file asserts anything about that
+ * row. A pending-state proof that silently widened what one adult can see
+ * about another would be the wrong trade twice over.
+ */
+test("/family/[person]/permissions processing: the row control is held while its grant is in flight", async ({
+  page,
+}) => {
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}/permissions`);
+
+  const ancestry = page
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Ancestry$/ }) });
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/consents", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    // Not `exact`: the control carries an aria-label naming the row and the
+    // person ("Turn on Ancestry for Another adult"), which is the accessible
+    // name, so an exact match on the visible word finds nothing. Scoping to
+    // the row already makes it the only button here.
+    const turnOn = ancestry.getByRole("button", { name: "Turn on" });
+    await expect(turnOn).toBeEnabled();
+    await turnOn.click();
+    await expect(turnOn).toBeDisabled();
+    // Nothing has been written yet, so the row may not have moved and may not
+    // be reporting a failure either.
+    await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+    await expect(ancestry.getByRole("alert")).toHaveCount(0);
+    expect(intercepted, "the state is held by a real in-flight grant").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released: a real grant, then withdrawn, so the fixture below sees what it
+  // would have seen without this test.
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("On");
+  await ancestry.getByRole("button", { name: "Turn off" }).click();
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  expect((await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).map(row => row.purpose))
+    .toEqual(["family.portrait", "reports.polygenic"]);
 });
 
 /**
