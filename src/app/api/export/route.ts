@@ -19,6 +19,7 @@ import { EVIDENCE_PUBLIC_LABELS } from "@/lib/genome/taxonomy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "@/lib/exports/own-subject-content";
+import { ownSubjectPurposeGranted } from "@/lib/genome/own-analysis-access";
 
 export const maxDuration = 300;
 const originalStateSchema = z.object({ version: z.literal("own-original-download-state-v1"), fileId: z.uuid(),
@@ -389,8 +390,9 @@ export async function GET() {
   if (claimsData?.claims?.sub !== user.id || typeof claimsData.claims.session_id !== "string") {
     return new Response("Unauthorized", { status: 401 });
   }
+  const exportActor = { accountId: user.id, sessionId: claimsData.claims.session_id };
   const ownContent = ownSubjectExportContent(admin.rpc.bind(admin) as unknown as OwnExportRpc,
-    { accountId: user.id, sessionId: claimsData.claims.session_id }, assertActive, { signal: exportAbort.signal });
+    exportActor, assertActive, { signal: exportAbort.signal });
   let canonical: OwnExportSnapshot[];
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
@@ -593,7 +595,37 @@ export async function GET() {
         ancestryCount += rows.length;
         return writeChunk(ancestry, chunk);
       };
-      await writeAncestry((legacyAncestry ?? []).filter(row => legacyIds.has(row.file_id)));
+      // D-097, resolved 2026-09-12: the legacy half must refuse after the
+      // `ancestry` purpose is revoked, exactly as the canonical half already
+      // does. This read used to carry NO ancestry check at all — it ran on
+      // `raw.export`/`export.share-link` alone — so a revoked ancestry
+      // permission still shipped these rows in the archive.
+      //
+      // The grant is subject-scoped, and one account can hold several legacy
+      // files across subjects, so each subject is asked separately and only
+      // its own files survive a refusal. Checked immediately before the write
+      // and again immediately after, matching what `ownContent.ancestry` does
+      // for the canonical half: a revocation landing mid-export must not leave
+      // a buffered result in the archive.
+      const legacySubjects = [...new Set(legacyFiles.map(file => file.subject_id).filter(
+        (id): id is string => typeof id === "string"))];
+      const ancestryGranted = async () => {
+        const granted = new Set<string>();
+        for (const subjectId of legacySubjects) {
+          if (await ownSubjectPurposeGranted(admin, exportActor, subjectId, "ancestry")) granted.add(subjectId);
+        }
+        return granted;
+      };
+      const grantedSubjects = await ancestryGranted();
+      const ancestryFileIds = new Set(legacyFiles
+        .filter(file => file.subject_id !== null && grantedSubjects.has(file.subject_id))
+        .map(file => file.id));
+      await writeAncestry((legacyAncestry ?? [])
+        .filter(row => legacyIds.has(row.file_id) && ancestryFileIds.has(row.file_id)));
+      assertActive();
+      const stillGranted = await ancestryGranted();
+      if (grantedSubjects.size !== stillGranted.size
+        || [...grantedSubjects].some(id => !stillGranted.has(id))) throw new Error("ancestry_grant_changed");
       for (const snapshot of canonical) {
         const rows = await ownContent.ancestry(snapshot); assertActive();
         // Write synchronously after the final authority check. Do not hold a

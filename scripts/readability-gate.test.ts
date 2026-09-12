@@ -339,9 +339,18 @@ function createFixtureRepository(files: Record<string, string>): string {
   for (const directory of ["data/templates", "data/providers", "supabase/migrations"]) {
     fs.mkdirSync(path.join(root, directory), { recursive: true });
   }
-  for (const file of ["package.json", "data/plain-vocabulary.json", "data/jargon.json"]) {
+  for (const file of ["package.json", "data/plain-vocabulary.json", "data/jargon.json",
+    // The glossary citation register, read by the gate since 2026-09-12. The
+    // real one is copied rather than stubbed so the planted repository holds
+    // the same both-directions relationship the gate checks: every citationId
+    // in jargon.json resolves here, and every entry here is used by one.
+    "data/glossary-citations.json"]) {
     fs.copyFileSync(path.join(repositoryRoot, file), path.join(root, file));
   }
+  // Snapshots live outside the planted tree; the gate compares each quote with
+  // the snapshot it names, so the directory has to be reachable.
+  fs.mkdirSync(path.join(root, "docs"), { recursive: true });
+  fs.symlinkSync(path.join(repositoryRoot, "docs/sources"), path.join(root, "docs/sources"));
   fs.writeFileSync(path.join(root, "data/providers/providers.json"), "[]\n");
   for (const [relativePath, content] of Object.entries(files)) {
     const absolute = path.join(root, relativePath);

@@ -1,0 +1,13 @@
+{
+  "term": "condition",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/condition",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/condition",
+  "fetchedAt": "2026-09-12T10:59:49.230Z",
+  "pageBytes": 1007,
+  "pageSha256": "6525549e0c52ec844a5f8e268ac72ecc55f91e7e192766e662ba4245176ca18b",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "Condition may also refer to a normal state with regard to one's health, such as pregnancy, or to a disease, disorder, illness, or injury."
+}

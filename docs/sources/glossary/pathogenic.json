@@ -1,0 +1,13 @@
+{
+  "term": "pathogenic",
+  "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4544753/",
+  "finalUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4544753/",
+  "fetchedAt": "2026-09-12T11:18:49.645Z",
+  "pageBytes": 321253,
+  "pageSha256": "47eda8057997e07e0e7e6361341aff97ef4af97486e154b1a39aa4bdb356b17f",
+  "pageTitle": "Standards and Guidelines for the Interpretation of Sequence Variants: A Joint Consensus Recommendation of the American College of Medical Genetics and Genomics and the Association for Molecular Pathology - PMC",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": "The American College of Medical Genetics and Genomics (ACMG) previously developed guidance for the interpretation of sequence variants.1 In the past decade, sequencing technology has evolved rapidly with the advent of high-throughput next generation ...",
+  "quote": "a variant classified as pathogenic using the proposed classification scheme has met criteria informed by empirical data"
+}

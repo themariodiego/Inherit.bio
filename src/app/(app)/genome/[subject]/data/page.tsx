@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { ScorePanelResult } from "@/components/results/polygenic/score-panel-result";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -23,7 +23,9 @@ import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { scorePanel } from "@/lib/genome/prs-panel";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { route } from "@/lib/primary-routes";
-import { resolveSubjectForAccount } from "@/lib/subjects";
+import { CapabilityUnavailable } from "@/components/capability-unavailable";
+import { viewerMaySee } from "@/lib/family/access";
+import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,19 +36,36 @@ export default async function GenomeDataPage(
 ) {
   const { subject: segment } = await props.params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) notFound();
-  const subject = await resolveSubjectForAccount(user.id, segment);
-  if (!subject) notFound();
+  // A family segment resolves here since 2026-09-12, under `raw.browse` — the
+  // permission the operator created for exactly this: reading someone's file
+  // inside Inherit, granted separately from downloading it.
+  const context = await resolveSubjectRoute(segment, { anyOf: ["raw.browse"] });
+  if (context.kind === "not-found") notFound();
+  if (context.kind === "gate") {
+    redirect(route("family.person", { person: context.personSegment }));
+  }
+  if (context.kind === "jurisdiction") {
+    return (
+      <CapabilityUnavailable
+        eyebrow={NAV_LABELS.family}
+        title={DATA_H1}
+        backHref={route("family.index")}
+      />
+    );
+  }
+  const { user, subject, dataSubjectId, person, domain, displayLabel } = context;
   const subjectParams = { subject: subject.routeSegment };
-  const base = route("genome.subject", subjectParams);
 
   const admin = createAdminClient();
+  // Panel coverage is built from `user_prs`, which is a polygenic RESULT.
+  // `raw.browse` opens the file, not the analysis, so a relative who granted
+  // only browsing sees the source facts and no score panel.
+  const mayReadScores = person === null || viewerMaySee(person, "reports.polygenic");
   // The coverage facts read the processed files; the subject bar counts
   // every file in the record, whatever its status.
   const [files, fileCount] = await Promise.all([
-    getPreparedSourceFiles(admin, subject.id),
-    getSubjectFileCount(admin, subject.id),
+    getPreparedSourceFiles(admin, dataSubjectId),
+    getSubjectFileCount(admin, dataSubjectId),
   ]);
 
   // Per-score panel coverage facts (name, id, matched of n, ancestry note).
@@ -58,11 +77,17 @@ export default async function GenomeDataPage(
   // No version column is selected because `prs_scores` has none; the panel
   // facts are built by `scorePanel` and the surface states the absence of a
   // version in words rather than implying one (G4.4, src/lib/genome/prs-panel.ts).
-  const { data: prsRows } = files.length > 0
-    ? await supabase
+  // `supabase` is the RLS client and returns nothing for another account's
+  // subject, so a relative's panel is read through the service client — but
+  // only after `resolveSubjectRoute` authorised the record AND that person
+  // granted the polygenic layer. Without both it is not read at all, rather
+  // than read and then hidden.
+  const scoreClient = person === null ? supabase : admin;
+  const { data: prsRows } = files.length > 0 && mayReadScores
+    ? await scoreClient
         .from("user_prs")
         .select("pgs_id, matched, file_id")
-        .eq("subject_id", subject.id)
+        .eq("subject_id", dataSubjectId)
         .in("file_id", files.map((file) => file.id))
     : { data: [] };
   const pgsIds = (prsRows ?? []).map((row) => row.pgs_id);
@@ -79,15 +104,15 @@ export default async function GenomeDataPage(
       return meta ? [{ row, meta }] : [];
     })
     .sort((a, b) => a.meta.name.localeCompare(b.meta.name));
-  const inputSources = await loadInputSources(admin, subject.id, scores.map(({ row }) => row.file_id),
+  const inputSources = await loadInputSources(admin, dataSubjectId, scores.map(({ row }) => row.file_id),
     { kind: "report", purpose: "reports.polygenic" });
 
   return (
     <div data-surface="standard" className="mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
-          { label: NAV_LABELS["my-genome"], href: base },
-          { label: subject.displayLabel },
+          { label: domain.label, href: domain.href },
+          { label: displayLabel },
           { label: DATA_CRUMB },
         ]}
       />
@@ -118,7 +143,7 @@ export default async function GenomeDataPage(
             {scores.map(({ row, meta }) => (
               <li key={`${row.file_id}:${row.pgs_id}`} data-slot="score-panel-result">
                 <ScorePanelResult
-                  subjectId={subject.id}
+                  subjectId={dataSubjectId}
                   panel={scorePanel(meta)}
                   trait={meta.trait}
                   ancestryNote={meta.ancestry_note}
@@ -135,7 +160,7 @@ export default async function GenomeDataPage(
         )}
       </section>
       {scores.length ? <div data-slot="score-input-provenance">
-        <InputProvenance sources={inputSources} subject={{ subjectId: subject.id }} />
+        <InputProvenance sources={inputSources} subject={{ subjectId: dataSubjectId }} />
       </div> : null}
     </div>
   );

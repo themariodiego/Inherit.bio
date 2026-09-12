@@ -1650,3 +1650,415 @@ text.
   until the operator or counsel says to apply it.
 - The US$100 figure was never endorsed here. Brief §12 item 7 requires counsel
   to supply it, and its presence in the page is not evidence that they did.
+
+## 2026-09-12 — D-097 reopened before implementing, and answered the other way
+
+The eight decisions above were recorded before any of them was acted on. This
+is why that was worth doing: the first one I picked up turned out to rest on a
+factual error in the question I had asked, and the record made the correction
+legible instead of silent.
+
+### What I got wrong
+
+I described the canonical half of `ancestry.json` as **withheld** from the
+export after the `ancestry` purpose is revoked, and the legacy half as
+**retained** — a difference of two read paths, one of which I could relax.
+
+The canonical half is not withheld. It is **deleted**.
+`private.execute_own_report_purge_v1` carries a purge-manifest entry targeting
+`generated-artifacts` in `private.own_analysis_runs` for the revoked grant,
+inside the registered 60-second deadline, and `e2e/ancestry-revocation.spec.ts`
+asserts that row is gone as one of its two independent observables.
+
+So "match canonical to legacy — the export keeps both halves", which the
+operator chose on that description, actually meant: stop deleting derived
+genetic analysis when someone revokes the permission that produced it, rewrite
+the purge's completeness proof, and change the spec that exists precisely to
+prove the access half and the delete half are enforced independently. Against a
+non-negotiable that reads "meet registered deletion deadlines, including 60
+seconds for derived data".
+
+That is not a decision anyone should make from a wrong description, so it went
+back with the price attached rather than being implemented.
+
+### What was decided instead
+
+**Match legacy to canonical.** Revoking `ancestry` now withholds the legacy
+rows too. Nothing stops deleting, the purge is untouched, the revocation spec
+still passes, and the export is consistent across its two halves.
+
+The cost is real and was stated: a person loses ancestry from their own export
+after revoking, which they can retrieve today. It reverses the read half of the
+2026-09-10 decision and the retention register's worked example, both of which
+are now corrected rather than left to be read as current.
+
+### The gap was wider than the defect said
+
+Measured while implementing, and it changes what this fixed:
+
+- **D-097 and the G5.3a matrix row both said legacy ancestry rows were
+  "immediately unreadable through `filterOwnAnalysisFiles`" after revocation.
+  They never were.** That function returns every legacy file untouched whatever
+  `purpose` says — the early return hands them back and the final filter
+  re-admits them by id. No purpose gate has ever applied to a legacy file.
+- So the leak was on the ancestry **page** as well as in the export. A page is
+  the more visible of the two, and it was the half nobody had written down.
+- `private.current_own_report_grant_v1` could not be reused: it raises
+  `not_found` for any file with no `single_logical_sample_verified_at`, so
+  routing legacy files through it would refuse them always — removing the
+  feature rather than gating it.
+
+The grant is subject-scoped (`target_kind='subject'`), so the question a legacy
+read needs is subject-level. `private.own_subject_purpose_grant_v1` asks it,
+and its grant select is the canonical resolver's, copied from
+`pg_get_functiondef` with exactly one substitution
+(`pg.target_id=f.subject_id` → `pg.target_id=p_subject_id`), asserted to apply
+once and asserted afterwards to leave no reference to the file row. The two
+were compared byte-for-byte after installation.
+
+### Deliberately not widened
+
+The same gap exists for `reports.monogenic` and `reports.polygenic`: revoking
+either still leaves results derived from a legacy source readable. `gateLegacy`
+is opt-in and only the two ancestry readers pass it. Recorded as **D-099**
+rather than fixed here — the operator's decision named `ancestry.json`, and
+widening a rights change past what was asked is how a scoped decision becomes
+an unreviewed one. The mechanism takes the purpose as an argument, so applying
+it is a call-site change plus tests whenever they say the word.
+
+## 2026-09-12 — `raw.browse`, and the genome hub moving with its children
+
+Two follow-on decisions from the jurisdiction pivot, both put separately
+because each would otherwise have been me deciding the shape of the Family
+journey while implementing a routing change.
+
+### The hub goes with its children
+
+Corrections item 5 named `/genome/[subject]/data` and
+`/genome/[subject]/data/browser`. `/genome/[subject]`, the hub above them,
+resolved with the same own-subject-only resolver and was named by neither side.
+Converting only the children would have left a person landing on a not-found
+parent above pages that worked.
+
+**Decided: all three move together.** The conversion cost more than a resolver
+swap, and the rest is the part worth remembering:
+
+- every tile was written in the second person — "your file", "your own
+  reports" — and each becomes a false sentence when the record is someone
+  else's;
+- tiles are now built from what the person actually granted, so a relative who
+  shared only ancestry has no Reports tile rather than a Reports link to a
+  not-found page;
+- Copilot stays own-record only, because `/copilot/[scope]` reads the viewer's
+  own subjects and an `s-{person}` scope does not resolve there yet;
+- "Add a file" is gone for a relative's record, because adding a file to
+  someone else's record is not a thing this product does and the button
+  implied it was.
+
+### `raw.browse` — a new directional purpose
+
+The question the routing change could not answer for itself: which grant
+authorises a relative's raw data? `/data` reads `user_prs`; `/data/browser`
+puts variant calls on screen. `DIRECTIONAL_PURPOSES` had no browse purpose, so
+the only candidate was `raw.export`.
+
+**Decided: add `raw.browse`, granted separately.** Using `raw.export` would
+have silently widened every export grant already given into a browsing grant.
+Both release the same bytes, which is an argument for asking rather than a
+reason not to: someone who agreed that a relative may download their file did
+not thereby agree that they may read their variants whenever they open a page,
+and the brief requires storage, analysis, sharing and AI permissions to stay
+separable.
+
+What it touched, and what it did not:
+
+- `purpose_grants_purpose_check`, `grant_directional_purpose_v1` and
+  `respond_adult_subject_invitation_v1` — the last two derived from the
+  installed definitions by one asserted substitution each.
+- **No new consent artifact.** Every directional purpose signs against
+  `consent.share-with-adult`, so this is a row on the permissions page and
+  nothing in the consent library.
+- **`generated_exports.purpose` deliberately not widened**: browsing produces
+  no export artifact, and a `raw.browse` row there would mean an archive
+  nobody asked for.
+- `subject_consents.scope` gains it for NEW acceptances only. That array is
+  descriptive — `grant_directional_purpose_v1` never reads it — so no existing
+  pairing changes and no grant depends on it.
+
+**`/data` needs both permissions, not one.** Panel coverage is built from
+`user_prs`, which is a polygenic RESULT rather than the file. `raw.browse`
+opens the file; the score panel additionally needs `reports.polygenic`, and
+without it the read does not happen at all rather than happening and being
+hidden.
+
+### What this change broke, and why the unit suite did not catch it
+
+`e2e/family.spec.ts` pinned the settable permission column at **six** rows.
+Adding a seventh made it seven, and CI failed on it — a real assertion, not a
+transport hiccup.
+
+The unit and component tests were updated for the new row and all passed; the
+browser suite was not run before pushing, because it takes forty minutes. That
+is the whole gap. **A change to a list that renders on a page needs the browser
+suite, or at minimum a grep of `e2e/` for count pins on the slot being changed**
+— `data-slot="permission-row"` in this case. Four other specs locate rows by
+label filter and were unaffected, which is why only one broke and why a quick
+scan would have found it in seconds.
+
+Recorded because the same shape will recur: any register, list or tile set that
+gains an entry has browser tests counting it somewhere.
+
+### The label, which took three attempts
+
+`raw.export`'s label is "Raw genetic data", exempt from the registered-term
+rule only because the brief names it verbatim as a §5 §5.3 toggle. This
+permission is new and the brief does not name it, so claiming the same
+exemption would have been claiming the brief says something it does not.
+
+Two drafts were rejected by the copy tests before one passed: "Read raw data in
+Inherit" ("raw data" is a registered term) and "Raw genetic data on screen"
+("genetic" is a registered term, and "screen" is not in the registered
+vocabulary). The shipped label is **"Read the letters in Inherit"** — the
+product's own plain word for the same thing, which the consequence lines
+already used. The gate caught both, which is the gate working.
+
+## 2026-09-12 — The NHGRI date finding was wrong, and the correction is worth more
+
+`scripts/glossary/fetch-source.mjs` and `docs/sources/glossary/README.md` both
+recorded that a summarising fetch had FABRICATED a last-updated date for the
+NHGRI polygenic-risk-score page, and that the page carried no such date
+anywhere in its HTML.
+
+Reading the raw bytes disproved it. The page really does carry
+`updated: September 12, 2026`, and so do `Susceptibility`, `Pathogenic Variant`
+and `Polygenic Trait` — three unrelated entries, all dated the day of the
+fetch. NHGRI renders the current date as every glossary entry's update line.
+Nothing was invented. The accusation was mine, and it was wrong.
+
+Both records are corrected rather than quietly dropped, because the corrected
+finding is the more useful one: a summariser cannot warn you about this, since
+the summariser is reading the page correctly. The page is what is unreliable.
+
+The tool now records the date it finds AND a `pageDateIsFetchDate` flag beside
+it, so the tell is visible in the snapshot instead of being hidden by a regex
+that happened not to match. It is `true` on every NHGRI snapshot and `false` on
+the MedlinePlus one, which carries a real 2021 date.
+
+## 2026-09-12 — A fixture invalidated twice by the same cause gets derived
+
+`glossed-text.test.ts` named "absolute risk" as a term that must not be
+glossed. Sourcing it made that false. The same fixture had already been moved
+once on 2026-09-11 for the mirror-image reason.
+
+Two hand-picked fixtures broken by the same mechanism is the signal to stop
+hand-picking. The file now also sweeps EVERY uncited term read from
+`data/jargon.json` and `data/glossary-citation-classes.json` — the raw inputs,
+not the module under test — and asserts no gloss carries it. The next term
+sourced needs no edit here.
+
+The sweep was checked against a mutation before being trusted: breaking
+`renderableGlossaryEntries()` to return everything made it fail on
+`association`. What it does NOT cover is stated in the test itself, because a
+comment claiming cover it does not have is worse than no comment.
+
+## 2026-09-12 — Citing an API endpoint rather than the page that renders it
+
+The NCI dictionaries were recorded as uncitable: their pages serve a
+JavaScript shell, so a quote taken from them cannot be verified against the
+bytes a reader receives. I wrote that this needed "a decision, not a
+workaround".
+
+Taking it. Reading the page's own bundle gives the endpoint it calls —
+`https://webapis.cancer.gov/glossary/v1/Terms/{dictionary}/{audience}/en/{term}`
+— which is NCI's own, returns the record as JSON, and carries the definition
+in the bytes. Twelve definitions are cited at that URL.
+
+The verification property is not weakened by this; it is the reason for it.
+The rule is that a quote must be present in the bytes at the URL the register
+names, and it holds exactly. What changes is which URL that is, and the
+answer is the one that actually contains the record rather than a rendering
+of it. Every such entry says so in its `claim`, so the choice is visible
+rather than something a reader has to reverse-engineer.
+
+The owner's condition — anything unreachable stays invisible — is about
+sources that cannot be reached. This one can be, and leaving twelve terms
+invisible while a real authority defined every one of them would have been
+the wrong reading of it.
+
+## 2026-09-12 — A count that fails on progress is measuring the wrong thing
+
+`glossary-classes.test.ts` asserted `uncited.length > 30`, written when two of
+the 42 were sourced. Sourcing twenty-four made it fail. Nothing was wrong: the
+test was pinning a snapshot of that day rather than a property.
+
+It is now a non-vacuity guard at `> 0`, with the real assertion — no uncited
+term renders — unchanged, and a note to delete the guard when the last term is
+sourced and the loop is empty for the right reason.
+
+The same shape is worth watching for elsewhere: a threshold chosen from today's
+numbers reads like a safety rail and behaves like a ratchet against the work.
+
+## 2026-09-12 — A grep for one component name is not a survey of a behaviour
+
+Writing the header comment for the four new jurisdiction proofs, I asserted
+that `/family/[person]`, `/files`, `/files/upload`, `/copilot/[scope]` and
+`/overview` "render no jurisdiction refusal at all", on the strength of one
+grep for `CapabilityUnavailable`.
+
+Three of those five do render one, by three mechanisms that grep could not
+see. `/family/[person]` prints `decision.userFacingCopy` directly as the page
+body. `/overview` renders it inside `data-slot="carrier-jurisdiction"`.
+`/family/portrait/[pairId]` has a branch of its own. Only `/files`,
+`/files/upload` and `/copilot/[scope]` genuinely mention jurisdiction nowhere.
+
+The comment was corrected before it was committed, and `/family/[person]` is
+now proven rather than written off. But the near-miss is the point: that
+sentence would have justified NOT building three refusals that already exist,
+and it would have read as a survey. When the claim is "this behaviour is
+absent", grep for the behaviour's several possible spellings or read the file —
+one component name is a search, not a finding.
+
+The three real product gaps stand: `/files`, `/files/upload` and
+`/copilot/[scope]` declare `jurisdiction-unavailable` in the register and
+implement nothing. That is the same shape as the `consent-required` conflict
+already waiting on the owner.
+
+## 2026-09-12 — Five rows locked at once was the clue; four guesses came first
+
+Proving `/family/portrait/[pairId] jurisdiction-unavailable` needed a
+`family_pairs` row, and the Portrait permission row refused to be turned on.
+Four wrong explanations, each plausible and each disproved:
+
+1. **The independent-login marker.** The copy names it and the row is locked
+   without it — but the database showed `independent_login_at` stamped while
+   the row stayed locked. The marker was never the blocker.
+2. **A one-render lag** between the page stamping that marker and reading it
+   back. Disproved by reloading: locked on both views.
+3. **The wrong account.** This one WAS real and worth keeping: `signIn` ends by
+   waiting for `/overview`, and an already-authenticated visit to
+   `/auth/sign-in` redirects there, so calling it while another account is
+   signed in "succeeds" without changing account. Fixed, and the row was still
+   locked.
+4. **B needing to grant rather than A.** Also real, also not sufficient.
+
+What settled it was a probe that printed EVERY row in the settable column
+instead of the one under suspicion. Five rows were actionless at once — both
+report layers, Portrait and Health picture — and five rows failing together is
+not a fact about Portrait. What they share is a grant presentation minted only
+for an account whose own record is complete. B had never completed theirs.
+
+The lesson is the probe, not the answer. Three of the four guesses were about
+the specific row because the failure was reported on the specific row. Widening
+the observation to the whole column took one run and answered it. When a
+guess about a mechanism fails twice, stop guessing at the mechanism and print
+the neighbourhood.
+
+## 2026-09-12 — Dropping a proof requirement needs the fact behind it pinned
+
+Corrections item 5 signed the drop of `jurisdiction-unavailable` from routes
+with no jurisdiction guard, and named the profile split as the remaining step
+for `/files`, `/files/upload` and `/copilot/[scope]`. Applying it removes a
+proof requirement, so it was put to the operator rather than taken, and the
+answer was to apply it AND pin the fact it rests on.
+
+The fact: all twelve restricted capabilities in `data/jurisdictions.json` are
+Family or Embryo Analysis capabilities, and those three routes surface none of
+them. G2.2 forbids the `n/a` only where a route's capability IS in that file.
+
+The risk the pin closes: the gate's floor was "at least 12", which a THIRTEENTH
+capability passes. An AI or storage restriction added later would silently
+invalidate three declarations and nothing would notice. The list is now pinned
+exactly, and the failure message names the three routes so the next reader
+knows what the change costs rather than editing the array to match. Confirmed
+by adding a synthetic `copilot_ai_analysis` capability: the gate fails and says
+so.
+
+The general rule: when a register stops requiring a proof because of a fact
+about another file, assert the fact where it lives. A comment saying "this
+holds today" is not a check.
+
+## 2026-09-12 — Every declared jurisdiction refusal is now proven in a browser
+
+`jurisdiction-unavailable` was the largest single-state gap in the ratchet on
+2026-09-11: nine of its declared pairs unproven, and a false proof among the
+ones that counted. It is now empty, and the closing is worth recording as a
+shape rather than a milestone.
+
+Nine pairs closed, and only six of them were tests. Three were the register
+asking for something that cannot exist, which is a different event and is
+logged separately in `scripts/route-gate.ts` so a reader can tell progress from
+scope reduction.
+
+The six proofs needed five DIFFERENT refusal shapes, and every one was traced
+in the page before a title claimed it:
+
+- `/genome/[subject]`, its `data` and `data/browser` children replace the page;
+- `/family/[person]/permissions` keeps its page and adds a header line, because
+  granting is a capability and pausing is a right;
+- `/family/[person]` fills the results slot with the register's sentence;
+- `/family/portrait/[pairId]` replaces its one output slot inside an intact
+  frame;
+- `/overview` refuses ONE LINE and keeps every other finding, because a
+  jurisdiction that has not reviewed carrier matching has said nothing about
+  the rest of a person's own genome.
+
+A single shared assertion helper would have been wrong for four of the six. The
+reason a title in this repository is a claim is that the five differ; a test
+that asserted "a refusal appears somewhere" would pass on a page that showed
+the findings underneath it.
+
+The last one also shows where a proof should live. `/overview`'s carrier line
+needs State D, two prepared uploads and a mutual grant, so its test went into
+`e2e/family-health-picture.spec.ts`, which already builds that. A
+`.nojurisdiction.spec.ts` of its own would have duplicated the most expensive
+fixture in the suite to assert one sentence.
+
+## 2026-09-12 — A zero in the proven column is the shape of the question
+
+Grouping the 63 remaining `empty` and `processing` pairs by state profile made
+one row look obvious: `auth-flow · processing`, four unproven and none proven.
+That is exactly the shape that justified taking `error` off nine profiles and
+`jurisdiction-unavailable` off three routes, and the pull to write a fourth
+n/a was strong.
+
+The state is fully implemented. `src/components/auth/auth-form.tsx:63` disables
+the submit control and renders "Working…" while the request is in flight, on
+all four routes. Four real pairs, now proven.
+
+So the rule the grouping needs beside it: a profile with no proofs is a
+question, never an answer. The profiles where over-declaration was real were
+established by reading the pages, not by the shape of a table — and the table
+would have argued for the wrong conclusion here on identical evidence.
+
+Two smaller things the run taught, both worth not rediscovering:
+
+- Every Next.js page carries a route announcer with `role="alert"`, so an
+  unscoped `page.getByRole("alert")` resolves to one element on a page with no
+  error at all. Scope alert assertions to the form or region.
+- `/auth/reset-password` renders its form without a session, which made it look
+  like the other three. `updateUser` refuses client-side when there is no
+  session and issues no request, so the pending state never opens. A page
+  rendering is not a request being sent.
+
+## 2026-09-12 — Two controls that mutated with no sign anything was happening
+
+Reading `account-management · processing` to decide whether the register
+over-declared it turned up something better than a register answer.
+
+`digest-toggle.tsx` flipped a Switch that awaited a `profiles` write and stayed
+live throughout. `consent-list.tsx` posted a consent REVOCATION from a button
+that never disabled and never changed. In both, a reader got no acknowledgement
+until the page refreshed under them, and could press again meanwhile.
+
+Every comparable control in the product already had a pending state — auth,
+permissions, invitations, account deletion, Copilot settings. These two were
+the exceptions, and the register already said both routes had the state. So the
+answer was not "prove it or drop it" but build what was already promised, which
+is what happened: both now hold a flag and disable, and `consent-list` shows
+"Working…", the word the auth forms already use.
+
+The general point: an audit asking "is this state reachable?" is also asking
+"should it be", and the second question is sometimes the useful one. Three
+profile readings today produced one proposed not-applicable, five provable
+pairs, and this — a real gap on a consent withdrawal that no state audit was
+looking for.

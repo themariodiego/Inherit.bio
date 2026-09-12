@@ -67,6 +67,70 @@ const BROWSER_TESTS = "e2e";
  *               jurisdiction-unavailable state, each traced to the branch that
  *               renders its refusal and each passing in a browser before this
  *               number moved.
+ *   139 -> 134  five more real proofs, four of them needing no new fixture:
+ *               `/genome/[subject]`, `/genome/[subject]/data` and
+ *               `/genome/[subject]/data/browser` in their
+ *               jurisdiction-unavailable state. `resolveSubjectRoute` asks the
+ *               jurisdiction BEFORE it asks whether any purpose is granted, so
+ *               the pairing that `e2e/genome-family.nojurisdiction.spec.ts`
+ *               already builds reaches all three. That order was read in the
+ *               resolver first; all ten tests in that file then passed in a
+ *               browser before this number moved. `/family/[person]` came
+ *               with them, from a third refusal shape again - it renders the
+ *               register's sentence as the page body rather than replacing
+ *               the page or adding a header line - traced at
+ *               `family/[person]/page.tsx:167` before it was titled.
+ *               `/family/portrait/[pairId]` is the fifth and did need
+ *               something: a `family_pairs` row, which one account turning
+ *               Portrait on creates. It was believed to need the whole
+ *               `e2e/portrait.spec.ts` fixture until the page was read -
+ *               `!allowed` is its FIRST branch, so a `pending` pair is enough.
+ *   134 -> 131  NOT a proof, and separated for that reason: the register
+ *               stopped requiring three pairs. `/files`, `/files/upload` and
+ *               `/copilot/[scope]` moved to the new `own-product-result`
+ *               profile, which is `product-result` without
+ *               `jurisdiction-unavailable`. They surface no capability that
+ *               appears in `data/jurisdictions.json` - all twelve restricted
+ *               ones are Family or Embryo Analysis - so G2.2 permits the n/a
+ *               here where it forbids it for `/family/[person]`. Corrections
+ *               item 5, signed 2026-09-12, names this profile split as its
+ *               remaining step. Required 216 -> 213; proven unchanged at 82.
+ *
+ *               The declaration was not simply dropped. `scripts/jurisdiction-gate.ts`
+ *               now pins the twelve capabilities EXACTLY, because a floor of
+ *               "at least 12" would let a thirteenth pass and silently
+ *               invalidate all three n/a declarations. Confirmed by adding a
+ *               synthetic `copilot_ai_analysis` capability: the gate fails and
+ *               names those three routes.
+ *   131 -> 130  a proof again, and the LAST `jurisdiction-unavailable` pair
+ *               the register requires: `/overview`. Its carrier line refuses
+ *               only in State D, with a mutual `family.heritability` grant and
+ *               the domain gate passed, so the test lives in
+ *               `e2e/family-health-picture.spec.ts` where that fixture already
+ *               exists rather than duplicating the suite's most expensive
+ *               setup. Every one of the nine states the register declares for
+ *               `jurisdiction-unavailable` is now proven in a browser.
+ *   130 -> 129  `/family/[person] empty`, the first of the `empty` group and a
+ *               proof. It needed no fixture either: `e2e/family.spec.ts`
+ *               already pairs two accounts whose grants all run one way, so
+ *               the reverse view has genuinely nothing to show. The state was
+ *               implemented and simply never titled.
+ *   129 -> 125  the four `/auth/*` routes in `processing`, and the reason to
+ *               read this line is what it nearly was instead. Grouped by
+ *               profile, `auth-flow · processing` showed four unproven and
+ *               none proven, which is the shape over-declaration takes here
+ *               and the shape that justified the three drops above. The
+ *               component settled it the other way: `auth-form.tsx:63`
+ *               disables the submit control and renders "Working…" while the
+ *               request is in flight. A zero in the proven column is the shape
+ *               of the question, never the answer.
+ *   125 -> 124  `/settings processing`, and this one was BUILT rather than
+ *               found. The digest switch awaited a write and stayed live, so
+ *               a reader had no sign anything was happening and could flip it
+ *               again mid-request - the register said the state existed and
+ *               the product did not have it. `consent-list.tsx` had the same
+ *               gap on a consent REVOCATION and is fixed in the same change;
+ *               its pair waits on a grant fixture.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -77,7 +141,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 139;
+const UNPROVEN_ROUTE_STATE_PAIRS = 124;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

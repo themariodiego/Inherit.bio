@@ -1,0 +1,13 @@
+{
+  "term": "heritability",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Genetics/HealthProfessional/en/heritability",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Genetics/HealthProfessional/en/heritability",
+  "fetchedAt": "2026-09-12T10:59:50.575Z",
+  "pageBytes": 1114,
+  "pageSha256": "35f6b3e906e6937f7066aa1831b5919f826136ce2daa17d121295b39db91a829",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "The proportion of variation in a population trait that can be attributed to inherited genetic factors."
+}

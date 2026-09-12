@@ -12769,6 +12769,20 @@
         "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
+    "own-product-result": {
+      "supported": [
+        "empty",
+        "processing",
+        "partial-coverage",
+        "complete",
+        "not-covered",
+        "consent-required"
+      ],
+      "notApplicable": {
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table."
+      }
+    },
     "restricted-flow": {
       "supported": [
         "empty",
@@ -14045,7 +14059,7 @@
       },
       "surface": "standard",
       "width": "64rem",
-      "stateProfile": "product-result",
+      "stateProfile": "own-product-result",
       "policy": {
         "mode": "resolved",
         "parameterResolver": "copilot-route-scope-v1",
@@ -14068,7 +14082,7 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
-      "stateProfile": "product-result",
+      "stateProfile": "own-product-result",
       "policy": {
         "contracts": [
           "resource-authorization-v1",
@@ -14086,7 +14100,7 @@
       "auth": "authenticated",
       "surface": "flow",
       "width": "64rem",
-      "stateProfile": "product-result",
+      "stateProfile": "own-product-result",
       "policy": {
         "mode": "resolved",
         "resolver": "upload-class-v1"

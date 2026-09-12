@@ -56,6 +56,44 @@ test("/settings complete: the account address, all four sections and the digest 
 });
 
 /**
+ * `/settings processing`, and the state exists because this run built it.
+ *
+ * The digest switch awaited a `profiles` write and stayed live throughout, so
+ * a reader flipping it had no sign anything was happening and could flip it
+ * again mid-request. `digest-toggle.tsx` now holds a `busy` flag and disables
+ * the control, which is what every comparable control in the product already
+ * did and what the register already said this route had.
+ *
+ * Held open the same way `e2e/auth-processing.spec.ts` holds its four: the
+ * write is intercepted and not released until the assertion has run, so the
+ * product sits in a state it defines rather than a simulated one.
+ */
+test("/settings processing: the digest switch is held while its write is in flight", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/rest/v1/profiles*", async (route) => {
+    if (route.request().method() === "GET") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/settings");
+    const digest = page.getByRole("switch");
+    await expect(digest).toBeEnabled();
+    await digest.click();
+    await expect(digest).toBeDisabled();
+    expect(intercepted, "the state is held by a real in-flight write").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+});
+
+/**
  * `/settings/consents` is a header, the grant list and a back link, so the
  * list is the page's whole substance and an empty list is the page's `empty`
  * state rather than one region of it having nothing to show. That distinction

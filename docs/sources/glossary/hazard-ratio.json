@@ -1,0 +1,13 @@
+{
+  "term": "hazard ratio",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/hazard-ratio",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/hazard-ratio",
+  "fetchedAt": "2026-09-12T10:59:49.626Z",
+  "pageBytes": 1592,
+  "pageSha256": "652d58dada1fe3493fd0060ff1ab187b25a8d95f9f971f8bc53292dc4e20cd2a",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "A measure of how often a particular event happens in one group compared to how often it happens in another group, over time."
+}

@@ -241,6 +241,9 @@ family fixture rather than a register change:
 | `/genome/[subject]/ancestry` | `resolveSubjectRoute` -> `kind: "jurisdiction"` -> `CapabilityUnavailable` |
 | `/genome/[subject]/reports` | same |
 | `/genome/[subject]/reports/[slug]` | same |
+| `/genome/[subject]` | `resolveSubjectRoute` since 2026-09-12 |
+| `/genome/[subject]/data` | `resolveSubjectRoute` since 2026-09-12, under `raw.browse` |
+| `/genome/[subject]/data/browser` | same |
 | `/family` | `familyCapability` |
 | `/family/[person]/permissions` | jurisdiction guard |
 | `/family/health-picture` | `familyCapability` |
@@ -248,12 +251,27 @@ family fixture rather than a register change:
 | `/overview` | `familyCapability` |
 | `/embryo-analysis` | jurisdiction guard |
 
-**Eleven cannot reach it**, and for the genome trio the reason is precise and
-worth stating rather than summarising: `/genome/[subject]`,
-`/genome/[subject]/data` and `/genome/[subject]/data/browser` resolve with
+**SIGNED AND ACTED ON 2026-09-12, and the answer was the reverse of the
+proposal for the genome trio.** The operator was asked the pivot question below
+and answered that those routes ARE meant to serve a relative, so they were not
+over-declaring — they were missing a capability. All three now resolve with
+`resolveSubjectRoute` and refuse in an unreviewed jurisdiction; the paragraph
+that follows describes what they did until then and is kept as the record of
+why the question was asked.
+
+Two things the implementation added that the proposal did not anticipate. The
+hub `/genome/[subject]` was not named by either side, so it was put separately
+rather than assumed, and the operator moved it with its children. And the two
+data routes needed a grant that did not exist: `raw.export` was the only
+candidate and using it would have widened every export grant already given into
+a browsing grant, so `raw.browse` was created for it.
+
+**Eight of the eleven cannot reach it.** For the genome trio the reason was
+precise and is worth keeping: `/genome[subject]`,
+`/genome/[subject]/data` and `/genome/[subject]/data/browser` resolved with
 `resolveSubjectForAccount` — the OWN-subject resolver — and never with
-`resolveSubjectRoute`. A family segment does not resolve on those routes at
-all, so the page answers not-found instead of refusing.
+`resolveSubjectRoute`. A family segment did not resolve on those routes at
+all, so the page answered not-found instead of refusing.
 
 **That is not a fail-open.** No family data is served by those routes, so the
 missing refusal withholds nothing it should withhold. It is worth saying
@@ -269,8 +287,38 @@ visits it on the jurisdiction-off server as its control and asserts a 200 with
 the account still signed in, precisely so that a refusal elsewhere cannot be
 confused with a broken session.
 
-**Proposed:** drop `jurisdiction-unavailable` from the declared states of those
-eleven routes, so the register describes the product that exists.
+**Proposed, and superseded for three of the eleven:** drop
+`jurisdiction-unavailable` from the declared states of the eight that have no
+guard, and BUILD the capability on the genome trio, which is what the operator
+chose. Of the eight, the five `account-management` routes lost the declaration
+on 2026-09-12.
+
+**APPLIED IN FULL 2026-09-12, and one route left the list because the list was
+wrong about it.** `/files`, `/files/upload` and `/copilot/[scope]` now take a
+new `own-product-result` profile — `product-result` without
+`jurisdiction-unavailable` — which is the profile split named above. The
+ratchet falls 134 → 131 as the register requiring less, recorded separately
+from the proofs in `scripts/route-gate.ts`.
+
+The n/a rests on one fact rather than on judgement: every one of the twelve
+restricted capabilities in `data/jurisdictions.json` is a Family or Embryo
+Analysis capability, and those three routes surface none of them. Because the
+fact could change, `scripts/jurisdiction-gate.ts` now pins that list EXACTLY —
+the previous floor of "at least 12" would have let a thirteenth capability pass
+and silently invalidate all three declarations. Adding a synthetic
+`copilot_ai_analysis` capability makes the gate fail and name the three routes,
+which is how the pin was confirmed rather than assumed.
+
+**`/family/[person]` is NOT in that group, and this document had it wrong.** It
+was listed above among the eight with "no jurisdiction guard at all". It has
+one: `family/[person]/page.tsx:167` renders `decision.userFacingCopy` as the
+page body where the shared results would be. It keeps its declaration, and the
+state is now proven in `e2e/genome-family.nojurisdiction.spec.ts`. The G2.2
+conflict item 7 raises for it is therefore moot — nothing is being dropped.
+
+The error is worth naming because of how it was made: the route was measured
+with a grep for `CapabilityUnavailable`, and this page refuses without using
+that component. A grep for one component name is not a survey of a behaviour.
 
 **THE QUESTION THIS TURNS ON, and it is yours rather than mine.** The proposal
 above assumes the product is right and the register over-declares. The opposite
@@ -315,11 +363,15 @@ in the first two checks, which is why the third was done.
 
 | state | declared and unproven | implement it | over-declared |
 |---|---|---|---|
-| `jurisdiction-unavailable` | 20 | 9 | 11 |
+| `jurisdiction-unavailable` (as measured 2026-09-11) | 20 | 9 | 11 |
+| `jurisdiction-unavailable` (after 2026-09-12) | 20 | **12** | **8** |
 | `consent-required` | 20 | 0 | 20 |
 
-**So 31 of the 40 unproven authority pairs are register over-declarations, and
-9 are genuine test work.** That is worth putting beside G2.2's own estimate,
+**As measured, 31 of the 40 unproven authority pairs were register
+over-declarations and 9 were genuine test work.** The 2026-09-12 decisions
+moved three from the first column to the second by BUILDING the capability
+rather than dropping the declaration, which is the outcome this item said was
+available and did not expect to be chosen. That is worth putting beside G2.2's own estimate,
 which places 50 of the remaining pairs in "needing new test-side setup only".
 For these two states the reachable figure is nine, and all nine sit behind one
 paired-family fixture.
@@ -369,6 +421,16 @@ subset of their routes:
   case, since it renders a relative's data under
   `third_party_adult_analysis`.
 
+  **RESOLVED 2026-09-12, and not by amending anything.** `/family/[person]`
+  already implements the refusal, so it was never a candidate for the n/a —
+  item 5 had simply measured it wrongly. It keeps the declaration and the state
+  is proven. The three routes item 5 does drop it from surface no capability in
+  that file at all, which is precisely the condition G2.2 attaches, so this
+  half of the conflict never existed. **Item 6's half stands untouched:** nine
+  Family or Embryo Analysis routes still declare `consent-required` and
+  implement nothing, and G2.2 forbids the n/a for them outright. That still
+  needs an amendment to G2.2 or nine gates built.
+
 **This was missed when items 5 and 6 were drafted**, and the miss has a
 shape worth naming: both were measured against the *product* — what each page
 component does — and neither was measured against the *brief*, which is the
@@ -381,6 +443,123 @@ answers from the operator: amend G2.2's forbidden list, or build the gates.
 Put separately rather than assumed either way, because "the brief requires a
 consent gate on every Family route" is a product commitment, not a register
 detail.
+
+## 8. `empty` and `processing`: the 63 remaining pairs, grouped by profile
+
+**Not a proposal, and deliberately not a set of conclusions.** This is a
+measurement, taken 2026-09-12 once `jurisdiction-unavailable` was closed and
+those two states became the largest remaining groups. It exists so that the
+decision, when it is taken, is taken over eight profiles rather than
+sixty-three routes.
+
+`empty` and `processing` are declared by profile, wholesale, exactly as `error`
+and `jurisdiction-unavailable` were. Grouping the unproven pairs by
+`(profile, state)` gives this:
+
+| profile · state | unproven | proven |
+|---|---:|---:|
+| `product-result` · processing | 13 | 1 |
+| `product-result` · empty | 7 | 7 |
+| `versioned-document` · empty | 6 | 0 |
+| `account-management` · processing | 5 | 0 |
+| `auth-flow` · empty | 4 | 0 |
+| `auth-flow` · processing | 4 | 0 |
+| `restricted-flow` · empty | 4 | 0 |
+| `restricted-flow` · processing | 4 | 0 |
+| `account-management` · empty | 4 | 1 |
+| `public-rights-flow` · empty | 3 | 0 |
+| `public-rights-flow` · processing | 3 | 0 |
+| `own-product-result` · empty | 2 | 1 |
+| `public-embryo-analysis` · empty | 1 | 0 |
+| `public-embryo-analysis` · processing | 1 | 0 |
+| `own-product-result` · processing | 1 | 2 |
+
+**A ZERO IN THE PROVEN COLUMN IS NOT EVIDENCE OF ANYTHING.** It is the shape
+that over-declaration takes, which makes it tempting, and the first profile
+checked shows why the temptation must be resisted. `auth-flow · processing`
+reads 4 unproven and 0 proven, and the state is fully IMPLEMENTED:
+`src/components/auth/auth-form.tsx:63` disables the submit button and renders
+"Working…" while a sign-in, sign-up or reset is in flight. Four routes, four
+real pairs, nothing to drop — a coverage gap that the table's shape would have
+argued was a phantom.
+
+So this item claims exactly two things, and no more.
+
+**Measured, and provable rather than droppable:**
+
+- `auth-flow · processing` — implemented as above. **Done the same day:**
+  `e2e/auth-processing.spec.ts` holds the `/auth/v1/*` request open with
+  `page.route` and asserts the pending control on all four routes. Ratchet
+  129 → 125. `/auth/reset-password` turned out to need a real session, because
+  `updateUser` refuses client-side with none and never issues a request at all
+  — a page rendering is not a request being sent.
+- `product-result · empty` and `account-management · empty` and
+  `own-product-result · processing` — half or more of each is already proven,
+  so the state is reachable on that profile by construction. Every remaining
+  pair in those three rows is a coverage gap.
+
+That is 7 + 4 + 1 + 4 = **16 of the 63 already known to be real work rather
+than a register question.**
+
+### Measured 2026-09-12, after the auth finding
+
+Three more profiles have now been read rather than inferred. The results split
+three ways, which is itself the argument against reading the table alone.
+
+**`versioned-document · empty` — 6 pairs, PROPOSED FOR n/a.** All six routes
+were read end to end; each is between nine and fourteen lines. Every one of
+them renders a committed body or answers `notFound()`, and not one carries a
+branch that renders nothing: `/legal/[artifact]`, its `versions/[version]` and
+`diff/[from]/[to]`, and the same three under `/legal/consent/[key]`. The diff
+pages render both versions side by side and fall back to "No change summary was
+recorded." for a missing summary field — which is a fallback inside a populated
+page, not an empty state. This is the same argument `static-document` already
+carries ("A versioned public document always has committed content"), and the
+suggestion above that it "may" transfer is now measured: it does.
+
+**`restricted-flow · processing` and `account-management · processing` — four
+of nine are IMPLEMENTED and provable**, exactly as `auth-flow · processing`
+was:
+
+| route | evidence |
+|---|---|
+| `/family/[person]/permissions` | `permission-grant-row.tsx:54` `pending`, `:93` `disabled={pending}` |
+| `/family/invite` | `invite-adult-form.tsx:32` `pending` |
+| `/settings/data` | `danger-zone.tsx:56` `busy`, gating both controls |
+| `/settings/copilot` | `own-copilot-permission.tsx:13` and `llm-settings-form.tsx:41`, both `busy` |
+
+**TWO OF THE REMAINDER ARE A PRODUCT FINDING, not a register question.**
+`/settings` and `/settings/consents` each perform a real mutation with NO
+in-flight state and no double-submit guard:
+
+- `digest-toggle.tsx` flips a `Switch` whose `onCheckedChange` awaits a
+  `profiles` update and then refreshes. The switch stays live throughout.
+- `consent-list.tsx:54` POSTs `/api/consents/{id}/revoke` from a button that is
+  never disabled and never changes.
+
+The second is a consent revocation. The server side is very likely idempotent,
+so this is not asserted as a data risk — but a person revoking a consent gets
+no acknowledgement that anything is happening until the page refreshes under
+them, and can press it again meanwhile. Every comparable control in the product
+(auth, permissions, invitations, deletion, Copilot settings) shows a pending
+state. These two are the exceptions.
+
+So the choice for those two pairs is not "prove or drop". It is **build the
+pending state, which the register already says these routes have**, and then
+prove it. Recommended, and small. `/settings/people` is the third remainder and
+needs nothing: it is the not-built page, and its profile question belongs with
+whatever decides that page's future.
+
+**Still not measured, and still not proposed:** `auth-flow · empty`,
+`restricted-flow · empty`, `public-rights-flow · empty` and `· processing`,
+`account-management · empty`, `public-embryo-analysis · empty` and
+`· processing`, and the thirteen `product-result · processing` pairs — though
+that last group's state is reachable by construction, since `/overview` proves
+it on the same profile.
+
+**What is asked of the operator here: nothing yet.** The measurement is
+recorded so the next pass is eight readings rather than sixty-three, and so
+that the sixteen known coverage gaps are not left looking like open questions.
 
 ## What happens after signature
 

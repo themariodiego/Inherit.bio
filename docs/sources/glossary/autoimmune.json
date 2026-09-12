@@ -1,0 +1,13 @@
+{
+  "term": "autoimmune",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/autoimmune-disease",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/autoimmune-disease",
+  "fetchedAt": "2026-09-12T10:59:48.494Z",
+  "pageBytes": 1745,
+  "pageSha256": "6350932bf4e289de500a86f85028835a95d7dbd20f43a0f0cd8546f32a7f070e",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "A condition in which the body's immune system mistakes its own healthy tissues as foreign and attacks them."
+}

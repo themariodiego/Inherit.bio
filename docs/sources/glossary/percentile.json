@@ -1,0 +1,13 @@
+{
+  "term": "percentile",
+  "url": "https://www.itl.nist.gov/div898/handbook/prc/section2/prc262.htm",
+  "finalUrl": "https://www.itl.nist.gov/div898/handbook/prc/section2/prc262.htm",
+  "fetchedAt": "2026-09-12T10:46:38.366Z",
+  "pageBytes": 11754,
+  "pageSha256": "7bfd3124f8dd6b269708087536aae3e599305475c00967c50be00cbd2f8ab101",
+  "pageTitle": "7.2.6.2. Percentiles",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "Percentiles split a set of ordered data into hundredths."
+}

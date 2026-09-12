@@ -116,7 +116,9 @@ describe("tier 2 result gate", () => {
 describe("permission columns", () => {
   const rows = permissions.PERMISSION_ROWS.map((row) => ({ id: row.id, state: "off" as const }));
 
-  it("renders the six rows in order, all off, with no master switch", () => {
+  // Seven rows since 2026-09-12: `raw.browse` was split from `raw.export`, so
+  // downloading someone's file and reading it on screen are separate choices.
+  it("renders the seven rows in order, all off, with no master switch", () => {
     const html = renderToStaticMarkup(
       h(PermissionColumn, {
         heading: permissions.yourColumnHeading("Bo"),
@@ -126,8 +128,8 @@ describe("permission columns", () => {
       }),
     );
     for (const row of permissions.PERMISSION_ROWS) expect(html).toContain(row.label);
-    expect(html.match(/data-slot="permission-row"/g)).toHaveLength(6);
-    expect(html.match(/data-permission-state="off"/g)).toHaveLength(6);
+    expect(html.match(/data-slot="permission-row"/g)).toHaveLength(7);
+    expect(html.match(/data-permission-state="off"/g)).toHaveLength(7);
     expect(html).not.toMatch(/everything|all rows|master/i);
     expect(html).toContain("What Bo will see about you");
   });
@@ -143,7 +145,7 @@ describe("permission columns", () => {
       }),
     );
     expect(html).toContain('data-settable="false"');
-    expect(html.match(/Only Bo can turn this on\./g)).toHaveLength(6);
+    expect(html.match(/Only Bo can turn this on\./g)).toHaveLength(7);
     expect(html).not.toContain('data-slot="permission-control"');
   });
 
@@ -161,10 +163,11 @@ describe("permission columns", () => {
       }),
     );
     expect(html).toContain('data-settable="true"');
-    expect(html.match(/data-slot="permission-control"/g)).toHaveLength(5);
+    // Six settable of seven rows: one is locked with its own reason.
+    expect(html.match(/data-slot="permission-control"/g)).toHaveLength(6);
     expect(html.match(/data-slot="permission-locked"/g)).toHaveLength(1);
     expect(html).toContain(permissions.INDEPENDENT_LOGIN_REQUIRED);
-    expect(html.match(/data-permission-state="off"/g)).toHaveLength(6);
+    expect(html.match(/data-permission-state="off"/g)).toHaveLength(7);
   });
 
   it("shows permission state as a glyph plus a word, never as colour alone", () => {

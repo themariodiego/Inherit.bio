@@ -48,6 +48,7 @@ export type PermissionRowId =
   | "reports.polygenic"
   | "ancestry"
   | "raw.export"
+  | "raw.browse"
   | "family.portrait"
   | "family.heritability";
 
@@ -79,6 +80,17 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
     id: "raw.export",
     label: "Raw genetic data",
     consequence: "They can download the letters in your file itself, not only the reports.",
+  },
+  {
+    id: "raw.browse",
+    // Not "Raw genetic data ..." like the row above it: that label is exempt
+    // from the registered-term rule only because the brief names it verbatim
+    // as a §5 §5.3 toggle. This permission is new, the brief does not name it,
+    // and claiming the same exemption would be claiming the brief says
+    // something it does not. So the label uses the product's own plain word
+    // for the same thing — "letters", as the consequence lines already do.
+    label: "Read the letters in Inherit",
+    consequence: "They can look through the letters in your file inside Inherit, without downloading it.",
   },
   {
     id: "family.portrait",

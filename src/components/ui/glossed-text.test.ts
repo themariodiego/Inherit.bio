@@ -4,6 +4,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { GlossedText } from "./glossed-text";
 import { GlossaryTerm } from "./glossary-term";
 import { glossaryEntry } from "@/copy/glossary";
+import jargon from "../../../data/jargon.json";
+import classes from "../../../data/glossary-citation-classes.json";
+
+/** The `cited` half of the split, straight from the classes file. */
+const CITED = new Set(
+  (classes as { terms: { term: string; class: string }[] }).terms
+    .filter((entry) => entry.class === "cited")
+    .map((entry) => entry.term),
+);
 
 /**
  * The rules here are the brief's, and each has a reader behind it: first use
@@ -53,16 +62,56 @@ describe("glossing a copy string on first use", () => {
     expect(glossed("Read the research consent carefully.")).toContain('data-term="research consent"');
   });
 
-  it("glosses nothing a reader may not be shown uncited", () => {
-    // The split is only worth having if it actually keeps these out. Whole
-    // sentences of cited vocabulary must come back untouched.
-    // "population" is deliberately absent from these: it is classed plain,
-    // because its definition names a GROUP rather than a quantity. The first
-    // draft of this test used it and failed, which is the classification being
-    // checked rather than assumed.
-    for (const sentence of ["Read the absolute risk carefully.", "The odds ratio is not a diagnosis.",
-      "Heritability is a statistical estimate."]) {
-      expect(glossed(sentence)).toBe(sentence);
+  /**
+   * There WAS a hand-picked list here: three sentences of cited vocabulary
+   * asserted to come back untouched. It rotted three times in two days, always
+   * for the same reason and always the intended one — "absolute risk" on
+   * 2026-09-11 when the split was introduced, then again with "absolute risk"
+   * and finally "diagnosis" on 2026-09-12 as each was sourced and began to
+   * render.
+   *
+   * Three breakages from one mechanism is the signal to stop hand-picking, so
+   * the property is derived below instead. The old comment warned that a
+   * derived rule "would agree with itself and prove nothing", and that warning
+   * is answered rather than ignored: the sweep reads `data/jargon.json` and
+   * `data/glossary-citation-classes.json`, which are the INPUTS to the module
+   * under test, not its output. Breaking `renderableGlossaryEntries()` to
+   * return every entry makes it fail on `association`, which was checked
+   * before it was trusted.
+   */
+  it("glosses no cited term that has no source, for every term in the register", () => {
+    // Read from the RAW data files rather than from `@/copy/glossary`, whose
+    // filter is the thing under test: asking the module which terms it thinks
+    // are renderable and then checking it renders those would agree with
+    // itself. `data/jargon.json` and the classes file are the inputs.
+    //
+    // Asserted as "no gloss carries this term", not "the sentence is
+    // unchanged", because an uncited phrase can contain a plain word that
+    // SHOULD be glossed - "risk allele" contains "allele", "reference panel"
+    // contains "reference". Glossing those is correct; glossing the phrase is
+    // not.
+    //
+    // What this does NOT cover, so it is not mistaken for cover: reclassifying
+    // a term from `cited` to `plain` removes it from CITED and so from this
+    // sweep. That route is closed in `src/copy/glossary/glossary-classes.test.ts`,
+    // which pins the plain count against the classes file.
+    const uncited = (jargon as { terms: { term: string; citationId?: string }[] }).terms
+      .filter((entry) => CITED.has(entry.term) && !entry.citationId)
+      .map((entry) => entry.term);
+    expect(uncited.length).toBeGreaterThan(0);
+    // The carrier has to be inert itself, or a gloss on one of ITS words would
+    // make the stronger assertion below fail for the wrong reason.
+    const carrier = (term: string) => `This sentence mentions ${term} once.`;
+    expect(glossed(carrier("nothing"))).toBe(carrier("nothing"));
+    for (const term of uncited) {
+      const html = glossed(carrier(term));
+      expect(html, `${term} must not be glossed uncited`).not.toContain(`data-term="${term}"`);
+      // A single-word term cannot contain a plain word to be glossed instead,
+      // so for those the whole sentence must come back byte-identical - the
+      // property the hand-picked sentences used to carry.
+      if (!term.includes(" ") && !term.includes("-")) {
+        expect(html, `${term} must leave its sentence alone`).toBe(carrier(term));
+      }
     }
   });
 
