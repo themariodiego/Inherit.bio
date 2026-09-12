@@ -2,443 +2,824 @@
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
   "providerEntries": [
-    { "slug": "23andme", "reason": "provider-directory" },
-    { "slug": "24genetics", "reason": "provider-directory" },
-    { "slug": "ancestrydna", "reason": "provider-directory" },
-    { "slug": "circledna", "reason": "provider-directory" },
-    { "slug": "dante-labs", "reason": "provider-directory" },
-    { "slug": "dna-complete", "reason": "provider-directory" },
-    { "slug": "familytreedna", "reason": "provider-directory" },
-    { "slug": "geneplanet", "reason": "provider-directory" },
-    { "slug": "living-dna", "reason": "provider-directory" },
-    { "slug": "mapmygenome", "reason": "provider-directory" },
-    { "slug": "myheritage", "reason": "provider-directory" },
-    { "slug": "nucleus-genomics", "reason": "provider-directory" },
-    { "slug": "selfdecode", "reason": "provider-directory" },
-    { "slug": "sequencing-com", "reason": "provider-directory" },
-    { "slug": "tellmegen", "reason": "provider-directory" },
-    { "slug": "yseq", "reason": "provider-directory" }
+    {
+      "slug": "23andme",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "24genetics",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "ancestrydna",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "circledna",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "dante-labs",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "dna-complete",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "familytreedna",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "geneplanet",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "living-dna",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "mapmygenome",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "myheritage",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "nucleus-genomics",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "selfdecode",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "sequencing-com",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "tellmegen",
+      "reason": "provider-directory"
+    },
+    {
+      "slug": "yseq",
+      "reason": "provider-directory"
+    }
   ],
   "entries": [
     {
       "name": "PostgreSQL",
       "category": "dependency-platform",
-      "aliases": ["postgresql", "postgresql.org"],
+      "aliases": [
+        "postgresql",
+        "postgresql.org"
+      ],
       "reason": "Database engine documentation supporting the reviewed private upload permission helper.",
-      "evidence": ["docs/adr/0023-upload-only-boolean-permission-check.md"]
+      "evidence": [
+        "docs/adr/0023-upload-only-boolean-permission-check.md"
+      ]
     },
     {
       "name": "IANA domain registry",
       "category": "cited-organisation",
-      "aliases": ["iana.org"],
+      "aliases": [
+        "iana.org"
+      ],
       "reason": "Special-use domain registry supporting reserved test-host classification in the name scanner.",
-      "evidence": ["docs/adr/0007-private-name-denylist.md"]
+      "evidence": [
+        "docs/adr/0007-private-name-denylist.md"
+      ]
     },
     {
       "name": "Stanford author article host",
       "category": "cited-organisation",
-      "aliases": ["ai.stanford.edu"],
+      "aliases": [
+        "ai.stanford.edu"
+      ],
       "reason": "Author-hosted published cilantro paper actually read in the source review; no hosted assets enter the application.",
-      "evidence": ["docs/sources/reviews/batch-01/indices-00-19.md"]
+      "evidence": [
+        "docs/sources/reviews/batch-01/indices-00-19.md"
+      ]
     },
     {
       "name": "BiOutils article host",
       "category": "cited-organisation",
-      "aliases": ["www.bioutils.ch", "bioutils.ch"],
+      "aliases": [
+        "www.bioutils.ch",
+        "bioutils.ch"
+      ],
       "reason": "Published bitter-taste paper copy actually read in the source review; no hosted assets enter the application.",
-      "evidence": ["docs/sources/reviews/batch-01/indices-00-19.md"]
+      "evidence": [
+        "docs/sources/reviews/batch-01/indices-00-19.md"
+      ]
     },
     {
       "name": "Springer publication platform",
       "category": "cited-organisation",
-      "aliases": ["link.springer.com"],
+      "aliases": [
+        "link.springer.com"
+      ],
       "reason": "Publisher full text of the BDNF stress meta-analysis actually read for independent claim verification.",
-      "evidence": ["docs/sources/reviews/batch-02/independent-correction-review.md"]
+      "evidence": [
+        "docs/sources/reviews/batch-02/independent-correction-review.md"
+      ]
     },
     {
       "name": "SAMtools format specifications",
       "category": "file-format-producer",
-      "aliases": ["samtools.github.io"],
+      "aliases": [
+        "samtools.github.io"
+      ],
       "reason": "Official VCF specifications cited for genotype phasing and per-sample reference-block lengths in the embryo transport review.",
-      "evidence": ["docs/protocol/decisions.md", "src/lib/embryos/vcf-transport.ts"]
+      "evidence": [
+        "docs/protocol/decisions.md",
+        "src/lib/embryos/vcf-transport.ts"
+      ]
     },
     {
       "name": "GitHub",
       "category": "dependency-platform",
-      "aliases": ["github", "github.com", "githubusercontent.com"],
+      "aliases": [
+        "github",
+        "github.com",
+        "githubusercontent.com"
+      ],
       "reason": "Source hosting and pull-request CI platform used by this repository.",
-      "evidence": [".github/workflows/ci.yml"]
+      "evidence": [
+        ".github/workflows/ci.yml"
+      ]
     },
     {
       "name": "Vercel",
       "category": "dependency-platform",
-      "aliases": ["vercel", "vercel.app", "vercel.com"],
+      "aliases": [
+        "vercel",
+        "vercel.app",
+        "vercel.com"
+      ],
       "reason": "Deployment platform used by the application.",
-      "evidence": ["docs/deployment.md"]
+      "evidence": [
+        "docs/deployment.md"
+      ]
     },
     {
       "name": "Supabase",
       "category": "dependency-platform",
-      "aliases": ["supabase", "supabase.co", "supabase.com"],
+      "aliases": [
+        "supabase",
+        "supabase.co",
+        "supabase.com"
+      ],
       "reason": "Database, authentication, storage, and local integration platform used by the application.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Resend",
       "category": "dependency-platform",
-      "aliases": ["resend", "resend.com"],
+      "aliases": [
+        "resend",
+        "resend.com"
+      ],
       "reason": "Transactional email platform used by the application.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "OpenAI",
       "category": "dependency-platform",
-      "aliases": ["openai", "openai.com"],
+      "aliases": [
+        "openai",
+        "openai.com"
+      ],
       "reason": "Supported bring-your-own-key model API and installed SDK adapter.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Anthropic",
       "category": "dependency-platform",
-      "aliases": ["anthropic", "anthropic.com", "claude", "claude.ai"],
+      "aliases": [
+        "anthropic",
+        "anthropic.com",
+        "claude",
+        "claude.ai"
+      ],
       "reason": "Supported bring-your-own-key model API and installed SDK adapter.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Google Chrome",
       "category": "dependency-platform",
-      "aliases": ["chrome", "google", "google chrome"],
+      "aliases": [
+        "chrome",
+        "google",
+        "google chrome"
+      ],
       "reason": "Browser runtime used by Playwright and Lighthouse verification.",
-      "evidence": ["scripts/lighthouse-check.ts"]
+      "evidence": [
+        "scripts/lighthouse-check.ts"
+      ]
     },
     {
       "name": "Playwright",
       "category": "dependency-platform",
-      "aliases": ["playwright", "playwright.dev"],
+      "aliases": [
+        "playwright",
+        "playwright.dev"
+      ],
       "reason": "Browser acceptance-test dependency installed by the repository.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "React",
       "category": "dependency-platform",
-      "aliases": ["react", "react.dev"],
+      "aliases": [
+        "react",
+        "react.dev"
+      ],
       "reason": "Application UI dependency installed by the repository.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Next.js",
       "category": "dependency-platform",
-      "aliases": ["next.js", "nextjs", "nextjs.org"],
+      "aliases": [
+        "next.js",
+        "nextjs",
+        "nextjs.org"
+      ],
       "reason": "Application framework installed by the repository.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Tailwind CSS",
       "category": "dependency-platform",
-      "aliases": ["tailwind", "tailwind css", "tailwindcss"],
+      "aliases": [
+        "tailwind",
+        "tailwind css",
+        "tailwindcss"
+      ],
       "reason": "CSS build dependency installed by the repository.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "Node.js",
       "category": "dependency-platform",
-      "aliases": ["node", "node.js", "nodejs"],
+      "aliases": [
+        "node",
+        "node.js",
+        "nodejs"
+      ],
       "reason": "Documented runtime for the application and worker.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "pnpm",
       "category": "dependency-platform",
-      "aliases": ["pnpm", "pnpm.io"],
+      "aliases": [
+        "pnpm",
+        "pnpm.io"
+      ],
       "reason": "Pinned package manager used by this repository.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "npm",
       "category": "dependency-platform",
-      "aliases": ["npm", "npmjs.com", "registry.npmjs.org"],
+      "aliases": [
+        "npm",
+        "npmjs.com",
+        "registry.npmjs.org"
+      ],
       "reason": "Package registry used by the worker lockfile and dependency evidence.",
-      "evidence": ["worker/package-lock.json"]
+      "evidence": [
+        "worker/package-lock.json"
+      ]
     },
     {
       "name": "Docker",
       "category": "dependency-platform",
-      "aliases": ["docker", "docker.com"],
+      "aliases": [
+        "docker",
+        "docker.com"
+      ],
       "reason": "Documented container runtime for the self-hosted worker.",
-      "evidence": ["worker/Dockerfile"]
+      "evidence": [
+        "worker/Dockerfile"
+      ]
     },
     {
       "name": "Mailpit",
       "category": "dependency-platform",
-      "aliases": ["mailpit"],
+      "aliases": [
+        "mailpit"
+      ],
       "reason": "Local email-capture service used by the Supabase acceptance stack.",
-      "evidence": ["e2e/README.md"]
+      "evidence": [
+        "e2e/README.md"
+      ]
     },
     {
       "name": "Ollama",
       "category": "dependency-platform",
-      "aliases": ["ollama", "ollama.com"],
+      "aliases": [
+        "ollama",
+        "ollama.com"
+      ],
       "reason": "Supported local model endpoint documented in the product.",
-      "evidence": ["README.md"]
+      "evidence": [
+        "README.md"
+      ]
     },
     {
       "name": "LM Studio",
       "category": "dependency-platform",
-      "aliases": ["lm studio"],
+      "aliases": [
+        "lm studio"
+      ],
       "reason": "Supported local model endpoint documented in the product.",
-      "evidence": ["README.md"]
+      "evidence": [
+        "README.md"
+      ]
     },
     {
       "name": "shadcn/ui",
       "category": "dependency-platform",
-      "aliases": ["shadcn", "shadcn/ui", "ui.shadcn.com"],
+      "aliases": [
+        "shadcn",
+        "shadcn/ui",
+        "ui.shadcn.com"
+      ],
       "reason": "Component registry used by the checked-in UI configuration.",
-      "evidence": ["components.json"]
+      "evidence": [
+        "components.json"
+      ]
     },
     {
       "name": "ESLint",
       "category": "dependency-platform",
-      "aliases": ["eslint", "eslint.org"],
+      "aliases": [
+        "eslint",
+        "eslint.org"
+      ],
       "reason": "Lint dependency installed and enforced by CI.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "GNU",
       "category": "dependency-platform",
-      "aliases": ["gnu", "gnu.org"],
+      "aliases": [
+        "gnu",
+        "gnu.org"
+      ],
       "reason": "License text and tool documentation identify the governing GNU license family.",
-      "evidence": ["LICENSE"]
+      "evidence": [
+        "LICENSE"
+      ]
     },
     {
       "name": "Free Software Foundation",
       "category": "cited-organisation",
-      "aliases": ["free software foundation", "fsf.org"],
+      "aliases": [
+        "free software foundation",
+        "fsf.org"
+      ],
       "reason": "Organisation cited by the committed AGPL license text.",
-      "evidence": ["LICENSE"]
+      "evidence": [
+        "LICENSE"
+      ]
     },
     {
       "name": "ClinVar",
       "category": "public-reference-dataset",
-      "aliases": ["clinvar"],
+      "aliases": [
+        "clinvar"
+      ],
       "reason": "Public variant reference dataset consumed by the research pipeline.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "dbSNP",
       "category": "public-reference-dataset",
-      "aliases": ["dbsnp"],
+      "aliases": [
+        "dbsnp"
+      ],
       "reason": "Public variant identifier dataset consumed by the application.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "gnomAD",
       "category": "public-reference-dataset",
-      "aliases": ["gnomad", "gnomad.broadinstitute.org"],
+      "aliases": [
+        "gnomad",
+        "gnomad.broadinstitute.org"
+      ],
       "reason": "Public population-frequency dataset consumed by report evidence.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "GWAS Catalog",
       "category": "public-reference-dataset",
-      "aliases": ["gwas", "gwas catalog"],
+      "aliases": [
+        "gwas",
+        "gwas catalog"
+      ],
       "reason": "Public association catalog consumed by the research pipeline.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "PGS Catalog",
       "category": "public-reference-dataset",
-      "aliases": ["pgs", "pgs catalog", "pgscatalog.org"],
+      "aliases": [
+        "pgs",
+        "pgs catalog",
+        "pgscatalog.org"
+      ],
       "reason": "Public polygenic-score catalog consumed by seeded score data.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "1000 Genomes Project",
       "category": "public-reference-dataset",
-      "aliases": ["1000 genomes", "internationalgenome.org"],
+      "aliases": [
+        "1000 genomes",
+        "internationalgenome.org"
+      ],
       "reason": "Public population-frequency reference consumed by ancestry computation.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "Natural Earth",
       "category": "public-reference-dataset",
-      "aliases": ["natural earth", "naturalearthdata.com", "naturalearth.s3.amazonaws.com"],
+      "aliases": [
+        "natural earth",
+        "naturalearthdata.com",
+        "naturalearth.s3.amazonaws.com"
+      ],
       "reason": "Public-domain 1:110m physical map data the ancestry map's region geometry is built from.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "Genome in a Bottle",
       "category": "public-reference-dataset",
-      "aliases": ["genome in a bottle", "giab"],
+      "aliases": [
+        "genome in a bottle",
+        "giab"
+      ],
       "reason": "Public benchmark sample shipped as the VCF acceptance fixture.",
-      "evidence": ["data/samples/PROVENANCE.md"]
+      "evidence": [
+        "data/samples/PROVENANCE.md"
+      ]
     },
     {
       "name": "Ensembl",
       "category": "public-reference-dataset",
-      "aliases": ["ensembl", "ensembl.org"],
+      "aliases": [
+        "ensembl",
+        "ensembl.org"
+      ],
       "reason": "Public assembly mapping and reference sequence source consumed by the application.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "ISOGG",
       "category": "public-reference-dataset",
-      "aliases": ["isogg", "isogg.org"],
+      "aliases": [
+        "isogg",
+        "isogg.org"
+      ],
       "reason": "Public Y-chromosome marker index used by the haplogroup reference data.",
-      "evidence": ["data/ref/haplogroups/PROVENANCE.md"]
+      "evidence": [
+        "data/ref/haplogroups/PROVENANCE.md"
+      ]
     },
     {
       "name": "PhyloTree",
       "category": "public-reference-dataset",
-      "aliases": ["phylotree", "phylotree.org"],
+      "aliases": [
+        "phylotree",
+        "phylotree.org"
+      ],
       "reason": "Public mitochondrial phylogeny source used by haplogroup reference data.",
-      "evidence": ["data/ref/haplogroups/PROVENANCE.md"]
+      "evidence": [
+        "data/ref/haplogroups/PROVENANCE.md"
+      ]
     },
     {
       "name": "HaploGrep",
       "category": "public-reference-dataset",
-      "aliases": ["haplogrep", "haplogrep.readthedocs.io"],
+      "aliases": [
+        "haplogrep",
+        "haplogrep.readthedocs.io"
+      ],
       "reason": "Public haplogroup reference implementation cited by provenance documentation.",
-      "evidence": ["data/ref/haplogroups/PROVENANCE.md"]
+      "evidence": [
+        "data/ref/haplogroups/PROVENANCE.md"
+      ]
     },
     {
       "name": "NCBI",
       "category": "cited-organisation",
-      "aliases": ["ncbi", "ncbi.nlm.nih.gov"],
+      "aliases": [
+        "ncbi",
+        "ncbi.nlm.nih.gov"
+      ],
       "reason": "Public data custodian cited by dataset and sample provenance.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "NIST",
       "category": "cited-organisation",
-      "aliases": ["nist", "nist.gov"],
+      "aliases": [
+        "nist",
+        "nist.gov"
+      ],
       "reason": "Public benchmark-data publisher cited by sample provenance.",
-      "evidence": ["data/samples/PROVENANCE.md"]
+      "evidence": [
+        "data/samples/PROVENANCE.md"
+      ]
     },
     {
       "name": "EMBL-EBI",
       "category": "cited-organisation",
-      "aliases": ["ebi", "ebi.ac.uk", "embl-ebi"],
+      "aliases": [
+        "ebi",
+        "ebi.ac.uk",
+        "embl-ebi"
+      ],
       "reason": "Public data infrastructure organisation cited by dataset licensing records.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "Broad Institute",
       "category": "cited-organisation",
-      "aliases": ["broad institute", "broadinstitute.org"],
+      "aliases": [
+        "broad institute",
+        "broadinstitute.org"
+      ],
       "reason": "Publisher of a consumed public population-frequency dataset.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "W3C",
       "category": "cited-organisation",
-      "aliases": ["w3c", "w3.org"],
+      "aliases": [
+        "w3c",
+        "w3.org"
+      ],
       "reason": "Standards organisation cited by accessibility documentation and test dependencies.",
-      "evidence": ["docs/acceptance-matrix.md"]
+      "evidence": [
+        "docs/acceptance-matrix.md"
+      ]
     },
     {
       "name": "ISO",
       "category": "cited-organisation",
-      "aliases": ["iso", "iso.org"],
+      "aliases": [
+        "iso",
+        "iso.org"
+      ],
       "reason": "Standards organisation cited by the security and data-handling documentation.",
-      "evidence": ["docs/architecture.md"]
+      "evidence": [
+        "docs/architecture.md"
+      ]
     },
     {
       "name": "National Society of Genetic Counselors",
       "category": "cited-organisation",
-      "aliases": ["nsgc", "nsgc.org"],
+      "aliases": [
+        "nsgc",
+        "nsgc.org"
+      ],
       "reason": "Professional directory source used for the counsellor referral artifact.",
-      "evidence": ["src/components/reports/support-panel.tsx"]
+      "evidence": [
+        "src/components/reports/support-panel.tsx"
+      ]
     },
     {
       "name": "Plus Bio",
       "category": "cited-organisation",
-      "aliases": ["plus bio", "plus.bio"],
+      "aliases": [
+        "plus bio",
+        "plus.bio"
+      ],
       "reason": "Related organisation named by the mandatory public disclosure and legal pages.",
-      "evidence": ["src/components/site/header.tsx"]
+      "evidence": [
+        "src/components/site/header.tsx"
+      ]
     },
     {
       "name": "DOI Foundation",
       "category": "cited-organisation",
-      "aliases": ["doi", "doi.org"],
+      "aliases": [
+        "doi",
+        "doi.org"
+      ],
       "reason": "Persistent scholarly-identifier resolver used by committed citations.",
-      "evidence": ["data/templates/basic-traits.json"]
+      "evidence": [
+        "data/templates/basic-traits.json"
+      ]
     },
     {
       "name": "IGV.js",
       "category": "dependency-platform",
-      "aliases": ["igv", "igv.js", "igv.org"],
+      "aliases": [
+        "igv",
+        "igv.js",
+        "igv.org"
+      ],
       "reason": "Installed genome-browser dependency used by the browse surface.",
-      "evidence": ["package.json"]
+      "evidence": [
+        "package.json"
+      ]
     },
     {
       "name": "YBrowse",
       "category": "public-reference-dataset",
-      "aliases": ["ybrowse", "ybrowse.org"],
+      "aliases": [
+        "ybrowse",
+        "ybrowse.org"
+      ],
       "reason": "Public Y-chromosome marker reference cited by the haplogroup provenance record.",
-      "evidence": ["data/ref/haplogroups/PROVENANCE.md"]
+      "evidence": [
+        "data/ref/haplogroups/PROVENANCE.md"
+      ]
     },
     {
       "name": "SNPedia",
       "category": "cited-organisation",
-      "aliases": ["snpedia", "snpedia.com"],
+      "aliases": [
+        "snpedia",
+        "snpedia.com"
+      ],
       "reason": "Named only in the dataset-license exclusion record that prevents incompatible ingestion.",
-      "evidence": ["docs/dataset-licenses.md"]
+      "evidence": [
+        "docs/dataset-licenses.md"
+      ]
     },
     {
       "name": "CPIC",
       "category": "cited-organisation",
-      "aliases": ["cpic", "cpicpgx.org", "api.cpicpgx.org", "files.cpicpgx.org", "clinical pharmacogenetics implementation consortium"],
+      "aliases": [
+        "cpic",
+        "cpicpgx.org",
+        "api.cpicpgx.org",
+        "files.cpicpgx.org",
+        "clinical pharmacogenetics implementation consortium"
+      ],
       "reason": "Public pharmacogenetics guideline body whose CC0 content and API were read for the Medicines category research.",
-      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+      "evidence": [
+        "docs/design/pharmacogenomics-research-2026-09-03.md"
+      ]
     },
     {
       "name": "ClinPGx",
       "category": "cited-organisation",
-      "aliases": ["clinpgx", "clinpgx.org", "www.clinpgx.org", "api.clinpgx.org", "pharmcat.clinpgx.org", "pharmcat"],
+      "aliases": [
+        "clinpgx",
+        "clinpgx.org",
+        "www.clinpgx.org",
+        "api.clinpgx.org",
+        "pharmcat.clinpgx.org",
+        "pharmcat"
+      ],
       "reason": "Public pharmacogenomics knowledge base and reference-caller documentation cited by the Medicines category research.",
-      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+      "evidence": [
+        "docs/design/pharmacogenomics-research-2026-09-03.md"
+      ]
     },
     {
       "name": "PharmGKB",
       "category": "cited-organisation",
-      "aliases": ["pharmgkb", "pharmgkb.org", "www.pharmgkb.org", "api.pharmgkb.org"],
+      "aliases": [
+        "pharmgkb",
+        "pharmgkb.org",
+        "www.pharmgkb.org",
+        "api.pharmgkb.org"
+      ],
       "reason": "Public pharmacogenomics knowledge base whose licence terms were read for the Medicines category research.",
-      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+      "evidence": [
+        "docs/design/pharmacogenomics-research-2026-09-03.md"
+      ]
     },
     {
       "name": "PharmVar",
       "category": "cited-organisation",
-      "aliases": ["pharmvar", "pharmvar.org", "www.pharmvar.org"],
+      "aliases": [
+        "pharmvar",
+        "pharmvar.org",
+        "www.pharmvar.org"
+      ],
       "reason": "Public pharmacogene allele registry whose terms the Medicines category research could not read; recorded as unverified.",
-      "evidence": ["docs/design/pharmacogenomics-research-2026-09-03.md"]
+      "evidence": [
+        "docs/design/pharmacogenomics-research-2026-09-03.md"
+      ]
     },
     {
       "name": "PLOS article host",
       "category": "cited-organisation",
-      "aliases": ["journals.plos.org"],
+      "aliases": [
+        "journals.plos.org"
+      ],
       "reason": "Primary publisher host for the Han pigmentation study read in the SLC45A2 source review.",
-      "evidence": ["docs/sources/reviews/batch-04/slc45a2-independent-review.md"]
+      "evidence": [
+        "docs/sources/reviews/batch-04/slc45a2-independent-review.md"
+      ]
     },
     {
       "name": "Wiley article host",
       "category": "cited-organisation",
-      "aliases": ["onlinelibrary.wiley.com"],
+      "aliases": [
+        "onlinelibrary.wiley.com"
+      ],
       "reason": "Primary publisher summary used to verify the Spanish questionnaire study's limited claim scope.",
-      "evidence": ["docs/sources/reviews/batch-04/slc45a2-independent-review.md"]
+      "evidence": [
+        "docs/sources/reviews/batch-04/slc45a2-independent-review.md"
+      ]
     },
     {
       "name": "NEJM article host",
       "category": "cited-organisation",
-      "aliases": ["www.nejm.org"],
+      "aliases": [
+        "www.nejm.org"
+      ],
       "reason": "Primary publisher host for the journal articles already cited in the autoimmune report seeds.",
-      "evidence": ["data/templates/autoimmune.json"]
+      "evidence": [
+        "data/templates/autoimmune.json"
+      ]
     },
     {
       "name": "Contributor Covenant",
       "category": "cited-organisation",
-      "aliases": ["contributor covenant", "contributor-covenant.org", "www.contributor-covenant.org"],
+      "aliases": [
+        "contributor covenant",
+        "contributor-covenant.org",
+        "www.contributor-covenant.org"
+      ],
       "reason": "Organisation cited by the committed Code of Conduct text; version 2.1 requires attribution with a link.",
-      "evidence": ["CODE_OF_CONDUCT.md"]
+      "evidence": [
+        "CODE_OF_CONDUCT.md"
+      ]
+    },
+    {
+      "name": "NHGRI",
+      "category": "cited-organisation",
+      "aliases": [
+        "nhgri",
+        "genome.gov",
+        "www.genome.gov",
+        "national human genome research institute",
+        "genome-wide association",
+        "genome-wide association studies"
+      ],
+      "reason": "Public genomics reference glossary cited for glossary definitions. Its pages are the source for terms in data/glossary-citations.json, and the snapshots under docs/sources/glossary/ record its page titles verbatim, which is why the organisation-shape aliases are here: distorting recorded evidence to satisfy a name rule would defeat the point of keeping it.",
+      "evidence": [
+        "docs/sources/glossary/README.md",
+        "data/glossary-citations.json"
+      ]
     }
   ]
 }
