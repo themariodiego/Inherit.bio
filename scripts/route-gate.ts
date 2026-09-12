@@ -102,6 +102,14 @@ const BROWSER_TESTS = "e2e";
  *               invalidate all three n/a declarations. Confirmed by adding a
  *               synthetic `copilot_ai_analysis` capability: the gate fails and
  *               names those three routes.
+ *   131 -> 130  a proof again, and the LAST `jurisdiction-unavailable` pair
+ *               the register requires: `/overview`. Its carrier line refuses
+ *               only in State D, with a mutual `family.heritability` grant and
+ *               the domain gate passed, so the test lives in
+ *               `e2e/family-health-picture.spec.ts` where that fixture already
+ *               exists rather than duplicating the suite's most expensive
+ *               setup. Every one of the nine states the register declares for
+ *               `jurisdiction-unavailable` is now proven in a browser.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -112,7 +120,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 131;
+const UNPROVEN_ROUTE_STATE_PAIRS = 130;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

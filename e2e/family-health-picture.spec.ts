@@ -602,6 +602,66 @@ test("the Overview does not advertise a clinical match from unbound reference la
 });
 
 /**
+ * `/overview jurisdiction-unavailable`, and it belongs in THIS file because of
+ * what the state costs to reach. The Overview's carrier line renders only in
+ * State D, with a self subject, at least one relative sharing
+ * `family.heritability` in both directions, and the domain's Tier-2 gate
+ * passed in this session. Nothing above that list is a shortcut: it is two
+ * real accounts, two prepared uploads and two signed grants, which is exactly
+ * the fixture the ten tests above already build. Rebuilding it in a
+ * `.nojurisdiction.spec.ts` of its own would have duplicated the most
+ * expensive setup in the suite to assert one sentence.
+ *
+ * It sits here, before the withdrawal tests below start revoking grants, and
+ * it reads from the OFF server while the fixture was built on this one. One
+ * database stands behind both and cookies are host-scoped rather than
+ * port-scoped, so the session and the passed gate carry across —
+ * `e2e/genome-family.nojurisdiction.spec.ts` uses the same crossing in the
+ * other direction.
+ *
+ * A FIFTH REFUSAL SHAPE. The three `/genome/[subject]/…` routes replace the
+ * page; `/family/[person]/permissions` adds a line to its header;
+ * `/family/[person]` fills the results slot; `/family/portrait/[pairId]`
+ * replaces its one output slot. The Overview does none of those: it keeps
+ * every other finding and refuses ONE line, because a jurisdiction that has
+ * not reviewed carrier matching has said nothing about the rest of a person's
+ * own genome. Traced at `overview/page.tsx:393` before it was titled.
+ */
+test("/overview jurisdiction-unavailable: the carrier line refuses in words while every other finding stays", async ({ page }) => {
+  const OFF = "http://localhost:3101";
+  await signIn(page, A.email, A.password);
+  await passGate(page);
+
+  // The control first: on THIS server the same account, same session and same
+  // grants reach the carrier line's own surface. Without it, a refusal on the
+  // other server could be an unreached state rather than a refused one.
+  await page.goto("/overview");
+  await expect(page.locator('[data-slot="carrier-jurisdiction"]')).toHaveCount(0);
+
+  const response = await page.goto(`${OFF}/overview`);
+  expect(response?.status()).toBe(200);
+  const refusal = page.locator('[data-slot="carrier-jurisdiction"]');
+  await expect(refusal).toHaveCount(1);
+  await expect(refusal).toContainText("Inherit cannot show carrier matches for your family here.");
+
+  // The refusal says THAT it cannot show them, never HOW MANY there were.
+  // Whether two people in a family carry a change in the same gene is a fact
+  // about their DNA, and a refusal that leaked it in either direction would be
+  // worse than the analysis. So the sentence carries no number at all - the
+  // first draft of this test asserted the refusal did not contain "carrier
+  // match", which its own copy says, and caught nothing.
+  await expect(refusal).not.toContainText(/\d/);
+  await expect(page.locator("[data-subject-pair]")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /carrier match to look at/ })).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText("Two people carry a change in the same gene.");
+
+  // And the rest of the Overview is untouched. This is the point of the
+  // shape: one restricted capability is refused, not the account's own genome.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator("main a[href^='/genome/']").first()).toBeVisible();
+});
+
+/**
  * `/family/health-picture partial-coverage`, the same both-halves reading used
  * for `/genome/[subject]/data/browser` and `/family/[person]`: the page shows
  * some content AND names the rest absent, in one view, and this test asserts

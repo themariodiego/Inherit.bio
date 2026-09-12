@@ -1976,3 +1976,39 @@ so.
 The general rule: when a register stops requiring a proof because of a fact
 about another file, assert the fact where it lives. A comment saying "this
 holds today" is not a check.
+
+## 2026-09-12 — Every declared jurisdiction refusal is now proven in a browser
+
+`jurisdiction-unavailable` was the largest single-state gap in the ratchet on
+2026-09-11: nine of its declared pairs unproven, and a false proof among the
+ones that counted. It is now empty, and the closing is worth recording as a
+shape rather than a milestone.
+
+Nine pairs closed, and only six of them were tests. Three were the register
+asking for something that cannot exist, which is a different event and is
+logged separately in `scripts/route-gate.ts` so a reader can tell progress from
+scope reduction.
+
+The six proofs needed five DIFFERENT refusal shapes, and every one was traced
+in the page before a title claimed it:
+
+- `/genome/[subject]`, its `data` and `data/browser` children replace the page;
+- `/family/[person]/permissions` keeps its page and adds a header line, because
+  granting is a capability and pausing is a right;
+- `/family/[person]` fills the results slot with the register's sentence;
+- `/family/portrait/[pairId]` replaces its one output slot inside an intact
+  frame;
+- `/overview` refuses ONE LINE and keeps every other finding, because a
+  jurisdiction that has not reviewed carrier matching has said nothing about
+  the rest of a person's own genome.
+
+A single shared assertion helper would have been wrong for four of the six. The
+reason a title in this repository is a claim is that the five differ; a test
+that asserted "a refusal appears somewhere" would pass on a page that showed
+the findings underneath it.
+
+The last one also shows where a proof should live. `/overview`'s carrier line
+needs State D, two prepared uploads and a mutual grant, so its test went into
+`e2e/family-health-picture.spec.ts`, which already builds that. A
+`.nojurisdiction.spec.ts` of its own would have duplicated the most expensive
+fixture in the suite to assert one sentence.
