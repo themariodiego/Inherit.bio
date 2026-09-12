@@ -739,8 +739,33 @@ upload first; they need the model daemon (`CANONICAL_COPILOT_CONTROL_URL`)
 that this container cannot start, so the title waits for an environment that
 can run it rather than being written unrun.
 
-**What is asked of the operator: sign or refuse these 3**, taking the count of
-proposed not-applicable pairs to 32 alongside item 8's 29.
+### And `public-embryo-analysis`, which should be one state, not seven
+
+`/embryo-analysis` is the only route on this profile, and **it has exactly one
+render**. That render is already proven, correctly, as
+`jurisdiction-unavailable` (`e2e/embryo-analysis.spec.ts`). The profile
+declares six more states on it.
+
+Item 8 proposed `empty` and `processing` for the usual reason: 35 lines of
+public copy with no form, no client state and no fetch. The remaining four go
+the same way, and one of them for a sharper reason than the rest.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/embryo-analysis` | `complete` | The page's one render is already named `jurisdiction-unavailable`. Counting the same render twice would inflate the proven column without proving anything. |
+| `/embryo-analysis` | `not-covered` | No file, no viewer, no coverage. The page describes the catalog, not a person. |
+| `/embryo-analysis` | `partial-coverage` | The same. |
+| `/embryo-analysis` | `consent-required` | The page asks for nothing and gates nothing; its register profile carries `zeroUserDataRule`. |
+
+**The clean expression is `supported: ["jurisdiction-unavailable"]`** on the
+`public-embryo-analysis` profile, with the other six recorded as
+not-applicable and the reasons above.
+
+**What is asked of the operator: sign or refuse this item's 7** — the two auth
+`complete` pairs, `/settings/people complete`, and the four above. That takes
+the total proposed not-applicable across this document to 36: item 8's 29 and
+item 10's 7. The `/embryo-analysis` route contributes six of the 36, split
+across the two items because it was read twice; nothing is counted twice.
 
 ## What happens after signature
 

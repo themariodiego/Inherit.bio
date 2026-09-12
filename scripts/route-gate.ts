@@ -199,6 +199,13 @@ const BROWSER_TESTS = "e2e";
  *               first and need the model daemon this container cannot start.
  *               `/settings/people complete` joins corrections item 10 as
  *               not-applicable: the page is not built.
+ *   110 -> 109  `/future-person/claim complete`. Deliberately not the
+ *               `assertDocumentComplete` helper the legal documents use: this
+ *               is a short rights surface, not a document, and what is worth
+ *               pinning is its two promises. The second is checked
+ *               STRUCTURALLY - the page says it accepts no claim papers or
+ *               personal details, so the test asserts there is no form, no
+ *               field and no control that could take any.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -209,7 +216,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 110;
+const UNPROVEN_ROUTE_STATE_PAIRS = 109;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

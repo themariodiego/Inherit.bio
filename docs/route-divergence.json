@@ -202,6 +202,7 @@
     "/files/upload complete",
     "/files/upload consent-required",
     "/files/upload processing",
+    "/future-person/claim complete",
     "/genome/[subject] jurisdiction-unavailable",
     "/genome/[subject] processing",
     "/genome/[subject]/ancestry complete",
