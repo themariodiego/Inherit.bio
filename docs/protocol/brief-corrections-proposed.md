@@ -161,8 +161,42 @@ response contract.
 
 ## 4. Routes that cannot reach a fault should not declare `error`
 
-**Decision taken by the operator 2026-09-11.** Recorded here because the
-register cannot act on it until the brief says so.
+**SIGNED AND APPLIED 2026-09-12.** The substance was decided on 11 September
+and the signature followed on the 12th; the section is kept as the record of
+why, not as an open proposal.
+
+What was actually done, so a reader can check it rather than trust it:
+
+1. The rule went into the brief at **G2.2**, not into §2. §2 has no route/state
+   vocabulary block to sit beside — G2.2 is where the eight states and the
+   `n/a` rule are actually stated, and the new sentence is an explicit
+   exception to G2.2's own "never an implementation choice", so it has to be
+   read next to it or it reads as a contradiction.
+2. `error` came off **nine** `stateProfiles`, one more than the eight that
+   carry routes: `public-capability-marketing` has no routes today, and
+   leaving an unreachable state declared on an unused profile is the same
+   defect waiting for its first route.
+3. Each profile gained a `notApplicable.error` reason, because
+   `src/lib/claims/capture-plan.ts` requires every state to be either
+   supported or exempted with a non-empty reason. The reasons name what that
+   profile's routes do with bad input, then the shared measurement.
+4. `stateProjection.error` was removed from `public-embryo-analysis`. A
+   projection line for a state the profile no longer declares is exactly the
+   kind of leftover that makes a register describe a product that is not
+   there.
+5. The measurement was **re-run on 2026-09-12** rather than carried over: 28
+   files call `notFound()` (19 on 11 September — the convention has spread),
+   four error boundaries exist, and no fault, injection or simulate seam
+   appears anywhere in `src/` or `scripts/`.
+6. The brief hash moved, so `briefSha256` in the register was re-pinned to
+   `f686d040…` and `gate:routes` passes against it. This is the mechanism
+   item 0 installed doing its job on its first real brief edit.
+
+**Effect, measured rather than predicted:** required pairs **288 -> 226**,
+`UNPROVEN_ROUTE_STATE_PAIRS` **214 -> 152**, `provenRouteStates` unchanged at
+**74**. The ledger comparison is what proves the drop came from the
+denominator; a ratchet falling 62 in one commit would otherwise be
+indistinguishable from 62 new tests.
 
 **Add**, in §2 beside the route/state vocabulary:
 
@@ -303,6 +337,50 @@ is to build the gate rather than to drop the declaration — and that is a
 product decision, not a register tidy-up.
 
 ---
+
+---
+
+## 7. A conflict items 5 and 6 did not account for, found while applying them
+
+**Not a proposal. Found on 2026-09-12 while carrying out the signatures on
+items 5 and 6, and it blocks part of both.**
+
+G2.2 ends with a list the two items walk straight into:
+
+> Four `n/a` declarations are forbidden outright: `not-covered` and
+> `partial-coverage` on any route rendering a result derived from an uploaded
+> file; `consent-required` on any Family or Embryo Analysis route;
+> `jurisdiction-unavailable` on any route whose capability appears in
+> `data/jurisdictions.json`.
+
+So the brief already forbids exactly the tidy-up items 5 and 6 propose, for a
+subset of their routes:
+
+- **Item 6** would drop `consent-required` from nine Family or Embryo Analysis
+  routes — `/embryo-analysis`, `/embryos`, `/embryos/request-data`,
+  `/embryos/upload`, `/family`, `/family/[person]`,
+  `/family/[person]/permissions`, `/family/health-picture`, `/family/invite`.
+  G2.2 forbids that `n/a` outright. The brief's position is that these routes
+  **must** implement the state, which makes the correction for them "build the
+  gate", not "drop the declaration" — the caveat item 6 raised itself, now with
+  a specific rule behind it.
+- **Item 5** would drop `jurisdiction-unavailable` from routes whose capability
+  may well appear in `data/jurisdictions.json`; `/family/[person]` is the clear
+  case, since it renders a relative's data under
+  `third_party_adult_analysis`.
+
+**This was missed when items 5 and 6 were drafted**, and the miss has a
+shape worth naming: both were measured against the *product* — what each page
+component does — and neither was measured against the *brief*, which is the
+thing that says what the product owes. A correction to the register that the
+brief forbids is not a correction.
+
+**Nothing is dropped from those routes.** The non-conflicting remainder of
+each item is applied; the conflicting subset waits, and needs one of two
+answers from the operator: amend G2.2's forbidden list, or build the gates.
+Put separately rather than assumed either way, because "the brief requires a
+consent gate on every Family route" is a product commitment, not a register
+detail.
 
 ## What happens after signature
 

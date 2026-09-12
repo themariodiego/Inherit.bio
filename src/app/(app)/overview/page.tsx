@@ -230,6 +230,10 @@ export default async function OverviewPage() {
   // change, and it carries the pair, never a value. Today no reference
   // position has a clinical classification, so this costs one query.
   const carrierLines: { pair: [string, string]; count: number }[] = [];
+  // The register's own sentence for a refused carrier capability, or null when
+  // nothing is being withheld. A refusal used to leave no trace here at all,
+  // which made "switched off" and "no matches" the same empty space.
+  let carrierRefusal: string | null = null;
   const sharedSideBySide = family.filter(
     (person: FamilyPerson) =>
       viewerMaySee(person, "family.heritability") &&
@@ -246,6 +250,13 @@ export default async function OverviewPage() {
       familyCapability(user.id, contributors, "carrier_match"),
     ]);
     const allowed = decisions.every(permits);
+    // Say so rather than showing nothing. The first refusing decision answers,
+    // in the order the register checks them, so the broadest reason leads; the
+    // sentence is the catalog's, never one this page composes. It states that
+    // Inherit cannot show these matches, and deliberately not whether there
+    // were any — that is a fact about the family's DNA and the refusal must
+    // not leak it in either direction.
+    if (!allowed) carrierRefusal = decisions.find((decision) => !permits(decision))!.userFacingCopy;
     const refVariants = allowed ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
     for (const person of refVariants.length > 0 ? sharedSideBySide : []) {
@@ -379,6 +390,15 @@ export default async function OverviewPage() {
             familyRows.length > 0 ? (
               <>
                 <PeopleList people={familyRows} viewerAccountId={user.id} />
+                {carrierRefusal ? (
+                  <p
+                    role="status"
+                    data-slot="carrier-jurisdiction"
+                    className="max-w-prose text-base leading-relaxed text-ink"
+                  >
+                    {STATE_D.carrierUnavailable} {carrierRefusal}
+                  </p>
+                ) : null}
                 {carrierLines.map((line) => (
                   <p
                     key={line.pair.join(":")}

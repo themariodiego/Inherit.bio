@@ -33,14 +33,22 @@ import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
  * one `e2e/family.spec.ts` binds, and `mode: "serial"` below keeps the pairing
  * ahead of the tests that depend on it.
  *
- * WHAT IS DELIBERATELY NOT CLAIMED. Only these three routes are titled, because
- * only these three were traced to the branch that renders the refusal. Six more
- * routes implement a jurisdiction refusal by other means (`familyCapability`
- * on `/family`, `/family/[person]/permissions`, `/family/health-picture`,
- * `/family/portrait/[pairId]` and `/overview`, and a separate guard on
- * `/embryo-analysis`); proving those needs their own tracing, not a wider title
- * here. A title in this repository IS a claim: `scripts/route-gate.ts` counts a
- * (route, state) pair as proven when a test title names both as whole tokens.
+ * `/family/[person]/permissions` was added on 2026-09-12 and is the fourth
+ * route here, for the same reason as the first three: its guard needs a real
+ * family person, so it needs this file's pairing. Its refusal has a DIFFERENT
+ * SHAPE, traced before it was titled — see the test.
+ *
+ * WHAT IS DELIBERATELY NOT CLAIMED. `/family` and `/family/health-picture`
+ * are proven in `e2e/family-hub.nojurisdiction.spec.ts` instead, because
+ * tracing showed their guards resolve to the viewer's own unset code when the
+ * family is empty and need no pairing at all. `/embryo-analysis` is proven
+ * signed out in `e2e/embryo-analysis.spec.ts`. That leaves
+ * `/family/portrait/[pairId]`, which needs a `family_pairs` row and therefore
+ * a mutual portrait grant, and `/overview`, whose refusal was only built on
+ * 2026-09-12 and needs the full State-D fixture to reach. Neither is titled
+ * anywhere yet. A title in this repository IS a claim: `scripts/route-gate.ts`
+ * counts a (route, state) pair as proven when a test title names both as whole
+ * tokens.
  */
 
 const runId = randomUUID();
@@ -51,6 +59,16 @@ const B = { email: `genome-family-b-${runId}@e2e.local`, password: "e2e-genome-f
 const MAIN = "http://localhost:3100";
 
 const REFUSAL_HEADING = "Not available in this jurisdiction yet";
+/**
+ * The register's own sentence, which `/family/[person]/permissions` prints
+ * directly instead of using the `<CapabilityUnavailable>` frame the three
+ * `/genome/[subject]/…` routes render. Retyped rather than imported from
+ * `data/jurisdictions.json`, so the assertion checks that the catalog's
+ * sentence reaches the reader rather than agreeing with the catalog by
+ * construction.
+ */
+const REFUSAL_SENTENCE =
+  "This part of Inherit is not available here because its legal review is not complete.";
 const NOT_ABOUT_YOU = "It says nothing about you or anyone else.";
 const NOTHING_RECORDED = "We create no analysis or consent record.";
 
@@ -198,4 +216,40 @@ test("/genome/[subject]/reports/[slug] jurisdiction-unavailable: the subject is 
   // The refusal is about the subject, so an unknown slug refuses identically
   // rather than answering not-found and revealing which reports exist.
   await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/reports/no-such-report-exists`);
+});
+
+test("/family/[person]/permissions jurisdiction-unavailable: grants refuse while the rights stay", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  const response = await page.goto(`/family/${pairedSegment}/permissions`);
+  expect(response?.status()).toBe(200);
+
+  // A DIFFERENT SHAPE FROM THE THREE ABOVE, and the whole reason this route
+  // was traced before being titled. Those three replace the page with a
+  // refusal. This one does not, on purpose: the register calls its mode
+  // "mixed" because granting is a capability the jurisdiction decides while
+  // pausing and stopping are rights that it does not. So the page keeps
+  // rendering and the refusal is one line in its header.
+  const refusal = page.getByRole("status").filter({ hasText: REFUSAL_SENTENCE });
+  await expect(refusal).toHaveCount(1);
+
+  // The capability half: not one permission is settable. `permission-control`
+  // is the button a settable row renders, and a row without an action renders
+  // `permission-locked` in its place, so this is the refusal reaching every
+  // row rather than the page merely printing a sentence above working
+  // switches.
+  await expect(page.locator('[data-slot="permission-control"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="permission-row"]').first()).toBeVisible();
+  await expect(page.locator('[data-slot="permission-locked"]').first()).toBeVisible();
+
+  // The rights half, which is the part that would be a real harm to get
+  // wrong: an unreviewed jurisdiction must never trap someone in a sharing
+  // arrangement they want out of.
+  await expect(page.getByRole("button", { name: "Pause sharing" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stop sharing" })).toBeVisible();
+
+  // NOT PROVEN HERE, said rather than left as a silent gap: the page's own
+  // comment claims resume is jurisdiction-guarded alongside grant. This
+  // pairing is not paused, so the resume control never renders and nothing
+  // here tests that claim either way.
 });

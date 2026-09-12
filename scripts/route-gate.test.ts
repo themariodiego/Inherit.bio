@@ -66,7 +66,11 @@ describe("the route gate holds the register to the code", () => {
     expect(result.matchedEndpointCount).toBeGreaterThan(30);
     expect(result.registeredRedirectCount).toBe(10);
     expect(result.checkedKindCount).toBeGreaterThan(90);
-    expect(result.requiredStateCount).toBe(288);
+    // 288 -> 226 -> 216 on 2026-09-12: corrections item 4 took `error` off nine
+    // `stateProfiles`, then `consent-required` and `jurisdiction-unavailable` came
+    // off `account-management`. Pinned exactly rather than as a floor, so a profile
+    // quietly losing a state fails here instead of reading as progress.
+    expect(result.requiredStateCount).toBe(216);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
   });
 

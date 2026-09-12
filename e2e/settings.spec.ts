@@ -75,21 +75,41 @@ test("/settings/consents empty: a new account holds no grants, and the page says
 });
 
 /**
- * `/settings/people` is eight lines that return `CapabilityUnavailable`
- * unconditionally, and that component's own heading is "Not available in this
- * jurisdiction yet". So this is the page's only render, and naming it is not a
- * component state standing in for a route state — there is no other state for
- * it to stand in for.
+ * THIS TEST USED TO PROVE A LIE, and the way it did it is worth keeping.
+ *
+ * It was titled "/settings/people jurisdiction-unavailable: its only render
+ * refuses on jurisdiction", which `scripts/route-gate.ts` counted as one of
+ * the proven (route, state) pairs. The assertions all passed. The page really
+ * did render "Not available in this jurisdiction yet" — because it returned
+ * `<CapabilityUnavailable>` unconditionally, with no jurisdiction guard on the
+ * route at all. The feature had simply never been built, and every visitor was
+ * told a legal review was missing.
+ *
+ * The old comment here reasoned that naming the state was fair because this is
+ * the page's only render and there was "no other state for it to stand in
+ * for". That is true and beside the point: a route with no jurisdiction guard
+ * cannot be in the jurisdiction-unavailable state, however few other states it
+ * has. What the title certified was that a false sentence renders.
+ *
+ * So the pair is gone from `docs/route-divergence.json` (74 proven -> 73) and
+ * `jurisdiction-unavailable` is gone from the `account-management` profile.
+ * This title deliberately names NO (route, state) pair: the page's real state
+ * is "not written yet", the register has no such state, and inventing a proof
+ * for one is what got us here.
  */
-test("/settings/people jurisdiction-unavailable: its only render refuses on jurisdiction", async ({ page }) => {
+test("the People settings page says it is not built, and blames no jurisdiction", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/settings/people");
 
   await expect(page.locator("main h1")).toHaveText("People and relationships");
-  const refusal = page.getByRole("status");
-  await expect(refusal).toContainText("Not available in this jurisdiction yet");
-  await expect(refusal, "the refusal says it is about the site, not the reader")
-    .toContainText("It says nothing about you or anyone else");
-  await expect(refusal, "and that nothing was recorded").toContainText("We create no analysis or consent record");
-  await expect(refusal.getByRole("link", { name: "Go back" })).toHaveAttribute("href", "/settings");
+  const notice = page.getByRole("status");
+  await expect(notice).toContainText("Not built yet");
+  await expect(notice, "it says what the page will do once it exists")
+    .toContainText("list the people you share with");
+  await expect(notice, "and names what is NOT the reason")
+    .toContainText("No law and nothing about you is holding it back");
+  // The regression this guards: the jurisdiction sentence must not come back
+  // on a route that has no jurisdiction guard to justify it.
+  await expect(page.getByText("Not available in this jurisdiction yet")).toHaveCount(0);
+  await expect(notice.getByRole("link", { name: "Go back" })).toHaveAttribute("href", "/settings");
 });

@@ -51,8 +51,33 @@ const BROWSER_TESTS = "e2e";
  * fails when a proof is lost and it fails when a proof is added, so every
  * browser test that covers a new (route, state) pair has to bring this number
  * down with it and no later change can quietly give one back.
+ *
+ * It can also fall because the register stops requiring a pair, and that is a
+ * different event which must never be mistaken for a proof. Both happened on
+ * 2026-09-12, neither because a test was written:
+ *
+ *   214 -> 152  corrections item 4 signed; `error` off nine `stateProfiles`;
+ *               required 288 -> 226, proven unchanged at 74.
+ *   152 -> 143  `consent-required` and `jurisdiction-unavailable` off the
+ *               `account-management` profile; required 226 -> 216, and proven
+ *               74 -> 73 because one of those pairs was a FALSE proof.
+ *   143 -> 139  four real proofs, and the only one of the three moves that
+ *               was: `/embryo-analysis`, `/family`, `/family/health-picture`
+ *               and `/family/[person]/permissions` in their
+ *               jurisdiction-unavailable state, each traced to the branch that
+ *               renders its refusal and each passing in a browser before this
+ *               number moved.
+ *
+ * That last one is the case this comment exists for. `/settings/people
+ * jurisdiction-unavailable` was counted as proven by a passing browser test.
+ * The route has no jurisdiction guard; the page returned the refusal component
+ * unconditionally because the feature was never built, so the title certified
+ * that a false sentence renders. A ratchet cannot detect that on its own - the
+ * number would have looked healthy forever. What it can do is keep the ledger
+ * comparison separate, so a drop is always attributable to a named cause
+ * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 214;
+const UNPROVEN_ROUTE_STATE_PAIRS = 139;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
