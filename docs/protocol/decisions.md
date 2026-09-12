@@ -1952,3 +1952,27 @@ the specific row because the failure was reported on the specific row. Widening
 the observation to the whole column took one run and answered it. When a
 guess about a mechanism fails twice, stop guessing at the mechanism and print
 the neighbourhood.
+
+## 2026-09-12 — Dropping a proof requirement needs the fact behind it pinned
+
+Corrections item 5 signed the drop of `jurisdiction-unavailable` from routes
+with no jurisdiction guard, and named the profile split as the remaining step
+for `/files`, `/files/upload` and `/copilot/[scope]`. Applying it removes a
+proof requirement, so it was put to the operator rather than taken, and the
+answer was to apply it AND pin the fact it rests on.
+
+The fact: all twelve restricted capabilities in `data/jurisdictions.json` are
+Family or Embryo Analysis capabilities, and those three routes surface none of
+them. G2.2 forbids the `n/a` only where a route's capability IS in that file.
+
+The risk the pin closes: the gate's floor was "at least 12", which a THIRTEENTH
+capability passes. An AI or storage restriction added later would silently
+invalidate three declarations and nothing would notice. The list is now pinned
+exactly, and the failure message names the three routes so the next reader
+knows what the change costs rather than editing the array to match. Confirmed
+by adding a synthetic `copilot_ai_analysis` capability: the gate fails and says
+so.
+
+The general rule: when a register stops requiring a proof because of a fact
+about another file, assert the fact where it lives. A comment saying "this
+holds today" is not a check.

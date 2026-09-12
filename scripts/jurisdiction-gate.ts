@@ -315,6 +315,39 @@ export function runJurisdictionGate(
     }
   }
 
+  // --- The register coupling: this list decides which routes may say n/a ----
+  //
+  // `docs/route-register.json` gives `/files`, `/files/upload` and
+  // `/copilot/[scope]` the `own-product-result` profile, whose `notApplicable`
+  // for `jurisdiction-unavailable` rests on one fact: every restricted
+  // capability here is a Family or Embryo Analysis one, and those three routes
+  // surface none of them. G2.2 permits that n/a only while the fact holds.
+  //
+  // A floor of "at least 12" cannot protect it — a THIRTEENTH capability
+  // passes a floor and silently invalidates three declarations. So the list is
+  // pinned exactly. If this fails, do not edit the array to match: read the new
+  // capability, decide whether any of those three routes surfaces it, and move
+  // them back to `product-result` if so. The failure is the question being
+  // asked, not a chore.
+  const PINNED_CAPABILITIES = [
+    "third_party_adult_analysis", "family_heritability", "family_portrait",
+    "family_portrait_abo", "family_portrait_rh", "family_portrait_red_hair",
+    "family_portrait_lactase_persistence", "family_portrait_earwax",
+    "embryo_analysis", "embryo_single_locus", "embryo_statistical_estimate",
+    "carrier_match",
+  ];
+  if (JSON.stringify(capabilities) !== JSON.stringify(PINNED_CAPABILITIES)) {
+    const added = capabilities.filter((capability) => !PINNED_CAPABILITIES.includes(capability));
+    const gone = PINNED_CAPABILITIES.filter((capability) => !capabilities.includes(capability));
+    failures.push(
+      "restricted capabilities changed, which decides whether /files, /files/upload and " +
+        "/copilot/[scope] may declare jurisdiction-unavailable not-applicable" +
+        (added.length > 0 ? `; added ${added.join(", ")}` : "") +
+        (gone.length > 0 ? `; removed ${gone.join(", ")}` : "") +
+        (added.length === 0 && gone.length === 0 ? "; the order differs" : ""),
+    );
+  }
+
   // --- Floor guards: an empty read must not look like a clean product -------
   if (capabilities.length < 12) {
     failures.push(`floor: ${capabilities.length} restricted capabilities read, expected at least 12`);

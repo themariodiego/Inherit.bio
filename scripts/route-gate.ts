@@ -85,6 +85,23 @@ const BROWSER_TESTS = "e2e";
  *               Portrait on creates. It was believed to need the whole
  *               `e2e/portrait.spec.ts` fixture until the page was read -
  *               `!allowed` is its FIRST branch, so a `pending` pair is enough.
+ *   134 -> 131  NOT a proof, and separated for that reason: the register
+ *               stopped requiring three pairs. `/files`, `/files/upload` and
+ *               `/copilot/[scope]` moved to the new `own-product-result`
+ *               profile, which is `product-result` without
+ *               `jurisdiction-unavailable`. They surface no capability that
+ *               appears in `data/jurisdictions.json` - all twelve restricted
+ *               ones are Family or Embryo Analysis - so G2.2 permits the n/a
+ *               here where it forbids it for `/family/[person]`. Corrections
+ *               item 5, signed 2026-09-12, names this profile split as its
+ *               remaining step. Required 216 -> 213; proven unchanged at 82.
+ *
+ *               The declaration was not simply dropped. `scripts/jurisdiction-gate.ts`
+ *               now pins the twelve capabilities EXACTLY, because a floor of
+ *               "at least 12" would let a thirteenth pass and silently
+ *               invalidate all three n/a declarations. Confirmed by adding a
+ *               synthetic `copilot_ai_analysis` capability: the gate fails and
+ *               names those three routes.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -95,7 +112,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 134;
+const UNPROVEN_ROUTE_STATE_PAIRS = 131;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

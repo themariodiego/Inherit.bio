@@ -291,10 +291,34 @@ confused with a broken session.
 `jurisdiction-unavailable` from the declared states of the eight that have no
 guard, and BUILD the capability on the genome trio, which is what the operator
 chose. Of the eight, the five `account-management` routes lost the declaration
-on 2026-09-12; `/files`, `/files/upload`, `/copilot/[scope]` and
-`/family/[person]` share the `product-result` profile with routes that do
-implement the state, so dropping it for them needs the profile split — and
-`/family/[person]` is separately blocked by G2.2 (see item 7).
+on 2026-09-12.
+
+**APPLIED IN FULL 2026-09-12, and one route left the list because the list was
+wrong about it.** `/files`, `/files/upload` and `/copilot/[scope]` now take a
+new `own-product-result` profile — `product-result` without
+`jurisdiction-unavailable` — which is the profile split named above. The
+ratchet falls 134 → 131 as the register requiring less, recorded separately
+from the proofs in `scripts/route-gate.ts`.
+
+The n/a rests on one fact rather than on judgement: every one of the twelve
+restricted capabilities in `data/jurisdictions.json` is a Family or Embryo
+Analysis capability, and those three routes surface none of them. Because the
+fact could change, `scripts/jurisdiction-gate.ts` now pins that list EXACTLY —
+the previous floor of "at least 12" would have let a thirteenth capability pass
+and silently invalidate all three declarations. Adding a synthetic
+`copilot_ai_analysis` capability makes the gate fail and name the three routes,
+which is how the pin was confirmed rather than assumed.
+
+**`/family/[person]` is NOT in that group, and this document had it wrong.** It
+was listed above among the eight with "no jurisdiction guard at all". It has
+one: `family/[person]/page.tsx:167` renders `decision.userFacingCopy` as the
+page body where the shared results would be. It keeps its declaration, and the
+state is now proven in `e2e/genome-family.nojurisdiction.spec.ts`. The G2.2
+conflict item 7 raises for it is therefore moot — nothing is being dropped.
+
+The error is worth naming because of how it was made: the route was measured
+with a grep for `CapabilityUnavailable`, and this page refuses without using
+that component. A grep for one component name is not a survey of a behaviour.
 
 **THE QUESTION THIS TURNS ON, and it is yours rather than mine.** The proposal
 above assumes the product is right and the register over-declares. The opposite
@@ -396,6 +420,16 @@ subset of their routes:
   may well appear in `data/jurisdictions.json`; `/family/[person]` is the clear
   case, since it renders a relative's data under
   `third_party_adult_analysis`.
+
+  **RESOLVED 2026-09-12, and not by amending anything.** `/family/[person]`
+  already implements the refusal, so it was never a candidate for the n/a —
+  item 5 had simply measured it wrongly. It keeps the declaration and the state
+  is proven. The three routes item 5 does drop it from surface no capability in
+  that file at all, which is precisely the condition G2.2 attaches, so this
+  half of the conflict never existed. **Item 6's half stands untouched:** nine
+  Family or Embryo Analysis routes still declare `consent-required` and
+  implement nothing, and G2.2 forbids the n/a for them outright. That still
+  needs an amendment to G2.2 or nine gates built.
 
 **This was missed when items 5 and 6 were drafted**, and the miss has a
 shape worth naming: both were measured against the *product* — what each page
