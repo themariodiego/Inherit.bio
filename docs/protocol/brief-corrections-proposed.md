@@ -501,17 +501,61 @@ So this item claims exactly two things, and no more.
 That is 7 + 4 + 1 + 4 = **16 of the 63 already known to be real work rather
 than a register question.**
 
-**Not measured, and therefore not proposed:** `versioned-document · empty`,
-`auth-flow · empty`, `restricted-flow · empty` and `· processing`,
-`public-rights-flow · empty` and `· processing`, `account-management ·
-processing`, `public-embryo-analysis · empty` and `· processing`. Each needs
-its pages read the way items 4 and 5 were, and this item will not guess at
-them. One observation is offered as a starting point rather than a finding:
-`static-document` already carries the n/a "A versioned public document always
-has committed content" for `empty`, and its sibling `versioned-document` does
-not, though the six routes on it are the version and diff views of those same
-documents. If that argument holds for one it may hold for both — but "may" is
-the whole of the claim, and the profile has not been read.
+### Measured 2026-09-12, after the auth finding
+
+Three more profiles have now been read rather than inferred. The results split
+three ways, which is itself the argument against reading the table alone.
+
+**`versioned-document · empty` — 6 pairs, PROPOSED FOR n/a.** All six routes
+were read end to end; each is between nine and fourteen lines. Every one of
+them renders a committed body or answers `notFound()`, and not one carries a
+branch that renders nothing: `/legal/[artifact]`, its `versions/[version]` and
+`diff/[from]/[to]`, and the same three under `/legal/consent/[key]`. The diff
+pages render both versions side by side and fall back to "No change summary was
+recorded." for a missing summary field — which is a fallback inside a populated
+page, not an empty state. This is the same argument `static-document` already
+carries ("A versioned public document always has committed content"), and the
+suggestion above that it "may" transfer is now measured: it does.
+
+**`restricted-flow · processing` and `account-management · processing` — four
+of nine are IMPLEMENTED and provable**, exactly as `auth-flow · processing`
+was:
+
+| route | evidence |
+|---|---|
+| `/family/[person]/permissions` | `permission-grant-row.tsx:54` `pending`, `:93` `disabled={pending}` |
+| `/family/invite` | `invite-adult-form.tsx:32` `pending` |
+| `/settings/data` | `danger-zone.tsx:56` `busy`, gating both controls |
+| `/settings/copilot` | `own-copilot-permission.tsx:13` and `llm-settings-form.tsx:41`, both `busy` |
+
+**TWO OF THE REMAINDER ARE A PRODUCT FINDING, not a register question.**
+`/settings` and `/settings/consents` each perform a real mutation with NO
+in-flight state and no double-submit guard:
+
+- `digest-toggle.tsx` flips a `Switch` whose `onCheckedChange` awaits a
+  `profiles` update and then refreshes. The switch stays live throughout.
+- `consent-list.tsx:54` POSTs `/api/consents/{id}/revoke` from a button that is
+  never disabled and never changes.
+
+The second is a consent revocation. The server side is very likely idempotent,
+so this is not asserted as a data risk — but a person revoking a consent gets
+no acknowledgement that anything is happening until the page refreshes under
+them, and can press it again meanwhile. Every comparable control in the product
+(auth, permissions, invitations, deletion, Copilot settings) shows a pending
+state. These two are the exceptions.
+
+So the choice for those two pairs is not "prove or drop". It is **build the
+pending state, which the register already says these routes have**, and then
+prove it. Recommended, and small. `/settings/people` is the third remainder and
+needs nothing: it is the not-built page, and its profile question belongs with
+whatever decides that page's future.
+
+**Still not measured, and still not proposed:** `auth-flow · empty`,
+`restricted-flow · empty`, `public-rights-flow · empty` and `· processing`,
+`account-management · empty`, `public-embryo-analysis · empty` and
+`· processing`, and the thirteen `product-result · processing` pairs — though
+that last group's state is reachable by construction, since `/overview` proves
+it on the same profile.
 
 **What is asked of the operator here: nothing yet.** The measurement is
 recorded so the next pass is eight readings rather than sixty-three, and so
