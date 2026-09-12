@@ -160,9 +160,11 @@
   "provenRouteStates": [
     "/ complete",
     "/about complete",
+    "/auth/forgot-password complete",
     "/auth/forgot-password processing",
     "/auth/reset-password processing",
     "/auth/sign-in processing",
+    "/auth/sign-up complete",
     "/auth/sign-up processing",
     "/changelog complete",
     "/copilot/[scope] complete",

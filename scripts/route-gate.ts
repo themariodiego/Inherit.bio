@@ -178,6 +178,16 @@ const BROWSER_TESTS = "e2e";
  *               `/family/portrait/[pairId]`, stays open on purpose: it shows
  *               no file count, so a sentence there would tell one adult
  *               something new about another's record.
+ *   114 -> 112  `/auth/sign-up complete` and `/auth/forgot-password complete`,
+ *               the two of that profile's four that HAVE the state: each
+ *               replaces its form with a named "Check your email" panel.
+ *               `/auth/sign-in` and `/auth/reset-password` call router.push on
+ *               success and render no outcome of their own, so their complete
+ *               belongs to another route; corrections item 10 proposes both
+ *               not-applicable rather than titling a render that does not
+ *               exist. Both tests check what the sentence CLAIMS - the new
+ *               account really is unusable until activated, and the reset
+ *               confirmation really does not say whether the address exists.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -188,7 +198,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 114;
+const UNPROVEN_ROUTE_STATE_PAIRS = 112;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

@@ -692,6 +692,36 @@ file is being prepared, where today it says they have no file. Either answer is
 defensible; the reason it is asked rather than chosen is that it changes what
 one person learns about another.
 
+## 10. `auth-flow · complete` is declared on four routes and rendered by two
+
+Two pairs proposed not-applicable. Small, and included because the reason is
+the one this document keeps returning to.
+
+`/auth/sign-up` and `/auth/forgot-password` each replace their form with a
+named "Check your email" panel. That is a real outcome, rendered by the route,
+and both are now proven in `e2e/auth-complete.spec.ts`.
+
+`/auth/sign-in` and `/auth/reset-password` do not. Both call `router.push()`
+on success — `/auth/sign-in` to the `next` destination (`sign-in/page.tsx:39`),
+`/auth/reset-password` to `/overview` (`reset-password/page.tsx:30`) — and
+render nothing of their own afterwards. The reader's next screen belongs to a
+different route, which has its own states and its own proofs.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/auth/sign-in` | `complete` | Success navigates to `next` and the route renders no outcome. What the reader sees next is `/overview` or the requested destination, whose own `complete` is proven separately. |
+| `/auth/reset-password` | `complete` | Success navigates to `/overview`. Same shape. |
+
+**Why this is not a technicality.** A route state is something a reader can be
+looking at. Titling `complete` on a page that has already navigated away would
+certify a render that does not exist — which is exactly what `/settings/people
+jurisdiction-unavailable` did before item 4, and the ratchet counted it as
+progress for weeks. Both of these would have been easy to "prove" by asserting
+on `/overview` after signing in, and the assertion would have passed.
+
+**What is asked of the operator: sign or refuse these 2**, taking the count of
+proposed not-applicable pairs to 31 alongside item 8's 29.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
