@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import {
   BROWSER_H1,
   BROWSER_NO_FILE,
+  BROWSER_PREPARING,
   DATA_CRUMB,
   FIRST_PARTY_NOTE,
   FULL_LIBRARY,
@@ -58,7 +59,7 @@ import {
   genotypeFigures,
   search,
 } from "@/lib/genome/browser";
-import { getSubjectFileCount } from "@/lib/genome/load";
+import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { loadInputSources } from "@/lib/genome/input-sources";
 import { formatLocus } from "@/lib/genome/locus";
@@ -99,9 +100,13 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
   const admin = createAdminClient();
   // The search reads the processed files; the subject bar counts every file
   // in the record, whatever its status.
-  const [files, fileCount] = await Promise.all([
+  // `preparing` is read separately from `fileCount`, and the difference
+  // matters: the count includes a rejected or retired file, which is no
+  // reason to promise a reader that a search box is coming.
+  const [files, fileCount, preparing] = await Promise.all([
     getPreparedSourceFiles(admin, dataSubjectId),
     getSubjectFileCount(admin, dataSubjectId),
+    hasFileInPreparation(admin, dataSubjectId),
   ]);
   let selectedActive: (typeof files)[number] | null = files[0] ?? null;
   let outcome = q && selectedActive ? await search(admin, dataSubjectId, selectedActive.id, q) : EMPTY;
@@ -160,7 +165,9 @@ export default async function BrowserPage(props: PageProps<"/genome/[subject]/da
             <Button type="submit">{SEARCH_BUTTON}</Button>
           </form>
         ) : (
-          <p className="max-w-prose text-sm text-ink-muted">{BROWSER_NO_FILE}</p>
+          <p className="max-w-prose text-sm text-ink-muted">
+            {preparing ? BROWSER_PREPARING : BROWSER_NO_FILE}
+          </p>
         )}
       </header>
 

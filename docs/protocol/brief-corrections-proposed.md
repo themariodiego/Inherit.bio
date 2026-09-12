@@ -585,19 +585,88 @@ whether they ever come back off:
   (`/embryos/request-data` is the third: its copy button writes to the clipboard,
   which is not a network request.)
 
-### `product-result · processing` — deliberately still unread
+### `product-result · processing` — READ; see item 9
 
-A keyword pass over the fourteen routes found processing vocabulary in only
-three. **That is recorded as indicative and must not be acted on.** A keyword
-pass is what produced the wrong answer about `/family/[person]` in item 5 and
-would have produced the wrong answer about `auth-flow · processing` here. Each
-page needs reading for whether it branches on file status. `/overview` proves
-the state on this profile, so it is reachable by construction and these are
-coverage gaps or missing implementations, never register questions.
+This section said the fourteen routes were unread and that a keyword pass over
+them was indicative only and must not be acted on. All thirteen remaining ones
+have now been read line by line, and the keyword pass was wrong in both
+directions: it found vocabulary in three, and reading found a distinct
+render on seven. Item 9 carries the result, route by route. Nothing on this
+profile is proposed for not-applicable, so none of it changes the count of 29
+below.
 
 **What is asked of the operator: sign or refuse the 29.** They are grouped so
 the decision is eight readings rather than sixty-three routes, and each row
 carries what was read rather than what was inferred.
+
+## 9. `product-result · processing`, read route by route
+
+Item 8 left these thirteen unread and said a keyword pass over them was
+indicative only. They have now been read. **The keyword pass was wrong in both
+directions**: it found processing vocabulary in three routes, and reading found
+that seven render something a reader can tell apart from "there is nothing
+here", while six render exactly what they render for an account that has
+uploaded nothing at all.
+
+Nothing here is proposed for not-applicable. `/overview` already proves the
+state on this profile, so it is reachable by construction; the question each
+route answers is whether it was BUILT, and for six of them the answer is no.
+
+### The state being measured
+
+A file that exists but is not yet prepared. In this product that window is
+real, server-side and durable: `status: "uploaded"` means the file is
+finalized and stored and preparation has not been asked for yet
+(`e2e/overview-processing.spec.ts` waits inside it by holding the preparation
+request). So for each route the question is: **does the page render anything
+different at `uploaded` from what it renders with no file at all?**
+
+### Seven that do
+
+| Route | What separates it from "no file" |
+| --- | --- |
+| `/family` | `cardState` returns `awaiting-results` -> "No shared results yet" where no canonical access gives `no-file` -> "No file yet" (`(family-hub)/family/page.tsx:91`). |
+| `/family/[person]` | "No completed result is shared yet." under canonical access, against `noFileYet(name)` without it (`family/[person]/page.tsx:190`). |
+| `/family/health-picture` | A distinct CELL state: `no-prepared-file` -> "No prepared file yet", separate from `no-file` -> "No file yet" (`health-picture-cell.tsx:47`, `health-picture-projection.ts:19`). |
+| `/genome/[subject]/reports/[slug]` | With `fileCount > 0` and no prepared result: "Choose this result type in Reports to see what your file supports." `fileCount === 0` gets `NO_FILE_YET` instead (`reports/[slug]/page.tsx:450`). This is the right next step at `uploaded`, because preparation is what the report choice asks for. |
+| `/embryos` | `cohort.status === "ingesting"` -> `STILL_CHECKING_STATUS` on the card (`cohort-card.tsx:59`). |
+| `/embryos/compare` | `case "processing": <BlockingState state="processing">` (`embryos/compare/page.tsx:173`). |
+| `/embryos/[embryoId]` | The same, twice (`embryos/[embryoId]/page.tsx:156`, `:201`). |
+
+### Six that do not
+
+| Route | What it renders while the file is preparing |
+| --- | --- |
+| `/genome/[subject]` | The same tiles. There is no file-status branch anywhere on the page; the only status-aware element is the subject bar's file COUNT, which counts every file "whatever its status" and so reads the same at `uploaded` as at `annotated`. |
+| `/genome/[subject]/reports` | Every card carries the `awaiting` pill, "Awaiting your data" — the identical pill an account with no file sees, because the branch is on `fileCount > 0` for the layer's CALLS, which is zero in both cases (`reports/page.tsx:208`). |
+| `/genome/[subject]/ancestry` | `AncestryRegions` with `result: null` and both lineage cards empty. No branch on file status exists. |
+| `/genome/[subject]/data` | "Add a file to see how much of each score panel it covers." |
+| `/genome/[subject]/data/browser` | "Add a file to look up its positions here." |
+| `/family/portrait/[pairId]` | `noFileYetFor(...)` for whichever side lacks a PREPARED source, so a relative whose file is preparing is reported to the other person as having no file (`portrait/[pairId]/page.tsx:189`). |
+
+### The two that are not merely missing but wrong
+
+`/genome/[subject]/data` and `/genome/[subject]/data/browser` do not just fail
+to say the file is being prepared. **They instruct the reader to add a file
+they have already added.** Someone who has just uploaded, and who is being told
+on `/overview` that their file is in flight, is told on these two pages to add
+one. That is a false instruction on the owner's own record, not a missing
+nicety, and it is the kind of sentence the non-negotiables rule out.
+
+`/family/portrait/[pairId]` is the same class one step removed: it reports a
+preparing file to the OTHER person as an absent file.
+
+### What this is not
+
+It is not a register question. Every one of these thirteen routes can occupy
+the state — the file status is the account's, not the page's — so the register
+is right to declare it and no not-applicable is proposed. Six of them are
+unbuilt, and six of the seven that are built are still untitled, which is a
+coverage gap rather than a claim.
+
+**What is asked of the operator: nothing to sign.** This item records a
+measurement and names six gaps. The two false instructions are the part worth
+acting on first, and they need product copy rather than a signature.
 
 ## What happens after signature
 

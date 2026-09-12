@@ -2110,3 +2110,38 @@ It also closed a question left open earlier: whether a LOCAL grant could be
 listed under copy that says the list is about cloud. It cannot. The chat route
 consults `consent_grants` only inside its `if (!local)` branch and nothing else
 inserts into that table, so the empty-state sentence is accurate.
+
+## 2026-09-12 — Reading thirteen routes found six gaps and two false sentences
+
+Corrections item 8 recorded a keyword pass over the `product-result ·
+processing` routes and said, in the document itself, that it was indicative
+only and must not be acted on. Reading them settled it, and the keyword pass
+was wrong in both directions: it found processing vocabulary in three routes,
+and reading found a distinct render on seven.
+
+The six that have none render, while a file is being prepared, exactly what
+they render for an account that has uploaded nothing. Two of them do worse:
+`/genome/[subject]/data` said "Add a file to see how much of each score panel
+it covers" and its browser said "Add a file to look up its positions here" —
+to a reader whose file was in flight, and who was being told so on `/overview`
+at that same moment. That is a false instruction on the owner's own record, so
+it was fixed rather than filed, and both now say the file is being prepared.
+
+The cause is worth more than the fix. The list of statuses that means "in
+flight" existed in exactly one place: a `const` inside the Overview page. No
+other page could consult it, so no other page did. It now lives in
+`@/lib/genome/load` with the step numbers beside it, and `hasFileInPreparation`
+asks the database the same question — deliberately not "does the record have a
+file", because a rejected or retired file is no reason to promise a reader
+that results are coming.
+
+The general point: a state that only one page can name is a state every other
+page will get wrong. The route-state register is a good instrument for finding
+those, but only if the profiles are read rather than grepped — this is the
+second time in two days that a keyword pass produced a wrong answer a reading
+overturned.
+
+Four gaps stay open and named in item 9: `/genome/[subject]`,
+`/genome/[subject]/reports`, `/genome/[subject]/ancestry` and
+`/family/portrait/[pairId]`. None of them states anything false; they simply
+say nothing.

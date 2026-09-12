@@ -158,6 +158,17 @@ const BROWSER_TESTS = "e2e";
  *               it back off: four tests around it assert exact grant sets, and
  *               a pending-state proof is not worth widening what one adult can
  *               see about another.
+ *   119 -> 117  `/genome/[subject]/data` and its browser in `processing`, and
+ *               these were BUILT rather than found. Corrections item 9 read
+ *               all thirteen remaining `product-result · processing` routes;
+ *               six render exactly what they render for an account that has
+ *               uploaded nothing, and two of those six told the reader to ADD
+ *               A FILE THEY HAD ALREADY ADDED, while /overview was telling
+ *               them the same file was in flight. The status list that defines
+ *               "in flight" lived only in /overview, which is why two pages
+ *               had no notion of it; it now lives in `@/lib/genome/load` and
+ *               all three read the one list. The other four gaps stay open and
+ *               named in item 9.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -168,7 +179,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 119;
+const UNPROVEN_ROUTE_STATE_PAIRS = 117;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
