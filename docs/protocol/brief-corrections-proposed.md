@@ -444,6 +444,75 @@ Put separately rather than assumed either way, because "the brief requires a
 consent gate on every Family route" is a product commitment, not a register
 detail.
 
+## 8. `empty` and `processing`: the 63 remaining pairs, grouped by profile
+
+**Not a proposal, and deliberately not a set of conclusions.** This is a
+measurement, taken 2026-09-12 once `jurisdiction-unavailable` was closed and
+those two states became the largest remaining groups. It exists so that the
+decision, when it is taken, is taken over eight profiles rather than
+sixty-three routes.
+
+`empty` and `processing` are declared by profile, wholesale, exactly as `error`
+and `jurisdiction-unavailable` were. Grouping the unproven pairs by
+`(profile, state)` gives this:
+
+| profile · state | unproven | proven |
+|---|---:|---:|
+| `product-result` · processing | 13 | 1 |
+| `product-result` · empty | 7 | 7 |
+| `versioned-document` · empty | 6 | 0 |
+| `account-management` · processing | 5 | 0 |
+| `auth-flow` · empty | 4 | 0 |
+| `auth-flow` · processing | 4 | 0 |
+| `restricted-flow` · empty | 4 | 0 |
+| `restricted-flow` · processing | 4 | 0 |
+| `account-management` · empty | 4 | 1 |
+| `public-rights-flow` · empty | 3 | 0 |
+| `public-rights-flow` · processing | 3 | 0 |
+| `own-product-result` · empty | 2 | 1 |
+| `public-embryo-analysis` · empty | 1 | 0 |
+| `public-embryo-analysis` · processing | 1 | 0 |
+| `own-product-result` · processing | 1 | 2 |
+
+**A ZERO IN THE PROVEN COLUMN IS NOT EVIDENCE OF ANYTHING.** It is the shape
+that over-declaration takes, which makes it tempting, and the first profile
+checked shows why the temptation must be resisted. `auth-flow · processing`
+reads 4 unproven and 0 proven, and the state is fully IMPLEMENTED:
+`src/components/auth/auth-form.tsx:63` disables the submit button and renders
+"Working…" while a sign-in, sign-up or reset is in flight. Four routes, four
+real pairs, nothing to drop — a coverage gap that the table's shape would have
+argued was a phantom.
+
+So this item claims exactly two things, and no more.
+
+**Measured, and provable rather than droppable:**
+
+- `auth-flow · processing` — implemented as above. Four titled tests, each
+  holding the auth request open long enough to assert the pending control.
+- `product-result · empty` and `account-management · empty` and
+  `own-product-result · processing` — half or more of each is already proven,
+  so the state is reachable on that profile by construction. Every remaining
+  pair in those three rows is a coverage gap.
+
+That is 7 + 4 + 1 + 4 = **16 of the 63 already known to be real work rather
+than a register question.**
+
+**Not measured, and therefore not proposed:** `versioned-document · empty`,
+`auth-flow · empty`, `restricted-flow · empty` and `· processing`,
+`public-rights-flow · empty` and `· processing`, `account-management ·
+processing`, `public-embryo-analysis · empty` and `· processing`. Each needs
+its pages read the way items 4 and 5 were, and this item will not guess at
+them. One observation is offered as a starting point rather than a finding:
+`static-document` already carries the n/a "A versioned public document always
+has committed content" for `empty`, and its sibling `versioned-document` does
+not, though the six routes on it are the version and diff views of those same
+documents. If that argument holds for one it may hold for both — but "may" is
+the whole of the claim, and the profile has not been read.
+
+**What is asked of the operator here: nothing yet.** The measurement is
+recorded so the next pass is eight readings rather than sixty-three, and so
+that the sixteen known coverage gaps are not left looking like open questions.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
