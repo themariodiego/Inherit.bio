@@ -550,16 +550,54 @@ prove it. Recommended, and small. `/settings/people` is the third remainder and
 needs nothing: it is the not-built page, and its profile question belongs with
 whatever decides that page's future.
 
-**Still not measured, and still not proposed:** `auth-flow · empty`,
-`restricted-flow · empty`, `public-rights-flow · empty` and `· processing`,
-`account-management · empty`, `public-embryo-analysis · empty` and
-`· processing`, and the thirteen `product-result · processing` pairs — though
-that last group's state is reachable by construction, since `/overview` proves
-it on the same profile.
+### The rest, measured the same day
 
-**What is asked of the operator here: nothing yet.** The measurement is
-recorded so the next pass is eight readings rather than sixty-three, and so
-that the sixteen known coverage gaps are not left looking like open questions.
+Every profile above was read. Together with `versioned-document · empty` this
+proposes **29 pairs for not-applicable** — 124 → 95 if signed, and every one of
+them the register requiring less rather than a proof.
+
+| profile · state | pairs | why |
+|---|---:|---|
+| `auth-flow · empty` | 4 | All four pages read. Zero data-driven branches between them; each renders `AuthForm` with a fixed field list, and `createClient()` appears only for the auth ACTION, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch (`sent`) renders "Check your email" — a confirmation, which is a `complete` shape. |
+| `restricted-flow · empty` | 4 | `/family/invite` is a form. `/family/[person]/permissions` always renders both columns and all seven rows; its `youSeeNothing` (:243) gates a note BESIDE the populated columns. `/embryos/upload` and `/embryos/request-data` always render. |
+| `public-rights-flow · empty` | 3 | `/legal/appeals` is a static legal page with no form and no button. `/future-person/claim` is sixteen lines whose whole body is "Claims are not open yet" — what the page IS, not an absence. `/withdraw/[token]` renders an outcome or the invitation; its "empty" word is copy about a closed reserved subject. |
+| `public-embryo-analysis · empty`, `· processing` | 2 | `/embryo-analysis` is 35 lines of public copy with one link styled as a button. No form, no state, no fetch. |
+| `account-management · empty` | 4 | `/settings`, `/settings/data` and `/settings/copilot` render fixed sections with no length-zero branch; `/settings/people` renders `FeatureNotBuilt` unconditionally. (`/settings/consents empty` is proven and STAYS declared — its grant list is the page, so an empty list is the page's empty state.) |
+| `account-management · processing` | 1 | `/settings/people` performs no request. |
+
+**Two `processing` n/a declarations that look identical and are not.** Both are
+in `public-rights-flow` and `restricted-flow` above, and the difference decides
+whether they ever come back off:
+
+- **`/withdraw/[token]` — permanent, and correct.** Its accept and refuse
+  controls are plain `<form action="/api/withdraw" method="post">` submissions
+  with hidden inputs: a native, full-page POST with no client JavaScript. It has
+  no pending state and SHOULD NOT get one. A rights surface that works without
+  JavaScript is a feature, and the browser's own navigation indicator is the
+  feedback. Note the contrast with `/settings/consents`, where the same shape
+  WAS a gap worth fixing — the difference is whether the page chose to carry
+  client state at all.
+- **`/embryos/upload` — temporary, with an expiry.** `upload-flow.tsx` is 405
+  lines containing no `async`, no `fetch` and no form action: a `useReducer`
+  decision tree that ends in links. It performs no request because the route it
+  would post to does not exist yet. **When that route lands, `processing`
+  becomes real again and this n/a must come back off.**
+  (`/embryos/request-data` is the third: its copy button writes to the clipboard,
+  which is not a network request.)
+
+### `product-result · processing` — deliberately still unread
+
+A keyword pass over the fourteen routes found processing vocabulary in only
+three. **That is recorded as indicative and must not be acted on.** A keyword
+pass is what produced the wrong answer about `/family/[person]` in item 5 and
+would have produced the wrong answer about `auth-flow · processing` here. Each
+page needs reading for whether it branches on file status. `/overview` proves
+the state on this profile, so it is reachable by construction and these are
+coverage gaps or missing implementations, never register questions.
+
+**What is asked of the operator: sign or refuse the 29.** They are grouped so
+the decision is eight readings rather than sixty-three routes, and each row
+carries what was read rather than what was inferred.
 
 ## What happens after signature
 
