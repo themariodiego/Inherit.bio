@@ -1488,3 +1488,165 @@ overturning it.
   retrieve today, while making canonical match legacy relaxes a withdrawal
   protection someone wrote deliberately. Recorded as D-097.
 
+
+## 2026-09-12 — the eight open owner decisions, answered
+
+Put to the operator one at a time and answered in one sitting. Every item had
+been waiting on a signature, and several had been waiting since 10 September.
+Recorded here first, before any of them is acted on, because the answers are
+the durable thing and the container is not.
+
+Ordered as they were asked. Each says what was decided, what it costs, and what
+it does NOT license.
+
+### 1. `error` state — apply corrections item 4 as drafted
+
+The register requires `error` on 62 routes and no browser test can reach any of
+them: four error boundaries exist, 19 files answer bad input with `notFound()`
+rather than throwing, and there is no fault, injection or simulate flag
+anywhere in `src/` or `scripts/`.
+
+- **Decided:** add the brief rule — a route declares `error` only where a fault
+  is reachable — drop `error` from the affected `stateProfiles`, and lower
+  `UNPROVEN_ROUTE_STATE_PAIRS` by exactly the number the gate reports.
+- 62 pairs stop being unprovable obligations; 22 routes complete.
+- **Not licensed:** removing or weakening the error boundaries. Their unit
+  coverage in `src/components/site/error-content.test.ts` and
+  `src/app/boundaries.test.ts` stays. This changes what the register declares,
+  not what the product does.
+
+### 2. `consent-required` — drop it from all twenty routes
+
+Measured three ways (page components, both shared blocking components' call
+sites, and the absence of any gate above them — there is no `src/middleware.ts`
+and the `(app)` layout carries no consent check, so a redirect-based refusal
+would still have shown up). Exactly three pages implement the state and all
+three are already proven.
+
+- **Decided:** drop the declaration from the twenty routes that do not
+  implement it.
+- **Not licensed:** concluding that those routes should never gate on consent.
+  If any of them ought to, the correction for that route is to build the gate,
+  and that is a separate decision.
+
+### 3. `jurisdiction-unavailable` — build the relative resolver
+
+The pivot question was whether `/genome/[subject]/data` and
+`/genome/[subject]/data/browser` are meant to serve a relative's data. They
+resolve with `resolveSubjectForAccount`, the own-subject resolver, so a family
+segment does not resolve at all and the page answers not-found rather than
+refusing. (Not a fail-open: no relative's data is served either way.)
+
+- **Decided:** they are meant to serve a relative. Leave the state declared on
+  those routes and switch them to `resolveSubjectRoute`, so a permitted family
+  segment resolves and an unreviewed one refuses.
+- The other eight — `/settings`, `/settings/consents`, `/settings/copilot`,
+  `/settings/data`, `/files`, `/files/upload`, `/copilot/[scope]`,
+  `/family/[person]` — have no jurisdiction guard and their declarations come
+  off.
+- **Open and not decided here:** `/genome/[subject]` itself, the hub above
+  those two. The question named the two data routes, following the wording of
+  corrections item 5. It is treated the same as its children unless the
+  operator says otherwise; flagged so the assumption is visible rather than
+  silent.
+- This is Family work (priority 4) reaching forward into priority 1's surface,
+  and it pulls raw-data browsing of a relative's file into scope, which needs
+  its own permission story.
+
+### 4. `/overview` renders its refusal — a correction found while tracing
+
+Not one of the eight. Found on 12 September while tracing the six remaining
+`jurisdiction-unavailable` routes, and it corrects the table in corrections
+item 5, which lists `/overview` under "implements the refusal".
+
+- `/overview` calls `familyCapability` for `third_party_adult_analysis`,
+  `family_heritability` and `carrier_match`, and when any of them refuses it
+  renders **nothing**: the carrier-match lines are omitted with no visible
+  reason. A person cannot tell "no matches" from "switched off".
+- **Decided:** render the decision's own `userFacingCopy` where the carrier
+  lines would be, as `/family` and `/family/health-picture` already do. The
+  sentence comes from `data/jurisdictions.json`; no surface invents a
+  jurisdiction line.
+- A jurisdiction refusal is not a finding, so this reveals nothing genetic.
+
+### 5. Finalization read-ahead — recheck before consuming
+
+`ranges()` rechecks authority immediately before fetching each 4 MB range and
+finalization runs strictly sequentially. Overlapping at depth 3 measured 21%
+faster on loopback — a floor, since read-ahead hides latency and hosted round
+trips are slower than local ones.
+
+- **Decided:** take the overlap, and move the authority recheck to immediately
+  before a range is **consumed** rather than before it is fetched.
+- Every range is still authorised at the moment its bytes are used. The only
+  thing read speculatively is bytes the service role already holds, and
+  publication rechecks again at `complete_own_upload_finalization_v1`.
+- **Not licensed:** raising the 4 MB body size, which would trade a verified
+  contract for a speedup and needs hosted capacity evidence this work does not
+  have.
+
+### 6. D-097 — the canonical half matches the legacy half
+
+The two halves of the same `ancestry.json` behave oppositely after revoking the
+`ancestry` purpose: the canonical half is withheld deliberately, the legacy
+half is retained because export runs on `raw.export`/`export.share-link` rather
+than on the analysis grant.
+
+- **Decided:** match canonical to legacy. The export keeps both halves.
+  Consistent with the 2026-09-10 decision and with `docs/retention.md` as it
+  now reads: storage, analysis, sharing and AI permissions are separate, so
+  revoking an analysis purpose does not withdraw already-derived data from the
+  subject's own export.
+- **This removes a guard that was written on purpose**, with stated reasoning,
+  in `src/lib/exports/own-subject-content.ts` and
+  `private.own_subject_export_content_v1`. It is being removed by decision, not
+  by oversight, and the register must say so where the guard used to be.
+- Access under the revoked purpose still ends immediately
+  (`purpose.access-immediate`). This is about the subject's own export, not
+  about anyone else's read.
+
+### 7. G5.5 — research from here, determination from a named human
+
+The operator had asked for each jurisdiction and capability to be reviewed with
+a recommendation to sign. That was declined and the decline stands: a
+determination authored here and countersigned afterwards would make its
+`reviewer` and `qualification` fields assert that a qualified person reached
+it, which the operator's own non-negotiables forbid.
+
+- **Decided:** produce the research — the actual governing instruments per
+  jurisdiction, sourced, dated and quoted, never invented — clearly labelled as
+  RESEARCH AND NOT A DETERMINATION, with every conclusion field left blank. A
+  qualified named person then writes the determination.
+- **The hard boundary, restated so it cannot drift:** no conclusion field is
+  filled from here. Not `status`, not `reviewer`, not `qualification`, not
+  `review`. A source that cannot actually be retrieved is not cited.
+- Until a real determination exists the resolver keeps failing closed, and the
+  catalog keeps saying honestly how many jurisdictions are reviewed: zero.
+
+### 8. Glossary — source all 42 cited definitions for real
+
+110 terms are classed; 68 `plain` render now, 42 `cited` stay invisible until
+each definition carries a resolvable `citationId`.
+
+- **Decided:** retrieve each source for real, quote it, record the true access
+  date, and snapshot the non-permanent ones as the register's rule requires.
+- **The condition, which is not optional:** any source that cannot actually be
+  reached stays uncited and its term stays invisible. No gap is filled from
+  memory. A citation that cannot be resolved is worse than an absent
+  definition, because it looks like evidence.
+
+### 9. The damages cap — remove the currency amount, as a draft
+
+`/terms` caps liability at "the greater of one hundred US dollars (US$100) or
+the amount you paid us". Inherit sells nothing, so the second branch is dead
+text.
+
+- **Decided:** express the cap without a currency amount at all, which is
+  G5.7's copy half read strictly.
+- **This is a draft, not an edit to the live page**, and the chosen option said
+  so in terms: a liability cap without a figure needs rewriting on a different
+  principle, and that is counsel's call. `docs/protocol/legal-copy-proposed.md`
+  is revised to propose it; `src/app/(marketing)/terms/page.tsx` is not touched
+  until the operator or counsel says to apply it.
+- The US$100 figure was never endorsed here. Brief §12 item 7 requires counsel
+  to supply it, and its presence in the page is not evidence that they did.
