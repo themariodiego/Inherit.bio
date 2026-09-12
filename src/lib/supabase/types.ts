@@ -8108,6 +8108,12 @@ export type Database = {
         }
         Returns: string[]
       }
+      own_subject_purpose_granted_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_subject_id: string; p_purpose: string
+        }
+        Returns: boolean
+      }
       read_own_report_calls_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;

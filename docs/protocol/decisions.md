@@ -1650,3 +1650,78 @@ text.
   until the operator or counsel says to apply it.
 - The US$100 figure was never endorsed here. Brief §12 item 7 requires counsel
   to supply it, and its presence in the page is not evidence that they did.
+
+## 2026-09-12 — D-097 reopened before implementing, and answered the other way
+
+The eight decisions above were recorded before any of them was acted on. This
+is why that was worth doing: the first one I picked up turned out to rest on a
+factual error in the question I had asked, and the record made the correction
+legible instead of silent.
+
+### What I got wrong
+
+I described the canonical half of `ancestry.json` as **withheld** from the
+export after the `ancestry` purpose is revoked, and the legacy half as
+**retained** — a difference of two read paths, one of which I could relax.
+
+The canonical half is not withheld. It is **deleted**.
+`private.execute_own_report_purge_v1` carries a purge-manifest entry targeting
+`generated-artifacts` in `private.own_analysis_runs` for the revoked grant,
+inside the registered 60-second deadline, and `e2e/ancestry-revocation.spec.ts`
+asserts that row is gone as one of its two independent observables.
+
+So "match canonical to legacy — the export keeps both halves", which the
+operator chose on that description, actually meant: stop deleting derived
+genetic analysis when someone revokes the permission that produced it, rewrite
+the purge's completeness proof, and change the spec that exists precisely to
+prove the access half and the delete half are enforced independently. Against a
+non-negotiable that reads "meet registered deletion deadlines, including 60
+seconds for derived data".
+
+That is not a decision anyone should make from a wrong description, so it went
+back with the price attached rather than being implemented.
+
+### What was decided instead
+
+**Match legacy to canonical.** Revoking `ancestry` now withholds the legacy
+rows too. Nothing stops deleting, the purge is untouched, the revocation spec
+still passes, and the export is consistent across its two halves.
+
+The cost is real and was stated: a person loses ancestry from their own export
+after revoking, which they can retrieve today. It reverses the read half of the
+2026-09-10 decision and the retention register's worked example, both of which
+are now corrected rather than left to be read as current.
+
+### The gap was wider than the defect said
+
+Measured while implementing, and it changes what this fixed:
+
+- **D-097 and the G5.3a matrix row both said legacy ancestry rows were
+  "immediately unreadable through `filterOwnAnalysisFiles`" after revocation.
+  They never were.** That function returns every legacy file untouched whatever
+  `purpose` says — the early return hands them back and the final filter
+  re-admits them by id. No purpose gate has ever applied to a legacy file.
+- So the leak was on the ancestry **page** as well as in the export. A page is
+  the more visible of the two, and it was the half nobody had written down.
+- `private.current_own_report_grant_v1` could not be reused: it raises
+  `not_found` for any file with no `single_logical_sample_verified_at`, so
+  routing legacy files through it would refuse them always — removing the
+  feature rather than gating it.
+
+The grant is subject-scoped (`target_kind='subject'`), so the question a legacy
+read needs is subject-level. `private.own_subject_purpose_grant_v1` asks it,
+and its grant select is the canonical resolver's, copied from
+`pg_get_functiondef` with exactly one substitution
+(`pg.target_id=f.subject_id` → `pg.target_id=p_subject_id`), asserted to apply
+once and asserted afterwards to leave no reference to the file row. The two
+were compared byte-for-byte after installation.
+
+### Deliberately not widened
+
+The same gap exists for `reports.monogenic` and `reports.polygenic`: revoking
+either still leaves results derived from a legacy source readable. `gateLegacy`
+is opt-in and only the two ancestry readers pass it. Recorded as **D-099**
+rather than fixed here — the operator's decision named `ancestry.json`, and
+widening a rights change past what was asked is how a scoped decision becomes
+an unreviewed one. The mechanism takes the purpose as an argument, so applying
+it is a call-site change plus tests whenever they say the word.

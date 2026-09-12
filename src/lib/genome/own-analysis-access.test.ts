@@ -63,3 +63,75 @@ describe("new own-result access boundary", () => {
     }
   });
 });
+
+/**
+ * D-097. Until 2026-09-12 a legacy file passed this function untouched
+ * whatever `purpose` said, so revoking `ancestry` withheld nothing derived
+ * from a legacy source. `gateLegacy` is the opt-in that fixes it for the
+ * ancestry readers; these tests fail if it stops asking, stops failing closed,
+ * or starts asking on the paths that did not opt in.
+ */
+describe("the legacy purpose gate (D-097)", () => {
+  const grantRpc = (granted: boolean | null, error: unknown = null) => {
+    const rpc = vi.fn().mockImplementation((name: string) =>
+      name === "own_subject_purpose_granted_v1"
+        ? Promise.resolve({ data: granted, error })
+        : Promise.resolve({ data: [id], error: null }));
+    return { db: { rpc, from: vi.fn() } as unknown as Db, rpc };
+  };
+
+  it("keeps legacy files when the subject-level ancestry grant is live", async () => {
+    const { db, rpc } = grantRpc(true);
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy], { gateLegacy: true }))
+      .toEqual([legacy]);
+    expect(rpc).toHaveBeenCalledWith("own_subject_purpose_granted_v1", {
+      p_account_id: actor.accountId, p_session_id: actor.sessionId,
+      p_subject_id: "subject", p_purpose: "ancestry",
+    });
+  });
+
+  it("drops legacy files once that grant is gone", async () => {
+    const { db } = grantRpc(false);
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy], { gateLegacy: true }))
+      .toEqual([]);
+  });
+
+  it.each([
+    ["an error", null, { code: "42501" }],
+    ["a non-boolean answer", "yes" as unknown as boolean, null],
+    ["a null answer", null, null],
+  ])("fails closed on %s", async (_label, data, error) => {
+    const { db } = grantRpc(data as boolean | null, error);
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy], { gateLegacy: true }))
+      .toEqual([]);
+  });
+
+  it("fails closed when the RPC throws rather than returning", async () => {
+    const rpc = vi.fn().mockRejectedValue(new Error("transport"));
+    const db = { rpc, from: vi.fn() } as unknown as Db;
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy], { gateLegacy: true }))
+      .toEqual([]);
+  });
+
+  it("fails closed with no current account, without asking the database", async () => {
+    mocks.actor.mockResolvedValue(null);
+    const { db, rpc } = grantRpc(true);
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy], { gateLegacy: true }))
+      .toEqual([]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("asks nothing and keeps legacy files when the caller did not opt in", async () => {
+    // The report readers still take the old path deliberately; the same
+    // asymmetry exists for them and is recorded rather than fixed in passing.
+    const { db, rpc } = grantRpc(false);
+    expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy])).toEqual([legacy]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("does not ask when there is no legacy file to gate", async () => {
+    const { db, rpc } = grantRpc(true);
+    await filterOwnAnalysisFiles(db, "subject", "ancestry", [modern], { gateLegacy: true });
+    expect(rpc.mock.calls.map(call => call[0])).not.toContain("own_subject_purpose_granted_v1");
+  });
+});

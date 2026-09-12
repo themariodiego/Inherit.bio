@@ -105,7 +105,12 @@ export async function loadOwnAncestryRows(db: Db, subjectId: string,
  * Preserve latest-completion order, including a newly analyzed older file. */
 export async function loadAncestryResultSnapshot(db: Db, legacyReader: Db, subjectId: string) {
   const candidates = await loadOwnAnalysisCandidateFiles(db, subjectId);
-  const allowed = await filterOwnAnalysisFiles(db, subjectId, "ancestry", candidates);
+  // `gateLegacy` since 2026-09-12 (D-097). Without it the legacy branch below
+  // kept serving `public.ancestry_results` after the `ancestry` purpose was
+  // revoked, because `filterOwnAnalysisFiles` returns legacy files untouched
+  // whatever the purpose says. The canonical half has always refused; the
+  // operator's answer to D-097 is that the legacy half must match it.
+  const allowed = await filterOwnAnalysisFiles(db, subjectId, "ancestry", candidates, { gateLegacy: true });
   const legacyIds = allowed.filter(file => file.single_logical_sample_verified_at === null).map(file => file.id);
   const [canonical, legacy] = await Promise.all([
     readOwnCaptures(db, subjectId, allowed),
@@ -119,7 +124,9 @@ export async function loadAncestryResultSnapshot(db: Db, legacyReader: Db, subje
   const rows = [...canonical.rows, ...historical]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || a.file_id.localeCompare(b.file_id));
   return { rows, confirm: async () => {
-    const current = new Set((await filterOwnAnalysisFiles(db, subjectId, "ancestry", allowed)).map(file => file.id));
+    // The recheck carries the same gate: a purpose revoked DURING the read must
+    // withhold the legacy rows too, which is the whole point of rechecking.
+    const current = new Set((await filterOwnAnalysisFiles(db, subjectId, "ancestry", allowed, { gateLegacy: true })).map(file => file.id));
     // A file ID surviving regrant is insufficient: require the same complete
     // captured content and completion time after all other result/source reads.
     const confirmed = new Set(await canonical.confirm(current));
