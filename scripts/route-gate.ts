@@ -131,6 +131,14 @@ const BROWSER_TESTS = "e2e";
  *               the product did not have it. `consent-list.tsx` had the same
  *               gap on a consent REVOCATION and is fixed in the same change;
  *               its pair waits on a grant fixture.
+ *   124 -> 122  `/settings/copilot` and `/settings/data` in `processing`, both
+ *               measured as implemented in corrections item 8 before either
+ *               was titled. `/settings/data` is the one worth a second look:
+ *               its only pending control is on the account-deletion request,
+ *               so the test drives a real deletion on a throwaway account and
+ *               says so. The product answers with a seven-day notice period
+ *               and a cancel path, and `e2e/account-deletion-purge.spec.ts`
+ *               already does the same thing.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -141,7 +149,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 124;
+const UNPROVEN_ROUTE_STATE_PAIRS = 122;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

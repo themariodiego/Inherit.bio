@@ -94,6 +94,97 @@ test("/settings processing: the digest switch is held while its write is in flig
 });
 
 /**
+ * `/settings/copilot processing`. `LlmSettingsForm` holds a `busy` flag
+ * (`llm-settings-form.tsx:41`) and disables its submit while the POST to
+ * `/api/llm/settings` is in flight. The label does NOT change here — unlike
+ * the auth forms and the revoke control, this one only disables — so the
+ * assertion is the disabled state alone, which is what stops a second save of
+ * the same configuration.
+ *
+ * Held the same way as everywhere else in this suite: the request is
+ * intercepted and released only after the assertion, so the product sits in a
+ * state it defines. Only the POST is held; the page's own reads must complete
+ * or the form never renders.
+ */
+test("/settings/copilot processing: the save control is held while the provider write is in flight", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/llm/settings", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/settings/copilot");
+    const save = page.getByRole("button", { name: "Save provider", exact: true });
+    await expect(save).toBeEnabled();
+    await save.click();
+    await expect(save).toBeDisabled();
+    expect(intercepted, "the state is held by a real in-flight write").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+});
+
+/**
+ * `/settings/data processing`, and this one schedules a real account deletion
+ * — which is why it uses an account of its own rather than the shared USER
+ * above, and why it is worth saying so plainly.
+ *
+ * The pending control is on the deletion request: `danger-zone.tsx:56` holds
+ * `busy` and the button reads "Scheduling…" while the POST is in flight. There
+ * is no non-destructive control on this page carrying that state, so the test
+ * drives the destructive one on a throwaway account. That is the same thing
+ * `e2e/account-deletion-purge.spec.ts:84` already does, and the product's own
+ * answer is a seven-day notice period with a cancel path, not an immediate
+ * purge.
+ *
+ * Only the POST is held. The page's GET must complete first or `requestDeletion`
+ * returns early — it refuses to run while `state` is null.
+ */
+test("/settings/data processing: the deletion control says Scheduling while its request is in flight", async ({ page }) => {
+  const email = `settings-data-processing-${randomUUID()}@e2e.local`;
+  const password = "e2e-settings-data-processing-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/account/delete", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/settings/data");
+    const schedule = page.getByTestId("delete-account");
+    await expect(schedule).toBeDisabled();
+    await page.getByLabel(/Type/).fill("delete my genome");
+    await expect(schedule).toBeEnabled();
+    await schedule.click();
+
+    await expect(schedule).toBeDisabled();
+    await expect(schedule).toHaveText("Scheduling…");
+    expect(intercepted, "the state is held by a real in-flight request").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released, so the deletion really is scheduled. Asserted rather than left
+  // implicit: this test performs a consequential action and should say what
+  // the account was left in.
+  await expect(page.getByRole("heading", { name: "Account deletion scheduled" })).toBeVisible();
+});
+
+/**
  * `/settings/consents` is a header, the grant list and a back link, so the
  * list is the page's whole substance and an empty list is the page's `empty`
  * state rather than one region of it having nothing to show. That distinction
