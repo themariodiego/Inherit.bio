@@ -38,17 +38,49 @@ import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
  * family person, so it needs this file's pairing. Its refusal has a DIFFERENT
  * SHAPE, traced before it was titled — see the test.
  *
+ * THREE MORE ROUTES JOINED ON 2026-09-12, and they needed no new fixture —
+ * only this one, which already exists. `/genome/[subject]`,
+ * `/genome/[subject]/data` and `/genome/[subject]/data/browser` all call
+ * `resolveSubjectRoute`, and that resolver asks the jurisdiction BEFORE it
+ * asks whether any purpose is granted (subject-route.ts: the `permits`
+ * check precedes the `options.anyOf` check). So this pairing, which has no
+ * grants at all, reaches the refusal on all three. That order was read in the
+ * resolver before the tests were titled rather than assumed from the two
+ * routes above that behave the same way.
+ *
  * WHAT IS DELIBERATELY NOT CLAIMED. `/family` and `/family/health-picture`
  * are proven in `e2e/family-hub.nojurisdiction.spec.ts` instead, because
  * tracing showed their guards resolve to the viewer's own unset code when the
  * family is empty and need no pairing at all. `/embryo-analysis` is proven
- * signed out in `e2e/embryo-analysis.spec.ts`. That leaves
- * `/family/portrait/[pairId]`, which needs a `family_pairs` row and therefore
- * a mutual portrait grant, and `/overview`, whose refusal was only built on
- * 2026-09-12 and needs the full State-D fixture to reach. Neither is titled
- * anywhere yet. A title in this repository IS a claim: `scripts/route-gate.ts`
- * counts a (route, state) pair as proven when a test title names both as whole
- * tokens.
+ * signed out in `e2e/embryo-analysis.spec.ts`.
+ *
+ * `/family/[person]` is the fourth route added the same day and has a THIRD
+ * shape again: it neither replaces the page nor prints a line in a header, but
+ * renders `decision.userFacingCopy` as the whole body where the shared results
+ * would be. Traced at `family/[person]/page.tsx:167` before it was titled.
+ *
+ * THE FIRST DRAFT OF THIS PARAGRAPH WAS WRONG, and the way it was wrong is
+ * worth keeping. It said `/family/[person]`, `/files`, `/files/upload`,
+ * `/copilot/[scope]` and `/overview` all "render no jurisdiction refusal at
+ * all", on the strength of one grep for `CapabilityUnavailable`. Three of
+ * those five do render one, by three different mechanisms that grep could not
+ * see: `/family/[person]` prints `userFacingCopy` directly, `/overview`
+ * renders it inside `data-slot="carrier-jurisdiction"`, and
+ * `/family/portrait/[pairId]` has a full branch of its own. A grep for one
+ * component name is not a survey of a behaviour.
+ *
+ * So, accurately, of the routes the register lists as
+ * `jurisdiction-unavailable` and this file does not prove:
+ *   - `/overview` and `/family/portrait/[pairId]` implement a refusal and are
+ *     FIXTURE gaps. `/overview` needs the full State-D fixture; the portrait
+ *     needs a `family_pairs` row and therefore a mutual portrait grant.
+ *   - `/files`, `/files/upload` and `/copilot/[scope]` mention jurisdiction
+ *     nowhere in their page modules and are PRODUCT gaps. A test titled for
+ *     one of those would certify a refusal that does not exist, which is
+ *     exactly what happened to `/settings/people`.
+ *
+ * A title in this repository IS a claim: `scripts/route-gate.ts` counts a
+ * (route, state) pair as proven when a test title names both as whole tokens.
  */
 
 const runId = randomUUID();
@@ -252,4 +284,75 @@ test("/family/[person]/permissions jurisdiction-unavailable: grants refuse while
   // comment claims resume is jurisdiction-guarded alongside grant. This
   // pairing is not paused, so the resume control never renders and nothing
   // here tests that claim either way.
+});
+
+/**
+ * The three routes added on 2026-09-12. Each asserts the shared refusal shape
+ * AND the absence of the specific thing that page exists to show, because a
+ * refusal that merely adds a banner above the record would satisfy the first
+ * assertion and none of the point.
+ */
+
+test("/genome/[subject] jurisdiction-unavailable: the hub refuses before it offers a single tool", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}`);
+  // The tile grid is the hub. Its absence is the refusal replacing the page
+  // rather than sitting above a working set of links into the record.
+  await expect(page.getByRole("region", { name: "Genome tools" })).toHaveCount(0);
+  await expect(page.locator("main a[href*='/reports'], main a[href*='/ancestry']")).toHaveCount(0);
+  // The subject bar carries the relative's name and their file count, which
+  // are facts about them that an unreviewed jurisdiction has not permitted.
+  await expect(page.locator('[data-slot="subject-name"]')).toHaveCount(0);
+});
+
+test("/genome/[subject]/data jurisdiction-unavailable: no method, no panel and no provenance survives", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/data`);
+  await expect(page.locator('[data-slot="score-panel-result"], [data-slot="score-input-provenance"], [data-slot="input-provenance"]'))
+    .toHaveCount(0);
+});
+
+test("/genome/[subject]/data/browser jurisdiction-unavailable: the browser is not rendered and no region is fetched", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  // Every request the page makes, so "no region is fetched" is measured
+  // rather than inferred from the markup. The refusal must not quietly load
+  // the relative's variants behind a message that says it did not.
+  const fetched: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/")) fetched.push(url.pathname);
+  });
+  await expectJurisdictionRefusal(page, `/genome/${pairedSegment}/data/browser`);
+  await expect(page.getByTestId("genome-browser")).toHaveCount(0);
+  await expect(page.locator('[data-slot="table-input-provenance"], [data-slot="track-input-provenance"]'))
+    .toHaveCount(0);
+  expect(fetched.filter((path) => path.includes("browser") || path.includes("variants")), fetched.join(", "))
+    .toHaveLength(0);
+});
+
+test("/family/[person] jurisdiction-unavailable: the refusal is the body where the shared results would be", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  await signIn(page, A.email, A.password);
+  const response = await page.goto(`/family/${pairedSegment}`);
+  expect(response?.status()).toBe(200);
+
+  // A THIRD SHAPE. The `/genome/[subject]/…` routes replace the page with
+  // `<CapabilityUnavailable>`; `/family/[person]/permissions` keeps its page
+  // and adds a line to the header; this one keeps its frame and puts the
+  // register's own sentence where the shared results would go. All three are
+  // correct for what the route is, which is why each was traced rather than
+  // assumed from the last one.
+  const refusal = page.getByRole("status").filter({ hasText: REFUSAL_SENTENCE });
+  await expect(refusal).toHaveCount(1);
+
+  // The refusal is exclusive: the page renders it INSTEAD of the paused
+  // sentence, the nothing-shared sentence, the Tier-2 gate and the results.
+  // If it were additive, a reader could be told the jurisdiction refuses and
+  // shown the findings underneath it.
+  await expect(page.locator("main a[href*='/reports/']")).toHaveCount(0);
+  await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveCount(1);
 });

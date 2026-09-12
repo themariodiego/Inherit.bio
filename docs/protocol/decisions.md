@@ -1897,3 +1897,28 @@ sourced and the loop is empty for the right reason.
 
 The same shape is worth watching for elsewhere: a threshold chosen from today's
 numbers reads like a safety rail and behaves like a ratchet against the work.
+
+## 2026-09-12 — A grep for one component name is not a survey of a behaviour
+
+Writing the header comment for the four new jurisdiction proofs, I asserted
+that `/family/[person]`, `/files`, `/files/upload`, `/copilot/[scope]` and
+`/overview` "render no jurisdiction refusal at all", on the strength of one
+grep for `CapabilityUnavailable`.
+
+Three of those five do render one, by three mechanisms that grep could not
+see. `/family/[person]` prints `decision.userFacingCopy` directly as the page
+body. `/overview` renders it inside `data-slot="carrier-jurisdiction"`.
+`/family/portrait/[pairId]` has a branch of its own. Only `/files`,
+`/files/upload` and `/copilot/[scope]` genuinely mention jurisdiction nowhere.
+
+The comment was corrected before it was committed, and `/family/[person]` is
+now proven rather than written off. But the near-miss is the point: that
+sentence would have justified NOT building three refusals that already exist,
+and it would have read as a survey. When the claim is "this behaviour is
+absent", grep for the behaviour's several possible spellings or read the file —
+one component name is a search, not a finding.
+
+The three real product gaps stand: `/files`, `/files/upload` and
+`/copilot/[scope]` declare `jurisdiction-unavailable` in the register and
+implement nothing. That is the same shape as the `consent-required` conflict
+already waiting on the owner.

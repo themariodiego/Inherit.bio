@@ -67,6 +67,19 @@ const BROWSER_TESTS = "e2e";
  *               jurisdiction-unavailable state, each traced to the branch that
  *               renders its refusal and each passing in a browser before this
  *               number moved.
+ *   139 -> 135  four more real proofs, needing no new fixture:
+ *               `/genome/[subject]`, `/genome/[subject]/data` and
+ *               `/genome/[subject]/data/browser` in their
+ *               jurisdiction-unavailable state. `resolveSubjectRoute` asks the
+ *               jurisdiction BEFORE it asks whether any purpose is granted, so
+ *               the pairing that `e2e/genome-family.nojurisdiction.spec.ts`
+ *               already builds reaches all three. That order was read in the
+ *               resolver first; all ten tests in that file then passed in a
+ *               browser before this number moved. `/family/[person]` came
+ *               with them, from a third refusal shape again - it renders the
+ *               register's sentence as the page body rather than replacing
+ *               the page or adding a header line - traced at
+ *               `family/[person]/page.tsx:167` before it was titled.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -77,7 +90,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 139;
+const UNPROVEN_ROUTE_STATE_PAIRS = 135;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
