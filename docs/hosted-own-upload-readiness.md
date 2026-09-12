@@ -142,8 +142,18 @@ than a ceiling**: read-ahead hides latency, and hosted latency per round trip
 is higher than the near-zero here, so the same change should buy more in
 production than it does on this measurement.
 
-**It is not taken, because it widens an authority window and that is not an
-engineering decision.** `ranges()` rechecks authority before every fetch, so a
+**TAKEN 2026-09-12, on the operator's decision, in the variant this section
+proposed.** `ranges()` in `src/lib/uploads/subject-finalization.ts` now
+overlaps its fetches at depth 3 and rechecks authority immediately before each
+range is CONSUMED, plus once before the pipeline starts so a lease already
+revoked fetches nothing at all. Three tests pin it, each confirmed to fail
+against the old behaviour: the overlap test fails at depth 1, and both recheck
+tests fail when the consumption-time recheck is removed. What follows is the
+argument as it stood before the decision, kept because it is the reason the
+default was not simply taken.
+
+**It was not taken at the time, because it widens an authority window and that
+is not an engineering decision.** `ranges()` rechecks authority before every fetch, so a
 revocation landing mid-transfer stops the next range. At depth 3 the recheck
 for a range happens up to three ranges early, so roughly 12 MB rather than 4 MB
 could be read into the function's memory after a revocation. Nothing reaches a
@@ -159,6 +169,15 @@ still be authorised at the moment its bytes are used, the overlap would stand,
 and the only thing read speculatively would be bytes the service role already
 holds. Whether that is the same guarantee is a judgement about the contract,
 not about the code.
+
+**The operator chose that variant on 2026-09-12.** One thing measured while
+implementing it, and worth recording because it is not what a reader would
+guess: a recheck that fails mid-transfer answers **503**, not 404. The
+not-found path belongs to the initial authorization; a later failure goes
+through the generic one. "Unavailable" describes the service rather than the
+permission, which is arguably the wrong word for a revocation, but it is how
+finalization has always answered and changing it was not part of moving the
+recheck. It is asserted as measured in `subject-finalization.test.ts`.
 
 ### Measured: what a person gets when finalization dies · 11 September 2026
 

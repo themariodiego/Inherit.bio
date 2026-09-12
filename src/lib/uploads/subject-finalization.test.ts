@@ -308,3 +308,95 @@ describe("resuming a finalization that was already part done", () => {
     expect(written()).toEqual([]);
   });
 });
+
+/**
+ * Read-ahead, and the authority guarantee that had to survive it (operator
+ * decision, 2026-09-12). `ranges()` now overlaps its range fetches and
+ * rechecks authority immediately before each range is CONSUMED rather than
+ * before it is fetched. These tests pin both halves, because the speedup is
+ * only acceptable while the second half holds.
+ */
+describe("finalization read-ahead", () => {
+  /** Three ranges of source, so depth-3 read-ahead is actually exercised. */
+  const threeRanges = () =>
+    setSource(Buffer.from(vcf + row.repeat(Math.ceil((INGEST_CHUNK_MAXIMUM_BYTES * 2) / row.length) + 1)));
+
+  it("starts later range fetches before the earlier ones are consumed", async () => {
+    threeRanges();
+    // Every fetch resolves only when released, so the number in flight at once
+    // is observable rather than inferred from timing.
+    const gates: (() => void)[] = [];
+    let peak = 0, inFlight = 0;
+    mocks.fetch.mockImplementation(async (url: string, options: RequestInit) => {
+      inFlight += 1; peak = Math.max(peak, inFlight);
+      await new Promise<void>(resolve => gates.push(resolve));
+      inFlight -= 1;
+      return served(url, options);
+    });
+    let settled = false;
+    const pending = send().finally(() => { settled = true; });
+    // Release whatever is waiting, tick, repeat until the request finishes.
+    // Looping on `gates.length` instead would stop early: the request awaits
+    // RPCs between range batches, so the queue is transiently empty while more
+    // fetches are still to come.
+    for (let round = 0; round < 200 && !settled; round += 1) {
+      gates.splice(0).forEach(release => release());
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    expect((await pending).status).toBe(200);
+    // The old loop could never exceed one. Anything above it is the overlap.
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it("rechecks authority for every range it consumes, not once per transfer", async () => {
+    // Measured as a DELTA rather than an absolute, because finalization also
+    // rechecks around the copy and the staging removal, and pinning the total
+    // would break on any unrelated change to those steps.
+    const authorizations = () =>
+      mocks.rpc.mock.calls.filter(([name]) => name === "authorize_own_upload_finalization_v1").length;
+
+    expect((await send()).status).toBe(200);
+    const oneRange = authorizations();
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+
+    vi.clearAllMocks();
+    stored = { revision: 0, checkpoint: null };
+    mocks.rpc.mockImplementation(async (name, params) => rpc(name, params));
+    mocks.fetch.mockImplementation(async (url, options) => served(url, options));
+    mocks.copy.mockResolvedValue({ data: {}, error: null });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    mocks.info.mockResolvedValue({ data: { id: objectId }, error: null });
+    threeRanges();
+    expect((await send()).status).toBe(200);
+    expect(mocks.fetch).toHaveBeenCalledTimes(6);
+
+    // Four more ranges are consumed (two extra per pass, two passes), so four
+    // more rechecks happen. One per consumed range is the whole guarantee.
+    expect(authorizations() - oneRange).toBe(4);
+  });
+
+  it("drops bytes already read ahead when the grant disappears mid-transfer", async () => {
+    threeRanges();
+    // Authority holds for the first consumed range and is gone afterwards, so
+    // the ranges prefetched behind it are in memory when it is withdrawn.
+    let authorizations = 0;
+    mocks.rpc.mockImplementation(async (name: string, params?: Record<string, unknown>) => {
+      if (name === "authorize_own_upload_finalization_v1") {
+        authorizations += 1;
+        if (authorizations > 2) return { data: null, error: { code: "42501" } };
+      }
+      return rpc(name, params);
+    });
+    const response = await send();
+    // 503, not 404: a recheck that fails mid-transfer goes through the generic
+    // failure path rather than the not-found one the initial authorization
+    // uses. Asserted as measured. It is arguably the wrong status for a
+    // revocation - "unavailable" describes the service, not the permission -
+    // but that is how finalization has always answered here and changing it
+    // is not part of moving the recheck.
+    expect(response.status).toBe(503);
+    // Nothing was published from the speculative reads.
+    expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
+    expect(mocks.copy).not.toHaveBeenCalled();
+  });
+});
