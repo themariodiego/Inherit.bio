@@ -85,7 +85,7 @@ interface VocabularyFile {
 
 interface JargonFile {
   schemaVersion: number;
-  terms: Array<{ term: string; aliases?: string[]; definition: string }>;
+  terms: Array<{ term: string; aliases?: string[]; definition: string; citationId?: string }>;
 }
 
 export interface CopyBlock {
@@ -820,6 +820,54 @@ export function runReadabilityGate(repositoryRoot: string) {
     if (!entry.term.trim() || wordCount(entry.definition) === 0 || wordCount(entry.definition) > 25) {
       failures.push(`${entry.term || "<empty>"}: jargon definition must contain 1–25 words`);
     }
+  }
+
+  // The glossary citation register (2026-09-12). A `cited` definition becomes
+  // visible to a reader by carrying a `citationId` that resolves here, so this
+  // file is the difference between a clinical definition being shown and being
+  // withheld — and both directions have to hold in CI, not only in the unit
+  // suite.
+  //
+  // Kept apart from `data/citations.json` deliberately: that one is the
+  // reviewed report seed, pinned at exactly 71 claims and 19 citations, and it
+  // treats a citation no report claim uses as an orphan. A definition is not a
+  // report claim.
+  const glossarySources = JSON.parse(
+    fs.readFileSync(path.join(repositoryRoot, "data/glossary-citations.json"), "utf8"),
+  ) as { citations: { id: string; type: string; identifier: string; url: string;
+    archived_path: string; access_date: string; quote: string; claim: string }[] };
+  const glossaryIds = new Set<string>();
+  for (const citation of glossarySources.citations) {
+    const at = `glossary citation ${citation.id}`;
+    if (glossaryIds.has(citation.id)) failures.push(`${at}: duplicate id`);
+    glossaryIds.add(citation.id);
+    for (const field of ["id", "type", "identifier", "url", "archived_path", "access_date", "quote", "claim"] as const) {
+      if (typeof citation[field] !== "string" || citation[field].trim() === "") {
+        failures.push(`${at}: ${field} must be nonempty text`);
+      }
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(citation.access_date ?? "")) failures.push(`${at}: access_date must be YYYY-MM-DD`);
+    if (!citation.archived_path?.startsWith("docs/sources/")) failures.push(`${at}: archived_path must be under docs/sources/`);
+    else if (!fs.existsSync(path.join(repositoryRoot, citation.archived_path))) {
+      failures.push(`${at}: archived_path does not exist: ${citation.archived_path}`);
+    } else {
+      // The quote has to be the one the fetch verified against the page bytes.
+      // A quote edited here but not there is a quote nobody checked.
+      const snapshot = JSON.parse(
+        fs.readFileSync(path.join(repositoryRoot, citation.archived_path), "utf8"),
+      ) as { quote: string | null };
+      if (snapshot.quote !== citation.quote) failures.push(`${at}: quote differs from its snapshot`);
+    }
+    if (wordCount(citation.quote ?? "") > 25) failures.push(`${at}: quote must be at most 25 words`);
+  }
+  // Both directions, so neither file can drift from the other.
+  const cited = new Map(jargon.terms.filter((entry) => entry.citationId)
+    .map((entry) => [entry.term, entry.citationId as string] as const));
+  for (const [term, id] of cited) {
+    if (!glossaryIds.has(id)) failures.push(`jargon "${term}": citationId ${id} is in no glossary register`);
+  }
+  for (const id of glossaryIds) {
+    if (![...cited.values()].includes(id)) failures.push(`glossary citation ${id}: no definition uses it`);
   }
 
   const blocks = collectReadabilityBlocks(repositoryRoot);

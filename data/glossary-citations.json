@@ -1,0 +1,27 @@
+{
+  "purpose": "Sources for glossary definitions, kept apart from data/citations.json on purpose. That file is the REVIEWED REPORT SEED: src/lib/claims/canonical-report-data.test.ts pins it at exactly 71 claims and 19 citations against a fixed 2026-09-06 commit date, and src/lib/claims/registry.ts requires every entry to be used by a report claim. A glossary definition is not a report claim, so a source only a definition uses is an orphan by that model's own definition — and adding one would mean re-pinning content that represents a completed review. Two registers with one shape each is safer than one register with two meanings.",
+  "sameShapeAs": "data/citations.json",
+  "rule": "Every entry needs a snapshot under docs/sources/, an access date, and a quote of at most 25 words that scripts/glossary/fetch-source.mjs verified is present in the fetched bytes. Every entry must be referenced by a definition in data/jargon.json, and every citationId there must resolve here. Both directions are checked by scripts/claims-gate.ts.",
+  "citations": [
+    {
+      "id": "registry:nhgri-glossary-carrier",
+      "type": "registry",
+      "identifier": "NHGRI Talking Glossary of Genomic and Genetic Terms: Carrier",
+      "url": "https://www.genome.gov/genetics-glossary/Carrier",
+      "archived_path": "docs/sources/glossary/carrier.json",
+      "access_date": "2026-09-12",
+      "quote": "an individual who carries and is capable of passing on a genetic mutation associated with a disease",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "registry:nhgri-glossary-gwas",
+      "type": "registry",
+      "identifier": "NHGRI Talking Glossary of Genomic and Genetic Terms: Genome-Wide Association Studies (GWAS)",
+      "url": "https://www.genome.gov/genetics-glossary/Genome-Wide-Association-Studies-GWAS",
+      "archived_path": "docs/sources/glossary/genome-wide-association-study.json",
+      "access_date": "2026-09-12",
+      "quote": "surveying the genomes of many people, looking for genomic variants that occur more frequently in those with a specific disease or trait",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { glossaryEntries, glossaryEntry, renderableGlossaryEntries } from "./index";
@@ -40,7 +40,20 @@ describe("every glossary term is classified on purpose", () => {
     expect(classes.counts.total).toBe(classes.terms.length);
     expect(classes.counts.cited).toBe(cited);
     expect(classes.counts.plain).toBe(classes.terms.length - cited);
-    expect(renderableGlossaryEntries().length).toBe(classes.counts.plain);
+    // Renderable is no longer the same set as `plain`. Since 2026-09-12 a
+    // `cited` term also renders once its definition resolves to a real entry
+    // in data/glossary-citations.json, which is what sourcing the 42 is for:
+    // without it, sourcing them would have changed nothing on screen.
+    //
+    // Derived from the register rather than pinned, so deleting a citation
+    // returns its term to invisible and this still holds. What it still
+    // catches is what it was written for — a term reclassified from cited to
+    // plain to make it render.
+    const withEvidence = glossaryEntries()
+      .filter((entry) => entry.citationClass === "cited" && entry.citationId !== null);
+    expect(renderableGlossaryEntries().length).toBe(classes.counts.plain + withEvidence.length);
+    const renderable = renderableGlossaryEntries().map((entry) => entry.term);
+    for (const entry of withEvidence) expect(renderable).toContain(entry.term);
   });
 
   it("keeps every named risk, disease and statistical term out of what renders", () => {
@@ -71,5 +84,69 @@ describe("every glossary term is classified on purpose", () => {
     }
     expect(glossaryEntry("pathogenic")?.citationClass).toBe("cited");
     expect(glossaryEntry("chromosome")?.citationClass).toBe("plain");
+  });
+});
+
+
+/**
+ * The half that matters more than the rendering half: a reference resolving to
+ * nothing must not let a clinical definition onto a page. Built 2026-09-12
+ * with the operator's condition that anything unreachable stays invisible.
+ */
+describe("a cited definition renders only on evidence that resolves", () => {
+  const REGISTER = JSON.parse(
+    readFileSync(path.join(ROOT, "data/glossary-citations.json"), "utf8"),
+  ) as { citations: { id: string; quote: string; archived_path: string; access_date: string }[] };
+  const IDS = new Set(REGISTER.citations.map((citation) => citation.id));
+
+  it("resolves every citationId a definition carries", () => {
+    // READ THE RAW FILE, not glossaryEntries(). `index.ts` already nulls an id
+    // that resolves to nothing, so asserting over its output would agree with
+    // itself: a typo would be silently dropped and this would pass. Written
+    // that way first, and it proved nothing — pointing a definition at a
+    // dangling id changed no result at all.
+    const raw = JSON.parse(readFileSync(path.join(ROOT, "data/jargon.json"), "utf8")) as {
+      terms: { term: string; citationId?: string }[];
+    };
+    const carried = raw.terms.filter((entry) => entry.citationId);
+    expect(carried.length, "the sourcing has started").toBeGreaterThan(0);
+    for (const entry of carried) {
+      expect(IDS.has(entry.citationId!), `${entry.term}: ${entry.citationId} is in no register`).toBe(true);
+      expect(glossaryEntry(entry.term)?.citationId, entry.term).toBe(entry.citationId);
+    }
+  });
+
+  it("leaves no citation in the register that no definition uses", () => {
+    // The corpus register's orphan rule, kept for this one rather than
+    // inherited: a source nobody cites is a source nobody checks.
+    const used = new Set((JSON.parse(readFileSync(path.join(ROOT, "data/jargon.json"), "utf8")) as {
+      terms: { citationId?: string }[];
+    }).terms.map((entry) => entry.citationId).filter(Boolean));
+    for (const citation of REGISTER.citations) {
+      expect(used.has(citation.id), `${citation.id} is used by no definition`).toBe(true);
+    }
+  });
+
+  it("keeps every citation checkable: a snapshot, a date, and a quote inside the limit", () => {
+    for (const citation of REGISTER.citations) {
+      expect(citation.archived_path.startsWith("docs/sources/"), citation.id).toBe(true);
+      expect(existsSync(path.join(ROOT, citation.archived_path)), citation.archived_path).toBe(true);
+      expect(citation.access_date, citation.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const words = citation.quote.split(/\s+/).filter((token) => /[A-Za-z0-9]/.test(token));
+      expect(words.length, `${citation.id} quote length`).toBeLessThanOrEqual(25);
+      // The quote must be the one the fetch verified against the page bytes.
+      const snapshot = JSON.parse(readFileSync(path.join(ROOT, citation.archived_path), "utf8")) as { quote: string | null };
+      expect(snapshot.quote, `${citation.id} quote must match its snapshot`).toBe(citation.quote);
+    }
+  });
+
+  it("still hides every cited term with no evidence yet", () => {
+    const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
+    const uncited = glossaryEntries()
+      .filter((entry) => entry.citationClass === "cited" && entry.citationId === null);
+    expect(uncited.length, "most of the 42 are still unsourced").toBeGreaterThan(30);
+    for (const entry of uncited) {
+      expect(renderable.has(entry.term), `${entry.term} must not render uncited`).toBe(false);
+    }
   });
 });
