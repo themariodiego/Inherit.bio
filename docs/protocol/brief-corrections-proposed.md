@@ -241,6 +241,9 @@ family fixture rather than a register change:
 | `/genome/[subject]/ancestry` | `resolveSubjectRoute` -> `kind: "jurisdiction"` -> `CapabilityUnavailable` |
 | `/genome/[subject]/reports` | same |
 | `/genome/[subject]/reports/[slug]` | same |
+| `/genome/[subject]` | `resolveSubjectRoute` since 2026-09-12 |
+| `/genome/[subject]/data` | `resolveSubjectRoute` since 2026-09-12, under `raw.browse` |
+| `/genome/[subject]/data/browser` | same |
 | `/family` | `familyCapability` |
 | `/family/[person]/permissions` | jurisdiction guard |
 | `/family/health-picture` | `familyCapability` |
@@ -248,12 +251,27 @@ family fixture rather than a register change:
 | `/overview` | `familyCapability` |
 | `/embryo-analysis` | jurisdiction guard |
 
-**Eleven cannot reach it**, and for the genome trio the reason is precise and
-worth stating rather than summarising: `/genome/[subject]`,
-`/genome/[subject]/data` and `/genome/[subject]/data/browser` resolve with
+**SIGNED AND ACTED ON 2026-09-12, and the answer was the reverse of the
+proposal for the genome trio.** The operator was asked the pivot question below
+and answered that those routes ARE meant to serve a relative, so they were not
+over-declaring — they were missing a capability. All three now resolve with
+`resolveSubjectRoute` and refuse in an unreviewed jurisdiction; the paragraph
+that follows describes what they did until then and is kept as the record of
+why the question was asked.
+
+Two things the implementation added that the proposal did not anticipate. The
+hub `/genome/[subject]` was not named by either side, so it was put separately
+rather than assumed, and the operator moved it with its children. And the two
+data routes needed a grant that did not exist: `raw.export` was the only
+candidate and using it would have widened every export grant already given into
+a browsing grant, so `raw.browse` was created for it.
+
+**Eight of the eleven cannot reach it.** For the genome trio the reason was
+precise and is worth keeping: `/genome[subject]`,
+`/genome/[subject]/data` and `/genome/[subject]/data/browser` resolved with
 `resolveSubjectForAccount` — the OWN-subject resolver — and never with
-`resolveSubjectRoute`. A family segment does not resolve on those routes at
-all, so the page answers not-found instead of refusing.
+`resolveSubjectRoute`. A family segment did not resolve on those routes at
+all, so the page answered not-found instead of refusing.
 
 **That is not a fail-open.** No family data is served by those routes, so the
 missing refusal withholds nothing it should withhold. It is worth saying
@@ -269,8 +287,14 @@ visits it on the jurisdiction-off server as its control and asserts a 200 with
 the account still signed in, precisely so that a refusal elsewhere cannot be
 confused with a broken session.
 
-**Proposed:** drop `jurisdiction-unavailable` from the declared states of those
-eleven routes, so the register describes the product that exists.
+**Proposed, and superseded for three of the eleven:** drop
+`jurisdiction-unavailable` from the declared states of the eight that have no
+guard, and BUILD the capability on the genome trio, which is what the operator
+chose. Of the eight, the five `account-management` routes lost the declaration
+on 2026-09-12; `/files`, `/files/upload`, `/copilot/[scope]` and
+`/family/[person]` share the `product-result` profile with routes that do
+implement the state, so dropping it for them needs the profile split — and
+`/family/[person]` is separately blocked by G2.2 (see item 7).
 
 **THE QUESTION THIS TURNS ON, and it is yours rather than mine.** The proposal
 above assumes the product is right and the register over-declares. The opposite
@@ -315,11 +339,15 @@ in the first two checks, which is why the third was done.
 
 | state | declared and unproven | implement it | over-declared |
 |---|---|---|---|
-| `jurisdiction-unavailable` | 20 | 9 | 11 |
+| `jurisdiction-unavailable` (as measured 2026-09-11) | 20 | 9 | 11 |
+| `jurisdiction-unavailable` (after 2026-09-12) | 20 | **12** | **8** |
 | `consent-required` | 20 | 0 | 20 |
 
-**So 31 of the 40 unproven authority pairs are register over-declarations, and
-9 are genuine test work.** That is worth putting beside G2.2's own estimate,
+**As measured, 31 of the 40 unproven authority pairs were register
+over-declarations and 9 were genuine test work.** The 2026-09-12 decisions
+moved three from the first column to the second by BUILDING the capability
+rather than dropping the declaration, which is the outcome this item said was
+available and did not expect to be chosen. That is worth putting beside G2.2's own estimate,
 which places 50 of the remaining pairs in "needing new test-side setup only".
 For these two states the reachable figure is nine, and all nine sit behind one
 paired-family fixture.
