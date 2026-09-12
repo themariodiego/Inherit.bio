@@ -175,6 +175,7 @@
     "/embryos/upload jurisdiction-unavailable",
     "/family empty",
     "/family jurisdiction-unavailable",
+    "/family/[person] empty",
     "/family/[person] jurisdiction-unavailable",
     "/family/[person] partial-coverage",
     "/family/[person]/permissions complete",

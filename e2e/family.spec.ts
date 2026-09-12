@@ -50,6 +50,10 @@ const GATE_SESSION = "You won’t be asked again until you sign out.";
 const BASELINE_ABSENT =
   "No baseline: Inherit does not know this person’s sex and age band.";
 const NOT_SHARED = `${B_AS_SEEN_BY_A} has not shared anything with you yet. You will see nothing here until they do.`;
+/** The same sentence the other way round, for B's view of A. Retyped rather
+ *  than imported, as NOT_SHARED is: the assertion is that the copy reaches the
+ *  reader, not that the copy module agrees with itself. */
+const NOT_SHARED_BY_A = `${A_AS_SEEN_BY_B} has not shared anything with you yet. You will see nothing here until they do.`;
 const PAUSED_BODY =
   "Sharing with this person is paused. Nothing about them shows here until one of you resumes it.";
 
@@ -424,6 +428,44 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   // `e2e/a11y.spec.ts` cannot build two accounts and an accepted invitation,
   // so its coverage is here, at the same bar.
   await expectAxeClean(page);
+});
+
+/**
+ * `/family/[person] empty`, and it is the mirror of the partial-coverage test
+ * below rather than a weaker version of it. B looks at A, and A has granted B
+ * nothing: the grants asserted above are all one-directional, B to A. So the
+ * page has genuinely nothing about A to show, which is what `empty` means
+ * everywhere else in the register — the page works, and there is no content
+ * for it yet.
+ *
+ * Deliberately NOT `not-covered` or `partial-coverage`. Nothing here is
+ * uncovered by anyone's file and nothing is partly shown: A's file may not
+ * even exist, and the page cannot know, because a viewer with no grant is told
+ * nothing about whether there is anything to grant. That distinction is the
+ * point of the sentence — it names the person and says what will change it,
+ * without leaking whether A has uploaded anything at all.
+ */
+test("/family/[person] empty: with nothing granted in this direction, the page names the person and says so", async ({
+  page,
+}) => {
+  // B's session, looking at A. The reverse of every other read in this file.
+  await page.request.post("/auth/sign-out");
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}`);
+
+  await expect(page.getByRole("status")).toHaveText(NOT_SHARED_BY_A);
+
+  // The empty state is EXCLUSIVE, the same reading applied to the refusals:
+  // one status region, and none of the surfaces a shared record would bring.
+  await expect(page.getByRole("status")).toHaveCount(1);
+  await expect(page.locator("main a[href*='/reports']")).toHaveCount(0);
+  await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
+
+  // And it says nothing about whether A has a file. A count here would tell B
+  // something A never shared, which is the whole reason the sentence is
+  // phrased about sharing rather than about content.
+  await expect(page.locator('[data-slot="subject-files"]')).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText(/\b\d+ file/);
 });
 
 /**

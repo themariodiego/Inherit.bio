@@ -110,6 +110,11 @@ const BROWSER_TESTS = "e2e";
  *               exists rather than duplicating the suite's most expensive
  *               setup. Every one of the nine states the register declares for
  *               `jurisdiction-unavailable` is now proven in a browser.
+ *   130 -> 129  `/family/[person] empty`, the first of the `empty` group and a
+ *               proof. It needed no fixture either: `e2e/family.spec.ts`
+ *               already pairs two accounts whose grants all run one way, so
+ *               the reverse view has genuinely nothing to show. The state was
+ *               implemented and simply never titled.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -120,7 +125,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 130;
+const UNPROVEN_ROUTE_STATE_PAIRS = 129;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
