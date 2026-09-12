@@ -52,7 +52,6 @@ import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
 
 export const metadata: Metadata = { title: "Overview" };
 
