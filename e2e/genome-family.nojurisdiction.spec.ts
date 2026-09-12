@@ -71,9 +71,16 @@ import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
  *
  * So, accurately, of the routes the register lists as
  * `jurisdiction-unavailable` and this file does not prove:
- *   - `/overview` and `/family/portrait/[pairId]` implement a refusal and are
- *     FIXTURE gaps. `/overview` needs the full State-D fixture; the portrait
- *     needs a `family_pairs` row and therefore a mutual portrait grant.
+ *   - `/overview` implements a refusal and is a FIXTURE gap: its State-D
+ *     carrier line needs two prepared files and a mutual heritability grant
+ *     before the refusal is even reachable.
+ *   - `/family/portrait/[pairId]` was in that list too, on the belief that its
+ *     refusal needed a MUTUAL portrait grant and therefore the whole
+ *     `e2e/portrait.spec.ts` fixture. Reading the page settled it: `!allowed`
+ *     is the FIRST branch, ahead of the paused sentence, the blocking screen
+ *     and the gate, so only the pair ROW has to exist — and one account
+ *     turning Portrait on creates it, `pending`. It is proven below, and its
+ *     test carries what it cost to get there.
  *   - `/files`, `/files/upload` and `/copilot/[scope]` mention jurisdiction
  *     nowhere in their page modules and are PRODUCT gaps. A test titled for
  *     one of those would certify a refusal that does not exist, which is
@@ -355,4 +362,89 @@ test("/family/[person] jurisdiction-unavailable: the refusal is the body where t
   await expect(page.locator("main a[href*='/reports/']")).toHaveCount(0);
   await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveCount(1);
+});
+
+test("/family/portrait/[pairId] jurisdiction-unavailable: the pair exists and the refusal stands in for every output", async ({ page }) => {
+  expect(pairedSegment).not.toBe("");
+  const admin = adminClient();
+  const accounts = await admin.auth.admin.listUsers();
+  const idA = accounts.data.users.find(user => user.email === A.email)?.id;
+  const idB = accounts.data.users.find(user => user.email === B.email)?.id;
+  expect(idA && idB).toBeTruthy();
+  const selfOf = async (accountId: string) => (await admin.from("subjects").select("id")
+    .eq("subject_account_id", accountId).eq("subject_class", "self").eq("lifecycle", "active").single()).data!.id;
+  const [subjectA, subjectB] = await Promise.all([selfOf(idA!), selfOf(idB!)]);
+
+  // THE PAIR ROW IS THE WHOLE FIXTURE, and B is the one who can create it.
+  // `family_pairs` appears when one account turns Portrait on — the row sits
+  // `pending` until the other agrees, and `pending` is enough to reach this
+  // route. But the Portrait row is settable only for a subject carrying the
+  // independent-login marker, which is stamped by a sign-in of one's OWN
+  // after accepting an invitation. A never accepted anything, so A's row stays
+  // locked; B's becomes settable on B's next sign-in. The first draft of this
+  // test had A grant and timed out for exactly that reason, which
+  // `e2e/family.spec.ts` already documents at its Portrait row.
+  // SIGN OUT FIRST, and this is not ceremony. `signIn` ends by waiting for
+  // /overview, and an already-authenticated visit to /auth/sign-in redirects
+  // there — so calling it while A is signed in "succeeds" without changing
+  // account, and the page below then renders A's locked Portrait row. That is
+  // what the first run of this test actually did. `e2e/family.spec.ts` posts
+  // the sign-out before its own switch to B for the same reason.
+  await page.request.post(`${MAIN}/auth/sign-out`);
+  await signIn(page, B.email, B.password);
+  // B completes the same account step A did in the invitation test. A grant
+  // presentation is minted only for an account whose own record is complete,
+  // so without it every pair row stays actionless.
+  await page.goto(`${MAIN}/files/upload`);
+  await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1991-02-02");
+  const completedB = page.waitForResponse(response => response.url().endsWith("/api/account/completion")
+    && response.request().method() === "POST");
+  await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
+  expect((await completedB).status()).toBe(200);
+  await page.goto(`${MAIN}/family/s-${subjectA}/permissions`);
+  const row = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
+  // The row is settable now, and getting here took four wrong guesses worth
+  // recording. It was NOT the independent-login marker, which the database
+  // showed stamped while the row stayed locked; a probe printing every row in
+  // the settable column found FIVE rows actionless at once — both report
+  // layers, Portrait and Health picture — which is not a Portrait fact. What
+  // they share is a grant presentation minted only for an account whose own
+  // record is complete. B's completion above is what turns all five settable.
+  await expect(row.locator('[data-slot="permission-control"]')).toHaveCount(1);
+  const granted = page.waitForResponse(response =>
+    response.url().endsWith("/api/consents") && response.request().method() === "POST");
+  await row.getByRole("button", { name: /Turn on/ }).click();
+  expect((await granted).status()).toBe(201);
+
+  const pairs = await admin.from("family_pairs").select("id, status, subject_a_id, subject_b_id")
+    .or(`subject_a_id.eq.${subjectA},subject_b_id.eq.${subjectA}`);
+  const pair = (pairs.data ?? []).find(candidate =>
+    candidate.subject_a_id === subjectB || candidate.subject_b_id === subjectB);
+  expect(pair, "one Portrait grant creates the pair row").toBeTruthy();
+  expect(pair!.status, "one grant leaves it pending, which is enough to reach the route").toBe("pending");
+
+  // The refusal, read on the off server by the account that did not grant.
+  await page.request.post(`${MAIN}/auth/sign-out`);
+  await signIn(page, A.email, A.password);
+  const response = await page.goto(`/family/portrait/${pair!.id}`);
+  expect(response?.status()).toBe(200);
+  const refusal = page.getByRole("status").filter({ hasText: REFUSAL_SENTENCE });
+  await expect(refusal).toHaveCount(1);
+
+  // A FOURTH SHAPE: the page keeps its frame — breadcrumbs, the pair bar, the
+  // h1 and the persistent banner — and the refusal replaces the one slot that
+  // would otherwise hold the blocking screen, the gate or the portrait. That
+  // is what the page's own comment calls "exactly one of", and these
+  // assertions are that the refusal really is the one.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator('[data-slot="pair-bar"]')).toHaveCount(1);
+  await expect(page.locator('[data-slot="portrait-blocking"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="portrait-empty"]')).toHaveCount(0);
+  await expect(page.locator("[data-claim-block], [data-figure-kind]")).toHaveCount(0);
+
+  // Nothing was derived for a pair the jurisdiction refuses.
+  const results = await admin.from("portrait_results")
+    .select("id", { count: "exact", head: true }).eq("family_pair_id", pair!.id);
+  expect(results.count ?? 0).toBe(0);
 });

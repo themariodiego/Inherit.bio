@@ -67,7 +67,7 @@ const BROWSER_TESTS = "e2e";
  *               jurisdiction-unavailable state, each traced to the branch that
  *               renders its refusal and each passing in a browser before this
  *               number moved.
- *   139 -> 135  four more real proofs, needing no new fixture:
+ *   139 -> 134  five more real proofs, four of them needing no new fixture:
  *               `/genome/[subject]`, `/genome/[subject]/data` and
  *               `/genome/[subject]/data/browser` in their
  *               jurisdiction-unavailable state. `resolveSubjectRoute` asks the
@@ -80,6 +80,11 @@ const BROWSER_TESTS = "e2e";
  *               register's sentence as the page body rather than replacing
  *               the page or adding a header line - traced at
  *               `family/[person]/page.tsx:167` before it was titled.
+ *               `/family/portrait/[pairId]` is the fifth and did need
+ *               something: a `family_pairs` row, which one account turning
+ *               Portrait on creates. It was believed to need the whole
+ *               `e2e/portrait.spec.ts` fixture until the page was read -
+ *               `!allowed` is its FIRST branch, so a `pending` pair is enough.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -90,7 +95,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 135;
+const UNPROVEN_ROUTE_STATE_PAIRS = 134;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

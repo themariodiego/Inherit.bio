@@ -185,6 +185,7 @@
     "/family/invite complete",
     "/family/invite jurisdiction-unavailable",
     "/family/portrait/[pairId] consent-required",
+    "/family/portrait/[pairId] jurisdiction-unavailable",
     "/files complete",
     "/files consent-required",
     "/files empty",

@@ -1922,3 +1922,33 @@ The three real product gaps stand: `/files`, `/files/upload` and
 `/copilot/[scope]` declare `jurisdiction-unavailable` in the register and
 implement nothing. That is the same shape as the `consent-required` conflict
 already waiting on the owner.
+
+## 2026-09-12 — Five rows locked at once was the clue; four guesses came first
+
+Proving `/family/portrait/[pairId] jurisdiction-unavailable` needed a
+`family_pairs` row, and the Portrait permission row refused to be turned on.
+Four wrong explanations, each plausible and each disproved:
+
+1. **The independent-login marker.** The copy names it and the row is locked
+   without it — but the database showed `independent_login_at` stamped while
+   the row stayed locked. The marker was never the blocker.
+2. **A one-render lag** between the page stamping that marker and reading it
+   back. Disproved by reloading: locked on both views.
+3. **The wrong account.** This one WAS real and worth keeping: `signIn` ends by
+   waiting for `/overview`, and an already-authenticated visit to
+   `/auth/sign-in` redirects there, so calling it while another account is
+   signed in "succeeds" without changing account. Fixed, and the row was still
+   locked.
+4. **B needing to grant rather than A.** Also real, also not sufficient.
+
+What settled it was a probe that printed EVERY row in the settable column
+instead of the one under suspicion. Five rows were actionless at once — both
+report layers, Portrait and Health picture — and five rows failing together is
+not a fact about Portrait. What they share is a grant presentation minted only
+for an account whose own record is complete. B had never completed theirs.
+
+The lesson is the probe, not the answer. Three of the four guesses were about
+the specific row because the failure was reported on the specific row. Widening
+the observation to the whole column took one run and answered it. When a
+guess about a mechanism fails twice, stop guessing at the mechanism and print
+the neighbourhood.
