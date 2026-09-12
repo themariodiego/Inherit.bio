@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "2d6bc5194bc5dc936930d4439c34dae34c0409ee478c339b73d46b262bc72162",
+  "briefSha256": "f686d0400cda0ea5dcb5a16593f3839a29170cba94aeedd65f712ad28f5e5d4f",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -12676,8 +12676,7 @@
   "stateProfiles": {
     "static-document": {
       "supported": [
-        "complete",
-        "error"
+        "complete"
       ],
       "notApplicable": {
         "empty": "A versioned public document always has committed content.",
@@ -12685,13 +12684,13 @@
         "partial-coverage": "A static public document renders no uploaded-file result.",
         "not-covered": "A static public document renders no uploaded-file result.",
         "consent-required": "A public document is readable without a genetic-data consent.",
-        "jurisdiction-unavailable": "Rights, legal and science documents are never jurisdiction-blocked."
+        "jurisdiction-unavailable": "Rights, legal and science documents are never jurisdiction-blocked.",
+        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "public-capability-marketing": {
       "supported": [
         "complete",
-        "error",
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
@@ -12699,7 +12698,8 @@
         "processing": "The public branch starts no user-data processing.",
         "partial-coverage": "The public branch renders no uploaded-file result.",
         "not-covered": "The public branch renders no uploaded-file result.",
-        "consent-required": "The public restriction explanation is readable without genetic-data consent."
+        "consent-required": "The public restriction explanation is readable without genetic-data consent.",
+        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "jurisdictionUnavailable": "return-200-render-the-exact-fail-closed-capability-copy-and-future-person-rights-link-with-zero-user-result-cookie-or-subject-fetch"
     },
@@ -12710,11 +12710,12 @@
         "partial-coverage",
         "complete",
         "not-covered",
-        "error",
         "consent-required",
         "jurisdiction-unavailable"
       ],
-      "notApplicable": {},
+      "notApplicable": {
+        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+      },
       "zeroUserDataRule": "every-state-is-a-public-educational-projection-selected-from-committed-copy-and-the-current-public-jurisdiction-catalog-with-zero-account-subject-file-result-cookie-or-genetic-data-fetch",
       "stateProjection": {
         "empty": "show-the-committed-no-upload-yet-educational-entry-state",
@@ -12722,7 +12723,6 @@
         "partial-coverage": "show-the-committed-partial-coverage-explanation-with-no-individual-result",
         "complete": "show-the-complete-public-legality-first-overview",
         "not-covered": "show-the-committed-not-covered-explanation-and-no-number-policy",
-        "error": "show-the-public-safe-retry-and-rights-navigation-state",
         "consent-required": "show-the-exact-current-parent-and-future-person-consent-prerequisites-before-any-sign-in-or-upload-action",
         "jurisdiction-unavailable": "show-the-exact-fail-closed-capability-copy-and-future-person-rights-link"
       }
@@ -12730,29 +12730,29 @@
     "versioned-document": {
       "supported": [
         "empty",
-        "complete",
-        "error"
+        "complete"
       ],
       "notApplicable": {
         "processing": "A versioned document performs no asynchronous user-data processing.",
         "partial-coverage": "A versioned document renders no uploaded-file result.",
         "not-covered": "A versioned document renders no uploaded-file result.",
         "consent-required": "Public version history is readable without a genetic-data consent.",
-        "jurisdiction-unavailable": "Public version history is never jurisdiction-blocked."
+        "jurisdiction-unavailable": "Public version history is never jurisdiction-blocked.",
+        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "auth-flow": {
       "supported": [
         "empty",
         "processing",
-        "complete",
-        "error"
+        "complete"
       ],
       "notApplicable": {
         "partial-coverage": "Authentication does not render an uploaded-file result.",
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
-        "jurisdiction-unavailable": "Authentication remains available in every jurisdiction."
+        "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
+        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "product-result": {
@@ -12762,24 +12762,25 @@
         "partial-coverage",
         "complete",
         "not-covered",
-        "error",
         "consent-required",
         "jurisdiction-unavailable"
       ],
-      "notApplicable": {}
+      "notApplicable": {
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+      }
     },
     "restricted-flow": {
       "supported": [
         "empty",
         "processing",
         "complete",
-        "error",
         "consent-required",
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
-        "not-covered": "This single-purpose flow does not render a result derived from an uploaded file."
+        "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
+        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "account-management": {
@@ -12787,27 +12788,27 @@
         "empty",
         "processing",
         "complete",
-        "error",
         "consent-required",
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
         "partial-coverage": "Account management does not render an uploaded-file result.",
-        "not-covered": "Account management does not render an uploaded-file result."
+        "not-covered": "Account management does not render an uploaded-file result.",
+        "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "public-rights-flow": {
       "supported": [
         "empty",
         "processing",
-        "complete",
-        "error"
+        "complete"
       ],
       "notApplicable": {
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
-        "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked."
+        "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       }
     },
     "redirect": {

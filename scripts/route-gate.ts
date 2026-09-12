@@ -51,8 +51,17 @@ const BROWSER_TESTS = "e2e";
  * fails when a proof is lost and it fails when a proof is added, so every
  * browser test that covers a new (route, state) pair has to bring this number
  * down with it and no later change can quietly give one back.
+ *
+ * It can also fall because the register stops requiring a pair, and that is a
+ * different event which must never be mistaken for a proof. On 2026-09-12 it
+ * went 214 -> 152 for exactly that reason: the operator signed corrections
+ * item 4, `error` came off nine `stateProfiles`, and the required set shrank
+ * from 288 pairs to 226 while the proven set stayed at 74. Not one test was
+ * written. The ledger comparison above is what makes the distinction visible
+ * rather than a matter of trust - `provenRouteStates` is unchanged across that
+ * move, so a reader can see the drop came from the denominator.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 214;
+const UNPROVEN_ROUTE_STATE_PAIRS = 152;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

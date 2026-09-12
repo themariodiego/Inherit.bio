@@ -66,7 +66,10 @@ describe("the route gate holds the register to the code", () => {
     expect(result.matchedEndpointCount).toBeGreaterThan(30);
     expect(result.registeredRedirectCount).toBe(10);
     expect(result.checkedKindCount).toBeGreaterThan(90);
-    expect(result.requiredStateCount).toBe(288);
+    // 226 since 2026-09-12, when the operator signed corrections item 4 and `error`
+    // came off nine `stateProfiles` as a state no request can reach. Pinned exactly
+    // rather than as a floor, so a profile quietly losing a state fails here.
+    expect(result.requiredStateCount).toBe(226);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
   });
 
