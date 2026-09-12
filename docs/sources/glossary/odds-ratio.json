@@ -1,0 +1,13 @@
+{
+  "term": "odds ratio",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/odds-ratio",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/odds-ratio",
+  "fetchedAt": "2026-09-12T10:59:50.218Z",
+  "pageBytes": 2355,
+  "pageSha256": "95639aa687db476f67cd4d91e4aae37b5bc08375ed8aec96f93966f584b9fba7",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "A measure of the odds of an event happening in one group compared to the odds of the same event happening in another group."
+}

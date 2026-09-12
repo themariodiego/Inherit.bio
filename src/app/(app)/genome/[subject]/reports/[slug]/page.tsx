@@ -268,10 +268,10 @@ function VariantResult({
             that gets glosses: it explains an ABSENCE, and leans on "variant",
             "genotype" and "reference" to do it. A term naming a disease, a
             risk or a statistic is glossed here only once its definition
-            carries a source, so nothing reaches this surface uncited. As of
-            2026-09-12 none of the sourced ones appears in these two
-            sentences, and the five glosses are the same plain terms as
-            before. The paragraph's own text is
+            carries a source, so nothing reaches this surface uncited.
+            Sourcing NCI's definition of "clinical" on 2026-09-12 added the
+            sixth gloss here, which is the register changing what a reader
+            can open - measured, not assumed. The paragraph's own text is
             unchanged while the glosses are closed, which is what lets the
             copy still be asserted exactly. */}
         <p {...REQUIRED_ACCURACY}><GlossedText>{notCovered}</GlossedText></p>

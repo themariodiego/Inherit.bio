@@ -1,0 +1,13 @@
+{
+  "term": "clinical",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/clinical",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/clinical",
+  "fetchedAt": "2026-09-12T10:59:48.658Z",
+  "pageBytes": 526,
+  "pageSha256": "db159470127f363285ed3980b711a5afadb426893e437f4b85d384a5e62f2a46",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "Having to do with the examination and treatment of patients."
+}

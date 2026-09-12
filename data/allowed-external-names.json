@@ -867,6 +867,24 @@
         "data/glossary-citations.json",
         "docs/sources/glossary/prevalence.json"
       ]
+    },
+    {
+      "name": "NCI",
+      "category": "cited-organisation",
+      "aliases": [
+        "nci",
+        "cancer.gov",
+        "www.cancer.gov",
+        "webapis.cancer.gov",
+        "national cancer institute",
+        "nci dictionary of cancer terms",
+        "nci dictionary of genetics terms"
+      ],
+      "reason": "Cited by name in the glossary citation register as the source for twelve definitions, at the dictionary's own JSON endpoint because the human page renders client-side.",
+      "evidence": [
+        "data/glossary-citations.json",
+        "docs/sources/glossary/hazard-ratio.json"
+      ]
     }
   ]
 }

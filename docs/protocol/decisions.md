@@ -1860,3 +1860,40 @@ The sweep was checked against a mutation before being trusted: breaking
 `renderableGlossaryEntries()` to return everything made it fail on
 `association`. What it does NOT cover is stated in the test itself, because a
 comment claiming cover it does not have is worse than no comment.
+
+## 2026-09-12 — Citing an API endpoint rather than the page that renders it
+
+The NCI dictionaries were recorded as uncitable: their pages serve a
+JavaScript shell, so a quote taken from them cannot be verified against the
+bytes a reader receives. I wrote that this needed "a decision, not a
+workaround".
+
+Taking it. Reading the page's own bundle gives the endpoint it calls —
+`https://webapis.cancer.gov/glossary/v1/Terms/{dictionary}/{audience}/en/{term}`
+— which is NCI's own, returns the record as JSON, and carries the definition
+in the bytes. Twelve definitions are cited at that URL.
+
+The verification property is not weakened by this; it is the reason for it.
+The rule is that a quote must be present in the bytes at the URL the register
+names, and it holds exactly. What changes is which URL that is, and the
+answer is the one that actually contains the record rather than a rendering
+of it. Every such entry says so in its `claim`, so the choice is visible
+rather than something a reader has to reverse-engineer.
+
+The owner's condition — anything unreachable stays invisible — is about
+sources that cannot be reached. This one can be, and leaving twelve terms
+invisible while a real authority defined every one of them would have been
+the wrong reading of it.
+
+## 2026-09-12 — A count that fails on progress is measuring the wrong thing
+
+`glossary-classes.test.ts` asserted `uncited.length > 30`, written when two of
+the 42 were sourced. Sourcing twenty-four made it fail. Nothing was wrong: the
+test was pinning a snapshot of that day rather than a property.
+
+It is now a non-vacuity guard at `> 0`, with the real assertion — no uncited
+term renders — unchanged, and a note to delete the guard when the last term is
+sourced and the loop is empty for the right reason.
+
+The same shape is worth watching for elsewhere: a threshold chosen from today's
+numbers reads like a safety rail and behaves like a ratchet against the work.

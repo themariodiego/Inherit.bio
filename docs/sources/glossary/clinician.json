@@ -1,0 +1,13 @@
+{
+  "term": "clinician",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/clinician",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/clinician",
+  "fetchedAt": "2026-09-12T10:59:49.062Z",
+  "pageBytes": 532,
+  "pageSha256": "3852426a65c5ffedb0e67466630f0a67c1fecb429f857c57cefc7635a03f46f6",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "A health professional who takes care of patients."
+}

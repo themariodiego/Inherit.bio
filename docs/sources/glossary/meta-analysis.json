@@ -1,0 +1,13 @@
+{
+  "term": "meta-analysis",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/meta-analysis",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/meta-analysis",
+  "fetchedAt": "2026-09-12T10:59:50.028Z",
+  "pageBytes": 780,
+  "pageSha256": "ccbc53ebe9b5099d0eba15e784cfb1b1aeceda247688a3f24b0b3323956c5ef8",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "A process that analyzes data from different studies done about the same subject."
+}

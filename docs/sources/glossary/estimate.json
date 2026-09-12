@@ -1,0 +1,13 @@
+{
+  "term": "estimate",
+  "url": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm",
+  "finalUrl": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm",
+  "fetchedAt": "2026-09-12T10:59:51.327Z",
+  "pageBytes": 15106,
+  "pageSha256": "0b81efaef2ba53ad7751e3ea5cc74225e518666c6e62a612b94eeba262baeca9",
+  "pageTitle": "1.3.5.2. Confidence Limits for the Mean",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "Interval estimates are often desirable because the estimate of the mean varies from sample to sample."
+}

@@ -1,0 +1,13 @@
+{
+  "term": "diagnosis",
+  "url": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/diagnosis",
+  "finalUrl": "https://webapis.cancer.gov/glossary/v1/Terms/Cancer.gov/Patient/en/diagnosis",
+  "fetchedAt": "2026-09-12T10:59:49.463Z",
+  "pageBytes": 855,
+  "pageSha256": "f40fb7d9cc4ae360374507f63fb5619885a1ce5aa1905e1d441a32e23baa6b45",
+  "pageTitle": null,
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "The process of identifying a disease, condition, or injury from its signs and symptoms."
+}

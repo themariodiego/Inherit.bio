@@ -158,7 +158,13 @@ describe("a cited definition renders only on evidence that resolves", () => {
     const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
     const uncited = glossaryEntries()
       .filter((entry) => entry.citationClass === "cited" && entry.citationId === null);
-    expect(uncited.length, "most of the 42 are still unsourced").toBeGreaterThan(30);
+    // A non-vacuity guard, not a target. This read `toBeGreaterThan(30)` when
+    // two of the 42 were sourced, which made it fail the moment sourcing
+    // worked - a test that turns red on progress is measuring the wrong thing.
+    // What has to hold is that no uncited term renders; the count is whatever
+    // the register happens to hold. Delete this line when the last one is
+    // sourced and the loop is empty for the right reason.
+    expect(uncited.length, "there is still something to hide").toBeGreaterThan(0);
     for (const entry of uncited) {
       expect(renderable.has(entry.term), `${entry.term} must not render uncited`).toBe(false);
     }

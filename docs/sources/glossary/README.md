@@ -60,12 +60,27 @@ against the term's name.
 | `incidence` | CDC, *Principles of Epidemiology*, Lesson 3 §2 | **supports it, from a table.** The quote is the numerator CDC gives for incidence proportion — "Number of new cases of disease during specified time interval" — and the denominator on the same row is the population at the start of the interval. Both halves are recorded in the register's `claim`, because a table cell quoted alone would look like more than it is. |
 | `absolute risk` | CDC, *Principles of Epidemiology*, Lesson 3 §2 | **supports it, under another name.** CDC calls the measure incidence proportion and lists "risk" among its synonyms on the same page. That is why the citation is not to a page using the phrase "absolute risk", and the register says so. |
 | `relative risk` | CDC, *Principles of Epidemiology*, Lesson 3 §5 | **supports it.** "compares the risk of a health event … among one group with the risk among another group", and CDC gives "relative risk" as the alternative name for the risk ratio in the same sentence. |
+| `heritability` | NCI, *Dictionary of Genetics Terms* | **supports it.** "The proportion of variation in a population trait that can be attributed to inherited genetic factors" is Inherit's "the share of the differences between people in a trait that comes from their genes". |
+| `linkage disequilibrium` | NCI, *Dictionary of Genetics Terms* | **supports it.** "occur together more often than can be accounted for by chance because of their physical proximity on a chromosome". |
+| `odds ratio` | NCI, *Dictionary of Cancer Terms* | **supports it.** "the odds of an event happening in one group compared to the odds of the same event happening in another group" — including the "expressed as odds" half, which CDC's own definition of the measure does not state. |
+| `hazard ratio` | NCI, *Dictionary of Cancer Terms* | **supports it.** "how often a particular event happens in one group compared to how often it happens in another group, over time". Inherit says "how much faster one group reaches an event"; that is the same quantity described the other way round, and the `claim` says so rather than leaving a reader to assume it. |
+| `meta-analysis` | NCI, *Dictionary of Cancer Terms* | **supports it.** "A process that analyzes data from different studies done about the same subject." |
+| `autoimmune` | NCI, *Dictionary of Cancer Terms* | **supports it.** "the body's immune system mistakes its own healthy tissues as foreign and attacks them". |
+| `inflammation` | NCI, *Dictionary of Cancer Terms* | **supports it in part.** "A normal part of the body's response to injury or infection." Inherit's definition adds "irritation", which the source does not carry; the `claim` says so and does not attribute it. |
+| `condition` | NCI, *Dictionary of Cancer Terms* | **supports it.** "a normal state with regard to one's health, such as pregnancy, or … a disease, disorder, illness, or injury". |
+| `diagnosis` | NCI, *Dictionary of Cancer Terms* | **supports it.** "The process of identifying a disease, condition, or injury from its signs and symptoms." The source names the process; Inherit names the conclusion it reaches, which the `claim` records. |
+| `clinical` | NCI, *Dictionary of Cancer Terms* | **supports it in part.** "Having to do with the examination and treatment of patients." The word "qualified" is Inherit's own restriction and is not attributed to NCI. |
+| `clinician` | NCI, *Dictionary of Cancer Terms* | **supports it in part.** "A health professional who takes care of patients", with the same note about "qualified". |
+| `sensitivity` | NCI, *Dictionary of Cancer Terms* | **supports it.** Inherit's definition holds two senses and so does the entry. The quote is the test sense; the entry's next sentence carries the other. |
+| `estimate` | NIST/SEMATECH e-Handbook 1.3.5.2 | **supports it.** "the estimate of the mean varies from sample to sample" is Inherit's "a calculated value with uncertainty, not a known outcome". |
 
 ## Judged and REJECTED, with the snapshot kept as the evidence
 
 | term | source checked | why it does not carry the definition |
 |---|---|---|
 | `polygenic` | NHGRI, *Polygenic Trait*, and *Polygenic Risk Score (PRS)* | Inherit defines the adjective — "influenced by many DNA positions, usually with small effects". The PRS page defines a *score*, not the adjective. The Polygenic Trait page defines the adjective but as "influenced by two or more genes", and searching its body for "small effect", "many variants" and "thousands" finds nothing. Two or more genes is not "many DNA positions … with small effects", so the term stays uncited. |
+| `medication` | NCI, *Dictionary of Cancer Terms* | Inherit's definition is "a drug **or care plan** used to prevent, manage, or treat illness". NCI's entry is about a dosage form and what it is used for; a care plan is not a dosage form, and nothing on the page carries that half. Rather than cite the supported half and quietly widen it, the term stays uncited — and Inherit's own definition is the thing to look at, because "or care plan" may simply be wrong. |
+| `overload` | NCI, *Dictionary of Cancer Terms*, "iron overload" | Inherit defines the generic word — "a harmful buildup beyond what the body can handle well" — and NCI defines the iron-specific condition. Citing the specific for the generic would overstate it, and the term appears in no shipped copy, so nothing is lost by leaving it. |
 | `pathogenic` | NHGRI, *Pathogenic Variant* | Inherit's definition is the ACMG sense — "a DNA change that a **clinical review has judged** to cause a condition" — and the page never mentions classification or review. It defines a pathogenic variant as one that "may increase a person's risk", and adds that carrying one "does not guarantee" the condition. That is a different claim from the one Inherit makes, so citing it would misrepresent both. The right authority is the ACMG/AMP classification guidance or ClinGen; neither has been fetched yet. |
 
 ## Authorities probed and what they can carry
@@ -75,33 +90,40 @@ against the term's name.
   `meta-analysis`; its index was fetched and read rather than guessed at.
 - **MedlinePlus Genetics** — static HTML, real modification dates. Covers the
   inheritance and variant-interpretation half.
-- **NIST/SEMATECH e-Handbook of Statistical Methods** — static HTML, and the
-  natural authority for `odds ratio`, `z-score`, `hazard ratio`, `effect size`,
-  `probability`, `baseline`, `estimate` and `model`, which are statistics
-  rather than genetics.
+- **NIST/SEMATECH e-Handbook of Statistical Methods** — static HTML, and now
+  largely spent. Its table of contents was fetched and read: it has no section
+  for `z-score`, `odds`, `baseline` or `effect size`, and its "process
+  modeling" definition is not what Inherit's `model` means. `odds ratio` and
+  `hazard ratio` came from NCI instead, which defines both plainly.
 - **CDC, *Principles of Epidemiology in Public Health Practice*** — static
   HTML, and the authority for the epidemiological measures. It is served from
   `archive.cdc.gov`; the live `www.cdc.gov` path for the course now 404s. The
   archive is CDC's own, the snapshot pins the bytes, and the URL says plainly
   that it is an archive.
-- **NCI Dictionary of Cancer Terms — CANNOT BE CITED BY THIS METHOD.** Every
+- **NCI Dictionaries of Cancer Terms and of Genetics Terms** — reachable, but
+  not at the address a person would type. Every
   `cancer.gov/publications/dictionaries/...` page returns a JavaScript shell
-  whose body is "You need to enable JavaScript to run this app." The definition
-  is fetched at runtime from `webapis.cancer.gov`, so the quote is not in the
-  bytes at the URL a reader would open. Quoting it would mean recording a quote
-  the snapshot cannot verify, which is the one thing this method exists to
-  prevent. It stays unused unless the register is willing to cite an API
-  response separately from the human page — a decision, not a workaround.
+  whose body is "You need to enable JavaScript to run this app.", so the
+  definition is not in those bytes and a quote taken from them could not be
+  verified. Reading the page's own bundle gives the endpoint it calls:
+  `https://webapis.cancer.gov/glossary/v1/Terms/{dictionary}/{audience}/en/{term}`,
+  which is NCI's own, returns the record as JSON, and carries the definition in
+  the bytes.
 
-## Still uncited: 31 of 42
+  **Twelve definitions are cited there, at that URL.** The verification
+  property is unchanged and arguably stronger — the quote is checked against
+  the exact bytes the register names, and those bytes are the record itself
+  rather than a rendering of it. Each of those entries says in its `claim` why
+  the endpoint rather than the page is cited, so nobody has to reverse-engineer
+  the choice. The alternative was leaving twelve terms invisible while a real
+  authority defined every one of them.
 
-`association`, `autoimmune`, `baseline`, `classification`, `clinical`,
-`clinician`, `condition`, `diagnosis`, `effect size`, `estimate`,
-`hazard ratio`, `heritability`, `imputation`, `inflammation`,
-`linkage disequilibrium`, `medical`, `medication`, `meta-analysis`, `model`,
-`odds`, `odds ratio`, `overload`, `pathogenic`, `polygenic`, `probability`,
-`reference panel`, `replication`, `risk allele`, `sensitivity`, `statistical`,
-`z-score`.
+## Still uncited: 18 of 42
+
+`association`, `baseline`, `classification`, `effect size`,
+`imputation`, `medical`, `medication`, `model`, `odds`, `overload`,
+`pathogenic`, `polygenic`, `probability`, `reference panel`,
+`replication`, `risk allele`, `statistical`, `z-score`.
 
 Each stays invisible to readers until a fetched page carries its definition.
 That is the operator's condition working as intended, not a gap to be closed by
