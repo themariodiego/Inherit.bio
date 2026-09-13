@@ -237,6 +237,7 @@
     "/genome/[subject]/reports/[slug] complete",
     "/genome/[subject]/reports/[slug] jurisdiction-unavailable",
     "/genome/[subject]/reports/[slug] not-covered",
+    "/genome/[subject]/reports/[slug] processing",
     "/legal complete",
     "/legal/[artifact] complete",
     "/legal/[artifact]/diff/[from]/[to] complete",

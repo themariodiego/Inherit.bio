@@ -628,7 +628,7 @@ different at `uploaded` from what it renders with no file at all?**
 | `/family` | `cardState` returns `awaiting-results` -> "No shared results yet" where no canonical access gives `no-file` -> "No file yet" (`(family-hub)/family/page.tsx:91`). |
 | `/family/[person]` | "No completed result is shared yet." under canonical access, against `noFileYet(name)` without it (`family/[person]/page.tsx:190`). |
 | `/family/health-picture` | A distinct CELL state: `no-prepared-file` -> "No prepared file yet", separate from `no-file` -> "No file yet" (`health-picture-cell.tsx:47`, `health-picture-projection.ts:19`). |
-| `/genome/[subject]/reports/[slug]` | With `fileCount > 0` and no prepared result: "Choose this result type in Reports to see what your file supports." `fileCount === 0` gets `NO_FILE_YET` instead (`reports/[slug]/page.tsx:450`). This is the right next step at `uploaded`, because preparation is what the report choice asks for. |
+| `/genome/[subject]/reports/[slug]` | With `fileCount > 0` and no prepared result: "Choose this result type in Reports to see what your file supports." `fileCount === 0` gets `NO_FILE_YET` instead (`reports/[slug]/page.tsx:450`). **That last judgement was wrong and was reversed on 2026-09-13.** It reads as the right next step only in isolation: `/genome/[subject]/reports`, the page the sentence sends the reader to, now answers the same account with `REPORTS_PREPARING` and offers nothing to choose. The instruction cannot be followed at the moment it is given. The page now renders `REPORT_PREPARING` instead, on the account's own record only, and the pair is proven in `e2e/genome-data-processing.spec.ts`. Rendering *something* different from the no-file case was the measurement this table made; whether that something is right is a second question, and this row answered it too quickly. |
 | `/embryos` | `cohort.status === "ingesting"` -> `STILL_CHECKING_STATUS` on the card (`cohort-card.tsx:59`). |
 | `/embryos/compare` | `case "processing": <BlockingState state="processing">` (`embryos/compare/page.tsx:173`). |
 | `/embryos/[embryoId]` | The same, twice (`embryos/[embryoId]/page.tsx:156`, `:201`). |
@@ -656,6 +656,8 @@ will fill in: `HUB_PREPARING`, `REPORTS_PREPARING` and `ANCESTRY_PREPARING` in
 the measured-or-withheld timing sentence belongs to `/overview`, which has the
 sample to decide, and repeating a guess elsewhere would be an invented number.
 All five pairs are proven in `e2e/genome-data-processing.spec.ts`.
+
+**A sixth, from the table above rather than this one.** `/genome/[subject]/reports/[slug]` was counted among the seven routes that DO render something different, and so was never a candidate for this fix. It does render something different, and what it renders is an instruction the reader cannot act on. It now carries `REPORT_PREPARING` on the account's own record, and is excluded on a relative's for the same disclosure reason as the portrait page: this route renders no file count for a relative. The lesson is in the shape of the table — "differs from the no-file case" was the whole test, and a route can pass it while saying something wrong.
 
 **Still open: `/family/portrait/[pairId]`,** and on purpose. It is wrong the
 same way — it reports a preparing file to the other person as an absent one —

@@ -55,7 +55,9 @@ import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectFileCount,
+  hasFileInPreparation,
 } from "@/lib/genome/load";
+import { REPORT_PREPARING } from "@/copy/genome/preparation";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -339,6 +341,12 @@ export default async function ReportDetailPage(
     );
   }
   const { user, subject, dataSubjectId, person, domain, files, fileCount, template, shared, sharedReport, sharedChoices, sharedLegacyAvailable } = context;
+  // The same "in flight" question the five My Genome pages ask, asked of the
+  // same helper (corrections item 9). Own records only: this page renders a
+  // relative's record without a file count, so the sentence would tell one
+  // adult something new about another's record — the reason
+  // `/family/portrait/[pairId]` is still left alone.
+  const preparing = person ? false : await hasFileInPreparation(createAdminClient(), dataSubjectId);
 
   const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";
@@ -447,7 +455,7 @@ export default async function ReportDetailPage(
         ))}
       </div>
     ) : (
-      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : (
+      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : preparing ? REPORT_PREPARING : (
         <>Choose this result type in <Link className="underline" href={reportsHref}>Reports</Link> to see what your file supports.</>
       )}</p>
     );

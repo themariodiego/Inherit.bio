@@ -30,3 +30,15 @@ export const REPORTS_PREPARING =
 
 export const ANCESTRY_PREPARING =
   "A file is still being prepared. Regions and parent lines appear here once it is ready.";
+
+/**
+ * The sixth page, added 2026-09-13. One report opened directly, on the
+ * account's own record, with a file in flight: it answered "Choose this
+ * result type in Reports to see what your file supports", which is an
+ * instruction the reader cannot follow yet — Reports itself is telling them
+ * the file is still being prepared. Same correction, same reason, and the
+ * same limit: own records only, because this page shows a relative's file
+ * count only through the subject bar it does not render for them.
+ */
+export const REPORT_PREPARING =
+  "A file is still being prepared. This report says what it covers once it is ready.";

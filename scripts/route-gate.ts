@@ -316,6 +316,14 @@ const BROWSER_TESTS = "e2e";
  *               privacy one - this letter is written to be pasted into a
  *               clinic's inbox, so the rendered text must carry no identifier
  *               at all, a property that holds whatever the copy becomes.
+ *   95 -> 94    `/genome/[subject]/reports/[slug] processing`, a SIXTH page
+ *               found by corrections item 9's reading and fixed the same way
+ *               as the five before it. Opened directly with a file in flight,
+ *               one report told the reader to "Choose this result type in
+ *               Reports" - an instruction they cannot follow, because Reports
+ *               was at that moment telling them the file is still being
+ *               prepared. Own records only, for the same disclosure reason
+ *               that keeps `/family/portrait/[pairId]` open.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -326,7 +334,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 95;
+const UNPROVEN_ROUTE_STATE_PAIRS = 94;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

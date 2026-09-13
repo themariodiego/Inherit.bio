@@ -11,11 +11,12 @@ import {
 import {
   ANCESTRY_PREPARING,
   HUB_PREPARING,
+  REPORT_PREPARING,
   REPORTS_PREPARING,
 } from "../src/copy/genome/preparation";
 
 /**
- * `processing` on the five My Genome routes — and until today none had it.
+ * `processing` on the six My Genome routes — and until 2026-09-12 none had it.
  *
  * WHAT WAS WRONG. Corrections item 9 read all thirteen remaining
  * `product-result · processing` routes. Six render, while a file is being
@@ -119,6 +120,16 @@ test("/genome/[subject]/data processing: coverage says the file is being prepare
   // telling them to add one.
   await expect(view.getByText(SCORE_COVERAGE_NO_FILE, { exact: true }),
     "no instruction to add a file that is already here").toHaveCount(0);
+});
+
+test("/genome/[subject]/reports/[slug] processing: one report says the file is being prepared, not to go and choose it", async () => {
+  await view.goto("/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551");
+
+  await expect(view.getByText(REPORT_PREPARING, { exact: true })).toBeVisible();
+  // The regression this replaces, asserted by its own words: an instruction
+  // to choose a result type in a library that is not offering any yet.
+  await expect(view.getByText("Choose this result type in", { exact: false }),
+    "no instruction to choose from a library that has nothing to choose yet").toHaveCount(0);
 });
 
 test("/genome/[subject]/data/browser processing: the browser says the file is being prepared, not that none was added", async () => {
