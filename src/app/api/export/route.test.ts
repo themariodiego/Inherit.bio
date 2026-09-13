@@ -280,6 +280,25 @@ describe("legacy report purposes in the export", () => {
     expect(mocks.genotypeReads, "no genetic read for a file with no live purpose").toEqual([]);
   });
 
+  /**
+   * D-097's gate, which had no direct test until now for the same reason
+   * D-099 went unnoticed: the harness had no legacy file, so the legacy half
+   * of the archive was never reached and every assertion about it was really
+   * an assertion about an empty list. Both records once described legacy
+   * ancestry rows as unreadable after revocation, and they never were.
+   */
+  it("ships a legacy ancestry row while the ancestry purpose is live, and withholds it once revoked", async () => {
+    mocks.legacyRows = [{ file_id: "legacy-0", result: "Legacy ancestry row" }];
+    mocks.grants = new Set(["subject ancestry"]);
+    const granted = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+    expect(JSON.parse(granted.readAsText("ancestry.json")))
+      .toEqual([{ file_id: "legacy-0", result: "Legacy ancestry row" }]);
+
+    mocks.grants = new Set();
+    const revoked = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+    expect(JSON.parse(revoked.readAsText("ancestry.json"))).toEqual([]);
+  });
+
   it("aborts rather than shipping a buffered result when a purpose is revoked mid-export", async () => {
     mocks.grants = new Set(["subject reports.monogenic", "subject reports.polygenic"]);
     mocks.revokeAfterBuild = true;
