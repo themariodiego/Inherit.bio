@@ -119,6 +119,12 @@ update public.token_candidates set state='issued'
 insert into public.token_hashes(candidate_id,token_hash,token_revision,status)
  select id,repeat('e',64),token_revision,'current' from public.token_candidates
  where target_id=(select invitation_id from completion_invitation);
+-- Issuance mirrors the hash onto the invitation, and the authority resolver
+-- requires the two to agree: a token that does not match the invitation it
+-- names is a replaced token. The fixture forges the delivery, so it has to
+-- forge this half of it too.
+update public.subject_invitations set token_hash=repeat('e',64)
+ where id=(select invitation_id from completion_invitation);
 select is(public.respond_adult_subject_invitation_v1(repeat('e',64),'confirm',
  '76100000-0000-4000-8000-000000000001',repeat('c',64)),'accepted','the fixture uses the actual adult acceptance transition');
 update completion_target set id=(select subject_id from completion_invitation),subject_revision=2,binding_revision=1;
