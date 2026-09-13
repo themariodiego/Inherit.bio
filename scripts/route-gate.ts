@@ -251,6 +251,18 @@ const BROWSER_TESTS = "e2e";
  *               A lesson that cost a run for the SECOND time: an unscoped
  *               `getByRole("alert")` resolves to one element on every page,
  *               because Next.js renders a route announcer. Scope it.
+ *   103 -> 102  `/family/health-picture complete`, RETITLED. The test already
+ *               established it and the title named the page's refusals rather
+ *               than its state. `complete` on a comparison surface cannot mean
+ *               "every report covered" - no real file covers the catalogue -
+ *               so it means the page shows everything it is PERMITTED AND ABLE
+ *               to: both columns, both layers, every granted cell carrying its
+ *               own attributed result, and no cell absent for want of a
+ *               permission or a source. Coverage absences remain and are a
+ *               property of the file. Two assertions are new and make the
+ *               retitle safe: no cell reads "No prepared file yet" or "No file
+ *               yet". It sits on ONE fixture with `partial-coverage` further
+ *               down the same file, differing only in what was granted.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -261,7 +273,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 103;
+const UNPROVEN_ROUTE_STATE_PAIRS = 102;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

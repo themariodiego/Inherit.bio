@@ -189,6 +189,7 @@
     "/family/[person]/permissions complete",
     "/family/[person]/permissions jurisdiction-unavailable",
     "/family/[person]/permissions processing",
+    "/family/health-picture complete",
     "/family/health-picture empty",
     "/family/health-picture jurisdiction-unavailable",
     "/family/health-picture partial-coverage",
