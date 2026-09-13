@@ -2511,3 +2511,51 @@ decision.** Twenty-five of the twenty-seven open pairs wait on item 11, two
 wait on this disclosure question, and sixty more wait on signatures for items
 6, 8 and 10. That is a better thing to hand over than a list of work that
 looks available and is not.
+
+## 2026-09-13 — I said everything was blocked, and two rows had not been read
+
+At the end of the ratchet work I told the operator that nothing remaining was
+unblocked: the ratchet waits on item 11 and three signatures, D-100 to D-102
+need owner decisions, and D-017, D-022, D-031 and D-083 need science, counsel,
+a product capability or a policy artifact. I wrote that into a check-in as
+settled state.
+
+Then I scanned every open row in `docs/protocol/defects.md`, which is what I
+should have done before saying it. Ten rows are not closed. I had assessed
+eight. Of the two I had not:
+
+- **D-033 was never open.** My scan flagged it because its status cell
+  contains a literal `|` inside a character class, which split the row. It
+  reads "fixed (this branch)".
+- **D-084 was done.** Every one of the three things it asks for is in the
+  tree: `/withdraw/request` mints the candidate cookie and serves the
+  fragment-reading interstitial, `/withdraw/session` builds its request from
+  the cookie alone and renders the E2 acceptance screens, and
+  `api.rights-activate` refuses without the candidate. `e2e/co-parent-invitation.spec.ts`
+  drives the whole path and passes. The row had gone unread since 2026-09-05.
+
+That also re-scopes D-081, whose status still said the adult path "needs the
+`/withdraw/request` interstitial and `api.rights-activate`". It has them. What
+is left there is the harder half — moving the adult token onto the same
+issuance model, with a thirty-day overlap because mailed tokens outlive the
+change.
+
+**The mistake and its shape.** I trusted a carried-forward summary that called
+D-081 and D-084 "larger, not session-sized" and did not re-read the rows. That
+is the same failure I had spent the previous hour correcting in the
+corrections table: a blocked-on claim inherited rather than checked, wrong in
+the direction that makes the plan tidier. Finding it in someone else's
+document and then repeating it in my own report on the same day is worth
+writing down plainly.
+
+**So the honest position changed.** "Everything is blocked" was wrong. The
+ratchet is blocked and the seven owner-or-science defects are blocked; D-081
+is neither, and one of its surfaces — `/withdraw/[token]/page.tsx` calling
+`adultInvitationAvailable(token)` on a plain GET, which hands any link
+scanner or prefetcher a live availability oracle keyed by a mailed URL — needs
+no decision from anyone to be wrong.
+
+**A rule for this file, since it is read as a to-do list.** An open row is a
+claim about the present tense, and it decays. Before treating one as work,
+re-read the code it names; before treating one as blocked, re-read the
+blocker. Two of the last three rows I checked that way had already moved.
