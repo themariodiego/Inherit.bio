@@ -894,11 +894,15 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
-## Where the 95 unproven pairs stand, as of 2026-09-13
+## Where the 93 unproven pairs stand
 
-Counted from `docs/route-register.json` against `docs/route-divergence.json`,
-so this table moves on its own as the ratchet does. It exists because the
-question "what does signing this unlock?" had no answer anywhere.
+Counted from `docs/route-register.json` against `docs/route-divergence.json`.
+The first version of this table claimed it "moves on its own as the ratchet
+does", which was not true of numbers typed into markdown: two proofs later it
+was already stale. `scripts/route-gate.test.ts` now recomputes the total and
+fails if the three bold figures below disagree with the register, so the claim
+holds because something checks it. It exists because the question "what does
+signing this unlock?" had no answer anywhere.
 
 | | pairs | what moves them |
 | --- | ---: | --- |
@@ -907,10 +911,10 @@ question "what does signing this unlock?" had no answer anywhere.
 | Proposed not-applicable in item 10 | 17 | one signature |
 | less one pair proposed twice | −1 | see below |
 | **Awaiting a signature** | **60** | |
-| Genuinely open | 35 | test work, and for most of them item 11 first |
-| **Total unproven** | **95** | |
+| **Genuinely open** | **33** | test work, and for most of them item 11 first |
+| **Total unproven** | **93** | |
 
-Signing all three proposals would take the ratchet from 95 to 35 without a line
+Signing all three proposals would take the ratchet from 93 to 33 without a line
 of test code, because every one of those 60 is the register describing
 behaviour the product does not have.
 
@@ -921,22 +925,23 @@ readings are right and they agree, so nothing is in conflict; but it is one
 pair, not two, and a signature on both items must not be read as retiring two.
 Found while counting this table, which is the reason to build one.
 
-### And of the 35 that are open, 27 wait on item 11
+### And of the 33 that are open, 27 wait on item 11
 
 | state | open | blocked by item 11? |
 | --- | ---: | --- |
 | `not-covered` | 11 | yes — renders identically to `empty` on three of them |
 | `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
 | `complete` | 8 | yes — currently four different meanings |
-| `processing` | 5 | partly: all five are Family routes whose "no completed result yet" may or may not be work in flight |
-| `empty` | 3 | no |
+| `processing` | 4 | partly: all four are Family routes whose "no completed result yet" may or may not be work in flight |
+| `empty` | 2 | no |
 
-**Eight pairs could be attempted today** without any ruling: the three `empty`
-(`/embryos/[embryoId]`, `/family/portrait/[pairId]`,
-`/genome/[subject]/reports/[slug]`) and, with a reading of what the Family
-surfaces mean by an ungenerated result, the five `processing`. Everything else
-in the open column is a judgement call the operator should make once rather
-than one the next reader makes twenty times.
+**Six pairs could be attempted today** without any ruling: the two `empty`
+(`/embryos/[embryoId]`, `/family/portrait/[pairId]`) and, with a reading of
+what the Family surfaces mean by an ungenerated result, the four `processing`.
+Two of the original eight have since been proven — `/genome/[subject]/reports/[slug]`
+in both `empty` and `processing`, the second of which needed a product fix
+first. Everything else in the open column is a judgement call the operator
+should make once rather than one the next reader makes twenty times.
 
 ## What happens after signature
 
