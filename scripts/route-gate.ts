@@ -347,6 +347,34 @@ const BROWSER_TESTS = "e2e";
  *               a passing QC row deliberately - without it the `pending`
  *               branch one line earlier answers first and the test would
  *               prove `processing` again under another name.
+ *    90 -> 88   two `not-covered` pairs, and NEITHER needed a fixture or a
+ *               product change: `/family/portrait/[pairId]` and
+ *               `/family/health-picture` both reach the state on the suites'
+ *               existing carrier-pair fixture, and both had been asserted for
+ *               days under titles that claimed nothing.
+ *
+ *               The reason to read this entry is that each of those pages has
+ *               MORE THAN ONE no-output branch, and only one of them is
+ *               `not-covered`. Portrait's page chooses between a person with
+ *               no processed file (`role=status`, `data-state=empty`, no
+ *               `data-slot`), a refused carrier decision, no classified
+ *               position (`data-slot=portrait-empty`, `data-state=unavailable`)
+ *               and no position both files cover (the same slot,
+ *               `data-state=empty`). A title naming the state has to settle
+ *               WHICH, so both tests now assert the branch from the DOM: the
+ *               unavailable slot present, and the empty ones absent. The
+ *               health picture's separation is one assertion wide in the other
+ *               direction — its `empty` state renders neither the carrier
+ *               panel nor the comparison table, and this test asserts both are
+ *               there.
+ *
+ *               The sense of `not-covered` is the one
+ *               `/genome/[subject]/ancestry not-covered` already established:
+ *               the file is here and prepared, and the data does not support a
+ *               result. On both of these pages that is the legacy reference
+ *               labels lacking reviewed allele, condition and assertion
+ *               provenance — the shipped table's own state (D-034), not a
+ *               fixture defect.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -357,7 +385,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 90;
+const UNPROVEN_ROUTE_STATE_PAIRS = 88;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

@@ -2437,3 +2437,38 @@ table has no foreign key on `invitation_id`. Their outbox rows are all
 `submitted`/`accepted`, so nothing reclaims them and they cause nothing. It is
 recorded here because the near-miss is the point: the evidence for a defect is
 the failing path, not a suspicious-looking row.
+
+## 2026-09-13 — "It renders identically" was true of three routes and written about eleven
+
+The corrections table said `not-covered` waits on item 11 because it "renders
+identically to `empty`", and counted all eleven open pairs behind that. Two of
+them do not.
+
+`/family/portrait/[pairId]` has FOUR no-output branches, and they are
+distinguishable in the DOM without reading the fixture: a person with no
+processed file is `role=status` with `data-state=empty` and no `data-slot`; a
+refused carrier decision renders the decision's own copy; no classified
+position is `data-slot=portrait-empty` with `data-state=unavailable`; no
+position both files cover is the same slot with `data-state=empty`. Only the
+third is `not-covered`. `/family/health-picture` separates them the other way
+round: its `empty` renders neither the carrier panel nor the comparison table,
+and its `not-covered` renders both.
+
+Both were already asserted in a browser, and had been for days, under titles
+that claimed nothing. So the ratchet moved 90 → 88 with no fixture, no product
+change and no ruling — only titles that now say what the tests check, and one
+added assertion in each that settles WHICH branch is on screen rather than
+leaving it to be inferred from what the fixture was meant to do.
+
+The sense of `not-covered` is the one `/genome/[subject]/ancestry not-covered`
+established: the file is here and prepared, and the data does not support a
+result. On both these pages that is the legacy reference labels lacking
+reviewed allele, condition and assertion provenance — the shipped table's own
+state (D-034), not a fixture defect.
+
+**The lesson is about the table, not the ratchet.** A blocked-on column is a
+claim like any other, and this one generalised from three routes to eleven
+without anyone re-reading the other eight. Nine remain, and they remain because
+the ambiguity is real; the two that left did not need a signature and should
+never have been counted as though they did. Waiting on a decision that was not
+actually needed is indistinguishable, from the outside, from being blocked.
