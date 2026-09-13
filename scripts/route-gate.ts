@@ -339,6 +339,14 @@ const BROWSER_TESTS = "e2e";
  *               past their own Tier-2 gate. The grant is withdrawn and the
  *               hold released afterwards, so the pause/resume/stop fixture
  *               below is unchanged - asserted by that test still passing.
+ *   91 -> 90    `/embryos/[embryoId] empty`, one line apart in the resolver
+ *               from the `processing` proven above and owing a reader a
+ *               different sentence: a cohort finalized with its declared
+ *               embryo subjects created and NO FILE SENT, which is the status
+ *               `finalize_embryo_cohort_v1` writes. The seeded embryo carries
+ *               a passing QC row deliberately - without it the `pending`
+ *               branch one line earlier answers first and the test would
+ *               prove `processing` again under another name.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -349,7 +357,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 91;
+const UNPROVEN_ROUTE_STATE_PAIRS = 90;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

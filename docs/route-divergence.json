@@ -177,6 +177,7 @@
     "/embryos jurisdiction-unavailable",
     "/embryos processing",
     "/embryos/[embryoId] consent-required",
+    "/embryos/[embryoId] empty",
     "/embryos/[embryoId] jurisdiction-unavailable",
     "/embryos/[embryoId] processing",
     "/embryos/compare consent-required",

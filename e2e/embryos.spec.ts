@@ -20,6 +20,7 @@ import {
   NEXT_STEP_SENTENCE,
   REQUEST_DATA_H1,
 } from "@/copy/embryos/request-data";
+import { FILE_NOT_ADDED_SENTENCE } from "@/copy/embryos/detail";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import {
   BACK_BUTTON,
@@ -77,6 +78,7 @@ const B = { email: "embryos-b@e2e.local", password: "e2e-embryos-pw" };
 const C = { email: "embryos-c@e2e.local", password: "e2e-embryos-pw" };
 /** Holds the one cohort that is still being read, so A's hub keeps its two. */
 const D = { email: "embryos-d@e2e.local", password: "e2e-embryos-pw" };
+const E = { email: "embryos-e@e2e.local", password: "e2e-embryos-pw" };
 
 /** The register's own copy for an unreviewed capability (data/jurisdictions.json). */
 const UNREVIEWED_COPY = "This part of Inherit is not available here because its legal review is not complete.";
@@ -98,6 +100,8 @@ let cohort2 = "";
 let embryo1 = "";
 let embryo2Of2 = "";
 let accountD = "";
+let accountE = "";
+let embryoAwaitingFile = "";
 let cohortIngesting = "";
 let embryoPending = "";
 
@@ -182,8 +186,13 @@ async function seedCohort(input: {
   requiredPrincipals: string[];
   createdAt: string;
   embryos: SeededEmbryo[];
-  /** `ingesting` is a cohort the pipeline is still reading (`access.ts:117`). */
-  cohortStatus?: "active" | "ingesting";
+  /**
+   * `ingesting` is a cohort the pipeline is still reading (`access.ts:117`);
+   * `upload_pending` is the status `finalize_embryo_cohort_v1` writes, with
+   * the declared embryo subjects already created and no file yet
+   * (`access.ts:118`).
+   */
+  cohortStatus?: "active" | "ingesting" | "upload_pending";
 }): Promise<{ cohortId: string; embryoIds: string[] }> {
   const admin = adminClient();
   const inThirtyDays = new Date(Date.now() + 30 * 86_400_000).toISOString();
@@ -347,6 +356,22 @@ test.beforeAll(async () => {
   });
   cohortIngesting = ingesting.cohortId;
   embryoPending = ingesting.embryoIds[0];
+
+  // And a fifth for the cohort that has been finalized and has no file yet.
+  // Separate for the same reason as D: on either of the others it would move
+  // a card count or an order that another test pins.
+  accountE = await createConfirmedUser(E.email, E.password);
+  await unseed(accountE);
+  const principalE = await accountPrincipalOf(accountE);
+  const awaitingFile = await seedCohort({
+    owner: accountE,
+    uploaderPrincipal: principalE,
+    requiredPrincipals: [principalE],
+    createdAt: "2026-09-04T10:00:00.000Z",
+    cohortStatus: "upload_pending",
+    embryos: [{ ordinal: 0, status: "qc_pass", callRate: 0.99 }],
+  });
+  embryoAwaitingFile = awaitingFile.embryoIds[0];
 });
 
 test("signed out, every Embryo route sends the visitor to sign in and renders nothing", async ({ page }) => {
@@ -873,6 +898,34 @@ test("/embryos/compare processing: the comparison withholds everything while the
 
   // The state replaces the comparison rather than sitting above a partial one.
   await expect(page.locator("[data-compare-surface]")).toHaveCount(0);
+  await expectNoResults(page);
+  await expectNoSexOrRank(page);
+});
+
+/**
+ * `/embryos/[embryoId] empty`, and it is a different absence from the one
+ * above. `processing` is a file that is being read; this is a cohort that has
+ * been finalized with its declared embryo subjects created and NO FILE SENT
+ * YET — the status `finalize_embryo_cohort_v1` writes and the one
+ * `access.ts:118` reads. The two are one line apart in the resolver and owe a
+ * reader two different sentences.
+ *
+ * The embryo carries a passing QC row on purpose: without it the `pending`
+ * branch one line earlier would answer first, and this test would be proving
+ * `processing` again under another name.
+ */
+test("/embryos/[embryoId] empty: the cohort is finalized and no file has been added, which is not the same as one still being read", async ({ page }) => {
+  await signIn(page, E.email, E.password);
+  await page.goto(`/embryos/${embryoAwaitingFile}`);
+
+  const blocking = page.locator('[data-slot="blocking-state"]');
+  await expect(blocking).toHaveAttribute("data-state", "empty");
+  await expect(blocking).toContainText(FILE_NOT_ADDED_SENTENCE);
+  // The neighbouring sentence, which would tell this reader that something is
+  // under way when nothing has been sent.
+  await expect(page.getByText(STILL_CHECKING_STATUS, { exact: true })).toHaveCount(0);
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Embryo 1");
   await expectNoResults(page);
   await expectNoSexOrRank(page);
 });
