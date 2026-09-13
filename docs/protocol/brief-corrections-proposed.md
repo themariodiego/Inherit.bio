@@ -767,6 +767,29 @@ the total proposed not-applicable across this document to 36: item 8's 29 and
 item 10's 7. The `/embryo-analysis` route contributes six of the 36, split
 across the two items because it was read twice; nothing is counted twice.
 
+### `own-product-result`: three routes that never render a result
+
+The profile split out on 2026-09-12 covers `/files`, `/files/upload` and
+`/copilot/[scope]`. `/copilot/[scope]` now proves `empty` and `processing`;
+`/files` already proves `empty` and `complete`. What remains does not apply,
+for one reason that covers all seven.
+
+**None of these three routes renders a RESULT.** `/files` is a list of files,
+`/files/upload` is the add-a-file flow, and `/copilot/[scope]` is a
+conversation. Coverage is a property of a report against a file, and none of
+them shows one, so `not-covered` and `partial-coverage` have nothing to
+describe on any of them.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/files` | `not-covered`, `partial-coverage` | A list of the account's files, with names, sizes and statuses. No report, no coverage. |
+| `/files/upload` | `not-covered`, `partial-coverage` | The add-a-file flow. Nothing has been read yet, let alone covered. |
+| `/files/upload` | `empty` | 24 lines: a header, `<OwnUploadEntry />` and a back link, all unconditional. There is no length-zero branch to be empty. |
+| `/copilot/[scope]` | `not-covered`, `partial-coverage` | A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own. |
+
+That takes item 10's proposed not-applicable pairs to 17, and the document's
+total to 46.
+
 ### `/genome/[subject]`: a hub with one product-result state, not four
 
 `complete` is proven (`e2e/genome-data.spec.ts`). The other three do not apply,

@@ -238,6 +238,19 @@ const BROWSER_TESTS = "e2e";
  *               sentence and NOT the preparing one. An assertion on the
  *               rendered copy alone would not notice them collapsing back
  *               together.
+ *   105 -> 103  `/copilot/[scope]` in `empty` and `processing`, BOTH
+ *               REACHABLE FOR THE FIRST TIME because of the chat-route fix
+ *               above. The compatibility panel this route serves could not
+ *               send a message at all, so `processing` never existed to be
+ *               proven - the panel went straight from idle to a 400. The
+ *               remaining two states on this route, and five more across
+ *               `/files` and `/files/upload`, are proposed not-applicable in
+ *               item 10: none of the three renders a result, so coverage has
+ *               nothing to describe on any of them.
+ *
+ *               A lesson that cost a run for the SECOND time: an unscoped
+ *               `getByRole("alert")` resolves to one element on every page,
+ *               because Next.js renders a route announcer. Scope it.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -248,7 +261,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 105;
+const UNPROVEN_ROUTE_STATE_PAIRS = 103;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

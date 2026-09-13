@@ -169,6 +169,8 @@
     "/changelog complete",
     "/copilot/[scope] complete",
     "/copilot/[scope] consent-required",
+    "/copilot/[scope] empty",
+    "/copilot/[scope] processing",
     "/embryo-analysis jurisdiction-unavailable",
     "/embryos empty",
     "/embryos jurisdiction-unavailable",
