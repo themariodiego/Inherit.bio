@@ -41,24 +41,53 @@ export const JOBS_SECRET = "e2e-jobs-secret";
  * fails here - and fails carrying every drain receipt, which names whether the
  * worker was starved, idle, or failing sends.
  */
+interface JobResponse {
+  status: () => number;
+  json: () => Promise<unknown>;
+}
+
+/**
+ * Assert a machine job's reply against `machine-job-result-v1` and hand back
+ * its outcome.
+ *
+ * D-086: these routes used to answer with `processed`, `failed` and a count
+ * of the rows still queued, and the suites read those numbers. The register
+ * allows `{status:"complete", outcome}` and nothing else — no counts, no
+ * target row, no error text — so a caller that needs to know whether work
+ * remains reads the queue itself, with the service key, rather than being
+ * told by the endpoint. `no_work` is the register's own name for an empty
+ * queue, which is the signal a drain loop actually needs.
+ */
+export async function jobRan(response: JobResponse, what: string): Promise<"no_work" | "completed"> {
+  expect(response.status(), what).toBe(200);
+  const body = (await response.json()) as { status?: string; outcome?: string };
+  // `unknownFields: "forbidden"`: two keys, no third.
+  expect(Object.keys(body).sort(), what).toEqual(["outcome", "status"]);
+  expect(body.status, what).toBe("complete");
+  expect(body.outcome, `${what}: the job reported that something failed`)
+    .not.toBe("completed_with_failures");
+  expect(["no_work", "completed"], what).toContain(body.outcome);
+  return body.outcome as "no_work" | "completed";
+}
+
 export async function drainMailUntil<T>(
-  request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<{ status: () => number; json: () => Promise<unknown> }> },
+  request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<JobResponse> },
   found: () => T | undefined,
   what = "the mail this journey requested",
 ): Promise<T> {
   let value = found();
-  const receipts: string[] = [];
+  const outcomes: string[] = [];
   for (let attempt = 0; attempt < 40 && value === undefined; attempt++) {
     const response = await request.post("/api/jobs/mail", {
       headers: { authorization: `Bearer ${JOBS_SECRET}` },
     });
-    expect(response.status(), `mail drain ${attempt + 1}`).toBe(200);
-    const receipt = (await response.json()) as { processed?: number; failed?: number; pending?: number };
-    receipts.push(JSON.stringify(receipt));
+    const outcome = await jobRan(response, `mail drain ${attempt + 1}`);
+    outcomes.push(outcome);
     value = found();
-    if (value === undefined && (receipt.processed ?? 0) === 0 && (receipt.pending ?? 0) === 0) break;
+    // An empty queue will not fill itself on the next attempt.
+    if (value === undefined && outcome === "no_work") break;
   }
-  expect(value, `${what} must reach the configured mail provider; drains: ${receipts.join(" ")}`)
+  expect(value, `${what} must reach the configured mail provider; drains: ${outcomes.join(" ")}`)
     .not.toBeUndefined();
   return value as T;
 }

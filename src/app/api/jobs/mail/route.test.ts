@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn(), pending: 0 }));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), terminal: vi.fn(), invitationTerminal: vi.fn(), submit: vi.fn(), from: vi.fn() }));
 vi.mock("@/lib/embryo/terminal-mail", () => ({ drainEmbryoTerminalMail: mocks.terminal }));
 vi.mock("@/lib/embryos/invitation-terminal-mail", () => ({ drainInvitationTerminalMail: mocks.invitationTerminal }));
 vi.mock("@/lib/email", () => ({ submitMail: mocks.submit }));
@@ -9,14 +9,20 @@ vi.mock("@/lib/crypto", () => ({ decryptSecret: () => "synthetic@example.test", 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     rpc: mocks.rpc,
-    from: () => ({ select: () => ({ eq: () => ({ lte: () => ({ gt: async () => ({ count: mocks.pending }) }) }) }) }),
+    // D-086: the drain used to end with a queue-depth count for its response
+    // body. `machine-job-result-v1` forbids private counts, so the query went
+    // with the field. A table read from this route is now a defect, and this
+    // mock makes one fail rather than pass silently.
+    from: mocks.from,
   }),
 }));
 
 describe("independent mail queues", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.pending = 0;
+    mocks.from.mockImplementation((table: string) => {
+      throw new Error(`the drain must not read ${table}`);
+    });
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     // Mail links need an origin to be built from, and since D-098 an unset one
     // is refused off the hosted deployment rather than guessed at.
@@ -35,7 +41,7 @@ describe("independent mail queues", () => {
       method: "POST", headers: { authorization: "Bearer test-job-secret" },
     }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ processed: 0, failed: 1, pending: 0 });
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.rpc).toHaveBeenCalledWith("claim_mail_outbox");
   });
 
@@ -69,7 +75,7 @@ describe("independent mail queues", () => {
   ])("does not submit an invalidated or unverifiable claim: %j", async (authorization) => {
     claimOnce(authorization);
     const response = await POST(workerRequest());
-    expect(await response.json()).toEqual({ processed: 0, failed: 1, pending: 0 });
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.submit).not.toHaveBeenCalled();
     expect(mocks.rpc).toHaveBeenCalledWith("authorize_mail_submission_v1", {
       p_outbox_id: row.outbox_id, p_attempt_ordinal: 2,
@@ -80,7 +86,7 @@ describe("independent mail queues", () => {
   it("checks the exact claim before submitting and records provider acceptance", async () => {
     claimOnce({ data: true, error: null });
     const response = await POST(workerRequest());
-    expect(await response.json()).toEqual({ processed: 1, failed: 0, pending: 0 });
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
     const authorizationIndex = mocks.rpc.mock.calls.findIndex(([name]) => name === "authorize_mail_submission_v1");
     expect(mocks.rpc.mock.invocationCallOrder[authorizationIndex]).toBeLessThan(mocks.submit.mock.invocationCallOrder[0]);
     expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
@@ -100,10 +106,9 @@ describe("independent mail queues", () => {
         manageUrl: "https://example.test/settings",
       } },
     ];
-    mocks.pending = queue.length;
     mocks.rpc.mockImplementation(async (name: string) => {
       if (name === "claim_mail_outbox") {
-        const next = queue.shift(); mocks.pending = queue.length;
+        const next = queue.shift();
         return { data: next ? [next] : [], error: null };
       }
       if (name === "authorize_mail_submission_v1") return { data: true, error: null };
@@ -112,22 +117,38 @@ describe("independent mail queues", () => {
     });
     const first = await POST(workerRequest());
     expect(first.status).toBe(200);
-    expect(await first.json()).toEqual({ processed: 25, failed: 0, pending: 1 });
+    // The response cannot say 25 were sent and 1 is left, and it should not:
+    // that is a queue depth. What matters is proven below instead — the batch
+    // stopped at its bound, the leftover row was still there, and the next
+    // drain claimed exactly it.
+    expect(await first.json()).toEqual({ status: "complete", outcome: "completed" });
     expect(mocks.submit).toHaveBeenCalledTimes(25);
     expect(mocks.submit.mock.calls.every(([, mail]) => mail.id === "report-ready")).toBe(true);
     expect(queue.map(item => item.outbox_id)).toEqual(["digest"]);
     const second = await POST(workerRequest());
     expect(second.status).toBe(200);
-    expect(await second.json()).toEqual({ processed: 1, failed: 0, pending: 0 });
+    expect(await second.json()).toEqual({ status: "complete", outcome: "completed" });
     expect(mocks.submit).toHaveBeenCalledTimes(26);
     expect(mocks.submit.mock.calls.at(-1)?.[1]).toMatchObject({ id: "research-digest" });
     expect(mocks.rpc.mock.calls.filter(([name]) => name === "authorize_mail_submission_v1")).toHaveLength(26);
   });
 
+  it("separates an empty queue from a drained one, and carries the contract's headers", async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    const response = await POST(workerRequest());
+    expect(response.status).toBe(200);
+    // `no_work` is the distinction the register draws that a bare "complete"
+    // would lose: nothing was due, which is not a failure and not a delivery.
+    expect(await response.json()).toEqual({ status: "complete", outcome: "no_work" });
+    expect(mocks.submit).not.toHaveBeenCalled();
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  });
+
   it("does not overwrite provider acceptance with a failure after a lost database receipt", async () => {
     claimOnce({ data: true, error: null }, { message: "receipt unavailable" });
     const response = await POST(workerRequest());
-    expect(await response.json()).toEqual({ processed: 0, failed: 1, pending: 0 });
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.submit).toHaveBeenCalledTimes(1);
     const receipts = mocks.rpc.mock.calls.filter(([name]) => name === "complete_mail_attempt");
     expect(receipts).toHaveLength(1);
@@ -138,7 +159,7 @@ describe("independent mail queues", () => {
     claimOnce({ data: true, error: null });
     mocks.submit.mockRejectedValue(new Error("provider rejected"));
     const response = await POST(workerRequest());
-    expect(await response.json()).toEqual({ processed: 0, failed: 1, pending: 0 });
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.rpc).toHaveBeenCalledWith("complete_mail_attempt", expect.objectContaining({
       p_success: false, p_outcome_code: "provider_or_payload_error",
     }));

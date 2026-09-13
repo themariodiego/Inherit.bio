@@ -74,7 +74,20 @@ export default async function InsurancePage() {
                 text a person confirms in the product.
               </p>
               <p className="break-all font-mono text-xs">sha256 {artifact.body_sha256}</p>
-              <p><Link href={versionHref}>Permanent link to this version</Link></p>
+              {/*
+                * A link alone in its own paragraph is a target, not a word in
+                * a sentence, so SC 2.5.8's Inline exception does not reach it
+                * and the G1.13b sweep measured it at 193x17. `min-h-11` is
+                * the 44px the rest of the product's standalone links use.
+                */}
+              <p>
+                <Link
+                  href={versionHref}
+                  className="inline-flex min-h-11 items-center underline decoration-forest decoration-2 underline-offset-4 hover:text-forest"
+                >
+                  Permanent link to this version
+                </Link>
+              </p>
             </>
           ),
         },

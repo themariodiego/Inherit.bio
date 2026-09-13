@@ -37,7 +37,7 @@ describe("retention cron transport", () => {
   });
 
   it.each<Record<string, string>>([{}, { "content-length": "0" }])("delegates exactly one fresh authorized bodyless POST (%j)", async headers => {
-    const result = Response.json({ processed: 1, failed: 0, pending: 0, expiredInvitations: 0 });
+    const result = Response.json({ status: "complete", outcome: "completed" });
     mocks.retention.mockResolvedValue(result);
     const response = await GET(request({ ...headers, cookie: "unrelated=private", "x-target-id": "ignored" }));
     expect(response).toBe(result);

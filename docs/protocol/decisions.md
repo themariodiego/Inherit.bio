@@ -2329,3 +2329,76 @@ Worth generalising, because three specs now use this hold-a-request technique
 (`e2e/overview-processing.spec.ts`, `e2e/genome-data-processing.spec.ts` and
 now `e2e/family.spec.ts`): the page that holds a request should not be the
 page that navigates afterwards. Release, then leave that page alone.
+
+## 2026-09-13 — A defect row is a sighting, not a boundary
+
+D-086 read: the mail drain returns counts, the register allows two fields,
+severity low. Fixing that line is ten minutes' work. Reading the contract it
+cites is what changed the job.
+
+`machine-job-result-v1` binds seven routes and forbids more than the shape:
+
+    targetJobRowObjectRecipientDocumentTemplateSubjectCohortFileAccount
+    ErrorFreeTextOrPrivateCounts: "never-returned"
+
+Six of the seven were breaking it. The retention drain answered with the
+number of account deletions still due — how many people are part-way through
+leaving, to anything holding the shared jobs secret. `research-publish`
+answered with the slug it had just published and the number of subscribers it
+had queued a digest for. `research-refresh` answered with the raw
+`Error.message`. D-086's own route was, if anything, the mildest of them.
+
+So the fix is the class, not the row. A defect row records where somebody
+happened to be standing when they noticed something; it is not a statement
+about how far the thing extends. Fixing exactly the row would have closed
+D-086 truthfully and left the contract violated by five siblings, which is the
+shape of progress that counts documents instead of capabilities.
+
+**What was deliberately NOT fixed, and why that is not the same evasion.**
+Two more divergences turned up on the same routes: `jobs.run` is registered,
+kept and contract-bound with no implementation (D-100), and
+`jobs.research-publish` requires a `slug` in a request body its register entry
+forbids (D-101). Neither is a response-shape problem. D-101 in particular
+cannot be fixed without deciding what the endpoint IS — a due-work drain that
+publishes whatever review has approved, or an operator command that names its
+target — and that is an owner's call about design, not a contract repair. The
+line between "the row understated the class" and "this is a different job" is
+whether the fix needs a decision nobody has made. Widening past that line is
+how a scoped change becomes an unreviewed one.
+
+**Removing a field is not free, and the tests are where it costs.** Six suites
+read those counts, and two of them read them for a real reason: the browser
+drain loops used `pending === 0` to know when to stop, and `processed >= 1` to
+know they were making progress. Deleting the fields and deleting the
+assertions would have been changing tests to fit the code.
+
+Two things saved it. The register's `no_work` outcome IS the "queue is empty"
+signal those loops needed, and it says it more exactly than `processed === 0
+&& pending === 0` did. And the queue depth itself is still readable — by the
+test, with the service key, running the same query the route used to run. The
+observation moved to the observer entitled to make it, which is the whole
+point of the contract clause. The unit suites needed nothing weakened either:
+they already asserted the submissions and the receipts the counts summarised,
+so the counts were the redundant half.
+
+Three things got stronger on the way past. `no_work` had never been tested on
+any route and now is on two — an idle sweep is a distinct outcome from one
+that deleted something, and a cron monitor needs the difference.
+`research-refresh` was silently dropping failed template upserts (`if (!error)
+drafted++` and nothing else), so a refused write vanished; it is counted now,
+and the job reports `completed_with_failures`. And two queue-depth queries
+disappeared with the fields they fed — the drains no longer ask the database a
+question they are not allowed to answer.
+
+**Why a helper was not enough.** Six call sites drifted from this contract
+once. `src/lib/jobs/machine-result.test.ts` reads every route file the
+register binds to the contract and fails if a 2xx JSON body is constructed
+anywhere but the helper. It was verified by reintroducing the exact violation
+D-086 described and watching it fail. `jobs.run` is named in a one-entry
+`UNIMPLEMENTED` set rather than skipped by a wildcard, so D-100 cannot be
+closed by accident.
+
+**Checked and left alone:** `annotation-refresh` still answers a failed
+upstream call with `Ensembl 502` in the body. It is an error response rather
+than a success one, and an upstream status code is not anybody's data. Noted
+here so that its absence from the change reads as a decision.

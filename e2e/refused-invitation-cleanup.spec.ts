@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { randomBytes, randomUUID } from "node:crypto";
-import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET } from "./helpers";
+import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET, jobRan } from "./helpers";
 
 // This exercises the production retention route and real Storage API. The
 // co-parent suite covers the refusal UI. This fixture focuses on the
@@ -68,10 +68,10 @@ test("jobs.retention: physically delete refused-draft evidence without deleting 
   const response = await request.post("/api/jobs/retention", {
     headers: { authorization: `Bearer ${JOBS_SECRET}` },
   });
-  expect(response.status()).toBe(200);
-  const receipt = await response.json();
-  expect(receipt.failed).toBe(0);
-  expect(receipt.processed).toBeGreaterThanOrEqual(1);
+  // D-086: `{processed, failed}` left the response. `completed` says the same
+  // thing the two counts did — the sweep ran, did work, and lost nothing —
+  // and the storage and row assertions below say WHICH work it did.
+  expect(await jobRan(response, "the refused-draft cleanup sweep")).toBe("completed");
   expect((await admin.storage.from(bucket).download(targetObject)).error).not.toBeNull();
   expect((await admin.from("embryo_cohort_drafts").select("id").eq("id", target)).data).toEqual([]);
   expect((await admin.from("legal_evidence_ingest_sessions").select("id").eq("id", targetSession)).data).toEqual([]);

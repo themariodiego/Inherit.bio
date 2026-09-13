@@ -3,7 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { JOBS_SECRET, adminClient, createConfirmedUser, signIn } from "./helpers";
+import { JOBS_SECRET, adminClient, createConfirmedUser, jobRan, signIn } from "./helpers";
 import {
   generateOwnFileWithChosenReports,
   uploadOwnFilePrepared,
@@ -275,11 +275,12 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   const drains: string[] = [];
   for (let attempt = 0; attempt < 40 && !invitationUrl; attempt++) {
     const drain = await page.request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-    expect(drain.status(), `mail drain ${attempt + 1}`).toBe(200);
-    const receipt = await drain.json() as { processed: number; failed: number; pending: number };
-    drains.push(JSON.stringify(receipt));
+    // D-086: the drain reports an outcome, not counts. `no_work` is an empty
+    // queue, which is the only reason to stop early.
+    const outcome = await jobRan(drain, `mail drain ${attempt + 1}`);
+    drains.push(outcome);
     invitationUrl = invitationOf();
-    if (!invitationUrl && receipt.processed === 0 && receipt.pending === 0) break;
+    if (!invitationUrl && outcome === "no_work") break;
   }
   expect(invitationUrl,
     `the invitation must reach the configured mail provider; drains: ${drains.join(" ")}`).toBeTruthy();

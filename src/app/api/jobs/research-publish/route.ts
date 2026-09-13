@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
+import { machineJobDrained, machineJobResult } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -25,9 +26,10 @@ export async function POST(request: Request) {
     .eq("slug", slug)
     .maybeSingle();
   if (!template) return new Response("Unknown template", { status: 404 });
-  if (template.status === "published") {
-    return NextResponse.json({ published: false, reason: "already published" });
-  }
+  // D-086: this said `{ published: false, reason: "already published" }`.
+  // `machine-job-result-v1` forbids free text, and "nothing to do" is the
+  // outcome it already defines for a job that found no due work.
+  if (template.status === "published") return machineJobResult("no_work");
 
   const now = new Date().toISOString();
   const { error: updateError } = await admin
@@ -35,9 +37,11 @@ export async function POST(request: Request) {
     .update({ status: "published", published_at: now, updated_at: now })
     .eq("slug", slug);
   if (updateError) {
-    return new Response(`Publish failed: ${updateError.message}`, {
-      status: 500,
-    });
+    // The database's own message used to be the response body. It can carry
+    // column values and constraint text, so it goes to the server log and the
+    // caller gets the same coded 503 the changelog failure below returns.
+    console.error("[research-publish] template publish write failed");
+    return NextResponse.json({ error: "publish_incomplete" }, { status: 503 });
   }
 
   const { data: changelog, error: changelogError } = await admin
@@ -59,6 +63,7 @@ export async function POST(request: Request) {
     .select("id")
     .eq("digest_opt_in", true);
   let queued = 0;
+  let failedQueues = 0;
   if (optIns && optIns.length > 0) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     for (const p of optIns) {
@@ -90,9 +95,14 @@ export async function POST(request: Request) {
         queued++;
       } catch {
         console.error("[mail] research-digest enqueue failed");
+        failedQueues++;
       }
     }
   }
 
-  return NextResponse.json({ published: true, slug, digest_queued: queued });
+  // The slug and the digest count are exactly what the contract's
+  // "targetJobRow…DocumentTemplate…OrPrivateCounts" clause forbids: the
+  // template this run touched, and how many people are subscribed to it.
+  // Publishing is one unit of work; each queued digest is another.
+  return machineJobDrained({ done: 1 + queued, failed: failedQueues });
 }

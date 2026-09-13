@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bindEnsemblFrequencies, type EnsemblVariation } from "@/lib/genome/reference-evidence";
+import { machineJobDrained, machineJobResult } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -34,7 +34,10 @@ async function runRefresh() {
     .limit(BATCH);
   if (readError) return new Response("Reference read failed", { status: 503 });
   if (!stale || stale.length === 0) {
-    return NextResponse.json({ enriched: 0, note: "reference store fresh" });
+    // D-086: this said `{ enriched: 0, note: "reference store fresh" }`. The
+    // register's `machine-job-result-v1` forbids free text as well as counts,
+    // and "nothing was due" is exactly the outcome it defines for the case.
+    return machineJobResult("no_work");
   }
 
   const ids = stale.map((r) => `rs${r.rsid}`);
@@ -80,7 +83,10 @@ async function runRefresh() {
     enriched++;
   }
 
-  return NextResponse.json({ enriched, batch: stale.length });
+  // The batch size and the number enriched are this job's internals; an
+  // update that fails has already returned 503 above, so reaching here means
+  // every row in the batch was written.
+  return machineJobDrained({ done: enriched, failed: 0 });
 }
 
 export async function GET(request: Request) {
