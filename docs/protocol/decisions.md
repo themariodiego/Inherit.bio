@@ -2305,3 +2305,27 @@ legacy ancestry rows as unreadable after revocation, and they never were,
 because nothing had ever checked.
 
 Reverting is one flag per call site if the operator disagrees.
+
+## 2026-09-13 — A test that passes because it is fast is not passing
+
+`/family processing` passed locally and timed out in CI at the 120-second
+deadline. The failure was in its cleanup, not its assertions: it released the
+held `/api/files/*/process` request and then navigated the same page that
+owned it. The released continuation and the navigation raced, CI lost, and
+Playwright reported `net::ERR_ABORTED` on the `goto`.
+
+Locally the released request finished first every time, so the test was green
+for a reason that had nothing to do with what it asserts. That is the
+dangerous shape: not a flaky test, a test whose correctness depended on
+winning a race it never acknowledged.
+
+The fix is structural rather than faster. The cleanup now runs on a SECOND
+page in the same context: `page.route` is page-scoped, so the new page is
+never intercepted and there is no continuation to race. The release moved to
+the end, immediately before the context closes, so nothing waits on a promise
+that never resolves.
+
+Worth generalising, because three specs now use this hold-a-request technique
+(`e2e/overview-processing.spec.ts`, `e2e/genome-data-processing.spec.ts` and
+now `e2e/family.spec.ts`): the page that holds a request should not be the
+page that navigates afterwards. Release, then leave that page alone.

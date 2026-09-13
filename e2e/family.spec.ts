@@ -830,17 +830,31 @@ test("/family processing: the hub card says no shared results yet, not no file y
     await bContext.close();
   }
 
-  // Put the fixture back: the grant withdrawn, the held request released so
-  // nothing is left pending, and A's file left to finish on its own.
-  releaseAPreparation();
-  const aPage = aPreparingContext!.pages()[0];
-  await aPage.goto(`/family/s-${invitedSubjectId}/permissions`);
-  const estimates = aPage
+  // Put the fixture back: the grant withdrawn, so the pause/resume/stop test
+  // below sees the A -> B direction empty exactly as every test above left it.
+  //
+  // ON A NEW PAGE IN A'S CONTEXT, AND THE ORDER MATTERS. The page that
+  // uploaded still owns the held `/api/files/*/process` request. Releasing the
+  // hold and then navigating THAT page races the continuation against the
+  // navigation: CI aborted the navigation with net::ERR_ABORTED and the test
+  // sat there until the 120s deadline, while the same code passed locally
+  // because the released request happened to finish first. A second page is
+  // not intercepted — `page.route` is page-scoped — so this is deterministic
+  // rather than fast enough.
+  const aCleanup = await aPreparingContext!.newPage();
+  await aCleanup.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const estimates = aCleanup
     .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
-    .filter({ has: aPage.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
+    .filter({ has: aCleanup.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
   await estimates.getByRole("button", { name: "Turn off" }).click();
   await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("Off");
   expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+
+  // Released last, so no promise is left unresolved when the context closes.
+  // Whether that request then completes or is aborted with the context does
+  // not matter: nothing below reads A's files, and a file left at `uploaded`
+  // is a state the product defines rather than a broken one.
+  releaseAPreparation();
   await aPreparingContext!.close();
   aPreparingContext = null;
 });
