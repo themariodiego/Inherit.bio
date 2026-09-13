@@ -324,6 +324,12 @@ const BROWSER_TESTS = "e2e";
  *               was at that moment telling them the file is still being
  *               prepared. Own records only, for the same disclosure reason
  *               that keeps `/family/portrait/[pairId]` open.
+ *   94 -> 93    `/genome/[subject]/reports/[slug] empty`, the neighbour of the
+ *               pair above and written with it. Three situations render
+ *               almost nothing on that page and are one `fileCount` and one
+ *               preparation check apart, so the test establishes from the
+ *               DATABASE that the account holds no file and then asserts that
+ *               neither neighbouring sentence appears.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -334,7 +340,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 94;
+const UNPROVEN_ROUTE_STATE_PAIRS = 93;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
