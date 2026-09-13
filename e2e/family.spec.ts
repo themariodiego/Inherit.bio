@@ -635,6 +635,56 @@ test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer 
 });
 
 /**
+ * `/family complete`, on the fixture the tests above have already built: one
+ * accepted invitation, one shared layer, one live pair.
+ *
+ * `complete` means the hub is showing everything it has — which on this page
+ * is a populated people list AND three tiles, each either resolved to a real
+ * destination or stating why it is not. THAT IS NOT A WEAKER CLAIM. A tile
+ * that cannot resolve yet and says so is what this page has; a tile that
+ * shipped a link answering 404 would be worse and would pass a laxer test.
+ * The Copilot tile is the live example: its group scopes do not resolve, so
+ * it carries its blocking sentence instead of a href, and the assertion below
+ * pins that rather than skipping it.
+ *
+ * Placed here deliberately. Sharing is live at this point in the file; the
+ * pause/resume/stop test below ends it, and after that the hub is a different
+ * page.
+ */
+test("/family complete: the person list populated, and every tile either resolved or saying why not", async ({
+  page,
+}) => {
+  await signIn(page, A.email, A.password);
+  await page.goto("/family");
+
+  // The list, with the one person this fixture built.
+  const card = page.locator('[data-slot="person-card"]');
+  await expect(card).toHaveCount(1);
+  await expect(card.locator('[data-slot="subject-name"]')).toHaveText(B_AS_SEEN_BY_A);
+  await expect(card.locator('[data-slot="person-state"]')).toHaveText("Reports ready");
+
+  const tiles = page.locator('[data-slot="family-tile"]');
+  await expect(tiles).toHaveCount(3);
+
+  // Two tiles resolve, and to this fixture's own records rather than to a
+  // generic index: the individual-risks tile opens the one person shared with
+  // A, and Portrait opens the pair their two grants created.
+  await expect(page.locator('[data-tile="individual-risks"]').getByRole("link").first())
+    .toHaveAttribute("href", `/family/s-${invitedSubjectId}`);
+  const portraitHref = await page.locator('[data-tile="portrait"]').getByRole("link").first()
+    .getAttribute("href");
+  expect(portraitHref, "Portrait opens the pair, not the hub").toMatch(/^\/family\/portrait\/[0-9a-f-]{36}$/);
+
+  // The third states its reason instead of shipping a link that would 404.
+  const copilot = page.locator('[data-tile="copilot"]');
+  await expect(copilot.getByRole("link")).toHaveCount(0);
+  await expect(copilot.locator('[data-slot="tile-blocked"]')).not.toHaveText("");
+
+  // And the hub's own primary action, which is how the list grows.
+  await expect(page.getByRole("link", { name: "Add another adult" })).toBeVisible();
+});
+
+/**
  * `/family/[person]/permissions processing`, measured as implemented in
  * corrections item 8 (`permission-grant-row.tsx:54`, `:93`) before it was
  * titled: the row control holds a `pending` flag and disables while its

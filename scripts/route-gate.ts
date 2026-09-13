@@ -263,6 +263,16 @@ const BROWSER_TESTS = "e2e";
  *               retitle safe: no cell reads "No prepared file yet" or "No file
  *               yet". It sits on ONE fixture with `partial-coverage` further
  *               down the same file, differing only in what was granted.
+ *   102 -> 101  `/family complete`, on the fixture the file had already
+ *               built. `complete` here is the people list populated AND all
+ *               three tiles, each either resolved to a real destination or
+ *               stating why not - which is not a weaker claim. The Copilot
+ *               tile's group scopes do not resolve, so it carries its
+ *               blocking sentence instead of a href, and the test pins that
+ *               rather than skipping it: a tile that shipped a link answering
+ *               404 would be worse and would pass a laxer test. Placed before
+ *               the pause/resume/stop test, which ends the sharing this state
+ *               depends on.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -273,7 +283,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 102;
+const UNPROVEN_ROUTE_STATE_PAIRS = 101;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

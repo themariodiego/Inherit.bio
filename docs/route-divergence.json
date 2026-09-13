@@ -181,6 +181,7 @@
     "/embryos/compare jurisdiction-unavailable",
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
+    "/family complete",
     "/family empty",
     "/family jurisdiction-unavailable",
     "/family/[person] empty",
