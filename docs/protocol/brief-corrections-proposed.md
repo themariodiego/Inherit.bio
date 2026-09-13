@@ -1,6 +1,10 @@
-# Proposed brief corrections — awaiting operator signature
+# Brief and register corrections — proposed, signed and applied
 
-**Status: PROPOSED. Nothing here has been applied to `docs/inherit-v2-brief.md`.**
+**Status, 2026-09-13: items 4, 5, 6, 8, 10 and 12 are SIGNED AND APPLIED.**
+Each of those carries a signature line at its own head saying what was applied
+and what was not. The rest are still proposals and are still unapplied, and
+this document is kept whole rather than pruned: the reasoning behind a signed
+item is the record of why the register says what it now says.
 
 The operator asked for these to be drafted for sign-off rather than made. Each
 item below gives the exact text to replace, the exact replacement, and why.
@@ -983,7 +987,7 @@ never existed in this repository's history.
 
 ---
 
-## Where the 36 unproven pairs stand
+## Where the 35 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1005,12 +1009,21 @@ proposals is the nine that G2.2 forbids dropping.
 | Applied from item 8 | 29 | done 2026-09-13 |
 | Applied from item 10 | 16 | done 2026-09-13 |
 | **Retired from the register** | **51** | |
-| Item 6's Family and Embryo half | 9 | product work — build the gate |
+| Item 6's Family and Embryo half | 8 | product work — build the gate |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **36** | |
+| **Total unproven** | **35** | |
 
-Building the nine consent gates would take the ratchet from 36 to 27. That is
-the whole of what a register correction can no longer do for this number.
+Building the remaining eight consent gates would
+take the ratchet from 35 to 27. That is the whole of what a register
+correction can no longer do for this number.
+
+**The first of the nine was proven on 2026-09-13, and it was not built.**
+`/family/[person] consent-required` is the paused-sharing branch, which this
+item measured as absent because it checked the two shared blocking components
+and this page renders its refusal inline. The measurement's three checks were
+each correct and the conclusion was wrong. Worth carrying into the other
+eight: read the page's own branches, not only the components it might have
+used.
 
 **Item 6 applied to six routes, not fifteen.** Five of its twenty —
 `/settings`, `/settings/consents`, `/settings/copilot`, `/settings/data` and

@@ -2755,3 +2755,44 @@ and Embryo half this guard now protects.
 Of the 36 that remain, nine are those gates — product work, task 33 — and 27
 are test work, most of it behind item 11's question about what eight state ids
 actually mean. Nothing left in the ratchet is a register correction.
+
+## 2026-09-13 · The first consent gate was already there
+
+`/family/[person] consent-required` is proven, and nothing was built for it.
+The state is the paused-sharing branch: this person consented and then
+suspended it, `family-sharing-state-v1` keeps every grant row while emptying
+the live set, and the page has been rendering "Sharing with this person is
+paused. Nothing about them shows here until one of you resumes it." for as
+long as the pause has existed.
+
+Corrections item 6 measured this route as rendering no consent refusal, and
+said it had checked three ways rather than one because a negative is easy to
+get wrong: the page component, the call sites of both shared blocking
+components, and the absence of any gate above the route. Each check was
+correct. The conclusion was wrong, because this page renders its refusal
+INLINE and uses neither shared component — so the second check, the one doing
+the work, could not see it. **Carry that into the other eight: read the page's
+own branches, not only the components it might have used.**
+
+What made the pair titleable rather than merely present is the rule the
+health-picture suite wrote down when it declined to claim this state: a
+`consent-required` page names an outstanding consent step and links to where
+it is given; an `empty` page has nothing in it and no step this reader can
+take. Paused passes both halves — the reader is one of the two who can resume,
+and the Permissions link is on screen throughout — and the branch one line
+above it, for a person who never shared, fails the first, because only that
+person can act. Three independent readings now agree on that rule, and it is
+the one to decide the remaining eight by.
+
+Both branches carry `data-slot="person-blocking"` with their state now. They
+render the same shape and mean opposite things, so a title has to settle which
+is on screen from the DOM rather than from a sentence that could be reworded —
+the discipline `/family/portrait/[pairId]` established for its four no-output
+branches.
+
+It is a separate test rather than a second title on the lifecycle test that
+already drove the pause, and the reason is worth keeping: `/family/[person]`
+is a prefix of `/family/[person]/permissions`, so one title carrying both
+paths and both state words would also have proven `/family/[person] complete`,
+which nothing renders. The gate's path anchoring stops a prefix matching a
+longer path, but not two paths written into one sentence.

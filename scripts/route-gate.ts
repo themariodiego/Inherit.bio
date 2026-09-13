@@ -448,6 +448,37 @@ const BROWSER_TESTS = "e2e";
  *               consent gates, and the brief forbids the waiver. It stays
  *               declared and unproven, which is the honest state.
  *
+ *    36 -> 35   `/family/[person] consent-required`, the FIRST of the nine
+ *               Family and Embryo consent gates, and it was implemented and
+ *               untitled rather than missing. Corrections item 6 measured
+ *               this route as rendering no consent refusal, three ways: the
+ *               page component, the call sites of both shared blocking
+ *               components, and the absence of any gate above it. All three
+ *               were right and the conclusion was wrong, because this page
+ *               renders its refusal INLINE and uses neither shared component.
+ *               `person.sharing === "paused"` is one branch above
+ *               `layers.length === 0`, and the two render the same shape and
+ *               mean opposite things.
+ *
+ *               The rule that separates them is not new either: it was
+ *               written down for `/family/health-picture empty`, which is a
+ *               count of who has agreed. A `consent-required` page names an
+ *               outstanding consent step and links to where it is given; an
+ *               `empty` page has nothing in it and no step this reader can
+ *               take. Paused passes both halves — the reader is one of the
+ *               two who can resume, and the Permissions link is on screen —
+ *               and the branch above it fails the first, because only the
+ *               other person can share.
+ *
+ *               Both branches now carry `data-slot="person-blocking"` with
+ *               their state, so the title settles WHICH from the DOM rather
+ *               than from a sentence that could be moved. Its own test, not a
+ *               second title on the lifecycle test that already drove the
+ *               pause: `/family/[person]` is a prefix of
+ *               `/family/[person]/permissions`, so one title carrying both
+ *               paths and both state words would also have proven
+ *               `/family/[person] complete`, which nothing renders.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -457,7 +488,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 36;
+const UNPROVEN_ROUTE_STATE_PAIRS = 35;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

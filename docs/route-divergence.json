@@ -191,6 +191,7 @@
     "/family empty",
     "/family jurisdiction-unavailable",
     "/family processing",
+    "/family/[person] consent-required",
     "/family/[person] empty",
     "/family/[person] jurisdiction-unavailable",
     "/family/[person] partial-coverage",

@@ -856,6 +856,74 @@ test("/family processing: the hub card says no shared results yet, not no file y
 });
 
 /**
+ * `/family/[person] consent-required`, and the reason it is a separate test
+ * rather than a second title on the one below.
+ *
+ * The state is the PAUSED branch: this person consented, then suspended it.
+ * One line above it in `family/[person]/page.tsx` sits the branch for a
+ * person who never consented, which is `empty` and proven separately, and the
+ * two render the same shape - one status paragraph and nothing else. So this
+ * test settles WHICH from the DOM rather than from the sentence alone, the
+ * discipline `/family/portrait/[pairId]` established for its four no-output
+ * branches, and asserts the neighbouring sentence is absent.
+ *
+ * It is NOT the Tier-2 gate, for the reason the partial-coverage test above
+ * records at length: that gate is a session acknowledgement, and every
+ * `consent-required` this repository claims rests on a recorded, revocable
+ * consent artifact. A pause is exactly that - `family-sharing-state-v1` keeps
+ * every grant row and empties the live set - which is what makes this branch
+ * the honest carrier of the state.
+ *
+ * The rule separating it from `empty` is the one
+ * `e2e/family-health-picture.spec.ts` wrote down for that route: a
+ * `consent-required` page names an outstanding consent step and links to
+ * where it is given, and an `empty` page has nothing in it and no step this
+ * reader can take. Paused passes both halves - "until one of you resumes it"
+ * names the step, the reader is one of the two who can take it, and the
+ * Permissions link on this page is where. The branch above it fails the first
+ * half: only the other person can share, so the reader has no step at all.
+ * Both halves are asserted below rather than argued.
+ *
+ * A second title on the lifecycle test below would have been cheaper and
+ * would have been WRONG: `/family/[person]` is a prefix of
+ * `/family/[person]/permissions`, so a title carrying both paths and both
+ * state words would also have proven `/family/[person] complete`, which
+ * nothing has rendered.
+ *
+ * The pause is put back before this test ends, so the lifecycle test below
+ * sees the fixture it built.
+ */
+test("/family/[person] consent-required: paused sharing withholds every result and is not the never-shared sentence", async ({ page }) => {
+  await signIn(page, A.email, A.password);
+  const grantsBefore = await liveGrants(selfSubjectB, accountA, "subject_to_recipient");
+  await page.goto(`/family/s-${invitedSubjectId}/permissions`);
+  await page.getByRole("button", { name: "Pause sharing" }).click();
+  await expect(page.getByRole("button", { name: "Resume sharing" })).toBeVisible();
+
+  await page.goto(`/family/s-${invitedSubjectId}`);
+  const blocking = page.locator('[data-slot="person-blocking"]');
+  await expect(blocking).toHaveAttribute("data-state", "consent-required");
+  await expect(blocking).toHaveText(PAUSED_BODY);
+  // The branch one line above renders the same shape and means the opposite.
+  await expect(page.locator('[data-slot="person-blocking"][data-state="empty"]')).toHaveCount(0);
+  await expect(page.getByText(NOT_SHARED, { exact: true })).toHaveCount(0);
+  // "and links to where it is given": resuming happens on the permissions
+  // page, and the link to it is on screen beside the refusal.
+  await expect(
+    page.locator(`main a[href="/family/s-${invitedSubjectId}/permissions"]`),
+  ).toHaveCount(1);
+  await expectNoResults(page);
+
+  // A suspended consent is still a consent: no grant row is touched, which is
+  // what separates this state from the tombstone the test below reaches.
+  expect(await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).toEqual(grantsBefore);
+
+  await page.goto(`/family/s-${invitedSubjectId}/permissions`);
+  await page.getByRole("button", { name: "Resume sharing" }).click();
+  await expect(page.getByRole("button", { name: "Pause sharing" })).toBeVisible();
+});
+
+/**
  * `/family/[person]/permissions complete`, on the reading already recorded
  * for `/settings complete`: this page has no partial shape. It renders the
  * whole permission surface for a live relationship - the controls, their

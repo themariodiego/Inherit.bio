@@ -404,11 +404,13 @@ describe("the corrections table agrees with the register it claims to be counted
   /**
    * Item 6's Family and Embryo half: nine routes that declare
    * `consent-required` and render no refusal, where G2.2 forbids the n/a and
-   * the owner chose to build the gates instead. It is the last part of items
+   * the owner chose to build the gates instead. `/family/[person]` left this
+   * set on 2026-09-13 — its refusal turned out to be implemented and
+   * untitled — so eight remain. It is the last part of items
    * 6, 8 and 10 that has not been applied, and the only part of this number a
    * signature could ever have moved. Everything else open is test work.
    */
-  const CONSENT_GATES_TO_BUILD = 9;
+  const CONSENT_GATES_TO_BUILD = 8;
 
   it("states the current total in its heading and its total row", () => {
     expect(unproven, "the register must hold at least one unproven pair for this to mean anything").toBeGreaterThan(0);
