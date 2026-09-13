@@ -2559,3 +2559,42 @@ no decision from anyone to be wrong.
 claim about the present tense, and it decays. Before treating one as work,
 re-read the code it names; before treating one as blocked, re-read the
 blocker. Two of the last three rows I checked that way had already moved.
+
+## 2026-09-13 — Thirteen suites were not failing; they were reading someone else's mail
+
+`claim_mail_outbox` takes the oldest deliverable row **in the whole table**. On
+a fresh CI database that is always the row the test just created. On a
+developer database holding another run's queued or stale-claimed mail it is
+someone else's, so the suite hashes a token that belongs to nothing it built,
+and every assertion downstream of the claim fails.
+
+Twenty-four pgTAP suites were failing on this machine. Thirteen were failing
+for that reason and for no other: with the ambient rows retired inside the
+test transaction — no assertion changed, the rollback puts them back — all
+thirteen go green unchanged. The eleven that remain assert whole-database
+facts (the first audit sequence, a global row count after a delete) and only
+hold on a database with nothing else in it.
+
+**What made this worth chasing rather than shrugging at.** I had been treating
+"fails locally, passes in CI" as a property of those suites, carried forward
+from summary to summary. It was a property of the fixture, one line long, and
+in the meantime it made a whole verification surface unusable — which is how a
+change gets pushed on the strength of CI alone.
+
+**The same class, found on the way, and NOT fixed.** `e2e/research.spec.ts`
+fails here for the sibling reason: `jobRanCleanly` refuses
+`completed_with_failures`, and one undeliverable row left behind by another
+journey makes the drain report exactly that. Its comment already says so. That
+one cannot be fixed by a rollback, because it is a live database, and the two
+tempting fixes are both wrong: relaxing the assertion to `jobRan` would be
+changing a test to make it pass, and hand-cleaning the developer queue would
+be mutating shared state for local convenience. So it stays unverifiable here
+and verified in CI, and what it turned up instead is recorded as D-104 — a
+mail row that exhausts its attempts is never given a terminal state, so it
+sits in `claimed` forever.
+
+**The rule.** A test's fixture should establish the conditions its assertions
+name. When an assertion is about "the queue" or "the count" rather than about
+the rows the test created, it is a claim about the whole database, and it is
+only true on an empty one. Either scope the claim to the journey, or make the
+fixture true wherever it runs.
