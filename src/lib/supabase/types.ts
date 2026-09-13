@@ -7980,6 +7980,12 @@ export type Database = {
         }
         Returns: Json
       }
+      record_blocked_embryo_response_v1: {
+        Args: {
+          p_consumer: string
+        }
+        Returns: undefined
+      }
       record_resend_mail_event: {
         Args: {
           p_occurred_at: string

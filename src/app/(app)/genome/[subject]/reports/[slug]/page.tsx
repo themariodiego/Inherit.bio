@@ -645,7 +645,7 @@ export default async function ReportDetailPage(
               </details>
             ) : null}
             <ReportSummarySources sourceIds={summarySourceIds} existingIds={existingSourceIds} />
-            {summarySourceIds.length > 0 ? <Link href="/science#sources" className="underline underline-offset-2">About these sources</Link> : null}
+            {summarySourceIds.length > 0 ? <Link href={route("science.index", { hash: "sources" })} className="underline underline-offset-2">About these sources</Link> : null}
             {reportMethod(template) === "polygenic-score" ? (
               <p data-slot="score-method-source">
                 {SCORE_METHOD_LABEL}: {" "}

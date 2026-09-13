@@ -5,6 +5,8 @@ import {
   JOBS_SECRET,
   adminClient,
   createConfirmedUser,
+  dueMailCount,
+  jobRanCleanly,
   signIn,
 } from "./helpers";
 
@@ -95,13 +97,20 @@ test("a fixtured release drafts a template into the review queue", async ({
     },
   });
   expect(res.status()).toBe(200);
-  const json = (await res.json()) as {
-    results: { new_release: boolean; drafted: number }[];
-  };
-  expect(json.results[0].new_release).toBe(true);
-  expect(json.results[0].drafted).toBe(1);
+  // D-086: the job used to answer with the release key, whether the release
+  // was new and how many drafts it wrote. `machine-job-result-v1` allows the
+  // outcome and nothing else, so what it did is read from the database it
+  // wrote to — which is the stronger observation anyway.
+  expect(await res.json()).toEqual({ status: "complete", outcome: "completed" });
 
   const admin = adminClient();
+  const { data: release } = await admin
+    .from("research_releases")
+    .select("source, summary")
+    .eq("release_key", "e2e-release-1")
+    .single();
+  expect(release?.source).toBe("gwas_catalog");
+  expect(release?.summary).toMatchObject({ drafted: 1, associations: 1 });
   const { data: draft } = await admin
     .from("report_templates")
     .select("slug, status, evidence, citations")
@@ -121,10 +130,15 @@ test("a fixtured release drafts a template into the review queue", async ({
       },
     },
   });
-  const replayJson = (await replay.json()) as {
-    results: { new_release: boolean }[];
-  };
-  expect(replayJson.results[0].new_release).toBe(false);
+  // A release already in the ledger is no work at all, and the contract's
+  // three outcomes say so directly: this is the idempotency claim, not a
+  // weaker version of it.
+  expect(await replay.json()).toEqual({ status: "complete", outcome: "no_work" });
+  const { count: releases } = await admin
+    .from("research_releases")
+    .select("id", { count: "exact", head: true })
+    .eq("release_key", "e2e-release-1");
+  expect(releases).toBe(1);
 });
 
 test("unauthorized refresh is rejected", async ({ request }) => {
@@ -143,9 +157,23 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
     data: { slug: SLUG },
   });
   expect(res.status()).toBe(200);
-  const json = (await res.json()) as { published: boolean; digest_queued: number };
-  expect(json.published).toBe(true);
-  expect(json.digest_queued).toBeGreaterThanOrEqual(1);
+  // D-086: the answer used to name the slug it had published and count the
+  // subscribers it had queued a digest for. Both are what
+  // `machine-job-result-v1` forbids, so the outcome is all that comes back
+  // and the effects are read from the database.
+  expect(await res.json()).toEqual({ status: "complete", outcome: "completed" });
+  const admin = adminClient();
+  const { data: published } = await admin
+    .from("report_templates")
+    .select("status")
+    .eq("slug", SLUG)
+    .single();
+  expect(published?.status).toBe("published");
+  const { count: digests } = await admin
+    .from("mail_outbox")
+    .select("id", { count: "exact", head: true })
+    .eq("purpose", "research.digest");
+  expect(digests ?? 0).toBeGreaterThanOrEqual(1);
 
   // The global worker claims at most 25 ordinary rows in queue order. Earlier
   // source-ready notices remain genuine work; a successful batch is not a promise
@@ -153,20 +181,30 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   // with due work and progress, without selecting/deleting/reordering any row.
   // As with the invitation journeys, this needs a disposable local queue and
   // the fixed capture provider; it must not drain an unreviewed shared queue.
+  // D-086 again: the drain's reply no longer carries a queue depth, because a
+  // queue depth is a count of people waiting on mail. The loop reads the
+  // outbox directly instead — the same query the route used to run, moved to
+  // the one caller entitled to the answer.
   for (let batch = 0; batch < 10; batch++) {
+    const before = await dueMailCount(admin);
     const drain = await request.post("/api/jobs/mail", {
       headers: { authorization: `Bearer ${JOBS_SECRET}` },
     });
-    expect(drain.status()).toBe(200);
-    const drainJson = (await drain.json()) as { processed: number; failed: number; pending: number };
+    // `jobRanCleanly` refuses `completed_with_failures`, which is what this
+    // loop's `expect(drainJson.failed).toBe(0)` meant before D-086. It needs
+    // the disposable local queue this test already documents a need for: an
+    // undeliverable row left behind by another journey fails it, exactly as
+    // the `failed` reading did.
+    const outcome = await jobRanCleanly(drain, `research mail batch ${batch + 1}`);
+    const after = await dueMailCount(admin);
     await test.info().attach(`research-mail-batch-${batch + 1}`, {
-      body: JSON.stringify({ processed: drainJson.processed, failed: drainJson.failed, pending: drainJson.pending }),
+      body: JSON.stringify({ outcome, dueBefore: before, dueAfter: after, delivered: captured.length }),
       contentType: "application/json",
     });
-    expect(drainJson.processed).toBeGreaterThanOrEqual(1);
-    expect(drainJson.failed).toBe(0);
+    expect(outcome).toBe("completed");
+    expect(after, "a batch that delivered nothing would loop forever").toBeLessThan(before);
     if (captured.some(email => [email.to].flat().includes(USER.email))) break;
-    expect(drainJson.pending, "a missing digest needs remaining due queue work").toBeGreaterThan(0);
+    expect(after, "a missing digest needs remaining due queue work").toBeGreaterThan(0);
   }
 
   // Changelog page shows the entry (heading carries the report title).

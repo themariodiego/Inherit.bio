@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = {
   title: "Deceased people",
@@ -144,7 +145,7 @@ export default function DeceasedPage() {
               <p>
                 Estate authority does not replace the rights of a living adult
                 subject or a future person. The{" "}
-                <Link href="/legal/future-person">Future Person Charter</Link>
+                <Link href={route("legal.future-person")}>Future Person Charter</Link>
                 {" "}continues to govern future-person records.
               </p>
             </>
@@ -184,7 +185,7 @@ export default function DeceasedPage() {
               Record whether you prefer deletion or a permitted estate export.
               Keep that choice with your will or emergency account details. You
               can also export your data for free or request account deletion in{" "}
-              <Link href="/settings">Settings</Link> while you are alive.
+              <Link href={route("settings.index")}>Settings</Link> while you are alive.
             </p>
           ),
         },

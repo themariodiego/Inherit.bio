@@ -782,7 +782,21 @@ test("with fewer legacy labels, the panel still states unavailable rather than a
   await expect(page.locator("[data-subject-pair]")).toHaveCount(0);
 });
 
-test("with no classified position at all, the panel says so in words, never a count of zero", async ({
+/**
+ * `/family/health-picture not-covered`, in the sense
+ * `/genome/[subject]/ancestry not-covered` already uses: the files are here
+ * and prepared, and the data does not support a result.
+ *
+ * The claim in the title is that this is NOT the `empty` state proven at the
+ * bottom of this file, and the two are one assertion apart. `empty` renders a
+ * count of the people who have agreed and NOTHING else — no carrier panel, no
+ * comparison table. Here the panel is present and so is the report table:
+ * both adults are on the page, both files are read, and the panel's own
+ * sentence says no classified position was covered. It is also not a negative
+ * screen — "checked the" and "0 positions" are absent — because saying zero
+ * would read as a result rather than as an absence of one.
+ */
+test("/family/health-picture not-covered: with no classified position at all, the panel says so in words, never a count of zero", async ({
   page,
 }) => {
   // The shipped reference table's own state (D-034).
@@ -796,7 +810,9 @@ test("with no classified position at all, the panel says so in words, never a co
   await expect(panel.locator('[data-slot="carrier-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
   await expect(panel).not.toContainText("checked the");
   await expect(panel).not.toContainText("0 positions");
-  // The independently generated report table remains available.
+  // The independently generated report table remains available. Its presence,
+  // with the panel above, is what separates this from `empty`: that state
+  // renders neither.
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 

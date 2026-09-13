@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Embryo Analysis" };
 
@@ -27,9 +28,9 @@ export default function EmbryoAnalysisPage() {
           The record belongs to the future person. They retain rights to know,
           not know, correct, export, restrict analysis, and delete it.
         </p>
-        <Link href="/legal/future-person" className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-2">Read the Future Person Charter</Link>
+        <Link href={route("legal.future-person")} className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-2">Read the Future Person Charter</Link>
       </section>
-      <Button asChild variant="outline" className="mt-8"><Link href="/overview">Open Inherit</Link></Button>
+      <Button asChild variant="outline" className="mt-8"><Link href={route("app.overview")}>Open Inherit</Link></Button>
     </div>
   );
 }

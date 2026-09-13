@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { adultInvitationAvailable } from "@/lib/adult-invitations";
 import { createClient } from "@/lib/supabase/server";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Review invitation" };
 
@@ -42,7 +43,7 @@ export default async function WithdrawPage(props: PageProps<"/withdraw/[token]">
           <h2 className="font-medium">{outcome.title}</h2>
           <p className="mt-3 text-sm leading-relaxed text-ink-muted">{outcome.body}</p>
           {searchParams.result === "accepted" ? (
-            <Link href="/settings/people" className="mt-4 inline-block text-sm underline underline-offset-2">
+            <Link href={route("settings.people")} className="mt-4 inline-block text-sm underline underline-offset-2">
               Open people settings
             </Link>
           ) : null}

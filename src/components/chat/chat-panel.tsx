@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
 import { ConsentDialog } from "./consent-dialog";
+import { route } from "@/lib/primary-routes";
 
 export interface ChatProviderInfo {
   configured: boolean;
@@ -76,7 +77,7 @@ export function ChatPanel({
             <strong>Cloud mode:</strong> genome-derived answers are sent to{" "}
             {providerDisplayName(info.providerKey ?? "")} ({info.model}) under
             your consent grant —{" "}
-            <Link href="/settings/copilot" className="underline underline-offset-2">
+            <Link href={route("settings.copilot")} className="underline underline-offset-2">
               revoke in Settings
             </Link>
             .
@@ -159,7 +160,7 @@ export function ChatPanel({
         <div className="rounded-xl border border-line bg-tint p-4 text-sm">
           <p>
             Configure a provider in{" "}
-            <Link href="/settings/copilot" className="underline underline-offset-2">
+            <Link href={route("settings.copilot")} className="underline underline-offset-2">
               Settings
             </Link>
             {". "}Add your own Anthropic key, or connect a model that runs on

@@ -894,7 +894,7 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
-## Where the 90 unproven pairs stand
+## Where the 88 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -911,10 +911,10 @@ signing this unlock?" had no answer anywhere.
 | Proposed not-applicable in item 10 | 17 | one signature |
 | less one pair proposed twice | −1 | see below |
 | **Awaiting a signature** | **60** | |
-| **Genuinely open** | **30** | test work, and for most of them item 11 first |
-| **Total unproven** | **90** | |
+| **Genuinely open** | **28** | test work, and for most of them item 11 first |
+| **Total unproven** | **88** | |
 
-Signing all three proposals would take the ratchet from 90 to 30 without a line
+Signing all three proposals would take the ratchet from 88 to 28 without a line
 of test code, because every one of those 60 is the register describing
 behaviour the product does not have.
 
@@ -925,11 +925,11 @@ readings are right and they agree, so nothing is in conflict; but it is one
 pair, not two, and a signature on both items must not be read as retiring two.
 Found while counting this table, which is the reason to build one.
 
-### And of the 30 that are open, 27 wait on item 11
+### And of the 28 that are open, 25 wait on item 11
 
 | state | open | blocked by item 11? |
 | --- | ---: | --- |
-| `not-covered` | 11 | yes — renders identically to `empty` on three of them |
+| `not-covered` | 9 | yes — renders identically to `empty` on three of them |
 | `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
 | `complete` | 8 | yes — currently four different meanings |
 | `processing` | 2 | partly: both are Family routes whose "no completed result yet" may or may not be work in flight |
@@ -938,7 +938,23 @@ Found while counting this table, which is the reason to build one.
 **Three pairs could be attempted today** without any ruling: one `empty`
 (`/family/portrait/[pairId]`) and two `processing` (`/family/health-picture`,
 `/family/portrait/[pairId]`) — and all three are the same two routes, which is
-worth noticing. Five of the original eight have since been proven — `/genome/[subject]/reports/[slug]` in both
+worth noticing.
+
+**Two `not-covered` pairs left the open column on 2026-09-13 without item 11,
+and the reason is a correction to this table rather than a ruling.** The row
+above says `not-covered` waits on item 11 because it "renders identically to
+`empty`". That is true of three routes and was written as though it were true
+of all eleven. It is not true of `/family/portrait/[pairId]` or
+`/family/health-picture`: portrait renders four distinguishable no-output
+branches, of which `not-covered` is the one carrying
+`data-slot=portrait-empty` with `data-state=unavailable`, and the health
+picture's `empty` renders neither the carrier panel nor the comparison table
+while its `not-covered` renders both. Both were already asserted in a browser
+under titles that claimed nothing; the tests now settle which branch is on
+screen from the DOM, and the titles say so. The nine that remain are the ones
+where the ambiguity is real.
+
+Five of the original eight have since been proven — `/genome/[subject]/reports/[slug]` in both
 `empty` and `processing`, the second of which needed a product fix first, and
 `/family` and `/family/[person]` in `processing`, which needed only the
 fixture and confirmed item 9's reading that both distinguish "no file" from

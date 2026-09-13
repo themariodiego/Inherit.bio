@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Add a file" };
 
@@ -17,7 +18,7 @@ export default function FileUploadPage() {
       </header>
       <OwnUploadEntry />
       <p className="text-sm">
-        <Link href="/files" className="link-target underline underline-offset-2">← All files</Link>
+        <Link href={route("files.index")} className="link-target underline underline-offset-2">← All files</Link>
       </p>
     </div>
   );

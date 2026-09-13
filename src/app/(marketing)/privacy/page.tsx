@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
@@ -158,7 +159,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   You can review and revoke each grant at any time in{" "}
-                  <Link href="/settings">Settings</Link>. Revocation stops all
+                  <Link href={route("settings.index")}>Settings</Link>. Revocation stops all
                   future transmission at once.
                 </li>
                 <li>
@@ -239,7 +240,7 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 Deletion is available self-serve in{" "}
-                <Link href="/settings">Settings</Link> — no support ticket, no
+                <Link href={route("settings.index")}>Settings</Link> — no support ticket, no
                 retention phone call, no dark patterns.
               </p>
             </>
@@ -397,7 +398,7 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Withdraw consent</strong> — revoke any LLM-provider
                   consent at any time in{" "}
-                  <Link href="/settings">Settings</Link> (GDPR Article 7(3)).
+                  <Link href={route("settings.index")}>Settings</Link> (GDPR Article 7(3)).
                 </li>
                 <li>
                   <strong>No sale, no sharing</strong> — we do not sell or

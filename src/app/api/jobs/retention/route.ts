@@ -10,6 +10,7 @@ import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-clean
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+import { machineJobDrained } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -283,16 +284,14 @@ export async function POST(request: Request) {
     }
   }
 
-  const now = new Date().toISOString();
-  const { count: pending } = await admin
-    .from("account_deletion_requests")
-    .select("id", { count: "exact", head: true })
-    .or(`and(state.eq.notice_period,notice_ends_at.lte.${now}),state.eq.delete_started`);
-
-  return NextResponse.json({
-    processed,
+  // D-086: this used to answer with `processed`, `failed`, `expiredInvitations`
+  // and a count of the account deletions still due. `machine-job-result-v1`
+  // forbids private counts, and a deletion backlog is the most private of them
+  // — it says how many people are part-way through leaving. The count query
+  // went with the field, since it fed nothing else. Expired invitations are
+  // work done, so they count toward the outcome without being reported.
+  return machineJobDrained({
+    done: processed + (expiredInvitations ?? 0),
     failed,
-    pending: pending ?? 0,
-    expiredInvitations: expiredInvitations ?? 0,
   });
 }

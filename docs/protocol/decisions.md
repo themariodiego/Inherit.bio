@@ -2329,3 +2329,146 @@ Worth generalising, because three specs now use this hold-a-request technique
 (`e2e/overview-processing.spec.ts`, `e2e/genome-data-processing.spec.ts` and
 now `e2e/family.spec.ts`): the page that holds a request should not be the
 page that navigates afterwards. Release, then leave that page alone.
+
+## 2026-09-13 — A defect row is a sighting, not a boundary
+
+D-086 read: the mail drain returns counts, the register allows two fields,
+severity low. Fixing that line is ten minutes' work. Reading the contract it
+cites is what changed the job.
+
+`machine-job-result-v1` binds seven routes and forbids more than the shape:
+
+    targetJobRowObjectRecipientDocumentTemplateSubjectCohortFileAccount
+    ErrorFreeTextOrPrivateCounts: "never-returned"
+
+Six of the seven were breaking it. The retention drain answered with the
+number of account deletions still due — how many people are part-way through
+leaving, to anything holding the shared jobs secret. `research-publish`
+answered with the slug it had just published and the number of subscribers it
+had queued a digest for. `research-refresh` answered with the raw
+`Error.message`. D-086's own route was, if anything, the mildest of them.
+
+So the fix is the class, not the row. A defect row records where somebody
+happened to be standing when they noticed something; it is not a statement
+about how far the thing extends. Fixing exactly the row would have closed
+D-086 truthfully and left the contract violated by five siblings, which is the
+shape of progress that counts documents instead of capabilities.
+
+**What was deliberately NOT fixed, and why that is not the same evasion.**
+Two more divergences turned up on the same routes: `jobs.run` is registered,
+kept and contract-bound with no implementation (D-100), and
+`jobs.research-publish` requires a `slug` in a request body its register entry
+forbids (D-101). Neither is a response-shape problem. D-101 in particular
+cannot be fixed without deciding what the endpoint IS — a due-work drain that
+publishes whatever review has approved, or an operator command that names its
+target — and that is an owner's call about design, not a contract repair. The
+line between "the row understated the class" and "this is a different job" is
+whether the fix needs a decision nobody has made. Widening past that line is
+how a scoped change becomes an unreviewed one.
+
+**Removing a field is not free, and the tests are where it costs.** Six suites
+read those counts, and two of them read them for a real reason: the browser
+drain loops used `pending === 0` to know when to stop, and `processed >= 1` to
+know they were making progress. Deleting the fields and deleting the
+assertions would have been changing tests to fit the code.
+
+Two things saved it. The register's `no_work` outcome IS the "queue is empty"
+signal those loops needed, and it says it more exactly than `processed === 0
+&& pending === 0` did. And the queue depth itself is still readable — by the
+test, with the service key, running the same query the route used to run. The
+observation moved to the observer entitled to make it, which is the whole
+point of the contract clause. The unit suites needed nothing weakened either:
+they already asserted the submissions and the receipts the counts summarised,
+so the counts were the redundant half.
+
+Three things got stronger on the way past. `no_work` had never been tested on
+any route and now is on two — an idle sweep is a distinct outcome from one
+that deleted something, and a cron monitor needs the difference.
+`research-refresh` was silently dropping failed template upserts (`if (!error)
+drafted++` and nothing else), so a refused write vanished; it is counted now,
+and the job reports `completed_with_failures`. And two queue-depth queries
+disappeared with the fields they fed — the drains no longer ask the database a
+question they are not allowed to answer.
+
+**Why a helper was not enough.** Six call sites drifted from this contract
+once. `src/lib/jobs/machine-result.test.ts` reads every route file the
+register binds to the contract and fails if a 2xx JSON body is constructed
+anywhere but the helper. It was verified by reintroducing the exact violation
+D-086 described and watching it fail. `jobs.run` is named in a one-entry
+`UNIMPLEMENTED` set rather than skipped by a wildcard, so D-100 cannot be
+closed by accident.
+
+**Checked and left alone:** `annotation-refresh` still answers a failed
+upstream call with `Ensembl 502` in the body. It is an error response rather
+than a success one, and an upstream status code is not anybody's data. Noted
+here so that its absence from the change reads as a decision.
+
+### The correction that run made necessary, kept because it is the lesson
+
+The first version of the browser helper refused `completed_with_failures`
+everywhere. Six journeys failed at "mail drain 1" on the spot.
+
+They were right to. `drainMailUntil` drains a SHARED local queue until the
+mail THIS journey asked for arrives, and that queue holds rows from every
+earlier run — this container had fifty-five ordinary outbox rows stuck in
+`claimed` with attempt counts up to ten, addressed to accounts that no longer
+exist. Every drain re-claims some of them and fails. A journey is not entitled
+to fail because somebody else's leftover could not be delivered, and the old
+loops never read `failed` at all: making the shared helper strict silently
+tightened six tests that had deliberately been loose.
+
+So `jobRan` asserts the contract and returns the outcome, and `jobRanCleanly`
+is the one that refuses a failure — used by exactly the four call sites that
+read `failed === 0` before. The rule is worth stating: when a field disappears,
+each reader gets the assertion IT had, not the strictest one any reader had.
+
+Two specs still fail in this container, and both fail for the reason they
+document. `e2e/account-deletion-purge.spec.ts` asserts
+`INHERIT_DISPOSABLE_LOCAL_E2E === "true"` in its first line and this stack is
+not that. `e2e/research.spec.ts` needs a clean drain, which the fifty-five
+stuck rows make impossible; its previous `expect(drainJson.failed).toBe(0)`
+would fail identically. Sixty-four cases pass. Neither failure is a
+consequence of this change, and neither was made to pass by weakening it.
+
+One theory was checked and discarded rather than written up: thirty
+`invitation_terminal_notices` rows referencing invitations that no longer
+exist looked like a permanent poison for the drain's failure signal, and the
+table has no foreign key on `invitation_id`. Their outbox rows are all
+`submitted`/`accepted`, so nothing reclaims them and they cause nothing. It is
+recorded here because the near-miss is the point: the evidence for a defect is
+the failing path, not a suspicious-looking row.
+
+## 2026-09-13 — "It renders identically" was true of three routes and written about eleven
+
+The corrections table said `not-covered` waits on item 11 because it "renders
+identically to `empty`", and counted all eleven open pairs behind that. Two of
+them do not.
+
+`/family/portrait/[pairId]` has FOUR no-output branches, and they are
+distinguishable in the DOM without reading the fixture: a person with no
+processed file is `role=status` with `data-state=empty` and no `data-slot`; a
+refused carrier decision renders the decision's own copy; no classified
+position is `data-slot=portrait-empty` with `data-state=unavailable`; no
+position both files cover is the same slot with `data-state=empty`. Only the
+third is `not-covered`. `/family/health-picture` separates them the other way
+round: its `empty` renders neither the carrier panel nor the comparison table,
+and its `not-covered` renders both.
+
+Both were already asserted in a browser, and had been for days, under titles
+that claimed nothing. So the ratchet moved 90 → 88 with no fixture, no product
+change and no ruling — only titles that now say what the tests check, and one
+added assertion in each that settles WHICH branch is on screen rather than
+leaving it to be inferred from what the fixture was meant to do.
+
+The sense of `not-covered` is the one `/genome/[subject]/ancestry not-covered`
+established: the file is here and prepared, and the data does not support a
+result. On both these pages that is the legacy reference labels lacking
+reviewed allele, condition and assertion provenance — the shipped table's own
+state (D-034), not a fixture defect.
+
+**The lesson is about the table, not the ratchet.** A blocked-on column is a
+claim like any other, and this one generalised from three routes to eleven
+without anyone re-reading the other eight. Nine remain, and they remain because
+the ambiguity is real; the two that left did not need a signature and should
+never have been counted as though they did. Waiting on a decision that was not
+actually needed is indistinguishable, from the outside, from being blocked.

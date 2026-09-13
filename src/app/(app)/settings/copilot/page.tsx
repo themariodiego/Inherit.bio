@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LlmSettingsForm } from "@/components/settings/llm-settings-form";
 import { createClient } from "@/lib/supabase/server";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Copilot settings" };
 
@@ -17,7 +18,7 @@ export default async function CopilotSettingsPage() {
       <header className="space-y-2"><p className="eyebrow">Settings</p><h1 className="display text-3xl">Copilot model</h1></header>
       <LlmSettingsForm localAvailable={modelRuntime().localAllowed} current={llm ? { provider: llm.provider as "anthropic" | "openai_compatible", base_url: llm.base_url, model: llm.model, key_last4: llm.key_last4 } : null} />
       <OwnCopilotPermission view={permission} />
-      <Link href="/settings" className="text-sm underline underline-offset-2">← Settings</Link>
+      <Link href={route("settings.index")} className="text-sm underline underline-offset-2">← Settings</Link>
     </div>
   );
 }

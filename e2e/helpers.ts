@@ -41,24 +41,84 @@ export const JOBS_SECRET = "e2e-jobs-secret";
  * fails here - and fails carrying every drain receipt, which names whether the
  * worker was starved, idle, or failing sends.
  */
+interface JobResponse {
+  status: () => number;
+  json: () => Promise<unknown>;
+}
+
+export type JobOutcome = "no_work" | "completed" | "completed_with_failures";
+
+/**
+ * Assert a machine job's reply against `machine-job-result-v1` and hand back
+ * its outcome, without judging it.
+ *
+ * D-086: these routes used to answer with `processed`, `failed` and a count
+ * of the rows still queued, and the suites read those numbers. The register
+ * allows `{status:"complete", outcome}` and nothing else — no counts, no
+ * target row, no error text — so a caller that needs to know whether work
+ * remains reads the queue itself, with the service key, rather than being
+ * told by the endpoint.
+ *
+ * This does NOT refuse `completed_with_failures`, because most callers never
+ * did: a journey draining the shared local queue until ITS mail arrives is
+ * not entitled to fail because somebody else's leftover row could not be
+ * delivered. Callers that genuinely asserted a clean run use `jobRanCleanly`.
+ */
+export async function jobRan(response: JobResponse, what: string): Promise<JobOutcome> {
+  expect(response.status(), what).toBe(200);
+  const body = (await response.json()) as { status?: string; outcome?: string };
+  // `unknownFields: "forbidden"`: two keys, no third.
+  expect(Object.keys(body).sort(), what).toEqual(["outcome", "status"]);
+  expect(body.status, what).toBe("complete");
+  expect(["no_work", "completed", "completed_with_failures"], what).toContain(body.outcome);
+  return body.outcome as JobOutcome;
+}
+
+/** `jobRan`, for the callers that read `failed === 0` before D-086. */
+export async function jobRanCleanly(response: JobResponse, what: string): Promise<"no_work" | "completed"> {
+  const outcome = await jobRan(response, what);
+  expect(outcome, `${what}: the job reported that something failed`)
+    .not.toBe("completed_with_failures");
+  return outcome as "no_work" | "completed";
+}
+
+/**
+ * Rows the mail worker would claim right now — the exact query the drain ran
+ * for the `pending` field it may no longer return. A drain loop uses it to
+ * know when to stop; the service key is what makes reading it legitimate.
+ */
+export async function dueMailCount(admin: SupabaseClient): Promise<number> {
+  const now = new Date().toISOString();
+  const { count } = await admin
+    .from("mail_outbox")
+    .select("id", { count: "exact", head: true })
+    .eq("state", "queued")
+    .lte("not_before", now)
+    .gt("expires_at", now);
+  return count ?? 0;
+}
+
 export async function drainMailUntil<T>(
-  request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<{ status: () => number; json: () => Promise<unknown> }> },
+  request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<JobResponse> },
   found: () => T | undefined,
   what = "the mail this journey requested",
 ): Promise<T> {
   let value = found();
-  const receipts: string[] = [];
+  const admin = adminClient();
+  const outcomes: string[] = [];
   for (let attempt = 0; attempt < 40 && value === undefined; attempt++) {
     const response = await request.post("/api/jobs/mail", {
       headers: { authorization: `Bearer ${JOBS_SECRET}` },
     });
-    expect(response.status(), `mail drain ${attempt + 1}`).toBe(200);
-    const receipt = (await response.json()) as { processed?: number; failed?: number; pending?: number };
-    receipts.push(JSON.stringify(receipt));
+    outcomes.push(await jobRan(response, `mail drain ${attempt + 1}`));
     value = found();
-    if (value === undefined && (receipt.processed ?? 0) === 0 && (receipt.pending ?? 0) === 0) break;
+    if (value !== undefined) break;
+    // Nothing due will not become due by asking again. This replaces the old
+    // `processed === 0 && pending === 0` reading, which the response can no
+    // longer support, and it is the same question asked of the queue itself.
+    if (await dueMailCount(admin) === 0) break;
   }
-  expect(value, `${what} must reach the configured mail provider; drains: ${receipts.join(" ")}`)
+  expect(value, `${what} must reach the configured mail provider; drains: ${outcomes.join(" ")}`)
     .not.toBeUndefined();
   return value as T;
 }

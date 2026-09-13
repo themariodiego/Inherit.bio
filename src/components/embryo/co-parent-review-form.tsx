@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from "react";
 import type { CoParentReview } from "@/lib/embryos/co-parent-review";
 import { typedNameIsValid } from "@/lib/embryos/basis";
 import { InvitationRefusalForm } from "./invitation-refusal-form";
+import { route } from "@/lib/primary-routes";
 
 const STATEMENTS: Record<string, string> = {
   "genetic-parent-or-authority": "I am a genetic parent of these embryos, or I alone hold the legal right to decide what happens to them.",
@@ -63,7 +64,7 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
     <section className="mx-auto max-w-5xl px-6 py-16" role="status">
       <h1 className="display text-4xl">You have accepted the invitation</h1>
       <p className="mt-5 max-w-prose">Your two signed statements are recorded. The group still needs to be finalized. This does not start analysis or share your own genome.</p>
-      <a href="/overview" className="mt-6 inline-block text-forest underline">Go to your overview</a>
+      <a href={route("app.overview")} className="mt-6 inline-block text-forest underline">Go to your overview</a>
     </section>
   );
 
@@ -72,7 +73,7 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
       <h1 className="display text-4xl">Review this invitation before you sign</h1>
       <p className="mt-5 max-w-prose"><strong>{review.inviterName}</strong> signed the upload request for this group of {review.embryoCount} embryos.</p>
       <p className="mt-3 max-w-prose text-ink-muted">Only sign if you recognize this request and the people involved. Inherit cannot check parentage. Your own genome is not shared by accepting.</p>
-      <p className="mt-3"><a href="/legal/future-person" target="_blank" rel="noopener noreferrer" className="text-forest underline">Read the Future Person Charter (opens a new tab)</a></p>
+      <p className="mt-3"><a href={route("legal.future-person")} target="_blank" rel="noopener noreferrer" className="text-forest underline">Read the Future Person Charter (opens a new tab)</a></p>
       {!review.acceptanceAvailable ? <p className="mt-6 rounded-2xl border border-line p-5" role="status">{review.unavailableCopy}</p> : null}
       <form onSubmit={submit} className="mt-8 space-y-8">
         {review.artifacts.map(artifact => (

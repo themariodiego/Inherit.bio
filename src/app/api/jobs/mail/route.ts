@@ -6,6 +6,7 @@ import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
 import { drainInvitationTerminalMail } from "@/lib/embryos/invitation-terminal-mail";
+import { machineJobDrained } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -315,13 +316,12 @@ async function drainMail() {
     }
   }
 
-  const now = new Date().toISOString();
-  const { count: pending } = await admin
-    .from("mail_outbox")
-    .select("id", { count: "exact", head: true })
-    .eq("state", "queued")
-    .lte("not_before", now)
-    .gt("expires_at", now);
-
-  return NextResponse.json({ processed, failed, pending: pending ?? 0 });
+  // D-086: the drain used to answer with `processed`, `failed` and a count of
+  // the rows still queued. `machine-job-result-v1` forbids private counts, and
+  // a queue depth is one: anything holding the shared jobs secret could read
+  // how many people are waiting on mail. The count query went with it — it
+  // existed only to fill that field, so keeping it would be a round trip per
+  // drain for a number nobody may see. What the bounded batch leaves behind is
+  // still proven, by the next drain claiming it.
+  return machineJobDrained({ done: processed, failed });
 }

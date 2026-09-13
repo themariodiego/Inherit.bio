@@ -27,6 +27,7 @@ import {
   DISTINGUISHING_PRINCIPLE,
   HEADER_SENTENCE,
   NO_CLASSIFIED_POSITIONS,
+  NO_POSITIONS_BOTH_COVER,
   OPEN_CONSENTS_BUTTON,
   PORTRAIT_H1,
   PORTRAIT_STEPS,
@@ -501,7 +502,25 @@ test("once B has turned Portrait on and acknowledged, the page withholds every r
   await expect(page.locator('[data-slot="portrait-header-sentence"]')).toHaveText(HEADER_SENTENCE);
 });
 
-test("the page proper withholds legacy-label outputs, states unavailable rather than negative, and never shows a picture", async ({
+/**
+ * `/family/portrait/[pairId] not-covered`, and the title is a claim about
+ * WHICH of this page's four no-output branches is on screen, so the test
+ * settles it from the DOM rather than from the fixture's intent.
+ *
+ * The page (`family/portrait/[pairId]/page.tsx`) chooses between: a person
+ * with no processed file, which renders `role=status` with `data-state=empty`
+ * and no `data-slot`; a refused carrier decision, which renders the decision's
+ * own copy; no classified position, `data-slot=portrait-empty` with
+ * `data-state=unavailable`; and no position both files cover, the same slot
+ * with `data-state=empty`. Only the third is `not-covered` in the register's
+ * sense — the sense `/genome/[subject]/ancestry not-covered` already uses:
+ * both files are here and prepared, and the data does not support a result.
+ *
+ * Both adults uploaded a prepared file three tests ago. What they carry is
+ * legacy labels without reviewed allele, condition and assertion provenance,
+ * so nothing activates an output — which is the state, not a fixture defect.
+ */
+test("/family/portrait/[pairId] not-covered: legacy labels activate no output, the page states unavailable rather than negative, and never shows a picture", async ({
   page,
 }) => {
   await signIn(page, A.email, A.password);
@@ -519,6 +538,10 @@ test("the page proper withholds legacy-label outputs, states unavailable rather 
   await expect(page.locator("[data-claim-block]")).toHaveCount(0);
   await expect(page.locator('[data-slot="portrait-empty"]')).toHaveText(NO_CLASSIFIED_POSITIONS);
   await expect(page.locator('[data-slot="portrait-empty"]')).toHaveAttribute("data-state", "unavailable");
+  // Neither empty branch: not "a person has no processed file" (which carries
+  // no data-slot), and not "no position both files cover".
+  await expect(page.locator('main [role="status"][data-state="empty"]')).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText(NO_POSITIONS_BOTH_COVER);
   await expect(page.locator("[data-exact-marker], [data-modelled-marker], [data-figure-basis=exact], [data-slot=outcome-dot]")).toHaveCount(0);
   for (const entry of SYNTHETIC) await expect(page.locator("main")).not.toContainText(entry.gene);
   await expect(page.locator("main")).not.toContainText("No change to show that you both carry");

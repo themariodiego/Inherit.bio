@@ -165,8 +165,14 @@ const REQUIRED = [
   { route: "/legal", must: [/Legal and policy library/i, /privacy/i] },
   { route: "/legal/consents", must: [/Granular grants/i, /Revocation/i, /Versioned evidence/i] },
   {
+    // D-082: this page renders the signed artifact rather than a hand-written
+    // precis of it, so the pins are the facts the SIGNED text carries and the
+    // old page did not — the cover GINA does not reach, the relatives who
+    // never agreed, and their way to object without an account. Pinning the
+    // old section headings would pass on a page that had quietly dropped them
+    // again, which is the defect this closed.
     route: "/legal/insurance-and-discrimination",
-    must: [/Protection has gaps/i, /Not legal advice/i],
+    must: [/not legal advice/i, /long-term care/i, /did not agree/i, /without an account/i],
   },
   { route: "/legal/self-hosting", must: [/Operator responsibility/i, /Open source is not approval/i] },
   { route: "/legal/state-genetic-privacy", must: [/Rule source/i, /Correcting location/i] },

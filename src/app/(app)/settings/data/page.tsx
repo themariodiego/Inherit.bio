@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DangerZone } from "@/components/settings/danger-zone";
 import { Button } from "@/components/ui/button";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Data settings" };
 
@@ -18,7 +19,7 @@ export default function DataSettingsPage() {
         <Button asChild variant="outline" className="mt-4"><a href="/api/export">Download export</a></Button>
       </section>
       <DangerZone />
-      <Link href="/settings" className="text-sm underline underline-offset-2">← Settings</Link>
+      <Link href={route("settings.index")} className="text-sm underline underline-offset-2">← Settings</Link>
     </div>
   );
 }

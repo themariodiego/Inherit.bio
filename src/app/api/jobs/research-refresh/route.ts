@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   draftFromAssociation,
@@ -8,6 +7,7 @@ import {
   RELEASE_FETCHERS,
   type ResearchSource,
 } from "@/lib/research/sources";
+import { machineJobDrained } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -56,16 +56,23 @@ export async function POST(request: Request) {
   return runRefresh(body?.fixture ?? null);
 }
 
+/**
+ * D-086: this used to answer with one object per source — the release key it
+ * had recorded, whether the release was new, how many templates it drafted,
+ * and on failure the raw `Error.message`. `machine-job-result-v1` names both
+ * of those, the target row and the error free text, as never-returned. The
+ * message now goes to the server log, where a diagnosis belongs, and the
+ * response says only whether the job ran and whether anything failed.
+ */
 async function runRefresh(fixture: FixturePayload | null) {
   const admin = createAdminClient();
-  const body = fixture ? { fixture } : null;
+  let done = 0;
+  let failed = 0;
 
-  const results: Record<string, unknown>[] = [];
-
-  if (body?.fixture) {
-    const f = body.fixture;
-    const outcome = await processRelease(admin, f.source, f.release_key, f.associations);
-    results.push({ source: f.source, ...outcome });
+  if (fixture) {
+    const outcome = await processRelease(admin, fixture.source, fixture.release_key, fixture.associations);
+    done += outcome.recorded + outcome.drafted;
+    failed += outcome.failed;
   } else {
     for (const source of Object.keys(RELEASE_FETCHERS) as ResearchSource[]) {
       try {
@@ -74,17 +81,18 @@ async function runRefresh(fixture: FixturePayload | null) {
         // data is fixture-shaped and can be fed through the fixture path by
         // an operator — the release ledger is what drives "new this month".
         const outcome = await processRelease(admin, source, info.releaseKey, []);
-        results.push({ source, ...outcome });
-      } catch (err) {
-        results.push({
-          source,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        done += outcome.recorded + outcome.drafted;
+        failed += outcome.failed;
+      } catch {
+        // The source name is a fixed catalog key, not anybody's data; the
+        // upstream error text stays out of both the response and this line.
+        console.error("[research-refresh] release read or draft failed", { source });
+        failed++;
       }
     }
   }
 
-  return NextResponse.json({ results });
+  return machineJobDrained({ done, failed });
 }
 
 async function processRelease(
@@ -100,9 +108,12 @@ async function processRelease(
     .eq("release_key", releaseKey)
     .maybeSingle();
 
-  if (existing) return { release_key: releaseKey, new_release: false, drafted: 0 };
+  // A release already in the ledger is not work; the caller reports no_work
+  // for it rather than replaying the drafts.
+  if (existing) return { recorded: 0, drafted: 0, failed: 0 };
 
   let drafted = 0;
+  let failed = 0;
   for (const assoc of associations) {
     const draft = draftFromAssociation(assoc, `${source} ${releaseKey}`);
     const { error } = await admin.from("report_templates").upsert(
@@ -121,7 +132,11 @@ async function processRelease(
       },
       { onConflict: "slug", ignoreDuplicates: true },
     );
-    if (!error) drafted++;
+    // A refused upsert used to vanish: `drafted` simply did not advance and
+    // nothing else recorded it. It is counted now, so the job reports
+    // completed_with_failures rather than a clean run.
+    if (error) failed++;
+    else drafted++;
   }
 
   await admin.from("research_releases").insert({
@@ -130,5 +145,5 @@ async function processRelease(
     summary: { drafted, associations: associations.length },
   });
 
-  return { release_key: releaseKey, new_release: true, drafted };
+  return { recorded: 1, drafted, failed };
 }
