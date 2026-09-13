@@ -924,6 +924,22 @@
         "data/glossary-citations.json",
         "docs/sources/glossary/imputation.json"
       ]
+    },
+    {
+      "name": "govinfo",
+      "category": "cited-organisation",
+      "aliases": [
+        "govinfo",
+        "govinfo.gov",
+        "www.govinfo.gov",
+        "u.s. government publishing office",
+        "united states code"
+      ],
+      "reason": "Official publisher of United States federal law. Cited as the primary source for the jurisdiction research under docs/reviews/jurisdictions/research/, where quoting a third-party reproduction instead of the official text would defeat the point of the research.",
+      "evidence": [
+        "docs/reviews/jurisdictions/research/README.md",
+        "docs/reviews/jurisdictions/research/US.md"
+      ]
     }
   ]
 }
