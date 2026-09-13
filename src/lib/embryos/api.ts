@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createAdminClient } from "@/lib/supabase/admin";
+
 /**
  * The response conventions every embryo route shares (E0 contract §5.6,
  * §6.0; register `embryo-closed-schema-v1`). Every body goes out through
@@ -113,16 +115,36 @@ const OPERATION_ID_PATTERN = /^[a-z0-9.-]{1,64}$/;
 
 /**
  * The register's `embryo-closed-schema-v1` failure: 500 with a fixed body.
- * The log line is the observability event and nothing more: the coded
- * template, the coded operation slot and the registered consumer id. No
- * key name, value, target id or payload fragment is ever written. The audit
- * row the register also asks for has no RPC yet (the 2026-09-05 embryo E0
- * slice-1 entry in docs/protocol/decisions.md); this function stays async
- * so adding it changes no caller.
+ *
+ * TWO RECORDS, AND THEY CARRY DIFFERENT THINGS, because the contract says so:
+ * `observabilityEvent` is a template id and two constant slots, and "the
+ * observability sink receives only observabilityEvent". So the log line is
+ * exactly those three constants and nothing else. The registered consumer —
+ * which route's response was blocked — belongs in the audit row, which the
+ * contract asks for as "exactly one pseudonymized legal audit event for the
+ * whole blocked attempt, with a server-coded registered consumer and shape
+ * reference, and never key names, values, target IDs or payload fragments".
+ *
+ * D-085: that audit row was never written, because no route-callable RPC
+ * existed. It does now, and the consumer moved into it from the log line
+ * where the contract did not allow it.
+ *
+ * An operation that is not a registered id becomes `unregistered` here AND
+ * again inside the RPC, so a payload fragment cannot reach either record.
+ * A failed audit write does not change the response — the shape is already
+ * refused and the caller gets the same fixed 500 — but it is never silent:
+ * the ledger missing an event it is required to hold is itself a finding.
  */
 export async function blockedResponse(operation: string): Promise<Response> {
   const consumer = OPERATION_ID_PATTERN.test(operation) ? operation : "unregistered";
-  console.error("feature.blocked embryo.closed-schema-serialization", consumer);
+  console.error("feature.blocked embryo.closed-schema-serialization unsafe-embryo-response-shape");
+  try {
+    const { error } = await createAdminClient()
+      .rpc("record_blocked_embryo_response_v1", { p_consumer: consumer });
+    if (error) throw error;
+  } catch {
+    console.error("feature.blocked embryo.closed-schema-audit-unavailable", consumer);
+  }
   return sensitiveJson({ error: "unsafe_response_blocked" }, 500);
 }
 

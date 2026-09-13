@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const audit = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: audit.rpc }) }));
+
 import {
   ClosedShapeError,
   SENSITIVE_HEADERS,
@@ -13,8 +17,13 @@ import {
   unavailable,
 } from "./api";
 
+beforeEach(() => {
+  audit.rpc.mockResolvedValue({ data: null, error: null });
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  audit.rpc.mockReset();
 });
 
 const EXPECTED_HEADERS: Record<string, string> = {
@@ -164,23 +173,53 @@ describe("closedObject", () => {
 });
 
 describe("blockedResponse", () => {
-  it("answers 500 with the fixed body and logs one coded line naming only the registered consumer", async () => {
+  it("answers 500 with the fixed body, and splits the two records the contract defines", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const response = await blockedResponse("api.embryo-record-key-cards");
     expect(response.status).toBe(500);
     expectSensitive(response);
     expect(await response.json()).toEqual({ error: "unsafe_response_blocked" });
+
+    // `observabilityEvent` is a template id and two constant slots, and the
+    // contract says the sink receives only that — so the consumer is NOT here.
     expect(log).toHaveBeenCalledTimes(1);
-    expect(log).toHaveBeenCalledWith("feature.blocked embryo.closed-schema-serialization", "api.embryo-record-key-cards");
+    expect(log).toHaveBeenCalledWith(
+      "feature.blocked embryo.closed-schema-serialization unsafe-embryo-response-shape",
+    );
+
+    // D-085: exactly one audit event, carrying the registered consumer.
+    expect(audit.rpc).toHaveBeenCalledTimes(1);
+    expect(audit.rpc).toHaveBeenCalledWith("record_blocked_embryo_response_v1", {
+      p_consumer: "api.embryo-record-key-cards",
+    });
   });
 
-  it("logs no fragment of an argument that is not a registered operation id", async () => {
+  it("puts no fragment of an unregistered argument in either record", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     await blockedResponse("record_key=0123456789ABCDEFGHJK {sex: unknown}");
-    expect(log).toHaveBeenCalledWith("feature.blocked embryo.closed-schema-serialization", "unregistered");
-    const logged = JSON.stringify(log.mock.calls);
-    expect(logged).not.toContain("0123456789ABCDEFGHJK");
-    expect(logged).not.toContain("sex");
+    expect(audit.rpc).toHaveBeenCalledWith("record_blocked_embryo_response_v1", {
+      p_consumer: "unregistered",
+    });
+    const written = JSON.stringify([...log.mock.calls, ...audit.rpc.mock.calls]);
+    expect(written).not.toContain("0123456789ABCDEFGHJK");
+    expect(written).not.toContain("sex");
+    expect(written).not.toContain("record_key");
+  });
+
+  it.each([
+    ["a returned error", async () => ({ data: null, error: { message: "audit unavailable" } })],
+    ["a thrown one", async () => { throw new Error("audit unavailable"); }],
+  ])("still answers the fixed 500 when the audit write fails with %s, and says so", async (_case, behaviour) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    audit.rpc.mockImplementation(behaviour);
+    const response = await blockedResponse("api.embryo-disposition");
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "unsafe_response_blocked" });
+    // The ledger missing an event it is required to hold is its own finding,
+    // so the second line exists; it is never the response's problem.
+    expect(log).toHaveBeenCalledWith(
+      "feature.blocked embryo.closed-schema-audit-unavailable", "api.embryo-disposition",
+    );
   });
 });
 
