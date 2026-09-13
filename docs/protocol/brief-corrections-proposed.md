@@ -894,7 +894,7 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
-## Where the 88 unproven pairs stand
+## Where the 87 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -911,10 +911,10 @@ signing this unlock?" had no answer anywhere.
 | Proposed not-applicable in item 10 | 17 | one signature |
 | less one pair proposed twice | −1 | see below |
 | **Awaiting a signature** | **60** | |
-| **Genuinely open** | **28** | test work, and for most of them item 11 first |
-| **Total unproven** | **88** | |
+| **Genuinely open** | **27** | test work, and for most of them item 11 first |
+| **Total unproven** | **87** | |
 
-Signing all three proposals would take the ratchet from 88 to 28 without a line
+Signing all three proposals would take the ratchet from 87 to 27 without a line
 of test code, because every one of those 60 is the register describing
 behaviour the product does not have.
 
@@ -925,7 +925,7 @@ readings are right and they agree, so nothing is in conflict; but it is one
 pair, not two, and a signature on both items must not be read as retiring two.
 Found while counting this table, which is the reason to build one.
 
-### And of the 28 that are open, 25 wait on item 11
+### And of the 27 that are open, 25 wait on item 11
 
 | state | open | blocked by item 11? |
 | --- | ---: | --- |
@@ -933,12 +933,20 @@ Found while counting this table, which is the reason to build one.
 | `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
 | `complete` | 8 | yes — currently four different meanings |
 | `processing` | 2 | partly: both are Family routes whose "no completed result yet" may or may not be work in flight |
-| `empty` | 1 | no |
+| `empty` | 0 | proven 2026-09-13 |
 
-**Three pairs could be attempted today** without any ruling: one `empty`
-(`/family/portrait/[pairId]`) and two `processing` (`/family/health-picture`,
-`/family/portrait/[pairId]`) — and all three are the same two routes, which is
-worth noticing.
+**Two pairs could be attempted today** without any ruling, both `processing`
+(`/family/health-picture`, `/family/portrait/[pairId]`), and both on the same
+two routes. The third, `/family/portrait/[pairId] empty`, was proven on
+2026-09-13 — and it was attemptable, but not by the route anyone would try
+first. Deleting a file from the existing pair is refused by the product on
+purpose (`file_delete_shared_graph`, surfaced as 409, because a shared graph
+needs its subject-level disposition rather than a file shortcut), so the state
+is reachable only from the other end: grants before any file, in
+`e2e/portrait-no-file.spec.ts`. That fixture has a second trap worth recording
+— BOTH accounts need a date of birth before EITHER can grant Portrait, and
+without the recipient's the granter's control is simply absent with no reason
+on screen.
 
 **Two `not-covered` pairs left the open column on 2026-09-13 without item 11,
 and the reason is a correction to this table rather than a ruling.** The row
