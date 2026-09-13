@@ -1,3 +1,8 @@
+-- `claim_mail_outbox` takes the oldest deliverable row, so a developer
+-- database holding other queued mail would hand this suite someone else's
+-- token. Retiring those rows inside the test transaction makes every claim
+-- below deterministic wherever the suite runs; the rollback puts them back.
+update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
 
 -- Three accounts: the owner-parent A, the invited co-parent B, a stranger C.
 insert into auth.users (id, email, raw_user_meta_data)
