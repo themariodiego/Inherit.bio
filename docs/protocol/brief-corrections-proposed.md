@@ -894,6 +894,61 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
+## 12. The `/api/jobs/run` test hook, its two named specs, and its callers are all absent
+
+**Found 2026-09-13, after the operator decided to retire `jobs.run` from the
+register (D-100). The decision stands; this is the step that decision needs
+and neither of us knew about when it was made.**
+
+Brief line 2224 describes the hook affirmatively:
+
+> **Test hook.** `POST /api/jobs/run?kind=…` drains the queue synchronously;
+> it requires the service role or `E2E_TEST_HOOKS=1` and is used by
+> `e2e/revocation.spec.ts`, `e2e/embryo-ingest.spec.ts` and §A.13.
+
+Measured against the tree the same day, and every part of that sentence is
+now false:
+
+| The brief says | The tree holds |
+| --- | --- |
+| `POST /api/jobs/run` | no `src/app/api/jobs/run/` directory |
+| `e2e/revocation.spec.ts` uses it | no such file |
+| `e2e/embryo-ingest.spec.ts` uses it | no such file |
+| — | no caller of `/api/jobs/run` anywhere in `src`, `e2e` or `scripts` |
+
+Line 2277 also builds an assertion on it — "after `POST /api/jobs/run?kind=revoke_purge`,
+a **service-role** query finds zero rows" — inside the description of
+`e2e/revocation.spec.ts`, which does not exist either.
+
+What the suite actually does today is drain through the four job routes that
+are built and registered: `api/jobs/mail`, `api/jobs/retention`,
+`api/jobs/research-publish` and `api/jobs/research-refresh`. The capability
+the hook existed for — not waiting 24 hours inside Playwright — is met by
+those, so nothing is lost by the brief saying so.
+
+**Proposed:** replace the test-hook paragraph at line 2224 with the four job
+routes the suite drains through, and correct line 2277 to name the route that
+performs a purge drain rather than `/api/jobs/run`. Then the register entry
+for `jobs.run` is removed, along with its seven other references
+(`workerExecutionBindings`, the `machine-api-v1` binding, the test-hook
+sentence at register line 368 and the three id lists), and
+`src/lib/jobs/machine-result.test.ts` drops the `UNIMPLEMENTED` exception
+that exists only for this id.
+
+**Why this is not a register tidy-up I can do alone.** The register is derived
+from the brief and pinned to `briefSha256`. Removing an entry the brief
+affirmatively describes would leave the register no longer derived from its
+source — the mirror image of `/api/uploads`, where an entry cannot be ADDED
+because the brief denies the route exists. Same rule, other direction.
+
+**What this does NOT say:** that a synchronous drain hook is a bad idea. If
+one is wanted for tests that do not have another way to advance a queue, the
+correction is to build it and keep the entry. The measurement is only that
+nothing has used it, and that the two specs the brief cites as its users have
+never existed in this repository's history.
+
+---
+
 ## Where the 87 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.

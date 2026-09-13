@@ -2598,3 +2598,42 @@ name. When an assertion is about "the queue" or "the count" rather than about
 the rows the test created, it is a claim about the whole database, and it is
 only true on an empty one. Either scope the claim to the journey, or make the
 fixture true wherever it runs.
+
+## 2026-09-13 — Four owner decisions, asked and answered
+
+Asked directly and answered by the owner on 2026-09-13. Recorded here verbatim
+in effect, because each one authorises work that was blocked and because a
+decision remembered only in a chat log is a decision nobody can audit.
+
+**Corrections items 6, 8 and 10: signed.** The register edits are applied for
+the routes where dropping an unimplemented declaration is permitted. The nine
+Family and Embryo Analysis routes that G2.2 forbids the `n/a` for are NOT
+edited: the owner chose to have the consent gates BUILT on `/embryo-analysis`,
+`/embryos`, `/embryos/request-data`, `/embryos/upload`, `/family`,
+`/family/[person]`, `/family/[person]/permissions`, `/family/health-picture`
+and `/family/invite`. That is the reading item 7 argued for — the brief's
+position is that those routes must implement the state, so the correction for
+them is to build it rather than to stop declaring it.
+
+**D-103: five statements, not four.** The register's four-item array is the
+thing that changes, not the transaction. The five keys the acceptance already
+records — `age-18-plus`, `mailbox-control`, `no-inviter-access`,
+`identity-not-verified`, `revocable` — stay, because signatures already
+reference them and dropping one would leave stored consent inconsistent with
+the published set. **The owner writes the five sentences.** Until they exist
+the confirm body cannot be built, and that is the right order: the wording a
+person is told they agreed to is not an implementation detail.
+
+**D-100: `jobs.run` is retired from the register.** No dispatcher was planned.
+The five job routes that exist do the work, and the contract sweep stops
+carrying a permanent exception for an endpoint that never existed.
+
+**D-101: the code moves to the register, not the register to the code.**
+`/api/jobs/research-publish` becomes what its entry already describes — a
+due-work drain that publishes what the review queue has approved and takes no
+input. Operator-selected publication was not the intent.
+
+**What is still not decided, and why that is fine.** D-102's locked-permission
+wording and D-103's five sentences are both user-facing copy on consent and
+rights surfaces. Neither was answered here and neither should be invented to
+keep momentum; they are the two places where waiting is cheaper than guessing.

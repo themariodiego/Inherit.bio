@@ -14,14 +14,14 @@ const register = JSON.parse(
 const bound = register.routes.filter((route) => route.successResponseContract === CONTRACT);
 
 /**
- * Registered under this contract with no route file. `jobs.run` is
- * `disposition: "kept"` in the register and `/api/jobs/run` does not exist,
- * which is a register-versus-reality divergence rather than a contract
- * breach — recorded as its own defect row so that adding the file cannot
- * quietly skip this check. Anything else appearing here means a job route
- * was deleted without the register being told.
+ * D-100, closed 2026-09-13: this held one exception, `jobs.run`, which the
+ * register carried as `disposition: "kept"` while `/api/jobs/run` did not
+ * exist. The operator retired the route rather than build it, and corrections
+ * item 12 corrected the brief that described it, so the exception has nothing
+ * left to exempt and the sweep now covers every bound route with no carve-out.
+ * A route appearing here without a file means one was deleted without the
+ * register being told.
  */
-const UNIMPLEMENTED = new Set(["jobs.run"]);
 
 function routeFile(routePath: string): string {
   return path.join(process.cwd(), "src/app", routePath, "route.ts");
@@ -71,7 +71,11 @@ describe("machine-job-result-v1", () => {
     }
   });
 
-  it("binds the seven job routes the register lists, or this sweep is vacuous", () => {
+  // Six, not seven: `jobs.run` was retired from the register on 2026-09-13
+  // (D-100, and corrections item 12 for the brief that described it). Every
+  // route named here now has a file, which is what let the sweep below drop
+  // its one exemption.
+  it("binds the six job routes the register lists, or this sweep is vacuous", () => {
     expect(bound.map((route) => route.id).sort()).toEqual([
       "jobs.annotation-refresh",
       "jobs.mail",
@@ -79,7 +83,6 @@ describe("machine-job-result-v1", () => {
       "jobs.research-refresh",
       "jobs.retention",
       "jobs.retention-cron",
-      "jobs.run",
     ]);
   });
 
@@ -96,7 +99,6 @@ describe("machine-job-result-v1", () => {
   it("lets no job route write its own success body", () => {
     const offences: string[] = [];
     for (const route of bound) {
-      if (UNIMPLEMENTED.has(route.id)) continue;
       const file = routeFile(route.path);
       if (!fs.existsSync(file)) {
         offences.push(`${route.id}: no route file at ${path.relative(process.cwd(), file)}`);
@@ -115,9 +117,8 @@ describe("machine-job-result-v1", () => {
     expect(offences, offences.join("\n")).toEqual([]);
   });
 
-  it("has every implemented job route import the helper", () => {
+  it("has every job route import the helper", () => {
     for (const route of bound) {
-      if (UNIMPLEMENTED.has(route.id)) continue;
       const file = routeFile(route.path);
       const source = fs.readFileSync(file, "utf8");
       // The cron adapter returns the retention route's own response verbatim,

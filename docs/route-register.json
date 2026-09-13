@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "f686d0400cda0ea5dcb5a16593f3839a29170cba94aeedd65f712ad28f5e5d4f",
+  "briefSha256": "ef61154015c1768e622bba0ae1302a7b3e37c4cd3cde24d9d42fec8f12498961",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -179,7 +179,6 @@
         "policyResolvers.analysis-eligibility-v1",
         "policyContracts.copilot-context-v1",
         "workerExecutionBindings.self-hosted-worker-claim-and-execution",
-        "workerExecutionBindings.jobs.run",
         "workerExecutionBindings.embryo-sanitization",
         "workerExecutionBindings.export-generation"
       ]
@@ -365,7 +364,7 @@
       "perEmbryoPartialFailure": "split_cohort_vcf-and-score_embryo-process-each-embryo-in-a-separate-transaction; for-split_cohort_vcf-one-current-ordinal-QC-failure-deletes-only-that-ordinals-partial-or-pending-source-and-writes-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-named-reason-from-embryo-autosomal-only-v1.qcProjection-then-continues-and-only-the-whole-ordinal-terminal-transaction-promotes-that-marker-to-sourceState-qc_fail_no_source-and-the-brief-required-embryoStatus-qc_fail-with-no-source-or-result-cells-and-sets-the-job-partial-true; score_embryo-may-commit-its-qc_fail-result-column-under-its-own-current-published-source-set-transaction; stale-binding-cancellation-or-retry-exhaustion-is-not-an-ordinal-QC-failure-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-fragment-or-attempt-owned-row-delete-with-zero-publication; no-blank-or-omitted-embryo-column-is-permitted",
       "progress": "write-progress-at-most-once-per-two-seconds-and-progress_note-only-as-one-closed-stage-ID-from-the-kind-implementation; sample-label-subject-cohort-file-genotype-result-error-free-text-and-private-counts-are-forbidden",
       "idempotencyVerification": "fixtures-must-prove-three-distinct-score_embryo-output_kind-values-over-the-same-cohort-source-set-create-three-distinct-keys-and-jobs-while-an-identical-full-tuple-replays-one-job; revoke-then-regrant-lifecycle-or-purpose-revision-change-computation_revision-change-every-embryo-basis-case-or-five-set-membership-revision-change-and-every-donor-slot-artifact-attribution-or-explicit-classification-change-must-create-new-keys-even-with-identical-genetic-bytes; an-injected-hash-collision-with-a-different-full-tuple-fails-closed",
-      "testHook": "jobs.run-may-synchronously-drain-only-after-its-registered-service-role-or-nonproduction-E2E_TEST_HOOKS-authentication-and-production-startup-refuses-when-E2E_TEST_HOOKS-is-set",
+      "testHook": "the-browser-suite-advances-a-queue-only-by-posting-to-a-registered-job-route-under-that-routes-own-machine-authentication; no-synchronous-drain-endpoint-exists-and-production-startup-refuses-when-E2E_TEST_HOOKS-is-set",
       "dispatchResolver": "worker-job-dispatch-v1",
       "contracts": [
         "worker-job-dispatch-v1",
@@ -7445,32 +7444,6 @@
         "retry-or-terminalize"
       ]
     },
-    "jobs.run": {
-      "executionProfile": "workerExecutionBindings.self-hosted-worker-claim-and-execution",
-      "resolver": "worker-job-dispatch-v1",
-      "databaseAuthorization": "resource-authorization-v1",
-      "enqueueAndExecutionContract": "worker-job-enqueue-v1",
-      "ordinarySubjectSourceGate": "policyContracts.genetic-file-ingest-v1.ordinarySubjectSingleSample",
-      "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
-      "conditionalBuildContract": "genome-build-inference-v1",
-      "conditionalBuildApplicability": "pgt_table-laboratory-table-embryo-ingest-only",
-      "contracts": [
-        "genetic-file-ingest-v1",
-        "canonical-source-publication-v1",
-        "genome-build-inference-v1",
-        "genome-liftover-v1",
-        "worker-job-enqueue-v1",
-        "worker-job-dispatch-v1",
-        "embryo-basis-authority-v1",
-        "embryo-donor-attribution-v1"
-      ],
-      "checkpoints": [
-        "claim",
-        "sourceRead",
-        "derivedWrite-or-purgeDeleteBatch",
-        "retry-or-terminalize"
-      ]
-    },
     "embryo-sanitization": {
       "jobKind": {
         "const": "split_cohort_vcf"
@@ -7868,7 +7841,6 @@
         "api.subject-access-request",
         "api.future-person-claim",
         "api.future-person-identity-profile",
-        "jobs.run",
         "jobs.annotation-refresh",
         "jobs.research-publish",
         "jobs.research-refresh",
@@ -8053,7 +8025,6 @@
       "slots": {
         "routeId": {
           "enum": [
-            "jobs.run",
             "jobs.annotation-refresh",
             "jobs.research-publish",
             "jobs.research-refresh",
@@ -9116,7 +9087,6 @@
     ]
   },
   "machineAuthBindings": {
-    "jobs.run": "machine-api-v1",
     "jobs.annotation-refresh": "machine-api-v1",
     "jobs.research-publish": "machine-api-v1",
     "jobs.research-refresh": "machine-api-v1",
@@ -12607,10 +12577,6 @@
       "api.jurisdiction": [
         "invalid-request-v1",
         "jurisdiction-write-v1"
-      ],
-      "jobs.run": [
-        "invalid-request-v1",
-        "machine-job-result-v1"
       ],
       "jobs.annotation-refresh": [
         "machine-job-result-v1"
@@ -19131,51 +19097,6 @@
       },
       "successResponseContract": "jurisdiction-write-v1",
       "disposition": "kept"
-    },
-    {
-      "id": "jobs.run",
-      "path": "/api/jobs/run",
-      "kind": "endpoint",
-      "domain": "jobs",
-      "auth": "method-specific",
-      "methods": [
-        "POST"
-      ],
-      "requestContract": {
-        "body": "forbidden"
-      },
-      "queryContract": {
-        "closed": {
-          "kind": "required-one-of-worker-job-dispatch-v1-matrix-kind"
-        },
-        "unknownMissingOrInvalid": "invalid-request-v1"
-      },
-      "methodPolicies": {
-        "POST": {
-          "authAlternatives": [
-            {
-              "all": [
-                "authenticated-service-role-platform-credential"
-              ]
-            },
-            {
-              "all": [
-                "valid-jobs-secret",
-                "E2E_TEST_HOOKS=1",
-                "environment-is-not-production"
-              ]
-            }
-          ],
-          "booleanFlagsAloneNeverAuthenticate": true,
-          "productionWhenTestHooksEnabled": "refuse-start",
-          "execution": "synchronous-drain",
-          "dispatchResolver": "worker-job-dispatch-v1",
-          "workerBinding": "workerExecutionBindings.jobs.run"
-        }
-      },
-      "stateProfile": "endpoint",
-      "disposition": "kept",
-      "successResponseContract": "machine-job-result-v1"
     },
     {
       "id": "jobs.annotation-refresh",
