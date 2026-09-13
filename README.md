@@ -27,14 +27,17 @@ Plus Bio service in either direction** (see [About](/about) and the
    re-downloadable; FASTQ/BAM analysis runs on a self-host
    [worker](worker/README.md) — never claimed as serverless (see
    [ADR-0001](docs/adr/0001-gating-decision-large-files-and-compute.md)).
-3. **Reports** — 120+ genotype-specific report templates across 12+
+3. **Reports** — 162 genotype-specific report templates across 16
    categories, each with citations (PMID/DOI), an evidence label, honest
    "your file does not cover this variant" states, and an
    informational-not-medical-advice line on the report itself. Polygenic
    scores come with percentile context, a numeric coverage fraction, and a
    mandatory ancestry-portability caveat. A scheduled research pipeline
-   watches GWAS/PGS/ClinVar releases and drafts new reports into a human
-   review queue ([changelog](/changelog)).
+   watches GWAS/PGS/ClinVar releases and drafts new reports into a review
+   queue. Drafting is automatic; **publishing is not** — a template goes live
+   only once a human decision is recorded against it, and the publisher takes
+   no input from its caller, so nobody can name a draft and push it out
+   ([changelog](/changelog)).
 4. **Exploration & ancestry** — variant search (rsID/gene/position), an
    embedded genome browser over your own data (first-party reference; no
    external genome host is contacted), continental admixture against 1000
@@ -80,6 +83,22 @@ pnpm dev
 proof, network audit, upload/report flows) against a production build and
 the local stack.
 
+## Gates
+
+Eleven `pnpm gate:*` checks read the repository rather than a description of
+it: routes against the register, claims against their citations, copy against
+a plain-vocabulary list, environment variables against both the template and
+the self-hosting guide, secrets over the tracked tree *and its history*, plus
+jurisdictions, report templates, result headings, legal placeholders and
+comparator names.
+
+Ten run in CI. `gate:schema-drift` deliberately does not — it compares a
+deployed database against `supabase/migrations`, and in CI that database was
+built from those same files seconds earlier, so it could only ever confirm
+itself. It belongs against a deployed environment, after a deploy, and it
+**fails when it cannot check**: for a condition nothing else can see, a
+skipped check is indistinguishable from a healthy one.
+
 ## Deploy
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fthemariodiego%2FInherit.bio)
@@ -89,6 +108,15 @@ clone from the button needs the environment variables described in
 [docs/self-hosting.md](docs/self-hosting.md) before it serves anything, and
 large-file compute (FASTQ/BAM) stays on the self-hosted
 [worker](worker/README.md) either way.
+
+**Apply migrations before the code that needs them, and check afterwards.** A
+deployment whose database is behind its application fails in the least visible
+way available: the routes calling the missing functions return their
+deliberate, detail-free 503, so nothing reaches an error aggregator and the
+test suite stays green because CI builds its database from the migration files
+themselves. That happened here, to every upload, for as long as it took a
+person to say their upload did not work. `pnpm gate:schema-drift` exists
+because of it; run it after each deploy.
 
 ## Non-goals
 
