@@ -3,7 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { JOBS_SECRET, adminClient, createConfirmedUser, jobRan, signIn } from "./helpers";
+import { JOBS_SECRET, adminClient, createConfirmedUser, dueMailCount, jobRan, signIn } from "./helpers";
 import {
   generateOwnFileWithChosenReports,
   uploadOwnFilePrepared,
@@ -275,12 +275,13 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   const drains: string[] = [];
   for (let attempt = 0; attempt < 40 && !invitationUrl; attempt++) {
     const drain = await page.request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-    // D-086: the drain reports an outcome, not counts. `no_work` is an empty
-    // queue, which is the only reason to stop early.
-    const outcome = await jobRan(drain, `mail drain ${attempt + 1}`);
-    drains.push(outcome);
+    // D-086: the drain reports an outcome, not counts. This loop never read
+    // `failed` and still does not — an undeliverable row belonging to another
+    // journey is not this one's failure — and "is there work left" is asked
+    // of the queue, which is where the answer was always coming from.
+    drains.push(await jobRan(drain, `mail drain ${attempt + 1}`));
     invitationUrl = invitationOf();
-    if (!invitationUrl && outcome === "no_work") break;
+    if (!invitationUrl && await dueMailCount(adminClient()) === 0) break;
   }
   expect(invitationUrl,
     `the invitation must reach the configured mail provider; drains: ${drains.join(" ")}`).toBeTruthy();

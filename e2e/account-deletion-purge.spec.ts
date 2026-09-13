@@ -9,7 +9,7 @@ import {
   adminClient,
   createConfirmedUser,
   JOBS_SECRET,
-  jobRan,
+  jobRanCleanly,
   signIn,
 } from "./helpers";
 
@@ -155,7 +155,7 @@ test("due account deletion reaches a zero-residual terminal state", async ({
   // failed and none were left. A queue of part-way-through account deletions
   // is the most private count this codebase had in an HTTP body, so the reply
   // is now the outcome alone; the rows below say exactly what was deleted.
-  expect(await jobRan(purge, "the account-deletion purge")).toBe("completed");
+  expect(await jobRanCleanly(purge, "the account-deletion purge")).toBe("completed");
 
   const { data: completed } = await admin
     .from("account_deletion_requests")

@@ -5,6 +5,8 @@ import {
   JOBS_SECRET,
   adminClient,
   createConfirmedUser,
+  dueMailCount,
+  jobRanCleanly,
   signIn,
 } from "./helpers";
 
@@ -183,29 +185,23 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   // queue depth is a count of people waiting on mail. The loop reads the
   // outbox directly instead — the same query the route used to run, moved to
   // the one caller entitled to the answer.
-  const dueMail = async () => {
-    const now = new Date().toISOString();
-    const { count } = await admin
-      .from("mail_outbox")
-      .select("id", { count: "exact", head: true })
-      .eq("state", "queued")
-      .lte("not_before", now)
-      .gt("expires_at", now);
-    return count ?? 0;
-  };
   for (let batch = 0; batch < 10; batch++) {
-    const before = await dueMail();
+    const before = await dueMailCount(admin);
     const drain = await request.post("/api/jobs/mail", {
       headers: { authorization: `Bearer ${JOBS_SECRET}` },
     });
-    expect(drain.status()).toBe(200);
-    const after = await dueMail();
+    // `jobRanCleanly` refuses `completed_with_failures`, which is what this
+    // loop's `expect(drainJson.failed).toBe(0)` meant before D-086. It needs
+    // the disposable local queue this test already documents a need for: an
+    // undeliverable row left behind by another journey fails it, exactly as
+    // the `failed` reading did.
+    const outcome = await jobRanCleanly(drain, `research mail batch ${batch + 1}`);
+    const after = await dueMailCount(admin);
     await test.info().attach(`research-mail-batch-${batch + 1}`, {
-      body: JSON.stringify({ dueBefore: before, dueAfter: after, delivered: captured.length }),
+      body: JSON.stringify({ outcome, dueBefore: before, dueAfter: after, delivered: captured.length }),
       contentType: "application/json",
     });
-    // A clean batch that moved the queue: nothing failed, and due work fell.
-    expect(await drain.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(outcome).toBe("completed");
     expect(after, "a batch that delivered nothing would loop forever").toBeLessThan(before);
     if (captured.some(email => [email.to].flat().includes(USER.email))) break;
     expect(after, "a missing digest needs remaining due queue work").toBeGreaterThan(0);

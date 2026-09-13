@@ -4,7 +4,7 @@ import http from "node:http";
 import config from "../playwright.config";
 import { encryptSecret, hmacSecret } from "../src/lib/crypto";
 import { EMBRYO_ARTIFACT_STATEMENT_KEYS } from "../src/lib/embryos/basis";
-import { JOBS_SECRET, adminClient, anonClient, createConfirmedUser, jobRan, signIn } from "./helpers";
+import { JOBS_SECRET, adminClient, anonClient, createConfirmedUser, dueMailCount, jobRan, jobRanCleanly, signIn } from "./helpers";
 
 // Use exactly the local server's existing fixture key, never a hosted secret.
 const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer];
@@ -83,9 +83,10 @@ test("/withdraw/request → session: real co-parent email, explicit activation, 
   let message: (typeof messages)[number] | undefined;
   for (let batch = 0; batch < 8 && !message; batch++) {
     const drain = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-    const outcome = await jobRan(drain, `mail drain ${batch + 1}`);
+    await jobRan(drain, `mail drain ${batch + 1}`);
     message = messages.find(mail => (Array.isArray(mail.to) ? mail.to : [mail.to]).includes(recipient.email));
-    if (!message && outcome === "no_work") break;
+    // D-086: `pending === 0` is now read from the queue rather than the reply.
+    if (!message && await dueMailCount(adminClient()) === 0) break;
   }
   expect(message).toBeTruthy();
   const emailed = message!.html?.match(/http:\/\/localhost:3100\/withdraw\/request#[A-Za-z0-9_-]{43}/u)?.[0];
@@ -215,7 +216,7 @@ for (const mode of ["anonymous", "other-account", "other-account-deleting"] as c
     const cleanup = await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
     // `jobRan` refuses `completed_with_failures`, which is what the old
     // `failed === 0` read meant before the counts left the response.
-    await jobRan(cleanup, "the retention sweep after a refusal");
+    await jobRanCleanly(cleanup, "the retention sweep after a refusal");
     expect((await admin.from("embryo_cohort_drafts").select("id").eq("id", draftId)).data).toEqual([]);
     const replay = await page.request.post("/api/withdraw/session", {
       headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin" }, data: originalBody,
@@ -225,7 +226,7 @@ for (const mode of ["anonymous", "other-account", "other-account-deleting"] as c
     await page.reload();
     await expect(page.getByRole("heading", { name: "You have declined this invitation" })).toBeVisible();
     const mail = await request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
-    await jobRan(mail, "the drain that sends both refusal notices");
+    await jobRanCleanly(mail, "the drain that sends both refusal notices");
     const notices = await admin.from("mail_outbox").select("state").eq("target_kind", "subject_invitation")
       .eq("target_id", invitationId).not("invitation_terminal_notice_id", "is", null);
     expect(notices.data).toEqual([{ state: "submitted" }, { state: "submitted" }]);
