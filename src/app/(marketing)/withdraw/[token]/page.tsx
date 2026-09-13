@@ -1,11 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { adultInvitationAvailable } from "@/lib/adult-invitations";
 import { createClient } from "@/lib/supabase/server";
 import { route } from "@/lib/primary-routes";
 
-export const metadata: Metadata = { title: "Review invitation" };
+export const metadata: Metadata = { title: "Review invitation", robots: { index: false, follow: false } };
+
+/**
+ * D-081(a): this page used to call `adultInvitationAvailable(token)` on a
+ * plain GET, so following a mailed URL answered the question "is this token
+ * still live?" — to a person, and equally to a link scanner, a mail-security
+ * bot or a browser prefetching the link. The register's own
+ * `tokenSecurityContract.activation` forbids exactly that:
+ * `scanner-prefetch-GETs-cannot-see-burn-or-use-a-token`.
+ *
+ * The lookup is gone. A GET now renders the same screen whatever the token's
+ * state, and `respond_adult_subject_invitation_v1` decides on the POST — which
+ * it always did; the pre-check was presentational and nothing else read it.
+ *
+ * THE COST IS REAL AND IS THE TRADE THE CONTRACT ASKS FOR. Someone opening a
+ * link that has expired or was already used now sees the actions and learns it
+ * failed after choosing one, as `?result=unavailable`, rather than being told
+ * first. No copy changed: that outcome and its sentence already existed for
+ * the POST path.
+ *
+ * THIS IS ONE SURFACE OF D-081, NOT ITS CLOSURE. The raw token is still in
+ * the path of this URL, in the `next=` query string of the sign-in bounce
+ * below, and in the receipt redirect `api/withdraw` sends back here. Those
+ * three go when the adult token moves onto the `mail-token-delivery-v1`
+ * issuance model the co-parent path already uses — a migration with a
+ * thirty-day overlap, because mailed tokens outlive the change.
+ */
 
 const outcomes: Record<string, { title: string; body: string }> = {
   accepted: {
@@ -28,11 +53,11 @@ const outcomes: Record<string, { title: string; body: string }> = {
 
 export default async function WithdrawPage(props: PageProps<"/withdraw/[token]">) {
   const [{ token }, searchParams] = await Promise.all([props.params, props.searchParams]);
-  const result = typeof searchParams.result === "string" ? outcomes[searchParams.result] : null;
-  const available = !result && await adultInvitationAvailable(token);
+  // The ONLY thing that decides what this page shows: a result the POST
+  // redirected back with. No token state is read here.
+  const outcome = typeof searchParams.result === "string" ? outcomes[searchParams.result] ?? null : null;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const outcome = result ?? (!available ? outcomes.unavailable : null);
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
