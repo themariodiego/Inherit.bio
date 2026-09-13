@@ -155,6 +155,16 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   expect(outgoing.every(entry => !entry.url.includes(token))).toBe(true);
   expect(outgoing.filter(entry => entry.body?.includes(token))).toHaveLength(1);
 
+  // A forwarded link does not let the wrong account accept. The inviter is
+  // signed in here and holds the same rights cookie; the accept control is
+  // absent, and the two controls that need no account are still offered.
+  await signIn(page, INVITER.email, INVITER.password);
+  await page.goto("/withdraw/session");
+  await expect(page.getByRole("button", { name: "Accept through my account" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refuse", exact: true })).toBeVisible();
+  await page.request.post("/auth/sign-out");
+
+  await page.goto("/withdraw/session");
   await page.getByRole("link", { name: "Sign in to accept" }).click();
   await page.getByLabel("Email").fill(RECIPIENT.email);
   await page.getByLabel("Password").fill(RECIPIENT.password);
