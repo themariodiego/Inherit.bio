@@ -292,6 +292,22 @@ const BROWSER_TESTS = "e2e";
  *               out on purpose: accepting needs an account because it creates
  *               a reserved subject under one, and refusing must not, or a
  *               stranger would have to register to decline.
+ *   99 -> 96    `processing` on the three Embryo result surfaces, which
+ *               nothing had rendered in a browser. `access.ts:117` returns it
+ *               when the cohort is still being read or an embryo has no QC
+ *               verdict; the resolver had a unit test and the pages had no
+ *               evidence. Seeded, on a separate account: E0 does not exist so
+ *               no cohort can be created through the product at all, every
+ *               Embryo test here seeds, and `ingesting`/`pending` are values
+ *               the schema permits and the resolver branches on. The pending
+ *               embryo carries NO qc row, because a check that has not run
+ *               should not be described as having a verdict.
+ *
+ *               ONE ASSERTION WAS WRONG AND THE PRODUCT WAS RIGHT: I expected
+ *               no status chip on a pending embryo. It carries "Checking the
+ *               file" and no verdict, which is more careful than silence, so
+ *               the test now asserts that word and the absence of all three
+ *               QC verdicts instead.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -302,7 +318,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 99;
+const UNPROVEN_ROUTE_STATE_PAIRS = 96;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
