@@ -122,12 +122,35 @@ describe("the legacy purpose gate (D-097)", () => {
   });
 
   it("asks nothing and keeps legacy files when the caller did not opt in", async () => {
-    // The report readers still take the old path deliberately; the same
-    // asymmetry exists for them and is recorded rather than fixed in passing.
+    // Not a softer setting: the Family surfaces read a relative's record,
+    // where the reader holds no own-subject grant and the authority is the
+    // counterpart's Family permission, checked before this call.
     const { db, rpc } = grantRpc(false);
     expect(await filterOwnAnalysisFiles(db, "subject", "ancestry", [legacy])).toEqual([legacy]);
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  // D-099, closed 2026-09-13. The report purposes are gated the same way and
+  // ask for themselves: a live `reports.polygenic` grant must not release a
+  // result the reader chose under `reports.monogenic`, or the two selections
+  // would be one.
+  it.each(["reports.monogenic", "reports.polygenic"] as const)(
+    "gates the legacy half on a live %s grant and names that purpose", async (purpose) => {
+      const { db, rpc } = grantRpc(true);
+      expect(await filterOwnAnalysisFiles(db, "subject", purpose, [legacy], { gateLegacy: true }))
+        .toEqual([legacy]);
+      expect(rpc).toHaveBeenCalledWith("own_subject_purpose_granted_v1", {
+        p_account_id: actor.accountId, p_session_id: actor.sessionId,
+        p_subject_id: "subject", p_purpose: purpose,
+      });
+    });
+
+  it.each(["reports.monogenic", "reports.polygenic"] as const)(
+    "drops the legacy half once %s is revoked", async (purpose) => {
+      const { db } = grantRpc(false);
+      expect(await filterOwnAnalysisFiles(db, "subject", purpose, [legacy], { gateLegacy: true }))
+        .toEqual([]);
+    });
 
   it("does not ask when there is no legacy file to gate", async () => {
     const { db, rpc } = grantRpc(true);

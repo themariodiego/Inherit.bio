@@ -60,14 +60,28 @@ async function allPages<T>(query: (offset: number) => PromiseLike<{ data: T[] | 
   }
 }
 
-/** Shared report-only read. Callers must authorize the subject before an admin read. */
+/**
+ * Shared report-only read. Callers must authorize the subject before an admin
+ * read.
+ *
+ * `gateLegacy` is D-099, closed 2026-09-13. It is what makes a revoked
+ * `reports.monogenic` or `reports.polygenic` refuse results derived from a
+ * LEGACY source, exactly as `ancestry` has since D-097. It is a parameter
+ * rather than a default because this function serves two readers with two
+ * different authorities: the account reading its OWN record, where the live
+ * subject-level grant is the right question, and the Family surfaces reading
+ * a relative's record, where the reader holds no own-subject grant on that
+ * subject and the authority is the counterpart's Family permission, checked
+ * before this call. Defaulting it on would answer the Family question with
+ * the wrong grant and remove legacy sharing rather than gate it.
+ */
 export async function loadReportCallRows(db: Db, subjectId: string, rsids: readonly number[], ownerId?: string,
-  purpose: OwnReportPurpose | null = null) {
+  purpose: OwnReportPurpose | null = null, { gateLegacy = false }: { gateLegacy?: boolean } = {}) {
   const candidates = await allPages((offset) => db.from("genome_files")
     .select("id,build,status,observed_call_sha256,observed_call_version,single_logical_sample_verified_at")
     .eq("subject_id", subjectId).in("status", ["annotated", "stored"])
     .in("build", ["GRCh37", "GRCh38"]).order("id").range(offset, offset + PAGE - 1));
-  const files = candidates ? await filterOwnAnalysisFiles(db, subjectId, purpose, candidates) : null;
+  const files = candidates ? await filterOwnAnalysisFiles(db, subjectId, purpose, candidates, { gateLegacy }) : null;
   const calls: ReportCall[] = [];
   const checkedFileIds = files?.map((file) => file.id) ?? [];
   if (!files) return { calls, fileCount: 0, checkedFileIds };
@@ -118,18 +132,19 @@ export async function loadReportCallRows(db: Db, subjectId: string, rsids: reado
     }
   }
   // A withdrawal during the paged read must not escape as an analytic response.
-  const current = await filterOwnAnalysisFiles(db, subjectId, purpose, files.filter(f => !failedModern.has(f.id)));
+  const current = await filterOwnAnalysisFiles(db, subjectId, purpose, files.filter(f => !failedModern.has(f.id)), { gateLegacy });
   const currentIds = new Set(current.map(f => f.id));
   return { calls: calls.filter(c => currentIds.has(c.file_id)), fileCount: current.length,
     checkedFileIds: checkedFileIds.filter(id => currentIds.has(id)) };
 }
 
-export async function getSubjectReportCalls(db: Db, subjectId: string, templates: readonly ReportTemplate[]) {
+export async function getSubjectReportCalls(db: Db, subjectId: string, templates: readonly ReportTemplate[],
+  { gateLegacy = false }: { gateLegacy?: boolean } = {}) {
   const rsids = [...new Set(templates.flatMap((template) => template.variants.map((variant) => variant.rsid)))];
   // One load, one layer: mixing purposes into one genotype map would let an
   // allowed estimate reveal an unselected variant-call layer (or vice versa).
   const layers = new Set(templates.map(t => t.layer ?? "estimate"));
   const purpose = layers.size === 1 ? layers.has("variant_call") ? "reports.monogenic" : "reports.polygenic" : null;
-  const { calls, fileCount, checkedFileIds } = await loadReportCallRows(db, subjectId, rsids, undefined, purpose);
+  const { calls, fileCount, checkedFileIds } = await loadReportCallRows(db, subjectId, rsids, undefined, purpose, { gateLegacy });
   return { ...resolveReportCalls(calls, templates), calls, fileCount, checkedFileIds };
 }

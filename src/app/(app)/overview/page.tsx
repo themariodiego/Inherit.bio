@@ -45,13 +45,13 @@ import { acknowledged } from "@/lib/family/tier2";
 import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
 import { subjectAttributes } from "@/lib/figures/contract";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
+import { PREPARATION_STEP_FOR_STATUS, type FileStatus } from "@/lib/genome/load";
 import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
 import { loadOwnOverviewReports } from "@/components/overview/own-report-summary";
 import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
 
 export const metadata: Metadata = { title: "Overview" };
 
@@ -59,8 +59,6 @@ export const metadata: Metadata = { title: "Overview" };
 // 72rem). It informs nothing (X9.1): only counts of things the reader can
 // point at, each with a unit noun and a short note; no genetic value, no
 // chart, no dash placeholder. One h1 and three domain h2s — four headings.
-
-type FileStatus = Database["public"]["Enums"]["genome_file_status"];
 
 /** The columns Overview reads; the session client is untyped, so name them. */
 interface FileRow {
@@ -75,13 +73,13 @@ interface FileRow {
 /**
  * Statuses between "finalised" and "annotated": a file in any of these is in
  * flight, and the newest one puts the page in State B.
+ *
+ * Moved to `@/lib/genome/load` and imported rather than kept here, because
+ * this page was the only reader of it. `/genome/[subject]/data` and its
+ * browser had no notion of a file in flight and told a reader to add one they
+ * had already added (corrections item 9); they now read the same list.
  */
-const STEP_FOR_STATUS: Partial<Record<FileStatus, number>> = {
-  uploading: 0,
-  uploaded: 0,
-  parsing: 1,
-  parsed: 1,
-};
+const STEP_FOR_STATUS = PREPARATION_STEP_FOR_STATUS;
 
 /** Below this many measured files the timing sentence would be a guess. */
 const MIN_TIMING_SAMPLE = 20;

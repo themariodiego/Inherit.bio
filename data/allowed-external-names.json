@@ -885,6 +885,45 @@
         "data/glossary-citations.json",
         "docs/sources/glossary/hazard-ratio.json"
       ]
+    },
+    {
+      "name": "National Academies of Sciences, Engineering, and Medicine",
+      "category": "cited-organisation",
+      "aliases": [
+        "national academies of sciences, engineering, and medicine",
+        "national academies",
+        "nasem",
+        "reproducibility and replicability in science"
+      ],
+      "reason": "Cited by name in the glossary citation register as the source for the definition of replication, read on NCBI Bookshelf because the chapter text is served there as static HTML.",
+      "evidence": [
+        "data/glossary-citations.json",
+        "docs/sources/glossary/replication.json"
+      ]
+    },
+    {
+      "name": "National Science Foundation",
+      "category": "cited-organisation",
+      "aliases": [
+        "national science foundation"
+      ],
+      "reason": "Not an Inherit source. The name appears inside the verbatim page-description metadata recorded in the National Academies snapshot, which the fetch tool copies from the page rather than paraphrasing; allowlisted so the snapshot stays byte-faithful instead of being hand-edited.",
+      "evidence": [
+        "docs/sources/glossary/replication.json"
+      ]
+    },
+    {
+      "name": "IGSR",
+      "category": "cited-organisation",
+      "aliases": [
+        "igsr",
+        "international genome sample resource"
+      ],
+      "reason": "Cited by name in the glossary citation register as the source for the definition of imputation; it is the resource that publishes the 1000 Genomes Project data already listed here.",
+      "evidence": [
+        "data/glossary-citations.json",
+        "docs/sources/glossary/imputation.json"
+      ]
     }
   ]
 }

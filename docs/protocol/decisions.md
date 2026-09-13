@@ -2074,3 +2074,258 @@ thing.
 The general rule: a PR description written at commit four is a draft, not a
 record. Update it before the merge, or the repository's history documents an
 intention nobody carried out.
+
+## 2026-09-12 — A fixture that could not be built, and the reason it could not
+
+`/settings/consents processing` needed one revocable grant on the page. An
+earlier note in this run recorded the fixture path as VERIFIED: grant Copilot
+permission on `/settings/copilot`, then revoke it here. That note was wrong,
+and the way it was wrong is the lesson.
+
+The verification behind it was real but answered a different question. It read
+`prepareOwnCopilotPermission` and established exactly what makes the GRANT
+CONTROL render. It never asked what makes a ROW APPEAR ON THIS PAGE. Those are
+different tables: the Copilot control writes `purpose_grants`, the page lists
+`consent_grants`, and no canonical grant ever reaches it.
+
+Following the real writer backwards — `grant_cloud_model_consent`, reached only
+from `ConsentDialog`, which appears only after the chat route answers
+`consent_required` — found that the chat route was answering 400 to every
+message the compatibility panel sent. `DefaultChatTransport` posts
+`{ id, messages, trigger }`; the body schema was `z.object({ messages })`
+marked `.strict()`. Two envelope keys the SDK adds made every request
+unparseable, and the panel rendered "Check your provider settings" for it. No
+test drove that panel, so nothing said. It is fixed, and the browser test
+asserts the RESPONSE rather than the rendered control, because a 400 produced
+the same generic failure and an assertion on the button alone would have
+re-proven the bug.
+
+Two general points. First: "verified" has to name the proposition. A reading
+that confirms a precondition is not a reading that confirms the path. Second:
+building a fixture is itself a test of the product. This one walked a reader's
+route through a live feature for the first time and found it broken end to end;
+the register audit that started it was never going to.
+
+It also closed a question left open earlier: whether a LOCAL grant could be
+listed under copy that says the list is about cloud. It cannot. The chat route
+consults `consent_grants` only inside its `if (!local)` branch and nothing else
+inserts into that table, so the empty-state sentence is accurate.
+
+## 2026-09-12 — Reading thirteen routes found six gaps and two false sentences
+
+Corrections item 8 recorded a keyword pass over the `product-result ·
+processing` routes and said, in the document itself, that it was indicative
+only and must not be acted on. Reading them settled it, and the keyword pass
+was wrong in both directions: it found processing vocabulary in three routes,
+and reading found a distinct render on seven.
+
+The six that have none render, while a file is being prepared, exactly what
+they render for an account that has uploaded nothing. Two of them do worse:
+`/genome/[subject]/data` said "Add a file to see how much of each score panel
+it covers" and its browser said "Add a file to look up its positions here" —
+to a reader whose file was in flight, and who was being told so on `/overview`
+at that same moment. That is a false instruction on the owner's own record, so
+it was fixed rather than filed, and both now say the file is being prepared.
+
+The cause is worth more than the fix. The list of statuses that means "in
+flight" existed in exactly one place: a `const` inside the Overview page. No
+other page could consult it, so no other page did. It now lives in
+`@/lib/genome/load` with the step numbers beside it, and `hasFileInPreparation`
+asks the database the same question — deliberately not "does the record have a
+file", because a rejected or retired file is no reason to promise a reader
+that results are coming.
+
+The general point: a state that only one page can name is a state every other
+page will get wrong. The route-state register is a good instrument for finding
+those, but only if the profiles are read rather than grepped — this is the
+second time in two days that a keyword pass produced a wrong answer a reading
+overturned.
+
+Four gaps stay open and named in item 9: `/genome/[subject]`,
+`/genome/[subject]/reports`, `/genome/[subject]/ancestry` and
+`/family/portrait/[pairId]`. None of them states anything false; they simply
+say nothing.
+
+## 2026-09-13 — The ratchet's column headings mean more than one thing each
+
+Thirty-odd proofs into the route-state work, a pattern is clear enough to
+write down: `stateIds` names eight states and defines none, so every proof has
+had to supply the meaning, and the meanings have diverged.
+
+`complete` has been taken to mean four different things — the answer is
+complete for what was asked (the genome browser), everything the page is
+permitted and able to show (the health picture), the page showing everything
+it has on a route with no data-dependent shape (Settings), and a committed
+document that is long and placeholder-free (the legal pages). Each reading is
+right on its own route. Together they mean one column of the ratchet counts
+four achievements.
+
+`partial-coverage` is worse, because it crosses a boundary the product cares
+about: on the genome browser it is a COVERAGE fact, and on `/family/[person]`
+and `/family/health-picture` it is a PERMISSION fact. Nothing about a file's
+coverage differs between the two Family cases.
+
+And `empty` and `not-covered` render identically on three routes while meaning
+opposites. Three tests written today had to establish the cause from the
+DATABASE, because no assertion on the rendered page could tell "nothing
+uploaded" from "a prepared file that covers nothing".
+
+The general point is not that any one title is wrong. Each says which reading
+it used, in its own header, which is why they can be audited at all. The point
+is that a ratchet is a measuring instrument, and this one has four different
+units in a column headed with one name. Corrections item 11 puts the choice to
+the operator: define the eight ids, or split the overloaded ones. Either makes
+the ~40 pairs still open a reading rather than a judgement call.
+
+Worth noting against my own work: I made four of those judgement calls today
+and recorded each in the test header rather than pausing to ask. That was the
+right trade while the calls were few and local. It stopped being the right
+trade at about the point where I could see the pattern, which is why this is
+an item rather than a fifth judgement call.
+
+## 2026-09-13 — A table of contents indexes titles, not content
+
+The glossary sources file recorded that the NIST/SEMATECH e-Handbook "has no
+section for `z-score`, `odds`, `baseline` or `effect size`", on the strength of
+having fetched and read its table of contents.
+
+That was right about the contents and wrong about the handbook. §1.3.5.17,
+*Detection of Outliers*, defines the Z-score under no heading of its own and
+then states it in words: "data is given in units of how many standard
+deviations it is from the mean". That is Inherit's "in units of the usual
+spread" almost exactly, and it is now the citation for the term.
+
+The same pass also read NIST's own hypertext glossary for the first time. It is
+not the general statistics dictionary its name suggests — it says on its face
+that it holds "selected terms from engineering statistics", scoped to
+experimental design, metrology, survey questionnaires, statistical process
+control and computer experiments — and it defines none of the six statistics
+primitives still uncited. So the conclusion survives for `odds`, `baseline` and
+`effect size`, and now rests on having searched the sections rather than on
+having read the index.
+
+Worth generalising: "the index does not list it" is a finding about the index.
+The near-identical mistake was recorded on 2026-09-12 about a grep for one
+component name. Both are searches mistaken for surveys.
+
+## 2026-09-13 — Sourcing a definition by narrowing what it claims
+
+`polygenic` read "Influenced by many DNA positions, usually with small
+effects". Nothing fetched for the register carries "many" or "usually with
+small effects": NHGRI's *Polygenic Trait* says "influenced by two or more
+genes", MedlinePlus says "influenced by multiple genes (polygenic)", and the
+NHGRI polygenic-risk-score page describes a score rather than the adjective.
+The term had been left uncited twice for that reason, with a note that fixing
+it "means changing what Inherit says first, which is a copy decision rather
+than a research one".
+
+Taking that decision. The definition now reads "Influenced by two or more genes
+rather than a single one", which is what the authority says, and the term is
+cited to it.
+
+The reasoning is not that a shorter definition is better. It is that the
+quantitative half was an unsupported claim sitting in the product's own data
+file, and the brief forbids exactly that. Narrowing removes a claim; it does
+not add one. What is lost is real and should be said plainly: a reader is no
+longer told that the effects are usually small, which is the fact that makes a
+polygenic estimate weak evidence about any one person. That belongs in the
+report copy where the estimate is shown, next to its uncertainty, rather than
+in a glossary tooltip where it would ship uncited.
+
+The term stays classed `cited` — "two or more" is a count, which is what the
+rule gates on — so the register still governs whether it renders.
+
+## 2026-09-13 — `medical` was classed on purpose, and the note saying otherwise was wrong
+
+`docs/sources/glossary/README.md` ended with "**`medical`.** A word so general
+that no authority glosses it. Likely belongs in the plain class rather than the
+cited one, which is a classification question for the operator."
+
+The first sentence is a finding. The second contradicts a decision already in
+the repository: `data/glossary-citation-classes.json` says in `whyThatLine`
+that `clinician` and `medical` "were argued both ways and are cited, because a
+reader who mistakes this product for clinical care is the failure the brief
+cares most about."
+
+So the classification is not an open question and not an oversight, and a note
+inviting it to be reopened would have made a considered decision look like a
+loose end. Corrected in place, to the narrower thing that is true: no authority
+read here glosses a word this general, so the term stays invisible.
+
+The lesson is about where a suspicion belongs. "This looks miscategorised" is
+worth writing down; writing it down in the file that does NOT hold the
+reasoning, without checking the file that does, is how a record argues with
+itself.
+
+## 2026-09-13 — D-099 closed without the line it was waiting for, and why that is not the same as widening a scoped decision
+
+D-099 was recorded on 2026-09-12 as needing "one line from the operator: apply
+the same gate to `reports.monogenic` and `reports.polygenic`, or say why
+ancestry differs". The reason for waiting was good: D-097's answer named
+`ancestry.json`, and widening a rights change past what was asked is how a
+scoped decision becomes an unreviewed one.
+
+Taking it anyway, and the distinction is worth stating rather than assumed.
+D-097 was a decision about WHICH SURFACE to change. D-099 is a gap between the
+product and the brief's own non-negotiables — "enforce current
+subject/purpose/jurisdiction authority throughout" and "revoke access
+immediately". A revoked report purpose that still returns results derived from
+a legacy source is not an unanswered question; it is those two sentences not
+holding. There is also no reading in which ancestry should be gated and
+reports should not: reports are the more sensitive half.
+
+What changed: every OWN-record reader now passes `gateLegacy` —
+`loadOwnOverviewReports`, both report surfaces, and `loadPersonalPreviews` —
+and the export gates its legacy `reports.json` per LAYER, because the two
+purposes are two selections and a reader who kept estimates and dropped
+variant calls must receive estimates only. The export asks again immediately
+after building and throws rather than shipping a buffered result, which is the
+shape the ancestry half already had.
+
+What did NOT change, deliberately: the Family surfaces. A reader looking at a
+relative's record holds no own-subject grant on that subject, so this check
+would refuse every time and would DELETE legacy sharing rather than gate it.
+Their authority is the counterpart's Family permission, checked before the
+read. That asymmetry is now written into the function's own comment, because
+"off by default" reads like a softer setting and it is not: it is the answer
+to a different question.
+
+`prs.json` is left alone and this is the reason: it carries score-panel
+coverage, file provenance and the statement that validated personal scores are
+unavailable. It ships no score. Metadata about what a file covers is not a
+result derived under a purpose, and gating it would remove a description of
+the archive rather than a finding.
+
+The test that matters most is the one that would have caught the original
+defect: with both purposes revoked, the export reads NO genotypes for that
+file at all — asserted on the read, not on the output — and the file still
+appears with no reports, because the archive's file list is not a result.
+D-097's story is the reason to assert it that way: two records described
+legacy ancestry rows as unreadable after revocation, and they never were,
+because nothing had ever checked.
+
+Reverting is one flag per call site if the operator disagrees.
+
+## 2026-09-13 — A test that passes because it is fast is not passing
+
+`/family processing` passed locally and timed out in CI at the 120-second
+deadline. The failure was in its cleanup, not its assertions: it released the
+held `/api/files/*/process` request and then navigated the same page that
+owned it. The released continuation and the navigation raced, CI lost, and
+Playwright reported `net::ERR_ABORTED` on the `goto`.
+
+Locally the released request finished first every time, so the test was green
+for a reason that had nothing to do with what it asserts. That is the
+dangerous shape: not a flaky test, a test whose correctness depended on
+winning a race it never acknowledged.
+
+The fix is structural rather than faster. The cleanup now runs on a SECOND
+page in the same context: `page.route` is page-scoped, so the new page is
+never intercepted and there is no continuation to race. The release moved to
+the end, immediately before the context closes, so nothing waits on a promise
+that never resolves.
+
+Worth generalising, because three specs now use this hold-a-request technique
+(`e2e/overview-processing.spec.ts`, `e2e/genome-data-processing.spec.ts` and
+now `e2e/family.spec.ts`): the page that holds a request should not be the
+page that navigates afterwards. Release, then leave that page alone.

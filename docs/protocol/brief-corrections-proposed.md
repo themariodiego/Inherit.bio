@@ -585,19 +585,367 @@ whether they ever come back off:
   (`/embryos/request-data` is the third: its copy button writes to the clipboard,
   which is not a network request.)
 
-### `product-result · processing` — deliberately still unread
+### `product-result · processing` — READ; see item 9
 
-A keyword pass over the fourteen routes found processing vocabulary in only
-three. **That is recorded as indicative and must not be acted on.** A keyword
-pass is what produced the wrong answer about `/family/[person]` in item 5 and
-would have produced the wrong answer about `auth-flow · processing` here. Each
-page needs reading for whether it branches on file status. `/overview` proves
-the state on this profile, so it is reachable by construction and these are
-coverage gaps or missing implementations, never register questions.
+This section said the fourteen routes were unread and that a keyword pass over
+them was indicative only and must not be acted on. All thirteen remaining ones
+have now been read line by line, and the keyword pass was wrong in both
+directions: it found vocabulary in three, and reading found a distinct
+render on seven. Item 9 carries the result, route by route. Nothing on this
+profile is proposed for not-applicable, so none of it changes the count of 29
+below.
 
 **What is asked of the operator: sign or refuse the 29.** They are grouped so
 the decision is eight readings rather than sixty-three routes, and each row
 carries what was read rather than what was inferred.
+
+## 9. `product-result · processing`, read route by route
+
+Item 8 left these thirteen unread and said a keyword pass over them was
+indicative only. They have now been read. **The keyword pass was wrong in both
+directions**: it found processing vocabulary in three routes, and reading found
+that seven render something a reader can tell apart from "there is nothing
+here", while six render exactly what they render for an account that has
+uploaded nothing at all.
+
+Nothing here is proposed for not-applicable. `/overview` already proves the
+state on this profile, so it is reachable by construction; the question each
+route answers is whether it was BUILT, and for six of them the answer is no.
+
+### The state being measured
+
+A file that exists but is not yet prepared. In this product that window is
+real, server-side and durable: `status: "uploaded"` means the file is
+finalized and stored and preparation has not been asked for yet
+(`e2e/overview-processing.spec.ts` waits inside it by holding the preparation
+request). So for each route the question is: **does the page render anything
+different at `uploaded` from what it renders with no file at all?**
+
+### Seven that do
+
+| Route | What separates it from "no file" |
+| --- | --- |
+| `/family` | `cardState` returns `awaiting-results` -> "No shared results yet" where no canonical access gives `no-file` -> "No file yet" (`(family-hub)/family/page.tsx:91`). |
+| `/family/[person]` | "No completed result is shared yet." under canonical access, against `noFileYet(name)` without it (`family/[person]/page.tsx:190`). |
+| `/family/health-picture` | A distinct CELL state: `no-prepared-file` -> "No prepared file yet", separate from `no-file` -> "No file yet" (`health-picture-cell.tsx:47`, `health-picture-projection.ts:19`). |
+| `/genome/[subject]/reports/[slug]` | With `fileCount > 0` and no prepared result: "Choose this result type in Reports to see what your file supports." `fileCount === 0` gets `NO_FILE_YET` instead (`reports/[slug]/page.tsx:450`). **That last judgement was wrong and was reversed on 2026-09-13.** It reads as the right next step only in isolation: `/genome/[subject]/reports`, the page the sentence sends the reader to, now answers the same account with `REPORTS_PREPARING` and offers nothing to choose. The instruction cannot be followed at the moment it is given. The page now renders `REPORT_PREPARING` instead, on the account's own record only, and the pair is proven in `e2e/genome-data-processing.spec.ts`. Rendering *something* different from the no-file case was the measurement this table made; whether that something is right is a second question, and this row answered it too quickly. |
+| `/embryos` | `cohort.status === "ingesting"` -> `STILL_CHECKING_STATUS` on the card (`cohort-card.tsx:59`). |
+| `/embryos/compare` | `case "processing": <BlockingState state="processing">` (`embryos/compare/page.tsx:173`). |
+| `/embryos/[embryoId]` | The same, twice (`embryos/[embryoId]/page.tsx:156`, `:201`). |
+
+### Six that did not — five now closed
+
+**Status, added after the reading: five of these six were built in the same
+change and are titled.** The table below records what each rendered when it
+was read, because that is the measurement; the closing note under it says what
+each says now.
+
+| Route | What it rendered while the file was preparing |
+| --- | --- |
+| `/genome/[subject]` | (closed) The same tiles. There is no file-status branch anywhere on the page; the only status-aware element is the subject bar's file COUNT, which counts every file "whatever its status" and so reads the same at `uploaded` as at `annotated`. |
+| `/genome/[subject]/reports` | (closed) Every card carries the `awaiting` pill, "Awaiting your data" — the identical pill an account with no file sees, because the branch is on `fileCount > 0` for the layer's CALLS, which is zero in both cases (`reports/page.tsx:208`). |
+| `/genome/[subject]/ancestry` | (closed) `AncestryRegions` with `result: null` and both lineage cards empty. No branch on file status exists. |
+| `/genome/[subject]/data` | (closed) "Add a file to see how much of each score panel it covers." |
+| `/genome/[subject]/data/browser` | (closed) "Add a file to look up its positions here." |
+| `/family/portrait/[pairId]` | (OPEN) `noFileYetFor(...)` for whichever side lacks a PREPARED source, so a relative whose file is preparing is reported to the other person as having no file (`portrait/[pairId]/page.tsx:189`). |
+
+**Closed.** The five My Genome routes now carry one sentence each, naming what
+will fill in: `HUB_PREPARING`, `REPORTS_PREPARING` and `ANCESTRY_PREPARING` in
+`src/copy/genome/preparation.ts`, `SCORE_COVERAGE_PREPARING` and
+`BROWSER_PREPARING` in `src/copy/genome/data.ts`. None promises a duration —
+the measured-or-withheld timing sentence belongs to `/overview`, which has the
+sample to decide, and repeating a guess elsewhere would be an invented number.
+All five pairs are proven in `e2e/genome-data-processing.spec.ts`.
+
+**A sixth, from the table above rather than this one.** `/genome/[subject]/reports/[slug]` was counted among the seven routes that DO render something different, and so was never a candidate for this fix. It does render something different, and what it renders is an instruction the reader cannot act on. It now carries `REPORT_PREPARING` on the account's own record, and is excluded on a relative's for the same disclosure reason as the portrait page: this route renders no file count for a relative. The lesson is in the shape of the table — "differs from the no-file case" was the whole test, and a route can pass it while saying something wrong.
+
+**Still open: `/family/portrait/[pairId]`,** and on purpose. It is wrong the
+same way — it reports a preparing file to the other person as an absent one —
+but unlike the five it shows no file count, so a sentence there would tell one
+adult something NEW about another adult's record. The five disclose nothing
+further, because a subject bar already counts every file in the record
+whatever its status. Changing what one person learns about another is the
+operator's call, not a tidy-up.
+
+### The two that were not merely missing but wrong
+
+`/genome/[subject]/data` and `/genome/[subject]/data/browser` do not just fail
+to say the file is being prepared. **They instruct the reader to add a file
+they have already added.** Someone who has just uploaded, and who is being told
+on `/overview` that their file is in flight, is told on these two pages to add
+one. That is a false instruction on the owner's own record, not a missing
+nicety, and it is the kind of sentence the non-negotiables rule out.
+
+`/family/portrait/[pairId]` is the same class one step removed: it reports a
+preparing file to the OTHER person as an absent file.
+
+### What this is not
+
+It is not a register question. Every one of these thirteen routes can occupy
+the state — the file status is the account's, not the page's — so the register
+is right to declare it and no not-applicable is proposed. Six of them are
+unbuilt, and six of the seven that are built are still untitled, which is a
+coverage gap rather than a claim.
+
+**What is asked of the operator: one decision, on one route.** The measurement
+needs no signature and five of the six gaps are closed. The remaining question
+is whether `/family/portrait/[pairId]` may tell one adult that the other's
+file is being prepared, where today it says they have no file. Either answer is
+defensible; the reason it is asked rather than chosen is that it changes what
+one person learns about another.
+
+## 10. `auth-flow · complete` is declared on four routes and rendered by two
+
+Two pairs proposed not-applicable. Small, and included because the reason is
+the one this document keeps returning to.
+
+`/auth/sign-up` and `/auth/forgot-password` each replace their form with a
+named "Check your email" panel. That is a real outcome, rendered by the route,
+and both are now proven in `e2e/auth-complete.spec.ts`.
+
+`/auth/sign-in` and `/auth/reset-password` do not. Both call `router.push()`
+on success — `/auth/sign-in` to the `next` destination (`sign-in/page.tsx:39`),
+`/auth/reset-password` to `/overview` (`reset-password/page.tsx:30`) — and
+render nothing of their own afterwards. The reader's next screen belongs to a
+different route, which has its own states and its own proofs.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/auth/sign-in` | `complete` | Success navigates to `next` and the route renders no outcome. What the reader sees next is `/overview` or the requested destination, whose own `complete` is proven separately. |
+| `/auth/reset-password` | `complete` | Success navigates to `/overview`. Same shape. |
+
+**Why this is not a technicality.** A route state is something a reader can be
+looking at. Titling `complete` on a page that has already navigated away would
+certify a render that does not exist — which is exactly what `/settings/people
+jurisdiction-unavailable` did before item 4, and the ratchet counted it as
+progress for weeks. Both of these would have been easy to "prove" by asserting
+on `/overview` after signing in, and the assertion would have passed.
+
+### One more, and one that is only unproven
+
+`/settings/people complete` is proposed not-applicable on the same reading item
+8 used for its `empty` and `processing`: the page renders `FeatureNotBuilt`
+unconditionally. A page that is not built has no complete state.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/settings/people` | `complete` | The route renders `FeatureNotBuilt` and nothing else. Item 8 already proposes its `empty` and `processing` for the same reason. |
+
+`/settings/copilot complete` is NOT proposed. The state is real; it is only
+unproven, and the distinction cost a written-then-deleted test. Its permission
+section needs an own-file permission — `own_copilot_configuration_v1` calls
+`own_report_context_v1` — so an account with a saved provider and no uploaded
+file sees the page's lesser shape, and titling that would have claimed the
+fuller one. The proof belongs beside the canonical Copilot fixtures, which
+upload first; they need the model daemon (`CANONICAL_COPILOT_CONTROL_URL`)
+that this container cannot start, so the title waits for an environment that
+can run it rather than being written unrun.
+
+### And `public-embryo-analysis`, which should be one state, not seven
+
+`/embryo-analysis` is the only route on this profile, and **it has exactly one
+render**. That render is already proven, correctly, as
+`jurisdiction-unavailable` (`e2e/embryo-analysis.spec.ts`). The profile
+declares six more states on it.
+
+Item 8 proposed `empty` and `processing` for the usual reason: 35 lines of
+public copy with no form, no client state and no fetch. The remaining four go
+the same way, and one of them for a sharper reason than the rest.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/embryo-analysis` | `complete` | The page's one render is already named `jurisdiction-unavailable`. Counting the same render twice would inflate the proven column without proving anything. |
+| `/embryo-analysis` | `not-covered` | No file, no viewer, no coverage. The page describes the catalog, not a person. |
+| `/embryo-analysis` | `partial-coverage` | The same. |
+| `/embryo-analysis` | `consent-required` | The page asks for nothing and gates nothing; its register profile carries `zeroUserDataRule`. |
+
+**The clean expression is `supported: ["jurisdiction-unavailable"]`** on the
+`public-embryo-analysis` profile, with the other six recorded as
+not-applicable and the reasons above.
+
+**What is asked of the operator: sign or refuse this item's 7** — the two auth
+`complete` pairs, `/settings/people complete`, and the four above. That takes
+the total proposed not-applicable across this document to 36: item 8's 29 and
+item 10's 7. The `/embryo-analysis` route contributes six of the 36, split
+across the two items because it was read twice; nothing is counted twice.
+
+### `own-product-result`: three routes that never render a result
+
+The profile split out on 2026-09-12 covers `/files`, `/files/upload` and
+`/copilot/[scope]`. `/copilot/[scope]` now proves `empty` and `processing`;
+`/files` already proves `empty` and `complete`. What remains does not apply,
+for one reason that covers all seven.
+
+**None of these three routes renders a RESULT.** `/files` is a list of files,
+`/files/upload` is the add-a-file flow, and `/copilot/[scope]` is a
+conversation. Coverage is a property of a report against a file, and none of
+them shows one, so `not-covered` and `partial-coverage` have nothing to
+describe on any of them.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/files` | `not-covered`, `partial-coverage` | A list of the account's files, with names, sizes and statuses. No report, no coverage. |
+| `/files/upload` | `not-covered`, `partial-coverage` | The add-a-file flow. Nothing has been read yet, let alone covered. |
+| `/files/upload` | `empty` | 24 lines: a header, `<OwnUploadEntry />` and a back link, all unconditional. There is no length-zero branch to be empty. |
+| `/copilot/[scope]` | `not-covered`, `partial-coverage` | A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own. |
+
+That takes item 10's proposed not-applicable pairs to 17, and the document's
+total to 46.
+
+### `/genome/[subject]`: a hub with one product-result state, not four
+
+`complete` is proven (`e2e/genome-data.spec.ts`). The other three do not apply,
+and the reason is structural rather than a matter of taste.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/genome/[subject]` | `partial-coverage` | The hub renders tiles, a file COUNT and a link per tool. It never renders a result, so there is nothing that could be partly covered. |
+| `/genome/[subject]` | `not-covered` | The same. Coverage is a property of a report, and this page shows none. |
+| `/genome/[subject]` | `empty` | It has no empty render. For an own record all three tiles are unconditional; for a relative's record `resolveSubjectRoute` refuses the page outright when nothing is granted (`anyOf: ["reports.monogenic", "reports.polygenic", "ancestry"]`) rather than serving an empty hub — which is deliberate, because an empty hub would confirm the record exists. |
+
+That takes item 10's proposed not-applicable pairs to 10, and the document's
+total to 39.
+
+### A shape the register has no state for, found on the main hub
+
+Not a proposal — a measurement, recorded because the route is `/overview` and
+the shape is on the priority-1 journey.
+
+`/overview` resolves five internal states, and State A has TWO renders. With
+nothing uploaded it shows the Start-here strip; that is `empty` and is now
+proven. With a file PREPARED and no report type chosen
+(`needsReportChoice = !hasReports && !hasAncestry && hasPreparedSource`,
+`overview/page.tsx:278`) it shows "Choose your reports — Your file is prepared.
+Choose report types and generate your results."
+
+**No register state fits that.** It is not `empty`: a file exists and the page
+says so. Not `processing`: nothing is in flight. Not `partial-coverage` or
+`not-covered`: no result exists to be partly or wholly uncovered. And **not
+`consent-required`** — which was checked rather than assumed, because it would
+have contradicted item 6. Item 6 measured that state as a page WITHHOLDING
+results for want of a permission, the `BlockingState` shape. This page
+withholds nothing; no result exists yet because none was ever requested. It is
+an invitation, not a refusal, so item 6's measurement stands unchanged.
+
+Every reader who uploads a file passes through this shape before choosing
+report types. It has no name in `stateIds`, so the ratchet cannot see it and
+no title can claim it. Whether that matters is the operator's call: the
+options are to leave it unnamed, or to add a state id for "prepared, awaiting
+the reader's choice" and declare it where it occurs.
+
+## 11. Eight state ids are carrying at least a dozen distinct meanings
+
+A structural observation, not a proposal for any one route. It is here because
+it is what the last thirty proofs kept running into, and because the ~40 pairs
+still genuinely open cannot be decided consistently until it is settled.
+
+`stateIds` lists eight names and defines none of them. Precedent has therefore
+had to supply the meanings, and precedent has supplied several per name.
+
+### `complete` currently means at least four different things
+
+| Where | What `complete` was taken to mean |
+| --- | --- |
+| `/genome/[subject]/data/browser` | **The answer is complete for what was asked.** The spec says so in as many words: it "can only mean the answer is complete for what was asked", because the browser never claims the file covers the genome. |
+| `/family/health-picture` | **Everything the page is permitted and able to show.** It cannot mean every report covered — no real file covers the catalogue — so it means both columns, both layers, no absence for want of a permission or a source. |
+| `/settings/data`, `/genome/[subject]` | **The page showing everything it has,** on a route with no data-dependent shape at all. |
+| `/legal/*` | **A committed document that is long and placeholder-free** (`assertDocumentComplete`). |
+
+Each reading is defensible on its own route. Together they mean the column
+headed `complete` in the ratchet counts four different achievements.
+
+### `partial-coverage` means coverage on some routes and PERMISSION on others
+
+`/genome/[subject]/data/browser partial-coverage` is a coverage fact: the gene
+search lists reference positions the file does not carry.
+`/family/[person] partial-coverage` and `/family/health-picture
+partial-coverage` are permission facts: one layer was granted and the other was
+not, so the cells read "Not shared with you". Nothing about a file's coverage
+differs between the two Family cases.
+
+### `empty` and `not-covered` render identically and mean opposites
+
+On `/overview` and both `/genome/[subject]/data*` routes, "nothing uploaded"
+and "a prepared file that covers nothing" produce the same absence of numbers
+and figures. They owe the reader opposite sentences. Three tests added on
+2026-09-12 had to establish the cause **from the database** to tell the two
+apart, because no assertion on the rendered page could.
+
+### And one live shape has no id at all
+
+`/overview` State A with a prepared file and no report type chosen — recorded
+above. Every reader who uploads passes through it.
+
+### What would make the remaining pairs decidable
+
+Two options, and the choice is the operator's:
+
+1. **Define the eight ids** in the register, one sentence each, and record for
+   each profile which reading applies. Cheapest, changes no code, and makes
+   every remaining pair a reading rather than a judgement call.
+2. **Split the overloaded ids** — separate a permission absence from a coverage
+   absence, and add the "prepared, awaiting the reader's choice" shape. Truer
+   to the product, but it moves the declared states on most profiles and every
+   existing proof has to be re-read against the new names.
+
+**What is asked of the operator: pick one, or say the ambiguity is
+acceptable.** Nothing here blocks the proofs already recorded — each states
+which reading it used, in its own test header. What it blocks is deciding the
+rest consistently, and a ratchet whose column headings mean four things is
+worth less than one whose headings mean one thing each.
+
+## Where the 90 unproven pairs stand
+
+Counted from `docs/route-register.json` against `docs/route-divergence.json`.
+The first version of this table claimed it "moves on its own as the ratchet
+does", which was not true of numbers typed into markdown: two proofs later it
+was already stale. `scripts/route-gate.test.ts` now recomputes the total and
+fails if the three bold figures below disagree with the register, so the claim
+holds because something checks it. It exists because the question "what does
+signing this unlock?" had no answer anywhere.
+
+| | pairs | what moves them |
+| --- | ---: | --- |
+| Proposed not-applicable in item 6 (`consent-required`) | 15 | one signature |
+| Proposed not-applicable in item 8 | 29 | one signature |
+| Proposed not-applicable in item 10 | 17 | one signature |
+| less one pair proposed twice | −1 | see below |
+| **Awaiting a signature** | **60** | |
+| **Genuinely open** | **30** | test work, and for most of them item 11 first |
+| **Total unproven** | **90** | |
+
+Signing all three proposals would take the ratchet from 90 to 30 without a line
+of test code, because every one of those 60 is the register describing
+behaviour the product does not have.
+
+**`/embryo-analysis consent-required` is proposed twice** — once in item 6, as
+one of the twenty routes that declare the state and never render it, and again
+in item 10, among the four that reduce this profile to its single render. Both
+readings are right and they agree, so nothing is in conflict; but it is one
+pair, not two, and a signature on both items must not be read as retiring two.
+Found while counting this table, which is the reason to build one.
+
+### And of the 30 that are open, 27 wait on item 11
+
+| state | open | blocked by item 11? |
+| --- | ---: | --- |
+| `not-covered` | 11 | yes — renders identically to `empty` on three of them |
+| `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
+| `complete` | 8 | yes — currently four different meanings |
+| `processing` | 2 | partly: both are Family routes whose "no completed result yet" may or may not be work in flight |
+| `empty` | 1 | no |
+
+**Three pairs could be attempted today** without any ruling: one `empty`
+(`/family/portrait/[pairId]`) and two `processing` (`/family/health-picture`,
+`/family/portrait/[pairId]`) — and all three are the same two routes, which is
+worth noticing. Five of the original eight have since been proven — `/genome/[subject]/reports/[slug]` in both
+`empty` and `processing`, the second of which needed a product fix first, and
+`/family` and `/family/[person]` in `processing`, which needed only the
+fixture and confirmed item 9's reading that both distinguish "no file" from
+"file being prepared", and `/embryos/[embryoId]` in `empty`. Everything else
+in the open column is a judgement call
+the operator should make once rather than one the next reader makes twenty
+times.
 
 ## What happens after signature
 

@@ -25,6 +25,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { H1, REGIONS_HEADING, SECTION_LABEL, SOURCES_HEADING, storedModelLine } from "@/copy/ancestry";
 import { NAV_LABELS } from "@/copy/navigation";
+import { ANCESTRY_PREPARING } from "@/copy/genome/preparation";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
 import { mapShapes } from "@/lib/ancestry/geometry";
 import { MIN_MARKERS, PANEL, SOURCES, LINEAGE_TREES } from "@/lib/ancestry/panel";
@@ -32,7 +33,7 @@ import { presentShares } from "@/lib/ancestry/present";
 import { tierQualifies } from "@/lib/ancestry/regions";
 import { regionsView } from "@/lib/ancestry/view";
 import { POPS, type Pop } from "@/lib/genome/admixture";
-import { getSubjectFileCount } from "@/lib/genome/load";
+import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { viewerMaySee } from "@/lib/family/access";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
@@ -123,9 +124,12 @@ export default async function AncestryPage(
   // Canonical results come from the checked private journal. Legacy own rows
   // retain RLS; Family keeps its separately authorized legacy reader.
   const resultClient = person ? admin : await createClient();
-  const [fileCount, captured] = await Promise.all([
+  const [fileCount, captured, preparing] = await Promise.all([
     getSubjectFileCount(admin, dataSubjectId),
     loadAncestryResultSnapshot(admin, resultClient, dataSubjectId),
+    // A narrower question than the count: a rejected or retired file is
+    // counted and is no reason to say regions are coming.
+    hasFileInPreparation(admin, dataSubjectId),
   ]);
   let admix = captured.rows.find((row) => row.kind === "admixture");
   let mt = captured.rows.find((row) => row.kind === "mtdna");
@@ -157,6 +161,9 @@ export default async function AncestryPage(
       />
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{H1}</h1>
+      {preparing ? (
+        <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{ANCESTRY_PREPARING}</p>
+      ) : null}
 
       <section data-testid="admixture" aria-labelledby="regions-heading" className="space-y-4">
         <h2 id="regions-heading" className="text-lg font-semibold text-ink">

@@ -262,6 +262,56 @@
       "access_date": "2026-09-12",
       "quote": "this recommendation describes a process for classification of variants into these five categories based on criteria using typical types of variant evidence",
       "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The five categories and the criteria-based process are together Inherit's \"published list that sorts DNA changes by how likely they are to cause a condition\". Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:cdc-epidemiology-glossary-association",
+      "type": "handbook",
+      "identifier": "CDC, Principles of Epidemiology in Public Health Practice, Third Edition: Glossary",
+      "url": "https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/glossary.html",
+      "archived_path": "docs/sources/glossary/association.json",
+      "access_date": "2026-09-13",
+      "quote": "the statistical relation between two or more events, characteristics, or other variables",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. CDC's entry carries Inherit's \"a pattern in groups\": a statistical relation between events, characteristics or variables. It does not carry the second half. \"Does not by itself prove cause\" is Inherit's own restriction, recorded here rather than attributed to CDC, and it narrows what the definition claims rather than widening it. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "report:nasem-2019-replicability",
+      "type": "report",
+      "identifier": "National Academies of Sciences, Engineering, and Medicine, Reproducibility and Replicability in Science (2019), Chapter 3, NCBI Bookshelf NBK547546",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK547546/",
+      "archived_path": "docs/sources/glossary/replication.json",
+      "access_date": "2026-09-13",
+      "quote": "Replicability is obtaining consistent results across studies aimed at answering the same scientific question, each of which has obtained its own data.",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The report defines the noun replicability; Inherit's entry is for replication, the act that noun names, and the same page calls a second study replicable when it collects new data and finds consistent results. That is Inherit's \"a new study finding a similar result with other data\". The citation is under the related word, which is stated here rather than left for a reader to notice. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "documentation:igsr-1000-genomes-imputation",
+      "type": "documentation",
+      "identifier": "IGSR / 1000 Genomes Project FAQ: How was imputation used in 1000 Genomes to fill in gaps in sequencing?",
+      "url": "https://www.internationalgenome.org/faq/how-was-imputation-used-in-1000-genomes-to-fill-in-gaps-in-sequencing/",
+      "archived_path": "docs/sources/glossary/imputation.json",
+      "access_date": "2026-09-13",
+      "quote": "we can statistically infer the genotype for that variant in that individual using haplotype information",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The quote is the second half of one sentence; its first half is the condition Inherit's \"unmeasured DNA positions\" names, that the individual \"has no coverage at a particular location\". Both halves are recorded here because the quote read alone would look like a claim about genotypes generally rather than about missing ones. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "registry:nhgri-glossary-polygenic-trait",
+      "type": "registry",
+      "identifier": "NHGRI Talking Glossary of Genomic and Genetic Terms: Polygenic Trait",
+      "url": "https://www.genome.gov/genetics-glossary/Polygenic-Trait",
+      "archived_path": "docs/sources/glossary/polygenic.json",
+      "access_date": "2026-09-13",
+      "quote": "a characteristic, such as height or skin color, that is influenced by two or more genes",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. Inherit's definition was narrowed to what this page carries. It previously read \"Influenced by many DNA positions, usually with small effects\", and no page fetched for this register carries either \"many\" or \"usually with small effects\" — the quantitative half was Inherit's own and unsupported. The page's update line reads as the date of the fetch, which is NHGRI's template rather than a change to the entry; the snapshot records that. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
+    },
+    {
+      "id": "handbook:nist-detection-of-outliers",
+      "type": "handbook",
+      "identifier": "NIST/SEMATECH e-Handbook of Statistical Methods 1.3.5.17, Detection of Outliers",
+      "url": "https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm",
+      "archived_path": "docs/sources/glossary/z-score.json",
+      "access_date": "2026-09-13",
+      "quote": "data is given in units of how many standard deviations it is from the mean",
+      "claim": "Supports the wording of Inherit's glossary definition for this term and nothing else. The sentence follows the handbook's Z-score formula on the same page and is the handbook's own plain-words reading of it, which is Inherit's \"in units of the usual spread\". The definition sits inside the outlier-detection section under no heading of its own, which is why reading the handbook's table of contents had recorded it as having no definition for this term. Not a clinical statement, not a claim about any person's file, not an endorsement of any Inherit result."
     }
   ]
 }

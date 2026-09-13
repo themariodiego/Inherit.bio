@@ -4,7 +4,7 @@ import fs from "node:fs";
 import http from "node:http";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
-import { EACH_TURNS_IT_ON } from "../src/copy/family/health-picture";
+import { CELL_NO_FILE, CELL_NO_PREPARED_FILE, EACH_TURNS_IT_ON } from "../src/copy/family/health-picture";
 import path from "node:path";
 import {
   adminClient,
@@ -441,7 +441,31 @@ test("the page withholds every result until the one Tier-2 gate is passed", asyn
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
 });
 
-test("the side-by-side table compares nothing and offers no way to order it", async ({ page }) => {
+/**
+ * RETITLED 2026-09-12 to name `/family/health-picture complete`. Every
+ * assertion below already established it; the title named the page's refusals
+ * rather than its state, so the route gate could not count it.
+ *
+ * WHAT `complete` MEANS ON A COMPARISON SURFACE, because it cannot mean "every
+ * report covered" — no real file covers the whole catalogue. It means the page
+ * is showing everything it is PERMITTED AND ABLE to show: both people's
+ * columns, both layers, every granted cell carrying its own attributed result,
+ * and no cell absent for want of a permission or a prepared file. Coverage
+ * absences may remain, and do; they are a property of the file, not of this
+ * page's completeness.
+ *
+ * That is exactly what separates it from `partial-coverage`, proven further
+ * down the same file on the same fixture: there one layer's grant is missing
+ * and the other adult's cells read "Not shared with you". The two titles sit
+ * on one fixture and differ only in what has been granted, which is what makes
+ * the pair worth reading together.
+ *
+ * TWO ASSERTIONS ARE NEW, and they are what make the retitle safe rather than
+ * a rename: no cell reads "No prepared file yet" and none reads "No file yet".
+ * Both are absences of a SOURCE rather than of coverage, and either would mean
+ * the page was not showing everything it could.
+ */
+test("/family/health-picture complete: both columns, both layers, every permitted cell carrying its own attributed result", async ({ page }) => {
   await signIn(page, A.email, A.password);
   await passGate(page);
 
@@ -499,6 +523,13 @@ test("the side-by-side table compares nothing and offers no way to order it", as
   );
   expect(await lettersOfB.count()).toBeGreaterThan(0);
   await expect(page.locator('[data-slot="cell-absence"]', { hasText: NOT_SHARED_CELL })).toHaveCount(0);
+  // Nor is any cell missing a SOURCE. These two absences mean the page is not
+  // showing everything it could; a coverage absence does not, which is why
+  // only these two are asserted to zero.
+  await expect(page.getByText(CELL_NO_PREPARED_FILE, { exact: true }),
+    "no column is waiting on a file to be prepared").toHaveCount(0);
+  await expect(page.getByText(CELL_NO_FILE, { exact: true }),
+    "and none is waiting on a file at all").toHaveCount(0);
 
   // These are actual fixture calls rendered from each separately completed
   // stored report, not synthetic clinical labels or a shared genotype map.

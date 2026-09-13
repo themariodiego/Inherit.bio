@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -10,8 +10,10 @@ import {
   expectAxeClean,
   firstViewportInteractives,
   signIn,
+  uploadOwnFileThroughUi,
 } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { CARD_AWAITING_RESULTS_STATUS, CARD_NO_FILE_STATUS } from "@/copy/family";
 import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 
@@ -259,6 +261,65 @@ test("/family/invite states the pre-consent sentence above the form and offers n
   await expect(page.getByLabel("A note for them")).toBeVisible();
   // Path B has no screen, so its secondary link is not rendered.
   await expect(page.getByText("They can’t use Inherit themselves")).toHaveCount(0);
+});
+
+/**
+ * `/family/invite processing`, measured as implemented in corrections item 8
+ * (`invite-adult-form.tsx:32`) before it was titled: the submit control holds
+ * a `pending` flag, disables, and changes its word to "Requesting…" while the
+ * POST to `/api/subject-drafts` is in flight.
+ *
+ * ON ITS OWN ACCOUNT, deliberately. Releasing the held request sends a real
+ * invitation, which would give A a second invited record — and the hub
+ * assertions in the tests below expect exactly one person, so this would have
+ * broken them from two tests away. A pending-state proof is not worth
+ * perturbing a fixture that four other tests depend on.
+ *
+ * Held the way the rest of this suite holds a transient state: the request is
+ * intercepted and released only after the assertion, so the product sits in a
+ * state it defines rather than a simulated one.
+ */
+test("/family/invite processing: the send control says Requesting while the invitation is in flight", async ({
+  page,
+}) => {
+  const inviter = { email: `family-invite-processing-${randomUUID()}@e2e.local`, password: "e2e-family-invite-pw" };
+  await createConfirmedUser(inviter.email, inviter.password);
+  await signIn(page, inviter.email, inviter.password);
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/subject-drafts", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    await page.goto("/family/invite");
+    const form = page.locator("form").filter({ has: page.getByLabel("Their email address") });
+    await form.getByLabel("Their email address").fill(`family-invitee-${randomUUID()}@e2e.local`);
+    await form.getByRole("checkbox").check();
+    const send = form.getByRole("button", { name: "Send invitation", exact: true });
+    await expect(send).toBeEnabled();
+    await send.click();
+
+    const requesting = form.getByRole("button", { name: "Requesting…", exact: true });
+    await expect(requesting).toBeVisible();
+    await expect(requesting).toBeDisabled();
+    // Nothing is decided while the request is open. A confirmation beside a
+    // pending control would be about an invitation that has not been sent.
+    await expect(form.getByRole("alert")).toHaveCount(0);
+    expect(intercepted, "the state is held by a real in-flight request").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released, so an invitation really was requested. Said plainly: this test
+  // sends synthetic mail to a synthetic address, and leaves a record on an
+  // account nothing else in this file touches.
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
 });
 
 test("A invites B, B accepts, adds a file and shares one layer from their own session", async ({
@@ -573,6 +634,229 @@ test("/family/[person] partial-coverage: past the Tier-2 gate, the shared layer 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: test.info().outputPath(`shared-report-${viewport.name}.png`), fullPage: true });
   }
+});
+
+/**
+ * `/family complete`, on the fixture the tests above have already built: one
+ * accepted invitation, one shared layer, one live pair.
+ *
+ * `complete` means the hub is showing everything it has — which on this page
+ * is a populated people list AND three tiles, each either resolved to a real
+ * destination or stating why it is not. THAT IS NOT A WEAKER CLAIM. A tile
+ * that cannot resolve yet and says so is what this page has; a tile that
+ * shipped a link answering 404 would be worse and would pass a laxer test.
+ * The Copilot tile is the live example: its group scopes do not resolve, so
+ * it carries its blocking sentence instead of a href, and the assertion below
+ * pins that rather than skipping it.
+ *
+ * Placed here deliberately. Sharing is live at this point in the file; the
+ * pause/resume/stop test below ends it, and after that the hub is a different
+ * page.
+ */
+test("/family complete: the person list populated, and every tile either resolved or saying why not", async ({
+  page,
+}) => {
+  await signIn(page, A.email, A.password);
+  await page.goto("/family");
+
+  // The list, with the one person this fixture built.
+  const card = page.locator('[data-slot="person-card"]');
+  await expect(card).toHaveCount(1);
+  await expect(card.locator('[data-slot="subject-name"]')).toHaveText(B_AS_SEEN_BY_A);
+  await expect(card.locator('[data-slot="person-state"]')).toHaveText("Reports ready");
+
+  const tiles = page.locator('[data-slot="family-tile"]');
+  await expect(tiles).toHaveCount(3);
+
+  // Two tiles resolve, and to this fixture's own records rather than to a
+  // generic index: the individual-risks tile opens the one person shared with
+  // A, and Portrait opens the pair their two grants created.
+  await expect(page.locator('[data-tile="individual-risks"]').getByRole("link").first())
+    .toHaveAttribute("href", `/family/s-${invitedSubjectId}`);
+  const portraitHref = await page.locator('[data-tile="portrait"]').getByRole("link").first()
+    .getAttribute("href");
+  expect(portraitHref, "Portrait opens the pair, not the hub").toMatch(/^\/family\/portrait\/[0-9a-f-]{36}$/);
+
+  // The third states its reason instead of shipping a link that would 404.
+  const copilot = page.locator('[data-tile="copilot"]');
+  await expect(copilot.getByRole("link")).toHaveCount(0);
+  await expect(copilot.locator('[data-slot="tile-blocked"]')).not.toHaveText("");
+
+  // And the hub's own primary action, which is how the list grows.
+  await expect(page.getByRole("link", { name: "Add another adult" })).toBeVisible();
+});
+
+/**
+ * `/family/[person]/permissions processing`, measured as implemented in
+ * corrections item 8 (`permission-grant-row.tsx:54`, `:93`) before it was
+ * titled: the row control holds a `pending` flag and disables while its
+ * request is in flight.
+ *
+ * THE LABEL DOES NOT CHANGE HERE, unlike the auth forms, the invite form and
+ * the consent revocation. The button keeps saying "Turn on" and only goes
+ * disabled, so the assertion is the disabled state alone — which is the half
+ * that matters anyway: it is what stops a second grant of the same purpose
+ * while the first is still being written.
+ *
+ * IT LEAVES THE FIXTURE WHERE IT FOUND IT, and that is not incidental. This
+ * page's controls make and withdraw real directional grants, and four tests
+ * around this one assert exact grant sets and exact shared-layer lists. So the
+ * test turns Ancestry on, proves the state on the way, and then turns it back
+ * off — chosen because no other test in this file asserts anything about that
+ * row. A pending-state proof that silently widened what one adult can see
+ * about another would be the wrong trade twice over.
+ */
+test("/family/[person]/permissions processing: the row control is held while its grant is in flight", async ({
+  page,
+}) => {
+  await signIn(page, B.email, B.password);
+  await page.goto(`/family/s-${selfSubjectA}/permissions`);
+
+  const ancestry = page
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Ancestry$/ }) });
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/consents", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    await held;
+    await route.continue();
+  });
+
+  try {
+    // Not `exact`: the control carries an aria-label naming the row and the
+    // person ("Turn on Ancestry for Another adult"), which is the accessible
+    // name, so an exact match on the visible word finds nothing. Scoping to
+    // the row already makes it the only button here.
+    const turnOn = ancestry.getByRole("button", { name: "Turn on" });
+    await expect(turnOn).toBeEnabled();
+    await turnOn.click();
+    await expect(turnOn).toBeDisabled();
+    // Nothing has been written yet, so the row may not have moved and may not
+    // be reporting a failure either.
+    await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+    await expect(ancestry.getByRole("alert")).toHaveCount(0);
+    expect(intercepted, "the state is held by a real in-flight grant").toBeGreaterThan(0);
+  } finally {
+    release();
+  }
+
+  // Released: a real grant, then withdrawn, so the fixture below sees what it
+  // would have seen without this test.
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("On");
+  await ancestry.getByRole("button", { name: "Turn off" }).click();
+  await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  expect((await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).map(row => row.purpose))
+    .toEqual(["family.portrait", "reports.polygenic"]);
+});
+
+/**
+ * `processing` on the two Family surfaces that read a relative's record, in
+ * the one direction this file has left empty: A has granted B nothing and has
+ * no file, which is what makes `/family/[person] empty` above honest.
+ *
+ * THE STATE. A turns on one report layer for B, then uploads a file and holds
+ * its preparation request. `status: "uploaded"` is the server's own window —
+ * finalized and stored, preparation not yet asked for — and holding the
+ * request keeps A genuinely inside it. Nothing here seeds a row or writes a
+ * status; the same technique as `e2e/genome-data-processing.spec.ts`.
+ *
+ * WHY IT IS WORTH THE FIXTURE. Both pages have two sentences that differ by
+ * one fact: whether the other adult has a file at all. Corrections item 9
+ * measured that both distinguish them, and this is the first thing to check
+ * it from a browser. The failure it guards is `/family/portrait/[pairId]`'s,
+ * which does NOT distinguish them and reports a preparing file to the other
+ * person as an absent one.
+ *
+ * The grant is turned off and the hold released in the second test, so the
+ * pause/resume/stop fixture below sees what it would have seen without these.
+ */
+let releaseAPreparation: () => void = () => {};
+let aPreparingContext: BrowserContext | null = null;
+
+test("/family/[person] processing: with A's file still being prepared, B is told no completed result yet rather than no file", async ({ browser }) => {
+  aPreparingContext = await browser.newContext();
+  const aPage = await aPreparingContext.newPage();
+  await signIn(aPage, A.email, A.password);
+
+  // A's own direction, which every assertion above has left empty.
+  await aPage.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const estimates = aPage
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: aPage.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
+  await estimates.getByRole("button", { name: "Turn on" }).click();
+  await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("On");
+
+  const held = new Promise<void>((resolve) => { releaseAPreparation = resolve; });
+  await aPage.route("**/api/files/*/process", async (route) => { await held; await route.continue(); }, { times: 1 });
+  const fileId = await uploadOwnFileThroughUi(aPage, SOURCE_PATH);
+  const stored = await adminClient().from("genome_files").select("status,subject_id").eq("id", fileId).single();
+  expect(stored.error).toBeNull();
+  expect(stored.data!.status, "the state this test waits inside is the server's, not the test's").toBe("uploaded");
+  expect(stored.data!.subject_id).toBe(selfSubjectA);
+
+  const bContext = await browser.newContext();
+  const bPage = await bContext.newPage();
+  try {
+    await signIn(bPage, B.email, B.password);
+    await bPage.goto(`/family/s-${selfSubjectA}`);
+    await bPage.getByRole("checkbox").check();
+    await bPage.getByRole("button", { name: "Show what’s shared" }).click();
+
+    await expect(bPage.getByText("No completed result is shared yet.", { exact: true })).toBeVisible();
+    // The sentence this one replaces. A file exists; saying otherwise about
+    // another adult's record is the failure this pair is here to catch.
+    await expect(bPage.getByText(`${A_AS_SEEN_BY_B} hasn’t added a file yet.`, { exact: false }),
+      "no claim that the other adult has added nothing").toHaveCount(0);
+    await expectNoResults(bPage);
+  } finally {
+    await bContext.close();
+  }
+});
+
+test("/family processing: the hub card says no shared results yet, not no file yet", async ({ browser }) => {
+  const bContext = await browser.newContext();
+  const bPage = await bContext.newPage();
+  try {
+    await signIn(bPage, B.email, B.password);
+    await bPage.goto("/family");
+    await expect(bPage.locator('[data-slot="person-state"]')).toHaveText(CARD_AWAITING_RESULTS_STATUS);
+    await expect(bPage.locator('[data-slot="person-state"]')).not.toHaveText(CARD_NO_FILE_STATUS);
+  } finally {
+    await bContext.close();
+  }
+
+  // Put the fixture back: the grant withdrawn, so the pause/resume/stop test
+  // below sees the A -> B direction empty exactly as every test above left it.
+  //
+  // ON A NEW PAGE IN A'S CONTEXT, AND THE ORDER MATTERS. The page that
+  // uploaded still owns the held `/api/files/*/process` request. Releasing the
+  // hold and then navigating THAT page races the continuation against the
+  // navigation: CI aborted the navigation with net::ERR_ABORTED and the test
+  // sat there until the 120s deadline, while the same code passed locally
+  // because the released request happened to finish first. A second page is
+  // not intercepted — `page.route` is page-scoped — so this is deterministic
+  // rather than fast enough.
+  const aCleanup = await aPreparingContext!.newPage();
+  await aCleanup.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const estimates = aCleanup
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: aCleanup.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
+  await estimates.getByRole("button", { name: "Turn off" }).click();
+  await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+
+  // Released last, so no promise is left unresolved when the context closes.
+  // Whether that request then completes or is aborted with the context does
+  // not matter: nothing below reads A's files, and a file left at `uploaded`
+  // is a state the product defines rather than a broken one.
+  releaseAPreparation();
+  await aPreparingContext!.close();
+  aPreparingContext = null;
 });
 
 /**
