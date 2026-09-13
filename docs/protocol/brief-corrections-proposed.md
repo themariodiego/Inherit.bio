@@ -987,6 +987,79 @@ never existed in this repository's history.
 
 ---
 
+## 13. Seven of the nine consent gates have nothing to gate on
+
+**Measured 2026-09-13, after building two of the nine. This is the answer to
+the question item 7 asked and nobody had checked.**
+
+Item 7 found that G2.2 forbids the `consent-required` `n/a` on any Family or
+Embryo Analysis route, and concluded that the correction for those nine routes
+is "build the gate, not drop the declaration". The owner chose that. What
+nobody had established is whether each gate CAN exist — whether the product
+has, on each of those routes, a recorded revocable consent that is missing.
+
+Two do, and both are now proven:
+
+| route | the consent | what happened |
+|---|---|---|
+| `/family/[person]` | a directional grant, paused | already rendered; it was implemented and untitled |
+| `/family/health-picture` | the mutual `family.heritability` grant, paused | built; the paused pair was falling into the empty state |
+
+**The other seven have no recorded revocable consent to require, and the
+reason differs by route.** Each was read on 2026-09-13, the page itself and
+not the components it might have used — the mistake item 6 made on
+`/family/[person]`.
+
+| route | read | why the state is unreachable |
+|---|---|---|
+| `/family` | `(family-hub)/family/page.tsx` | Consent here is per person: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The ROUTE-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent, so nothing can put the hub itself into this state. |
+| `/embryos` | `(app)/embryos/page.tsx`, `cohort-card.tsx` | The same shape. `analysisConsent` already renders a waiting line per cohort, and the `/embryos complete` proof was taken on a hub carrying a per-cohort jurisdiction line for exactly this reason: a per-item line is what the page HAS, not a state the page is in. The analysis grant is a property of a cohort; there is no account-level embryo consent. |
+| `/family/invite` | `(app)/family/invite/page.tsx`, 61 lines | A form for inviting an adult. It reads a jurisdiction and nothing else. There is no consent artifact a person must sign before they may invite someone — and inventing one would be adding a product requirement to satisfy a register declaration, which is backwards. |
+| `/family/[person]/permissions` | `(app)/family/[person]/permissions/page.tsx` | This is the page where consent is GIVEN. A consent refusal on it would be circular: the reader would be told to go to the page they are on. Its per-row `onlyTheyCanTurnThisOn` lock is a row state, not a page state, and D-102 already covers its empty-reason defect. |
+| `/embryos/request-data` | `(app)/embryos/request-data/page.tsx`, 81 lines | A letter to print or paste into a clinic's inbox. It reads no cohort, no subject and no consent. Its one render is proven as `complete`. |
+| `/embryos/upload` | `(app)/embryos/upload/page.tsx`, `upload-flow.tsx` | The consent artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist. There is nothing to check before it does. Item 8 already records this route's `processing` waiver as temporary for the same reason. |
+| `/embryo-analysis` | `(marketing)/embryo-analysis/page.tsx`, 36 lines | A public page with one render, already proven as `jurisdiction-unavailable`. The register's own projection for this state on this profile is "show the exact current parent and future-person consent prerequisites before any sign-in or upload action" — which is a panel of copy, not a refusal, and a page with one render cannot also be in a second state. Item 10 proposed the `n/a` for exactly this reason and G2.2 forbids it. |
+
+### What is being asked
+
+Not a licence to drop seven declarations. **One narrow amendment, or an
+explicit instruction to invent.**
+
+G2.2's forbidden list exists to stop a Family or Embryo route quietly
+declaring that consent does not apply to it. That purpose is served on every
+route where consent is a property of the page. It is not served on a route
+where consent is a property of an ITEM the page lists, or where the page is
+the place consent is given, or where no consent artifact exists in the schema
+at all — there the prohibition forces a permanent unproven pair and, worse,
+invites someone to satisfy it by building a refusal nobody asked for.
+
+**Proposed:** G2.2's second forbidden `n/a` reads
+
+> `consent-required` on any Family or Embryo Analysis route
+
+and becomes
+
+> `consent-required` on any Family or Embryo Analysis route that renders a
+> result, a record or a permission of a named person — never on a route whose
+> consent is a property of an item it lists rather than of the page, on the
+> route where that consent is given, or on a route that reads no consent at
+> all. Each exception names, in the register, the item-level state that
+> carries the refusal instead.
+
+Every one of the seven then carries a reason naming what does carry the
+refusal, which is a stronger record than a declaration nothing renders.
+
+**The alternative, stated plainly so it is a choice and not an oversight:**
+leave G2.2 as it is and accept seven permanently unproven pairs. That is
+defensible — an unproven pair is honest and a false one is not — and it costs
+only that the ratchet never reaches zero. What is NOT acceptable, and what
+this item exists to prevent, is closing them by building a consent
+requirement the product does not have.
+
+Filed as **D-108**.
+
+---
+
 ## Where the 34 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
@@ -1009,13 +1082,16 @@ proposals is the nine that G2.2 forbids dropping.
 | Applied from item 8 | 29 | done 2026-09-13 |
 | Applied from item 10 | 16 | done 2026-09-13 |
 | **Retired from the register** | **51** | |
-| Item 6's Family and Embryo half | 7 | product work — build the gate |
+| Item 6's Family and Embryo half | 7 | **an owner decision, not product work — see item 13** |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
 | **Total unproven** | **34** | |
 
 Building the remaining seven consent gates would
-take the ratchet from 34 to 27. That is the whole of what a register
-correction can no longer do for this number.
+take the ratchet from 34 to 27, and **item 13 measures that none of the seven
+can be built without inventing a consent the product does not have.** So this
+row is an owner decision after all: amend G2.2's forbidden list, or accept
+seven permanently unproven pairs. Either answer is honest; closing them by
+building a refusal nobody asked for is not.
 
 **Two of the nine closed on 2026-09-13, and only one of them was built.**
 `/family/[person] consent-required` is the paused-sharing branch, which this
