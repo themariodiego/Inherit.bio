@@ -2598,3 +2598,239 @@ name. When an assertion is about "the queue" or "the count" rather than about
 the rows the test created, it is a claim about the whole database, and it is
 only true on an empty one. Either scope the claim to the journey, or make the
 fixture true wherever it runs.
+
+## 2026-09-13 — Four owner decisions, asked and answered
+
+Asked directly and answered by the owner on 2026-09-13. Recorded here verbatim
+in effect, because each one authorises work that was blocked and because a
+decision remembered only in a chat log is a decision nobody can audit.
+
+**Corrections items 6, 8 and 10: signed.** The register edits are applied for
+the routes where dropping an unimplemented declaration is permitted. The nine
+Family and Embryo Analysis routes that G2.2 forbids the `n/a` for are NOT
+edited: the owner chose to have the consent gates BUILT on `/embryo-analysis`,
+`/embryos`, `/embryos/request-data`, `/embryos/upload`, `/family`,
+`/family/[person]`, `/family/[person]/permissions`, `/family/health-picture`
+and `/family/invite`. That is the reading item 7 argued for — the brief's
+position is that those routes must implement the state, so the correction for
+them is to build it rather than to stop declaring it.
+
+**D-103: five statements, not four.** The register's four-item array is the
+thing that changes, not the transaction. The five keys the acceptance already
+records — `age-18-plus`, `mailbox-control`, `no-inviter-access`,
+`identity-not-verified`, `revocable` — stay, because signatures already
+reference them and dropping one would leave stored consent inconsistent with
+the published set. **The owner writes the five sentences.** Until they exist
+the confirm body cannot be built, and that is the right order: the wording a
+person is told they agreed to is not an implementation detail.
+
+**D-100: `jobs.run` is retired from the register.** No dispatcher was planned.
+The five job routes that exist do the work, and the contract sweep stops
+carrying a permanent exception for an endpoint that never existed.
+
+**D-101: the code moves to the register, not the register to the code.**
+`/api/jobs/research-publish` becomes what its entry already describes — a
+due-work drain that publishes what the review queue has approved and takes no
+input. Operator-selected publication was not the intent.
+
+**What is still not decided, and why that is fine.** D-102's locked-permission
+wording and D-103's five sentences are both user-facing copy on consent and
+rights surfaces. Neither was answered here and neither should be invented to
+keep momentum; they are the two places where waiting is cheaper than guessing.
+
+## 2026-09-13 · The approval record the schema had and nothing read
+
+D-101 is closed, and building it turned up something worth writing down: the
+review queue's approval record already existed. `public.template_reviews` has
+been in the schema since `20260831224126_reference_registries_and_constraints`
+with `decision text not null check (decision in ('approve','re_review',
+'retire'))`, a `review_revision`, a reviewer principal and a `decided_at`. Not
+one line of application code has ever read it or written it. The draft summary
+the research pipeline writes even tells the reader it exists — every drafted
+template says it was "reviewed by a human before publication" — while the only
+thing that published a template was a caller naming its slug over HTTP.
+
+So the fix was not "invent a rule for which approved drafts are due", which is
+what the defect row expected. The rule was already specified; it just had no
+reader. A template is due when it sits in the review queue and the newest of
+its review rows decided `approve`. Revisions do the rest for free: a
+`re_review` or a `retire` takes a template back out without deleting the
+approval that came before it, and a later `approve` puts it back.
+
+Two consequences worth being explicit about.
+
+**The old route could publish a draft nobody had reviewed.** That is a bigger
+hole than the register mismatch D-101 was filed as. The authority was a shared
+operator secret, so it was not a privilege escalation — but nothing between
+`research-refresh` drafting a template from an upstream GWAS release and it
+appearing on `/changelog` and in subscribers' inboxes required a human to have
+looked at it. The register said `machine-reviewed-publication-only` and the
+code enforced only `machine`.
+
+**`template_reviews` still has no writer.** Publication is now gated on a row
+that only a service-role client can insert, because the reviewer surface does
+not exist yet. That is the honest state: the gate is real, it is closed, and
+the way through it today is a human with database access. The browser test
+inserts the approval the way a reviewer would and says so. Filed as **D-107**
+for the surface itself — a queue nobody can act on through the product is not
+a review queue, and the four `workerExecutionBindings` checkpoints for this
+route (the aggregate privacy threshold in particular) are still not all
+implemented. Neither is widened into this change: D-086 named exactly that
+mistake, and D-101's scope was the endpoint's authority model.
+
+## 2026-09-13 · One unexplained browser failure, and what was ruled out
+
+`e2e/portrait-no-file.spec.ts:208` failed once, on `a57c938`: the page showed
+a blocking screen where the empty state was expected. It has not recurred —
+three local repeats and CI runs 527 and 529 all pass, eight passes to the one
+failure — and the following were checked and ruled out rather than assumed:
+
+- **This branch's code.** Neither commit in the range touches the portrait
+  page, its data path or the permission rows it reads.
+- **A broken base.** Run 527 is green on `e06b0a9`, the commit the failing run
+  built on.
+- **A collision with a parallel run.** Every account in the fixture is a fresh
+  `randomUUID`, so no other worker or run could hold the same rows.
+- **A cached render.** The page calls `createClient()` and reads cookies, so
+  Next renders it dynamically; there is no cached variant to serve.
+- **A race the test loses.** The assertion polls fourteen times over five
+  seconds before failing.
+
+That leaves it genuinely unexplained, which is why it is written down instead
+of closed. The gap that made it unexplainable is fixed: CI kept no artifacts
+from a failing browser step, so `test-results/` and `playwright-report/` —
+the trace, the screenshot and the DOM at the moment of failure — were gone
+before anyone could look. `.github/workflows/ci.yml` now uploads both on
+failure with a fourteen-day retention. If it happens again there will be
+evidence rather than a second round of elimination.
+
+## 2026-09-13 · A route may now waive a state, and one waiver is forbidden
+
+Corrections items 6, 8 and 10 are signed and applied. The ratchet went 87 → 36
+and proven stayed at 126, which is the whole shape of the event: **51 pairs
+left the register and not one line of test code was written.** Required went
+213 → 162.
+
+Applying them needed a mechanism the register did not have. Until today a
+state could be declared or waived only on a `stateProfile`, which is a group,
+so a group that disagreed with itself had two bad answers: declare the state on
+routes that never render it, or split profiles until they mean nothing. These
+three items are full of that shape. `/settings/people` renders `FeatureNotBuilt`
+while its four `account-management` neighbours are real pages;
+`/settings/consents` proves `empty` on a grant list the others do not have;
+`/embryos/upload` performs no request while `/family/invite`, on the same
+profile, shows a pending state. One profile, three different answers.
+
+So a route may now waive a state its profile supports, in
+`notApplicableStates`, with the reason beside it. Twenty-six routes do. Five
+profiles still gave a state up wholesale where the whole group agreed —
+`empty` off `versioned-document`, `auth-flow`, `restricted-flow` and
+`public-rights-flow`, `processing` off `public-rights-flow`.
+
+**An exemption mechanism is the thing that rots**, which is the argument
+against adding one, so it is guarded rather than trusted. A waiver naming a
+state the profile does not support fails. A waiver with no reason fails. And
+`consent-required` waived on any Family or Embryo Analysis route fails
+outright, whether by profile or by route, because G2.2 forbids that `n/a`
+however well it is argued. Four planted defects, one per rule, and the fourth
+checks that a profile-level waiver is caught on every Family route beneath it
+rather than the first.
+
+That third guard is corrections item 7 turned from a reading into a check.
+Item 7 exists because items 5 and 6 were both measured against the product —
+what each page component does — and neither against the brief, which is the
+thing that says what the product owes. A correction the brief forbids is not a
+correction. That miss cost a re-measurement; the next one costs a failing gate.
+
+**It also moved this change's own count.** Item 10 proposed the clean
+expression `supported: ["jurisdiction-unavailable"]` for
+`public-embryo-analysis`, which would have waived `consent-required` on
+`/embryo-analysis` — a route the owner separately chose to build a consent gate
+on. The profile ships as `["consent-required", "jurisdiction-unavailable"]`
+instead, and the item is signed as sixteen of seventeen with the exception
+written down. Item 6 applied to six routes of its twenty rather than fifteen:
+five had already lost the declaration on 2026-09-12, and nine are the Family
+and Embryo half this guard now protects.
+
+Of the 36 that remain, nine are those gates — product work, task 33 — and 27
+are test work, most of it behind item 11's question about what eight state ids
+actually mean. Nothing left in the ratchet is a register correction.
+
+## 2026-09-13 · The first consent gate was already there
+
+`/family/[person] consent-required` is proven, and nothing was built for it.
+The state is the paused-sharing branch: this person consented and then
+suspended it, `family-sharing-state-v1` keeps every grant row while emptying
+the live set, and the page has been rendering "Sharing with this person is
+paused. Nothing about them shows here until one of you resumes it." for as
+long as the pause has existed.
+
+Corrections item 6 measured this route as rendering no consent refusal, and
+said it had checked three ways rather than one because a negative is easy to
+get wrong: the page component, the call sites of both shared blocking
+components, and the absence of any gate above the route. Each check was
+correct. The conclusion was wrong, because this page renders its refusal
+INLINE and uses neither shared component — so the second check, the one doing
+the work, could not see it. **Carry that into the other eight: read the page's
+own branches, not only the components it might have used.**
+
+What made the pair titleable rather than merely present is the rule the
+health-picture suite wrote down when it declined to claim this state: a
+`consent-required` page names an outstanding consent step and links to where
+it is given; an `empty` page has nothing in it and no step this reader can
+take. Paused passes both halves — the reader is one of the two who can resume,
+and the Permissions link is on screen throughout — and the branch one line
+above it, for a person who never shared, fails the first, because only that
+person can act. Three independent readings now agree on that rule, and it is
+the one to decide the remaining eight by.
+
+Both branches carry `data-slot="person-blocking"` with their state now. They
+render the same shape and mean opposite things, so a title has to settle which
+is on screen from the DOM rather than from a sentence that could be reworded —
+the discipline `/family/portrait/[pairId]` established for its four no-output
+branches.
+
+It is a separate test rather than a second title on the lifecycle test that
+already drove the pause, and the reason is worth keeping: `/family/[person]`
+is a prefix of `/family/[person]/permissions`, so one title carrying both
+paths and both state words would also have proven `/family/[person] complete`,
+which nothing renders. The gate's path anchoring stops a prefix matching a
+longer path, but not two paths written into one sentence.
+
+## 2026-09-13 · The second consent gate, and a pause the empty state was eating
+
+`/family/health-picture consent-required` is proven, and unlike the first one
+it was built rather than found.
+
+The rule came from that page's own `empty` test, which declined to claim this
+state and wrote down why: a `consent-required` page names an outstanding
+consent step and links to where it is given, and an `empty` page has nothing
+in it and no step this reader can take. A pause passes both halves, and the
+empty branch was swallowing it.
+
+`viewerMaySee` reads the LIVE grant set, and a pause empties that set without
+touching a grant row. So a pair who had both turned the health picture on and
+then paused it fell below two columns and met the empty state's two
+sentences: "This page needs two people who have both agreed to be seen side
+by side" and "Each person turns this on from their own account. You cannot
+turn it on for them." **Both are false for a pause.** They did agree, and
+either of them can lift it — including the reader. The page now reads the raw
+grant sets to tell the two apart, says sharing with that person is paused, and
+links to the permissions page where it is resumed.
+
+One detail decided the sentence rather than a preference about copy:
+`family_sharing_pauses` is a row about the PAIR — `account_low_id`,
+`account_high_id`, `ended_at` — with no record of who paused it. So the
+sentence names nobody as its author, which is both the only honest thing it
+can say and the reason it can be said at all without telling one adult
+something new about the other. `/family/[person]` reached the same wording
+from the same fact.
+
+Two of the nine gates are closed. Seven remain, and the reading so far
+suggests they are not alike: `/family` and `/embryos` already render
+per-person and per-cohort waiting lines, but the `/embryos complete` precedent
+says a per-item line does not put a route in a state; `/embryos/upload` is
+blocked on E0; and `/family/invite`, `/family/[person]/permissions` and
+`/embryos/request-data` have no recorded revocable artifact to require at all,
+which may be a genuine conflict with G2.2's blanket prohibition rather than
+a gap to fill.

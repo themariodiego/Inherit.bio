@@ -115,6 +115,23 @@ jobs:
         env:
           INHERIT_DISPOSABLE_LOCAL_E2E: "true"
         run: pnpm e2e
+      # D-106's sibling gap, found while root-causing a browser failure that
+      # could not be reproduced: the blocking screen names which precondition
+      # was missing, Playwright writes that to test-results/error-context.md,
+      # and CI discarded it. An unreproducible failure with its evidence
+      # thrown away costs a whole investigation and still ends in a guess.
+      # Failure only, and every fixture in this suite is synthetic by
+      # construction, so nothing here carries a real person's data.
+      - name: Keep the failing browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-evidence
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
       - name: Clean up only the owned browser runtime
         if: always()
         env:

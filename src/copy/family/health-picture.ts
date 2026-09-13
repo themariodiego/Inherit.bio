@@ -93,6 +93,23 @@ export function needsTwoPeople(shown: number): string {
 export const EACH_TURNS_IT_ON =
   "Each person turns this on from their own account. You cannot turn it on for them.";
 
+/**
+ * Sharing with this person is paused (design §1.4, `consent-required`).
+ *
+ * Distinct from the empty state above, and the difference matters to the
+ * reader: these two DID both turn it on, and `EACH_TURNS_IT_ON` would tell
+ * them to do a thing they have already done. `family_sharing_pauses` is a row
+ * about the pair with no record of who paused it, so this sentence names
+ * neither — it says what a reader can act on, which is that either of them
+ * can resume.
+ */
+export function pausedWith(name: string): string {
+  return `Sharing with ${name} is paused. This page cannot show the two of you side by side until one of you resumes it.`;
+}
+
+/** Where either of them resumes it. */
+export const OPEN_PERMISSIONS_LINK = "Open permissions";
+
 /** A column whose person has added no file yet (design §2.3, cell state 4). */
 export const CELL_NO_FILE = "No file yet";
 

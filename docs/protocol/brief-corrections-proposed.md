@@ -1,6 +1,10 @@
-# Proposed brief corrections — awaiting operator signature
+# Brief and register corrections — proposed, signed and applied
 
-**Status: PROPOSED. Nothing here has been applied to `docs/inherit-v2-brief.md`.**
+**Status, 2026-09-13: items 4, 5, 6, 8, 10 and 12 are SIGNED AND APPLIED.**
+Each of those carries a signature line at its own head saying what was applied
+and what was not. The rest are still proposals and are still unapplied, and
+this document is kept whole rather than pruned: the reasoning behind a signed
+item is the record of why the register says what it now says.
 
 The operator asked for these to be drafted for sign-off rather than made. Each
 item below gives the exact text to replace, the exact replacement, and why.
@@ -334,6 +338,19 @@ affected either way; their absence of a guard is not in question.
 
 ## 6. `consent-required` is declared on twenty routes and implemented on none of them
 
+**SIGNED AND APPLIED 2026-09-13, to six routes rather than twenty.** Five of
+the twenty had already lost the declaration on 2026-09-12, when
+`consent-required` came off the `account-management` profile wholesale. Nine
+are the Family and Embryo Analysis routes item 7 identified, where G2.2 forbids
+the `n/a` outright; the owner chose to build those gates, so they keep the
+declaration and stay unproven until the gates exist. That leaves `/overview`
+and the five `/genome/[subject]*` routes, each now carrying a
+`notApplicableStates` entry with this measurement beside it.
+
+`scripts/route-gate.ts` now FAILS when any Family or Embryo Analysis route
+waives `consent-required`, by profile or by route. Item 7's finding was a
+reading that a later reader could have missed; it is a check now.
+
 **Measured 2026-09-11, by the same method as item 5**, and the result is
 cleaner than that one.
 
@@ -445,6 +462,18 @@ consent gate on every Family route" is a product commitment, not a register
 detail.
 
 ## 8. `empty` and `processing`: the 63 remaining pairs, grouped by profile
+
+**SIGNED AND APPLIED 2026-09-13. All 29.** Four went to profiles that gave the
+state up wholesale — `empty` off `versioned-document`, `auth-flow`,
+`restricted-flow` and `public-rights-flow`, plus `processing` off
+`public-rights-flow`. The seven that a profile could not express, because the
+profile's other routes keep the state, went to per-route
+`notApplicableStates`: `empty` on four of the five `account-management` pages
+(`/settings/consents` keeps it and proves it), `processing` on
+`/settings/people`, and `processing` on `/embryos/upload` and
+`/embryos/request-data`. **`/embryos/upload processing` carries its expiry in
+the register**, in the words this item wrote: when the route it would post to
+lands, the state becomes real again and the waiver must come off.
 
 **Not a proposal, and deliberately not a set of conclusions.** This is a
 measurement, taken 2026-09-12 once `jurisdiction-unavailable` was closed and
@@ -696,6 +725,15 @@ one person learns about another.
 
 ## 10. `auth-flow · complete` is declared on four routes and rendered by two
 
+**SIGNED AND APPLIED 2026-09-13, sixteen of the seventeen.** The one that was
+not is `/embryo-analysis consent-required`: it is a Family or Embryo Analysis
+route, G2.2 forbids that `n/a` outright, and the owner separately chose to
+build the nine gates. So the clean expression this item recommends,
+`supported: ["jurisdiction-unavailable"]`, is one state short of what shipped —
+the profile is now `["consent-required", "jurisdiction-unavailable"]`, and the
+consent pair stays declared and unproven until the gate exists. Everything else
+here applied as written.
+
 Two pairs proposed not-applicable. Small, and included because the reason is
 the one this document keeps returning to.
 
@@ -894,7 +932,135 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
-## Where the 87 unproven pairs stand
+## 12. The `/api/jobs/run` test hook, its two named specs, and its callers are all absent
+
+**Found 2026-09-13, after the operator decided to retire `jobs.run` from the
+register (D-100). The decision stands; this is the step that decision needs
+and neither of us knew about when it was made.**
+
+Brief line 2224 describes the hook affirmatively:
+
+> **Test hook.** `POST /api/jobs/run?kind=…` drains the queue synchronously;
+> it requires the service role or `E2E_TEST_HOOKS=1` and is used by
+> `e2e/revocation.spec.ts`, `e2e/embryo-ingest.spec.ts` and §A.13.
+
+Measured against the tree the same day, and every part of that sentence is
+now false:
+
+| The brief says | The tree holds |
+| --- | --- |
+| `POST /api/jobs/run` | no `src/app/api/jobs/run/` directory |
+| `e2e/revocation.spec.ts` uses it | no such file |
+| `e2e/embryo-ingest.spec.ts` uses it | no such file |
+| — | no caller of `/api/jobs/run` anywhere in `src`, `e2e` or `scripts` |
+
+Line 2277 also builds an assertion on it — "after `POST /api/jobs/run?kind=revoke_purge`,
+a **service-role** query finds zero rows" — inside the description of
+`e2e/revocation.spec.ts`, which does not exist either.
+
+What the suite actually does today is drain through the four job routes that
+are built and registered: `api/jobs/mail`, `api/jobs/retention`,
+`api/jobs/research-publish` and `api/jobs/research-refresh`. The capability
+the hook existed for — not waiting 24 hours inside Playwright — is met by
+those, so nothing is lost by the brief saying so.
+
+**Proposed:** replace the test-hook paragraph at line 2224 with the four job
+routes the suite drains through, and correct line 2277 to name the route that
+performs a purge drain rather than `/api/jobs/run`. Then the register entry
+for `jobs.run` is removed, along with its seven other references
+(`workerExecutionBindings`, the `machine-api-v1` binding, the test-hook
+sentence at register line 368 and the three id lists), and
+`src/lib/jobs/machine-result.test.ts` drops the `UNIMPLEMENTED` exception
+that exists only for this id.
+
+**Why this is not a register tidy-up I can do alone.** The register is derived
+from the brief and pinned to `briefSha256`. Removing an entry the brief
+affirmatively describes would leave the register no longer derived from its
+source — the mirror image of `/api/uploads`, where an entry cannot be ADDED
+because the brief denies the route exists. Same rule, other direction.
+
+**What this does NOT say:** that a synchronous drain hook is a bad idea. If
+one is wanted for tests that do not have another way to advance a queue, the
+correction is to build it and keep the entry. The measurement is only that
+nothing has used it, and that the two specs the brief cites as its users have
+never existed in this repository's history.
+
+---
+
+## 13. Seven of the nine consent gates have nothing to gate on
+
+**Measured 2026-09-13, after building two of the nine. This is the answer to
+the question item 7 asked and nobody had checked.**
+
+Item 7 found that G2.2 forbids the `consent-required` `n/a` on any Family or
+Embryo Analysis route, and concluded that the correction for those nine routes
+is "build the gate, not drop the declaration". The owner chose that. What
+nobody had established is whether each gate CAN exist — whether the product
+has, on each of those routes, a recorded revocable consent that is missing.
+
+Two do, and both are now proven:
+
+| route | the consent | what happened |
+|---|---|---|
+| `/family/[person]` | a directional grant, paused | already rendered; it was implemented and untitled |
+| `/family/health-picture` | the mutual `family.heritability` grant, paused | built; the paused pair was falling into the empty state |
+
+**The other seven have no recorded revocable consent to require, and the
+reason differs by route.** Each was read on 2026-09-13, the page itself and
+not the components it might have used — the mistake item 6 made on
+`/family/[person]`.
+
+| route | read | why the state is unreachable |
+|---|---|---|
+| `/family` | `(family-hub)/family/page.tsx` | Consent here is per person: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The ROUTE-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent, so nothing can put the hub itself into this state. |
+| `/embryos` | `(app)/embryos/page.tsx`, `cohort-card.tsx` | The same shape. `analysisConsent` already renders a waiting line per cohort, and the `/embryos complete` proof was taken on a hub carrying a per-cohort jurisdiction line for exactly this reason: a per-item line is what the page HAS, not a state the page is in. The analysis grant is a property of a cohort; there is no account-level embryo consent. |
+| `/family/invite` | `(app)/family/invite/page.tsx`, 61 lines | A form for inviting an adult. It reads a jurisdiction and nothing else. There is no consent artifact a person must sign before they may invite someone — and inventing one would be adding a product requirement to satisfy a register declaration, which is backwards. |
+| `/family/[person]/permissions` | `(app)/family/[person]/permissions/page.tsx` | This is the page where consent is GIVEN. A consent refusal on it would be circular: the reader would be told to go to the page they are on. Its per-row `onlyTheyCanTurnThisOn` lock is a row state, not a page state, and D-102 already covers its empty-reason defect. |
+| `/embryos/request-data` | `(app)/embryos/request-data/page.tsx`, 81 lines | A letter to print or paste into a clinic's inbox. It reads no cohort, no subject and no consent. Its one render is proven as `complete`. |
+| `/embryos/upload` | `(app)/embryos/upload/page.tsx`, `upload-flow.tsx` | The consent artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist. There is nothing to check before it does. Item 8 already records this route's `processing` waiver as temporary for the same reason. |
+| `/embryo-analysis` | `(marketing)/embryo-analysis/page.tsx`, 36 lines | A public page with one render, already proven as `jurisdiction-unavailable`. The register's own projection for this state on this profile is "show the exact current parent and future-person consent prerequisites before any sign-in or upload action" — which is a panel of copy, not a refusal, and a page with one render cannot also be in a second state. Item 10 proposed the `n/a` for exactly this reason and G2.2 forbids it. |
+
+### What is being asked
+
+Not a licence to drop seven declarations. **One narrow amendment, or an
+explicit instruction to invent.**
+
+G2.2's forbidden list exists to stop a Family or Embryo route quietly
+declaring that consent does not apply to it. That purpose is served on every
+route where consent is a property of the page. It is not served on a route
+where consent is a property of an ITEM the page lists, or where the page is
+the place consent is given, or where no consent artifact exists in the schema
+at all — there the prohibition forces a permanent unproven pair and, worse,
+invites someone to satisfy it by building a refusal nobody asked for.
+
+**Proposed:** G2.2's second forbidden `n/a` reads
+
+> `consent-required` on any Family or Embryo Analysis route
+
+and becomes
+
+> `consent-required` on any Family or Embryo Analysis route that renders a
+> result, a record or a permission of a named person — never on a route whose
+> consent is a property of an item it lists rather than of the page, on the
+> route where that consent is given, or on a route that reads no consent at
+> all. Each exception names, in the register, the item-level state that
+> carries the refusal instead.
+
+Every one of the seven then carries a reason naming what does carry the
+refusal, which is a stronger record than a declaration nothing renders.
+
+**The alternative, stated plainly so it is a choice and not an oversight:**
+leave G2.2 as it is and accept seven permanently unproven pairs. That is
+defensible — an unproven pair is honest and a false one is not — and it costs
+only that the ratchet never reaches zero. What is NOT acceptable, and what
+this item exists to prevent, is closing them by building a consent
+requirement the product does not have.
+
+Filed as **D-108**.
+
+---
+
+## Where the 34 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -904,26 +1070,60 @@ fails if the three bold figures below disagree with the register, so the claim
 holds because something checks it. It exists because the question "what does
 signing this unlock?" had no answer anywhere.
 
+**Items 6, 8 and 10 were signed on 2026-09-13 and applied the same day.** 51 of
+the 60 pairs they proposed left the register; the ratchet went 87 → 36, and not
+one line of test code was written for it, because every one of those 51 was the
+register describing behaviour the product does not have. What is left of those
+proposals is the nine that G2.2 forbids dropping.
+
 | | pairs | what moves them |
 | --- | ---: | --- |
-| Proposed not-applicable in item 6 (`consent-required`) | 15 | one signature |
-| Proposed not-applicable in item 8 | 29 | one signature |
-| Proposed not-applicable in item 10 | 17 | one signature |
-| less one pair proposed twice | −1 | see below |
-| **Awaiting a signature** | **60** | |
+| Applied from item 6 (`consent-required`, the eleven non-Family routes) | 6 | done 2026-09-13 |
+| Applied from item 8 | 29 | done 2026-09-13 |
+| Applied from item 10 | 16 | done 2026-09-13 |
+| **Retired from the register** | **51** | |
+| Item 6's Family and Embryo half | 7 | **an owner decision, not product work — see item 13** |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **87** | |
+| **Total unproven** | **34** | |
 
-Signing all three proposals would take the ratchet from 87 to 27 without a line
-of test code, because every one of those 60 is the register describing
-behaviour the product does not have.
+Building the remaining seven consent gates would
+take the ratchet from 34 to 27, and **item 13 measures that none of the seven
+can be built without inventing a consent the product does not have.** So this
+row is an owner decision after all: amend G2.2's forbidden list, or accept
+seven permanently unproven pairs. Either answer is honest; closing them by
+building a refusal nobody asked for is not.
 
-**`/embryo-analysis consent-required` is proposed twice** — once in item 6, as
+**Two of the nine closed on 2026-09-13, and only one of them was built.**
+`/family/[person] consent-required` is the paused-sharing branch, which this
+item measured as absent because it checked the two shared blocking components
+and this page renders its refusal inline. The measurement's three checks were
+each correct and the conclusion was wrong. Worth carrying into the rest: read
+the page's own branches, not only the components it might have used.
+`/family/health-picture consent-required` was genuinely missing, and the same
+pause was the cause — the page reads the LIVE grant set, which a pause
+empties, so a paused pair fell into the empty state and was told to turn on a
+thing they had already turned on.
+
+**Item 6 applied to six routes, not fifteen.** Five of its twenty —
+`/settings`, `/settings/consents`, `/settings/copilot`, `/settings/data` and
+`/settings/people` — had already lost the declaration on 2026-09-12 when
+`consent-required` came off the `account-management` profile wholesale, so the
+signature found nothing to drop there. Nine more are the Family and Embryo
+routes item 7 identified, where **G2.2 forbids the `n/a` outright** and the
+owner chose to build the gates. That leaves `/overview` and the five
+`/genome/[subject]*` routes. `scripts/route-gate.ts` now FAILS on a
+`consent-required` waiver for any Family or Embryo Analysis route, so item 7's
+finding is a check rather than a reading, and this decision cannot be quietly
+reversed.
+
+**`/embryo-analysis consent-required` was proposed twice** — once in item 6, as
 one of the twenty routes that declare the state and never render it, and again
 in item 10, among the four that reduce this profile to its single render. Both
-readings are right and they agree, so nothing is in conflict; but it is one
-pair, not two, and a signature on both items must not be read as retiring two.
-Found while counting this table, which is the reason to build one.
+readings are right and they agree; but it is one pair, not two, and it is a
+Family or Embryo Analysis route, so neither signature retired it. The profile
+is now `supported: ["consent-required", "jurisdiction-unavailable"]` rather
+than the single state item 10 proposed. Found while counting this table, which
+is the reason to build one.
 
 ### And of the 27 that are open, 25 wait on item 11
 

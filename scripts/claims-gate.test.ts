@@ -116,6 +116,14 @@ function plant(overrides: Overrides): string {
   ) as LedgerFile;
   overrides.ledger?.(ledger);
   writeFileSync(path.join(root, LEDGER), JSON.stringify(ledger));
+
+  // The archaic-ranking allowlist (brief §7.6) is part of a valid repository,
+  // so a fixture repository carries the real one.
+  mkdirSync(path.join(root, "data/gates"), { recursive: true });
+  cpSync(
+    path.join(REPOSITORY_ROOT, "data/gates/archaic-allowlist.json"),
+    path.join(root, "data/gates/archaic-allowlist.json"),
+  );
   return root;
 }
 
@@ -619,6 +627,11 @@ describe("the claims gate holds the registers to the product", () => {
     // A ledger recording nothing, which is what an empty repository would
     // honestly have: the floor guards are what must fail here, not the read.
     writeFileSync(path.join(root, LEDGER), "{}");
+    mkdirSync(path.join(root, "data/gates"), { recursive: true });
+    writeFileSync(
+      path.join(root, "data/gates/archaic-allowlist.json"),
+      JSON.stringify({ sentences: [] }),
+    );
     const { failures } = runClaimsGate(root);
     // An empty scan reports nothing wrong with the product, which is exactly
     // the failure mode the floor guards exist to catch.

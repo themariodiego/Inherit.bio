@@ -91,6 +91,7 @@ const SOURCE_TREE = "src";
 const APP = "src/app";
 const CLAIM_COMPONENT = "src/components/claims/claim.tsx";
 const LEDGER = "docs/claims-divergence.json";
+const ARCHAIC_ALLOWLIST = "data/gates/archaic-allowlist.json";
 
 /** The `type` enum, verbatim from G1.11. */
 const CITATION_TYPES = ["pmid", "doi", "statute", "registry", "regulator", "dataset"] as const;
@@ -193,6 +194,73 @@ const DESIGNATED_SURFACES: DesignatedSurface[] = [
     rendersMarkup: true,
   },
 ];
+
+/**
+ * Brief §7.6. Archaic ancestry is not a score, so no user-visible surface may
+ * rank it: `/more Neanderthal than/i` and `/Neanderthal (percentile|rank|score)/i`
+ * both fail. Two sentences are meant to be exempt — the refusal on
+ * `/science/limits` and the no-ranking sentence on `/science#ancestry` — and
+ * they are pinned by FULL SENTENCE in `data/gates/archaic-allowlist.json`,
+ * never by file glob, so moving the wording to another file does not smuggle
+ * it past. Each pinned sentence may occur exactly once in the whole scanned
+ * tree; a second copy of an exempt sentence fails like any new occurrence.
+ *
+ * The guard is deliberately in place before the estimate it constrains. The
+ * card is withheld today, so the allowlist is empty and the rule is at its
+ * strongest; the pins arrive with the pages that need them.
+ */
+export const ARCHAIC_RANKING_PATTERNS: readonly RegExp[] = [
+  /more Neanderthal than/i,
+  /Neanderthal (percentile|rank|score)/i,
+];
+
+export interface ArchaicSource {
+  /** Repository-relative, for the failure line. */
+  path: string;
+  text: string;
+}
+
+/**
+ * Every ranking match not covered by a pinned sentence, plus every pinned
+ * sentence that occurs more than once or not at all. `sentences` is the
+ * allowlist exactly as the file lists it.
+ */
+export function archaicFindings(sources: ArchaicSource[], sentences: string[]): string[] {
+  const findings: string[] = [];
+  const occurrences = new Map<string, number>(sentences.map((sentence) => [sentence, 0]));
+
+  for (const source of sources) {
+    // Where an exempt sentence sits in this file, so a match inside one is
+    // read as part of it rather than as a new claim.
+    const exempt: { start: number; end: number }[] = [];
+    for (const sentence of sentences) {
+      if (!sentence) continue;
+      for (let at = source.text.indexOf(sentence); at !== -1; at = source.text.indexOf(sentence, at + 1)) {
+        exempt.push({ start: at, end: at + sentence.length });
+        occurrences.set(sentence, (occurrences.get(sentence) ?? 0) + 1);
+      }
+    }
+    for (const pattern of ARCHAIC_RANKING_PATTERNS) {
+      const sweep = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+      for (let hit = sweep.exec(source.text); hit; hit = sweep.exec(source.text)) {
+        const start = hit.index;
+        const end = start + hit[0].length;
+        if (exempt.some((range) => start >= range.start && end <= range.end)) continue;
+        const line = source.text.slice(0, start).split("\n").length;
+        findings.push(`${source.path}:${line}: archaic ancestry is not a score (brief §7.6): ${hit[0]}`);
+      }
+    }
+  }
+
+  for (const [sentence, count] of occurrences) {
+    if (count === 0) {
+      findings.push(`${ARCHAIC_ALLOWLIST} pins a sentence that appears nowhere: ${sentence}`);
+    } else if (count > 1) {
+      findings.push(`${ARCHAIC_ALLOWLIST} pins one occurrence but the tree holds ${count}: ${sentence}`);
+    }
+  }
+  return findings;
+}
 
 export type ClaimsLedger = Record<string, string[]>;
 
@@ -354,6 +422,7 @@ export interface ClaimsGateResult {
   templateCitationCount: number;
   registeredTemplateCitationCount: number;
   designatedSurfaceCount: number;
+  archaicScannedFileCount: number;
 }
 
 /** A word for the ≤ 25-word quote limit: a whitespace-separated token carrying a letter or digit. */
@@ -1093,6 +1162,29 @@ export function runClaimsGate(
   }
   compare("designated surface", surfaceStatus);
 
+  // Archaic ancestry is never ranked (brief §7.6). The sweep is the
+  // user-visible tree: every source module the walker already collected, plus
+  // the report templates. The brief itself and this script quote the two
+  // patterns to specify them, and neither is a surface a reader can reach.
+  const archaicAllowlist = JSON.parse(read(ARCHAIC_ALLOWLIST)) as { sentences?: unknown };
+  const pinnedSentences = Array.isArray(archaicAllowlist.sentences)
+    ? archaicAllowlist.sentences.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  if (!Array.isArray(archaicAllowlist.sentences)) {
+    failures.push(`${ARCHAIC_ALLOWLIST} must carry a sentences array`);
+  }
+  const archaicSources: ArchaicSource[] = [
+    ...markupFiles.map((file) => ({
+      path: path.relative(repositoryRoot, file),
+      text: readFileSync(file, "utf8"),
+    })),
+    ...templateFiles.map((name) => ({
+      path: path.join(TEMPLATES, name),
+      text: read(path.join(TEMPLATES, name)),
+    })),
+  ];
+  failures.push(...archaicFindings(archaicSources, pinnedSentences));
+
   // Floor guards. A reader that silently found nothing must not read as a
   // clean product, so each input is required to be roughly the size it is.
   if (citations.length < 15) failures.push(`citation register holds ${citations.length} sources, expected over 15`);
@@ -1109,6 +1201,9 @@ export function runClaimsGate(
   if (pageFiles.size < 50) failures.push(`page walker found ${pageFiles.size} page modules, expected over 50`);
   if (tables.size < 50) failures.push(`migration reader found ${tables.size} tables, expected over 50`);
   if (!existsSync(claimComponent)) failures.push(`the shared claim component ${CLAIM_COMPONENT} does not exist`);
+  if (archaicSources.length < 200) {
+    failures.push(`archaic sweep read ${archaicSources.length} files, expected over 200`);
+  }
 
   return {
     failures,
@@ -1126,6 +1221,7 @@ export function runClaimsGate(
     templateCitationCount,
     registeredTemplateCitationCount,
     designatedSurfaceCount: DESIGNATED_SURFACES.length,
+    archaicScannedFileCount: archaicSources.length,
   };
 }
 
@@ -1146,7 +1242,8 @@ function main() {
       `${result.registeredTemplateCitationCount} of ${result.templateCitationCount} template citations in the ` +
       `register, ${result.provenanceLiteralCount} provenance expressions and ${result.markedElementCount} claim ` +
       `or figure elements read across ${result.scannedMarkupFileCount} modules, ` +
-      `${result.designatedSurfaceCount} designated surfaces checked`,
+      `${result.designatedSurfaceCount} designated surfaces checked, ` +
+      `${result.archaicScannedFileCount} files swept for archaic ranking`,
   );
 }
 

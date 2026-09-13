@@ -169,11 +169,26 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
           <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
         </section>
       ) : person.sharing === "paused" ? (
-        <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
+        // Two no-output branches one line apart, and they mean opposite
+        // things: this person consented and then suspended it, and the one
+        // below never consented at all. They are marked so a reader of the
+        // DOM — and a browser test naming the state — can tell which is on
+        // screen, exactly as `/family/portrait/[pairId]` marks its four.
+        <p
+          role="status"
+          data-slot="person-blocking"
+          data-state="consent-required"
+          className="max-w-prose text-base leading-relaxed text-ink"
+        >
           {PAUSED_BODY}
         </p>
       ) : layers.length === 0 ? (
-        <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
+        <p
+          role="status"
+          data-slot="person-blocking"
+          data-state="empty"
+          className="max-w-prose text-base leading-relaxed text-ink"
+        >
           {nothingSharedYet(person.displayLabel)}
         </p>
       ) : gated ? (

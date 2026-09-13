@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Brief 7.6. The claims gate refuses /more Neanderthal than/i and /Neanderthal (percentile|rank|score)/i on every user-visible surface. Two sentences are meant to be exempt: the refusal sentence on /science/limits and the no-ranking sentence on /science#ancestry. They are pinned here by full sentence, never by file glob, and each may occur exactly once in the whole scanned tree.",
+  "status": "empty_until_the_archaic_estimate_and_its_two_sentences_exist",
+  "empty_because": "Neither sentence has been written, because the estimate they qualify is withheld: src/copy/ancestry.ts NEANDERTHAL_BODY says Inherit has not built and licence-checked the marker list this needs. Pinning a sentence that does not exist would be inventing the wording of a refusal. The list stays empty, which makes the rule strictly stronger — no occurrence is permitted anywhere — and the two entries are added by whoever writes those pages.",
+  "sentences": []
+}

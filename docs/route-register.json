@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "f686d0400cda0ea5dcb5a16593f3839a29170cba94aeedd65f712ad28f5e5d4f",
+  "briefSha256": "ef61154015c1768e622bba0ae1302a7b3e37c4cd3cde24d9d42fec8f12498961",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -179,7 +179,6 @@
         "policyResolvers.analysis-eligibility-v1",
         "policyContracts.copilot-context-v1",
         "workerExecutionBindings.self-hosted-worker-claim-and-execution",
-        "workerExecutionBindings.jobs.run",
         "workerExecutionBindings.embryo-sanitization",
         "workerExecutionBindings.export-generation"
       ]
@@ -365,7 +364,7 @@
       "perEmbryoPartialFailure": "split_cohort_vcf-and-score_embryo-process-each-embryo-in-a-separate-transaction; for-split_cohort_vcf-one-current-ordinal-QC-failure-deletes-only-that-ordinals-partial-or-pending-source-and-writes-one-attempt-owned-worker-only-unreadable-provisional-QC-marker-with-a-closed-named-reason-from-embryo-autosomal-only-v1.qcProjection-then-continues-and-only-the-whole-ordinal-terminal-transaction-promotes-that-marker-to-sourceState-qc_fail_no_source-and-the-brief-required-embryoStatus-qc_fail-with-no-source-or-result-cells-and-sets-the-job-partial-true; score_embryo-may-commit-its-qc_fail-result-column-under-its-own-current-published-source-set-transaction; stale-binding-cancellation-or-retry-exhaustion-is-not-an-ordinal-QC-failure-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-fragment-or-attempt-owned-row-delete-with-zero-publication; no-blank-or-omitted-embryo-column-is-permitted",
       "progress": "write-progress-at-most-once-per-two-seconds-and-progress_note-only-as-one-closed-stage-ID-from-the-kind-implementation; sample-label-subject-cohort-file-genotype-result-error-free-text-and-private-counts-are-forbidden",
       "idempotencyVerification": "fixtures-must-prove-three-distinct-score_embryo-output_kind-values-over-the-same-cohort-source-set-create-three-distinct-keys-and-jobs-while-an-identical-full-tuple-replays-one-job; revoke-then-regrant-lifecycle-or-purpose-revision-change-computation_revision-change-every-embryo-basis-case-or-five-set-membership-revision-change-and-every-donor-slot-artifact-attribution-or-explicit-classification-change-must-create-new-keys-even-with-identical-genetic-bytes; an-injected-hash-collision-with-a-different-full-tuple-fails-closed",
-      "testHook": "jobs.run-may-synchronously-drain-only-after-its-registered-service-role-or-nonproduction-E2E_TEST_HOOKS-authentication-and-production-startup-refuses-when-E2E_TEST_HOOKS-is-set",
+      "testHook": "the-browser-suite-advances-a-queue-only-by-posting-to-a-registered-job-route-under-that-routes-own-machine-authentication; no-synchronous-drain-endpoint-exists-and-production-startup-refuses-when-E2E_TEST_HOOKS-is-set",
       "dispatchResolver": "worker-job-dispatch-v1",
       "contracts": [
         "worker-job-dispatch-v1",
@@ -7445,32 +7444,6 @@
         "retry-or-terminalize"
       ]
     },
-    "jobs.run": {
-      "executionProfile": "workerExecutionBindings.self-hosted-worker-claim-and-execution",
-      "resolver": "worker-job-dispatch-v1",
-      "databaseAuthorization": "resource-authorization-v1",
-      "enqueueAndExecutionContract": "worker-job-enqueue-v1",
-      "ordinarySubjectSourceGate": "policyContracts.genetic-file-ingest-v1.ordinarySubjectSingleSample",
-      "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
-      "conditionalBuildContract": "genome-build-inference-v1",
-      "conditionalBuildApplicability": "pgt_table-laboratory-table-embryo-ingest-only",
-      "contracts": [
-        "genetic-file-ingest-v1",
-        "canonical-source-publication-v1",
-        "genome-build-inference-v1",
-        "genome-liftover-v1",
-        "worker-job-enqueue-v1",
-        "worker-job-dispatch-v1",
-        "embryo-basis-authority-v1",
-        "embryo-donor-attribution-v1"
-      ],
-      "checkpoints": [
-        "claim",
-        "sourceRead",
-        "derivedWrite-or-purgeDeleteBatch",
-        "retry-or-terminalize"
-      ]
-    },
     "embryo-sanitization": {
       "jobKind": {
         "const": "split_cohort_vcf"
@@ -7868,7 +7841,6 @@
         "api.subject-access-request",
         "api.future-person-claim",
         "api.future-person-identity-profile",
-        "jobs.run",
         "jobs.annotation-refresh",
         "jobs.research-publish",
         "jobs.research-refresh",
@@ -8053,7 +8025,6 @@
       "slots": {
         "routeId": {
           "enum": [
-            "jobs.run",
             "jobs.annotation-refresh",
             "jobs.research-publish",
             "jobs.research-refresh",
@@ -9116,7 +9087,6 @@
     ]
   },
   "machineAuthBindings": {
-    "jobs.run": "machine-api-v1",
     "jobs.annotation-refresh": "machine-api-v1",
     "jobs.research-publish": "machine-api-v1",
     "jobs.research-refresh": "machine-api-v1",
@@ -12608,10 +12578,6 @@
         "invalid-request-v1",
         "jurisdiction-write-v1"
       ],
-      "jobs.run": [
-        "invalid-request-v1",
-        "machine-job-result-v1"
-      ],
       "jobs.annotation-refresh": [
         "machine-job-result-v1"
       ],
@@ -12705,15 +12671,15 @@
     },
     "public-embryo-analysis": {
       "supported": [
-        "empty",
-        "processing",
-        "partial-coverage",
-        "complete",
-        "not-covered",
         "consent-required",
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
+        "empty": "/embryo-analysis is 35 lines of public copy with one link styled as a button. No form, no state, no fetch. Corrections item 8, signed 2026-09-13.",
+        "processing": "The same 35 lines start nothing. Corrections item 8, signed 2026-09-13.",
+        "complete": "The page's one render is already proven as jurisdiction-unavailable. Counting the same render twice would inflate the proven column without proving anything. Corrections item 10, signed 2026-09-13.",
+        "not-covered": "No file, no viewer, no coverage: the page describes the catalog, not a person. Corrections item 10, signed 2026-09-13.",
+        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
         "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
       },
       "zeroUserDataRule": "every-state-is-a-public-educational-projection-selected-from-committed-copy-and-the-current-public-jurisdiction-catalog-with-zero-account-subject-file-result-cookie-or-genetic-data-fetch",
@@ -12729,10 +12695,10 @@
     },
     "versioned-document": {
       "supported": [
-        "empty",
         "complete"
       ],
       "notApplicable": {
+        "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to “No change summary was recorded.” for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
         "processing": "A versioned document performs no asynchronous user-data processing.",
         "partial-coverage": "A versioned document renders no uploaded-file result.",
         "not-covered": "A versioned document renders no uploaded-file result.",
@@ -12743,11 +12709,11 @@
     },
     "auth-flow": {
       "supported": [
-        "empty",
         "processing",
         "complete"
       ],
       "notApplicable": {
+        "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders “Check your email”, which is a complete shape. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "Authentication does not render an uploaded-file result.",
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
@@ -12785,13 +12751,13 @@
     },
     "restricted-flow": {
       "supported": [
-        "empty",
         "processing",
         "complete",
         "consent-required",
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
+        "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
         "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
@@ -12813,11 +12779,11 @@
     },
     "public-rights-flow": {
       "supported": [
-        "empty",
-        "processing",
         "complete"
       ],
       "notApplicable": {
+        "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is “Claims are not open yet”, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its “empty” word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
+        "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs — a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
@@ -13366,6 +13332,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "auth-flow",
+      "notApplicableStates": {
+        "complete": "Success calls router.push() to the next destination (sign-in/page.tsx:39) and the route renders no outcome of its own. What the reader sees next is /overview or the requested destination, whose own complete is proven separately. Titling complete here would certify a render that does not exist. Corrections item 10, signed 2026-09-13."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -13402,6 +13371,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "auth-flow",
+      "notApplicableStates": {
+        "complete": "Success calls router.push() to /overview (reset-password/page.tsx:30) and the route renders no outcome of its own. Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -13414,6 +13386,9 @@
       "surface": "hub",
       "width": "72rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -13426,6 +13401,12 @@
       "surface": "hub",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
+        "partial-coverage": "The hub renders tiles, a file count and a link per tool. It never renders a result, so there is nothing that could be partly covered. Corrections item 10, signed 2026-09-13.",
+        "not-covered": "The same: coverage is a property of a report against a file, and this page shows no report. Corrections item 10, signed 2026-09-13.",
+        "empty": "It has no empty render. For an own record all three tiles are unconditional; for a relative's record resolveSubjectRoute refuses the page outright when nothing is granted (anyOf reports.monogenic, reports.polygenic, ancestry) rather than serving an empty hub, which is deliberate because an empty hub would confirm the record exists. Corrections item 10, signed 2026-09-13."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "subject-route-v1"
@@ -13468,6 +13449,9 @@
       "surface": "reading",
       "width": "44rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "subject-route-v1"
@@ -13484,6 +13468,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "subject-route-v1"
@@ -13500,6 +13487,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "subject-route-v1"
@@ -13516,6 +13506,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "subject-route-v1"
@@ -13886,6 +13879,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -13913,6 +13909,9 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "processing": "Its copy button writes to the clipboard, which is not a network request. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -14060,6 +14059,10 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "own-product-result",
+      "notApplicableStates": {
+        "not-covered": "A conversation. Its answers cite reports that have coverage, but the page renders no coverage state of its own — read 2026-09-13, the word coverage does not appear in it. Corrections item 10, signed 2026-09-13.",
+        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13."
+      },
       "policy": {
         "mode": "resolved",
         "parameterResolver": "copilot-route-scope-v1",
@@ -14083,6 +14086,10 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "own-product-result",
+      "notApplicableStates": {
+        "not-covered": "A list of the account's files, with names, sizes and statuses. No report, so no coverage. Corrections item 10, signed 2026-09-13.",
+        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13."
+      },
       "policy": {
         "contracts": [
           "resource-authorization-v1",
@@ -14101,6 +14108,11 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "own-product-result",
+      "notApplicableStates": {
+        "not-covered": "The add-a-file flow. Nothing has been read yet, let alone covered. Corrections item 10, signed 2026-09-13.",
+        "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
+        "empty": "24 lines: a header, OwnUploadEntry and a back link, all unconditional. There is no length-zero branch to be empty. Corrections item 10, signed 2026-09-13."
+      },
       "policy": {
         "mode": "resolved",
         "resolver": "upload-class-v1"
@@ -14117,6 +14129,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "account-management",
+      "notApplicableStates": {
+        "empty": "Read 2026-09-12: the page renders fixed sections with no length-zero branch. Corrections item 8, signed 2026-09-13."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -14129,6 +14144,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "account-management",
+      "notApplicableStates": {
+        "empty": "Read 2026-09-12: the page renders fixed sections with no length-zero branch. Corrections item 8, signed 2026-09-13."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -14141,6 +14159,9 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "account-management",
+      "notApplicableStates": {
+        "empty": "Read 2026-09-12: the page renders fixed sections with no length-zero branch. Corrections item 8, signed 2026-09-13."
+      },
       "policy": {
         "mode": "provider-and-runtime-settings",
         "transportAvailabilityResolver": "copilot-transport-availability-v1",
@@ -14164,6 +14185,11 @@
       "surface": "standard",
       "width": "64rem",
       "stateProfile": "account-management",
+      "notApplicableStates": {
+        "empty": "The route renders FeatureNotBuilt unconditionally. Corrections item 8, signed 2026-09-13.",
+        "processing": "The route performs no request. Corrections item 8, signed 2026-09-13.",
+        "complete": "A page that is not built has no complete state; the route renders FeatureNotBuilt and nothing else. Corrections item 10, signed 2026-09-13."
+      },
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -19131,51 +19157,6 @@
       },
       "successResponseContract": "jurisdiction-write-v1",
       "disposition": "kept"
-    },
-    {
-      "id": "jobs.run",
-      "path": "/api/jobs/run",
-      "kind": "endpoint",
-      "domain": "jobs",
-      "auth": "method-specific",
-      "methods": [
-        "POST"
-      ],
-      "requestContract": {
-        "body": "forbidden"
-      },
-      "queryContract": {
-        "closed": {
-          "kind": "required-one-of-worker-job-dispatch-v1-matrix-kind"
-        },
-        "unknownMissingOrInvalid": "invalid-request-v1"
-      },
-      "methodPolicies": {
-        "POST": {
-          "authAlternatives": [
-            {
-              "all": [
-                "authenticated-service-role-platform-credential"
-              ]
-            },
-            {
-              "all": [
-                "valid-jobs-secret",
-                "E2E_TEST_HOOKS=1",
-                "environment-is-not-production"
-              ]
-            }
-          ],
-          "booleanFlagsAloneNeverAuthenticate": true,
-          "productionWhenTestHooksEnabled": "refuse-start",
-          "execution": "synchronous-drain",
-          "dispatchResolver": "worker-job-dispatch-v1",
-          "workerBinding": "workerExecutionBindings.jobs.run"
-        }
-      },
-      "stateProfile": "endpoint",
-      "disposition": "kept",
-      "successResponseContract": "machine-job-result-v1"
     },
     {
       "id": "jobs.annotation-refresh",

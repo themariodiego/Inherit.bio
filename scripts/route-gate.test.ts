@@ -70,10 +70,88 @@ describe("the route gate holds the register to the code", () => {
     // nine `stateProfiles`; then `consent-required` and `jurisdiction-unavailable`
     // came off `account-management`; then `/files`, `/files/upload` and
     // `/copilot/[scope]` moved to `own-product-result`, which is `product-result`
-    // without `jurisdiction-unavailable`. Pinned exactly rather than as a floor, so
+    // without `jurisdiction-unavailable`. 213 -> 162 on 2026-09-13: corrections
+    // items 6, 8 and 10, five profiles giving a state up wholesale and 26 routes
+    // waiving one their profile keeps. Pinned exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(213);
+    expect(result.requiredStateCount).toBe(162);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
+  });
+
+  /**
+   * A route may waive a state its profile supports (`notApplicableStates`).
+   * That is an exemption mechanism, so these three are the whole reason it is
+   * allowed to exist: a waiver must waive something, must say why, and must
+   * not waive the one n/a G2.2 forbids outright.
+   */
+  it("fails when a route waives a state its profile does not support", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as Route[]).find((entry) => entry.id === "settings.people")!;
+        (route as Route & { notApplicableStates: Record<string, string> })
+          .notApplicableStates["jurisdiction-unavailable"] = "A reason long enough to pass the length check.";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "route state exemption: /settings/people waives jurisdiction-unavailable, which its " +
+        "account-management profile does not support. A waiver with nothing to waive is a " +
+        "stale exemption; remove it.",
+    );
+  });
+
+  it("fails when a route waives a state without writing down why", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as Route[]).find((entry) => entry.id === "settings.people")!;
+        (route as Route & { notApplicableStates: Record<string, string> })
+          .notApplicableStates.complete = "not built";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "route state exemption: /settings/people waives complete without saying why. " +
+        "An exemption whose reason nobody wrote down is one nobody can review.",
+    );
+  });
+
+  // Corrections item 7: items 5 and 6 were both measured against the product
+  // and neither against the brief, and G2.2 forbids this exact n/a. The miss
+  // is a gate failure now rather than a reading.
+  it("fails when a Family or Embryo route waives consent-required, which G2.2 forbids", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as Route[]).find((entry) => entry.id === "family.health-picture")!;
+        (route as Route & { notApplicableStates?: Record<string, string> }).notApplicableStates = {
+          "consent-required": "The page never renders a consent refusal, measured 2026-09-11.",
+        };
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "route state exemption: /family/health-picture waives consent-required, and G2.2 forbids " +
+        "that n/a on any Family or Embryo Analysis route outright. The correction for these " +
+        "routes is to build the gate, not to stop declaring it.",
+    );
+  });
+
+  it("fails when a profile waives consent-required for the Family routes on it", async () => {
+    const root = plant({
+      register: (register) => {
+        const profile = (register.stateProfiles as Record<string, { supported: string[]; notApplicable: Record<string, string> }>)["restricted-flow"];
+        profile.supported = profile.supported.filter((state) => state !== "consent-required");
+        profile.notApplicable["consent-required"] = "None of the four routes renders a consent refusal.";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    // Every Family and Embryo route on the profile, not just the first.
+    for (const routePath of ["/family/invite", "/family/[person]/permissions", "/embryos/upload", "/embryos/request-data"]) {
+      expect(failures).toContain(
+        `route state exemption: ${routePath} waives consent-required, and G2.2 forbids ` +
+          "that n/a on any Family or Embryo Analysis route outright. The correction for these " +
+          "routes is to build the gate, not to stop declaring it.",
+      );
+    }
   });
 
   it("fails when a route exports a verb the register does not declare", async () => {
@@ -308,7 +386,7 @@ describe("the detectors the gate is built from", () => {
 describe("the corrections table agrees with the register it claims to be counted from", () => {
   const document = readFileSync(path.join(REPOSITORY_ROOT, "docs/protocol/brief-corrections-proposed.md"), "utf8");
   const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8")) as {
-    routes: { path: string; stateProfile?: string }[];
+    routes: { path: string; stateProfile?: string; notApplicableStates?: Record<string, string> }[];
     stateProfiles: Record<string, { supported?: string[] }>;
   };
   const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8")) as {
@@ -319,11 +397,20 @@ describe("the corrections table agrees with the register it claims to be counted
   let unproven = 0;
   for (const route of register.routes) {
     for (const state of register.stateProfiles[route.stateProfile ?? ""]?.supported ?? []) {
+      if (state in (route.notApplicableStates ?? {})) continue;
       if (!proven.has(`${route.path} ${state}`)) unproven += 1;
     }
   }
-  /** Awaiting a signature: items 6, 8 and 10, less the one pair proposed twice. */
-  const AWAITING_SIGNATURE = 60;
+  /**
+   * Item 6's Family and Embryo half: nine routes that declare
+   * `consent-required` and render no refusal, where G2.2 forbids the n/a and
+   * the owner chose to build the gates instead. `/family/[person]` and
+   * `/family/health-picture` left this set on 2026-09-13 — the first was
+   * implemented and untitled, the second was built — so seven remain. It is the last part of items
+   * 6, 8 and 10 that has not been applied, and the only part of this number a
+   * signature could ever have moved. Everything else open is test work.
+   */
+  const CONSENT_GATES_TO_BUILD = 7;
 
   it("states the current total in its heading and its total row", () => {
     expect(unproven, "the register must hold at least one unproven pair for this to mean anything").toBeGreaterThan(0);
@@ -331,8 +418,8 @@ describe("the corrections table agrees with the register it claims to be counted
     expect(document).toContain(`| **Total unproven** | **${unproven}** | |`);
   });
 
-  it("states an open count that is the total less the pairs awaiting a signature", () => {
-    const open = unproven - AWAITING_SIGNATURE;
+  it("states an open count that is the total less the consent gates still to build", () => {
+    const open = unproven - CONSENT_GATES_TO_BUILD;
     expect(document).toContain(`| **Genuinely open** | **${open}** |`);
     expect(document).toContain(`### And of the ${open} that are open,`);
     expect(document).toContain(`take the ratchet from ${unproven} to ${open}`);

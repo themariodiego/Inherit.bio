@@ -96,7 +96,9 @@ Vercel Cron (daily on the demo) hits `JOBS_SECRET`/`CRON_SECRET`-protected
 routes; self-hosters can call the same routes from any scheduler. The
 research pipeline records upstream release keys in `research_releases`,
 drafts `review` templates (fixture-drivable for tests), and publishes via
-`/api/jobs/research-publish`.
+`/api/jobs/research-publish`. That route takes no input (D-101): it drains
+the templates a human reviewer approved in `template_reviews`, oldest
+approval first, and the caller cannot name one.
 
 ## Worker (Tier 3)
 

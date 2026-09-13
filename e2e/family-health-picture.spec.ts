@@ -815,6 +815,62 @@ test("/family/health-picture not-covered: with no classified position at all, th
 });
 
 /**
+ * `/family/health-picture consent-required`, and it is the state the test
+ * below deliberately did NOT claim. That one settled the rule: a
+ * `consent-required` page names an outstanding consent step and links to
+ * where it is given, and an `empty` page has nothing in it and no step this
+ * reader can take.
+ *
+ * A pause passes both halves and the empty branch was swallowing it. Both
+ * adults DID turn this on; `family_sharing_pauses` suspends the live set
+ * without touching a grant row, so the pair fell out of the shared list and
+ * the page told them to do the thing they had already done - "Each person
+ * turns this on from their own account. You cannot turn it on for them." -
+ * which is false twice over for a pause either of them can lift.
+ *
+ * The pause row is about the PAIR and records nobody as its author, so the
+ * sentence names neither. It says what the reader can act on.
+ *
+ * Restored before the test below, which needs both directions live to revoke
+ * one of them.
+ */
+test("/family/health-picture consent-required: a paused pair is told sharing is paused and where to resume it, not that nobody can act", async ({ page }) => {
+  await signIn(page, A.email, A.password);
+  await page.goto(`/family/s-${invitedSubjectB}/permissions`);
+  await page.getByRole("button", { name: "Pause sharing" }).click();
+  await expect(page.getByRole("button", { name: "Resume sharing" })).toBeVisible();
+
+  await page.goto("/family/health-picture");
+  const blocking = page.locator('[data-slot="health-picture-blocking"]');
+  await expect(blocking).toHaveAttribute("data-state", "consent-required");
+  await expect(blocking.locator("p")).toHaveText(
+    /^Sharing with .+ is paused\. This page cannot show the two of you side by side until one of you resumes it\. Open permissions$/,
+  );
+  // "and links to where it is given".
+  await expect(
+    blocking.locator(`a[href="/family/s-${invitedSubjectB}/permissions"]`),
+  ).toHaveCount(1);
+
+  // The two sentences of the empty state, which mean the opposite and which
+  // this branch used to render.
+  await expect(page.getByText(NEEDS_TWO, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(EACH_TURNS_IT_ON, { exact: true })).toHaveCount(0);
+
+  // Nothing derived reaches the browser behind the refusal.
+  await expect(page.locator('[data-slot="carrier-panel"]')).toHaveCount(0);
+  await expect(page.locator("[data-compare-surface]")).toHaveCount(0);
+  await expect(page.locator("[data-claim-block]")).toHaveCount(0);
+
+  // A suspended consent is still a consent: resuming brings the page back
+  // with no grant re-signed, which is what separates this from a revocation.
+  await page.goto(`/family/s-${invitedSubjectB}/permissions`);
+  await page.getByRole("button", { name: "Resume sharing" }).click();
+  await expect(page.getByRole("button", { name: "Pause sharing" })).toBeVisible();
+  await page.goto("/family/health-picture");
+  await expect(page.locator('[data-slot="health-picture-blocking"]')).toHaveCount(0);
+});
+
+/**
  * `/family/health-picture empty`, and the product names this state itself:
  * `src/copy/family/health-picture.ts` groups the sentence under its own
  * "States" heading and the line beside it is documented as belonging to "the
