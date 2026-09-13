@@ -2677,3 +2677,29 @@ a review queue, and the four `workerExecutionBindings` checkpoints for this
 route (the aggregate privacy threshold in particular) are still not all
 implemented. Neither is widened into this change: D-086 named exactly that
 mistake, and D-101's scope was the endpoint's authority model.
+
+## 2026-09-13 · One unexplained browser failure, and what was ruled out
+
+`e2e/portrait-no-file.spec.ts:208` failed once, on `a57c938`: the page showed
+a blocking screen where the empty state was expected. It has not recurred —
+three local repeats and CI runs 527 and 529 all pass, eight passes to the one
+failure — and the following were checked and ruled out rather than assumed:
+
+- **This branch's code.** Neither commit in the range touches the portrait
+  page, its data path or the permission rows it reads.
+- **A broken base.** Run 527 is green on `e06b0a9`, the commit the failing run
+  built on.
+- **A collision with a parallel run.** Every account in the fixture is a fresh
+  `randomUUID`, so no other worker or run could hold the same rows.
+- **A cached render.** The page calls `createClient()` and reads cookies, so
+  Next renders it dynamically; there is no cached variant to serve.
+- **A race the test loses.** The assertion polls fourteen times over five
+  seconds before failing.
+
+That leaves it genuinely unexplained, which is why it is written down instead
+of closed. The gap that made it unexplainable is fixed: CI kept no artifacts
+from a failing browser step, so `test-results/` and `playwright-report/` —
+the trace, the screenshot and the DOM at the moment of failure — were gone
+before anyone could look. `.github/workflows/ci.yml` now uploads both on
+failure with a fourteen-day retention. If it happens again there will be
+evidence rather than a second round of elimination.
