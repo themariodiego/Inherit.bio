@@ -206,6 +206,17 @@ const BROWSER_TESTS = "e2e";
  *               STRUCTURALLY - the page says it accepts no claim papers or
  *               personal details, so the test asserts there is no form, no
  *               field and no control that could take any.
+ *   109 -> 108  `/overview empty`, RETITLED rather than written. Every
+ *               assertion in `e2e/overview.spec.ts`'s State A test already
+ *               proved it - the Start-here strip, no figure, no dash, no
+ *               metric value - and the title simply did not name the pair.
+ *               That is the `/family/[person] empty` case, not the
+ *               `/settings/people` one: the route genuinely occupies the
+ *               state. ONE assertion is new and is what makes the retitle
+ *               safe. `empty` and `not-covered` render alike here and mean
+ *               opposite things, so the test now establishes the CAUSE from
+ *               the database - this account has no file - rather than
+ *               inferring it from the absence.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -216,7 +227,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 109;
+const UNPROVEN_ROUTE_STATE_PAIRS = 108;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
