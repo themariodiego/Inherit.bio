@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { loadAdultSubjectReview } from "@/lib/embryos/adult-subject-review";
+import { AdultSubjectReviewForm } from "@/components/embryo/adult-subject-review-form";
 import { loadCoParentReview } from "@/lib/embryos/co-parent-review";
 import { CoParentReviewForm } from "@/components/embryo/co-parent-review-form";
 import { InvitationRefusalForm, InvitationRefusalReceipt } from "@/components/embryo/invitation-refusal-form";
@@ -16,6 +18,11 @@ export default async function RightsSessionPage() {
   const request = new Request("https://inherit.bio/withdraw/session", {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
+  // The purpose stored on the session decides what this page is about. Each
+  // loader returns null for a session that is not its own, so a co-parent
+  // cookie can never reach the adult screen or the reverse.
+  const adult = await loadAdultSubjectReview(request);
+  if (adult) return <AdultSubjectReviewForm review={adult} />;
   const refusal = await loadInvitationRefusal(request);
   if (!refusal) notFound();
   if (refusal.kind === "done") return <InvitationRefusalReceipt />;

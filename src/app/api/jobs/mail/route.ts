@@ -136,13 +136,16 @@ function parseMail(
   }
   if (templateId === "adult-subject-invitation") {
     const parsed = adultSubjectInvitationPayload.parse(payload);
-    if (!deliveryToken || !/^[A-Za-z0-9_-]{43}$/.test(deliveryToken)) {
-      throw new Error("mail_token_unavailable");
-    }
+    // D-081: this was the one template that put a live token in a URL path,
+    // where it reaches access logs, referrers and browser history, and where
+    // a link scanner following the mail could spend it. It now uses the same
+    // fragment form as every other mailed token: the browser keeps the
+    // fragment in memory, the interstitial posts it to api.rights-activate,
+    // and the person continues on a cookie-bound rights session.
     return {
       id: templateId,
       payload: {
-        invitationUrl: applicationUrl(`/withdraw/${deliveryToken}`),
+        invitationUrl: fragmentUrl(deliveryToken),
         note: parsed.note,
       },
     };

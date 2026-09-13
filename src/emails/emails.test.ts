@@ -91,15 +91,16 @@ describe("research-digest email", () => {
 });
 
 describe("adult-subject invitation email", () => {
+  // D-081: the link is the fragment form the mail job now builds, not a path
+  // carrying the token. The fixture matches what production sends.
   it("states the no-access boundary and renders the one-time review link", async () => {
+    const reviewUrl = `https://example.test/withdraw/request#${"a".repeat(21)}-${"b".repeat(21)}`;
     const html = await render(
-      createElement(AdultSubjectInvitationEmail, {
-        invitationUrl: "https://example.test/withdraw/opaque-token",
-      }),
+      createElement(AdultSubjectInvitationEmail, { invitationUrl: reviewUrl }),
     );
     expect(html).toContain("No genetic file has been added");
     expect(html).toContain("no access to your genetic data");
-    expect(html).toContain("https://example.test/withdraw/opaque-token");
+    expect(html).toContain(reviewUrl);
     expect(html).toContain("30 days");
     expect(html).toContain(ATTRIBUTION);
     expect(html).toContain(DISCLAIMER);
