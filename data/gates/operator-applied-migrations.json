@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Migrations that exist in a deployed database on purpose and have no file in supabase/migrations, so the schema-drift gate can tell a deliberate operator installation from an unexplained one. Every entry names why it cannot be an ordinary migration. Anything not listed here is reported.",
+  "migrations": [
+    {
+      "name": "install_own_report_retention_scheduler",
+      "why": "An operator-only pg_cron installation. Its own preflight refuses unless current_user is postgres, the database is postgres and pg_cron is in shared_preload_libraries — conditions the ordinary migration flow cannot promise — and it deliberately creates an INACTIVE job that a separate operator step activates. Observed applied to production 2026-09-08; no file with this name has ever existed under supabase/migrations in this repository's history.",
+      "recordedOn": "2026-09-13"
+    }
+  ]
+}
