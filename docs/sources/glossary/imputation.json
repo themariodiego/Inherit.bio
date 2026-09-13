@@ -1,0 +1,13 @@
+{
+  "term": "imputation",
+  "url": "https://www.internationalgenome.org/faq/how-was-imputation-used-in-1000-genomes-to-fill-in-gaps-in-sequencing/",
+  "finalUrl": "https://www.internationalgenome.org/faq/how-was-imputation-used-in-1000-genomes-to-fill-in-gaps-in-sequencing/",
+  "fetchedAt": "2026-09-13T01:08:57.439Z",
+  "pageBytes": 11641,
+  "pageSha256": "97f9d1062ad37cb4d24cf14d9222f73f195f95d16b597831660751f9b1844459",
+  "pageTitle": "How was imputation used in 1000 Genomes to fill in gaps in sequencing? | 1000 Genomes",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": null,
+  "quote": "we can statistically infer the genotype for that variant in that individual using haplotype information"
+}

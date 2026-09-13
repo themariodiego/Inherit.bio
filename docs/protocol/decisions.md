@@ -2182,3 +2182,77 @@ and recorded each in the test header rather than pausing to ask. That was the
 right trade while the calls were few and local. It stopped being the right
 trade at about the point where I could see the pattern, which is why this is
 an item rather than a fifth judgement call.
+
+## 2026-09-13 — A table of contents indexes titles, not content
+
+The glossary sources file recorded that the NIST/SEMATECH e-Handbook "has no
+section for `z-score`, `odds`, `baseline` or `effect size`", on the strength of
+having fetched and read its table of contents.
+
+That was right about the contents and wrong about the handbook. §1.3.5.17,
+*Detection of Outliers*, defines the Z-score under no heading of its own and
+then states it in words: "data is given in units of how many standard
+deviations it is from the mean". That is Inherit's "in units of the usual
+spread" almost exactly, and it is now the citation for the term.
+
+The same pass also read NIST's own hypertext glossary for the first time. It is
+not the general statistics dictionary its name suggests — it says on its face
+that it holds "selected terms from engineering statistics", scoped to
+experimental design, metrology, survey questionnaires, statistical process
+control and computer experiments — and it defines none of the six statistics
+primitives still uncited. So the conclusion survives for `odds`, `baseline` and
+`effect size`, and now rests on having searched the sections rather than on
+having read the index.
+
+Worth generalising: "the index does not list it" is a finding about the index.
+The near-identical mistake was recorded on 2026-09-12 about a grep for one
+component name. Both are searches mistaken for surveys.
+
+## 2026-09-13 — Sourcing a definition by narrowing what it claims
+
+`polygenic` read "Influenced by many DNA positions, usually with small
+effects". Nothing fetched for the register carries "many" or "usually with
+small effects": NHGRI's *Polygenic Trait* says "influenced by two or more
+genes", MedlinePlus says "influenced by multiple genes (polygenic)", and the
+NHGRI polygenic-risk-score page describes a score rather than the adjective.
+The term had been left uncited twice for that reason, with a note that fixing
+it "means changing what Inherit says first, which is a copy decision rather
+than a research one".
+
+Taking that decision. The definition now reads "Influenced by two or more genes
+rather than a single one", which is what the authority says, and the term is
+cited to it.
+
+The reasoning is not that a shorter definition is better. It is that the
+quantitative half was an unsupported claim sitting in the product's own data
+file, and the brief forbids exactly that. Narrowing removes a claim; it does
+not add one. What is lost is real and should be said plainly: a reader is no
+longer told that the effects are usually small, which is the fact that makes a
+polygenic estimate weak evidence about any one person. That belongs in the
+report copy where the estimate is shown, next to its uncertainty, rather than
+in a glossary tooltip where it would ship uncited.
+
+The term stays classed `cited` — "two or more" is a count, which is what the
+rule gates on — so the register still governs whether it renders.
+
+## 2026-09-13 — `medical` was classed on purpose, and the note saying otherwise was wrong
+
+`docs/sources/glossary/README.md` ended with "**`medical`.** A word so general
+that no authority glosses it. Likely belongs in the plain class rather than the
+cited one, which is a classification question for the operator."
+
+The first sentence is a finding. The second contradicts a decision already in
+the repository: `data/glossary-citation-classes.json` says in `whyThatLine`
+that `clinician` and `medical` "were argued both ways and are cited, because a
+reader who mistakes this product for clinical care is the failure the brief
+cares most about."
+
+So the classification is not an open question and not an oversight, and a note
+inviting it to be reopened would have made a considered decision look like a
+loose end. Corrected in place, to the narrower thing that is true: no authority
+read here glosses a word this general, so the term stays invisible.
+
+The lesson is about where a suspicion belongs. "This looks miscategorised" is
+worth writing down; writing it down in the file that does NOT hold the
+reasoning, without checking the file that does, is how a record argues with
+itself.
