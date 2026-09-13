@@ -892,6 +892,50 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
+## Where the 95 unproven pairs stand, as of 2026-09-13
+
+Counted from `docs/route-register.json` against `docs/route-divergence.json`,
+so this table moves on its own as the ratchet does. It exists because the
+question "what does signing this unlock?" had no answer anywhere.
+
+| | pairs | what moves them |
+| --- | ---: | --- |
+| Proposed not-applicable in item 6 (`consent-required`) | 15 | one signature |
+| Proposed not-applicable in item 8 | 29 | one signature |
+| Proposed not-applicable in item 10 | 17 | one signature |
+| less one pair proposed twice | −1 | see below |
+| **Awaiting a signature** | **60** | |
+| Genuinely open | 35 | test work, and for most of them item 11 first |
+| **Total unproven** | **95** | |
+
+Signing all three proposals would take the ratchet from 95 to 35 without a line
+of test code, because every one of those 60 is the register describing
+behaviour the product does not have.
+
+**`/embryo-analysis consent-required` is proposed twice** — once in item 6, as
+one of the twenty routes that declare the state and never render it, and again
+in item 10, among the four that reduce this profile to its single render. Both
+readings are right and they agree, so nothing is in conflict; but it is one
+pair, not two, and a signature on both items must not be read as retiring two.
+Found while counting this table, which is the reason to build one.
+
+### And of the 35 that are open, 27 wait on item 11
+
+| state | open | blocked by item 11? |
+| --- | ---: | --- |
+| `not-covered` | 11 | yes — renders identically to `empty` on three of them |
+| `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
+| `complete` | 8 | yes — currently four different meanings |
+| `processing` | 5 | partly: all five are Family routes whose "no completed result yet" may or may not be work in flight |
+| `empty` | 3 | no |
+
+**Eight pairs could be attempted today** without any ruling: the three `empty`
+(`/embryos/[embryoId]`, `/family/portrait/[pairId]`,
+`/genome/[subject]/reports/[slug]`) and, with a reading of what the Family
+surfaces mean by an ungenerated result, the five `processing`. Everything else
+in the open column is a judgement call the operator should make once rather
+than one the next reader makes twenty times.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
