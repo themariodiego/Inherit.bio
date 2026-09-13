@@ -207,6 +207,7 @@
     "/family/invite jurisdiction-unavailable",
     "/family/invite processing",
     "/family/portrait/[pairId] consent-required",
+    "/family/portrait/[pairId] empty",
     "/family/portrait/[pairId] jurisdiction-unavailable",
     "/family/portrait/[pairId] not-covered",
     "/files complete",

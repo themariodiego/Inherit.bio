@@ -375,6 +375,32 @@ const BROWSER_TESTS = "e2e";
  *               labels lacking reviewed allele, condition and assertion
  *               provenance — the shipped table's own state (D-034), not a
  *               fixture defect.
+ *    88 -> 87   `/family/portrait/[pairId] empty`, in a new file, and the two
+ *               dead ends before it are the reason to read this entry.
+ *
+ *               The state is the page's `noFile` branch: a person in the pair
+ *               has no processed file. The obvious route to it — let the
+ *               existing suite upload for both, then delete one file — is
+ *               REFUSED BY THE PRODUCT, on purpose:
+ *               `prepare_genome_file_deletion_v1` raises
+ *               `file_delete_shared_graph` as soon as a `family_pairs` row
+ *               names the subject, because "these graph cases need their
+ *               existing subject-level disposition, not a file shortcut that
+ *               might remove another adult's shared working data". The delete
+ *               control on `/files` answers 409 for exactly that reason.
+ *
+ *               So the state is reachable only from the other end, grants
+ *               before any file, which is `e2e/portrait-no-file.spec.ts`. The
+ *               second dead end is in that fixture: BOTH accounts need a date
+ *               of birth before EITHER can grant Portrait, because
+ *               `family_report_endpoint_v1` builds the grant presentation
+ *               from both profiles and requires an adult date on each. With
+ *               only the granter's account completed, the granter's "Turn on"
+ *               control is simply absent, with no reason on screen — worth
+ *               knowing before the next fixture spends an hour on it.
+ *
+ *               The corrections table listed this pair as attemptable today,
+ *               and it was, but not by the route anyone would try first.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -385,7 +411,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 88;
+const UNPROVEN_ROUTE_STATE_PAIRS = 87;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
