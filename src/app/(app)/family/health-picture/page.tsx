@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { redirect } from "next/navigation";
@@ -19,6 +20,7 @@ import {
   BASELINE_TERM_TEXT,
   COMPARISON_BANNER,
   EACH_TURNS_IT_ON,
+  OPEN_PERMISSIONS_LINK,
   HEALTH_PICTURE_H1,
   HEALTH_PICTURE_UNAVAILABLE,
   HOW_SURE_HEADING,
@@ -31,6 +33,7 @@ import {
   WHERE_FROM_LEAD,
   coverageLead,
   needsTwoPeople,
+  pausedWith,
 } from "@/copy/family/health-picture";
 import { NAV_LABELS } from "@/copy/navigation";
 import { LAYER_PURPOSES, familyCapability, permits, viewerMaySee } from "@/lib/family/access";
@@ -142,6 +145,17 @@ export default async function FamilyHealthPicturePage() {
   const decision = permits(thirdParty) ? heritability : thirdParty;
   const allowed = permits(decision);
 
+  // Paused is not "never agreed". `family_sharing_pauses` suspends the live
+  // set without touching a grant row, so a pair who both turned this on and
+  // then paused it falls out of `shared` above and would otherwise be told to
+  // do the thing they have already done. Read from the raw grant sets, which
+  // a pause does not empty (`FamilyPerson.grantsToViewer`).
+  const pausedBoth = people.filter(
+    (person) =>
+      person.sharing === "paused" &&
+      person.grantsToViewer.has("family.heritability") &&
+      person.grantsFromViewer.has("family.heritability"),
+  );
   const columnCount = self === null ? 0 : 1 + shared.length;
   const gated = !(await acknowledged(user));
   const ready = allowed && columnCount >= 2 && !gated;
@@ -313,8 +327,32 @@ export default async function FamilyHealthPicturePage() {
         >
           <p className="text-base leading-relaxed text-ink">{decision.userFacingCopy}</p>
         </section>
+      ) : columnCount < 2 && pausedBoth.length > 0 ? (
+        <section
+          role="status"
+          data-slot="health-picture-blocking"
+          data-state="consent-required"
+          className="max-w-prose space-y-3"
+        >
+          {pausedBoth.map((person) => (
+            <p key={person.handle.routeSegment} className="text-base leading-relaxed text-ink">
+              {pausedWith(person.displayLabel)}{" "}
+              <Link
+                href={route("family.permissions", { person: person.handle.routeSegment })}
+                className="link-target underline underline-offset-2"
+              >
+                {OPEN_PERMISSIONS_LINK}
+              </Link>
+            </p>
+          ))}
+        </section>
       ) : columnCount < 2 ? (
-        <section role="status" className="max-w-prose space-y-3">
+        <section
+          role="status"
+          data-slot="health-picture-blocking"
+          data-state="empty"
+          className="max-w-prose space-y-3"
+        >
           <p className="text-base leading-relaxed text-ink">
             {/* inherit-figure-exempt: a count of the people who agreed, not a result */}
             {needsTwoPeople(columnCount)}

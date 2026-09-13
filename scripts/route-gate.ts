@@ -479,6 +479,31 @@ const BROWSER_TESTS = "e2e";
  *               paths and both state words would also have proven
  *               `/family/[person] complete`, which nothing renders.
  *
+ *    35 -> 34   `/family/health-picture consent-required`, and this one was
+ *               BUILT. The `empty` test one line below it in the suite is
+ *               where the rule came from: it declined to claim this state and
+ *               wrote down why, so a `consent-required` page names an
+ *               outstanding consent step and links to where it is given while
+ *               an `empty` page has nothing in it and no step this reader can
+ *               take.
+ *
+ *               A pause passes both halves and the empty branch was
+ *               swallowing it. `viewerMaySee` reads the LIVE grant set, which
+ *               a pause empties without touching a row, so a paused pair fell
+ *               below two columns and met "This page needs two people who
+ *               have both agreed to be seen side by side" and "Each person
+ *               turns this on from their own account. You cannot turn it on
+ *               for them." Both are false for a pause: they did agree, and
+ *               either of them can lift it. The page now reads the raw grant
+ *               sets to tell the two apart, says sharing is paused, and links
+ *               to where it is resumed.
+ *
+ *               `family_sharing_pauses` is a row about the PAIR with no
+ *               author recorded, so the sentence names nobody as having
+ *               paused it. That is a data fact, not a copy preference, and
+ *               it is why this sentence can be written at all without
+ *               telling one adult something new about the other.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -488,7 +513,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 35;
+const UNPROVEN_ROUTE_STATE_PAIRS = 34;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

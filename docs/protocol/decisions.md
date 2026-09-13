@@ -2796,3 +2796,41 @@ is a prefix of `/family/[person]/permissions`, so one title carrying both
 paths and both state words would also have proven `/family/[person] complete`,
 which nothing renders. The gate's path anchoring stops a prefix matching a
 longer path, but not two paths written into one sentence.
+
+## 2026-09-13 · The second consent gate, and a pause the empty state was eating
+
+`/family/health-picture consent-required` is proven, and unlike the first one
+it was built rather than found.
+
+The rule came from that page's own `empty` test, which declined to claim this
+state and wrote down why: a `consent-required` page names an outstanding
+consent step and links to where it is given, and an `empty` page has nothing
+in it and no step this reader can take. A pause passes both halves, and the
+empty branch was swallowing it.
+
+`viewerMaySee` reads the LIVE grant set, and a pause empties that set without
+touching a grant row. So a pair who had both turned the health picture on and
+then paused it fell below two columns and met the empty state's two
+sentences: "This page needs two people who have both agreed to be seen side
+by side" and "Each person turns this on from their own account. You cannot
+turn it on for them." **Both are false for a pause.** They did agree, and
+either of them can lift it — including the reader. The page now reads the raw
+grant sets to tell the two apart, says sharing with that person is paused, and
+links to the permissions page where it is resumed.
+
+One detail decided the sentence rather than a preference about copy:
+`family_sharing_pauses` is a row about the PAIR — `account_low_id`,
+`account_high_id`, `ended_at` — with no record of who paused it. So the
+sentence names nobody as its author, which is both the only honest thing it
+can say and the reason it can be said at all without telling one adult
+something new about the other. `/family/[person]` reached the same wording
+from the same fact.
+
+Two of the nine gates are closed. Seven remain, and the reading so far
+suggests they are not alike: `/family` and `/embryos` already render
+per-person and per-cohort waiting lines, but the `/embryos complete` precedent
+says a per-item line does not put a route in a state; `/embryos/upload` is
+blocked on E0; and `/family/invite`, `/family/[person]/permissions` and
+`/embryos/request-data` have no recorded revocable artifact to require at all,
+which may be a genuine conflict with G2.2's blanket prohibition rather than
+a gap to fill.

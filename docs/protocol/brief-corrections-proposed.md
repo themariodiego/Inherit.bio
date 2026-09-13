@@ -987,7 +987,7 @@ never existed in this repository's history.
 
 ---
 
-## Where the 35 unproven pairs stand
+## Where the 34 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1009,21 +1009,24 @@ proposals is the nine that G2.2 forbids dropping.
 | Applied from item 8 | 29 | done 2026-09-13 |
 | Applied from item 10 | 16 | done 2026-09-13 |
 | **Retired from the register** | **51** | |
-| Item 6's Family and Embryo half | 8 | product work — build the gate |
+| Item 6's Family and Embryo half | 7 | product work — build the gate |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **35** | |
+| **Total unproven** | **34** | |
 
-Building the remaining eight consent gates would
-take the ratchet from 35 to 27. That is the whole of what a register
+Building the remaining seven consent gates would
+take the ratchet from 34 to 27. That is the whole of what a register
 correction can no longer do for this number.
 
-**The first of the nine was proven on 2026-09-13, and it was not built.**
+**Two of the nine closed on 2026-09-13, and only one of them was built.**
 `/family/[person] consent-required` is the paused-sharing branch, which this
 item measured as absent because it checked the two shared blocking components
 and this page renders its refusal inline. The measurement's three checks were
-each correct and the conclusion was wrong. Worth carrying into the other
-eight: read the page's own branches, not only the components it might have
-used.
+each correct and the conclusion was wrong. Worth carrying into the rest: read
+the page's own branches, not only the components it might have used.
+`/family/health-picture consent-required` was genuinely missing, and the same
+pause was the cause — the page reads the LIVE grant set, which a pause
+empties, so a paused pair fell into the empty state and was told to turn on a
+thing they had already turned on.
 
 **Item 6 applied to six routes, not fifteen.** Five of its twenty —
 `/settings`, `/settings/consents`, `/settings/copilot`, `/settings/data` and
