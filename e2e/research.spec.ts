@@ -56,8 +56,12 @@ test.beforeAll(async () => {
     .eq("id", userId).select("id,digest_opt_in").single();
   expect(optIn.error).toBeNull();
   expect(optIn.data).toEqual({ id: userId, digest_opt_in: true });
-  // Clean any leftover fixture template/changelog from previous runs.
+  // Clean any leftover fixture template/changelog from previous runs. The
+  // review rows go first: `template_reviews.template_id` is `on delete
+  // restrict`, so an approval left behind by an earlier run would keep the
+  // template it approved alive and this run would publish that one instead.
   await admin.from("changelog_entries").delete().eq("template_slug", SLUG);
+  await admin.from("template_reviews").delete().eq("template_id", SLUG);
   await admin.from("report_templates").delete().eq("slug", SLUG);
   await admin
     .from("research_releases")
@@ -148,13 +152,86 @@ test("unauthorized refresh is rejected", async ({ request }) => {
   expect(res.status()).toBe(401);
 });
 
+// D-101: the drain publishes what the review queue approved and takes no
+// input. Naming a target is how the route used to work, and the register has
+// always forbidden it.
+test("a publish request that names a template is refused", async ({ request }) => {
+  const admin = adminClient();
+  const named = await request.post("/api/jobs/research-publish", {
+    headers: { authorization: `Bearer ${JOBS_SECRET}` },
+    data: { slug: SLUG },
+  });
+  expect(named.status()).toBe(400);
+  expect(await named.json()).toEqual({ error: "invalid_request" });
+
+  const queried = await request.post("/api/jobs/research-publish?slug=" + SLUG, {
+    headers: { authorization: `Bearer ${JOBS_SECRET}` },
+  });
+  expect(queried.status()).toBe(400);
+
+  const unauthorized = await request.post("/api/jobs/research-publish");
+  expect(unauthorized.status()).toBe(401);
+
+  // Neither refusal published anything.
+  const { data: still } = await admin
+    .from("report_templates")
+    .select("status")
+    .eq("slug", SLUG)
+    .single();
+  expect(still?.status).toBe("review");
+});
+
+// The template drafted above sits in the review queue with no decision on it.
+// A drain must leave it there: an approval is the only thing that publishes.
+test("an unapproved draft is not due, and the drain publishes nothing", async ({
+  request,
+}) => {
+  const admin = adminClient();
+  const res = await request.post("/api/jobs/research-publish", {
+    headers: { authorization: `Bearer ${JOBS_SECRET}` },
+  });
+  expect(res.status()).toBe(200);
+  expect(await res.json()).toEqual({ status: "complete", outcome: "no_work" });
+  const { data: unpublished } = await admin
+    .from("report_templates")
+    .select("status")
+    .eq("slug", SLUG)
+    .single();
+  expect(unpublished?.status).toBe("review");
+  const { count: entries } = await admin
+    .from("changelog_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("template_slug", SLUG);
+  expect(entries ?? 0).toBe(0);
+});
+
 test("publishing updates the changelog and sends the opt-in digest", async ({
   page,
   request,
 }) => {
+  const admin = adminClient();
+  // A human reviewer approves the draft. This is the act the drain waits for,
+  // and the only input it reads: the review row, never the request. The row is
+  // written with the service key because there is no reviewer surface to write
+  // it through — filed as D-107. This test stands in for that reviewer; it does
+  // not stand in for the review.
+  const reviewer = await admin
+    .from("subject_principals")
+    .insert({ principal_kind: "reviewer" })
+    .select("id")
+    .single();
+  expect(reviewer.error).toBeNull();
+  const approval = await admin.from("template_reviews").insert({
+    template_id: SLUG,
+    reviewer_principal_id: reviewer.data!.id,
+    review_revision: 1,
+    decision: "approve",
+    evidence_review_due: "2027-09-13",
+  });
+  expect(approval.error).toBeNull();
+
   const res = await request.post("/api/jobs/research-publish", {
     headers: { authorization: `Bearer ${JOBS_SECRET}` },
-    data: { slug: SLUG },
   });
   expect(res.status()).toBe(200);
   // D-086: the answer used to name the slug it had published and count the
@@ -162,7 +239,6 @@ test("publishing updates the changelog and sends the opt-in digest", async ({
   // `machine-job-result-v1` forbids, so the outcome is all that comes back
   // and the effects are read from the database.
   expect(await res.json()).toEqual({ status: "complete", outcome: "completed" });
-  const admin = adminClient();
   const { data: published } = await admin
     .from("report_templates")
     .select("status")

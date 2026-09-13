@@ -2637,3 +2637,43 @@ input. Operator-selected publication was not the intent.
 wording and D-103's five sentences are both user-facing copy on consent and
 rights surfaces. Neither was answered here and neither should be invented to
 keep momentum; they are the two places where waiting is cheaper than guessing.
+
+## 2026-09-13 · The approval record the schema had and nothing read
+
+D-101 is closed, and building it turned up something worth writing down: the
+review queue's approval record already existed. `public.template_reviews` has
+been in the schema since `20260831224126_reference_registries_and_constraints`
+with `decision text not null check (decision in ('approve','re_review',
+'retire'))`, a `review_revision`, a reviewer principal and a `decided_at`. Not
+one line of application code has ever read it or written it. The draft summary
+the research pipeline writes even tells the reader it exists — every drafted
+template says it was "reviewed by a human before publication" — while the only
+thing that published a template was a caller naming its slug over HTTP.
+
+So the fix was not "invent a rule for which approved drafts are due", which is
+what the defect row expected. The rule was already specified; it just had no
+reader. A template is due when it sits in the review queue and the newest of
+its review rows decided `approve`. Revisions do the rest for free: a
+`re_review` or a `retire` takes a template back out without deleting the
+approval that came before it, and a later `approve` puts it back.
+
+Two consequences worth being explicit about.
+
+**The old route could publish a draft nobody had reviewed.** That is a bigger
+hole than the register mismatch D-101 was filed as. The authority was a shared
+operator secret, so it was not a privilege escalation — but nothing between
+`research-refresh` drafting a template from an upstream GWAS release and it
+appearing on `/changelog` and in subscribers' inboxes required a human to have
+looked at it. The register said `machine-reviewed-publication-only` and the
+code enforced only `machine`.
+
+**`template_reviews` still has no writer.** Publication is now gated on a row
+that only a service-role client can insert, because the reviewer surface does
+not exist yet. That is the honest state: the gate is real, it is closed, and
+the way through it today is a human with database access. The browser test
+inserts the approval the way a reviewer would and says so. Filed as **D-107**
+for the surface itself — a queue nobody can act on through the product is not
+a review queue, and the four `workerExecutionBindings` checkpoints for this
+route (the aggregate privacy threshold in particular) are still not all
+implemented. Neither is widened into this change: D-086 named exactly that
+mistake, and D-101's scope was the endpoint's authority model.

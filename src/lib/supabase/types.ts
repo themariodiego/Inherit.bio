@@ -7726,6 +7726,14 @@ export type Database = {
           notice_id: string
         }[]
       }
+      claim_due_research_publication_v1: {
+        Args: never
+        Returns: {
+          slug: string
+          title: string
+          summary: string
+        }[]
+      }
       claim_mail_outbox: {
         Args: never
         Returns: {
