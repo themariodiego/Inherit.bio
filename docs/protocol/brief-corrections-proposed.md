@@ -894,7 +894,7 @@ which reading it used, in its own test header. What it blocks is deciding the
 rest consistently, and a ratchet whose column headings mean four things is
 worth less than one whose headings mean one thing each.
 
-## Where the 93 unproven pairs stand
+## Where the 91 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -911,10 +911,10 @@ signing this unlock?" had no answer anywhere.
 | Proposed not-applicable in item 10 | 17 | one signature |
 | less one pair proposed twice | −1 | see below |
 | **Awaiting a signature** | **60** | |
-| **Genuinely open** | **33** | test work, and for most of them item 11 first |
-| **Total unproven** | **93** | |
+| **Genuinely open** | **31** | test work, and for most of them item 11 first |
+| **Total unproven** | **91** | |
 
-Signing all three proposals would take the ratchet from 93 to 33 without a line
+Signing all three proposals would take the ratchet from 91 to 31 without a line
 of test code, because every one of those 60 is the register describing
 behaviour the product does not have.
 
@@ -925,23 +925,26 @@ readings are right and they agree, so nothing is in conflict; but it is one
 pair, not two, and a signature on both items must not be read as retiring two.
 Found while counting this table, which is the reason to build one.
 
-### And of the 33 that are open, 27 wait on item 11
+### And of the 31 that are open, 27 wait on item 11
 
 | state | open | blocked by item 11? |
 | --- | ---: | --- |
 | `not-covered` | 11 | yes — renders identically to `empty` on three of them |
 | `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
 | `complete` | 8 | yes — currently four different meanings |
-| `processing` | 4 | partly: all four are Family routes whose "no completed result yet" may or may not be work in flight |
+| `processing` | 2 | partly: both are Family routes whose "no completed result yet" may or may not be work in flight |
 | `empty` | 2 | no |
 
-**Six pairs could be attempted today** without any ruling: the two `empty`
-(`/embryos/[embryoId]`, `/family/portrait/[pairId]`) and, with a reading of
-what the Family surfaces mean by an ungenerated result, the four `processing`.
-Two of the original eight have since been proven — `/genome/[subject]/reports/[slug]`
-in both `empty` and `processing`, the second of which needed a product fix
-first. Everything else in the open column is a judgement call the operator
-should make once rather than one the next reader makes twenty times.
+**Four pairs could be attempted today** without any ruling: the two `empty`
+(`/embryos/[embryoId]`, `/family/portrait/[pairId]`) and two `processing`
+(`/family/health-picture`, `/family/portrait/[pairId]`). Four of the original
+eight have since been proven — `/genome/[subject]/reports/[slug]` in both
+`empty` and `processing`, the second of which needed a product fix first, and
+`/family` and `/family/[person]` in `processing`, which needed only the
+fixture and confirmed item 9's reading that both distinguish "no file" from
+"file being prepared". Everything else in the open column is a judgement call
+the operator should make once rather than one the next reader makes twenty
+times.
 
 ## What happens after signature
 

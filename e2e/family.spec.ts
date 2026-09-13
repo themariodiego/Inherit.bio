@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -10,8 +10,10 @@ import {
   expectAxeClean,
   firstViewportInteractives,
   signIn,
+  uploadOwnFileThroughUi,
 } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { CARD_AWAITING_RESULTS_STATUS, CARD_NO_FILE_STATUS } from "@/copy/family";
 import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 
@@ -750,6 +752,97 @@ test("/family/[person]/permissions processing: the row control is held while its
   await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
   expect((await liveGrants(selfSubjectB, accountA, "subject_to_recipient")).map(row => row.purpose))
     .toEqual(["family.portrait", "reports.polygenic"]);
+});
+
+/**
+ * `processing` on the two Family surfaces that read a relative's record, in
+ * the one direction this file has left empty: A has granted B nothing and has
+ * no file, which is what makes `/family/[person] empty` above honest.
+ *
+ * THE STATE. A turns on one report layer for B, then uploads a file and holds
+ * its preparation request. `status: "uploaded"` is the server's own window —
+ * finalized and stored, preparation not yet asked for — and holding the
+ * request keeps A genuinely inside it. Nothing here seeds a row or writes a
+ * status; the same technique as `e2e/genome-data-processing.spec.ts`.
+ *
+ * WHY IT IS WORTH THE FIXTURE. Both pages have two sentences that differ by
+ * one fact: whether the other adult has a file at all. Corrections item 9
+ * measured that both distinguish them, and this is the first thing to check
+ * it from a browser. The failure it guards is `/family/portrait/[pairId]`'s,
+ * which does NOT distinguish them and reports a preparing file to the other
+ * person as an absent one.
+ *
+ * The grant is turned off and the hold released in the second test, so the
+ * pause/resume/stop fixture below sees what it would have seen without these.
+ */
+let releaseAPreparation: () => void = () => {};
+let aPreparingContext: BrowserContext | null = null;
+
+test("/family/[person] processing: with A's file still being prepared, B is told no completed result yet rather than no file", async ({ browser }) => {
+  aPreparingContext = await browser.newContext();
+  const aPage = await aPreparingContext.newPage();
+  await signIn(aPage, A.email, A.password);
+
+  // A's own direction, which every assertion above has left empty.
+  await aPage.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const estimates = aPage
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: aPage.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
+  await estimates.getByRole("button", { name: "Turn on" }).click();
+  await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("On");
+
+  const held = new Promise<void>((resolve) => { releaseAPreparation = resolve; });
+  await aPage.route("**/api/files/*/process", async (route) => { await held; await route.continue(); }, { times: 1 });
+  const fileId = await uploadOwnFileThroughUi(aPage, SOURCE_PATH);
+  const stored = await adminClient().from("genome_files").select("status,subject_id").eq("id", fileId).single();
+  expect(stored.error).toBeNull();
+  expect(stored.data!.status, "the state this test waits inside is the server's, not the test's").toBe("uploaded");
+  expect(stored.data!.subject_id).toBe(selfSubjectA);
+
+  const bContext = await browser.newContext();
+  const bPage = await bContext.newPage();
+  try {
+    await signIn(bPage, B.email, B.password);
+    await bPage.goto(`/family/s-${selfSubjectA}`);
+    await bPage.getByRole("checkbox").check();
+    await bPage.getByRole("button", { name: "Show what’s shared" }).click();
+
+    await expect(bPage.getByText("No completed result is shared yet.", { exact: true })).toBeVisible();
+    // The sentence this one replaces. A file exists; saying otherwise about
+    // another adult's record is the failure this pair is here to catch.
+    await expect(bPage.getByText(`${A_AS_SEEN_BY_B} hasn’t added a file yet.`, { exact: false }),
+      "no claim that the other adult has added nothing").toHaveCount(0);
+    await expectNoResults(bPage);
+  } finally {
+    await bContext.close();
+  }
+});
+
+test("/family processing: the hub card says no shared results yet, not no file yet", async ({ browser }) => {
+  const bContext = await browser.newContext();
+  const bPage = await bContext.newPage();
+  try {
+    await signIn(bPage, B.email, B.password);
+    await bPage.goto("/family");
+    await expect(bPage.locator('[data-slot="person-state"]')).toHaveText(CARD_AWAITING_RESULTS_STATUS);
+    await expect(bPage.locator('[data-slot="person-state"]')).not.toHaveText(CARD_NO_FILE_STATUS);
+  } finally {
+    await bContext.close();
+  }
+
+  // Put the fixture back: the grant withdrawn, the held request released so
+  // nothing is left pending, and A's file left to finish on its own.
+  releaseAPreparation();
+  const aPage = aPreparingContext!.pages()[0];
+  await aPage.goto(`/family/s-${invitedSubjectId}/permissions`);
+  const estimates = aPage
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: aPage.locator('[data-slot="permission-label"]', { hasText: /^Statistical estimates$/ }) });
+  await estimates.getByRole("button", { name: "Turn off" }).click();
+  await expect(estimates.locator('[data-slot="permission-state"]')).toHaveText("Off");
+  expect(await liveGrants(selfSubjectA, accountB, "subject_to_recipient")).toEqual([]);
+  await aPreparingContext!.close();
+  aPreparingContext = null;
 });
 
 /**

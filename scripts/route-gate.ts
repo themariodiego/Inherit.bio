@@ -330,6 +330,15 @@ const BROWSER_TESTS = "e2e";
  *               preparation check apart, so the test establishes from the
  *               DATABASE that the account holds no file and then asserts that
  *               neither neighbouring sentence appears.
+ *   93 -> 91    `/family processing` and `/family/[person] processing`, the
+ *               first browser check of corrections item 9's measurement that
+ *               both surfaces distinguish "this adult has no file" from "this
+ *               adult's file is being prepared". They do. A grants one report
+ *               layer in the direction this file had left empty, then uploads
+ *               with the preparation request held, and B reads both pages
+ *               past their own Tier-2 gate. The grant is withdrawn and the
+ *               hold released afterwards, so the pause/resume/stop fixture
+ *               below is unchanged - asserted by that test still passing.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -340,7 +349,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 93;
+const UNPROVEN_ROUTE_STATE_PAIRS = 91;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
