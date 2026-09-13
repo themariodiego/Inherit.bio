@@ -2834,3 +2834,51 @@ blocked on E0; and `/family/invite`, `/family/[person]/permissions` and
 `/embryos/request-data` have no recorded revocable artifact to require at all,
 which may be a genuine conflict with G2.2's blanket prohibition rather than
 a gap to fill.
+
+## 2026-09-13 · Four owner decisions, and a standing authorization
+
+**Migrations are applied to production on every merge.** Not this one
+migration: a standing authorization, and it is the ordering that would have
+prevented D-106. From here, a merge to main is followed by applying whatever
+`supabase/migrations` holds that the deployed ledger does not, one at a time
+with verification after each, and a report of exactly what ran.
+
+`20260913080000_research_publication_due_work` was applied under it
+immediately. Production now holds 108 ledger rows — 107 repository files plus
+the operator-only `install_own_report_retention_scheduler` that has no file and
+is recorded as such — the function is present, and the grants are the ones the
+pgTAP suite asserts: `service_role` may execute, `anon` and `authenticated` may
+not. `apply_migration` stamps a row with the current time, so the version was
+rewritten from `20260913181700` to the repository's `20260913080000`, matched
+by name, exactly as the twelve were. The drift is cleared.
+
+**G2.2's consent prohibition is amended, not lifted** (D-108, item 13). The
+blanket became a rule with three named exceptions, and the enforcement got
+STRICTER in the process rather than looser. Before, any `consent-required`
+waiver on a Family or Embryo route failed the gate. Now it fails unless the
+register names which exception applies, from a closed list, and an item-level
+claim additionally has to name what a reader meets instead — which for
+`/family` and `/embryos` is a state that is itself proven. A prohibition that
+can be argued around in prose has been replaced by one that has to be answered
+in a field.
+
+**The eight state ids will be defined rather than split** (item 11). One
+sentence each in the register, plus which reading applies per profile. The
+alternative — splitting the overloaded ids — is truer to the product and moves
+the declared states on most profiles, which would put every existing proof up
+for re-reading. Definition is the cheaper of the two and makes the remaining 27
+a reading rather than a judgement call. Not yet done; next.
+
+**Blocked copy: I draft, the owner signs.** D-102's locked-permission reason
+and D-103's five adult-consent statements have been blocked all session. The
+standing position was that the owner writes them, on the ground that the
+wording a person is told they agreed to is not an implementation detail. That
+ground still holds for what SHIPS: candidates are drafted here for signature,
+and nothing reaches a consent surface unsigned. The five statements in
+particular remain the owner's to approve verbatim or rewrite.
+
+**Where the ratchet stands.** 87 to 27 in one day. 58 of those 60 pairs left
+because the register stopped describing behaviour the product does not have,
+and 2 were proofs. Nothing left in the number is a register correction: every
+remaining pair is a state the product has and no test names, or one item 11
+must first make decidable.

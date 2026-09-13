@@ -989,6 +989,20 @@ never existed in this repository's history.
 
 ## 13. Seven of the nine consent gates have nothing to gate on
 
+**SIGNED AND APPLIED 2026-09-13. The amendment, not the alternative.** G2.2's
+second forbidden `n/a` now reads "on any Family or Embryo Analysis route that
+renders a result, a record or a permission of a named person", with the three
+exceptions below, and `briefSha256` was repinned in the same change.
+
+The register does not take the exception on trust. Each of the seven routes
+carries `consentRequiredException.kind` from a closed list of three, and
+`scripts/route-gate.ts` fails a waiver that claims none of them, claims one
+outside the list, claims `item-level` without naming what carries the refusal
+instead, or carries an exception on a route that no longer waives the state.
+`/family` names `/family/[person] consent-required` and `/embryos` names the
+two Embryo result surfaces — all three of those are proven, so the claim is
+checkable rather than a sentence. Ratchet 34 to 27.
+
 **Measured 2026-09-13, after building two of the nine. This is the answer to
 the question item 7 asked and nobody had checked.**
 
@@ -1060,70 +1074,49 @@ Filed as **D-108**.
 
 ---
 
-## Where the 34 unproven pairs stand
+## Where the 27 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
 does", which was not true of numbers typed into markdown: two proofs later it
 was already stale. `scripts/route-gate.test.ts` now recomputes the total and
-fails if the three bold figures below disagree with the register, so the claim
-holds because something checks it. It exists because the question "what does
-signing this unlock?" had no answer anywhere.
+fails if the bold figures below disagree with the register, so the claim holds
+because something checks it.
 
-**Items 6, 8 and 10 were signed on 2026-09-13 and applied the same day.** 51 of
-the 60 pairs they proposed left the register; the ratchet went 87 → 36, and not
-one line of test code was written for it, because every one of those 51 was the
-register describing behaviour the product does not have. What is left of those
-proposals is the nine that G2.2 forbids dropping.
+**Items 6, 8, 10 and 13 are signed and applied.** Between them 58 pairs left
+the register, and two more were closed by proofs. The ratchet went 87 to 27 in
+one day, and **not one line of test code was written for 58 of those 60** —
+every one was the register describing behaviour the product does not have.
 
-| | pairs | what moves them |
+| | pairs | what moved them |
 | --- | ---: | --- |
-| Applied from item 6 (`consent-required`, the eleven non-Family routes) | 6 | done 2026-09-13 |
-| Applied from item 8 | 29 | done 2026-09-13 |
-| Applied from item 10 | 16 | done 2026-09-13 |
-| **Retired from the register** | **51** | |
-| Item 6's Family and Embryo half | 7 | **an owner decision, not product work — see item 13** |
+| Applied from item 6 (`consent-required`, the non-Family routes) | 6 | done 2026-09-13 |
+| Applied from item 8 (`empty` and `processing`) | 29 | done 2026-09-13 |
+| Applied from item 10 (`complete`, coverage, the public page) | 16 | done 2026-09-13 |
+| Applied from item 13 (G2.2 amended, D-108) | 7 | done 2026-09-13 |
+| **Retired from the register** | **58** | |
+| Closed by a proof | 2 | `/family/[person]`, `/family/health-picture` |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **34** | |
+| **Total unproven** | **27** | |
 
-Building the remaining seven consent gates would
-take the ratchet from 34 to 27, and **item 13 measures that none of the seven
-can be built without inventing a consent the product does not have.** So this
-row is an owner decision after all: amend G2.2's forbidden list, or accept
-seven permanently unproven pairs. Either answer is honest; closing them by
-building a refusal nobody asked for is not.
-
-**Two of the nine closed on 2026-09-13, and only one of them was built.**
-`/family/[person] consent-required` is the paused-sharing branch, which this
-item measured as absent because it checked the two shared blocking components
-and this page renders its refusal inline. The measurement's three checks were
-each correct and the conclusion was wrong. Worth carrying into the rest: read
-the page's own branches, not only the components it might have used.
-`/family/health-picture consent-required` was genuinely missing, and the same
-pause was the cause — the page reads the LIVE grant set, which a pause
-empties, so a paused pair fell into the empty state and was told to turn on a
-thing they had already turned on.
+**Nothing in this number is a register correction any more.** The open count
+and the total are now the same figure, which is the point: every remaining
+pair is a state the product has and no test names, or one that item 11 must
+first make decidable. A register correction cannot move it again.
 
 **Item 6 applied to six routes, not fifteen.** Five of its twenty —
 `/settings`, `/settings/consents`, `/settings/copilot`, `/settings/data` and
 `/settings/people` — had already lost the declaration on 2026-09-12 when
-`consent-required` came off the `account-management` profile wholesale, so the
-signature found nothing to drop there. Nine more are the Family and Embryo
-routes item 7 identified, where **G2.2 forbids the `n/a` outright** and the
-owner chose to build the gates. That leaves `/overview` and the five
-`/genome/[subject]*` routes. `scripts/route-gate.ts` now FAILS on a
-`consent-required` waiver for any Family or Embryo Analysis route, so item 7's
-finding is a check rather than a reading, and this decision cannot be quietly
-reversed.
+`consent-required` came off the `account-management` profile wholesale. Nine
+more were the Family and Embryo routes item 7 identified; two of those turned
+out to be reachable and were closed by proofs, and the other seven went with
+item 13. That leaves `/overview` and the five `/genome/[subject]*` routes here.
 
-**`/embryo-analysis consent-required` was proposed twice** — once in item 6, as
-one of the twenty routes that declare the state and never render it, and again
-in item 10, among the four that reduce this profile to its single render. Both
-readings are right and they agree; but it is one pair, not two, and it is a
-Family or Embryo Analysis route, so neither signature retired it. The profile
-is now `supported: ["consent-required", "jurisdiction-unavailable"]` rather
-than the single state item 10 proposed. Found while counting this table, which
-is the reason to build one.
+**`/embryo-analysis consent-required` was proposed twice** — once in item 6 and
+again in item 10 — and neither signature retired it, because it is a Family or
+Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
+is what retired it, under the `reads-no-consent` exception. It is one pair, not
+two, and it was counted once.
 
 ### And of the 27 that are open, 25 wait on item 11
 

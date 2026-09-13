@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "ef61154015c1768e622bba0ae1302a7b3e37c4cd3cde24d9d42fec8f12498961",
+  "briefSha256": "6b9f8b56ecbcf0f49cfd7d402e008dfa8cff727d1f6eb9d43f417447e3b10a6d",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -13525,6 +13525,13 @@
       "surface": "hub",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "Consent here is a property of a PERSON, not of this page: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The route-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent that could put the hub itself into this state. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "item-level",
+        "carriedBy": "/family/[person] consent-required, and the card's own “Sharing paused” state"
+      },
       "policy": {
         "mode": "public-first-then-authenticated",
         "publicBranch": {
@@ -13598,6 +13605,12 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "consent-required": "61 lines. A form for inviting an adult, which reads a jurisdiction and nothing else. No consent artifact exists that a person must sign before they may invite someone, and inventing one to satisfy this declaration would be adding a product requirement to serve a register entry. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -13663,6 +13676,12 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "consent-required": "This is the page on which the consent is GIVEN. A page-level consent refusal here would send the reader to the page they are already on. Its per-row `onlyTheyCanTurnThisOn` lock is a row state, not a page state, and D-102 covers that row's own empty-reason defect. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "consent-is-given-here"
+      },
       "policy": {
         "mode": "mixed",
         "guardedActions": {
@@ -13787,6 +13806,12 @@
       "surface": "marketing",
       "width": "64rem",
       "stateProfile": "public-embryo-analysis",
+      "notApplicableStates": {
+        "consent-required": "36 lines of public copy with one render, already proven as `jurisdiction-unavailable`, and the profile's `zeroUserDataRule` forbids it reading an account, a subject or a consent at all. The register's own projection for this state here is a panel of prerequisites rather than a refusal, and a page with one render cannot also be in a second state. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "policy": {
         "mode": "public-legality-first",
         "userDataFetch": "forbidden",
@@ -13829,6 +13854,13 @@
       "surface": "hub",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason — a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "item-level",
+        "carriedBy": "/embryos/[embryoId] consent-required and /embryos/compare consent-required, both proven"
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -13879,7 +13911,11 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "notApplicableStates": {
+        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
         "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
       },
       "policy": {
@@ -13909,7 +13945,11 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "notApplicableStates": {
+        "consent-required": "81 lines. A letter to print or paste into a clinic's inbox; it reads no cohort, no subject and no consent, and its one render is proven as `complete`. Read 2026-09-13; corrections item 13, signed.",
         "processing": "Its copy button writes to the clipboard, which is not a network request. Corrections item 8, signed 2026-09-13."
       },
       "policy": {

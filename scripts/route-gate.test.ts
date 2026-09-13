@@ -72,9 +72,12 @@ describe("the route gate holds the register to the code", () => {
     // `/copilot/[scope]` moved to `own-product-result`, which is `product-result`
     // without `jurisdiction-unavailable`. 213 -> 162 on 2026-09-13: corrections
     // items 6, 8 and 10, five profiles giving a state up wholesale and 26 routes
-    // waiving one their profile keeps. Pinned exactly rather than as a floor, so
+    // waiving one their profile keeps. 162 -> 155 on 2026-09-13: G2.2 amended
+    // (D-108), and the seven Family and Embryo routes that declared
+    // consent-required with nothing to require stopped declaring it. Pinned
+    // exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(162);
+    expect(result.requiredStateCount).toBe(155);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
   });
 
@@ -115,10 +118,14 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
-  // Corrections item 7: items 5 and 6 were both measured against the product
-  // and neither against the brief, and G2.2 forbids this exact n/a. The miss
-  // is a gate failure now rather than a reading.
-  it("fails when a Family or Embryo route waives consent-required, which G2.2 forbids", async () => {
+  /**
+   * G2.2's consent prohibition was a blanket until 2026-09-13 and is now
+   * three named exceptions (D-108). These four hold the amendment to its
+   * width: a waiver still fails unless the register says WHICH case applies,
+   * an item-level claim has to name what carries the refusal instead, and an
+   * exception that excepts nothing is a stale exemption.
+   */
+  it("fails when a Family route waives consent-required without claiming a G2.2 exception", async () => {
     const root = plant({
       register: (register) => {
         const route = (register.routes as Route[]).find((entry) => entry.id === "family.health-picture")!;
@@ -129,29 +136,51 @@ describe("the route gate holds the register to the code", () => {
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "route state exemption: /family/health-picture waives consent-required, and G2.2 forbids " +
-        "that n/a on any Family or Embryo Analysis route outright. The correction for these " +
-        "routes is to build the gate, not to stop declaring it.",
+      "route state exemption: /family/health-picture waives consent-required without claiming one of " +
+        "G2.2's exceptions (item-level, consent-is-given-here, reads-no-consent). On a Family or Embryo " +
+        "Analysis route the prohibition holds unless the register says which case applies.",
     );
   });
 
-  it("fails when a profile waives consent-required for the Family routes on it", async () => {
+  it("fails when the claimed exception is not one G2.2 names", async () => {
     const root = plant({
       register: (register) => {
-        const profile = (register.stateProfiles as Record<string, { supported: string[]; notApplicable: Record<string, string> }>)["restricted-flow"];
-        profile.supported = profile.supported.filter((state) => state !== "consent-required");
-        profile.notApplicable["consent-required"] = "None of the four routes renders a consent refusal.";
+        const route = (register.routes as Route[]).find((entry) => entry.id === "family.invite")!;
+        (route as Route & { consentRequiredException: { kind: string } }).consentRequiredException.kind =
+          "the-page-is-only-a-form";
       },
     });
     const { failures } = await runRouteGate(root);
-    // Every Family and Embryo route on the profile, not just the first.
-    for (const routePath of ["/family/invite", "/family/[person]/permissions", "/embryos/upload", "/embryos/request-data"]) {
-      expect(failures).toContain(
-        `route state exemption: ${routePath} waives consent-required, and G2.2 forbids ` +
-          "that n/a on any Family or Embryo Analysis route outright. The correction for these " +
-          "routes is to build the gate, not to stop declaring it.",
-      );
-    }
+    expect(failures.join("\n")).toContain("/family/invite waives consent-required without claiming one of");
+  });
+
+  it("fails when an item-level claim does not name what carries the refusal", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as Route[]).find((entry) => entry.id === "family.index")!;
+        delete (route as Route & { consentRequiredException: { carriedBy?: string } }).consentRequiredException.carriedBy;
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "route state exemption: /family claims G2.2's item-level exception without naming what carries " +
+        "the refusal instead. An item-level claim is only reviewable if it says which item state a " +
+        "reader meets in its place.",
+    );
+  });
+
+  it("fails when an exception is left behind on a route that no longer waives the state", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as Route[]).find((entry) => entry.id === "family.invite")!;
+        delete (route as Route & { notApplicableStates?: Record<string, string> }).notApplicableStates!["consent-required"];
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "route state exemption: /family/invite carries a consentRequiredException but does not waive " +
+        "consent-required. An exception with nothing to except is a stale exemption; remove it.",
+    );
   });
 
   it("fails when a route exports a verb the register does not declare", async () => {
@@ -401,27 +430,23 @@ describe("the corrections table agrees with the register it claims to be counted
       if (!proven.has(`${route.path} ${state}`)) unproven += 1;
     }
   }
-  /**
-   * Item 6's Family and Embryo half: nine routes that declare
-   * `consent-required` and render no refusal, where G2.2 forbids the n/a and
-   * the owner chose to build the gates instead. `/family/[person]` and
-   * `/family/health-picture` left this set on 2026-09-13 — the first was
-   * implemented and untitled, the second was built — so seven remain. It is the last part of items
-   * 6, 8 and 10 that has not been applied, and the only part of this number a
-   * signature could ever have moved. Everything else open is test work.
-   */
-  const CONSENT_GATES_TO_BUILD = 7;
-
   it("states the current total in its heading and its total row", () => {
     expect(unproven, "the register must hold at least one unproven pair for this to mean anything").toBeGreaterThan(0);
     expect(document).toContain(`## Where the ${unproven} unproven pairs stand`);
     expect(document).toContain(`| **Total unproven** | **${unproven}** | |`);
   });
 
-  it("states an open count that is the total less the consent gates still to build", () => {
-    const open = unproven - CONSENT_GATES_TO_BUILD;
-    expect(document).toContain(`| **Genuinely open** | **${open}** |`);
-    expect(document).toContain(`### And of the ${open} that are open,`);
-    expect(document).toContain(`take the ratchet from ${unproven} to ${open}`);
+  /**
+   * Until 2026-09-13 the open count was the total less the pairs a signature
+   * could still retire, and that difference is now zero: items 6, 8, 10 and 13
+   * are applied and no pair waits on a register correction. The invariant that
+   * replaces it is the stronger one — every unproven pair is genuinely open —
+   * and it fails the moment someone writes a row implying a correction could
+   * move this number again.
+   */
+  it("states an open count equal to the total, because no pair waits on a correction", () => {
+    expect(document).toContain(`| **Genuinely open** | **${unproven}** |`);
+    expect(document).toContain(`### And of the ${unproven} that are open,`);
+    expect(document).toContain("Nothing in this number is a register correction any more.");
   });
 });
