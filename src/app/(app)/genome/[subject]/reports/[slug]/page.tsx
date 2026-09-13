@@ -55,7 +55,9 @@ import type { GenotypeSpec } from "@/lib/figures/spec";
 import { CATEGORY_LABELS } from "@/lib/genome/categories";
 import {
   getSubjectFileCount,
+  hasFileInPreparation,
 } from "@/lib/genome/load";
+import { REPORT_PREPARING } from "@/copy/genome/preparation";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { InputProvenance } from "@/components/reports/input-provenance";
@@ -170,8 +172,14 @@ const loadReport = cache(async (segment: string, slug: string, source?: string |
   if (!raw) return { kind: "not-found" } as const;
   const layer = (raw.layer ?? "estimate") as FindingLayer;
   if (context.person && !viewerMaySee(context.person, LAYER_PURPOSES[layer])) return { kind: "not-found" } as const;
+  // D-099: the legacy half answers to the live purpose grant on the reader's
+  // OWN record. Not on a relative's: the authority there is their Family
+  // permission, checked above, and this reader holds no own-subject grant on
+  // that subject, so asking for one would delete legacy sharing rather than
+  // gate it.
   const files = await filterOwnAnalysisFiles(admin, context.dataSubjectId,
-    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", context.person ? candidateFiles.filter(file => file.single_logical_sample_verified_at === null) : candidateFiles);
+    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", context.person ? candidateFiles.filter(file => file.single_logical_sample_verified_at === null) : candidateFiles,
+    { gateLegacy: context.person === null });
   return { ...context, files, fileCount, shared, sharedReport: null, sharedChoices, sharedLegacyAvailable, template: raw as unknown as ReportTemplate };
 });
 
@@ -339,6 +347,12 @@ export default async function ReportDetailPage(
     );
   }
   const { user, subject, dataSubjectId, person, domain, files, fileCount, template, shared, sharedReport, sharedChoices, sharedLegacyAvailable } = context;
+  // The same "in flight" question the five My Genome pages ask, asked of the
+  // same helper (corrections item 9). Own records only: this page renders a
+  // relative's record without a file count, so the sentence would tell one
+  // adult something new about another's record — the reason
+  // `/family/portrait/[pairId]` is still left alone.
+  const preparing = person ? false : await hasFileInPreparation(createAdminClient(), dataSubjectId);
 
   const reportName = reportNameOf(template.title);
   const layer: FindingLayer = template.layer ?? "estimate";
@@ -404,6 +418,7 @@ export default async function ReportDetailPage(
           createAdminClient(),
           dataSubjectId,
           [template],
+          { gateLegacy: person === null },
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>(), calls: [], checkedFileIds: [] };
     const recordedFiles = new Set(calls.map((call) => call.file_id));
@@ -447,7 +462,7 @@ export default async function ReportDetailPage(
         ))}
       </div>
     ) : (
-      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : (
+      <p className="text-sm text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : preparing ? REPORT_PREPARING : (
         <>Choose this result type in <Link className="underline" href={reportsHref}>Reports</Link> to see what your file supports.</>
       )}</p>
     );

@@ -55,19 +55,24 @@ async function subjectPurposeGranted(db: Db, subjectId: string, purpose: OwnRepo
  * removes those sources, without hiding independently valid historical files.
  * Call both before genetic reads and before returning their reduced result.
  *
- * `gateLegacy` ALSO REQUIRES A LIVE SUBJECT-LEVEL GRANT FOR THE LEGACY FILES,
- * and it is off by default because turning it on everywhere is a wider change
- * than the one it was added for.
+ * `gateLegacy` ALSO REQUIRES A LIVE SUBJECT-LEVEL GRANT FOR THE LEGACY FILES.
  *
  * Without it, legacy files pass this function untouched whatever `purpose`
  * says: the early return above hands them back, and the final filter re-admits
  * them by id. That was measured on 2026-09-12 and it contradicted both D-097
  * and the G5.3a matrix row, which each described legacy ancestry rows as
  * "unreadable through filterOwnAnalysisFiles" after revocation. They never
- * were. The operator's answer to D-097 is that they should be, so the ancestry
- * readers pass `gateLegacy` and the report readers, for now, do not - the same
- * asymmetry exists for `reports.monogenic` and `reports.polygenic` and is
- * recorded as its own defect rather than fixed in passing here.
+ * were.
+ *
+ * It stays OFF BY DEFAULT, and the default is not a softer setting - it is
+ * the answer to a different question. Every OWN-record reader passes it:
+ * `ancestry` since D-097, and `reports.monogenic`/`reports.polygenic` since
+ * D-099 on 2026-09-13, so a revoked report purpose withdraws legacy-derived
+ * results from Overview, both report surfaces and the personal previews. The
+ * Family surfaces do not, and must not: a reader looking at a relative's
+ * record holds no own-subject grant on that subject, so this check would
+ * always refuse and would delete legacy sharing rather than gate it. Their
+ * authority is the counterpart's Family permission, checked before the read.
  *
  * The check is deliberately NOT `filter_own_analysis_files_v1`. That RPC
  * resolves a grant per file through `private.current_own_report_grant_v1`,

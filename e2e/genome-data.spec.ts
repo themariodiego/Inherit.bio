@@ -9,6 +9,7 @@ import {
 } from "./helpers";
 import { NO_RANGE_YET, RESOLUTION_LIMIT, panelVersionLine } from "../src/copy/genome/polygenic";
 import { NOT_FOUND_HEADING } from "../src/copy/not-found";
+import { ADD_A_FILE, NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
 
 // The expert path (brief §7.3, §1.4–§1.6, §2.2, X4, X6.1, X13) on the tiny
 // GRCh38 fixture (rs762551 0/1 → A/C; rs4988235 1/1 → A/A), over the real
@@ -384,4 +385,66 @@ test("Settings and the ancestry page link to Data and methods", async ({ page })
 
   await page.goto("/genome/me/ancestry");
   await expect(page.getByRole("link", { name: DATA_AND_METHODS })).toHaveAttribute("href", DATA);
+});
+
+/**
+ * `/genome/[subject] complete`, the My Genome hub with a prepared file behind
+ * it. On the same reading as `/settings complete` and `/settings/data
+ * complete`: this page has no coverage shape of its own, so `complete` means
+ * it is offering every tool the record can actually serve.
+ *
+ * WHY THE HUB HAS NO OTHER PRODUCT-RESULT STATE, which is the measurement
+ * this title rests on and which corrections item 10 records. It renders tiles
+ * and a file count, never a result, so `partial-coverage` and `not-covered`
+ * have nothing to describe here; and it has no empty render, because for an
+ * own record all three tiles are unconditional and for a relative's record
+ * `resolveSubjectRoute` refuses the page outright when nothing is granted
+ * (`anyOf: ["reports.monogenic", "reports.polygenic", "ancestry"]`) rather
+ * than serving an empty hub. Those three are proposed not-applicable.
+ *
+ * The one assertion that is not about presence: the preparing line must be
+ * ABSENT. This file is prepared, and a page that told this reader their
+ * results were still coming would be as wrong as the page that told them to
+ * add a file they had already added.
+ */
+test("/genome/[subject] complete: every tool the record can serve, one file counted, and no claim that anything is still coming", async ({
+  page,
+}) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto("/genome/me");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("My Genome");
+
+  // Three tiles for an own record, each opening something real.
+  const tools = page.getByRole("region", { name: "Genome tools" });
+  await expect(tools.locator("article")).toHaveCount(3);
+  for (const [title, href] of [
+    ["Reports", "/genome/me/reports"],
+    ["Ancestry", "/genome/me/ancestry"],
+    ["Copilot", "/copilot/me"],
+  ] as const) {
+    await expect(tools.getByRole("heading", { name: title, exact: true })).toBeVisible();
+    await expect(tools.getByRole("link", { name: `Open ${title}`, exact: true }))
+      .toHaveAttribute("href", href);
+  }
+
+  // The file is prepared, so nothing here may say results are on their way.
+  await expect(page.getByText("A file is still being prepared", { exact: false }),
+    "the preparing sentence belongs to a file in flight, and this one is not")
+    .toHaveCount(0);
+
+  // The hub's only number, and it counts FILES rather than findings — which
+  // is the distinction this surface exists to keep.
+  await expect(page.locator('[data-slot="subject-files"]')).toHaveText("1 file");
+
+  // "Add a file" appears twice, in the subject bar and as the page's own
+  // action, and both must lead to the same place for this subject. Asserted
+  // as a pair rather than picked apart: two routes to one destination is the
+  // design, and one of them drifting elsewhere is the regression.
+  const addAFile = page.getByRole("link", { name: ADD_A_FILE, exact: true });
+  await expect(addAFile).toHaveCount(2);
+  for (const index of [0, 1]) {
+    await expect(addAFile.nth(index)).toHaveAttribute("href", "/files/upload?subject=me");
+  }
+  await expect(page.getByText(NOT_DIAGNOSTIC, { exact: true })).toBeVisible();
 });

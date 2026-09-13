@@ -142,3 +142,91 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
     .eq("subject_id", invitation!.target_id);
   expect(files).toBe(0);
 });
+
+/**
+ * `/withdraw/[token] complete`: the outcome render, reached by REFUSING.
+ *
+ * This is the first thing in the suite to drive the Refuse control. The test
+ * above accepts, so the accepted outcome was already asserted inside a title
+ * that claims a different pair; refusing gives this pair its own proof AND
+ * covers a rights control nothing had exercised. On a surface whose whole
+ * purpose is letting someone say no, that was the wrong control to leave
+ * undriven.
+ *
+ * `complete` is unambiguous here under every reading in corrections item 11:
+ * the flow reached an end and the page names which end. There is nothing
+ * partial about it and nothing further the page could show.
+ *
+ * SIGNED OUT ON PURPOSE. Accepting needs an account, because it creates a
+ * reserved subject under one; refusing must not, or the product would require
+ * a stranger to register before they could decline. The page renders the
+ * refuse form whether or not anyone is signed in, and this test holds that
+ * open by never signing in.
+ *
+ * A second address rather than the one above: that invitation is spent, and a
+ * used token renders the "cannot be used" outcome, which is a different
+ * sentence about a different situation.
+ */
+test("/withdraw/[token] complete: refusing closes the reserved subject and the page says so, with no account", async ({
+  page,
+  request,
+}) => {
+  const refuser = `adult-refuser-${Date.now()}@e2e.local`;
+
+  await signIn(page, INVITER.email, INVITER.password);
+  await page.goto("/family/invite");
+  await page.getByLabel("Their email address").fill(refuser);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Send invitation" }).click();
+  await expect(page.getByRole("status")).toContainText("Invitation requested");
+
+  const message = await drainMailUntil(request, () => captured.find((email) =>
+    (Array.isArray(email.to) ? email.to : [email.to]).includes(refuser),
+  ), "the second invitation");
+  const invitationUrl = message.html?.match(
+    /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/,
+  )?.[0];
+  expect(invitationUrl, "the mail must carry one opaque invitation URL").toBeTruthy();
+
+  const admin = adminClient();
+  const { data: invitation } = await admin
+    .from("subject_invitations")
+    .select("id, target_id, status")
+    .eq("invitation_kind", "adult_subject")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+  expect(invitation?.status).toBe("pending");
+
+  // No account, and prove it rather than assume it: refusing must not require
+  // a stranger to register first.
+  await page.request.post("/auth/sign-out");
+  await page.context().clearCookies();
+  await page.goto(invitationUrl!);
+  await expect(page.getByText("No genetic data has been shared")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in to accept" }),
+    "accepting needs an account; refusing does not").toBeVisible();
+
+  await page.getByRole("button", { name: "Refuse", exact: true }).click();
+
+  // The outcome: this page's `complete`.
+  await expect(page.getByRole("heading", { name: "Invitation refused" })).toBeVisible();
+  await expect(page.getByText(
+    "The reserved subject was closed. This address will not receive another invitation for this target.",
+    { exact: true },
+  )).toBeVisible();
+  // The controls are gone: an outcome replaces the choice rather than sitting
+  // beside it, so the same token cannot be refused twice or accepted after.
+  await expect(page.getByRole("button", { name: "Refuse", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Accept through my account" })).toHaveCount(0);
+
+  // And the sentence is true: the invitation is no longer pending and the
+  // reserved subject is not active.
+  const { data: after } = await admin
+    .from("subject_invitations").select("status").eq("id", invitation!.id).single();
+  expect(after?.status, "the refusal was recorded, not merely rendered").not.toBe("pending");
+  const { data: target } = await admin
+    .from("subjects").select("lifecycle").eq("id", invitation!.target_id).maybeSingle();
+  expect(target?.lifecycle ?? "gone", "the reserved subject was closed").not.toBe("active");
+});

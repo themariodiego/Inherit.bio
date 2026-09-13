@@ -10,7 +10,7 @@ import {
   waitingForResultsBody,
   waitingForResultsStatus,
 } from "@/copy/embryos/index";
-import { EMBRYO_STATUS, RETENTION_SENTENCE, ROLE_YOU } from "@/copy/embryos/index";
+import { EMBRYO_STATUS, RETENTION_SENTENCE, ROLE_YOU, STILL_CHECKING_STATUS } from "@/copy/embryos/index";
 import {
   BACK_TO_EMBRYOS_LINK,
   COPIED_STATUS,
@@ -20,6 +20,7 @@ import {
   NEXT_STEP_SENTENCE,
   REQUEST_DATA_H1,
 } from "@/copy/embryos/request-data";
+import { FILE_NOT_ADDED_SENTENCE } from "@/copy/embryos/detail";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import {
   BACK_BUTTON,
@@ -75,6 +76,9 @@ import { INGEST_REFUSALS } from "@/copy/upload/errors";
 const A = { email: "embryos-a@e2e.local", password: "e2e-embryos-pw" };
 const B = { email: "embryos-b@e2e.local", password: "e2e-embryos-pw" };
 const C = { email: "embryos-c@e2e.local", password: "e2e-embryos-pw" };
+/** Holds the one cohort that is still being read, so A's hub keeps its two. */
+const D = { email: "embryos-d@e2e.local", password: "e2e-embryos-pw" };
+const E = { email: "embryos-e@e2e.local", password: "e2e-embryos-pw" };
 
 /** The register's own copy for an unreviewed capability (data/jurisdictions.json). */
 const UNREVIEWED_COPY = "This part of Inherit is not available here because its legal review is not complete.";
@@ -95,6 +99,11 @@ let cohort1 = "";
 let cohort2 = "";
 let embryo1 = "";
 let embryo2Of2 = "";
+let accountD = "";
+let accountE = "";
+let embryoAwaitingFile = "";
+let cohortIngesting = "";
+let embryoPending = "";
 
 test.describe.configure({ mode: "serial" });
 
@@ -166,7 +175,8 @@ async function unseed(ownerAccountId: string) {
 
 interface SeededEmbryo {
   ordinal: number;
-  status: "qc_pass" | "qc_marginal" | "qc_fail";
+  /** `pending` is an embryo whose QC has not run; it carries no `embryo_qc` row. */
+  status: "qc_pass" | "qc_marginal" | "qc_fail" | "pending";
   callRate: number;
 }
 
@@ -176,6 +186,13 @@ async function seedCohort(input: {
   requiredPrincipals: string[];
   createdAt: string;
   embryos: SeededEmbryo[];
+  /**
+   * `ingesting` is a cohort the pipeline is still reading (`access.ts:117`);
+   * `upload_pending` is the status `finalize_embryo_cohort_v1` writes, with
+   * the declared embryo subjects already created and no file yet
+   * (`access.ts:118`).
+   */
+  cohortStatus?: "active" | "ingesting" | "upload_pending";
 }): Promise<{ cohortId: string; embryoIds: string[] }> {
   const admin = adminClient();
   const inThirtyDays = new Date(Date.now() + 30 * 86_400_000).toISOString();
@@ -206,7 +223,7 @@ async function seedCohort(input: {
       basis_revision: 1,
       participant_set_revision: 1,
       donor_attribution_revision: 1,
-      status: "active",
+      status: input.cohortStatus ?? "active",
       embryo_count: input.embryos.length,
       retention_expires_at: inTwoYears,
       created_at: input.createdAt,
@@ -252,6 +269,9 @@ async function seedCohort(input: {
       .select("id")
       .single();
     if (embryoError || !row) throw new Error(`embryo: ${embryoError?.message}`);
+    // A pending embryo has no QC verdict yet, so it gets no QC row: seeding one
+    // would describe a check that has not run.
+    if (embryo.status === "pending") { embryoIds.push(row.id); continue; }
     const sitesExpected = 1000;
     const { error: qcError } = await admin.from("embryo_qc").insert({
       embryo_id: row.id,
@@ -319,6 +339,39 @@ test.beforeAll(async () => {
   });
   cohort2 = second.cohortId;
   embryo2Of2 = second.embryoIds[0];
+
+  // A separate account for the still-being-read cohort. On A it would change
+  // the hub's card count and the newest-first order that `/embryos complete`
+  // pins, and those two assertions are the point of that test.
+  accountD = await createConfirmedUser(D.email, D.password);
+  await unseed(accountD);
+  const principalD = await accountPrincipalOf(accountD);
+  const ingesting = await seedCohort({
+    owner: accountD,
+    uploaderPrincipal: principalD,
+    requiredPrincipals: [principalD],
+    createdAt: "2026-09-03T10:00:00.000Z",
+    cohortStatus: "ingesting",
+    embryos: [{ ordinal: 0, status: "pending", callRate: 0 }],
+  });
+  cohortIngesting = ingesting.cohortId;
+  embryoPending = ingesting.embryoIds[0];
+
+  // And a fifth for the cohort that has been finalized and has no file yet.
+  // Separate for the same reason as D: on either of the others it would move
+  // a card count or an order that another test pins.
+  accountE = await createConfirmedUser(E.email, E.password);
+  await unseed(accountE);
+  const principalE = await accountPrincipalOf(accountE);
+  const awaitingFile = await seedCohort({
+    owner: accountE,
+    uploaderPrincipal: principalE,
+    requiredPrincipals: [principalE],
+    createdAt: "2026-09-04T10:00:00.000Z",
+    cohortStatus: "upload_pending",
+    embryos: [{ ordinal: 0, status: "qc_pass", callRate: 0.99 }],
+  });
+  embryoAwaitingFile = awaitingFile.embryoIds[0];
 });
 
 test("signed out, every Embryo route sends the visitor to sign in and renders nothing", async ({ page }) => {
@@ -392,7 +445,23 @@ test("/embryos/compare empty: the zero-cohort blocking state with no cohort, and
   await expectAxeClean(page);
 });
 
-test("/embryos/request-data: the letter verbatim, one primary action that copies it, the formats and the way back", async ({ page }) => {
+/**
+ * RETITLED 2026-09-13 to name `/embryos/request-data complete`. The
+ * assertions already established it: this page has one render and the test
+ * covers all of it — the letter verbatim, the copy control proven by reading
+ * the clipboard back, the formats, the next step and the way out.
+ *
+ * `complete` is unambiguous here under every reading in corrections item 11.
+ * The page's whole substance is one letter; there is no coverage to be partial
+ * about, nothing withheld for a permission, and no second shape.
+ *
+ * ONE ASSERTION IS NEW. This letter is written to be pasted into an email to a
+ * clinic, so it must carry nothing about a specific record. The exact-text
+ * check above already pins it, but only against today's constant; the new
+ * assertion says the rendered letter contains no identifier at all, which is
+ * the property that must hold whatever the copy becomes.
+ */
+test("/embryos/request-data complete: the letter verbatim, one primary action that copies it, the formats and the way back", async ({ page }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await signIn(page, C.email, C.password);
   await page.goto("/embryos/request-data");
@@ -409,6 +478,11 @@ test("/embryos/request-data: the letter verbatim, one primary action that copies
   await page.getByRole("button", { name: COPY_EMAIL_BUTTON }).click();
   await expect(page.locator('[data-slot="copy-status"]')).toHaveText(COPIED_STATUS);
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LETTER);
+
+  // A letter meant for a clinic's inbox names no record of the sender's.
+  const letterText = await page.locator('blockquote[data-slot="request-letter"]').innerText();
+  expect(letterText, "no opaque identifier travels in a letter the reader will paste elsewhere")
+    .not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
 
   const body = await (await page.request.get("/embryos/request-data")).body();
   expect(body.length).toBeLessThanOrEqual(150 * 1024);
@@ -615,9 +689,35 @@ test("/embryos/{id} for an unknown, malformed or foreign embryo answers 404 with
   }
 });
 
-test("/embryos for the uploader: the seeded cohort's chips, status words, analysis line, links and the second cohort's jurisdiction line", async ({ page }) => {
+/**
+ * RETITLED 2026-09-13 to name `/embryos complete`. The assertions already
+ * established it; the title described the fixture rather than the state.
+ *
+ * `complete` here is the reading that holds under every candidate definition
+ * in corrections item 11, which is why this one could be titled while the
+ * ambiguous pairs wait: the hub is showing everything it has and everything it
+ * is permitted to. Both cohorts are listed with every chip, status word,
+ * retention line and link they carry; the compare tile resolves to the newest
+ * readable cohort; and the Copilot tile states its blocking reason rather than
+ * shipping a dead link.
+ *
+ * THE SECOND COHORT'S JURISDICTION LINE DOES NOT MAKE THIS INCOMPLETE, and the
+ * distinction is worth stating because it is easy to get backwards. That line
+ * is what the page HAS for that cohort — the honest answer for a record whose
+ * capability is unreviewed. The route-level `jurisdiction-unavailable` state
+ * is a different render entirely, proven in `e2e/embryos.nojurisdiction.spec.ts`
+ * where the whole capability refuses. The assertion added below is the
+ * discriminator: this page carries the availability line, not the route's
+ * jurisdiction line.
+ */
+test("/embryos complete: both cohorts listed with every chip, status, link and retention line, and each tile resolved or explained", async ({ page }) => {
   await signIn(page, A.email, A.password);
   await page.goto("/embryos");
+  // The route is permitted here. Without this the assertions below would also
+  // pass on a page that had refused at the route level and happened to render
+  // its cohort list, which is the one thing `complete` must exclude.
+  await expect(page.locator('[data-slot="availability-line"]')).toHaveCount(1);
+  await expect(page.locator('[data-slot="jurisdiction-line"]')).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 2, name: "Your embryos" })).toBeVisible();
   await expect(page.locator('[data-slot="empty-state"]')).toHaveCount(0);
   const cards = page.locator('[data-slot="cohort-card"]');
@@ -734,4 +834,113 @@ test("the co-parent sees the shared cohort through the participant set, and only
   await expect(page.getByRole("heading", { level: 1, name: "Embryo 1" })).toBeVisible();
   await expect(page.locator('[data-slot="blocking-state"][data-state="consent-required"]')).toHaveCount(1);
   await expectNoResults(page);
+});
+
+/**
+ * `processing` on the three Embryo result surfaces, which nothing had rendered
+ * in a browser before.
+ *
+ * WHAT THE STATE IS. `resolveResultSurfaceState` returns `processing` when the
+ * cohort is still being read or an embryo has no QC verdict yet
+ * (`src/lib/embryos/access.ts:117`: `cohort.status === "ingesting" || embryoStatus === "pending"`).
+ * `src/lib/embryos/access.test.ts` already covers that resolver over the pure
+ * inputs; what was missing was any evidence the three pages render it.
+ *
+ * WHY IT IS SEEDED, and the honesty of that. E0 — the route the upload flow
+ * would post to — does not exist, so no cohort can be created through the
+ * product at all; every Embryo test in this file seeds, and its header says so.
+ * Seeding `ingesting` and `pending` is the same kind of fixture, not a
+ * stronger one: both are values the schema permits and the product's own
+ * resolver branches on. The pending embryo carries NO `embryo_qc` row, because
+ * a check that has not run should not be described as having a verdict.
+ *
+ * ON A SEPARATE ACCOUNT. On A this cohort would change the hub's card count
+ * and the newest-first order that `/embryos complete` pins, and those two
+ * assertions are the point of that test.
+ *
+ * `processing` is one of the state ids corrections item 11 does NOT find
+ * overloaded: it means work in flight on every route that has claimed it. That
+ * is why these three could be titled while the `complete` and coverage pairs
+ * wait for the operator.
+ */
+
+test("/embryos processing: a cohort still being read says so on its card, with no result and no verdict", async ({ page }) => {
+  await signIn(page, D.email, D.password);
+  await page.goto("/embryos");
+
+  const card = page.locator(`[data-cohort-id="${cohortIngesting}"]`);
+  await expect(card).toHaveCount(1);
+  await expect(card).toHaveAttribute("data-cohort-status", "ingesting");
+  await expect(card.locator('[data-slot="cohort-state"]')).toHaveText(STILL_CHECKING_STATUS);
+
+  // The embryo chip is present, and this is the assertion that took a run to
+  // get right: I expected no chip at all, and the product is more careful than
+  // that. A pending embryo carries no `embryo_qc` row, so the card says
+  // "Checking the file" and says NO verdict — not "Ready", not "Quality check
+  // not passed". Asserting the absence of a chip would have been asserting
+  // the absence of an honest sentence.
+  const chip = card.locator('[data-slot="embryo-state"]');
+  await expect(chip).toHaveText(EMBRYO_STATUS.pending);
+  for (const verdict of [EMBRYO_STATUS.qc_pass, EMBRYO_STATUS.qc_marginal, EMBRYO_STATUS.qc_fail]) {
+    await expect(card, `no verdict before the check has run: ${verdict}`).not.toContainText(verdict);
+  }
+  await expectNoResults(page);
+  await expectNoSexOrRank(page);
+});
+
+test("/embryos/compare processing: the comparison withholds everything while the files are still being read", async ({ page }) => {
+  await signIn(page, D.email, D.password);
+  await page.goto(`/embryos/compare?cohort=${cohortIngesting}`);
+
+  const blocking = page.locator('[data-slot="blocking-state"]');
+  await expect(blocking).toHaveAttribute("data-state", "processing");
+  await expect(blocking).toContainText(STILL_CHECKING_STATUS);
+
+  // The state replaces the comparison rather than sitting above a partial one.
+  await expect(page.locator("[data-compare-surface]")).toHaveCount(0);
+  await expectNoResults(page);
+  await expectNoSexOrRank(page);
+});
+
+/**
+ * `/embryos/[embryoId] empty`, and it is a different absence from the one
+ * above. `processing` is a file that is being read; this is a cohort that has
+ * been finalized with its declared embryo subjects created and NO FILE SENT
+ * YET — the status `finalize_embryo_cohort_v1` writes and the one
+ * `access.ts:118` reads. The two are one line apart in the resolver and owe a
+ * reader two different sentences.
+ *
+ * The embryo carries a passing QC row on purpose: without it the `pending`
+ * branch one line earlier would answer first, and this test would be proving
+ * `processing` again under another name.
+ */
+test("/embryos/[embryoId] empty: the cohort is finalized and no file has been added, which is not the same as one still being read", async ({ page }) => {
+  await signIn(page, E.email, E.password);
+  await page.goto(`/embryos/${embryoAwaitingFile}`);
+
+  const blocking = page.locator('[data-slot="blocking-state"]');
+  await expect(blocking).toHaveAttribute("data-state", "empty");
+  await expect(blocking).toContainText(FILE_NOT_ADDED_SENTENCE);
+  // The neighbouring sentence, which would tell this reader that something is
+  // under way when nothing has been sent.
+  await expect(page.getByText(STILL_CHECKING_STATUS, { exact: true })).toHaveCount(0);
+
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Embryo 1");
+  await expectNoResults(page);
+  await expectNoSexOrRank(page);
+});
+
+test("/embryos/[embryoId] processing: the detail page withholds everything while its QC has not run", async ({ page }) => {
+  await signIn(page, D.email, D.password);
+  await page.goto(`/embryos/${embryoPending}`);
+
+  const blocking = page.locator('[data-slot="blocking-state"]');
+  await expect(blocking).toHaveAttribute("data-state", "processing");
+  await expect(blocking).toContainText(STILL_CHECKING_STATUS);
+
+  // The page still identifies the embryo it is about — withholding a result is
+  // not the same as refusing to say which record the reader is looking at.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Embryo 1");
+  await expectNoResults(page);
+  await expectNoSexOrRank(page);
 });

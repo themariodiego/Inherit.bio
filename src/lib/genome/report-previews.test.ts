@@ -7,6 +7,16 @@ import type { ReportTemplate } from "./reports";
 import type { Db } from "./load";
 import { loadPersonalPreviews, resolvePersonalPreview, type PreviewAudience, type PreviewCall } from "./report-previews";
 
+/**
+ * Since D-099 a preview built from a LEGACY source answers to the same live
+ * `reports.polygenic` grant as a modern one, so these reads now need a
+ * session and a grant answer. Both are mocked here rather than stubbed away:
+ * the grant RPC is what the last test in this file revokes.
+ */
+const mocks = vi.hoisted(() => ({ actor: vi.fn() }));
+vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
+mocks.actor.mockResolvedValue({ accountId: "owner", sessionId: "session" });
+
 const audience: PreviewAudience = {
   viewerAccountId: "owner", ownerAccountId: "owner", subjectClass: "self", subjectId: "subject", isFamily: false,
 };
@@ -123,12 +133,36 @@ describe("reviewed personal previews", () => {
     };
     const fileQuery = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
       range: async () => ({ data: [{ id: "known", status: "annotated", single_logical_sample_verified_at: null, build: "GRCh37" }] }) };
-    const db = { from: vi.fn((table: string) => table === "genome_files" ? fileQuery : query) } as unknown as Db;
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+    const db = { rpc, from: vi.fn((table: string) => table === "genome_files" ? fileQuery : query) } as unknown as Db;
     const result = await loadPersonalPreviews(db, audience, templates, [{ id: "known", build: "GRCh37" }, { id: "unknown", build: null }], new Set());
+    // The legacy source is readable because the purpose is granted, and the
+    // question asked is the subject-level one D-097 established.
+    expect(rpc).toHaveBeenCalledWith("own_subject_purpose_granted_v1", {
+      p_account_id: "owner", p_session_id: "session", p_subject_id: "subject", p_purpose: "reports.polygenic",
+    });
     expect(query.eq.mock.calls).toEqual([["subject_id", "subject"], ["user_id", "owner"], ["subject_id", "subject"], ["user_id", "owner"]]);
     expect(query.in.mock.calls[0]).toEqual(["file_id", ["known"]]);
     expect(result.get(trait.slug)?.text).toBe(trait.statements.TT);
     query.then = (resolve) => resolve({ data: [call], error: { message: "unavailable" } });
     expect((await loadPersonalPreviews(db, audience, templates, [{ id: "known", build: "GRCh38" }], new Set())).size).toBe(0);
+  });
+
+  it("withholds a legacy-derived preview once the polygenic purpose is revoked (D-099)", async () => {
+    const query = {
+      select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(), range: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(), then: (resolve: (value: unknown) => void) => resolve({ data: [{ ...call, file_id: "known" }], error: null }),
+    };
+    const fileQuery = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(),
+      range: async () => ({ data: [{ id: "known", status: "annotated", single_logical_sample_verified_at: null, build: "GRCh37" }] }) };
+    const from = vi.fn((table: string) => table === "genome_files" ? fileQuery : query);
+    // The one difference from the test above: the grant is gone. The rows are
+    // still there and still readable by the raw query; the preview is not.
+    const revoked = { rpc: vi.fn().mockResolvedValue({ data: false, error: null }), from } as unknown as Db;
+    expect((await loadPersonalPreviews(revoked, audience, templates, [{ id: "known", build: "GRCh37" }], new Set())).size).toBe(0);
+    // Fail closed rather than open: an unreadable grant answer withholds too.
+    const unreadable = { rpc: vi.fn().mockResolvedValue({ data: null, error: { message: "down" } }), from } as unknown as Db;
+    expect((await loadPersonalPreviews(unreadable, audience, templates, [{ id: "known", build: "GRCh37" }], new Set())).size).toBe(0);
   });
 });

@@ -7,7 +7,7 @@
     {"term": "allele", "aliases": ["alleles"], "definition": "One version of a DNA position."},
     {"term": "analysis", "aliases": ["analyses"], "definition": "A structured check of data to answer a question."},
     {"term": "ancestry", "aliases": ["ancestral"], "definition": "The populations and places connected to a person's biological family history."},
-    {"term": "association", "aliases": ["associations", "associated", "associate"], "definition": "A pattern in groups that does not by itself prove cause."},
+    {"term": "association", "aliases": ["associations", "associated", "associate"], "definition": "A pattern in groups that does not by itself prove cause.", "citationId": "handbook:cdc-epidemiology-glossary-association"},
     {"term": "autoimmune", "definition": "Describes the immune system attacking the body's own cells.", "citationId": "registry:nci-autoimmune-disease"},
     {"term": "autosomal", "definition": "On one of the 22 numbered chromosome pairs, not on the X or Y."},
     {"term": "average", "definition": "One central value used to summarize a group.", "citationId": "handbook:nist-measures-of-location"},
@@ -53,7 +53,7 @@
     {"term": "heritability", "definition": "The share of the differences between people in a trait that comes from their genes.", "citationId": "registry:nci-genetics-heritability"},
     {"term": "heterozygous", "aliases": ["heterozygote", "heterozygotes"], "definition": "Having two different DNA versions at a position."},
     {"term": "homozygous", "aliases": ["homozygote", "homozygotes"], "definition": "Having two matching DNA versions at a position."},
-    {"term": "imputation", "aliases": ["imputed"], "definition": "Filling in unmeasured DNA positions with a statistical model."},
+    {"term": "imputation", "aliases": ["imputed"], "definition": "Filling in unmeasured DNA positions with a statistical model.", "citationId": "documentation:igsr-1000-genomes-imputation"},
     {"term": "incidence", "definition": "How many new cases of a condition appear in a group over a period.", "citationId": "handbook:cdc-epidemiology-incidence"},
     {"term": "inflammation", "definition": "The body's response to injury, infection, or irritation.", "citationId": "registry:nci-inflammation"},
     {"term": "inheritance", "aliases": ["inherited"], "definition": "The passing of DNA from biological parents to children."},
@@ -81,7 +81,7 @@
     {"term": "personal data", "definition": "Information linked or reasonably linkable to a person."},
     {"term": "phenotype", "aliases": ["phenotypes", "phenotypic"], "definition": "An observable trait or condition shaped by DNA and other factors."},
     {"term": "pigmentation", "definition": "Color produced by biological pigments in skin, hair, or eyes."},
-    {"term": "polygenic", "definition": "Influenced by many DNA positions, usually with small effects."},
+    {"term": "polygenic", "definition": "Influenced by two or more genes rather than a single one.", "citationId": "registry:nhgri-glossary-polygenic-trait"},
     {"term": "population", "aliases": ["populations"], "definition": "A defined group of people used for a study or comparison."},
     {"term": "preliminary", "definition": "Early evidence that needs more study before strong conclusions."},
     {"term": "prevalence", "definition": "How common a condition is in a group at one point in time.", "citationId": "handbook:cdc-epidemiology-prevalence"},
@@ -95,7 +95,7 @@
     {"term": "reference panel", "aliases": ["reference panels"], "definition": "A set of genomes used as the comparison group for an estimate."},
     {"term": "regulator", "aliases": ["regulators", "regulatory"], "definition": "A public authority that oversees rules for an activity."},
     {"term": "relative risk", "aliases": ["relative"], "definition": "A ratio comparing chances in two groups.", "citationId": "handbook:cdc-epidemiology-risk-ratio"},
-    {"term": "replication", "aliases": ["replicated"], "definition": "A new study finding a similar result with other data."},
+    {"term": "replication", "aliases": ["replicated"], "definition": "A new study finding a similar result with other data.", "citationId": "report:nasem-2019-replicability"},
     {"term": "research consent", "definition": "Specific permission for data or samples to be used in research."},
     {"term": "revocable", "aliases": ["revocation", "revoked"], "definition": "Able to be withdrawn for future access or use."},
     {"term": "risk allele", "definition": "A DNA version linked to a group-level difference in chance."},
@@ -110,6 +110,6 @@
     {"term": "variant", "aliases": ["variants", "variation"], "definition": "A difference at a place in DNA."},
     {"term": "whole genome", "definition": "Nearly all of a person's DNA, including regions outside genes."},
     {"term": "x-linked", "definition": "An inheritance pattern involving a gene on the X chromosome."},
-    {"term": "z-score", "aliases": ["z-scores"], "definition": "How far a value sits from the average, in units of the usual spread."}
+    {"term": "z-score", "aliases": ["z-scores"], "definition": "How far a value sits from the average, in units of the usual spread.", "citationId": "handbook:nist-detection-of-outliers"}
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "term": "replication",
+  "url": "https://www.ncbi.nlm.nih.gov/books/NBK547546/",
+  "finalUrl": "https://www.ncbi.nlm.nih.gov/books/NBK547546/",
+  "fetchedAt": "2026-09-13T01:08:52.056Z",
+  "pageBytes": 86843,
+  "pageSha256": "01ab67b02899a64b5511b94e47f5a4b3496b589b072ad770ad7ef1822997e4aa",
+  "pageTitle": "Understanding Reproducibility and Replicability - Reproducibility and Replicability in Science - NCBI Bookshelf",
+  "pageDate": null,
+  "pageDateIsFetchDate": false,
+  "pageDescription": "Scientific research has evolved from an activity mainly undertaken by individuals operating in a few locations to many teams, large communities, and complex organizations involving hundreds to thousands of individuals worldwide. In the 17th century, scientists would communicate through letters and were able to understand and assimilate major developments across all the emerging major disciplines. In 2016—the most recent year for which data are available—more than 2,295,000 scientific and engineering research articles were published worldwide (National Science Foundation, 2018e). In addition, the number of scientific and engineering fields and subfields of research is large and has greatly expanded in recent years, especially in fields that intersect disciplines (e.g., biophysics); more than 230 distinct fields and subfields can now be identified. The published literature is so voluminous and specialized that some researchers look to information retrieval, machine learning, and artificial intelligence techniques to track and apprehend the important work in their own fields.",
+  "quote": "Replicability is obtaining consistent results across studies aimed at answering the same scientific question, each of which has obtained its own data."
+}

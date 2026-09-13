@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
+  adminClient,
   createConfirmedUser,
   firstViewportInteractives,
   seededTemplateCount,
@@ -126,14 +127,42 @@ async function expectExactlyOnePrimary(page: Page, name: string, href: string) {
 
 test.describe.configure({ mode: "serial" });
 
+/** Kept so the empty-state test can name the account whose files it counts. */
+let accountId = "";
+
 test.beforeAll(async () => {
-  await createConfirmedUser(USER.email, USER.password);
+  accountId = await createConfirmedUser(USER.email, USER.password);
 });
 
-test("State A: four headings, the Start-here strip, nine box links, one primary button and the empty-hub budget", async ({
+/**
+ * RETITLED 2026-09-12, not rewritten. Every assertion below already proved
+ * `/overview empty`; the title simply did not name the pair, so the route
+ * gate could not count it. That is the `/family/[person] empty` case again —
+ * a state implemented and never titled — and NOT the `/settings/people` case,
+ * where a title certified a render the route could not produce. State A is
+ * exactly what `empty` means in this register: the page works and there is no
+ * content for it yet.
+ *
+ * ONE ASSERTION IS NEW, and it is what makes the title safe. `empty` and
+ * `not-covered` render alike here — no figures, no numbers — and they mean
+ * opposite things: nothing uploaded, versus a file that covered nothing. So
+ * the test now establishes the cause from the database rather than inferring
+ * it from the absence: this account has no file at all.
+ */
+test("/overview empty: State A shows the Start-here strip, four headings, nine box links, one primary button and no number at all", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
+
+  // The reason this page is empty, stated rather than assumed. Without it the
+  // assertions below would pass just as well for an account whose file was
+  // prepared and covered nothing, which is a different state with a different
+  // sentence owed to the reader.
+  const { data: files, error } = await adminClient()
+    .from("genome_files").select("id").eq("user_id", accountId);
+  expect(error).toBeNull();
+  expect(files, "State A because nothing was uploaded, not because nothing was covered").toEqual([]);
+
   await page.goto("/overview");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Overview");

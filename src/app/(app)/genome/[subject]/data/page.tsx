@@ -14,11 +14,12 @@ import {
   MANAGE_FILES,
   SCORE_COVERAGE_HEADING,
   SCORE_COVERAGE_NO_FILE,
+  SCORE_COVERAGE_PREPARING,
   SCORE_COVERAGE_NONE,
   scoreInputLabel,
 } from "@/copy/genome/data";
 import { NAV_LABELS } from "@/copy/navigation";
-import { getSubjectFileCount } from "@/lib/genome/load";
+import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { getPreparedSourceFiles } from "@/lib/genome/prepared-sources";
 import { scorePanel } from "@/lib/genome/prs-panel";
 import { loadInputSources } from "@/lib/genome/input-sources";
@@ -63,9 +64,13 @@ export default async function GenomeDataPage(
   const mayReadScores = person === null || viewerMaySee(person, "reports.polygenic");
   // The coverage facts read the processed files; the subject bar counts
   // every file in the record, whatever its status.
-  const [files, fileCount] = await Promise.all([
+  // `preparing` is read separately from `fileCount`, and the difference
+  // matters: the count includes a rejected or retired file, which is no
+  // reason to promise a reader that coverage is coming.
+  const [files, fileCount, preparing] = await Promise.all([
     getPreparedSourceFiles(admin, dataSubjectId),
     getSubjectFileCount(admin, dataSubjectId),
+    hasFileInPreparation(admin, dataSubjectId),
   ]);
 
   // Per-score panel coverage facts (name, id, matched of n, ancestry note).
@@ -135,7 +140,9 @@ export default async function GenomeDataPage(
           {SCORE_COVERAGE_HEADING}
         </h2>
         {files.length === 0 ? (
-          <p className="max-w-prose text-sm text-ink-muted">{SCORE_COVERAGE_NO_FILE}</p>
+          <p className="max-w-prose text-sm text-ink-muted">
+            {preparing ? SCORE_COVERAGE_PREPARING : SCORE_COVERAGE_NO_FILE}
+          </p>
         ) : scores.length === 0 ? (
           <p className="max-w-prose text-sm text-ink-muted">{SCORE_COVERAGE_NONE}</p>
         ) : (

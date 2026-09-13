@@ -13,6 +13,7 @@ import {
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { NAV_LABELS } from "@/copy/navigation";
+import { REPORTS_PREPARING } from "@/copy/genome/preparation";
 import { EVIDENCE_PUBLIC_LABELS } from "@/copy/reports/evidence";
 import {
   CANNOT_NUMBER_HREF,
@@ -27,6 +28,7 @@ import {
 import {
   getPublishedTemplates,
   getSubjectFileCount,
+  hasFileInPreparation,
 } from "@/lib/genome/load";
 import { getSubjectReportCalls } from "@/lib/genome/report-calls";
 import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
@@ -123,12 +125,15 @@ export default async function ReportsPage(
   if (shared && !shared.authorized) notFound();
   // The results read the processed files; the subject bar counts every file
   // in the record, whatever its status.
-  const [files, legacyOrOwnFileCount, allTemplates] = await Promise.all([
+  const [files, legacyOrOwnFileCount, allTemplates, preparing] = await Promise.all([
     loadOwnAnalysisCandidateFiles(admin, dataSubjectId, { legacyOnly: person !== null }),
     person ? admin.from("genome_files").select("id", { count: "exact", head: true })
       .eq("subject_id", dataSubjectId).is("single_logical_sample_verified_at", null).then(result => result.count ?? 0)
       : getSubjectFileCount(admin, dataSubjectId),
     getPublishedTemplates(admin),
+    // A narrower question than the count above: a rejected or retired file is
+    // counted and is no reason to tell a reader that coverage is coming.
+    hasFileInPreparation(admin, dataSubjectId),
   ]);
   // Test fixtures never reach the user-facing library.
   const stored = new Map<string, NonNullable<ReturnType<typeof resolveStoredSharedReport>>>();
@@ -144,7 +149,12 @@ export default async function ReportsPage(
   // Each layer has its own input map: one selected purpose cannot populate
   // another layer's coverage, genotypes or personalized text.
   const layerCalls = new Map(await Promise.all(allowedLayers.map(async layer => [layer,
-    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer)),
+    // D-099: gate the legacy half on the live purpose grant for the reader's
+    // OWN record. On a relative's record the authority is their Family
+    // permission, already checked above, and this reader holds no own-subject
+    // grant there — asking for one would remove legacy sharing, not gate it.
+    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer),
+      { gateLegacy: person === null }),
   ] as const)));
   const resolved = templates.map((t) =>
     stored.get(t.slug) ?? resolveTemplate(t, (rsid) => layerCalls.get(t.layer ?? "estimate")?.genotypes.get(rsid)),
@@ -246,7 +256,8 @@ export default async function ReportsPage(
       <header className="space-y-3">
         <h1 className="display text-3xl">{REPORTS_TITLE}</h1>
         {fileCount === 0 ? <p className="text-sm text-ink-muted">{shared?.access.some(access => access.kind === "canonical")
-          ? "No completed result is shared yet." : LIST_NO_FILE}</p> : null}
+          ? "No completed result is shared yet." : LIST_NO_FILE}</p>
+          : preparing ? <p role="status" className="text-sm text-ink-muted">{REPORTS_PREPARING}</p> : null}
         {/* One count line per non-empty layer, each carrying its own layer
             noun (G4.3), so a future variant_call layer is never described
             as estimates: the covered count, then the layer total. */}

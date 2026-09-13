@@ -21,6 +21,9 @@ import { createClient } from "@/lib/supabase/server";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "@/lib/exports/own-subject-content";
 import { ownSubjectPurposeGranted } from "@/lib/genome/own-analysis-access";
 
+/** The two report selections the legacy half of this archive answers to (D-099). */
+const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
+
 export const maxDuration = 300;
 const originalStateSchema = z.object({ version: z.literal("own-original-download-state-v1"), fileId: z.uuid(),
   prepared: z.boolean(), retired: z.boolean(), expiresAt: z.iso.datetime({ offset: true }).nullable() }).strict();
@@ -153,7 +156,20 @@ async function appendVariantsCsv(
 
 /** Resolves the report library against each processed file exactly like the
  * /reports pages do (same loaders, same resolver — no reimplementation). */
-async function buildReports(supabase: Db, legacyIds: Set<string>) {
+/**
+ * `allowLayer` is D-099, closed 2026-09-13: the legacy half of the archive
+ * answers to the same live `reports.monogenic` / `reports.polygenic` grants
+ * as the report surfaces, exactly as its ancestry half has since D-097.
+ *
+ * It gates by LAYER rather than per file, because the two purposes are two
+ * separate choices: a reader who selected estimates and revoked variant calls
+ * must not receive variant calls in an archive. A file with neither purpose
+ * granted is not read at all — it still appears, with no reports, because the
+ * archive's file list is not a result and hiding the file would misdescribe
+ * what the account holds.
+ */
+async function buildReports(supabase: Db, legacyIds: Set<string>,
+  allowLayer: (fileId: string, layer: string) => boolean) {
   const [processedFiles, allTemplates] = await Promise.all([
     getProcessedFiles(supabase),
     getPublishedTemplates(supabase),
@@ -164,12 +180,17 @@ async function buildReports(supabase: Db, legacyIds: Set<string>) {
 
   const files = [];
   for (const f of processedFiles.filter(file => legacyIds.has(file.id))) {
+    const permitted = templates.filter((t) => allowLayer(f.id, t.layer ?? "estimate"));
+    if (permitted.length === 0) {
+      files.push({ file_id: f.id, original_name: f.original_name, report_count: 0, reports: [] });
+      continue;
+    }
     const genotypes = await getGenotypesByRsid(
       supabase,
       f.id,
-      templateRsids(templates),
+      templateRsids(permitted),
     );
-    const reports = templates
+    const reports = permitted
       .map((t) => resolveTemplate(t, (rsid) => genotypes.get(rsid)))
       .filter((r) => r.covered)
       .map((r) => ({
@@ -635,9 +656,42 @@ export async function GET() {
       await writeChunk(ancestry, "]"); ancestry.end();
       contents.push({ path: "ancestry.json", description: "Completed source-bound ancestry estimates and legacy ancestry results.", count: ancestryCount });
 
-      // Stored canonical outcomes and the unchanged legacy report resolver.
-      const reportFiles: ExportReportFile[] = [...await buildReports(supabase, legacyIds), ...canonicalReports];
+      // Stored canonical outcomes and the legacy report resolver.
+      //
+      // D-099, resolved 2026-09-13: the legacy half must refuse after a report
+      // purpose is revoked, exactly as the canonical half and the ancestry
+      // half above already do. This read used to carry NO report check at all,
+      // so a revoked `reports.monogenic` or `reports.polygenic` still shipped
+      // legacy-derived results in the archive.
+      //
+      // Same shape as the ancestry gate: subject-scoped, asked per subject and
+      // per purpose, and asked again immediately after the build so that a
+      // revocation landing mid-export cannot leave a buffered result in the
+      // archive. The two purposes are held separately because they are two
+      // separate selections.
+      const reportsGranted = async () => {
+        const granted = new Set<string>();
+        for (const subjectId of legacySubjects) {
+          for (const purpose of REPORT_PURPOSES) {
+            if (await ownSubjectPurposeGranted(admin, exportActor, subjectId, purpose)) {
+              granted.add(`${subjectId} ${purpose}`);
+            }
+          }
+        }
+        return granted;
+      };
+      const grantedReports = await reportsGranted();
+      const subjectOfLegacyFile = new Map(legacyFiles.map(file => [file.id, file.subject_id]));
+      const allowReportLayer = (fileId: string, layer: string) => {
+        const subjectId = subjectOfLegacyFile.get(fileId);
+        return typeof subjectId === "string"
+          && grantedReports.has(`${subjectId} ${layer === "variant_call" ? "reports.monogenic" : "reports.polygenic"}`);
+      };
+      const reportFiles: ExportReportFile[] = [...await buildReports(supabase, legacyIds, allowReportLayer), ...canonicalReports];
       assertActive();
+      const stillGrantedReports = await reportsGranted();
+      if (grantedReports.size !== stillGrantedReports.size
+        || [...grantedReports].some(key => !stillGrantedReports.has(key))) throw new Error("reports_grant_changed");
       const reportCount = reportFiles.reduce((n, f) => n + f.report_count, 0);
       archive.append(JSON.stringify(reportFiles, null, 2), {
         name: "reports.json",

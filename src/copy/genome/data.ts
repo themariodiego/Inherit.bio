@@ -37,6 +37,15 @@ export const MANAGE_FILES = "Manage your files";
 
 export const SCORE_COVERAGE_HEADING = "Score panel coverage";
 export const SCORE_COVERAGE_NO_FILE = "Add a file to see how much of each score panel it covers.";
+/**
+ * Shown instead of the line above when a file IS here and is still being
+ * prepared. Added 2026-09-12 (corrections item 9): with only the line above,
+ * this page told a reader to add a file they had already added, at the same
+ * moment /overview was telling them it was in flight. "Prepared" is the
+ * product's own word for it, as in the Health picture cell.
+ */
+export const SCORE_COVERAGE_PREPARING =
+  "A file is still being prepared. Coverage appears here once it is ready.";
 export const SCORE_COVERAGE_NONE = "No score panels have been checked against this file yet.";
 export function scoreInputLabel(index: number): string { return `File ${index}`; }
 
@@ -48,6 +57,9 @@ export function scoreInputLabel(index: number): string { return `File ${index}`;
 export const BROWSER_H1 = "Genome browser";
 
 export const BROWSER_NO_FILE = "Add a file to look up its positions here.";
+/** The same correction as `SCORE_COVERAGE_PREPARING`, for the browser. */
+export const BROWSER_PREPARING =
+  "A file is still being prepared. You can look up its positions here once it is ready.";
 
 /** The search box's accessible name and its example text. */
 export const SEARCH_LABEL = "Search variants";

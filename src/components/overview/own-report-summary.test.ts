@@ -30,7 +30,9 @@ describe("Overview chosen-result summary", () => {
     expect(summary).toMatchObject({ hasPreparedSource: true, hasReports: false, showStarter: false, starter: [] });
     expect(mocks.calls).not.toHaveBeenCalled();
     expect(mocks.allow.mock.calls.map(call => call[2])).toEqual(["reports.polygenic", "reports.monogenic"]);
-    expect(mocks.allow.mock.calls.every(call => call.length === 4)).toBe(true); // completed-result default, never false
+    // The completed-result default is never overridden to false, and since
+    // D-099 every own-record call gates the legacy half on the live grant.
+    expect(mocks.allow.mock.calls.map(call => call[4])).toEqual([{ gateLegacy: true }, { gateLegacy: true }]);
   });
   it("populates only selected generated estimate inputs and its existing catalog count", async () => {
     mocks.allow.mockImplementation(async (_db, _subject, purpose, files) => purpose === "reports.polygenic" ? files : []);
@@ -38,7 +40,7 @@ describe("Overview chosen-result summary", () => {
     expect(summary).toMatchObject({ hasReports: true, estimateCount: 1, variantCallCount: 0, showStarter: true });
     expect(summary.starter.map(template => template.slug)).toEqual([trait.slug]);
     expect(mocks.calls).toHaveBeenCalledOnce();
-    expect(mocks.calls).toHaveBeenCalledWith(db, "subject", [trait]);
+    expect(mocks.calls).toHaveBeenCalledWith(db, "subject", [trait], { gateLegacy: true });
     expect(JSON.stringify(summary)).not.toContain("A/G");
     expect(Object.keys(summary).sort()).toEqual(["estimateCount", "hasPreparedSource", "hasReports", "showStarter", "starter", "variantCallCount"]);
   });

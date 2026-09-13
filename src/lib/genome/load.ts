@@ -32,6 +32,42 @@ export async function getSubjectProcessedFiles(supabase: Db, subjectId: string, 
   return data ?? [];
 }
 
+export type FileStatus = Database["public"]["Enums"]["genome_file_status"];
+
+/**
+ * The statuses between "finalised" and "annotated". A file in one of these is
+ * BEING PREPARED: it exists, it is stored, and it has no results yet.
+ *
+ * One definition, in one place, because two readers of it disagreed.
+ * `/overview` has always had this list and puts the page in State B when a
+ * file matches it. `/genome/[subject]/data` and its browser had no notion of
+ * it at all, so both told a reader to "add a file" while the file they had
+ * just added was preparing — measured in corrections item 9. The step numbers
+ * stay here with the statuses so the two cannot drift apart again.
+ */
+export const PREPARATION_STEP_FOR_STATUS: Partial<Record<FileStatus, number>> = {
+  uploading: 0,
+  uploaded: 0,
+  parsing: 1,
+  parsed: 1,
+};
+
+export const PREPARING_FILE_STATUSES = Object.keys(PREPARATION_STEP_FOR_STATUS) as FileStatus[];
+
+/**
+ * Whether this record has a file in preparation right now. Deliberately not
+ * "does the record have any file": a rejected or retired file is not a reason
+ * to promise a reader that results are coming.
+ */
+export async function hasFileInPreparation(supabase: Db, subjectId: string): Promise<boolean> {
+  const { count } = await supabase
+    .from("genome_files")
+    .select("id", { count: "exact", head: true })
+    .eq("subject_id", subjectId)
+    .in("status", PREPARING_FILE_STATUSES);
+  return (count ?? 0) > 0;
+}
+
 /** Every file in the record, whatever its status: the count /files shows. */
 export async function getSubjectFileCount(supabase: Db, subjectId: string): Promise<number> {
   const { count } = await supabase

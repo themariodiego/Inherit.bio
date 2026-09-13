@@ -131,6 +131,222 @@ const BROWSER_TESTS = "e2e";
  *               the product did not have it. `consent-list.tsx` had the same
  *               gap on a consent REVOCATION and is fixed in the same change;
  *               its pair waits on a grant fixture.
+ *   124 -> 122  `/settings/copilot` and `/settings/data` in `processing`, both
+ *               measured as implemented in corrections item 8 before either
+ *               was titled. `/settings/data` is the one worth a second look:
+ *               its only pending control is on the account-deletion request,
+ *               so the test drives a real deletion on a throwaway account and
+ *               says so. The product answers with a seven-day notice period
+ *               and a cancel path, and `e2e/account-deletion-purge.spec.ts`
+ *               already does the same thing.
+ *   122 -> 121  `/settings/consents processing`, and the fixture found a bug
+ *               on the way. The row this page lists can only be written by the
+ *               legacy provider-key consent, which only `ConsentDialog` sends,
+ *               which only appears after the chat route answers
+ *               `consent_required` - and the chat route was answering 400 to
+ *               everything the compatibility panel sent, because its body
+ *               schema admitted `messages` alone while the AI SDK transport
+ *               posts `{ id, messages, trigger }`. The panel blamed the
+ *               reader's provider settings for it. Schema fixed, panel works,
+ *               pair proven; an earlier note claiming the row could come from
+ *               `/settings/copilot` was wrong and is corrected in the spec.
+ *   121 -> 119  `/family/invite` and `/family/[person]/permissions` in
+ *               `processing`, the last two of the five pairs corrections item
+ *               8 measured as implemented-and-untitled. Both needed the
+ *               two-account family fixture rather than new product code. The
+ *               permissions one turns Ancestry on, proves the state, and turns
+ *               it back off: four tests around it assert exact grant sets, and
+ *               a pending-state proof is not worth widening what one adult can
+ *               see about another.
+ *   119 -> 117  `/genome/[subject]/data` and its browser in `processing`, and
+ *               these were BUILT rather than found. Corrections item 9 read
+ *               all thirteen remaining `product-result · processing` routes;
+ *               six render exactly what they render for an account that has
+ *               uploaded nothing, and two of those six told the reader to ADD
+ *               A FILE THEY HAD ALREADY ADDED, while /overview was telling
+ *               them the same file was in flight. The status list that defines
+ *               "in flight" lived only in /overview, which is why two pages
+ *               had no notion of it; it now lives in `@/lib/genome/load` and
+ *               all three read the one list. The other four gaps stay open and
+ *               named in item 9.
+ *   117 -> 114  the other three My Genome pages in `processing`: the hub, the
+ *               reports library and ancestry. Same cause and same fix as the
+ *               two above - none of them said anything false, they simply
+ *               said nothing while a file was in flight, on the one record
+ *               where the reader has a right to know. Five of the six gaps
+ *               item 9 named are now closed. The sixth,
+ *               `/family/portrait/[pairId]`, stays open on purpose: it shows
+ *               no file count, so a sentence there would tell one adult
+ *               something new about another's record.
+ *   114 -> 112  `/auth/sign-up complete` and `/auth/forgot-password complete`,
+ *               the two of that profile's four that HAVE the state: each
+ *               replaces its form with a named "Check your email" panel.
+ *               `/auth/sign-in` and `/auth/reset-password` call router.push on
+ *               success and render no outcome of their own, so their complete
+ *               belongs to another route; corrections item 10 proposes both
+ *               not-applicable rather than titling a render that does not
+ *               exist. Both tests check what the sentence CLAIMS - the new
+ *               account really is unusable until activated, and the reset
+ *               confirmation really does not say whether the address exists.
+ *   112 -> 110  `/settings/data complete` and `/settings/consents complete`.
+ *               `/settings/copilot complete` was written with them and then
+ *               DELETED rather than weakened: its permission section needs an
+ *               own-file permission (`own_copilot_configuration_v1` calls
+ *               `own_report_context_v1`), not merely a saved provider, so a
+ *               provider-only account sees the page's lesser shape and
+ *               titling that would have claimed the fuller one. Its proof
+ *               belongs with the canonical Copilot fixtures, which upload
+ *               first and need the model daemon this container cannot start.
+ *               `/settings/people complete` joins corrections item 10 as
+ *               not-applicable: the page is not built.
+ *   110 -> 109  `/future-person/claim complete`. Deliberately not the
+ *               `assertDocumentComplete` helper the legal documents use: this
+ *               is a short rights surface, not a document, and what is worth
+ *               pinning is its two promises. The second is checked
+ *               STRUCTURALLY - the page says it accepts no claim papers or
+ *               personal details, so the test asserts there is no form, no
+ *               field and no control that could take any.
+ *   109 -> 108  `/overview empty`, RETITLED rather than written. Every
+ *               assertion in `e2e/overview.spec.ts`'s State A test already
+ *               proved it - the Start-here strip, no figure, no dash, no
+ *               metric value - and the title simply did not name the pair.
+ *               That is the `/family/[person] empty` case, not the
+ *               `/settings/people` one: the route genuinely occupies the
+ *               state. ONE assertion is new and is what makes the retitle
+ *               safe. `empty` and `not-covered` render alike here and mean
+ *               opposite things, so the test now establishes the CAUSE from
+ *               the database - this account has no file - rather than
+ *               inferring it from the absence.
+ *   108 -> 107  `/genome/[subject] complete`: the My Genome hub with a
+ *               prepared file behind it, offering every tool the record can
+ *               serve. Its three other product-result states are proposed
+ *               not-applicable in item 10 - the hub renders tiles and a file
+ *               count, never a result, so coverage has nothing to describe
+ *               here, and it has no empty render because a relative with
+ *               nothing granted is refused the page outright rather than
+ *               served an empty one. The assertion that is not about
+ *               presence: the preparing sentence must be ABSENT on a prepared
+ *               file, or this page would repeat the mistake the two data
+ *               pages just stopped making.
+ *   107 -> 105  `empty` on the two `/genome/[subject]/data*` routes. THREE
+ *               situations render almost nothing on these pages - no file, a
+ *               file being prepared, and a prepared file covering nothing -
+ *               and they owe the reader three different sentences. Two of
+ *               them WERE the same sentence until this run split the
+ *               preparing case out, so each test establishes the cause from
+ *               the database and then asserts the page says the no-file
+ *               sentence and NOT the preparing one. An assertion on the
+ *               rendered copy alone would not notice them collapsing back
+ *               together.
+ *   105 -> 103  `/copilot/[scope]` in `empty` and `processing`, BOTH
+ *               REACHABLE FOR THE FIRST TIME because of the chat-route fix
+ *               above. The compatibility panel this route serves could not
+ *               send a message at all, so `processing` never existed to be
+ *               proven - the panel went straight from idle to a 400. The
+ *               remaining two states on this route, and five more across
+ *               `/files` and `/files/upload`, are proposed not-applicable in
+ *               item 10: none of the three renders a result, so coverage has
+ *               nothing to describe on any of them.
+ *
+ *               A lesson that cost a run for the SECOND time: an unscoped
+ *               `getByRole("alert")` resolves to one element on every page,
+ *               because Next.js renders a route announcer. Scope it.
+ *   103 -> 102  `/family/health-picture complete`, RETITLED. The test already
+ *               established it and the title named the page's refusals rather
+ *               than its state. `complete` on a comparison surface cannot mean
+ *               "every report covered" - no real file covers the catalogue -
+ *               so it means the page shows everything it is PERMITTED AND ABLE
+ *               to: both columns, both layers, every granted cell carrying its
+ *               own attributed result, and no cell absent for want of a
+ *               permission or a source. Coverage absences remain and are a
+ *               property of the file. Two assertions are new and make the
+ *               retitle safe: no cell reads "No prepared file yet" or "No file
+ *               yet". It sits on ONE fixture with `partial-coverage` further
+ *               down the same file, differing only in what was granted.
+ *   102 -> 101  `/family complete`, on the fixture the file had already
+ *               built. `complete` here is the people list populated AND all
+ *               three tiles, each either resolved to a real destination or
+ *               stating why not - which is not a weaker claim. The Copilot
+ *               tile's group scopes do not resolve, so it carries its
+ *               blocking sentence instead of a href, and the test pins that
+ *               rather than skipping it: a tile that shipped a link answering
+ *               404 would be worse and would pass a laxer test. Placed before
+ *               the pause/resume/stop test, which ends the sharing this state
+ *               depends on.
+ *   101 -> 100  `/embryos complete`, RETITLED. Chosen deliberately as a pair
+ *               whose reading holds under EVERY candidate definition in
+ *               corrections item 11, which is what lets it be titled while
+ *               the ambiguous ones wait for the operator. The second cohort's
+ *               jurisdiction line does not make the hub incomplete: that line
+ *               is what the page HAS for an unreviewed record, and the
+ *               route-level refusal is a different render proven elsewhere.
+ *               The added assertion is that discriminator - this page carries
+ *               the availability line, not the route's jurisdiction line.
+ *   100 -> 99   `/withdraw/[token] complete`, and the proof is the FIRST
+ *               THING IN THE SUITE TO DRIVE THE REFUSE CONTROL. The existing
+ *               test accepts, so the accepted outcome was already asserted
+ *               inside a title claiming a different pair; refusing gives this
+ *               pair its own proof and covers a rights control nothing had
+ *               exercised. On a surface whose whole purpose is letting someone
+ *               say no, that was the wrong control to leave undriven. Signed
+ *               out on purpose: accepting needs an account because it creates
+ *               a reserved subject under one, and refusing must not, or a
+ *               stranger would have to register to decline.
+ *   99 -> 96    `processing` on the three Embryo result surfaces, which
+ *               nothing had rendered in a browser. `access.ts:117` returns it
+ *               when the cohort is still being read or an embryo has no QC
+ *               verdict; the resolver had a unit test and the pages had no
+ *               evidence. Seeded, on a separate account: E0 does not exist so
+ *               no cohort can be created through the product at all, every
+ *               Embryo test here seeds, and `ingesting`/`pending` are values
+ *               the schema permits and the resolver branches on. The pending
+ *               embryo carries NO qc row, because a check that has not run
+ *               should not be described as having a verdict.
+ *
+ *               ONE ASSERTION WAS WRONG AND THE PRODUCT WAS RIGHT: I expected
+ *               no status chip on a pending embryo. It carries "Checking the
+ *               file" and no verdict, which is more careful than silence, so
+ *               the test now asserts that word and the absence of all three
+ *               QC verdicts instead.
+ *   96 -> 95    `/embryos/request-data complete`, RETITLED. One render, and
+ *               the test already covered all of it including a clipboard
+ *               read-back. Unambiguous under every reading in item 11: the
+ *               page's whole substance is one letter, with no coverage to be
+ *               partial about and nothing withheld. The new assertion is a
+ *               privacy one - this letter is written to be pasted into a
+ *               clinic's inbox, so the rendered text must carry no identifier
+ *               at all, a property that holds whatever the copy becomes.
+ *   95 -> 94    `/genome/[subject]/reports/[slug] processing`, a SIXTH page
+ *               found by corrections item 9's reading and fixed the same way
+ *               as the five before it. Opened directly with a file in flight,
+ *               one report told the reader to "Choose this result type in
+ *               Reports" - an instruction they cannot follow, because Reports
+ *               was at that moment telling them the file is still being
+ *               prepared. Own records only, for the same disclosure reason
+ *               that keeps `/family/portrait/[pairId]` open.
+ *   94 -> 93    `/genome/[subject]/reports/[slug] empty`, the neighbour of the
+ *               pair above and written with it. Three situations render
+ *               almost nothing on that page and are one `fileCount` and one
+ *               preparation check apart, so the test establishes from the
+ *               DATABASE that the account holds no file and then asserts that
+ *               neither neighbouring sentence appears.
+ *   93 -> 91    `/family processing` and `/family/[person] processing`, the
+ *               first browser check of corrections item 9's measurement that
+ *               both surfaces distinguish "this adult has no file" from "this
+ *               adult's file is being prepared". They do. A grants one report
+ *               layer in the direction this file had left empty, then uploads
+ *               with the preparation request held, and B reads both pages
+ *               past their own Tier-2 gate. The grant is withdrawn and the
+ *               hold released afterwards, so the pause/resume/stop fixture
+ *               below is unchanged - asserted by that test still passing.
+ *   91 -> 90    `/embryos/[embryoId] empty`, one line apart in the resolver
+ *               from the `processing` proven above and owing a reader a
+ *               different sentence: a cohort finalized with its declared
+ *               embryo subjects created and NO FILE SENT, which is the status
+ *               `finalize_embryo_cohort_v1` writes. The seeded embryo carries
+ *               a passing QC row deliberately - without it the `pending`
+ *               branch one line earlier answers first and the test would
+ *               prove `processing` again under another name.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -141,7 +357,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 124;
+const UNPROVEN_ROUTE_STATE_PAIRS = 90;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

@@ -19,7 +19,10 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { g
 // own-subject answer it used to give: `person: null`, the My Genome domain,
 // and the same subject id the reads are asserted against.
 vi.mock("@/lib/family/subject-route", () => ({ resolveSubjectRoute: mocks.subject }));
-vi.mock("@/lib/genome/load", () => ({ getSubjectProcessedFiles: mocks.files, getSubjectFileCount: async () => 2, getSubjectGenotypesByRsid: mocks.genotypes }));
+// `hasFileInPreparation` is false throughout: every case here supplies
+// PREPARED files, so nothing is in flight and the two pages take exactly the
+// branches they took before the preparing state existed.
+vi.mock("@/lib/genome/load", () => ({ getSubjectProcessedFiles: mocks.files, getSubjectFileCount: async () => 2, getSubjectGenotypesByRsid: mocks.genotypes, hasFileInPreparation: async () => false }));
 vi.mock("@/lib/genome/prepared-sources", () => ({ getPreparedSourceFiles: mocks.files, getPreparedSourceGenotypes: mocks.genotypes }));
 vi.mock("@/lib/genome/input-sources", () => ({ loadInputSources: mocks.sources }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not-found"); } }));

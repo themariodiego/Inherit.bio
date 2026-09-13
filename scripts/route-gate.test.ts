@@ -293,3 +293,48 @@ describe("the detectors the gate is built from", () => {
     expect(failures.some((failure) => failure.includes("2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe"))).toBe(true);
   });
 });
+
+/**
+ * The corrections document carries a table of where the unproven pairs stand,
+ * and its first version said the table "moves on its own as the ratchet does".
+ * Numbers typed into markdown do not move on their own: two proofs later it
+ * said 95 while the register said 93. This is what makes the sentence true.
+ *
+ * It pins the three figures a reader would act on, not the whole table. The
+ * per-state breakdown below them depends on which pairs each proposal covers,
+ * which lives in prose and cannot be recomputed from the register — so it is
+ * left to the document, and this test does not pretend to check it.
+ */
+describe("the corrections table agrees with the register it claims to be counted from", () => {
+  const document = readFileSync(path.join(REPOSITORY_ROOT, "docs/protocol/brief-corrections-proposed.md"), "utf8");
+  const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8")) as {
+    routes: { path: string; stateProfile?: string }[];
+    stateProfiles: Record<string, { supported?: string[] }>;
+  };
+  const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8")) as {
+    provenRouteStates?: string[];
+  };
+  /** The same arithmetic the gate does, from the same two files. */
+  const proven = new Set(ledger.provenRouteStates ?? []);
+  let unproven = 0;
+  for (const route of register.routes) {
+    for (const state of register.stateProfiles[route.stateProfile ?? ""]?.supported ?? []) {
+      if (!proven.has(`${route.path} ${state}`)) unproven += 1;
+    }
+  }
+  /** Awaiting a signature: items 6, 8 and 10, less the one pair proposed twice. */
+  const AWAITING_SIGNATURE = 60;
+
+  it("states the current total in its heading and its total row", () => {
+    expect(unproven, "the register must hold at least one unproven pair for this to mean anything").toBeGreaterThan(0);
+    expect(document).toContain(`## Where the ${unproven} unproven pairs stand`);
+    expect(document).toContain(`| **Total unproven** | **${unproven}** | |`);
+  });
+
+  it("states an open count that is the total less the pairs awaiting a signature", () => {
+    const open = unproven - AWAITING_SIGNATURE;
+    expect(document).toContain(`| **Genuinely open** | **${open}** |`);
+    expect(document).toContain(`### And of the ${open} that are open,`);
+    expect(document).toContain(`take the ratchet from ${unproven} to ${open}`);
+  });
+});

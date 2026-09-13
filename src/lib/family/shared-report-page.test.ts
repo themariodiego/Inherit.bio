@@ -19,7 +19,10 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.admin }));
 vi.mock("@/lib/family/tier2", () => ({ acknowledged: mocks.gate }));
 vi.mock("@/lib/family/graph", () => ({ resolveFamilyPerson: async () => ({ dataSubjectId: "source", counterpartAccountId: "owner", displayLabel: "Shared adult", handle: { id: "handle", routeSegment: "person" }, sharing: "active" }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: "viewer" } } }) } }) }));
-vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: async () => [mocks.template], getSubjectFileCount: async () => 0 }));
+// `hasFileInPreparation` is false throughout. These cases fix the file count
+// at zero, so the page takes its no-file branch and never reaches the
+// preparing sentence; the mock only has to exist for the read to resolve.
+vi.mock("@/lib/genome/load", () => ({ getPublishedTemplates: async () => [mocks.template], getSubjectFileCount: async () => 0, hasFileInPreparation: async () => false }));
 import ReportsPage from "@/app/(app)/genome/[subject]/reports/page";
 import FamilyPersonPage from "@/app/(app)/family/[person]/page";
 import ReportPage, { generateMetadata } from "@/app/(app)/genome/[subject]/reports/[slug]/page";

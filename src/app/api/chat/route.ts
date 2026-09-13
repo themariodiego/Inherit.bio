@@ -117,7 +117,21 @@ export async function POST(request: Request) {
   if (raw && typeof raw === "object" && ("contextToken" in raw || "chatId" in raw || "message" in raw)) {
     return ownChatResponse(request, raw, { systemPrompt: SYSTEM_PROMPT, refusal: refusalResponse });
   }
-  const legacy = z.object({ messages: z.array(z.custom<UIMessage>()).max(100) }).strict().safeParse(raw);
+  // The AI SDK transport posts an ENVELOPE around the turns, not the turns
+  // alone: `DefaultChatTransport` sends `{ id, messages, trigger, messageId? }`
+  // (ai 7.0.83, `PrepareSendMessagesRequest`). A schema admitting only
+  // `messages` refused every one of them with 400 `invalid_request`, so the
+  // compatibility panel on `/copilot/[scope]` could not send a single question
+  // and answered "Check your provider settings" for what was a client/server
+  // contract mismatch. The four keys the transport actually sends are named
+  // and bounded here; `.strict()` still refuses anything else, so an unknown
+  // key is a refusal rather than a silently ignored field.
+  const legacy = z.object({
+    id: z.string().max(200).optional(),
+    messageId: z.string().max(200).optional(),
+    trigger: z.enum(["submit-message", "regenerate-message"]).optional(),
+    messages: z.array(z.custom<UIMessage>()).max(100),
+  }).strict().safeParse(raw);
   if (!legacy.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const body = legacy.data;
   const scopeSegment = new URL(request.url).searchParams.get("scope") ?? "me";

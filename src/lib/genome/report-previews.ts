@@ -86,8 +86,12 @@ export async function loadPersonalPreviews(
   if (!isOwnPreviewAudience(audience)) return previews;
   const knownFiles = files.filter((file) => file.build === "GRCh37" || file.build === "GRCh38");
   if (knownFiles.length === 0) return previews;
+  // D-099: `isOwnPreviewAudience` above means this is the reader's own
+  // record, so the legacy half answers to the same live grant as the modern
+  // half. A preview is a result; a revoked purpose must withdraw it.
   const { calls } = await loadReportCallRows(db, audience.subjectId,
-    PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid), audience.viewerAccountId, "reports.polygenic");
+    PERSONAL_PREVIEW_TRAITS.map((trait) => trait.rsid), audience.viewerAccountId, "reports.polygenic",
+    { gateLegacy: true });
   const local = resolveReportCalls(calls, templates);
   const allConflicts = new Set([...conflicts, ...local.conflicts]);
   for (const [rsid, genotype] of local.genotypes) if (genotype === "--") allConflicts.add(rsid);
