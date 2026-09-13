@@ -2,6 +2,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
+
+-- `claim_mail_outbox` takes the oldest deliverable row, so a developer
+-- database holding other queued mail would hand this suite someone else's
+-- token. Retiring those rows inside the test transaction makes every claim
+-- below deterministic wherever the suite runs; the rollback puts them back.
+update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
 insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,
  maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32)
  on conflict(singleton) do update set maximum_array_bytes=excluded.maximum_array_bytes,maximum_vcf_bytes=excluded.maximum_vcf_bytes;

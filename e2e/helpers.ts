@@ -185,6 +185,61 @@ export async function createConfirmedUser(
 }
 
 /** Sign the browser session in through the UI. */
+/**
+ * The adult-subject invitation token, out of whichever host's mail sent it.
+ *
+ * D-081: the mail used to carry `/withdraw/<token>` and now carries
+ * `/withdraw/request#<token>`, so the token never reaches a server as part of
+ * a URL. Six specs matched that path by hand and all six broke on the same
+ * commit; the extraction lives here now, and the next transport change is one
+ * edit rather than six.
+ */
+export function adultInvitationToken(html: string | undefined): string | undefined {
+  return html?.match(/\/withdraw\/request#([A-Za-z0-9_-]{43})/)?.[1];
+}
+
+/** The mailed review URL for a token, against the host acceptance belongs on. */
+export function adultInvitationUrl(token: string, origin = "http://localhost:3100"): string {
+  return `${origin}/withdraw/request#${token}`;
+}
+
+/**
+ * Follow a mailed adult-subject invitation the way a person does, and accept.
+ *
+ * The link opens a generic interstitial that reads the fragment in the
+ * browser and posts it once to `api.rights-activate`; from there the invitee
+ * is on `/withdraw/session`, holding a host-only rights cookie, and no token
+ * appears in any URL again. Accepting needs the invited account, so this
+ * signs in through the review screen's own control rather than around it.
+ *
+ * `onReview` runs on the review screen before anything is clicked — the
+ * accessibility audit of a page `e2e/a11y.spec.ts` cannot reach, since its
+ * only real URL comes from an invitation.
+ */
+export async function acceptAdultInvitation(options: {
+  page: Page;
+  invitationUrl: string;
+  email: string;
+  password: string;
+  origin?: string;
+  onReview?: (page: Page) => Promise<void>;
+}): Promise<void> {
+  const { page, invitationUrl, email, password, onReview } = options;
+  const origin = options.origin ?? "http://localhost:3100";
+  await page.goto(invitationUrl);
+  await expect(page).toHaveURL(`${origin}/withdraw/request`);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(`${origin}/withdraw/session`);
+  if (onReview) await onReview(page);
+  await page.getByRole("link", { name: "Sign in to accept" }).click();
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(`${origin}/withdraw/session`);
+  await page.getByRole("button", { name: "Accept through my account" }).click();
+  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+}
+
 export async function signIn(page: Page, email: string, password: string) {
   await page.goto("/auth/sign-in");
   await page.getByLabel("Email").fill(email);

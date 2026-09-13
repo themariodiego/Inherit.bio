@@ -8017,6 +8017,16 @@ export type Database = {
           state: string
         }[]
       }
+      respond_adult_subject_invitation_session_v1: {
+        Args: {
+          p_account_email_hmac?: string
+          p_account_id?: string
+          p_action: string
+          p_nonce: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
       respond_adult_subject_invitation_v1: {
         Args: {
           p_account_email_hmac?: string

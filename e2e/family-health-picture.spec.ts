@@ -7,7 +7,10 @@ import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { CELL_NO_FILE, CELL_NO_PREPARED_FILE, EACH_TURNS_IT_ON } from "../src/copy/family/health-picture";
 import path from "node:path";
 import {
+  acceptAdultInvitation,
   adminClient,
+  adultInvitationToken,
+  adultInvitationUrl,
   createConfirmedUser,
   drainMailUntil,
   expectAxeClean,
@@ -357,19 +360,14 @@ test("both adults prepare their real source and generate chosen reports before s
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
-  const invitationUrl = await drainMailUntil(request, () => captured
-    .find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
-      && /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/.test(email.html ?? ""))
-    ?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0], "the invitation");
+  const token = await drainMailUntil(request, () => captured
+    .map(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
+      ? adultInvitationToken(email.html) : undefined)
+    .find(found => found !== undefined), "the invitation");
   await page.request.post("/auth/sign-out");
-  await page.goto(invitationUrl);
-  await page.getByRole("link", { name: "Sign in to accept" }).click();
-  await page.getByLabel("Email").fill(B.email);
-  await page.getByLabel("Password").fill(B.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl);
-  await page.getByRole("button", { name: "Accept through my account" }).click();
-  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  await acceptAdultInvitation({
+    page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
+  });
   // This was B's actual acceptance session. A's Family route names the invited
   // representative, while every source assertion still names B's own self.
   const admin = adminClient();

@@ -47,9 +47,9 @@
       ],
       "handler": "inline POST",
       "live": "posted by the form in src/app/(marketing)/withdraw/[token]/page.tsx",
-      "why": "The legacy adult-subject invitation response surface. api.withdraw is registered at /api/withdraw/[token] with token pinned to the literal \"session\", which src/app/api/withdraw/session/route.ts already implements. This bare path is the pre-migration form and is defect D-081.",
+      "why": "The legacy adult-subject invitation response surface. api.withdraw is registered at /api/withdraw/[token] with token pinned to the literal \"session\", which src/app/api/withdraw/session/route.ts implements \u2014 and which, since 2026-09-13, answers the adult confirm/refuse/delete as well as the co-parent refusal. This bare path is the pre-migration form and is defect D-081. Nothing mails a link that reaches it any more; it stays only for the tokens mailed before that change.",
       "priority": "defect D-081",
-      "closing": "Retire it with the rest of D-081; it disappears when the adult flow moves onto the rights session."
+      "closing": "Delete with the /withdraw/[token] directory once the last pre-2026-09-13 token has expired; see the permissiveDynamicSegment row."
     }
   ],
   "permissiveDynamicSegment": [
@@ -62,9 +62,9 @@
         "request",
         "session"
       ],
-      "why": "The register pins this segment to two literals and marks raw-bearer forbidden. Both literals are built (withdraw/request/route.ts, withdraw/session/page.tsx), but the [token] directory is built too, so /withdraw/<any raw token> resolves and the adult invitation mail links straight at it. That is defect D-081: the token reaches the server in the URL path, and so reaches access logs and browser history, while the co-parent mail for the same class of token uses the fragment form /withdraw/request#<token>.",
+      "why": "The register pins this segment to two literals and marks raw-bearer forbidden. Both literals are built (withdraw/request/route.ts, withdraw/session/page.tsx), and the [token] directory is built too, so /withdraw/<any raw token> still resolves. That is defect D-081. RE-SCOPED 2026-09-13: the adult invitation mail no longer links here. It links at /withdraw/request#<token> like every other mailed token, the adult purpose activates a rights session through api.rights-activate, and /withdraw/session answers confirm, refuse and delete off the cookie. What this directory still serves is the tokens that were mailed BEFORE that change, which live up to 30 days; deleting it today would take away the rights of the people holding them.",
       "priority": "defect D-081",
-      "closing": "Delete this directory once the adult flow activates through api.rights-activate like the co-parent flow does."
+      "closing": "Delete this directory, the bare POST /api/withdraw beside it, and both of these rows together, once the last token mailed before 2026-09-13 has expired \u2014 30 days by invitation.pending-30d. e2e/adult-subject-invitation.spec.ts keeps one test on this path until then, so the overlap is proven rather than assumed, and that test goes in the same commit."
     }
   ],
   "methodDivergence": [

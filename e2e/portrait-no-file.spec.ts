@@ -2,7 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import http from "node:http";
 import {
+  acceptAdultInvitation,
   adminClient,
+  adultInvitationToken,
+  adultInvitationUrl,
   createConfirmedUser,
   drainMailUntil,
   signIn,
@@ -131,19 +134,14 @@ test("two adults agree to compare before either has added a file", async ({ page
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
-  const invitationUrl = await drainMailUntil(request, () => captured
+  const token = await drainMailUntil(request, () => adultInvitationToken(captured
     .find((email) => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email))
-    ?.html?.match(/http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/)?.[0], "the invitation");
+    ?.html), "the invitation");
 
   await page.request.post("/auth/sign-out");
-  await page.goto(invitationUrl);
-  await page.getByRole("link", { name: "Sign in to accept" }).click();
-  await page.getByLabel("Email").fill(B.email);
-  await page.getByLabel("Password").fill(B.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl);
-  await page.getByRole("button", { name: "Accept through my account" }).click();
-  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  await acceptAdultInvitation({
+    page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
+  });
 
   // B's own account declaration, in B's own session. Both people need one
   // before either can grant Portrait: `family_report_endpoint_v1` builds the
