@@ -831,6 +831,67 @@ no title can claim it. Whether that matters is the operator's call: the
 options are to leave it unnamed, or to add a state id for "prepared, awaiting
 the reader's choice" and declare it where it occurs.
 
+## 11. Eight state ids are carrying at least a dozen distinct meanings
+
+A structural observation, not a proposal for any one route. It is here because
+it is what the last thirty proofs kept running into, and because the ~40 pairs
+still genuinely open cannot be decided consistently until it is settled.
+
+`stateIds` lists eight names and defines none of them. Precedent has therefore
+had to supply the meanings, and precedent has supplied several per name.
+
+### `complete` currently means at least four different things
+
+| Where | What `complete` was taken to mean |
+| --- | --- |
+| `/genome/[subject]/data/browser` | **The answer is complete for what was asked.** The spec says so in as many words: it "can only mean the answer is complete for what was asked", because the browser never claims the file covers the genome. |
+| `/family/health-picture` | **Everything the page is permitted and able to show.** It cannot mean every report covered — no real file covers the catalogue — so it means both columns, both layers, no absence for want of a permission or a source. |
+| `/settings/data`, `/genome/[subject]` | **The page showing everything it has,** on a route with no data-dependent shape at all. |
+| `/legal/*` | **A committed document that is long and placeholder-free** (`assertDocumentComplete`). |
+
+Each reading is defensible on its own route. Together they mean the column
+headed `complete` in the ratchet counts four different achievements.
+
+### `partial-coverage` means coverage on some routes and PERMISSION on others
+
+`/genome/[subject]/data/browser partial-coverage` is a coverage fact: the gene
+search lists reference positions the file does not carry.
+`/family/[person] partial-coverage` and `/family/health-picture
+partial-coverage` are permission facts: one layer was granted and the other was
+not, so the cells read "Not shared with you". Nothing about a file's coverage
+differs between the two Family cases.
+
+### `empty` and `not-covered` render identically and mean opposites
+
+On `/overview` and both `/genome/[subject]/data*` routes, "nothing uploaded"
+and "a prepared file that covers nothing" produce the same absence of numbers
+and figures. They owe the reader opposite sentences. Three tests added on
+2026-09-12 had to establish the cause **from the database** to tell the two
+apart, because no assertion on the rendered page could.
+
+### And one live shape has no id at all
+
+`/overview` State A with a prepared file and no report type chosen — recorded
+above. Every reader who uploads passes through it.
+
+### What would make the remaining pairs decidable
+
+Two options, and the choice is the operator's:
+
+1. **Define the eight ids** in the register, one sentence each, and record for
+   each profile which reading applies. Cheapest, changes no code, and makes
+   every remaining pair a reading rather than a judgement call.
+2. **Split the overloaded ids** — separate a permission absence from a coverage
+   absence, and add the "prepared, awaiting the reader's choice" shape. Truer
+   to the product, but it moves the declared states on most profiles and every
+   existing proof has to be re-read against the new names.
+
+**What is asked of the operator: pick one, or say the ambiguity is
+acceptable.** Nothing here blocks the proofs already recorded — each states
+which reading it used, in its own test header. What it blocks is deciding the
+rest consistently, and a ratchet whose column headings mean four things is
+worth less than one whose headings mean one thing each.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.

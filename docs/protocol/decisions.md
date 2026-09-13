@@ -2145,3 +2145,40 @@ Four gaps stay open and named in item 9: `/genome/[subject]`,
 `/genome/[subject]/reports`, `/genome/[subject]/ancestry` and
 `/family/portrait/[pairId]`. None of them states anything false; they simply
 say nothing.
+
+## 2026-09-13 — The ratchet's column headings mean more than one thing each
+
+Thirty-odd proofs into the route-state work, a pattern is clear enough to
+write down: `stateIds` names eight states and defines none, so every proof has
+had to supply the meaning, and the meanings have diverged.
+
+`complete` has been taken to mean four different things — the answer is
+complete for what was asked (the genome browser), everything the page is
+permitted and able to show (the health picture), the page showing everything
+it has on a route with no data-dependent shape (Settings), and a committed
+document that is long and placeholder-free (the legal pages). Each reading is
+right on its own route. Together they mean one column of the ratchet counts
+four achievements.
+
+`partial-coverage` is worse, because it crosses a boundary the product cares
+about: on the genome browser it is a COVERAGE fact, and on `/family/[person]`
+and `/family/health-picture` it is a PERMISSION fact. Nothing about a file's
+coverage differs between the two Family cases.
+
+And `empty` and `not-covered` render identically on three routes while meaning
+opposites. Three tests written today had to establish the cause from the
+DATABASE, because no assertion on the rendered page could tell "nothing
+uploaded" from "a prepared file that covers nothing".
+
+The general point is not that any one title is wrong. Each says which reading
+it used, in its own header, which is why they can be audited at all. The point
+is that a ratchet is a measuring instrument, and this one has four different
+units in a column headed with one name. Corrections item 11 puts the choice to
+the operator: define the eight ids, or split the overloaded ones. Either makes
+the ~40 pairs still open a reading rather than a judgement call.
+
+Worth noting against my own work: I made four of those judgement calls today
+and recorded each in the test header rather than pausing to ask. That was the
+right trade while the calls were few and local. It stopped being the right
+trade at about the point where I could see the pattern, which is why this is
+an item rather than a fifth judgement call.
