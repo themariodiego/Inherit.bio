@@ -420,7 +420,23 @@ test("/embryos/compare empty: the zero-cohort blocking state with no cohort, and
   await expectAxeClean(page);
 });
 
-test("/embryos/request-data: the letter verbatim, one primary action that copies it, the formats and the way back", async ({ page }) => {
+/**
+ * RETITLED 2026-09-13 to name `/embryos/request-data complete`. The
+ * assertions already established it: this page has one render and the test
+ * covers all of it — the letter verbatim, the copy control proven by reading
+ * the clipboard back, the formats, the next step and the way out.
+ *
+ * `complete` is unambiguous here under every reading in corrections item 11.
+ * The page's whole substance is one letter; there is no coverage to be partial
+ * about, nothing withheld for a permission, and no second shape.
+ *
+ * ONE ASSERTION IS NEW. This letter is written to be pasted into an email to a
+ * clinic, so it must carry nothing about a specific record. The exact-text
+ * check above already pins it, but only against today's constant; the new
+ * assertion says the rendered letter contains no identifier at all, which is
+ * the property that must hold whatever the copy becomes.
+ */
+test("/embryos/request-data complete: the letter verbatim, one primary action that copies it, the formats and the way back", async ({ page }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await signIn(page, C.email, C.password);
   await page.goto("/embryos/request-data");
@@ -437,6 +453,11 @@ test("/embryos/request-data: the letter verbatim, one primary action that copies
   await page.getByRole("button", { name: COPY_EMAIL_BUTTON }).click();
   await expect(page.locator('[data-slot="copy-status"]')).toHaveText(COPIED_STATUS);
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LETTER);
+
+  // A letter meant for a clinic's inbox names no record of the sender's.
+  const letterText = await page.locator('blockquote[data-slot="request-letter"]').innerText();
+  expect(letterText, "no opaque identifier travels in a letter the reader will paste elsewhere")
+    .not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
 
   const body = await (await page.request.get("/embryos/request-data")).body();
   expect(body.length).toBeLessThanOrEqual(150 * 1024);

@@ -183,6 +183,7 @@
     "/embryos/compare empty",
     "/embryos/compare jurisdiction-unavailable",
     "/embryos/compare processing",
+    "/embryos/request-data complete",
     "/embryos/request-data jurisdiction-unavailable",
     "/embryos/upload jurisdiction-unavailable",
     "/family complete",

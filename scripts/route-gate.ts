@@ -308,6 +308,14 @@ const BROWSER_TESTS = "e2e";
  *               file" and no verdict, which is more careful than silence, so
  *               the test now asserts that word and the absence of all three
  *               QC verdicts instead.
+ *   96 -> 95    `/embryos/request-data complete`, RETITLED. One render, and
+ *               the test already covered all of it including a clipboard
+ *               read-back. Unambiguous under every reading in item 11: the
+ *               page's whole substance is one letter, with no coverage to be
+ *               partial about and nothing withheld. The new assertion is a
+ *               privacy one - this letter is written to be pasted into a
+ *               clinic's inbox, so the rendered text must carry no identifier
+ *               at all, a property that holds whatever the copy becomes.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -318,7 +326,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 96;
+const UNPROVEN_ROUTE_STATE_PAIRS = 95;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
