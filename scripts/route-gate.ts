@@ -396,7 +396,8 @@ const BROWSER_TESTS = "e2e";
  *               `family_report_endpoint_v1` builds the grant presentation
  *               from both profiles and requires an adult date on each. With
  *               only the granter's account completed, the granter's "Turn on"
- *               control is simply absent, with no reason on screen — worth
+ *               control is simply absent, with no reason on screen: an empty
+ *               `permission-locked` paragraph, now filed as D-102. Worth
  *               knowing before the next fixture spends an hour on it.
  *
  *               The corrections table listed this pair as attemptable today,

@@ -149,9 +149,11 @@ test("two adults agree to compare before either has added a file", async ({ page
   // before either can grant Portrait: `family_report_endpoint_v1` builds the
   // grant presentation from BOTH profiles and requires a date of birth at or
   // over eighteen on each, so a missing one on the RECIPIENT leaves the
-  // granter's control unsettable with no reason on screen. Measured
-  // 2026-09-13, after the first version of this fixture completed only A's
-  // account and A's "Turn on" control was simply absent.
+  // granter's control unsettable with no reason on screen — an empty
+  // `permission-locked` paragraph, filed as D-102. Measured 2026-09-13, after
+  // the first version of this fixture completed only A's account and A's
+  // "Turn on" control was simply absent. Completing both accounts is this
+  // fixture working around that defect, not a step the state needs.
   await page.goto("/files/upload");
   await expect(page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true })).toBeVisible();
   await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1991-02-02");
