@@ -228,6 +228,16 @@ const BROWSER_TESTS = "e2e";
  *               presence: the preparing sentence must be ABSENT on a prepared
  *               file, or this page would repeat the mistake the two data
  *               pages just stopped making.
+ *   107 -> 105  `empty` on the two `/genome/[subject]/data*` routes. THREE
+ *               situations render almost nothing on these pages - no file, a
+ *               file being prepared, and a prepared file covering nothing -
+ *               and they owe the reader three different sentences. Two of
+ *               them WERE the same sentence until this run split the
+ *               preparing case out, so each test establishes the cause from
+ *               the database and then asserts the page says the no-file
+ *               sentence and NOT the preparing one. An assertion on the
+ *               rendered copy alone would not notice them collapsing back
+ *               together.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -238,7 +248,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 107;
+const UNPROVEN_ROUTE_STATE_PAIRS = 105;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
