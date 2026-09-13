@@ -273,6 +273,15 @@ const BROWSER_TESTS = "e2e";
  *               404 would be worse and would pass a laxer test. Placed before
  *               the pause/resume/stop test, which ends the sharing this state
  *               depends on.
+ *   101 -> 100  `/embryos complete`, RETITLED. Chosen deliberately as a pair
+ *               whose reading holds under EVERY candidate definition in
+ *               corrections item 11, which is what lets it be titled while
+ *               the ambiguous ones wait for the operator. The second cohort's
+ *               jurisdiction line does not make the hub incomplete: that line
+ *               is what the page HAS for an unreviewed record, and the
+ *               route-level refusal is a different render proven elsewhere.
+ *               The added assertion is that discriminator - this page carries
+ *               the availability line, not the route's jurisdiction line.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -283,7 +292,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 101;
+const UNPROVEN_ROUTE_STATE_PAIRS = 100;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

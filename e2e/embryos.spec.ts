@@ -615,9 +615,35 @@ test("/embryos/{id} for an unknown, malformed or foreign embryo answers 404 with
   }
 });
 
-test("/embryos for the uploader: the seeded cohort's chips, status words, analysis line, links and the second cohort's jurisdiction line", async ({ page }) => {
+/**
+ * RETITLED 2026-09-13 to name `/embryos complete`. The assertions already
+ * established it; the title described the fixture rather than the state.
+ *
+ * `complete` here is the reading that holds under every candidate definition
+ * in corrections item 11, which is why this one could be titled while the
+ * ambiguous pairs wait: the hub is showing everything it has and everything it
+ * is permitted to. Both cohorts are listed with every chip, status word,
+ * retention line and link they carry; the compare tile resolves to the newest
+ * readable cohort; and the Copilot tile states its blocking reason rather than
+ * shipping a dead link.
+ *
+ * THE SECOND COHORT'S JURISDICTION LINE DOES NOT MAKE THIS INCOMPLETE, and the
+ * distinction is worth stating because it is easy to get backwards. That line
+ * is what the page HAS for that cohort — the honest answer for a record whose
+ * capability is unreviewed. The route-level `jurisdiction-unavailable` state
+ * is a different render entirely, proven in `e2e/embryos.nojurisdiction.spec.ts`
+ * where the whole capability refuses. The assertion added below is the
+ * discriminator: this page carries the availability line, not the route's
+ * jurisdiction line.
+ */
+test("/embryos complete: both cohorts listed with every chip, status, link and retention line, and each tile resolved or explained", async ({ page }) => {
   await signIn(page, A.email, A.password);
   await page.goto("/embryos");
+  // The route is permitted here. Without this the assertions below would also
+  // pass on a page that had refused at the route level and happened to render
+  // its cohort list, which is the one thing `complete` must exclude.
+  await expect(page.locator('[data-slot="availability-line"]')).toHaveCount(1);
+  await expect(page.locator('[data-slot="jurisdiction-line"]')).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 2, name: "Your embryos" })).toBeVisible();
   await expect(page.locator('[data-slot="empty-state"]')).toHaveCount(0);
   const cards = page.locator('[data-slot="cohort-card"]');

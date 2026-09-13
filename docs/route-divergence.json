@@ -172,6 +172,7 @@
     "/copilot/[scope] empty",
     "/copilot/[scope] processing",
     "/embryo-analysis jurisdiction-unavailable",
+    "/embryos complete",
     "/embryos empty",
     "/embryos jurisdiction-unavailable",
     "/embryos/[embryoId] consent-required",
