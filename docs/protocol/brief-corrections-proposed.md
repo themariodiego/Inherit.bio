@@ -767,6 +767,33 @@ the total proposed not-applicable across this document to 36: item 8's 29 and
 item 10's 7. The `/embryo-analysis` route contributes six of the 36, split
 across the two items because it was read twice; nothing is counted twice.
 
+### A shape the register has no state for, found on the main hub
+
+Not a proposal — a measurement, recorded because the route is `/overview` and
+the shape is on the priority-1 journey.
+
+`/overview` resolves five internal states, and State A has TWO renders. With
+nothing uploaded it shows the Start-here strip; that is `empty` and is now
+proven. With a file PREPARED and no report type chosen
+(`needsReportChoice = !hasReports && !hasAncestry && hasPreparedSource`,
+`overview/page.tsx:278`) it shows "Choose your reports — Your file is prepared.
+Choose report types and generate your results."
+
+**No register state fits that.** It is not `empty`: a file exists and the page
+says so. Not `processing`: nothing is in flight. Not `partial-coverage` or
+`not-covered`: no result exists to be partly or wholly uncovered. And **not
+`consent-required`** — which was checked rather than assumed, because it would
+have contradicted item 6. Item 6 measured that state as a page WITHHOLDING
+results for want of a permission, the `BlockingState` shape. This page
+withholds nothing; no result exists yet because none was ever requested. It is
+an invitation, not a refusal, so item 6's measurement stands unchanged.
+
+Every reader who uploads a file passes through this shape before choosing
+report types. It has no name in `stateIds`, so the ratchet cannot see it and
+no title can claim it. Whether that matters is the operator's call: the
+options are to leave it unnamed, or to add a state id for "prepared, awaiting
+the reader's choice" and declare it where it occurs.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
