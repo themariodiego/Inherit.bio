@@ -3,7 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { JOBS_SECRET, adminClient, createConfirmedUser, dueMailCount, jobRan, signIn } from "./helpers";
+import { JOBS_SECRET, adminClient, createConfirmedUser, dueMailCount, jobRan, signIn, acceptAdultInvitation, adultInvitationToken, adultInvitationUrl } from "./helpers";
 import {
   generateOwnFileWithChosenReports,
   uploadOwnFilePrepared,
@@ -267,35 +267,31 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   // other runs, one drain never reaches the row this journey just wrote, so
   // this drains until the provider has the invitation or the queue is empty —
   // no row is skipped or written by hand to get there.
-  const link = /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/;
-  const invitationOf = () => captured.find(message =>
-    (Array.isArray(message.to) ? message.to : [message.to]).includes(two.email)
-    && link.test(message.html ?? ""))?.html?.match(link)?.[0];
-  let invitationUrl = invitationOf();
+  const invitationOf = () => captured
+    .map(message => (Array.isArray(message.to) ? message.to : [message.to]).includes(two.email)
+      ? adultInvitationToken(message.html) : undefined)
+    .find(found => found !== undefined);
+  let invitationToken = invitationOf();
   const drains: string[] = [];
-  for (let attempt = 0; attempt < 40 && !invitationUrl; attempt++) {
+  for (let attempt = 0; attempt < 40 && !invitationToken; attempt++) {
     const drain = await page.request.post("/api/jobs/mail", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
     // D-086: the drain reports an outcome, not counts. This loop never read
     // `failed` and still does not — an undeliverable row belonging to another
     // journey is not this one's failure — and "is there work left" is asked
     // of the queue, which is where the answer was always coming from.
     drains.push(await jobRan(drain, `mail drain ${attempt + 1}`));
-    invitationUrl = invitationOf();
-    if (!invitationUrl && await dueMailCount(adminClient()) === 0) break;
+    invitationToken = invitationOf();
+    if (!invitationToken && await dueMailCount(adminClient()) === 0) break;
   }
-  expect(invitationUrl,
+  expect(invitationToken,
     `the invitation must reach the configured mail provider; drains: ${drains.join(" ")}`).toBeTruthy();
   await page.request.post("/auth/sign-out");
 
   // The invitee accepts in their own session, from the link they were sent.
-  await page.goto(invitationUrl!);
-  await page.getByRole("link", { name: "Sign in to accept" }).click();
-  await page.getByLabel("Email").fill(two.email);
-  await page.getByLabel("Password").fill(two.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl!);
-  await page.getByRole("button", { name: "Accept through my account" }).click();
-  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  await acceptAdultInvitation({
+    page, invitationUrl: adultInvitationUrl(invitationToken!),
+    email: two.email, password: two.password,
+  });
 
   const admin = adminClient();
   const selfOne = await selfSubjectOf(accountOne);

@@ -4,9 +4,12 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  drainMailUntil,
+  acceptAdultInvitation,
   adminClient,
+  adultInvitationToken,
+  adultInvitationUrl,
   createConfirmedUser,
+  drainMailUntil,
   expectAxeClean,
   firstViewportInteractives,
   signIn,
@@ -351,30 +354,23 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   // The optional note travels as words, never as a link.
   expect(message.html).toContain("This is my note.");
   expect(message.html).not.toMatch(/href="[^"]*This is my note/);
-  const invitationUrl = message.html?.match(
-    /http:\/\/localhost:3100\/withdraw\/[A-Za-z0-9_-]{43}/,
-  )?.[0];
-  expect(invitationUrl).toBeTruthy();
+  const token = adultInvitationToken(message.html);
+  expect(token, "the invitation mail carries one fragment-form review link").toBeTruthy();
 
   // A's hub, before acceptance: nobody to show yet.
   await page.goto("/family");
   await expect(page.getByText("Just you so far.", { exact: true })).toBeVisible();
 
-  // B accepts through their own account.
+  // B accepts through their own account, from the link they were mailed.
   await page.request.post("/auth/sign-out");
-  await page.goto(invitationUrl!);
-  // `/withdraw/[token]` is a registered page whose only real URL is the one an
-  // invitation issues, so `e2e/a11y.spec.ts` cannot reach it and its audit is
-  // here, at the same bar. Read-only: the raw token is consumed by
-  // `api.rights-activate`, never by a page load.
-  await expectAxeClean(page);
-  await page.getByRole("link", { name: "Sign in to accept" }).click();
-  await page.getByLabel("Email").fill(B.email);
-  await page.getByLabel("Password").fill(B.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl!);
-  await page.getByRole("button", { name: "Accept through my account" }).click();
-  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  await acceptAdultInvitation({
+    page, invitationUrl: adultInvitationUrl(token!), email: B.email, password: B.password,
+    // `/withdraw/session` is a registered page whose only real URL comes from
+    // an invitation, so `e2e/a11y.spec.ts` cannot reach it and its audit is
+    // here, at the same bar. Read-only: the token was consumed by
+    // `api.rights-activate` on the interstitial, never by a page load.
+    onReview: expectAxeClean,
+  });
 
   const admin = adminClient();
   selfSubjectA = await selfSubjectOf(accountA);

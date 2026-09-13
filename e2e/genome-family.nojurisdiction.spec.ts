@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import http from "node:http";
 import { randomUUID } from "node:crypto";
-import { adminClient, createConfirmedUser, drainMailUntil, signIn } from "./helpers";
+import { adminClient, createConfirmedUser, drainMailUntil, signIn, acceptAdultInvitation, adultInvitationToken, adultInvitationUrl } from "./helpers";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 
 /**
@@ -184,20 +184,15 @@ test("a real accepted invitation gives the viewer a family subject to ask about"
   // server) failed for that reason alone. The token is the invitation; the
   // host is an artefact of which server happened to send it, and acceptance
   // belongs on the jurisdiction-enabled server.
-  const token = message.html?.match(/\/withdraw\/([A-Za-z0-9_-]{43})/)?.[1];
+  const token = adultInvitationToken(message.html);
   expect(token, "the invitation email carries a withdraw token").toBeTruthy();
-  const invitationUrl = `${MAIN}/withdraw/${token}`;
 
   // B accepts in their own session, which is what creates the pairing.
   await page.request.post(`${MAIN}/auth/sign-out`);
-  await page.goto(invitationUrl!);
-  await page.getByRole("link", { name: "Sign in to accept" }).click();
-  await page.getByLabel("Email").fill(B.email);
-  await page.getByLabel("Password").fill(B.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(invitationUrl!);
-  await page.getByRole("button", { name: "Accept through my account" }).click();
-  await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  await acceptAdultInvitation({
+    page, invitationUrl: adultInvitationUrl(token!, MAIN),
+    email: B.email, password: B.password, origin: MAIN,
+  });
 
   // The segment the routes below are asked about, read from the accepted
   // invitation rather than constructed: `graph.ts` forms it as `s-{subject}`.

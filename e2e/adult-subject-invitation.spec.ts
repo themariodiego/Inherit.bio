@@ -2,10 +2,11 @@ import { expect, test } from "@playwright/test";
 import crypto from "node:crypto";
 import http from "node:http";
 import {
+  adminClient,
+  adultInvitationToken,
+  createConfirmedUser,
   drainMailUntil,
   findUserByEmail,
-  adminClient,
-  createConfirmedUser,
   signIn,
 } from "./helpers";
 
@@ -75,7 +76,11 @@ async function inviteAndRead(
   // D-081: the token is behind the '#', so it never reaches the server, an
   // access log, a referrer header or browser history as part of a path.
   expect(message.html, "no mail may carry a token in a URL path").not.toMatch(PATH_LINK);
-  return { message, link: link!, token: link!.split("#")[1] };
+  // The same extractor the other five adult journeys use, so this spec cannot
+  // pass on a shape the shared helper would miss.
+  const token = adultInvitationToken(message.html);
+  expect(token, "the shared extractor reads the same token").toBeTruthy();
+  return { message, link: link!, token: token! };
 }
 
 async function latestPendingInvitation() {
