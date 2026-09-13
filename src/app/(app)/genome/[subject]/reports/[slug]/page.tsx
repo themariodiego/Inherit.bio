@@ -172,8 +172,14 @@ const loadReport = cache(async (segment: string, slug: string, source?: string |
   if (!raw) return { kind: "not-found" } as const;
   const layer = (raw.layer ?? "estimate") as FindingLayer;
   if (context.person && !viewerMaySee(context.person, LAYER_PURPOSES[layer])) return { kind: "not-found" } as const;
+  // D-099: the legacy half answers to the live purpose grant on the reader's
+  // OWN record. Not on a relative's: the authority there is their Family
+  // permission, checked above, and this reader holds no own-subject grant on
+  // that subject, so asking for one would delete legacy sharing rather than
+  // gate it.
   const files = await filterOwnAnalysisFiles(admin, context.dataSubjectId,
-    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", context.person ? candidateFiles.filter(file => file.single_logical_sample_verified_at === null) : candidateFiles);
+    layer === "variant_call" ? "reports.monogenic" : "reports.polygenic", context.person ? candidateFiles.filter(file => file.single_logical_sample_verified_at === null) : candidateFiles,
+    { gateLegacy: context.person === null });
   return { ...context, files, fileCount, shared, sharedReport: null, sharedChoices, sharedLegacyAvailable, template: raw as unknown as ReportTemplate };
 });
 
@@ -412,6 +418,7 @@ export default async function ReportDetailPage(
           createAdminClient(),
           dataSubjectId,
           [template],
+          { gateLegacy: person === null },
         )
       : { genotypes: new Map<number, string>(), conflicts: new Set<number>(), calls: [], checkedFileIds: [] };
     const recordedFiles = new Set(calls.map((call) => call.file_id));

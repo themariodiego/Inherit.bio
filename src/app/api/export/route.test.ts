@@ -4,18 +4,40 @@ const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid:
   stateRead: false, failAfterState: false, failFinalStreamCheck: false, originalReads: [] as string[], streamReads: 0, authChecks: 0, failStreamCheck: false,
   preparedId: "12345678-1234-4234-8234-000000000003", manifestId: "12345678-1234-4234-8234-000000000004",
   variantReads: 0, fail: false, count: 2, pauseOriginal: null as Promise<void> | null, reportReads: 0,
-  pauseSecondAncestry: null as Promise<void> | null, secondAncestryStarted: false, ancestryFailure: false, legacyRows: [] as Array<{ file_id: string; result: string }> }));
+  pauseSecondAncestry: null as Promise<void> | null, secondAncestryStarted: false, ancestryFailure: false, legacyRows: [] as Array<{ file_id: string; result: string }>,
+  // D-099 fixture: the LEGACY half of the archive, which until 2026-09-13
+  // carried no report-purpose check at all.
+  legacyFiles: [] as Array<Record<string, unknown>>, processed: [] as Array<Record<string, unknown>>,
+  templates: [] as Array<Record<string, unknown>>, grants: new Set<string>(), genotypeReads: [] as string[],
+  revokeAfterBuild: false, reportGrantChecks: 0 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
   getUser: async () => ({ data: { user: { id: "12345678-1234-4234-8234-000000000001", email: "synthetic@e2e.local" } } }),
   getClaims: async () => ({ data: { claims: { sub: "12345678-1234-4234-8234-000000000001", session_id: "12345678-1234-4234-8234-000000000002" } } }),
 } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
   const from = (table: string) => {
-    const builder = { select: () => builder, eq: () => builder, is: () => builder, order: () => builder, range: () => builder,
-      then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: table === "ancestry_results" ? mocks.legacyRows : [], error: null }).then(resolve) };
+    const rows = table === "ancestry_results" ? mocks.legacyRows : table === "genome_files" ? mocks.legacyFiles : [];
+    // The genome_files read is paged by `fetchAllRows`, which stops on the
+    // first empty page. Answer the offset honestly or it never terminates.
+    let offset = 0;
+    const builder = { select: () => builder, eq: () => builder, is: () => builder, order: () => builder,
+      range: (start: number) => { offset = start; return builder; },
+      then: (resolve: (value: unknown) => unknown) =>
+        Promise.resolve({ data: rows.slice(offset), error: null }).then(resolve) };
     return builder;
   };
-  return { from, rpc: (name: string, args: { p_expected?: Record<string, unknown> }) => ({ abortSignal: async () => {
+  return { from, rpc: (name: string, args: { p_expected?: Record<string, unknown>; p_subject_id?: string; p_purpose?: string }) => {
+    // The grant question is awaited directly, not through `abortSignal()`.
+    if (name === "own_subject_purpose_granted_v1") {
+      const granted = mocks.grants.has(`${args.p_subject_id} ${args.p_purpose}`);
+      // `revokeAfterBuild` withdraws AFTER the first pass over the report
+      // purposes has answered, which is the race the second check exists for:
+      // the archive has been built and not yet written.
+      if (mocks.revokeAfterBuild && args.p_purpose?.startsWith("reports.")
+        && ++mocks.reportGrantChecks === 2) mocks.grants.clear();
+      return Promise.resolve({ data: granted, error: null }) as never;
+    }
+    return ({ abortSignal: async () => {
     if (name === "own_original_download_state_v1") { mocks.stateRead = true; return { data: { version: "own-original-download-state-v1", fileId: mocks.preparedId,
       prepared: !mocks.stateInvalid, retired: mocks.retired, expiresAt: null }, error: mocks.stateError ? {} : null }; }
     mocks.authChecks++;
@@ -25,10 +47,23 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
       sizeBytes: 15, expiresAt: "2099-01-01T00:00:00Z" };
     return { data: { source: { ...source, ...(mocks.changedSource ? { manifestId: "12345678-1234-4234-8234-000000000009" } : {}) }, originalName: "Genome file" },
       error: (mocks.failStreamCheck && mocks.authChecks > 1) || (mocks.failFinalStreamCheck && mocks.authChecks > 2) ? {} : null };
-  } }), storage: { from: () => ({ download: () => {} }) } };
+  } });
+  }, storage: { from: () => ({
+    // A legacy file's original is fetched from Storage; the canonical half
+    // never reaches here (it streams through the prepared-original mock).
+    download: async () => ({ data: new Blob(["legacy-original"]) }),
+  }) } };
 } }));
-vi.mock("@/lib/genome/load", () => ({ getProcessedFiles: async () => [], getPublishedTemplates: async () => [],
-  getGenotypesByRsid: vi.fn(), templateRsids: vi.fn() }));
+vi.mock("@/lib/genome/load", () => ({
+  getProcessedFiles: async () => mocks.processed,
+  getPublishedTemplates: async () => mocks.templates,
+  getGenotypesByRsid: async (_db: unknown, fileId: string) => {
+    mocks.genotypeReads.push(fileId);
+    return new Map([[1, "A/G"], [2, "A/G"]]);
+  },
+  templateRsids: (templates: Array<{ variants: Array<{ rsid: number }> }>) =>
+    templates.flatMap(template => template.variants.map(variant => variant.rsid)),
+}));
 vi.mock("@/lib/genome/prs-output", () => ({ loadPrsForExport: async () => [] }));
 vi.mock("@/lib/exports/own-subject-content", async importOriginal => {
   const original = await importOriginal<typeof import("@/lib/exports/own-subject-content")>();
@@ -68,7 +103,8 @@ vi.mock("@/lib/uploads/prepared-original-download", async importOriginal => {
   } };
 });
 import { GET } from "./route";
-beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false; });
+beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
+  mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -189,4 +225,64 @@ it.each(["stateInvalid", "stateError", "authorityFail", "changedSource", "failSt
   if (key === "authorityFail" || key === "failAfterState") mocks.retired = true;
   await expect((await GET()).arrayBuffer()).rejects.toThrow("export unavailable");
   expect(mocks.originalReads).toEqual([]);
+});
+
+/**
+ * D-099, closed 2026-09-13. The LEGACY half of `reports.json` used to run on
+ * `raw.export` alone: revoking `reports.monogenic` or `reports.polygenic`
+ * left results derived from a legacy source in the archive, exactly the gap
+ * D-097 closed for `ancestry`.
+ *
+ * The fixture is two published templates on one legacy file, one per layer,
+ * so the two purposes can be revoked independently — they are two selections,
+ * and a reader who kept estimates and dropped variant calls must receive
+ * estimates only.
+ */
+describe("legacy report purposes in the export", () => {
+  const variant = (rsid: number) => ({ rsid, chrom: 1, pos38: 100 + rsid, ref: "A", alt: "G",
+    gene: "GENE", interpretations: { AG: `Interpretation ${rsid}` } });
+  const template = (slug: string, layer: string, rsid: number) => ({
+    slug, title: `Title ${slug}`, category: "basic-traits", evidence: "established",
+    summary: "Public description", pgs_id: null, layer, citations: [], variants: [variant(rsid)],
+  });
+  beforeEach(() => {
+    mocks.count = 0; // no canonical snapshots; this is about the legacy half
+    mocks.legacyFiles = [{ id: "legacy-0", subject_id: "subject", user_id: "u", original_name: "Legacy file",
+      variant_count: 1, single_logical_sample_verified_at: null }];
+    mocks.processed = [{ id: "legacy-0", original_name: "Legacy file" }];
+    mocks.templates = [template("estimate-report", "estimate", 1), template("variant-report", "variant_call", 2)];
+  });
+  const reportsFor = async () => {
+    const zip = new AdmZip(Buffer.from(await (await GET()).arrayBuffer()));
+    return JSON.parse(zip.readAsText("reports.json")) as Array<{ file_id: string; report_count: number; reports: Array<{ slug: string }> }>;
+  };
+
+  it("ships both layers while both purposes are granted", async () => {
+    mocks.grants = new Set(["subject reports.monogenic", "subject reports.polygenic"]);
+    const json = await reportsFor();
+    expect(json.map(file => file.reports.map(report => report.slug)))
+      .toEqual([["estimate-report", "variant-report"]]);
+  });
+
+  it("ships only the layer whose purpose is live", async () => {
+    mocks.grants = new Set(["subject reports.polygenic"]);
+    const json = await reportsFor();
+    expect(json[0].reports.map(report => report.slug)).toEqual(["estimate-report"]);
+    expect(json[0].report_count).toBe(1);
+  });
+
+  it("reads no genotypes at all once both purposes are revoked, and still names the file", async () => {
+    mocks.grants = new Set();
+    const json = await reportsFor();
+    // The file is still listed, because the archive's file list is not a
+    // result — but nothing derived from it is read or written.
+    expect(json).toEqual([{ file_id: "legacy-0", original_name: "Legacy file", report_count: 0, reports: [] }]);
+    expect(mocks.genotypeReads, "no genetic read for a file with no live purpose").toEqual([]);
+  });
+
+  it("aborts rather than shipping a buffered result when a purpose is revoked mid-export", async () => {
+    mocks.grants = new Set(["subject reports.monogenic", "subject reports.polygenic"]);
+    mocks.revokeAfterBuild = true;
+    await expect((await GET()).arrayBuffer()).rejects.toThrow();
+  });
 });

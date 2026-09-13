@@ -2256,3 +2256,52 @@ The lesson is about where a suspicion belongs. "This looks miscategorised" is
 worth writing down; writing it down in the file that does NOT hold the
 reasoning, without checking the file that does, is how a record argues with
 itself.
+
+## 2026-09-13 — D-099 closed without the line it was waiting for, and why that is not the same as widening a scoped decision
+
+D-099 was recorded on 2026-09-12 as needing "one line from the operator: apply
+the same gate to `reports.monogenic` and `reports.polygenic`, or say why
+ancestry differs". The reason for waiting was good: D-097's answer named
+`ancestry.json`, and widening a rights change past what was asked is how a
+scoped decision becomes an unreviewed one.
+
+Taking it anyway, and the distinction is worth stating rather than assumed.
+D-097 was a decision about WHICH SURFACE to change. D-099 is a gap between the
+product and the brief's own non-negotiables — "enforce current
+subject/purpose/jurisdiction authority throughout" and "revoke access
+immediately". A revoked report purpose that still returns results derived from
+a legacy source is not an unanswered question; it is those two sentences not
+holding. There is also no reading in which ancestry should be gated and
+reports should not: reports are the more sensitive half.
+
+What changed: every OWN-record reader now passes `gateLegacy` —
+`loadOwnOverviewReports`, both report surfaces, and `loadPersonalPreviews` —
+and the export gates its legacy `reports.json` per LAYER, because the two
+purposes are two selections and a reader who kept estimates and dropped
+variant calls must receive estimates only. The export asks again immediately
+after building and throws rather than shipping a buffered result, which is the
+shape the ancestry half already had.
+
+What did NOT change, deliberately: the Family surfaces. A reader looking at a
+relative's record holds no own-subject grant on that subject, so this check
+would refuse every time and would DELETE legacy sharing rather than gate it.
+Their authority is the counterpart's Family permission, checked before the
+read. That asymmetry is now written into the function's own comment, because
+"off by default" reads like a softer setting and it is not: it is the answer
+to a different question.
+
+`prs.json` is left alone and this is the reason: it carries score-panel
+coverage, file provenance and the statement that validated personal scores are
+unavailable. It ships no score. Metadata about what a file covers is not a
+result derived under a purpose, and gating it would remove a description of
+the archive rather than a finding.
+
+The test that matters most is the one that would have caught the original
+defect: with both purposes revoked, the export reads NO genotypes for that
+file at all — asserted on the read, not on the output — and the file still
+appears with no reports, because the archive's file list is not a result.
+D-097's story is the reason to assert it that way: two records described
+legacy ancestry rows as unreadable after revocation, and they never were,
+because nothing had ever checked.
+
+Reverting is one flag per call site if the operator disagrees.

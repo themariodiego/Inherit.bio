@@ -15,16 +15,19 @@ export async function loadOwnOverviewReports(db: Db, subjectId: string) {
   ]);
   const templates = published.filter(template => !isFixtureSlug(template.slug));
   const reads = await Promise.all((["estimate", "variant_call"] as const).map(async layer => {
-    const authorized = await filterOwnAnalysisFiles(db, subjectId, PURPOSES[layer], files);
+    // D-099: own record, so a revoked report purpose must also withdraw
+    // results derived from a legacy source. Every read on this path is the
+    // account's own subject (`/overview` passes `self.id`).
+    const authorized = await filterOwnAnalysisFiles(db, subjectId, PURPOSES[layer], files, { gateLegacy: true });
     const candidates = templates.filter(template => (template.layer ?? "estimate") === layer && isStarterCandidate(template));
     const calls = authorized.length && candidates.length
-      ? await getSubjectReportCalls(db, subjectId, candidates) : null;
+      ? await getSubjectReportCalls(db, subjectId, candidates, { gateLegacy: true }) : null;
     return { layer, authorized, candidates, calls };
   }));
   // Recheck both purposes after all starter reads, including layers whose
   // candidates are deliberately excluded (for example Medicines).
   const layers = await Promise.all(reads.map(async ({ layer, authorized, candidates, calls }) => {
-    const current = authorized.length ? await filterOwnAnalysisFiles(db, subjectId, PURPOSES[layer], authorized) : [];
+    const current = authorized.length ? await filterOwnAnalysisFiles(db, subjectId, PURPOSES[layer], authorized, { gateLegacy: true }) : [];
     const currentIds = new Set(current.map(file => file.id));
     const stableInputs = calls !== null && calls.fileCount > 0 && calls.checkedFileIds.every(id => currentIds.has(id));
     return {

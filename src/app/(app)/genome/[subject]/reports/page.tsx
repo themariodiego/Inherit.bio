@@ -149,7 +149,12 @@ export default async function ReportsPage(
   // Each layer has its own input map: one selected purpose cannot populate
   // another layer's coverage, genotypes or personalized text.
   const layerCalls = new Map(await Promise.all(allowedLayers.map(async layer => [layer,
-    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer)),
+    // D-099: gate the legacy half on the live purpose grant for the reader's
+    // OWN record. On a relative's record the authority is their Family
+    // permission, already checked above, and this reader holds no own-subject
+    // grant there — asking for one would remove legacy sharing, not gate it.
+    await getSubjectReportCalls(admin, dataSubjectId, templates.filter(t => (t.layer ?? "estimate") === layer),
+      { gateLegacy: person === null }),
   ] as const)));
   const resolved = templates.map((t) =>
     stored.get(t.slug) ?? resolveTemplate(t, (rsid) => layerCalls.get(t.layer ?? "estimate")?.genotypes.get(rsid)),
