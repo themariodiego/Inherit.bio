@@ -2472,3 +2472,42 @@ without anyone re-reading the other eight. Nine remain, and they remain because
 the ambiguity is real; the two that left did not need a signature and should
 never have been counted as though they did. Waiting on a decision that was not
 actually needed is indistinguishable, from the outside, from being blocked.
+
+## 2026-09-13 — "Attemptable today" was a claim about two pages nobody had read
+
+The corrections table's closing line said two pairs could be attempted without
+a ruling: `/family/health-picture processing` and
+`/family/portrait/[pairId] processing`. Both pages were read today, and
+neither can.
+
+The health picture derives every cell from one number:
+
+    if (!read.fileCount) return { state: { kind: "no-prepared-file" }, covered: false };
+
+`fileCount` counts PREPARED files, so a file in flight and no file at all take
+the same branch and a reader sees the same four words: "No prepared file yet".
+Portrait does the same thing one line differently — `hasSource` is
+`hasPreparedSource || hasLegacySource`, so a file mid-preparation reaches the
+`noFile` sentence, "… hasn’t added a file yet. There is nothing to show."
+
+Neither is a missing test. Each needs a NEW sentence, and the sentence is the
+whole difficulty: it tells one adult that another adult has a file being
+prepared right now — a fact about that person's record which the page does not
+otherwise carry, on a surface designed so that what you learn about someone is
+exactly what they granted. `scripts/route-gate.ts` already recorded that
+reasoning for Portrait when corrections item 9 was applied. What is new is
+that it is equally true of the health picture, and that the table said
+otherwise for both.
+
+**The point is not that two more pairs are blocked.** It is that the table
+promised an owner that some of this was test work they did not have to decide
+about, and it was not. A blocked-on column is a claim like any other. This one
+had been checked for Portrait and inferred for the health picture, and the
+inference was wrong in the direction that flatters the plan — which is the
+direction to be suspicious of.
+
+So the honest number is zero: **nothing left in the ratchet moves without a
+decision.** Twenty-five of the twenty-seven open pairs wait on item 11, two
+wait on this disclosure question, and sixty more wait on signatures for items
+6, 8 and 10. That is a better thing to hand over than a list of work that
+looks available and is not.

@@ -932,12 +932,32 @@ Found while counting this table, which is the reason to build one.
 | `not-covered` | 9 | yes — renders identically to `empty` on three of them |
 | `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
 | `complete` | 8 | yes — currently four different meanings |
-| `processing` | 2 | partly: both are Family routes whose "no completed result yet" may or may not be work in flight |
+| `processing` | 2 | yes — neither page distinguishes a file in flight from no file, and the sentence that would is a disclosure decision (below) |
 | `empty` | 0 | proven 2026-09-13 |
 
-**Two pairs could be attempted today** without any ruling, both `processing`
-(`/family/health-picture`, `/family/portrait/[pairId]`), and both on the same
-two routes. The third, `/family/portrait/[pairId] empty`, was proven on
+**No pair can be attempted today without a ruling.** This line said two could
+— both `processing`, on `/family/health-picture` and
+`/family/portrait/[pairId]` — and reading both pages on 2026-09-13 shows that
+neither can, for the same reason and in the same words:
+
+- the **health picture** derives every cell from `read.fileCount` alone
+  (`family/health-picture/page.tsx`: `if (!read.fileCount) return { state: {
+  kind: "no-prepared-file" } }`). There is no branch for a file in flight, so
+  "No prepared file yet" is what a reader sees whether the other adult has
+  sent nothing or is being read right now;
+- **Portrait** computes `hasSource` as `hasPreparedSource || hasLegacySource`,
+  so a file mid-preparation takes the same branch as no file at all and gets
+  the same sentence: "… hasn’t added a file yet. There is nothing to show."
+
+Both would need a NEW sentence, and the sentence is the problem rather than
+the test: it tells one adult that another has a file being prepared, which is
+information about that person's record that the page does not otherwise carry.
+`scripts/route-gate.ts` already records that reasoning for Portrait, from
+corrections item 9; what is new here is that it is equally true of the health
+picture, and that this table said otherwise. The same question decides D-102's
+wording. **Nothing in the ratchet is now test work alone.**
+
+The third of the three, `/family/portrait/[pairId] empty`, was proven on
 2026-09-13 — and it was attemptable, but not by the route anyone would try
 first. Deleting a file from the existing pair is refused by the product on
 purpose (`file_delete_shared_graph`, surfaced as 409, because a shared graph

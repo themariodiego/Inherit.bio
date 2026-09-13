@@ -401,7 +401,18 @@ const BROWSER_TESTS = "e2e";
  *               knowing before the next fixture spends an hour on it.
  *
  *               The corrections table listed this pair as attemptable today,
- *               and it was, but not by the route anyone would try first.
+ *               and it was, but not by the route anyone would try first. IT
+ *               LISTED TWO OTHERS AS WELL, and neither is: both remaining
+ *               `processing` pairs were read on 2026-09-13 and neither page
+ *               can distinguish the state at all. The health picture derives
+ *               every cell from `read.fileCount` alone, so "No prepared file
+ *               yet" covers a file in flight and no file alike; Portrait
+ *               computes `hasSource` as `hasPreparedSource ||
+ *               hasLegacySource`, so a file mid-preparation takes the noFile
+ *               branch. Each would need a new sentence, and the sentence is
+ *               the disclosure question this comment already records for
+ *               Portrait — now known to apply to both. The table is corrected.
+ *               Nothing left in the ratchet is test work alone.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
