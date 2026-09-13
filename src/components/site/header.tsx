@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 import { createClient } from "@/lib/supabase/server";
+import { route } from "@/lib/primary-routes";
 
 const nav = [
-  { href: "/providers", label: "Providers" },
+  { href: route("marketing.providers"), label: "Providers" },
   { href: "/about", label: "About" },
   { href: "/changelog", label: "Changelog" },
 ];
@@ -58,7 +59,7 @@ export async function SiteHeader() {
           <ThemeToggle />
           {user ? (
             <Button asChild size="sm">
-              <Link href="/overview">Overview</Link>
+              <Link href={route("app.overview")}>Overview</Link>
             </Button>
           ) : (
             <>

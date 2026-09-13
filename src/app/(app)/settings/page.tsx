@@ -8,10 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Settings" };
 
 const sections = [
-  { href: "/settings/data", title: "Data", copy: "Export or delete account data." },
-  { href: "/settings/copilot", title: "Copilot", copy: "Choose a local or cloud model endpoint." },
-  { href: "/settings/people", title: "People", copy: "Subject records and relationship authority." },
-  { href: "/settings/consents", title: "Consents", copy: "Review and revoke grants by purpose." },
+  { href: route("settings.data"), title: "Data", copy: "Export or delete account data." },
+  { href: route("settings.copilot"), title: "Copilot", copy: "Choose a local or cloud model endpoint." },
+  { href: route("settings.people"), title: "People", copy: "Subject records and relationship authority." },
+  { href: route("settings.consents"), title: "Consents", copy: "Review and revoke grants by purpose." },
 ] as const;
 
 export default async function SettingsPage() {

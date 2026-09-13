@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { route } from "@/lib/primary-routes";
 
 const steps = [
   {
@@ -54,7 +55,7 @@ export default function LandingPage() {
             <Link href="/auth/sign-up">Start with your raw data</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/providers">Find a sequencing provider</Link>
+            <Link href={route("marketing.providers")}>Find a sequencing provider</Link>
           </Button>
         </div>
       </section>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
 import type { ChatProviderInfo } from "./chat-panel";
+import { route } from "@/lib/primary-routes";
 
 const citation = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100_000),
   href: z.string().max(4000).refine(value => {
@@ -129,7 +130,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
       <div data-testid="data-flow-indicator" className="rounded-xl border border-line bg-card px-4 py-3 text-sm">
         <p>{info.local ? <><strong>Local mode:</strong> questions and permitted data go to your own endpoint ({info.providerKey}).</>
           : <><strong>Cloud mode:</strong> questions and permitted data go to {providerDisplayName(info.providerKey ?? "")} ({info.model}).</>}</p>
-        <Link href="/settings/copilot" className="underline underline-offset-2">Review or withdraw permission</Link>
+        <Link href={route("settings.copilot")} className="underline underline-offset-2">Review or withdraw permission</Link>
       </div>
       <div className="flex flex-wrap items-start gap-3 text-sm">
         <Button type="button" variant="outline" disabled={busy} onClick={() => {

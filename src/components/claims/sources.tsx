@@ -1,4 +1,5 @@
 import { claimSourceAnchor, presentationSource } from "@/lib/claims/presentation";
+import { route } from "@/lib/primary-routes";
 
 export function ClaimSources({ sourceIds, scienceIndex = false, start = 1 }: {
   sourceIds: readonly string[];
@@ -17,7 +18,7 @@ export function ClaimSources({ sourceIds, scienceIndex = false, start = 1 }: {
               {source.type === "pmid" ? `PMID ${source.identifier}` : source.identifier}
             </a>
             <p className="text-ink-muted">Source read: <time data-ui-chrome-kind="date" dateTime={source.access_date}>{source.access_date}</time></p>
-            {!scienceIndex ? <a href="/science#sources" className="underline underline-offset-2">About these sources</a> : null}
+            {!scienceIndex ? <a href={route("science.index", { hash: "sources" })} className="underline underline-offset-2">About these sources</a> : null}
           </li>
         );
       })}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/legal-page";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = {
   title: "Terms of service",
@@ -209,7 +210,7 @@ export default function TermsPage() {
             <>
               <p>
                 You can close your account at any time from{" "}
-                <Link href="/settings">Settings</Link>. We may terminate an
+                <Link href={route("settings.index")}>Settings</Link>. We may terminate an
                 account that violates section 6, with notice explaining why
                 and — except where legally prohibited — a window to export
                 first.
@@ -270,7 +271,7 @@ export default function TermsPage() {
               <p>
                 The person who may be born from an embryo in an Inherit record
                 is an intended beneficiary of rights one through six of the{" "}
-                <Link href="/legal/future-person">Future Person Charter</Link>.
+                <Link href={route("legal.future-person")}>Future Person Charter</Link>.
                 That person may enforce those rights against Inherit.
               </p>
               <p>

@@ -7,6 +7,7 @@ import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
+import { route } from "@/lib/primary-routes";
 
 export const metadata: Metadata = { title: "Copilot" };
 
@@ -45,7 +46,7 @@ export default async function ChatPage(
         <p>{ownChat.reason === "consent_required"
           ? "Choose what Copilot may use before asking about your file. Saving a provider does not grant that permission."
           : "This deployment cannot use the selected model endpoint. Review the available options in Copilot settings."}</p>
-        <Link href="/settings/copilot" className="link-target underline underline-offset-2">Review Copilot settings</Link>
+        <Link href={route("settings.copilot")} className="link-target underline underline-offset-2">Review Copilot settings</Link>
       </div>
     );
   }
@@ -141,7 +142,7 @@ export default async function ChatPage(
                 <li>
                   Paste it in{" "}
                   <Link
-                    href="/settings/copilot"
+                    href={route("settings.copilot")}
                     className="underline underline-offset-2"
                   >
                     Settings → Copilot provider
@@ -192,7 +193,7 @@ export default async function ChatPage(
           </div>
 
           <p>
-            <Link href="/settings/copilot" className="link-target underline underline-offset-2">
+            <Link href={route("settings.copilot")} className="link-target underline underline-offset-2">
               Open Settings →
             </Link>
           </p>

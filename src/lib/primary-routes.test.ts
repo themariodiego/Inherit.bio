@@ -171,3 +171,63 @@ describe("primary routes", () => {
     expect(route("science.index", { hash: "polygenic" })).toBe("/science#polygenic");
   });
 });
+
+/**
+ * The module's own binding rule, checked instead of asserted.
+ *
+ * `primary-routes.ts` opens by saying that "every runtime link destination
+ * consumes a route id" and that "no component spells a product path". Nothing
+ * enforced it, and on 2026-09-13 twenty-six links spelled one — including
+ * `/settings` from three legal pages and `/settings/copilot` from the Copilot
+ * panel. D-010 had recorded the opposite problem, that this module did not
+ * exist; it does, and is imported by 38 files, so the half of that defect
+ * that survived was this one.
+ *
+ * SCOPE, STATED SO THE PASS IS NOT READ AS MORE THAN IT IS. This checks only
+ * the routes with a builder AND no `[param]` segment, because those are the
+ * ones a literal can be compared against without parsing JSX. A literal
+ * `/genome/me/reports` would breach the same rule and is not caught here, and
+ * the register's other ~130 routes have no builder to consume at all.
+ *
+ * It reads BOTH spellings, because the first version of this test read only
+ * the JSX attribute and the nav and footer arrays spell their destinations as
+ * an object property — `{ href: "/overview", label: "Overview" }` — which is
+ * the same breach one character apart, in the two components every page
+ * renders.
+ */
+describe("no component spells a path this module can build", () => {
+  const STATIC_PATTERNS = ROUTE_IDS
+    .map((id) => [id, routePattern(id)] as const)
+    .filter(([, pattern]) => !pattern.includes("["));
+
+  function sourceFiles(directory: string, found: string[] = []): string[] {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) sourceFiles(full, found);
+      else if (/\.tsx?$/.test(entry.name) && !/\.test\./.test(entry.name)) found.push(full);
+    }
+    return found;
+  }
+
+  it("finds a builder for at least the product routes, or the sweep below is vacuous", () => {
+    expect(STATIC_PATTERNS.length).toBeGreaterThan(15);
+    expect(STATIC_PATTERNS.map(([id]) => id)).toContain("settings.index");
+  });
+
+  it("has no literal href for any of them anywhere under src/", () => {
+    const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+    const offences: string[] = [];
+    for (const file of sourceFiles(root)) {
+      if (file.endsWith(path.join("lib", "primary-routes.ts"))) continue;
+      fs.readFileSync(file, "utf8").split("\n").forEach((line, index) => {
+        for (const [id, pattern] of STATIC_PATTERNS) {
+          // The lookahead keeps `/settings` from matching `/settings/data`.
+          if (new RegExp(`href(?:=\\{?|: )"${pattern}(?=["#?])`).test(line)) {
+            offences.push(`${path.relative(root, file)}:${index + 1} spells ${pattern} — use route("${id}")`);
+          }
+        }
+      });
+    }
+    expect(offences, offences.join("\n")).toEqual([]);
+  });
+});

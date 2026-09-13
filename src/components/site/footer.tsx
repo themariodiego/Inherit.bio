@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { Attribution, Wordmark } from "./wordmark";
+import { route } from "@/lib/primary-routes";
 
 const columns: { heading: string; links: { href: string; label: string }[] }[] =
   [
     {
       heading: "Product",
       links: [
-        { href: "/providers", label: "Find a provider" },
-        { href: "/overview", label: "Overview" },
+        { href: route("marketing.providers"), label: "Find a provider" },
+        { href: route("app.overview"), label: "Overview" },
         { href: "/changelog", label: "Research changelog" },
         { href: "/legal/self-hosting", label: "Self-host" },
       ],
