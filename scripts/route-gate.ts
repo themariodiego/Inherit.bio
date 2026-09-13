@@ -217,6 +217,17 @@ const BROWSER_TESTS = "e2e";
  *               opposite things, so the test now establishes the CAUSE from
  *               the database - this account has no file - rather than
  *               inferring it from the absence.
+ *   108 -> 107  `/genome/[subject] complete`: the My Genome hub with a
+ *               prepared file behind it, offering every tool the record can
+ *               serve. Its three other product-result states are proposed
+ *               not-applicable in item 10 - the hub renders tiles and a file
+ *               count, never a result, so coverage has nothing to describe
+ *               here, and it has no empty render because a relative with
+ *               nothing granted is refused the page outright rather than
+ *               served an empty one. The assertion that is not about
+ *               presence: the preparing sentence must be ABSENT on a prepared
+ *               file, or this page would repeat the mistake the two data
+ *               pages just stopped making.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -227,7 +238,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 108;
+const UNPROVEN_ROUTE_STATE_PAIRS = 107;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

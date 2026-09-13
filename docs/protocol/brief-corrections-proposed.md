@@ -767,6 +767,20 @@ the total proposed not-applicable across this document to 36: item 8's 29 and
 item 10's 7. The `/embryo-analysis` route contributes six of the 36, split
 across the two items because it was read twice; nothing is counted twice.
 
+### `/genome/[subject]`: a hub with one product-result state, not four
+
+`complete` is proven (`e2e/genome-data.spec.ts`). The other three do not apply,
+and the reason is structural rather than a matter of taste.
+
+| Route | State | Why not applicable |
+| --- | --- | --- |
+| `/genome/[subject]` | `partial-coverage` | The hub renders tiles, a file COUNT and a link per tool. It never renders a result, so there is nothing that could be partly covered. |
+| `/genome/[subject]` | `not-covered` | The same. Coverage is a property of a report, and this page shows none. |
+| `/genome/[subject]` | `empty` | It has no empty render. For an own record all three tiles are unconditional; for a relative's record `resolveSubjectRoute` refuses the page outright when nothing is granted (`anyOf: ["reports.monogenic", "reports.polygenic", "ancestry"]`) rather than serving an empty hub — which is deliberate, because an empty hub would confirm the record exists. |
+
+That takes item 10's proposed not-applicable pairs to 10, and the document's
+total to 39.
+
 ### A shape the register has no state for, found on the main hub
 
 Not a proposal — a measurement, recorded because the route is `/overview` and
