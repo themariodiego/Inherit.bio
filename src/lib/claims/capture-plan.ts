@@ -65,7 +65,14 @@ export function planClaimCaptures(input: CapturePlanInput): ClaimCapture[] {
     if (!supported.length || new Set(supported).size !== supported.length || supported.some((s) => !stateIds.includes(s))) fail("invalid-supported-states");
     if (Object.keys(notApplicable).some((s) => !stateIds.includes(s) || supported.includes(s) || !nonempty(notApplicable[s]))) fail("invalid-state-exemption");
     for (const state of stateIds as string[]) if (!supported.includes(state) && !Object.hasOwn(notApplicable, state)) fail("undeclared-state");
-    for (const state of supported as string[]) {
+    // A route may waive a state its profile supports (route-gate.ts explains
+    // why). Capturing a surface the register says the route cannot render
+    // would ask the harness for a screenshot of nothing, so the waiver is read
+    // here too rather than only by the gate.
+    const waived = route.notApplicableStates === undefined ? {} : route.notApplicableStates;
+    if (!row(waived)) fail("invalid-route-state-exemption");
+    if (Object.keys(waived as Row).some((s) => !supported.includes(s) || !nonempty((waived as Row)[s]))) fail("invalid-route-state-exemption");
+    for (const state of (supported as string[]).filter((s) => !Object.hasOwn(waived as Row, s))) {
       // Build HTML covers only the ordinary static public complete state. Public
       // error/flow states are still rendered by the seeded browser harness.
       const channel = auth === "public" && route.stateProfile === "static-document" && state === "complete" && !path.includes("[")

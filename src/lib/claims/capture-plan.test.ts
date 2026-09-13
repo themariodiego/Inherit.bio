@@ -26,7 +26,14 @@ describe("independent rendered-claim capture planning", () => {
     const captures = planClaimCaptures({ ...fixture(), routeRegister: register, emailEntrypoints: emails });
     for (const route of register.routes.filter((r) => r.kind === "page")) {
       const profile = register.stateProfiles[route.stateProfile as keyof typeof register.stateProfiles];
-      for (const state of profile.supported) expect(captures.filter((c) => c.source.kind === "route" && c.source.id === route.id && c.source.state === state)).toHaveLength(1);
+      // A route may waive a state its profile supports; there is no surface to
+      // capture for one, and one capture demanded per waived state would be a
+      // screenshot request for a render the register says does not exist.
+      const waived = (route as { notApplicableStates?: Record<string, string> }).notApplicableStates ?? {};
+      for (const state of profile.supported) {
+        const planned = captures.filter((c) => c.source.kind === "route" && c.source.id === route.id && c.source.state === state);
+        expect(planned, `${route.path} ${state}`).toHaveLength(state in waived ? 0 : 1);
+      }
     }
     expect(captures.filter((c) => c.source.kind === "email")).toHaveLength(emails.length);
     expect(captures.filter((c) => c.source.kind === "export")).toHaveLength(Object.keys(register.exportContracts).length);

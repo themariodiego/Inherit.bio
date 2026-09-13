@@ -413,6 +413,40 @@ const BROWSER_TESTS = "e2e";
  *               the disclosure question this comment already records for
  *               Portrait — now known to apply to both. The table is corrected.
  *               Nothing left in the ratchet is test work alone.
+ *    87 -> 36   NOT A PROOF, and the largest single move this ratchet has
+ *               ever made, so read the cause before the number. Corrections
+ *               items 6, 8 and 10 were signed on 2026-09-13 and the register
+ *               stopped requiring 51 pairs. Required 213 -> 162; proven
+ *               unchanged at 126. Not one browser test was written for this
+ *               entry and none should be counted against it.
+ *
+ *               Two mechanisms carry it. Five profiles gave a state up
+ *               wholesale — `empty` off `versioned-document`, `auth-flow`,
+ *               `restricted-flow` and `public-rights-flow`, `processing` off
+ *               `public-rights-flow`, and `public-embryo-analysis` down to
+ *               the two states its one 35-line page can occupy. The rest is
+ *               new: a ROUTE may now waive a state its profile supports, in
+ *               `notApplicableStates`, with the reason beside it. Until today
+ *               the profile was the only place a state could be waived, which
+ *               forced a choice between declaring a state on routes that
+ *               never render it and splitting profiles until they meant
+ *               nothing. `/settings/people` renders `FeatureNotBuilt` while
+ *               its four `account-management` neighbours are real pages, and
+ *               `/settings/consents` proves `empty` on a grant list the
+ *               others do not have: one profile, three different answers.
+ *
+ *               An exemption mechanism is the thing that rots, so it is
+ *               guarded rather than trusted. A waiver naming a state the
+ *               profile does not support fails. A waiver without a reason
+ *               fails. AND `consent-required` waived on any Family or Embryo
+ *               Analysis route fails outright, because G2.2 forbids that n/a
+ *               however well argued — which is corrections item 7's finding
+ *               turned from a reading into a check. That guard is why this
+ *               entry moves 51 pairs and not 52: item 10 proposed
+ *               `/embryo-analysis consent-required` as not-applicable, the
+ *               owner separately chose to BUILD the nine Family and Embryo
+ *               consent gates, and the brief forbids the waiver. It stays
+ *               declared and unproven, which is the honest state.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -423,7 +457,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 87;
+const UNPROVEN_ROUTE_STATE_PAIRS = 36;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -435,11 +469,14 @@ interface RegisterEntry {
   methods?: string[];
   expectedStatus?: number;
   stateProfile?: string;
+  /** States this ONE route cannot reach, though its profile supports them. */
+  notApplicableStates?: Record<string, string>;
   parameterContract?: unknown;
 }
 
 interface StateProfile {
   supported?: string[];
+  notApplicable?: Record<string, string>;
 }
 
 interface BuiltRoute {
@@ -664,6 +701,89 @@ function compareLedger(
   }
 }
 
+/** The register, as much of it as the state matrix needs. */
+interface StateRegister {
+  routes: RegisterEntry[];
+  stateProfiles: Record<string, StateProfile>;
+}
+
+/**
+ * The states a route must prove: its profile's `supported` list, less the
+ * states that route alone cannot reach.
+ *
+ * A profile is a group, and until 2026-09-13 it was the only place a state
+ * could be declared or waived. That forced two bad answers whenever a group
+ * disagreed with itself — declare a state on routes that never render it, or
+ * split a profile per route until profiles mean nothing. Corrections items 6,
+ * 8 and 10 are full of that shape: `/settings/people` renders `FeatureNotBuilt`
+ * while the four other `account-management` pages are real, and `/settings`
+ * proves `empty` on a grant list its neighbours do not have. So a route may
+ * now waive a state its profile supports, and must say why in the same place.
+ *
+ * This is an exemption mechanism, which is exactly the thing that rots, so
+ * `notApplicableFailures` guards it below.
+ */
+function requiredStates(register: StateRegister, entry: RegisterEntry): string[] {
+  const waived = entry.notApplicableStates ?? {};
+  return (register.stateProfiles[entry.stateProfile ?? ""]?.supported ?? []).filter(
+    (state) => !(state in waived),
+  );
+}
+
+/** Family and Embryo Analysis routes, for the G2.2 prohibition below. */
+function isFamilyOrEmbryoRoute(routePath: string): boolean {
+  return routePath === "/embryo-analysis"
+    || routePath === "/family" || routePath.startsWith("/family/")
+    || routePath === "/embryos" || routePath.startsWith("/embryos/");
+}
+
+/**
+ * Three ways a not-applicable declaration goes wrong, and one the brief
+ * forbids outright.
+ *
+ * G2.2 ends with four `n/a` declarations that are forbidden however well
+ * argued. One of them is machine-decidable from the path alone —
+ * `consent-required` on any Family or Embryo Analysis route — and corrections
+ * item 7 was written because a proposal walked straight into it: items 5 and 6
+ * were both measured against the product and neither against the brief, which
+ * is the thing that says what the product owes. That miss is now a gate
+ * failure rather than a reading. The other three forbidden declarations turn
+ * on whether a route renders a result derived from an uploaded file and on
+ * which capabilities appear in data/jurisdictions.json; neither is decidable
+ * here, so neither is claimed.
+ */
+function notApplicableFailures(register: StateRegister): string[] {
+  const failures: string[] = [];
+  for (const entry of register.routes) {
+    const supported = register.stateProfiles[entry.stateProfile ?? ""]?.supported ?? [];
+    for (const [state, reason] of Object.entries(entry.notApplicableStates ?? {})) {
+      if (!supported.includes(state)) {
+        failures.push(
+          `route state exemption: ${entry.path} waives ${state}, which its ` +
+            `${entry.stateProfile} profile does not support. A waiver with nothing to ` +
+            `waive is a stale exemption; remove it.`,
+        );
+      }
+      if (typeof reason !== "string" || reason.trim().length < 20) {
+        failures.push(
+          `route state exemption: ${entry.path} waives ${state} without saying why. ` +
+            `An exemption whose reason nobody wrote down is one nobody can review.`,
+        );
+      }
+    }
+    const waivedConsent = (entry.notApplicableStates ?? {})["consent-required"] !== undefined
+      || (register.stateProfiles[entry.stateProfile ?? ""]?.notApplicable ?? {})["consent-required"] !== undefined;
+    if (waivedConsent && isFamilyOrEmbryoRoute(entry.path)) {
+      failures.push(
+        `route state exemption: ${entry.path} waives consent-required, and G2.2 forbids that ` +
+          `n/a on any Family or Embryo Analysis route outright. The correction for these ` +
+          `routes is to build the gate, not to stop declaring it.`,
+      );
+    }
+  }
+  return failures;
+}
+
 export async function runRouteGate(repositoryRoot: string): Promise<RouteGateResult> {
   const failures: string[] = [];
   const read = (relativePath: string) =>
@@ -826,9 +946,10 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   );
 
   // 5. The (route, state) ratchet.
+  failures.push(...notApplicableFailures(register));
   const required = new Set<string>();
   for (const entry of register.routes) {
-    for (const state of register.stateProfiles[entry.stateProfile ?? ""]?.supported ?? []) {
+    for (const state of requiredStates(register, entry)) {
       required.add(`${entry.path} ${state}`);
     }
   }
@@ -847,7 +968,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   const proven = new Set<string>();
   for (const title of titles) {
     for (const entry of register.routes) {
-      for (const state of register.stateProfiles[entry.stateProfile ?? ""]?.supported ?? []) {
+      for (const state of requiredStates(register, entry)) {
         const pair = `${entry.path} ${state}`;
         if (required.has(pair) && titleProves(title, entry.path, state)) proven.add(pair);
       }

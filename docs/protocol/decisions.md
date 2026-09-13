@@ -2703,3 +2703,55 @@ the trace, the screenshot and the DOM at the moment of failure — were gone
 before anyone could look. `.github/workflows/ci.yml` now uploads both on
 failure with a fourteen-day retention. If it happens again there will be
 evidence rather than a second round of elimination.
+
+## 2026-09-13 · A route may now waive a state, and one waiver is forbidden
+
+Corrections items 6, 8 and 10 are signed and applied. The ratchet went 87 → 36
+and proven stayed at 126, which is the whole shape of the event: **51 pairs
+left the register and not one line of test code was written.** Required went
+213 → 162.
+
+Applying them needed a mechanism the register did not have. Until today a
+state could be declared or waived only on a `stateProfile`, which is a group,
+so a group that disagreed with itself had two bad answers: declare the state on
+routes that never render it, or split profiles until they mean nothing. These
+three items are full of that shape. `/settings/people` renders `FeatureNotBuilt`
+while its four `account-management` neighbours are real pages;
+`/settings/consents` proves `empty` on a grant list the others do not have;
+`/embryos/upload` performs no request while `/family/invite`, on the same
+profile, shows a pending state. One profile, three different answers.
+
+So a route may now waive a state its profile supports, in
+`notApplicableStates`, with the reason beside it. Twenty-six routes do. Five
+profiles still gave a state up wholesale where the whole group agreed —
+`empty` off `versioned-document`, `auth-flow`, `restricted-flow` and
+`public-rights-flow`, `processing` off `public-rights-flow`.
+
+**An exemption mechanism is the thing that rots**, which is the argument
+against adding one, so it is guarded rather than trusted. A waiver naming a
+state the profile does not support fails. A waiver with no reason fails. And
+`consent-required` waived on any Family or Embryo Analysis route fails
+outright, whether by profile or by route, because G2.2 forbids that `n/a`
+however well it is argued. Four planted defects, one per rule, and the fourth
+checks that a profile-level waiver is caught on every Family route beneath it
+rather than the first.
+
+That third guard is corrections item 7 turned from a reading into a check.
+Item 7 exists because items 5 and 6 were both measured against the product —
+what each page component does — and neither against the brief, which is the
+thing that says what the product owes. A correction the brief forbids is not a
+correction. That miss cost a re-measurement; the next one costs a failing gate.
+
+**It also moved this change's own count.** Item 10 proposed the clean
+expression `supported: ["jurisdiction-unavailable"]` for
+`public-embryo-analysis`, which would have waived `consent-required` on
+`/embryo-analysis` — a route the owner separately chose to build a consent gate
+on. The profile ships as `["consent-required", "jurisdiction-unavailable"]`
+instead, and the item is signed as sixteen of seventeen with the exception
+written down. Item 6 applied to six routes of its twenty rather than fifteen:
+five had already lost the declaration on 2026-09-12, and nine are the Family
+and Embryo half this guard now protects.
+
+Of the 36 that remain, nine are those gates — product work, task 33 — and 27
+are test work, most of it behind item 11's question about what eight state ids
+actually mean. Nothing left in the ratchet is a register correction.

@@ -334,6 +334,19 @@ affected either way; their absence of a guard is not in question.
 
 ## 6. `consent-required` is declared on twenty routes and implemented on none of them
 
+**SIGNED AND APPLIED 2026-09-13, to six routes rather than twenty.** Five of
+the twenty had already lost the declaration on 2026-09-12, when
+`consent-required` came off the `account-management` profile wholesale. Nine
+are the Family and Embryo Analysis routes item 7 identified, where G2.2 forbids
+the `n/a` outright; the owner chose to build those gates, so they keep the
+declaration and stay unproven until the gates exist. That leaves `/overview`
+and the five `/genome/[subject]*` routes, each now carrying a
+`notApplicableStates` entry with this measurement beside it.
+
+`scripts/route-gate.ts` now FAILS when any Family or Embryo Analysis route
+waives `consent-required`, by profile or by route. Item 7's finding was a
+reading that a later reader could have missed; it is a check now.
+
 **Measured 2026-09-11, by the same method as item 5**, and the result is
 cleaner than that one.
 
@@ -445,6 +458,18 @@ consent gate on every Family route" is a product commitment, not a register
 detail.
 
 ## 8. `empty` and `processing`: the 63 remaining pairs, grouped by profile
+
+**SIGNED AND APPLIED 2026-09-13. All 29.** Four went to profiles that gave the
+state up wholesale — `empty` off `versioned-document`, `auth-flow`,
+`restricted-flow` and `public-rights-flow`, plus `processing` off
+`public-rights-flow`. The seven that a profile could not express, because the
+profile's other routes keep the state, went to per-route
+`notApplicableStates`: `empty` on four of the five `account-management` pages
+(`/settings/consents` keeps it and proves it), `processing` on
+`/settings/people`, and `processing` on `/embryos/upload` and
+`/embryos/request-data`. **`/embryos/upload processing` carries its expiry in
+the register**, in the words this item wrote: when the route it would post to
+lands, the state becomes real again and the waiver must come off.
 
 **Not a proposal, and deliberately not a set of conclusions.** This is a
 measurement, taken 2026-09-12 once `jurisdiction-unavailable` was closed and
@@ -695,6 +720,15 @@ defensible; the reason it is asked rather than chosen is that it changes what
 one person learns about another.
 
 ## 10. `auth-flow · complete` is declared on four routes and rendered by two
+
+**SIGNED AND APPLIED 2026-09-13, sixteen of the seventeen.** The one that was
+not is `/embryo-analysis consent-required`: it is a Family or Embryo Analysis
+route, G2.2 forbids that `n/a` outright, and the owner separately chose to
+build the nine gates. So the clean expression this item recommends,
+`supported: ["jurisdiction-unavailable"]`, is one state short of what shipped —
+the profile is now `["consent-required", "jurisdiction-unavailable"]`, and the
+consent pair stays declared and unproven until the gate exists. Everything else
+here applied as written.
 
 Two pairs proposed not-applicable. Small, and included because the reason is
 the one this document keeps returning to.
@@ -949,7 +983,7 @@ never existed in this repository's history.
 
 ---
 
-## Where the 87 unproven pairs stand
+## Where the 36 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -959,26 +993,45 @@ fails if the three bold figures below disagree with the register, so the claim
 holds because something checks it. It exists because the question "what does
 signing this unlock?" had no answer anywhere.
 
+**Items 6, 8 and 10 were signed on 2026-09-13 and applied the same day.** 51 of
+the 60 pairs they proposed left the register; the ratchet went 87 → 36, and not
+one line of test code was written for it, because every one of those 51 was the
+register describing behaviour the product does not have. What is left of those
+proposals is the nine that G2.2 forbids dropping.
+
 | | pairs | what moves them |
 | --- | ---: | --- |
-| Proposed not-applicable in item 6 (`consent-required`) | 15 | one signature |
-| Proposed not-applicable in item 8 | 29 | one signature |
-| Proposed not-applicable in item 10 | 17 | one signature |
-| less one pair proposed twice | −1 | see below |
-| **Awaiting a signature** | **60** | |
+| Applied from item 6 (`consent-required`, the eleven non-Family routes) | 6 | done 2026-09-13 |
+| Applied from item 8 | 29 | done 2026-09-13 |
+| Applied from item 10 | 16 | done 2026-09-13 |
+| **Retired from the register** | **51** | |
+| Item 6's Family and Embryo half | 9 | product work — build the gate |
 | **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **87** | |
+| **Total unproven** | **36** | |
 
-Signing all three proposals would take the ratchet from 87 to 27 without a line
-of test code, because every one of those 60 is the register describing
-behaviour the product does not have.
+Building the nine consent gates would take the ratchet from 36 to 27. That is
+the whole of what a register correction can no longer do for this number.
 
-**`/embryo-analysis consent-required` is proposed twice** — once in item 6, as
+**Item 6 applied to six routes, not fifteen.** Five of its twenty —
+`/settings`, `/settings/consents`, `/settings/copilot`, `/settings/data` and
+`/settings/people` — had already lost the declaration on 2026-09-12 when
+`consent-required` came off the `account-management` profile wholesale, so the
+signature found nothing to drop there. Nine more are the Family and Embryo
+routes item 7 identified, where **G2.2 forbids the `n/a` outright** and the
+owner chose to build the gates. That leaves `/overview` and the five
+`/genome/[subject]*` routes. `scripts/route-gate.ts` now FAILS on a
+`consent-required` waiver for any Family or Embryo Analysis route, so item 7's
+finding is a check rather than a reading, and this decision cannot be quietly
+reversed.
+
+**`/embryo-analysis consent-required` was proposed twice** — once in item 6, as
 one of the twenty routes that declare the state and never render it, and again
 in item 10, among the four that reduce this profile to its single render. Both
-readings are right and they agree, so nothing is in conflict; but it is one
-pair, not two, and a signature on both items must not be read as retiring two.
-Found while counting this table, which is the reason to build one.
+readings are right and they agree; but it is one pair, not two, and it is a
+Family or Embryo Analysis route, so neither signature retired it. The profile
+is now `supported: ["consent-required", "jurisdiction-unavailable"]` rather
+than the single state item 10 proposed. Found while counting this table, which
+is the reason to build one.
 
 ### And of the 27 that are open, 25 wait on item 11
 
