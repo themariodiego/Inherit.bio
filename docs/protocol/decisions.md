@@ -2882,3 +2882,52 @@ because the register stopped describing behaviour the product does not have,
 and 2 were proofs. Nothing left in the number is a register correction: every
 remaining pair is a state the product has and no test names, or one item 11
 must first make decidable.
+
+## 2026-09-13 · Four more, and one that changes the data model
+
+**D-022: the wrong record was ours.** Our provenance note asserted PhyloTree
+is "free for academic/non-commercial use with citation"; the publisher's page
+states no copyright, licence or terms at all and asks only for a citation. The
+licence audit bars a non-commercially-licensed source from the reference
+store, so for months an invented restriction was disqualifying a source on our
+own say-so, and the maternal-line capability was carrying the risk. The note
+now says what the page says, with the read date and the correction date. Stated
+in both files because it is the whole of what changed: data published with no
+terms is not data published permissively. This is a correction to a claim about
+someone else's page, not counsel's opinion on what rights attach, and counsel
+may revisit.
+
+**D-083: record the divergence, keep the code.** Five routes require a
+jurisdiction attestation version and hash; `policy.jurisdiction` exists nowhere
+in the repository, so nothing can name a version or hash a body, and they send
+a plain `jurisdictionCode`. Rather than author a legal artifact to satisfy a
+field, or drop a commitment the brief made about proving which jurisdiction a
+person accepted under, the mismatch is now written down — and compared. The
+route gate checks `unhashableAttestationFields` against the register in both
+directions, so a sixth route declaring the fields fails until it is recorded,
+and every row fails the day the artifact exists and the fields are really
+served. A record nothing checks is a sentence; this one is a ratchet.
+
+**D-017: expand the panel.** The shipped 168-marker panel cannot separate EUR
+from AMR — a fixture drawn at EUR 0.6 is reported as EUR 0.005, with the
+European-drawn alleles landing on admixed-American. The owner chose the real
+fix over merging the two references or withholding the estimate. That is marker
+selection, which is science work, and the catalogue it draws from needs a
+licence check before a single marker enters the reference store — the rule
+D-022 just demonstrated the cost of getting wrong. Not started; scoped next.
+
+**D-031: record chromosomal sex.** A change of plan rather than a choice among
+the three offered. The carrier panel refuses the X-linked arithmetic with
+`sex-unknown` because nothing records it, and Portrait's `xLinkedCross` is
+built and waiting.
+
+One judgement call is mine and is flagged rather than buried: **declared, not
+derived.** Inferring chromosomal sex from X/Y coverage would be inference on a
+sensitive attribute, which this product refuses elsewhere on principle —
+ADR-0003 refuses imputation, and X12.1 refuses inferring jurisdiction from IP,
+locale or timezone — and it is wrong for some people, which is precisely the
+population a genomics product must not quietly mislabel. The precedent to
+follow is `profiles.jurisdiction`: user-declared, server-enforced, optional,
+purpose-bound, revocable, and every change writing an audit row. If the owner
+wants derivation instead, that reverses a principle and should be said
+explicitly.

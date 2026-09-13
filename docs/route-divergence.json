@@ -286,5 +286,53 @@
     "/settings/data processing",
     "/terms complete",
     "/withdraw/[token] complete"
+  ],
+  "unhashableAttestationFieldsNote": "Request fields the register requires that nothing can honestly produce, because the artifact they attest to does not exist. D-083. `policy.jurisdiction` appears nowhere in this repository outside docs/route-register.json \u2014 not in src/, not in the docs, not in a test \u2014 so there is no published version to name and no body to hash; these bodies carry a plain `jurisdictionCode` instead. Owner decision 2026-09-13: record the divergence and keep the code, rather than author a legal artifact to satisfy a field or drop a commitment the brief made about proving which jurisdiction a person accepted under. scripts/route-gate.ts compares this list with the register in BOTH directions, so a sixth route declaring the fields fails until it is recorded here, and the day the artifact is authored and the fields are really served, every row here fails until it is removed.",
+  "unhashableAttestationFields": [
+    {
+      "routeId": "auth.sign-up-submit",
+      "path": "/api/auth/sign-up",
+      "fields": [
+        "jurisdictionAttestationVersion",
+        "jurisdictionAttestationHash"
+      ],
+      "served": "jurisdictionCode"
+    },
+    {
+      "routeId": "api.consent-reaffirm-rights",
+      "path": "/api/consents/reaffirm/session",
+      "fields": [
+        "jurisdictionAttestationVersion",
+        "jurisdictionAttestationHash"
+      ],
+      "served": "jurisdictionCode"
+    },
+    {
+      "routeId": "api.consent-grant-rights",
+      "path": "/api/consents/grant/session",
+      "fields": [
+        "jurisdictionAttestationVersion",
+        "jurisdictionAttestationHash"
+      ],
+      "served": "jurisdictionCode"
+    },
+    {
+      "routeId": "api.invitation-accept",
+      "path": "/api/invitations/accept",
+      "fields": [
+        "jurisdictionAttestationVersion",
+        "jurisdictionAttestationHash"
+      ],
+      "served": "jurisdictionCode"
+    },
+    {
+      "routeId": "api.withdraw",
+      "path": "/api/withdraw/[token]",
+      "fields": [
+        "jurisdictionAttestationVersion",
+        "jurisdictionAttestationHash"
+      ],
+      "served": "jurisdictionCode"
+    }
   ]
 }

@@ -554,6 +554,7 @@ interface RegisterEntry {
   notApplicableStates?: Record<string, string>;
   /** Which G2.2 exception lets a Family or Embryo route waive consent-required. */
   consentRequiredException?: { kind?: string; carriedBy?: string };
+  requestContract?: unknown;
   parameterContract?: unknown;
 }
 
@@ -944,6 +945,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     redirectStatusDivergence?: { routeId: string; expectedStatus: number; emitsStatus: number }[];
     kindDivergence?: { routeId: string; path: string; declaredKind: string; builtKind: string }[];
     storageBucketDivergence?: { bucket: string; direction: string }[];
+    unhashableAttestationFields?: { routeId: string; fields: string[] }[];
     provenRouteStates?: string[];
   };
 
@@ -1058,6 +1060,32 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
       .filter((bucket) => !declaredBuckets.has(bucket))
       .map((bucket) => `created-not-declared ${bucket}`),
   ];
+  // 4b. Request fields the register requires that nothing can honestly
+  // produce. `policy.jurisdiction` does not exist anywhere in this
+  // repository, so no body can name its published version or hash it, and
+  // these routes send a plain `jurisdictionCode` instead (D-083). The owner
+  // chose to record that rather than author a legal artifact to satisfy a
+  // field. Recording it is only worth anything if something checks it, so it
+  // is compared in BOTH directions like every other row: a sixth route
+  // declaring the fields fails until it is recorded, and the day the artifact
+  // exists and the fields are really served, every stale row fails too.
+  const attestationFields = ["jurisdictionAttestationVersion", "jurisdictionAttestationHash"];
+  const declaredAttestations: string[] = [];
+  for (const entry of register.routes) {
+    const contract = entry.requestContract as
+      | { closedBody?: Record<string, unknown>; oneOfClosedBodies?: Record<string, unknown>[] }
+      | undefined;
+    const bodies = [contract?.closedBody, ...(contract?.oneOfClosedBodies ?? [])];
+    const found = attestationFields.filter((field) => bodies.some((body) => body && field in body));
+    if (found.length > 0) declaredAttestations.push(`${entry.id} ${found.sort().join("+")}`);
+  }
+  compareLedger(
+    "unhashable attestation field",
+    declaredAttestations,
+    (ledger.unhashableAttestationFields ?? []).map((known) => `${known.routeId} ${[...known.fields].sort().join("+")}`),
+    failures,
+  );
+
   compareLedger(
     "storage bucket",
     bucketDivergence,

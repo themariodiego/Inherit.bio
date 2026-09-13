@@ -183,6 +183,44 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  /**
+   * D-083: five routes require a jurisdiction attestation version and hash
+   * that nothing can produce, because `policy.jurisdiction` does not exist.
+   * The owner chose to record that rather than author a legal artifact to
+   * satisfy a field — and a record nothing checks is a sentence, so it is
+   * compared both ways.
+   */
+  it("fails when a sixth route declares the attestation fields without recording it", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as (Route & { requestContract?: unknown })[])
+          .find((entry) => entry.id === "api.browse-region")!;
+        route.requestContract = { closedBody: { jurisdictionAttestationHash: "lowercase-sha256" } };
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "unhashable attestation field: not recorded in docs/route-divergence.json: " +
+        "api.browse-region jurisdictionAttestationHash",
+    );
+  });
+
+  it("fails when a recorded attestation row outlives the field it records", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        (ledger.unhashableAttestationFields as { routeId: string; fields: string[] }[]).push({
+          routeId: "api.browse-region",
+          fields: ["jurisdictionAttestationVersion", "jurisdictionAttestationHash"],
+        });
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "unhashable attestation field: recorded in docs/route-divergence.json but no longer present: " +
+        "api.browse-region jurisdictionAttestationHash+jurisdictionAttestationVersion",
+    );
+  });
+
   it("fails when a route exports a verb the register does not declare", async () => {
     const root = plant({
       register: (register) => {
