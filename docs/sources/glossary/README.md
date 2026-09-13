@@ -203,6 +203,45 @@ authorities already ruled out:
   true is narrower: no authority read here glosses a word this general, so it
   stays invisible.
 
+### Probed again on 2026-09-13, and still nothing — three more ruled out
+
+Recorded so the next pass does not repeat them.
+
+- **The NIST handbook's section BODIES, for `probability`.** The `z-score`
+  correction above says a table of contents indexes titles rather than
+  content, so the obvious next move was to search bodies for the five
+  primitives the contents do not name. It does not generalise. Three sections
+  were fetched and every sentence containing the word was read: §1.3.6.2
+  *Probability Distributions* carries seventeen of them, §8.1.1.1 carries one,
+  and §6.1.1 carries none. The handbook USES probability throughout — "the
+  probability density function (pdf) is the probability that the variate has
+  the value x" — and never says what a probability is. A
+  handbook written for people who already have the primitives will not define
+  them, however deeply it is searched.
+- **Eurostat's *Statistics Explained* glossary**, a fifth register and an
+  official EU publisher. `Glossary:Probability`, `Glossary:Odds` and
+  `Glossary:Statistical_model` answer **404**; `Glossary:Baseline` answers
+  **500**. It repeats the trap the EU jurisdiction research recorded and the
+  govinfo one recorded again: each of those 404s serves about 63,000 bytes of
+  navigation chrome, so a probe checking size, or checking that the term
+  appears in the page, would log all four as hits. Only the status line and
+  the rendered text together say what happened.
+- **The GWAS Catalog's methods and FAQ pages, re-read for `risk allele`.**
+  Both answer 200 and neither contains a sentence with the phrase. This
+  confirms rather than extends the note above; it is recorded because "the
+  GWAS Catalog was read" did not say WHICH pages.
+
+Five registers have now been read for the six statistics primitives — NIST's
+handbook contents and bodies, NIST's own glossary, CDC's course glossary, both
+NCI dictionaries, and Eurostat's — and not one of the six is defined in any of
+them. The pattern is consistent enough to state as a finding rather than a
+run of bad luck: **standards bodies publish definitions of the measures they
+compute, not of the vocabulary those measures are built from.** A source that
+defines "probability", "odds" or "statistical" plainly enough for a beginner is
+a dictionary or a textbook, and neither is the kind of authority this register
+accepts. That is a real limit on what this method can source, and it is a
+better answer than a citation that would not survive being checked.
+
 Each stays invisible to readers until a fetched page carries its definition.
 That is the operator's condition working as intended, not a gap to be closed by
 lowering the standard.
