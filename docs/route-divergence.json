@@ -270,6 +270,7 @@
     "/settings/copilot processing",
     "/settings/data complete",
     "/settings/data processing",
-    "/terms complete"
+    "/terms complete",
+    "/withdraw/[token] complete"
   ]
 }

@@ -282,6 +282,16 @@ const BROWSER_TESTS = "e2e";
  *               route-level refusal is a different render proven elsewhere.
  *               The added assertion is that discriminator - this page carries
  *               the availability line, not the route's jurisdiction line.
+ *   100 -> 99   `/withdraw/[token] complete`, and the proof is the FIRST
+ *               THING IN THE SUITE TO DRIVE THE REFUSE CONTROL. The existing
+ *               test accepts, so the accepted outcome was already asserted
+ *               inside a title claiming a different pair; refusing gives this
+ *               pair its own proof and covers a rights control nothing had
+ *               exercised. On a surface whose whole purpose is letting someone
+ *               say no, that was the wrong control to leave undriven. Signed
+ *               out on purpose: accepting needs an account because it creates
+ *               a reserved subject under one, and refusing must not, or a
+ *               stranger would have to register to decline.
  *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
@@ -292,7 +302,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 100;
+const UNPROVEN_ROUTE_STATE_PAIRS = 99;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
