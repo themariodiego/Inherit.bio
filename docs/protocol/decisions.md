@@ -3294,3 +3294,86 @@ refused the threshold change until the mirrored copy in
 first draft that "no code reads the threshold". `pnpm density:verify` exists
 now. Wiring it into CI needs the history fetched, because it reads the frozen
 baseline commit through `git archive` and the job checks out at depth 1.
+
+## 2026-09-14 · Three owner decisions on density, and the one that turned out to be impossible
+
+The operator answered three questions about the G2.5 result. Two were taken and
+applied; the third could not be done as asked, and finding out why is the more
+useful half.
+
+**1. Keep the brief's 60%.** Asked again with X6.2's clause, its stated
+rationale and its "ceilings may be lowered, never raised" in front of them, the
+operator kept the brief's number. Item 14 of
+`docs/protocol/brief-corrections-proposed.md` is marked declined and kept whole.
+So the relative half of G2.5 is recorded as failing, and the twenty public rows
+are where the work starts — they are the only block where neither the
+measurement nor the predecessor is arguable.
+
+**2. `/overview` at 390×844 is a defect; `/settings` at 1280×800 is not.**
+Fixed in part. The two layer definitions on Overview became keyboard-operable
+disclosures whose summary is the count line and its short gloss, which is the
+pattern `/genome/[subject]/reports` already uses for these same two sentences —
+so nothing is deleted, nothing is summarised, and the plain-language gloss a
+beginner needs is the summary itself. 245 of 574 first-viewport characters moved
+behind them; **1.8039 → 1.5001** at 390×844 and 0.9953 → 0.8748 at 1280×800.
+
+Two things about that measurement are worth keeping. The visible character count
+went *up*, 574 to 639, because the freed height pulled two more domain cards
+above the fold — ink and text disagree here and ink is the measurement the rule
+is written in. And the remaining 1.50 is structural: three domain cards with
+descriptions plus a persistent bottom navigation bar, against a predecessor with
+four numerals and no bar. Going below 1.0 means removing content or navigation,
+which is a product decision rather than a density fix, so it stops there. Filed
+as D-114.
+
+The `/settings` rise stands as an accepted breach, not a hidden one: 996
+characters against the 700 cap is the **only** absolute budget this rewrite
+newly broke, and it is recorded that way.
+
+**3. "Close the fixture confound: one file, both halves" cannot be done, and
+the reason is bigger than the fixture.** Reading
+`scripts/density-baseline/supabase-fixture.mjs` settles it. The baseline half
+does not read a file for its derived results — it is a PostgREST stub, and three
+of the four derived layers its authenticated pages showed are literals in that
+file: the admixture result (EUR 0.54, AFR 0.18, EAS 0.12, SAS 0.10, AMR 0.06,
+`markersUsed` 82, "82 of 120 ancestry markers covered in this synthetic
+fixture"), the mtDNA and Y calls, and the three polygenic scores (percentiles
+62, 33 and 78). Only `variant_calls` came from the sample.
+
+**No upload can reproduce a number that was never computed.** The baseline's
+ancestry page names 120 markers; the shipped estimator reads 168. So those rows
+have no honest predecessor, and X6.2's own clause — already in this document as
+`relativeComparison.unmappedNewRoutes` — governs them: the absolute budgets
+stand and the relative comparison is not applicable.
+
+The suggested fix was also measured rather than assumed. Uploading the
+baseline's own sample to HEAD covers **5 of the 168** shipped ancestry markers,
+three percent, far below the reliability floor, so it would take the ancestry
+map off the page and trade one incomparable row for another. Filed as D-113,
+closed as not-applicable rather than fixed.
+
+**It changes no conclusion, which is the point of saying so.** Strike all 16
+authenticated rows and the remaining 28 still contain no row that meets the
+rule. That is the sharper headline this round produced: **0 of 28 measurements
+with an honest predecessor are within 60%**, and all three of the 44 that pass
+are rows whose predecessor was partly invented.
+
+**And the absolute budgets, which are what applies on those 16 rows, were
+measured for the first time.** Every threshold in the contract, applied to all
+44 measurements of both halves, each miss labelled pre-existing, new or fixed.
+
+- **The white-space floor catches nothing.** All 44 clear 0.62 on both halves,
+  by a wide margin. That is the brief's own argument for having a relative rule
+  at all — *"an absolute floor alone would let today's app pass unchanged"* —
+  confirmed by measurement.
+- **The rewrite did not degrade the budgets.** 103 misses on the baseline, 92 on
+  the successors; 91 the same miss on both sides, 12 fixed, exactly **one** new.
+- **Roughly 57 of the 91 are probably the measurement, not the product**, said
+  as a reading rather than a finding and filed as D-115: `minProseMeasureCh`
+  misses on 21 of 22 routes on both halves because it is the narrowest of every
+  rendered `p` and `li`, so a three-character list item fails a 45-character
+  floor meant for body prose.
+- **The crisp remainder is 35 rows**: eight authenticated mobile surfaces at
+  16px primary-content left padding against 24px, two auth pages at 9 and 10
+  first-viewport interactives against 7, two mobile surfaces at 48 and 42
+  decorated elements against 40, and 21 measurements over the 700-character cap.

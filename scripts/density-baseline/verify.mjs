@@ -414,11 +414,36 @@ check("G2.5 post-change comparison matches its evidence", () => {
     );
   }
 
+  // The absolute budgets are what X6.2 says applies where the relative rule
+  // cannot, so the recorded summary is checked against its own evidence file
+  // and its internal arithmetic rather than taken on trust.
+  const budgets = readJson(
+    path.join(repositoryRoot, "docs/evidence/density-post-change/absolute-budgets.json"),
+  );
+  assert.deepEqual(comparison.absoluteBudgets.summary, budgets.summary);
+  const counted = { "pre-existing": 0, "new-in-the-rewrite": 0, "fixed-by-the-rewrite": 0 };
+  for (const row of budgets.rows) counted[row.status] += 1;
+  assert.equal(counted["pre-existing"], budgets.summary.preExisting);
+  assert.equal(counted["new-in-the-rewrite"], budgets.summary.newInTheRewrite);
+  assert.equal(counted["fixed-by-the-rewrite"], budgets.summary.fixedByTheRewrite);
+  assert.equal(
+    budgets.summary.preExisting + budgets.summary.newInTheRewrite,
+    budgets.summary.postChangeMisses,
+  );
+  assert.equal(
+    budgets.summary.preExisting + budgets.summary.fixedByTheRewrite,
+    budgets.summary.baselineMisses,
+  );
+  // The white-space floor is the one absolute budget X6.2 states itself, and
+  // the claim that it catches nothing is checked rather than asserted.
+  assert.equal(budgets.summary.whiteSpaceFloorMisses, 0);
+  assert.equal(budgets.rows.some((row) => row.measure === "whiteSpaceRatio"), false);
+
   // The comparison must not have become a silent baseline swap. The recorded
-  // routes stay the macOS capture until the fixture confound is closed, and
-  // the checks above this one verify them by hash.
+  // routes stay the macOS capture, and the checks above this one verify them
+  // by hash.
   assert.ok(comparison.notSwapped.length > 0);
-  assert.ok(comparison.fixtureConfound.status.startsWith("OPEN"));
+  assert.ok(comparison.noHonestPredecessor.status.startsWith("MEASURED"));
 });
 
 console.log(

@@ -55,27 +55,37 @@ unchanged”*. So the relative rule is a demand that the rewrite arrive
 substantially sparser, not a guard against regression, and the heading above
 understates it. X6.2 also closes with *“ceilings may be lowered, never
 raised”*, which makes relaxing the 60% the one direction that needs the
-operator's signature rather than an engineer's judgement. The operator has
-asked for 100%; that request is recorded, unapplied, as item 14 of
-`docs/protocol/brief-corrections-proposed.md` and in
-`docs/density-baseline.json#relativeComparison.proposedChange`.
+operator's signature rather than an engineer's judgement. The operator asked
+for 100% and then, shown the clause and its rationale, **kept the 60%**. Item
+14 of `docs/protocol/brief-corrections-proposed.md` is marked declined and kept
+whole, and `docs/density-baseline.json#relativeComparison.proposedChange`
+carries the sequence.
 
-**The rule has been measured now, and it is not met.** The first end-to-end
-comparison ran on 2026-09-14: 22 routes, 44 measurements, both halves on one
-machine and one browser build. **Three of the 44 are within the 60% rule and
-41 are not**, with a median ratio of 0.98 and a range of 0.37 to 1.80 — that
-is, at these 22 surfaces and in the first viewport, the rewrite is about as
-inky as the product it replaced, which is precisely the outcome X6.2's summary
-line says the relative rule exists to prevent. At 100% it would be 26 of 44.
-Two things in the result are worth naming here rather than only in the
-contract. The eight auth-surface rows are the collision this ADR predicts
-below — the same words, in the same layout, rendering 10–15% more ink because
-every control is now 44 px — and the answer prescribed there is re-capture, not
-redesign. And the two halves were fed different synthetic source files, so
-every measure that depends on how much a file supports is confounded; that
-covers 16 of the 44 rows, is recorded as open in
-`docs/density-baseline.json#postChange.comparison.fixtureConfound`, and does
-not touch the 28 public and auth rows, none of which meet the rule either.
+**The rule has been measured now, and it is not met anywhere it can honestly
+be applied.** The first end-to-end comparison ran on 2026-09-14: 22 routes, 44
+measurements, both halves on one machine and one browser build. **Three of the
+44 are within the 60% rule and 41 are not**, median ratio 0.9753, range 0.366
+to 1.50 — and all three passes are on routes whose baseline predecessor was
+partly a fixture author's choice of numbers rather than a computed result, so
+among the **28 measurements with an honest predecessor there are none**. At
+these surfaces, in the first viewport, the rewrite is about as inky as the
+product it replaced, which is precisely the outcome X6.2's summary line says
+the relative rule exists to prevent. At 100% it would be 26 of 44.
+
+Three things in the result belong here rather than only in the contract. The
+eight auth-surface rows are the collision this ADR predicts below — the same
+words, in the same layout, rendering 10–15% more ink because every control is
+now 44 px — and the answer prescribed there is re-capture, not redesign.
+Sixteen authenticated rows have **no honest predecessor**:
+`scripts/density-baseline/supabase-fixture.mjs` is a stub whose admixture
+result, haplogroup calls and polygenic scores are literals, so no upload can
+reproduce them, and the not-applicable clause above governs those rows
+(`postChange.comparison.noHonestPredecessor`). And **the absolute budgets, which
+are what applies there, were measured at the same time**: the rewrite misses 92
+against the baseline's 103, with 91 the same on both sides, 12 fixed and
+exactly one new. All 44 clear the 0.62 white-space floor on both halves — the
+absolute rule alone would indeed have let the old app pass unchanged, exactly
+as the brief said.
 
 ## Why budgets rather than guidance
 
