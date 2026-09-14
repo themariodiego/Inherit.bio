@@ -446,6 +446,18 @@
       ]
     },
     {
+      "name": "gnomAD public release bucket",
+      "category": "public-reference-dataset",
+      "aliases": [
+        "storage.googleapis.com/gcp-public-data--gnomad"
+      ],
+      "reason": "The public Google Cloud Storage bucket gnomAD publishes its releases in. The alias carries the bucket path deliberately: allowing the bare host would allow every object in Google Cloud Storage, and this entry is for one bucket of public reference data. Read at run time by scripts/ancestry-resolution/fetch-callset-frequencies.py, which fetches per-population allele frequencies through the release's tabix index and commits none of them.",
+      "evidence": [
+        "docs/dataset-licenses.md",
+        "docs/ancestry-resolution.md"
+      ]
+    },
+    {
       "name": "GWAS Catalog",
       "category": "public-reference-dataset",
       "aliases": [

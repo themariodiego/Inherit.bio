@@ -57,3 +57,6 @@ worker/node_modules
 # without one.
 scripts/ancestry-resolution/gnomad-pops.json
 scripts/ancestry-resolution/naming-rule-rows.jsonl
+scripts/ancestry-resolution/hgdp-tgp-freqs.json
+scripts/ancestry-resolution/hgdp-tgp-populations.json
+scripts/ancestry-resolution/__pycache__/

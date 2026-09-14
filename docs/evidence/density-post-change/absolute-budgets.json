@@ -12,10 +12,10 @@
   "summary": {
     "measurements": 44,
     "baselineMisses": 103,
-    "postChangeMisses": 92,
-    "preExisting": 91,
+    "postChangeMisses": 84,
+    "preExisting": 83,
     "newInTheRewrite": 1,
-    "fixedByTheRewrite": 12,
+    "fixedByTheRewrite": 20,
     "whiteSpaceFloorMisses": 0,
     "byMeasure": {
       "budgetedDecoratedElementCount": {
@@ -44,9 +44,9 @@
         "fixedByTheRewrite": 4
       },
       "primaryContentLeftPaddingPx": {
-        "preExisting": 8,
+        "preExisting": 0,
         "newInTheRewrite": 0,
-        "fixedByTheRewrite": 0
+        "fixedByTheRewrite": 8
       },
       "visibleTextCharacterCount": {
         "preExisting": 20,
@@ -96,7 +96,7 @@
       "baselineRoute": "/about",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
-      "value": 85.333,
+      "value": 78.019,
       "comparison": "<=",
       "limit": 68,
       "status": "pre-existing"
@@ -123,7 +123,7 @@
       "baselineRoute": "/about",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1704,
+      "value": 1431,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -168,7 +168,7 @@
       "baselineRoute": "/ancestry",
       "viewport": "390x844",
       "measure": "budgetedDecoratedElementCount",
-      "value": 48,
+      "value": 43,
       "comparison": "<=",
       "limit": 40,
       "status": "pre-existing"
@@ -180,15 +180,6 @@
       "value": 24,
       "comparison": ">=",
       "limit": 64,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/ancestry",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -264,15 +255,6 @@
       "status": "pre-existing"
     },
     {
-      "baselineRoute": "/browse",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
       "baselineRoute": "/changelog",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -329,15 +311,6 @@
     {
       "baselineRoute": "/chat",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/chat",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
       "value": 1122,
       "comparison": "<=",
@@ -363,15 +336,6 @@
       "status": "pre-existing"
     },
     {
-      "baselineRoute": "/dashboard",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
       "baselineRoute": "/legal/deceased",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -402,7 +366,7 @@
       "baselineRoute": "/legal/deceased",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1128,
+      "value": 932,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -447,7 +411,7 @@
       "baselineRoute": "/legal/gina",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1643,
+      "value": 1320,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -492,7 +456,7 @@
       "baselineRoute": "/legal/law-enforcement",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1810,
+      "value": 1393,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -537,7 +501,7 @@
       "baselineRoute": "/legal/research-consent",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1384,
+      "value": 1193,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -582,7 +546,7 @@
       "baselineRoute": "/privacy",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1869,
+      "value": 1609,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -680,15 +644,6 @@
     {
       "baselineRoute": "/reports",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/reports",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
       "value": 1385,
       "comparison": "<=",
@@ -720,15 +675,6 @@
       "value": 971,
       "comparison": "<=",
       "limit": 700,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/reports/[slug]",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -777,15 +723,6 @@
       "status": "pre-existing"
     },
     {
-      "baselineRoute": "/settings",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
       "baselineRoute": "/terms",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -816,7 +753,7 @@
       "baselineRoute": "/terms",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1740,
+      "value": 1448,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -860,17 +797,8 @@
     {
       "baselineRoute": "/uploads",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/uploads",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
-      "value": 867,
+      "value": 843,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -903,6 +831,15 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/ancestry",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/browse",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -912,12 +849,39 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/browse",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/dashboard",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
       "value": 131.038,
       "comparison": "<=",
       "limit": 68,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
       "status": "fixed-by-the-rewrite"
     },
     {
@@ -975,6 +939,15 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/reports/[slug]",
       "viewport": "1280x800",
       "measure": "minimumAdjacentSectionGapPx",
@@ -991,6 +964,215 @@
       "comparison": ">=",
       "limit": 64,
       "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
     }
-  ]
+  ],
+  "briefsOwnProseBasis": {
+    "what": "THREE READINGS OF THE SAME RULE, measured on the post-change half so the difference between them is evidence rather than argument (D-115). `maxProseMeasureCh` is the contract's basis: every rendered `p` OR `li`, anywhere in the document, measured as the element's BOX. `maxParagraphProseMeasureCh` is the brief's wording - \"prose <p>\" (line 197), \"No prose <p> in (app)\" (line 491) - paragraphs only, inside primary content, still the box. `maxParagraphLineMeasureCh` is the LONGEST LINE the paragraph actually renders, taken from the widest client rect of a Range over its text, which is what a reader meets.",
+    "result": "68ch cap, of 44 measurements: 16 misses on the contract's basis, 16 on the brief's, 7 on the longest line. The nine-row difference is two artefacts and seven fixes. THE ARTEFACTS: /files reports a 112ch box whose longest line is 56ch, and / reports 112ch against 59ch - a short paragraph fills a wide column and no long line exists, so capping it would change nothing a reader sees. THE FIXES: the seven legal and about surfaces really did render 85ch lines, and src/components/legal/legal-page.tsx now caps its prose, taking them to 63-65ch. That distinction was not visible on the box basis and is the reason the line basis was measured. 45ch floor at 1280x800: 21 misses on the contract's basis, 15 on the brief's, with 2 further routes carrying no paragraph in primary content at all.",
+    "rows": [
+      {
+        "baselineRoute": "/",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/about",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/ancestry",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/auth/forgot-password",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/auth/reset-password",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/auth/sign-in",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/auth/sign-up",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/browse",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/changelog",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/chat",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/dashboard",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/legal/deceased",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/legal/gina",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/legal/law-enforcement",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/legal/research-consent",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/privacy",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/providers",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/reports",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/reports/[slug]",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/settings",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/terms",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      },
+      {
+        "baselineRoute": "/uploads",
+        "viewport": "1280x800",
+        "measure": "minParagraphProseMeasureCh",
+        "value": null,
+        "comparison": "not-applicable",
+        "limit": 45
+      }
+    ]
+  }
 }

@@ -33,35 +33,64 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const raw = JSON.parse(
-  fs.readFileSync(path.join(HERE, "gnomad-pops.json"), "utf8"),
-) as Record<string, { id: string; ac: number; an: number }[]>;
 
-const variants = Object.keys(raw);
-const isNamed = (id: string) =>
-  (id.startsWith("hgdp:") || id.startsWith("1kg:")) && !/(_XX|_XY|:XX|:XY)$/.test(id);
+/**
+ * Two reference sources, one measurement. `api` is gnomAD's public GraphQL
+ * output, which returns 73 named populations and no Oceania at all (D-116);
+ * `callset` is the full HGDP+1kGP release read through its tabix index, which
+ * has all 78. The measurement must not fork with the source, or the two runs
+ * stop being comparable — the same reason the density comparison keeps one copy
+ * of its reading code.
+ */
+const SOURCE = (process.env.SOURCE ?? "callset") as "api" | "callset";
+const counts = new Map<string, Map<string, { ac: number; an: number }>>();
+let REGION_OF = new Map<string, string>();
 
+if (SOURCE === "api") {
+  const raw = JSON.parse(fs.readFileSync(path.join(HERE, "gnomad-pops.json"), "utf8")) as
+    Record<string, { id: string; ac: number; an: number }[]>;
+  const isNamed = (id: string) =>
+    (id.startsWith("hgdp:") || id.startsWith("1kg:")) && !/(_XX|_XY|:XX|:XY)$/.test(id);
+  for (const [variant, pops] of Object.entries(raw)) {
+    const m = new Map<string, { ac: number; an: number }>();
+    for (const p of pops) if (isNamed(p.id)) m.set(p.id, { ac: p.ac, an: p.an });
+    counts.set(variant, m);
+  }
+} else {
+  const raw = JSON.parse(fs.readFileSync(path.join(HERE, "hgdp-tgp-freqs.json"), "utf8")) as
+    Record<string, null | { rsid: string; pops: Record<string, { ac: number; an: number }> }>;
+  for (const [variant, rec] of Object.entries(raw)) {
+    if (!rec) continue;
+    counts.set(variant, new Map(Object.entries(rec.pops)));
+  }
+  const meta = JSON.parse(fs.readFileSync(path.join(HERE, "hgdp-tgp-populations.json"), "utf8")) as
+    Record<string, { region: string; samples: number }>;
+  REGION_OF = new Map(Object.entries(meta).map(([pop, m]) => [pop, m.region]));
+}
+
+const variants = [...counts.keys()];
 // A population qualifies only if it is present at EVERY marker: a reference
 // column with holes is a different model at different markers.
 const seen = new Map<string, number>();
-for (const v of variants) {
-  for (const p of raw[v]) if (isNamed(p.id)) seen.set(p.id, (seen.get(p.id) ?? 0) + 1);
-}
+for (const v of variants) for (const id of counts.get(v)!.keys()) seen.set(id, (seen.get(id) ?? 0) + 1);
 let POPS = [...seen].filter(([, n]) => n === variants.length).map(([id]) => id).sort();
-// The sample-size floor the earlier measurement used. Every population below it
-// is someone the result cannot name, which is the equal-granularity question in
-// its concrete form and is recorded rather than hidden.
-const minAn = (id: string) =>
-  Math.min(...variants.map((v) => raw[v].find((p) => p.id === id)!.an));
-const DROPPED = POPS.filter((id) => minAn(id) < 20);
-POPS = POPS.filter((id) => minAn(id) >= 20);
+/**
+ * The sample-size floor. Every population below it is someone the result cannot
+ * name, which is the equal-granularity question in its concrete form, so the
+ * dropped list is printed rather than hidden — and the floor is a parameter
+ * because where it sits is the decision, not a constant.
+ */
+const FLOOR = Number(process.env.MIN_ALLELES ?? 20);
+const minAn = (id: string) => Math.min(...variants.map((v) => counts.get(v)!.get(id)!.an));
+const DROPPED = POPS.filter((id) => minAn(id) < FLOOR);
+POPS = POPS.filter((id) => minAn(id) >= FLOOR);
 
 const LO = 0.001, HI = 0.999;
 const FREQ: number[][] = variants.map((v) => {
-  const by = new Map(raw[v].map((p) => [p.id, p]));
+  const by = counts.get(v)!;
   return POPS.map((id) => {
     const p = by.get(id)!;
-    return Math.min(HI, Math.max(LO, p.ac / p.an));
+    return Math.min(HI, Math.max(LO, p.an === 0 ? 0 : p.ac / p.an));
   });
 });
 
@@ -187,10 +216,13 @@ const SEEDS = Number(process.env.SEEDS ?? 6);
  * the Americas and East Asia (where it degraded sensibly), South Asia, and
  * sub-Saharan Africa.
  */
-const TARGETS = (process.env.TARGETS?.split(",") ?? [
-  "1kg:ibs", "hgdp:french", "hgdp:mozabite", "hgdp:bedouin",
-  "1kg:pel", "hgdp:han", "1kg:gih", "1kg:yri",
-]).filter((t) => POPS.includes(t));
+const DEFAULT_TARGETS = SOURCE === "api"
+  ? ["1kg:ibs", "hgdp:french", "hgdp:mozabite", "hgdp:bedouin", "1kg:pel", "hgdp:han", "1kg:gih", "1kg:yri"]
+  // One per region, plus a second in the two regions the earlier run found
+  // behaving differently, so every region the callset carries is represented -
+  // including the one the API omits entirely.
+  : ["IBS", "French", "Mozabite", "Bedouin", "PEL", "Han", "GIH", "YRI", "Papuan", "Melanesian", "Maya", "Sardinian"];
+const TARGETS = (process.env.TARGETS?.split(",") ?? DEFAULT_TARGETS).filter((t) => POPS.includes(t));
 
 const OUTPUT = process.env.NAMING_RULE_OUTPUT ?? path.join(HERE, "naming-rule-rows.jsonl");
 fs.writeFileSync(OUTPUT, "");
@@ -242,7 +274,21 @@ const median = (xs: number[]) => {
 const inSet = rows.filter((r) => r.represented);
 const outSet = rows.filter((r) => !r.represented);
 
-console.log(`populations ${POPS.length} (dropped below an>=20: ${DROPPED.length}), markers ${FREQ.length}, targets ${TARGETS.length}, seeds ${SEEDS}`);
+console.log(`source ${SOURCE}: populations ${POPS.length} at a floor of ${FLOOR} alleles (${DROPPED.length} dropped), markers ${FREQ.length}, targets ${TARGETS.length}, seeds ${SEEDS}, resamples ${RESAMPLES}`);
+if (REGION_OF.size) {
+  const byRegion = new Map<string, string[]>();
+  for (const p of POPS) {
+    const r = REGION_OF.get(p) ?? "?";
+    byRegion.set(r, [...(byRegion.get(r) ?? []), p]);
+  }
+  const dropped = new Map<string, number>();
+  for (const p of DROPPED) dropped.set(REGION_OF.get(p) ?? "?", (dropped.get(REGION_OF.get(p) ?? "?") ?? 0) + 1);
+  console.log(`\nWHAT EACH REGION CAN BE TOLD, at this floor`);
+  for (const r of [...new Set([...byRegion.keys(), ...dropped.keys()])].sort()) {
+    console.log(`  ${r.padEnd(4)} kept ${String(byRegion.get(r)?.length ?? 0).padStart(2)}  dropped ${String(dropped.get(r) ?? 0).padStart(2)}   ${(byRegion.get(r) ?? []).join(", ")}`);
+  }
+}
+if (TARGETS.length === 0) throw new Error(`no target survives the floor; POPS = ${POPS.join(", ")}`);
 console.log(`\nPER TARGET  (represented -> unrepresented)`);
 console.log(`${"target".padEnd(16)} ${"correct".padEnd(8)} ${"share".padEnd(13)} ${"low".padEnd(13)} ${"width".padEnd(13)} logLik/marker`);
 for (const target of TARGETS) {

@@ -50,8 +50,15 @@ export function LegalPage({
             {version !== undefined && <> · Version {version}</>}
           </p>
         )}
+        {/* max-w-prose on the PROSE, not on the column. The brief caps body
+            measure at 68ch at every viewport (X6.3); measured 2026-09-14, this
+            component rendered lines of 85ch at 1280px, because `max-w-3xl` is a
+            pixel width and `ch` scales with the font size. Verified against the
+            LONGEST RENDERED LINE rather than the element's box: 85ch before,
+            63-65ch after, on seven surfaces. The heading keeps the wider
+            column. */}
         {intro && (
-          <div className="mt-5 space-y-4 leading-relaxed text-ink-muted">
+          <div className="mt-5 max-w-prose space-y-4 leading-relaxed text-ink-muted">
             {intro}
           </div>
         )}
@@ -84,7 +91,7 @@ export function LegalPage({
               className="scroll-mt-24 border-t border-line py-8 first:border-t-0 first:pt-0 last:pb-0"
             >
               <h2 id={`${s.id}-heading`} className="display text-2xl">{s.heading}</h2>
-              <div className="mt-4 space-y-4 text-sm leading-relaxed text-ink-muted [&_a:hover]:text-ink [&_a]:underline [&_a]:underline-offset-2 [&_h3]:pt-2 [&_h3]:font-medium [&_h3]:text-ink [&_li]:pl-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
+              <div className="mt-4 max-w-prose space-y-4 text-sm leading-relaxed text-ink-muted [&_a:hover]:text-ink [&_a]:underline [&_a]:underline-offset-2 [&_h3]:pt-2 [&_h3]:font-medium [&_h3]:text-ink [&_li]:pl-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_strong]:font-medium [&_strong]:text-ink [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
                 {s.body}
               </div>
             </section>

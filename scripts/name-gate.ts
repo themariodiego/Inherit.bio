@@ -173,15 +173,23 @@ function isIgnoredHost(host: string): boolean {
   );
 }
 
-function hostIsAllowed(host: string, allowed: ResolvedAllowedName[]): boolean {
+/**
+ * An alias MAY carry a path, and when it does the path must appear on the line
+ * as well. Without that, allowing a shared host allows everything served from
+ * it: `storage.googleapis.com` is one bucket of public reference data and also
+ * the whole of Google Cloud Storage, and an allowlist entry that cannot tell
+ * them apart is not an allowlist. A bare host alias behaves exactly as before.
+ */
+function hostIsAllowed(host: string, allowed: ResolvedAllowedName[], lineText: string): boolean {
   const normalized = host.toLowerCase().replace(/^www\./, "").replace(/:\d+$/, "");
+  const line = lineText.toLowerCase();
   return allowed.some((entry) =>
     entry.aliases.some((alias) => {
-      const candidate = alias.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-      return (
-        candidate.includes(".") &&
-        (normalized === candidate || normalized.endsWith(`.${candidate}`))
-      );
+      const bare = alias.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "");
+      const candidate = bare.replace(/\/.*$/, "");
+      if (!candidate.includes(".")) return false;
+      if (normalized !== candidate && !normalized.endsWith(`.${candidate}`)) return false;
+      return bare === candidate || line.includes(bare);
     }),
   );
 }
@@ -239,7 +247,7 @@ export function scanExternalHosts(
       // Retain existing source-template handling; unparsed literal authorities
       // cannot borrow an allowed suffix after a backslash or invalid port.
       (!authority.includes("\\") && /[${}]/.test(authority)) ||
-      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed)))
+      (parsed && (isIgnoredHost(host) || hostIsAllowed(host, allowed, lineText)))
     ) {
       continue;
     }

@@ -3450,3 +3450,165 @@ not trust this session's TLS-interception CA. Verification was not disabled to
 get around it. The row also says the thing a licence does not settle — HGDP
 sampled small, named, often Indigenous communities, and unrestricted release
 governs what may be stored, not what may be said about a person.
+
+## 2026-09-14 · The bulk callset, and the upgrade the measurements actually support
+
+The operator ruled: get the bulk callset first, then re-measure; and read "equal
+granularity where possible" as give what the data supports and disclose the gap
+loudly. Both done, and the answer is better than the API route suggested.
+
+**The callset is readable without downloading it.** Each chromosome's VCF runs
+50 to 270 GB, but the release ships a tabix index, so a marker costs one HTTP
+range request over the ~16 kb its smallest index bin covers. This container has
+no `tabix` and no `bcftools`, so the index format is implemented directly in
+`scripts/ancestry-resolution/fetch-callset-frequencies.py`: all 168 panel
+markers, about a second each, no misses, no multi-allelic ambiguity, all **78**
+populations on every record. The region mapping is the release's own
+`hgdp_tgp_meta.genetic_region`, not a reading of population names.
+
+**D-116 closes.** Oceania is in the callset. At a ten-person floor every region
+keeps at least two populations: AFR 11, AMR 7, CSA 13, EAS 8, EUR 12, MID 4,
+OCE 2. **D-117 reduces** rather than closing: East Asia loses fifteen
+populations at 6–10 people, and the floor is load-bearing — at fifteen people
+Oceania falls to zero, because Papuan is 17 samples and Melanesian 13.
+
+**The naming gate still does not exist**, which was the thing worth checking.
+Best separation moves from +0.29 to +0.33 and the shape is unchanged: any
+threshold that refuses most unrepresented people also refuses a third of the
+correct names.
+
+**The region is right, and that is the finding.** Scored on the region of the
+top population rather than its name, over the same 144 estimates:
+
+| | population right | region right |
+| --- | --- | --- |
+| population IS in the set | 59 of 72 (82%) | **71 of 72 (99%)** |
+| population is NOT in the set | 0 of 72 | **62 of 72 (86%)** |
+
+And the ten failures concentrate: Mozabite fails **6 of 6** — an Algerian whose
+population is absent is called Sardinian, French or Finnish — and Bedouin 2 of
+6. Everything else, both Oceanian populations included, is 5 or 6 of 6. Filed
+as **D-120**, and it is a disclosure rather than a fix: 168 markers cannot
+separate North Africa from southern Europe.
+
+**So the upgrade the measurements support is a change of reference set, not a
+change of resolution.** Today's estimator reports five 1000 Genomes
+superpopulations — AFR, AMR, EAS, EUR, SAS — with **no Middle East and no
+Oceania in it at all**, so a Bedouin or Papuan reader is currently told a
+mixture of regions none of which is theirs. Seven regions, measured at 99% and
+86%, is a real improvement for exactly the people the current model serves
+worst, and it needs no name this product cannot support. The sub-continental
+names can still be shown as what the measurement says they are — the closest
+matches and how often each won across resamples — without being asserted.
+
+That is a design proposal and it has not been built. What is built is the
+measurement and the means to reproduce it.
+
+## 2026-09-14 · "Probably the measurement" was mine, and measuring it says six, not fifty-seven
+
+When the absolute density budgets were first evaluated on both halves of the
+G2.5 comparison, 83 misses carried over from the baseline and I wrote that
+"roughly 57 of the 83 are probably the measurement rather than the product",
+labelled as a reading rather than a finding. It is measured now, and the reading
+was wrong by an order of magnitude.
+
+**The basis is genuinely off, and in the direction I said.** The contract
+measures prose as every rendered `p` **or `li`**, anywhere in the document. The
+brief says "prose `<p>`" (line 197), "No prose `<p>` in `(app)`" (line 491), and
+explains the 45ch floor by arithmetic on the content column (line 569): "at
+390px with the mandated 24px surface padding, 342px of content at 16px Inter is
+about 39ch […] A gate demanding 45ch on a phone can never pass." A
+three-character list item is not body prose.
+
+So `measure.mjs` records the brief's basis beside the contract's —
+`minParagraphProseMeasureCh` and `maxParagraphProseMeasureCh`, paragraphs only
+and inside primary content — **added rather than substituted**, because every
+number already recorded against the old basis has to stay comparable. Which
+basis the contract should use is an operator decision; measuring both is what
+makes it one.
+
+**And then the size of it:**
+
+- The **45ch floor** is missed on **15 of 22** routes at 1280×800 instead of 21,
+  with 2 further routes carrying no paragraph in primary content at all, where
+  the rule does not apply. Six rows change verdict. `/overview` goes 21.9 → 54.2
+  and passes; `/files` stays at 21.8 on both bases, so its narrow paragraph is
+  real.
+- The **68ch cap** is missed **16 times on both bases**. Not one of those is the
+  basis. `/` and `/files` render 112ch paragraphs; the legal pages 85ch.
+- The **section gap** is wrong in magnitude rather than in verdict. It reads
+  `next.top − previous.bottom` — the space *between* boxes — and
+  `src/components/legal/legal-page.tsx` separates its sections with `border-t`
+  plus `py-8` *inside* each, so `/about` reports 0 where a reader sees 64px.
+  Still short of the brief's 96px, so the misses stand and the number does not.
+  The one route that sets its spacing deliberately, `/genome/me/reports`,
+  measures exactly 64 and 96 — which is the evidence that the measure is
+  otherwise reading correctly.
+
+**About six of the 83 change verdict, not 57.** The rest are the product, and
+the rest of that work is copy and layout decisions rather than engineering. The
+estimate was published as a reading and is corrected here as a measurement,
+which is the only reason it was worth publishing that way.
+
+## 2026-09-14 · The prose measure reads the box, and measuring the line found seven real defects
+
+The previous entry corrected "roughly 57 of the 83 misses are probably the
+measurement" to "about six". That correction was measured but incomplete: it
+tested only the prose ELEMENT TYPE, and the measure gets a second thing wrong.
+
+**It reads the element's box.** A block paragraph fills its column, so a
+forty-character sentence in a wide container reports a wide measure while
+rendering no long line at all. `measure.mjs` now records a third reading beside
+the other two — the longest line the paragraph actually renders, from the widest
+client rect of a Range over its text — added rather than substituted, because
+every number already recorded has to stay comparable.
+
+**Two more rows are the measurement.** `/files` reports a 112ch box against a
+**56ch** longest line; `/` reports 112ch against **59ch**. Capping either would
+change nothing a reader sees. Eight of the 83, then, not six and not 57.
+
+**And the same distinction found seven real defects the box basis could not
+separate out.** The six legal pages and `/about` were rendering body prose at
+**85 characters per line**, because `max-w-3xl` is a pixel width and `ch` scales
+with the font size — a 14px column that looks narrow measures wide.
+`legal-page.tsx` now caps the prose blocks rather than the column, so headings
+keep the wider measure. Verified by re-capture on the line basis: 85ch before,
+63–65ch after, on all seven. Filed as **D-121**.
+
+**I reverted that fix once and was wrong to.** Reading the box-versus-line table
+I had just produced, I concluded the legal pages' lines "were never long" and
+backed the change out — but the table was measured *after* the fix, so 63ch was
+its result rather than its baseline. Re-capturing without the change put the
+line measure back to 85ch and settled it. The cost was one capture; the reason
+it was caught is that the revert was re-measured rather than assumed.
+
+The relative comparison moves with it: median 0.9703 → **0.9371**, and the
+public surfaces' median 0.9473 → **0.8471**. Still no row within X6.2's 60%.
+
+## 2026-09-14 · The padding fix broke reflow, and the two rules are measured at different viewports
+
+CI run 561 failed the browser suite on the 24px primary-content padding fix
+(D-119), and the failure was mine and exact: `/genome/[subject]/data/browser` is
+recorded in `docs/accessibility-divergence.json` at **446 CSS px** of horizontal
+overflow at a 320px viewport — a known igv.js defect, ratcheted so it can never
+get worse — and raising the app shell's gutter from `px-4` to `px-6` took it to
+**454**. Reproduced locally before anything was changed.
+
+**Full-bleeding the widget was the first attempt and it moved nothing.** Giving
+the genome browser `-mx-6 md:mx-0` so it took the gutter back left the overflow
+at 454, which rules out the widget's own width as the cause and leaves the
+recorded "cause honestly unidentified" standing.
+
+**The answer was in the two rules' own wording.** The density minimum is
+specified at **390×844** (`thresholds.mobile390.primaryContentLeftPaddingPxMin`)
+and reflow at **320 CSS px**. They never both apply at the same width. So the
+gutter steps: `px-4` below 360px, `px-6` from 360px up. Verified both ways — all
+eight authenticated surfaces read 24px at 390, and the reflow sweep passes with
+the browser page back at 446.
+
+Worth naming because the obvious move was the wrong one: ADR-0029 says that when
+the accessibility rule and a density budget conflict, accessibility wins and the
+baseline is re-captured. That would have meant reverting D-119 and reopening
+eight rows. It was not needed, because there is no conflict at any viewport
+either rule actually names — and reaching for the precedence rule before reading
+the viewports would have cost a real fix for nothing.
