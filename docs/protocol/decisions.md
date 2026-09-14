@@ -3612,3 +3612,78 @@ baseline is re-captured. That would have meant reverting D-119 and reopening
 eight rows. It was not needed, because there is no conflict at any viewport
 either rule actually names — and reaching for the precedence rule before reading
 the viewports would have cost a real fix for nothing.
+
+## 2026-09-14 · A region frequency is a capped per-person average, and the metric that chose it is not the one that looked obvious
+
+The region-level ancestry model needs one frequency per region per marker from a
+callset that publishes them per population. Three rules were measured over 168
+markers, 7 regions, 78 populations and 20 simulated people each: pooled (Σac/Σan,
+every sampled person counts once), unweighted (mean of the population
+frequencies, every population counts once) and capped (weight by sampled people,
+capped at 30).
+
+On "does the largest share land on the right region" they are nearly tied —
+93.8%, 94.9%, **95.2%** — and a tenth of a point is not a reason to prefer
+anything. The rule was chosen on the second measurement instead: how large the
+**wrong** shares get, which is what a reader is actually shown. Excluding the
+admixed-American cohorts, whose label denotes admixture rather than a place:
+
+| rule | cohorts with ≥0.10 on a wrong region | ≥0.20 | ≥0.30 |
+| --- | --- | --- | --- |
+| pooled | 19 of 69 | 11 | 1 |
+| unweighted | 16 of 69 | 8 | 2 |
+| capped | 16 of 69 | 8 | **1** |
+
+Capped is at least as good as unweighted everywhere and strictly better at the
+tail, and better than pooled throughout. The mechanism is plain once measured:
+1kGP cohorts carry ~100 people and HGDP populations ~20, so pooling lets CEU,
+IBS, TSI, FIN and GBR speak for Europe while Basque, Sardinian, Orcadian and
+Adygei barely register — and it is exactly the quiet populations whose readers
+get the largest wrong numbers.
+
+**The choice does not rescue the model.** D-122 stands under the winning rule: a
+Sardinian is still told 22.9% Middle East and a Druze 28.2% Europe. Settling the
+weighting was a precondition for measuring the confusion honestly, not a fix for
+it. No region surface ships on the strength of this decision alone.
+
+Also worth recording: the capped branch silently did not apply on its first
+edit — the anchor string did not match, so `capped` fell through to the
+unweighted branch and produced byte-identical numbers. It was caught by reading
+the `build` function rather than by the output, because identical output is
+exactly what a tied rule would also produce. Two rules agreeing is not evidence
+that both ran.
+
+## 2026-09-14 · The model that memorised the reference set, and why held-out measurement is not optional
+
+A seven-component mixture over region *averages* cannot represent a population
+that sits inside a region but far from its average, so the obvious fix for D-122
+was to fit all 78 populations and add each one's share into its own region: fit
+fine, report coarse. Measured on people drawn from populations the reference set
+contains, it is a large clean win — cohorts putting ≥0.20 on a wrong region fall
+from 8 of 69 to 2, ≥0.30 from 1 to 0, and Sardinian's Middle East share
+collapses from 0.228 to under 0.083.
+
+**It was then measured with each person's own population held out of the
+reference set, and it reversed**: 14 cohorts above 0.20 against the region fit's
+11, and 5 above 0.30 against 2. A Druze with Druze removed becomes 0.525 Europe
+against 0.297 Middle East.
+
+The mechanism is not subtle once it is visible. Removing one population barely
+moves a regional average, so the coarse fit degrades gently. Removing it from a
+78-component table deletes the only component that could have represented that
+person, so the fit reaches for neighbours, and neighbours cross region borders.
+**The roll-up's entire advantage was having the person's own population in the
+table — which is exactly what a real reader does not have.** The reference set
+holds 78 populations; the world holds far more.
+
+So the capped region fit stands and D-122 stands. Recorded not for the rejected
+model but for the rule it proves: **a model scored only on people its reference
+set contains will prefer whichever variant memorises them best.** Every ancestry
+measurement from here reports held-out figures as the expectation and
+population-present figures as the ceiling, and says which is which.
+
+The same run settled the other candidate. Subsampling the panel held out, the
+non-AMR counts go 32/21/9 at 21 markers, 30/14/9 at 42, 22/11/4 at 84, 21/10/6 at
+126 and 21/11/5 at 168 — flat from 84 on, with Druze pinned at 0.48 throughout.
+Doubling the panel again is not a fix either. Both routes out were measured
+rather than assumed, and the limitation is real.
