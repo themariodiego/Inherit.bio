@@ -3549,3 +3549,38 @@ makes it one.
 the rest of that work is copy and layout decisions rather than engineering. The
 estimate was published as a reading and is corrected here as a measurement,
 which is the only reason it was worth publishing that way.
+
+## 2026-09-14 · The prose measure reads the box, and measuring the line found seven real defects
+
+The previous entry corrected "roughly 57 of the 83 misses are probably the
+measurement" to "about six". That correction was measured but incomplete: it
+tested only the prose ELEMENT TYPE, and the measure gets a second thing wrong.
+
+**It reads the element's box.** A block paragraph fills its column, so a
+forty-character sentence in a wide container reports a wide measure while
+rendering no long line at all. `measure.mjs` now records a third reading beside
+the other two — the longest line the paragraph actually renders, from the widest
+client rect of a Range over its text — added rather than substituted, because
+every number already recorded has to stay comparable.
+
+**Two more rows are the measurement.** `/files` reports a 112ch box against a
+**56ch** longest line; `/` reports 112ch against **59ch**. Capping either would
+change nothing a reader sees. Eight of the 83, then, not six and not 57.
+
+**And the same distinction found seven real defects the box basis could not
+separate out.** The six legal pages and `/about` were rendering body prose at
+**85 characters per line**, because `max-w-3xl` is a pixel width and `ch` scales
+with the font size — a 14px column that looks narrow measures wide.
+`legal-page.tsx` now caps the prose blocks rather than the column, so headings
+keep the wider measure. Verified by re-capture on the line basis: 85ch before,
+63–65ch after, on all seven. Filed as **D-121**.
+
+**I reverted that fix once and was wrong to.** Reading the box-versus-line table
+I had just produced, I concluded the legal pages' lines "were never long" and
+backed the change out — but the table was measured *after* the fix, so 63ch was
+its result rather than its baseline. Re-capturing without the change put the
+line measure back to 85ch and settled it. The cost was one capture; the reason
+it was caught is that the revert was re-measured rather than assumed.
+
+The relative comparison moves with it: median 0.9703 → **0.9371**, and the
+public surfaces' median 0.9473 → **0.8471**. Still no row within X6.2's 60%.

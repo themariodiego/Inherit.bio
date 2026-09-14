@@ -96,7 +96,7 @@
       "baselineRoute": "/about",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
-      "value": 85.333,
+      "value": 78.019,
       "comparison": "<=",
       "limit": 68,
       "status": "pre-existing"
@@ -123,7 +123,7 @@
       "baselineRoute": "/about",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1704,
+      "value": 1431,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -366,7 +366,7 @@
       "baselineRoute": "/legal/deceased",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1128,
+      "value": 932,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -411,7 +411,7 @@
       "baselineRoute": "/legal/gina",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1643,
+      "value": 1320,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -456,7 +456,7 @@
       "baselineRoute": "/legal/law-enforcement",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1810,
+      "value": 1393,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -501,7 +501,7 @@
       "baselineRoute": "/legal/research-consent",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1384,
+      "value": 1193,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -546,7 +546,7 @@
       "baselineRoute": "/privacy",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1869,
+      "value": 1609,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -753,7 +753,7 @@
       "baselineRoute": "/terms",
       "viewport": "1280x800",
       "measure": "visibleTextCharacterCount",
-      "value": 1740,
+      "value": 1448,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -994,8 +994,8 @@
     }
   ],
   "briefsOwnProseBasis": {
-    "what": "The contract measures prose as every rendered `p` OR `li` anywhere in the document. The brief says `prose <p>` (line 197), `No prose <p> in (app)` (line 491), and explains the 45ch floor by arithmetic on the CONTENT COLUMN (line 569). These rows apply the brief's wording instead - paragraphs only, inside primary content - on the post-change half, so the difference between the two bases is a measurement rather than an argument. D-115.",
-    "result": "At 1280x800 the 45ch floor is missed on 21 of 22 routes on the contract's basis and on 15 of 22 on the brief's, with 2 more routes carrying no paragraph in primary content at all, where the rule does not apply. The 68ch cap is missed 16 times on BOTH bases: not one of those is the basis. So the basis is over-applied and that is not the main story.",
+    "what": "THREE READINGS OF THE SAME RULE, measured on the post-change half so the difference between them is evidence rather than argument (D-115). `maxProseMeasureCh` is the contract's basis: every rendered `p` OR `li`, anywhere in the document, measured as the element's BOX. `maxParagraphProseMeasureCh` is the brief's wording - \"prose <p>\" (line 197), \"No prose <p> in (app)\" (line 491) - paragraphs only, inside primary content, still the box. `maxParagraphLineMeasureCh` is the LONGEST LINE the paragraph actually renders, taken from the widest client rect of a Range over its text, which is what a reader meets.",
+    "result": "68ch cap, of 44 measurements: 16 misses on the contract's basis, 16 on the brief's, 7 on the longest line. The nine-row difference is two artefacts and seven fixes. THE ARTEFACTS: /files reports a 112ch box whose longest line is 56ch, and / reports 112ch against 59ch - a short paragraph fills a wide column and no long line exists, so capping it would change nothing a reader sees. THE FIXES: the seven legal and about surfaces really did render 85ch lines, and src/components/legal/legal-page.tsx now caps its prose, taking them to 63-65ch. That distinction was not visible on the box basis and is the reason the line basis was measured. 45ch floor at 1280x800: 21 misses on the contract's basis, 15 on the brief's, with 2 further routes carrying no paragraph in primary content at all.",
     "rows": [
       {
         "baselineRoute": "/",

@@ -182,6 +182,7 @@ export async function measure(page, selectors) {
     // should use is an operator decision; measuring both is what makes it one.
     const proseMeasures = [];
     const paragraphProseMeasures = [];
+    const paragraphLineMeasures = [];
     for (const element of document.querySelectorAll("p,li")) {
       if (!rendered(element, false)) continue;
       const style = getComputedStyle(element);
@@ -208,6 +209,22 @@ export async function measure(page, selectors) {
         proseMeasures.push(measure);
         if (element.tagName === "P" && primaryRoot.contains(element)) {
           paragraphProseMeasures.push(measure);
+          // A THIRD READING, and it is the one a reader experiences. The two
+          // above measure the element's BOX. A block paragraph fills its
+          // container, so a forty-character sentence in a wide column reports a
+          // wide measure while producing no long line at all - and capping it
+          // would change nothing anybody sees. This measures the longest line
+          // the paragraph actually renders, by taking the widest client rect of
+          // a Range over its text. Recorded, not substituted; which of the
+          // three the contract should read is an operator decision (D-115).
+          let widest = 0;
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          for (const rect of range.getClientRects()) {
+            if (rect.width > widest) widest = rect.width;
+          }
+          range.detach?.();
+          if (widest > 0) paragraphLineMeasures.push(widest / zeroAdvance);
         }
       }
     }
@@ -273,6 +290,9 @@ export async function measure(page, selectors) {
       interactiveElements: interactives.length,
       visibleTextCharacters,
       paragraphProseElementCount: paragraphProseMeasures.length,
+      maxParagraphLineMeasureCh: paragraphLineMeasures.length
+        ? Math.round(Math.max(...paragraphLineMeasures) * 1000) / 1000
+        : null,
       maxParagraphProseMeasureCh: paragraphProseMeasures.length
         ? Math.round(Math.max(...paragraphProseMeasures) * 1000) / 1000
         : null,
