@@ -83,7 +83,7 @@
       },
       "measurementModule": {
         "path": "scripts/density-baseline/measure.mjs",
-        "sha256": "3da83360309f6cbeb62903f12aefe20da51c5026563d935103b46a28476163d5"
+        "sha256": "06350ac8bf887eb1a5c33892094a6d81ecb04efb5054d1b36f6ef5eab3a95c60"
       },
       "measurementHarness": {
         "path": "scripts/density-baseline/compute.mjs",
@@ -2618,15 +2618,15 @@
         },
         {
           "path": "docs/evidence/density-post-change/post-change-computed-measurements.json",
-          "sha256": "fd0dc8a0b98b8dbb9455647fe12370bafb2cb7f3e9b5dc6413ec0dd739a2e5ff"
+          "sha256": "0784c42686ec0334851ff6ad7774c070388b74a363d6894807ba62bd572b8b57"
         },
         {
           "path": "docs/evidence/density-post-change/comparison.json",
-          "sha256": "01f6bf64dd98efb49521ea88845216e23000e942ec325c23ee06b69c477309c9"
+          "sha256": "40fe17790b88804a98cf72cd68e256737528f548552835fb38f139bc5ab14ea6"
         },
         {
           "path": "docs/evidence/density-post-change/absolute-budgets.json",
-          "sha256": "600c3556eba10255cd66d68cecbfbdf4bda0847b3f41330f7de17d93bcf6710d"
+          "sha256": "6a62d4444489228131f52f6c07664af23cc3064499debf6cf353af261de3fa61"
         }
       ],
       "thresholds": {
@@ -2688,7 +2688,7 @@
             }
           }
         },
-        "reading": "THE WHITE-SPACE FLOOR CATCHES NOTHING: all 44 measurements clear 0.62 on both halves, by a wide margin - post-change ink runs 0.0265 to 0.1353, so white space runs 0.865 to 0.973. That is the brief's own argument for the relative rule, measured. THE REWRITE DID NOT DEGRADE THE ABSOLUTE BUDGETS AND HAS NOW IMPROVED THEM: 103 misses on the baseline against 84 on the successors, 83 of them the same miss on both sides, 20 fixed and exactly ONE new - /settings' 996 characters against the 700 cap, which the operator has accepted. Eight of the twenty were fixed in this change and are the only rows in this table that a measurement alone settled: every authenticated mobile surface rendered 16px of primary-content left padding against a 24px minimum, because the app shell's <main> carried px-4 below md. It carries px-6 now and all eight read 24. AND ROUGHLY 57 OF THE 83 THAT REMAIN ARE PROBABLY THE MEASUREMENT RATHER THAN THE PRODUCT, which is said as a reading and not as a finding: minProseMeasureCh misses on 21 of the 22 routes on both halves because it is the narrowest of every rendered p and li, so a three-character list item fails a 45-character floor meant for body prose; minimumAdjacentSectionGapPx reports exactly 0 on pages that plainly have gaps; and maxProseMeasureCh reads 85 to 131 characters where the widest element may be a container rather than a paragraph. A budget no version of this product has ever met, on either side of a rewrite, is a budget worth re-reading before it is worked. Filed as D-115. WHAT IS LEFT IS 27 ROWS AND THE WORD `crisp' WAS TOO GENEROUS FOR MOST OF THEM: 21 measurements exceed the 700-character visible-text cap, which is a copy decision on every surface; /auth/sign-in and /auth/sign-up carry 9 and 10 first-viewport interactive elements against 7, where the count includes the wordmark link and the footer's \"Back to Inherit\" - wrapping those in a navigation landmark, the pattern src/components/site/app-shell.tsx already uses, would take sign-in to 7, and whether that is honest marking or shaping the measurement is an owner's call rather than mine; and /genome/me/ancestry and /genome/me/reports carry 48 and 42 decorated elements at 390x844 against 40, which means removing visual chrome. None of those three is an engineering fix."
+        "reading": "THE WHITE-SPACE FLOOR CATCHES NOTHING: all 44 measurements clear 0.62 on both halves, by a wide margin - post-change ink runs 0.0265 to 0.1353, so white space runs 0.865 to 0.973. That is the brief's own argument for the relative rule, measured. THE REWRITE DID NOT DEGRADE THE ABSOLUTE BUDGETS AND HAS NOW IMPROVED THEM: 103 misses on the baseline against 84 on the successors, 83 of them the same miss on both sides, 20 fixed and exactly ONE new - /settings' 996 characters against the 700 cap, which the operator has accepted. Eight of the twenty were fixed in this change and are the only rows in this table that a measurement alone settled: every authenticated mobile surface rendered 16px of primary-content left padding against a 24px minimum, because the app shell's <main> carried px-4 below md. It carries px-6 now and all eight read 24. AND THE CLAIM THAT ROUGHLY 57 OF THEM WERE THE MEASUREMENT RATHER THAN THE PRODUCT WAS MINE, AND IT IS WRONG. It was a reading, it is now measured, and the measurement is in docs/evidence/density-post-change/absolute-budgets.json#briefsOwnProseBasis. The contract measures prose as every rendered `p` OR `li` anywhere in the document; the brief says \"prose <p>\" (line 197), \"No prose <p> in (app)\" (line 491), and explains the 45ch floor by arithmetic on the CONTENT COLUMN (line 569). Measuring the brief's wording instead - paragraphs only, inside primary content - the 45ch floor is missed on 15 of 22 routes rather than 21, with 2 further routes carrying no paragraph in primary content at all. Six rows change verdict. THE 68ch CAP LOSES NOTHING: 16 misses on both bases, so every one of those is the product. And the section-gap measure is wrong in MAGNITUDE rather than in verdict: it reads `next.top - previous.bottom`, which is the space BETWEEN boxes, and the legal layout separates its sections with `border-t` plus `py-8` INSIDE each, so /about reports 0 where a reader sees 64px. Still short of the 96px the brief asks for, so the misses stand and the number does not. Corrected count: about six of the 83, not 57. Filed as D-115, which is a defect in the contract's prose basis rather than a reason to defer the rest. WHAT IS LEFT IS 27 ROWS: 21 measurements exceed the 700-character visible-text cap, which is a copy decision on every surface; /auth/sign-in and /auth/sign-up carry 9 and 10 first-viewport interactive elements against 7, where the count includes the wordmark link and the footer's \"Back to Inherit\" - wrapping those in a navigation landmark, the pattern src/components/site/app-shell.tsx already uses, would take sign-in to 7, and whether that is honest marking or shaping the measurement is an owner's call rather than mine; and /genome/me/ancestry and /genome/me/reports carry 48 and 42 decorated elements at 390x844 against 40, which means removing visual chrome. None of those three is an engineering fix."
       }
     }
   }

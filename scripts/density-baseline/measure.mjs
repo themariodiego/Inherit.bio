@@ -169,7 +169,19 @@ export async function measure(page, selectors) {
       ? Math.round(Math.min(...finitePrimaryLefts) * 100) / 100
       : null;
 
+    // THE PROSE MEASURE IS RECORDED TWICE, and the second one is a diagnostic
+    // rather than a replacement. `proseMeasures` is the basis this contract has
+    // always used - every rendered `p` OR `li`, anywhere in the document - and
+    // it stays exactly as it was so every number already recorded against it
+    // remains comparable. `paragraphProseMeasures` is the brief's own wording:
+    // line 197 says "prose `<p>`", line 491 says "No prose `<p>` in `(app)`",
+    // and line 569 explains the 45ch floor by arithmetic on the CONTENT COLUMN.
+    // A three-character list item is not body prose and cannot clear a
+    // 45-character floor, which is why the wider basis misses on 21 of 22
+    // routes on BOTH halves of the comparison (D-115). Which basis the contract
+    // should use is an operator decision; measuring both is what makes it one.
     const proseMeasures = [];
+    const paragraphProseMeasures = [];
     for (const element of document.querySelectorAll("p,li")) {
       if (!rendered(element, false)) continue;
       const style = getComputedStyle(element);
@@ -192,7 +204,11 @@ export async function measure(page, selectors) {
       const zeroAdvance = probe.getBoundingClientRect().width / 10;
       probe.remove();
       if (zeroAdvance > 0) {
-        proseMeasures.push(element.getBoundingClientRect().width / zeroAdvance);
+        const measure = element.getBoundingClientRect().width / zeroAdvance;
+        proseMeasures.push(measure);
+        if (element.tagName === "P" && primaryRoot.contains(element)) {
+          paragraphProseMeasures.push(measure);
+        }
       }
     }
 
@@ -256,6 +272,13 @@ export async function measure(page, selectors) {
       focusableElements: focusables.length,
       interactiveElements: interactives.length,
       visibleTextCharacters,
+      paragraphProseElementCount: paragraphProseMeasures.length,
+      maxParagraphProseMeasureCh: paragraphProseMeasures.length
+        ? Math.round(Math.max(...paragraphProseMeasures) * 1000) / 1000
+        : null,
+      minParagraphProseMeasureCh: paragraphProseMeasures.length
+        ? Math.round(Math.min(...paragraphProseMeasures) * 1000) / 1000
+        : null,
       proseElementCount: proseMeasures.length,
       maxProseMeasureCh: proseMeasures.length
         ? Math.round(Math.max(...proseMeasures) * 1000) / 1000

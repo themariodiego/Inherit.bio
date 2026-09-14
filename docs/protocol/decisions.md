@@ -3503,3 +3503,49 @@ matches and how often each won across resamples — without being asserted.
 
 That is a design proposal and it has not been built. What is built is the
 measurement and the means to reproduce it.
+
+## 2026-09-14 · "Probably the measurement" was mine, and measuring it says six, not fifty-seven
+
+When the absolute density budgets were first evaluated on both halves of the
+G2.5 comparison, 83 misses carried over from the baseline and I wrote that
+"roughly 57 of the 83 are probably the measurement rather than the product",
+labelled as a reading rather than a finding. It is measured now, and the reading
+was wrong by an order of magnitude.
+
+**The basis is genuinely off, and in the direction I said.** The contract
+measures prose as every rendered `p` **or `li`**, anywhere in the document. The
+brief says "prose `<p>`" (line 197), "No prose `<p>` in `(app)`" (line 491), and
+explains the 45ch floor by arithmetic on the content column (line 569): "at
+390px with the mandated 24px surface padding, 342px of content at 16px Inter is
+about 39ch […] A gate demanding 45ch on a phone can never pass." A
+three-character list item is not body prose.
+
+So `measure.mjs` records the brief's basis beside the contract's —
+`minParagraphProseMeasureCh` and `maxParagraphProseMeasureCh`, paragraphs only
+and inside primary content — **added rather than substituted**, because every
+number already recorded against the old basis has to stay comparable. Which
+basis the contract should use is an operator decision; measuring both is what
+makes it one.
+
+**And then the size of it:**
+
+- The **45ch floor** is missed on **15 of 22** routes at 1280×800 instead of 21,
+  with 2 further routes carrying no paragraph in primary content at all, where
+  the rule does not apply. Six rows change verdict. `/overview` goes 21.9 → 54.2
+  and passes; `/files` stays at 21.8 on both bases, so its narrow paragraph is
+  real.
+- The **68ch cap** is missed **16 times on both bases**. Not one of those is the
+  basis. `/` and `/files` render 112ch paragraphs; the legal pages 85ch.
+- The **section gap** is wrong in magnitude rather than in verdict. It reads
+  `next.top − previous.bottom` — the space *between* boxes — and
+  `src/components/legal/legal-page.tsx` separates its sections with `border-t`
+  plus `py-8` *inside* each, so `/about` reports 0 where a reader sees 64px.
+  Still short of the brief's 96px, so the misses stand and the number does not.
+  The one route that sets its spacing deliberately, `/genome/me/reports`,
+  measures exactly 64 and 96 — which is the evidence that the measure is
+  otherwise reading correctly.
+
+**About six of the 83 change verdict, not 57.** The rest are the product, and
+the rest of that work is copy and layout decisions rather than engineering. The
+estimate was published as a reading and is corrected here as a measurement,
+which is the only reason it was worth publishing that way.
