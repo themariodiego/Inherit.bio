@@ -29,6 +29,7 @@ The budgets, in the shape they are enforced:
 |---|---|
 | White space, hub and standard surfaces | ≥ 0.62 |
 | White space, wide-data surfaces | ≥ 0.45 |
+| Successor ink coverage, against its predecessor | ≤ 0.6 |
 | Visible text, Overview and domain landings | ≤ 480 characters |
 | Visible text, elsewhere | ≤ 700 characters |
 | Decorated elements | ≤ 40 at 390×844, ≤ 60 at 1280×800 |
@@ -45,6 +46,36 @@ and state. Where a new route has no honest predecessor the relative rule is
 recorded as not applicable and the absolute budgets stand alone — which is the
 right answer rather than a gap, because inventing a predecessor to compare
 against would produce a number that means nothing.
+
+**The heading and the number are not the same rule, and the number is the one
+that governs.** “No denser than what it replaces” would be ≤ 100%. Brief X6.2
+says ≤ 60%, and says why in its own summary line: *“the brief asks for far more
+white space than today, so an absolute floor alone would let today's app pass
+unchanged”*. So the relative rule is a demand that the rewrite arrive
+substantially sparser, not a guard against regression, and the heading above
+understates it. X6.2 also closes with *“ceilings may be lowered, never
+raised”*, which makes relaxing the 60% the one direction that needs the
+operator's signature rather than an engineer's judgement. The operator has
+asked for 100%; that request is recorded, unapplied, as item 14 of
+`docs/protocol/brief-corrections-proposed.md` and in
+`docs/density-baseline.json#relativeComparison.proposedChange`.
+
+**The rule has been measured now, and it is not met.** The first end-to-end
+comparison ran on 2026-09-14: 22 routes, 44 measurements, both halves on one
+machine and one browser build. **Three of the 44 are within the 60% rule and
+41 are not**, with a median ratio of 0.98 and a range of 0.37 to 1.80 — that
+is, at these 22 surfaces and in the first viewport, the rewrite is about as
+inky as the product it replaced, which is precisely the outcome X6.2's summary
+line says the relative rule exists to prevent. At 100% it would be 26 of 44.
+Two things in the result are worth naming here rather than only in the
+contract. The eight auth-surface rows are the collision this ADR predicts
+below — the same words, in the same layout, rendering 10–15% more ink because
+every control is now 44 px — and the answer prescribed there is re-capture, not
+redesign. And the two halves were fed different synthetic source files, so
+every measure that depends on how much a file supports is confounded; that
+covers 16 of the 44 rows, is recorded as open in
+`docs/density-baseline.json#postChange.comparison.fixtureConfound`, and does
+not touch the 28 public and auth rows, none of which meet the rule either.
 
 ## Why budgets rather than guidance
 

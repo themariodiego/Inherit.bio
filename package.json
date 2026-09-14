@@ -24,6 +24,7 @@
     "gate:schema-drift": "tsx scripts/schema-drift-gate.ts",
     "gate:secrets": "tsx scripts/secret-gate.ts",
     "gate:templates": "tsx scripts/validate-templates.ts",
+    "density:verify": "node scripts/density-baseline/verify.mjs",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {

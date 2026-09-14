@@ -342,7 +342,7 @@ check("X0/X6/G2.5 checkpoint state", () => {
   assert.equal(baselineDocument.baseline.productionDataUsed, false);
   assert.equal(baselineDocument.baseline.cloudMutation, false);
   assert.deepEqual(baselineDocument.captureValidation.anomalies, []);
-  assert.equal(baselineDocument.postChange.status, "pending");
+  assert.equal(baselineDocument.postChange.status, "measured-with-findings");
   assert.equal(baselineDocument.thresholds.mobile390.horizontalOverflowPxMax, 0);
   assert.equal(
     baselineDocument.routes.every(
@@ -350,6 +350,75 @@ check("X0/X6/G2.5 checkpoint state", () => {
     ),
     true,
   );
+});
+
+check("G2.5 post-change comparison matches its evidence", () => {
+  const comparison = baselineDocument.postChange.comparison;
+  // Every artifact the comparison cites, by hash, on the same terms the
+  // baseline's own artifacts are pinned. A summary nobody can check against
+  // the numbers it summarises is a claim, not a measurement.
+  for (const artifact of comparison.artifacts) {
+    assert.equal(
+      fileSha256(path.join(repositoryRoot, artifact.path)),
+      artifact.sha256,
+      artifact.path,
+    );
+  }
+  const evidence = readJson(
+    path.join(repositoryRoot, "docs/evidence/density-post-change/comparison.json"),
+  );
+  assert.deepEqual(comparison.summary, evidence.summary);
+  assert.equal(evidence.routes.length, baselineDocument.baseline.captureCount);
+
+  // THE THRESHOLD IN FORCE IS THE BRIEF'S, and this is the assertion that
+  // keeps it there. X6.2 sets the relative rule at 60% and closes with
+  // "ceilings may be lowered, never raised", so a later change that quietly
+  // relaxes it to the proposed 1.0 fails here rather than passing as a tidy-up.
+  // The proposal itself is recorded, unsigned, in relativeComparison.
+  const inForce =
+    baselineDocument.thresholds.whiteSpace
+      .successorInkCoverageMaxFractionOfPredecessor;
+  assert.equal(inForce, 0.6);
+  assert.equal(comparison.thresholds.inForce, inForce);
+  assert.equal(evidence.summary.briefRule.threshold, inForce);
+  assert.ok(comparison.thresholds.proposedAndUnsigned > inForce);
+  assert.ok(baselineDocument.relativeComparison.proposedChange.length > 0);
+
+  // The verdicts are recomputed rather than trusted: the ratio is read back out
+  // of the two ink coverages on every row, and each verdict out of its own
+  // threshold. A recorded ratio that does not follow from its own two
+  // measurements would otherwise pass unnoticed.
+  const within = { briefRule: 0, proposedRule: 0 };
+  for (const row of evidence.routes) {
+    const where = `${row.baselineRoute} ${row.viewport}`;
+    const ratio =
+      Math.round(
+        (row.postChangeInkCoverageRatio / row.baselineInkCoverageRatio) * 10_000,
+      ) / 10_000;
+    assert.equal(row.ratio, ratio, where);
+    assert.equal(row.withinBriefRule, ratio <= inForce, where);
+    assert.equal(
+      row.withinProposedRule,
+      ratio <= comparison.thresholds.proposedAndUnsigned,
+      where,
+    );
+    if (row.withinBriefRule) within.briefRule += 1;
+    if (row.withinProposedRule) within.proposedRule += 1;
+  }
+  for (const [key, count] of Object.entries(within)) {
+    assert.equal(evidence.summary[key].within, count, key);
+    assert.equal(
+      evidence.summary[key].within + evidence.summary[key].over,
+      evidence.routes.length,
+      key,
+    );
+  }
+
+  // The comparison must not have become a silent baseline swap. The recorded
+  // routes stay the macOS capture until the fixture confound is closed, and
+  // the checks above this one verify them by hash.
+  assert.ok(comparison.notSwapped.length > 0);
+  assert.ok(comparison.fixtureConfound.status.startsWith("OPEN"));
 });
 
 console.log(

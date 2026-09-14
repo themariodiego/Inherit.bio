@@ -1093,6 +1093,108 @@ Filed as **D-108**.
 
 ---
 
+## 14. X6.2's relative density rule: 60% asked for, 98% measured
+
+**This one is a decision the operator has already taken in conversation, and
+it is filed rather than applied because taking it raises a ceiling the brief
+says may never be raised.**
+
+### What the brief says
+
+X6.2, in full on the relative half:
+
+> Relative: where a route has a baseline predecessor, its ink coverage is
+> **≤ 60% of that predecessor's**. […] One file,
+> `docs/density-baseline.json`, holds both the baseline and the post-change
+> figures; **ceilings may be lowered, never raised.**
+
+And the brief's own summary of why the number is 60 rather than 100:
+
+> **relative white space**: where a route has a baseline predecessor, its ink
+> coverage is **≤ 60% of that predecessor's** — the brief asks for *far more*
+> white space than today, so an absolute floor alone would let today's app
+> pass unchanged;
+
+So this is not a threshold picked for safety margin. It is the mechanism by
+which the brief demands the rewrite be substantially sparser, and its stated
+failure mode is exactly the outcome a 100% rule would permit.
+
+### What was measured
+
+The first end-to-end comparison ran on 2026-09-14 — 22 routes, 44
+measurements, both halves on one Linux machine and one browser build, with the
+full row-by-row record in `docs/evidence/density-post-change/comparison.json`
+and the reading in `docs/density-baseline.json#postChange.comparison`.
+
+| Threshold | Within | Over |
+|---|---|---|
+| ≤ 0.6 — brief X6.2, in force | **3** | 41 |
+| ≤ 1.0 — proposed here | 26 | 18 |
+
+Median ratio **0.9803**; range 0.3664 to 1.8039. The rewrite is, at these 22
+surfaces and in the first viewport, about as inky as the product it replaced.
+
+Three qualifications, so the table is not read as more than it is. All three
+passing measurements are on the two authenticated surfaces most exposed to a
+fixture confound recorded in the same document, so even the passes are the
+least safe rows to claim. The eight auth-surface rows fail by 10–15% with
+*identical* visible text on both sides, which is the 44 px control scale and
+nothing else — ADR-0029 already decided that collision in favour of the
+accessibility rule. And the twenty public rows, which no file feeds and no
+accessibility rule explains, are the cleanest reading available: median 0.947,
+none within 0.6, three drifting denser than their predecessors.
+
+### The proposal
+
+Replace the 60% in X6.2 and in the brief's summary line with 100%, so the
+relative rule reads as a guard against regression rather than a demand for
+sparseness, and set
+`docs/density-baseline.json#thresholds.whiteSpace.successorInkCoverageMaxFractionOfPredecessor`
+to 1.0 in the same change.
+
+**Exact text to replace**, twice, at `docs/inherit-v2-brief.md` X6.2 and at the
+summary line:
+
+> its ink coverage is **≤ 60% of that predecessor's**
+
+**Exact replacement:**
+
+> its ink coverage is **≤ 100% of that predecessor's** — no successor may be
+> denser than the surface it replaces
+
+The summary line's trailing clause — *"the brief asks for far more white space
+than today, so an absolute floor alone would let today's app pass unchanged"* —
+must go with it, because it is the justification for the number being lowered
+below 100 and it stops being true of the replacement.
+
+### Why it is not applied
+
+Three reasons, and any one of them is sufficient.
+
+1. X6.2 says ceilings may be lowered, never raised. This raises one.
+2. The question the operator answered — "should a successor be no denser, or
+   40% sparser?" — did not put the brief's clause or its stated rationale in
+   front of them, so the answer was given without the thing that makes it a
+   brief amendment rather than a preference.
+3. It is a large change of intent wearing the clothes of a threshold tweak.
+   Under 60% the honest status of G2.5's relative half is "fails, 41 of 44,
+   and needs design work on almost every surface". Under 100% it becomes
+   "mostly passes, with two named regressions". Those are very different
+   accounts of the same product, and which one the record carries is the
+   operator's to choose deliberately.
+
+### The alternative, stated so it is a choice
+
+Keep the 60%. It then stands as a large, measured, open piece of design work
+rather than a contract defect, and the public surfaces are where it starts,
+because they are the twenty rows where the measurement is not arguable. Either
+answer is defensible. What is not defensible is the threshold changing quietly
+in a document nobody enforces, which is how this was nearly done — the first
+draft of this change raised it and called it a transcription error, and the
+brief was read afterwards.
+
+---
+
 ## Where the 25 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.

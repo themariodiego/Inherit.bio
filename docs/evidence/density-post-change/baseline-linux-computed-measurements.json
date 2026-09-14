@@ -3,118 +3,18 @@
   "baseline": {
     "commitSha": "864736979c92a08ba77e8580d61946eba6864918",
     "routeCount": 22,
-    "captureCount": 44,
-    "fullTreeSha": "b141bdb7dcf82ec3edf45dad9a27b799e6e67c8a",
-    "sourceTreeSha": "fdd1646b6b0784dc5776c1b18910b3ae736cafc2",
-    "measurementStatus": "measured",
-    "productionDataUsed": false,
-    "cloudMutation": false,
-    "trackedFileCount": 239,
-    "sourceIdentityVerification": "Every tracked file in the archived capture checkout matched its baseline Git blob; current HEAD:src also matched at checkpoint time."
+    "captureCount": 44
   },
-  "capture": {
-    "measuredAt": "2026-08-31T13:28:40Z",
+  "captureEnvironment": {
+    "origin": "http://127.0.0.1:3100",
+    "browserName": "Google Chrome",
+    "browserVersion": "141.0.7390.37",
+    "nodeVersion": "22.22.2",
+    "locale": "en-US",
+    "timezone": "UTC",
     "theme": "light",
     "devicePixelRatio": 1,
-    "ground": "#f7f8f1",
-    "viewports": [
-      {
-        "key": "390x844",
-        "width": 390,
-        "height": 844
-      },
-      {
-        "key": "1280x800",
-        "width": 1280,
-        "height": 800
-      }
-    ],
-    "imageFormat": "PNG",
-    "imageExclusions": "No exclusion rectangle appeared in the baseline first viewports; the canonical future map-tile and user-image exclusion rule remains active.",
-    "runtime": "Clean git archive of the baseline commit, Next.js production build on loopback, and deterministic out-of-tree Supabase Auth/PostgREST fixture.",
-    "environment": {
-      "os": "macOS 26.5.1 (25F80)",
-      "kernel": "Darwin 25.5.0",
-      "architecture": "arm64",
-      "node": "22.17.0",
-      "pnpm": "10.33.0",
-      "next": "16.3.3",
-      "playwright": "1.62.1",
-      "browser": {
-        "name": "Google Chrome",
-        "version": "151.0.7922.175"
-      },
-      "locale": "en-US",
-      "timezone": "UTC",
-      "serviceWorkers": "blocked"
-    },
-    "waitConditions": [
-      "document load",
-      "500 ms stabilization",
-      "document.fonts.ready",
-      "animations and transitions disabled",
-      "scroll position reset to zero",
-      "two animation frames"
-    ],
-    "reproduction": {
-      "workingDirectory": "repository root",
-      "exactInvocation": "DENSITY_WORKING_ROOT=/private/tmp/inherit-density-baseline-final4 DENSITY_OUTPUT_ROOT=/private/tmp/inherit-density-baseline-final4/evidence scripts/density-baseline/reproduce.sh",
-      "sourceExtraction": "git archive --format=tar 864736979c92a08ba77e8580d61946eba6864918 | tar -xf - -C <fresh-baseline-checkout>",
-      "install": "corepack pnpm --dir <fresh-baseline-checkout> install --frozen-lockfile",
-      "build": "corepack pnpm --dir <fresh-baseline-checkout> build",
-      "start": "corepack pnpm --dir <fresh-baseline-checkout> start -p 3102",
-      "fixture": "INHERIT_STUB_PORT=3100 INHERIT_NEXT_ORIGIN=http://127.0.0.1:3102 INHERIT_BASELINE_CHECKOUT=<fresh-baseline-checkout> INHERIT_DENSITY_FIXED_TIME=2026-08-31T12:00:00.000Z node scripts/density-baseline/supabase-fixture.mjs",
-      "capture": "DENSITY_ORIGIN=http://127.0.0.1:3100 DENSITY_SCREENSHOT_DIRECTORY=<evidence>/screenshots DENSITY_CAPTURE_MANIFEST=<evidence>/capture-manifest.json node scripts/density-baseline/capture.mjs",
-      "compute": "DENSITY_SCREENSHOT_DIRECTORY=<evidence>/screenshots DENSITY_CAPTURE_MANIFEST=<evidence>/capture-manifest.json DENSITY_COMPUTED_MEASUREMENTS=<evidence>/computed-measurements.json node scripts/density-baseline/compute.mjs",
-      "verify": "DENSITY_REQUIRE_CURRENT_SOURCE_IDENTITY=1 node scripts/density-baseline/verify.mjs",
-      "buildEnvironment": {
-        "CI": "1",
-        "NODE_ENV": "production",
-        "NEXT_TELEMETRY_DISABLED": "1",
-        "NEXT_PUBLIC_SUPABASE_URL": "http://127.0.0.1:3100",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "density-baseline-anon-key",
-        "SUPABASE_SERVICE_ROLE_KEY": "density-baseline-service-role-key"
-      }
-    },
-    "artifacts": {
-      "captureHarness": {
-        "path": "scripts/density-baseline/capture.mjs",
-        "sha256": "34bfd67a9e988f6dcb62e7a5c3aef83efe22ecd788ad42e923ed265298d58b80"
-      },
-      "measurementModule": {
-        "path": "scripts/density-baseline/measure.mjs",
-        "sha256": "3da83360309f6cbeb62903f12aefe20da51c5026563d935103b46a28476163d5"
-      },
-      "measurementHarness": {
-        "path": "scripts/density-baseline/compute.mjs",
-        "sha256": "18414aa2acb83abe8ab69fc6581987a8d947f9c02855f99cbf8117377f6f024b"
-      },
-      "supabaseFixture": {
-        "path": "scripts/density-baseline/supabase-fixture.mjs",
-        "sha256": "c77e3ad02f2f8ca277d4abd4a3daed37af1294bbc63e0b1edffd08f09207ac3c"
-      },
-      "reproductionHarness": {
-        "path": "scripts/density-baseline/reproduce.sh",
-        "sha256": "c2da25890c32e6bdc2da8b6b0ead8983b19c6aae4c1aaefe2df979e14a36a682"
-      },
-      "verificationHarness": {
-        "path": "scripts/density-baseline/verify.mjs",
-        "sha256": "a617b84ca4ca8859a9d77af7526eeb0adf3b1cb095de9017d3efe8041df1f9d7"
-      },
-      "evidenceReadme": {
-        "path": "docs/evidence/density-baseline/README.md",
-        "sha256": "090d4b62165fadb1b3ce30f85af7e396e0c85a6c13f652c5c3ed604b5512ad24"
-      },
-      "captureManifest": {
-        "path": "docs/evidence/density-baseline/capture-manifest.json",
-        "sha256": "5dfd30c8668db3ede26097f3e30ec36285290c3c775555c520b706a043957fff"
-      },
-      "computedMeasurements": {
-        "path": "docs/evidence/density-baseline/computed-measurements.json",
-        "sha256": "6ea18f2f230f9f9cecffe418bd2e898f2c3b0be4dcc8238450e671d798ed4e4e"
-      }
-    },
-    "artifactDrift": "REPINNED 2026-09-14, and the drift is worth recording rather than quietly fixing. Three pinned harnesses had changed without their hashes moving with them: reproduce.sh, when its macOS-only default working directory and browser path were parameterised so it runs on Linux; capture.mjs, when `ready` and `measure` moved out to measure.mjs so both halves of the relative comparison read the page with one copy of the code; and verify.mjs itself, in this change. The pin worked the first time anyone ran the verifier - it failed on capture.mjs immediately - and that is the finding: NOTHING RUNS THE VERIFIER. It is not a pnpm script and not a CI job, so a hash pin that is only checked by hand catches drift whenever someone happens to look, which here was three commits late. `pnpm density:verify` exists now so it at least has a name. Wiring it into CI needs one thing this change does not have: the job checks out at depth 1 and the verifier reads the frozen baseline commit through `git archive`, so it would need the history fetched before it could run at all."
+    "serviceWorkers": "blocked"
   },
   "measurementSelectors": {
     "requiredAccuracy": "[data-density-required-accuracy]",
@@ -213,7 +113,7 @@
     "anomalies": [],
     "baselineOnlyFutureBudgetObservations": [
       "/ 390x844: baseline minimum adjacent section gap 0px < 64px",
-      "/ 1280x800: baseline maximum prose measure 116.903ch > 68ch",
+      "/ 1280x800: baseline maximum prose measure 116.941ch > 68ch",
       "/ 1280x800: baseline minimum prose measure 24.372ch < 45ch",
       "/ 1280x800: baseline minimum adjacent section gap 0px < 96px",
       "/about 390x844: baseline visible characters 936 exceed 700",
@@ -272,7 +172,7 @@
       "/ancestry 390x844: baseline minimum adjacent section gap 24px < 64px",
       "/ancestry 1280x800: baseline visible characters 1039 exceed 700",
       "/ancestry 1280x800: baseline maximum prose measure 101.449ch > 68ch",
-      "/ancestry 1280x800: baseline minimum prose measure 14.748ch < 45ch",
+      "/ancestry 1280x800: baseline minimum prose measure 14.749ch < 45ch",
       "/ancestry 1280x800: baseline minimum adjacent section gap -167.8px < 96px",
       "/browse 390x844: baseline primary content padding 16px < 24px",
       "/browse 1280x800: baseline maximum prose measure 131.038ch > 68ch",
@@ -285,7 +185,7 @@
       "/dashboard 390x844: baseline primary content padding 16px < 24px",
       "/dashboard 1280x800: baseline visible characters 1025 exceed 480",
       "/dashboard 1280x800: baseline maximum prose measure 131.038ch > 68ch",
-      "/dashboard 1280x800: baseline minimum prose measure 10.372ch < 45ch",
+      "/dashboard 1280x800: baseline minimum prose measure 10.371ch < 45ch",
       "/reports 390x844: baseline visible characters 1329 exceed 700",
       "/reports 390x844: baseline budgeted decorated elements 41 > 40",
       "/reports 390x844: baseline primary content padding 16px < 24px",
@@ -299,7 +199,7 @@
       "/reports/type-2-diabetes-tcf7l2-rs7903146 390x844: baseline minimum adjacent section gap 32px < 64px",
       "/reports/type-2-diabetes-tcf7l2-rs7903146 1280x800: baseline visible characters 1420 exceed 700",
       "/reports/type-2-diabetes-tcf7l2-rs7903146 1280x800: baseline maximum prose measure 101.449ch > 68ch",
-      "/reports/type-2-diabetes-tcf7l2-rs7903146 1280x800: baseline minimum prose measure 21.01ch < 45ch",
+      "/reports/type-2-diabetes-tcf7l2-rs7903146 1280x800: baseline minimum prose measure 21.002ch < 45ch",
       "/reports/type-2-diabetes-tcf7l2-rs7903146 1280x800: baseline minimum adjacent section gap 32px < 96px",
       "/settings 390x844: baseline primary content padding 16px < 24px",
       "/settings 390x844: baseline minimum adjacent section gap 40px < 64px",
@@ -321,16 +221,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "ea18255d7298b9c474735819c14a7802fcacc4f9f5c85dfcdd5af27585c4c051",
+          "screenshotSha256": "4c527ccdb7e309f4798916449b1e98ecacfde66b022ad690ec48b77bff7e1c05",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 34022,
-          "inkCoverageRatio": 0.10336,
-          "whiteSpaceRatio": 0.89664,
-          "exactGroundPixelCount": 287588,
-          "exactGroundRatio": 0.873703,
+          "inkPixelCount": 41356,
+          "inkCoverageRatio": 0.125641,
+          "whiteSpaceRatio": 0.874359,
+          "exactGroundPixelCount": 281720,
+          "exactGroundRatio": 0.855876,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/home__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -357,16 +257,16 @@
           "resolvedPath": "/"
         },
         "1280x800": {
-          "screenshotSha256": "61b381a3f82dd7a25cdb604343613931a7aac893ff9d7ac251225528bd73b002",
+          "screenshotSha256": "5042b3ec562d4acadc4619f4dd35bb5034cb1ffb17d8682a02dbed9bda362181",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 39328,
-          "inkCoverageRatio": 0.038406,
-          "whiteSpaceRatio": 0.961594,
-          "exactGroundPixelCount": 738775,
-          "exactGroundRatio": 0.72146,
+          "inkPixelCount": 46210,
+          "inkCoverageRatio": 0.045127,
+          "whiteSpaceRatio": 0.954873,
+          "exactGroundPixelCount": 734009,
+          "exactGroundRatio": 0.716806,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/home__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -377,7 +277,7 @@
           "requiredAccuracyTextElementExclusionCount": 0,
           "visibleTextCharacterCount": 581,
           "proseElementCount": 37,
-          "maxProseMeasureCh": 116.903,
+          "maxProseMeasureCh": 116.941,
           "minProseMeasureCh": 24.372,
           "topLevelSectionCount": 3,
           "minimumAdjacentSectionGapPx": 0,
@@ -392,10 +292,7 @@
           "statusView": "Your genome, on your terms.",
           "resolvedPath": "/"
         }
-      },
-      "successorRouteIds": [
-        "marketing.home"
-      ]
+      }
     },
     {
       "route": "/about",
@@ -404,16 +301,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "9c78f90d83919567fe513806a38a3aba42228f360690629755614db4c994ad79",
+          "screenshotSha256": "e4629d85bf7cc47fcf2e89c25bcc4aa7cf43460404c23a650543fe30f082c986",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 22761,
-          "inkCoverageRatio": 0.069149,
-          "whiteSpaceRatio": 0.930851,
-          "exactGroundPixelCount": 299087,
-          "exactGroundRatio": 0.908637,
+          "inkPixelCount": 30151,
+          "inkCoverageRatio": 0.0916,
+          "whiteSpaceRatio": 0.9084,
+          "exactGroundPixelCount": 292726,
+          "exactGroundRatio": 0.889312,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/about__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -440,16 +337,16 @@
           "resolvedPath": "/about"
         },
         "1280x800": {
-          "screenshotSha256": "4a819871785e59860323b3255996c4cfa18c621ec230d5a590bf84ccae966de1",
+          "screenshotSha256": "865d9ce57c64d5d57e2aae6e43cce721f0e5ff34579b59408dc182cdc7235639",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 54162,
-          "inkCoverageRatio": 0.052893,
-          "whiteSpaceRatio": 0.947107,
-          "exactGroundPixelCount": 950311,
-          "exactGroundRatio": 0.928038,
+          "inkPixelCount": 73574,
+          "inkCoverageRatio": 0.07185,
+          "whiteSpaceRatio": 0.92815,
+          "exactGroundPixelCount": 935293,
+          "exactGroundRatio": 0.913372,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/about__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -475,10 +372,7 @@
           "statusView": "About Inherit.",
           "resolvedPath": "/about"
         }
-      },
-      "successorRouteIds": [
-        "marketing.about"
-      ]
+      }
     },
     {
       "route": "/ancestry",
@@ -487,16 +381,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "9070659d2284808f1e7edc6b0ab6794e7be36d479d81dd8343e520326b2221b1",
+          "screenshotSha256": "e6407ffd6d2884d90b477ec11dc7cd77db1bd0b6faeccff827d17c7f93448503",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 22930,
-          "inkCoverageRatio": 0.069662,
-          "whiteSpaceRatio": 0.930338,
-          "exactGroundPixelCount": 145506,
-          "exactGroundRatio": 0.442052,
+          "inkPixelCount": 30530,
+          "inkCoverageRatio": 0.092751,
+          "whiteSpaceRatio": 0.907249,
+          "exactGroundPixelCount": 142489,
+          "exactGroundRatio": 0.432887,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/ancestry__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 2,
@@ -508,7 +402,7 @@
           "visibleTextCharacterCount": 597,
           "proseElementCount": 14,
           "maxProseMeasureCh": 47.29,
-          "minProseMeasureCh": 14.122,
+          "minProseMeasureCh": 14.123,
           "topLevelSectionCount": 3,
           "minimumAdjacentSectionGapPx": 24,
           "primaryContentLeftPaddingPx": 16,
@@ -523,16 +417,16 @@
           "resolvedPath": "/ancestry"
         },
         "1280x800": {
-          "screenshotSha256": "b626276f3ad5ae9d2ffafbb5e20616031fd4c42f5f19945518f90c4ff0633ce8",
+          "screenshotSha256": "19d4191faba301ded05ec5919b2ba9cc66c5311947f55ff05c51e8bf5d507888",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 54149,
-          "inkCoverageRatio": 0.05288,
-          "whiteSpaceRatio": 0.94712,
-          "exactGroundPixelCount": 511197,
-          "exactGroundRatio": 0.499216,
+          "inkPixelCount": 66206,
+          "inkCoverageRatio": 0.064654,
+          "whiteSpaceRatio": 0.935346,
+          "exactGroundPixelCount": 506752,
+          "exactGroundRatio": 0.494875,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/ancestry__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -544,7 +438,7 @@
           "visibleTextCharacterCount": 1039,
           "proseElementCount": 16,
           "maxProseMeasureCh": 101.449,
-          "minProseMeasureCh": 14.748,
+          "minProseMeasureCh": 14.749,
           "topLevelSectionCount": 3,
           "minimumAdjacentSectionGapPx": -167.8,
           "primaryContentLeftPaddingPx": 368,
@@ -558,10 +452,7 @@
           "statusView": "What your file supports",
           "resolvedPath": "/ancestry"
         }
-      },
-      "successorRouteIds": [
-        "genome.ancestry"
-      ]
+      }
     },
     {
       "route": "/auth/forgot-password",
@@ -570,16 +461,16 @@
       "state": "empty",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "26e7ef779a0d05e30c00786692cec773703f61c4add1428c03b6670958be0265",
+          "screenshotSha256": "16a1eac35c6969a38f979e1845c9112556e4758a6023f0473d67339ffceb72ad",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 14593,
-          "inkCoverageRatio": 0.044334,
-          "whiteSpaceRatio": 0.955666,
-          "exactGroundPixelCount": 245376,
-          "exactGroundRatio": 0.745461,
+          "inkPixelCount": 16595,
+          "inkCoverageRatio": 0.050416,
+          "whiteSpaceRatio": 0.949584,
+          "exactGroundPixelCount": 244643,
+          "exactGroundRatio": 0.743234,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-forgot-password__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -606,16 +497,16 @@
           "resolvedPath": "/auth/forgot-password"
         },
         "1280x800": {
-          "screenshotSha256": "9b1e31be63d2886c0f1e2db7c746f8df2b71c4ace3e0ef37a8c3993023ad985d",
+          "screenshotSha256": "5ab5e61a17ab387bedb10b316a47a51fab179c678b9cd5be72df1a69cc87fb09",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 16110,
-          "inkCoverageRatio": 0.015732,
-          "whiteSpaceRatio": 0.984268,
-          "exactGroundPixelCount": 930440,
-          "exactGroundRatio": 0.908633,
+          "inkPixelCount": 18117,
+          "inkCoverageRatio": 0.017692,
+          "whiteSpaceRatio": 0.982308,
+          "exactGroundPixelCount": 929705,
+          "exactGroundRatio": 0.907915,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-forgot-password__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -641,10 +532,7 @@
           "statusView": "Reset your password",
           "resolvedPath": "/auth/forgot-password"
         }
-      },
-      "successorRouteIds": [
-        "auth.forgot-password"
-      ]
+      }
     },
     {
       "route": "/auth/reset-password",
@@ -653,16 +541,16 @@
       "state": "empty",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "f3a11263c420c4c5357ab9512e1c06bfad2df31cbcaf852b0c3ee4fb8b91f691",
+          "screenshotSha256": "a85c9d03f9964d69cc052c0ff23a41bf7524aba22530a0571b11bd179d5147c9",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 14312,
-          "inkCoverageRatio": 0.04348,
-          "whiteSpaceRatio": 0.95652,
-          "exactGroundPixelCount": 253720,
-          "exactGroundRatio": 0.770811,
+          "inkPixelCount": 16143,
+          "inkCoverageRatio": 0.049043,
+          "whiteSpaceRatio": 0.950957,
+          "exactGroundPixelCount": 252996,
+          "exactGroundRatio": 0.768611,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-reset-password__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -689,16 +577,16 @@
           "resolvedPath": "/auth/reset-password"
         },
         "1280x800": {
-          "screenshotSha256": "e17b96f1d6209aeb7a2d839b618a6dbba26279c65c61795bb5eab4776e48f756",
+          "screenshotSha256": "e97b7dce12a9626185922a082e45c0e1b2eaa316b5668e3f0fca473dcb6cae24",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 15829,
-          "inkCoverageRatio": 0.015458,
-          "whiteSpaceRatio": 0.984542,
-          "exactGroundPixelCount": 939792,
-          "exactGroundRatio": 0.917766,
+          "inkPixelCount": 17665,
+          "inkCoverageRatio": 0.017251,
+          "whiteSpaceRatio": 0.982749,
+          "exactGroundPixelCount": 939066,
+          "exactGroundRatio": 0.917057,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-reset-password__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -724,10 +612,7 @@
           "statusView": "Choose a new password",
           "resolvedPath": "/auth/reset-password"
         }
-      },
-      "successorRouteIds": [
-        "auth.reset-password"
-      ]
+      }
     },
     {
       "route": "/auth/sign-in",
@@ -736,16 +621,16 @@
       "state": "empty",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "bbf4594d33ef20318926b045aff6d4789d162dfd775e1a20fcb840da73acd568",
+          "screenshotSha256": "27b4fdc3375e38e36f2a1a8d43753e0269fd266249332b39d879a2fdacb12753",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 17003,
-          "inkCoverageRatio": 0.051656,
-          "whiteSpaceRatio": 0.948344,
-          "exactGroundPixelCount": 194162,
-          "exactGroundRatio": 0.589871,
+          "inkPixelCount": 19491,
+          "inkCoverageRatio": 0.059214,
+          "whiteSpaceRatio": 0.940786,
+          "exactGroundPixelCount": 193249,
+          "exactGroundRatio": 0.587097,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-sign-in__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 9,
@@ -772,16 +657,16 @@
           "resolvedPath": "/auth/sign-in"
         },
         "1280x800": {
-          "screenshotSha256": "446eebacfbd56c34f13043c218c6f51e89523c1e770637212204b5183d4dbfe7",
+          "screenshotSha256": "da67e89b80bbd80810864877057726c291c66461ee52af415a93b205c57d3617",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 18604,
-          "inkCoverageRatio": 0.018168,
-          "whiteSpaceRatio": 0.981832,
-          "exactGroundPixelCount": 873430,
-          "exactGroundRatio": 0.852959,
+          "inkPixelCount": 21097,
+          "inkCoverageRatio": 0.020603,
+          "whiteSpaceRatio": 0.979397,
+          "exactGroundPixelCount": 872515,
+          "exactGroundRatio": 0.852065,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-sign-in__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 9,
@@ -807,10 +692,7 @@
           "statusView": "Welcome back",
           "resolvedPath": "/auth/sign-in"
         }
-      },
-      "successorRouteIds": [
-        "auth.sign-in"
-      ]
+      }
     },
     {
       "route": "/auth/sign-up",
@@ -819,16 +701,16 @@
       "state": "empty",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "b2e3f906020e83d41d599a080fd13264b8c92a3465c77e228a0db3cf74d45103",
+          "screenshotSha256": "23ffc2797c17aa048df595a1e0ef7c6ca58b1c8badaaeb467a6c159047c9aa02",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 19486,
-          "inkCoverageRatio": 0.059199,
-          "whiteSpaceRatio": 0.940801,
-          "exactGroundPixelCount": 174339,
-          "exactGroundRatio": 0.529648,
+          "inkPixelCount": 23706,
+          "inkCoverageRatio": 0.07202,
+          "whiteSpaceRatio": 0.92798,
+          "exactGroundPixelCount": 173633,
+          "exactGroundRatio": 0.527503,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-sign-up__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 10,
@@ -855,16 +737,16 @@
           "resolvedPath": "/auth/sign-up"
         },
         "1280x800": {
-          "screenshotSha256": "9f6ed6ee0d1219bc8b8fdd4714dfbe63150baccb2ff13d055a889e808f41adc6",
+          "screenshotSha256": "af8c4b0f09b99fbcdeea95ac8b30a37a331a5b880141f2f97b86b56bf00e15d2",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 20983,
-          "inkCoverageRatio": 0.020491,
-          "whiteSpaceRatio": 0.979509,
-          "exactGroundPixelCount": 850835,
-          "exactGroundRatio": 0.830894,
+          "inkPixelCount": 25273,
+          "inkCoverageRatio": 0.024681,
+          "whiteSpaceRatio": 0.975319,
+          "exactGroundPixelCount": 850127,
+          "exactGroundRatio": 0.830202,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/auth-sign-up__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 10,
@@ -890,10 +772,7 @@
           "statusView": "Create your account",
           "resolvedPath": "/auth/sign-up"
         }
-      },
-      "successorRouteIds": [
-        "auth.sign-up"
-      ]
+      }
     },
     {
       "route": "/browse",
@@ -902,16 +781,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "5ac6ca8146e43dcb7b2bc3aaae5aa3f5a8ad257697504b5e9678959a529d48c3",
+          "screenshotSha256": "0c88c88cd324cd2914f9c2a8a4c2ae0eaa016b0713625022aae43e2283814a02",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 12576,
-          "inkCoverageRatio": 0.038206,
-          "whiteSpaceRatio": 0.961794,
-          "exactGroundPixelCount": 300254,
-          "exactGroundRatio": 0.912183,
+          "inkPixelCount": 15983,
+          "inkCoverageRatio": 0.048557,
+          "whiteSpaceRatio": 0.951443,
+          "exactGroundPixelCount": 298553,
+          "exactGroundRatio": 0.907015,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/browse__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 7,
@@ -923,7 +802,7 @@
           "visibleTextCharacterCount": 255,
           "proseElementCount": 3,
           "maxProseMeasureCh": 47.29,
-          "minProseMeasureCh": 37.909,
+          "minProseMeasureCh": 37.921,
           "topLevelSectionCount": 0,
           "minimumAdjacentSectionGapPx": null,
           "primaryContentLeftPaddingPx": 16,
@@ -938,16 +817,16 @@
           "resolvedPath": "/browse"
         },
         "1280x800": {
-          "screenshotSha256": "3e040060834f3e1bab065da77cf071b3b4d25e46fd3b1748468543b6e31a3f2c",
+          "screenshotSha256": "d00b26c644c108517270aa2a3a4f4ad420ea056d3ecd31d2b5b64ead60f209c6",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 21293,
-          "inkCoverageRatio": 0.020794,
-          "whiteSpaceRatio": 0.979206,
-          "exactGroundPixelCount": 815135,
-          "exactGroundRatio": 0.79603,
+          "inkPixelCount": 26342,
+          "inkCoverageRatio": 0.025725,
+          "whiteSpaceRatio": 0.974275,
+          "exactGroundPixelCount": 814114,
+          "exactGroundRatio": 0.795033,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/browse__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 9,
@@ -973,11 +852,7 @@
           "statusView": "Browse your genome",
           "resolvedPath": "/browse"
         }
-      },
-      "successorRouteIds": [
-        "genome.data",
-        "genome.browser"
-      ]
+      }
     },
     {
       "route": "/changelog",
@@ -986,16 +861,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "9014558fcb577cf1f4fbd76d230d284d13295c57571b99ff60f5e39f33fff3d9",
+          "screenshotSha256": "a1b83e5a3058c15e55216f4161135f8d80fe8a182020be6160ef4459d835bd3e",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 21900,
-          "inkCoverageRatio": 0.066533,
-          "whiteSpaceRatio": 0.933467,
-          "exactGroundPixelCount": 299986,
-          "exactGroundRatio": 0.911368,
+          "inkPixelCount": 28968,
+          "inkCoverageRatio": 0.088006,
+          "whiteSpaceRatio": 0.911994,
+          "exactGroundPixelCount": 294469,
+          "exactGroundRatio": 0.894607,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/changelog__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -1022,16 +897,16 @@
           "resolvedPath": "/changelog"
         },
         "1280x800": {
-          "screenshotSha256": "2e40404fb86c8d4ea615a0964793a0005985b528117101e29e6e2aed0da2af86",
+          "screenshotSha256": "7c51cf03cd6b9ce5bda67e3c1541a6f85a62a2ac873a4525c43361955d9b65be",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 31722,
-          "inkCoverageRatio": 0.030979,
-          "whiteSpaceRatio": 0.969021,
-          "exactGroundPixelCount": 978739,
-          "exactGroundRatio": 0.9558,
+          "inkPixelCount": 43091,
+          "inkCoverageRatio": 0.042081,
+          "whiteSpaceRatio": 0.957919,
+          "exactGroundPixelCount": 969749,
+          "exactGroundRatio": 0.947021,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/changelog__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -1057,10 +932,7 @@
           "statusView": "New reports, continuously.",
           "resolvedPath": "/changelog"
         }
-      },
-      "successorRouteIds": [
-        "marketing.changelog"
-      ]
+      }
     },
     {
       "route": "/chat",
@@ -1069,16 +941,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "459c04d2914737ceb17b0159784b222a19cc102f7db762ac6606a9e81025d818",
+          "screenshotSha256": "138232d5e55130a4e9e253f5faf667f60ce7795c4fd53f63a045114cc3d4ee7b",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 28436,
-          "inkCoverageRatio": 0.08639,
-          "whiteSpaceRatio": 0.91361,
-          "exactGroundPixelCount": 90114,
-          "exactGroundRatio": 0.27377,
+          "inkPixelCount": 40196,
+          "inkCoverageRatio": 0.122117,
+          "whiteSpaceRatio": 0.877883,
+          "exactGroundPixelCount": 89293,
+          "exactGroundRatio": 0.271275,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/chat__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1105,16 +977,16 @@
           "resolvedPath": "/chat"
         },
         "1280x800": {
-          "screenshotSha256": "98282f867bc4e0b58916300e0800e4c9fe2d7372331df8e59135434fc105a0be",
+          "screenshotSha256": "d644eaa2f05d58deb2f7f25a2eb49ea28f2971f47db8410a1346e54ef2665270",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 41860,
-          "inkCoverageRatio": 0.040879,
-          "whiteSpaceRatio": 0.959121,
-          "exactGroundPixelCount": 414767,
-          "exactGroundRatio": 0.405046,
+          "inkPixelCount": 57182,
+          "inkCoverageRatio": 0.055842,
+          "whiteSpaceRatio": 0.944158,
+          "exactGroundPixelCount": 414283,
+          "exactGroundRatio": 0.404573,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/chat__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 9,
@@ -1140,10 +1012,7 @@
           "statusView": "Ask your genome",
           "resolvedPath": "/chat"
         }
-      },
-      "successorRouteIds": [
-        "copilot.scope"
-      ]
+      }
     },
     {
       "route": "/dashboard",
@@ -1152,16 +1021,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "57b2380dd981fc52689fb129cbb08631391852de7d620bee49df80487ac31eb9",
+          "screenshotSha256": "cc1e7ac36e31e64fb92f62979e6d664ac30c7b4082829db5538c9ec69ee47546",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 16533,
-          "inkCoverageRatio": 0.050228,
-          "whiteSpaceRatio": 0.949772,
-          "exactGroundPixelCount": 146837,
-          "exactGroundRatio": 0.446096,
+          "inkPixelCount": 21133,
+          "inkCoverageRatio": 0.064203,
+          "whiteSpaceRatio": 0.935797,
+          "exactGroundPixelCount": 145467,
+          "exactGroundRatio": 0.441934,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/dashboard__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 7,
@@ -1173,7 +1042,7 @@
           "visibleTextCharacterCount": 384,
           "proseElementCount": 18,
           "maxProseMeasureCh": 47.29,
-          "minProseMeasureCh": 16.894,
+          "minProseMeasureCh": 16.893,
           "topLevelSectionCount": 0,
           "minimumAdjacentSectionGapPx": null,
           "primaryContentLeftPaddingPx": 16,
@@ -1188,16 +1057,16 @@
           "resolvedPath": "/dashboard"
         },
         "1280x800": {
-          "screenshotSha256": "7acb5a1fd4b2ffb7e5ba7331898bb6f30aa9a5e38a3c73f32925c5eb36d39a4d",
+          "screenshotSha256": "b0f67cec3066226b1702ef0fc14693de5cb2328302fe6f7204996fc4be481cb4",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 41640,
-          "inkCoverageRatio": 0.040664,
-          "whiteSpaceRatio": 0.959336,
-          "exactGroundPixelCount": 542139,
-          "exactGroundRatio": 0.529433,
+          "inkPixelCount": 53522,
+          "inkCoverageRatio": 0.052268,
+          "whiteSpaceRatio": 0.947732,
+          "exactGroundPixelCount": 539919,
+          "exactGroundRatio": 0.527265,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/dashboard__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 12,
@@ -1209,7 +1078,7 @@
           "visibleTextCharacterCount": 1025,
           "proseElementCount": 20,
           "maxProseMeasureCh": 131.038,
-          "minProseMeasureCh": 10.372,
+          "minProseMeasureCh": 10.371,
           "topLevelSectionCount": 0,
           "minimumAdjacentSectionGapPx": null,
           "primaryContentLeftPaddingPx": 256,
@@ -1223,11 +1092,7 @@
           "statusView": "Your genome, at a glance.",
           "resolvedPath": "/dashboard"
         }
-      },
-      "successorRouteIds": [
-        "app.overview",
-        "genome.subject"
-      ]
+      }
     },
     {
       "route": "/legal/deceased",
@@ -1236,16 +1101,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "17348e4b269d9ac56d404986ffff6715270a96d5abb74e44de8677b039ea55ff",
+          "screenshotSha256": "fdfccb914b8322200f2109324c771d4a2caaba73e4dae7c0fec801ed7de6372b",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 27617,
-          "inkCoverageRatio": 0.083901,
-          "whiteSpaceRatio": 0.916099,
-          "exactGroundPixelCount": 292670,
-          "exactGroundRatio": 0.889142,
+          "inkPixelCount": 36820,
+          "inkCoverageRatio": 0.11186,
+          "whiteSpaceRatio": 0.88814,
+          "exactGroundPixelCount": 285383,
+          "exactGroundRatio": 0.867004,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-deceased__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1272,16 +1137,16 @@
           "resolvedPath": "/legal/deceased"
         },
         "1280x800": {
-          "screenshotSha256": "7474636a4202570cba0941ea322bf40cbe677bdf9a7927c785c410250dddad81",
+          "screenshotSha256": "efe99d87e375574acb00814e627da2aa8443078d5965dec0d5e16535771f7d60",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 50090,
-          "inkCoverageRatio": 0.048916,
-          "whiteSpaceRatio": 0.951084,
-          "exactGroundPixelCount": 956826,
-          "exactGroundRatio": 0.9344,
+          "inkPixelCount": 66979,
+          "inkCoverageRatio": 0.065409,
+          "whiteSpaceRatio": 0.934591,
+          "exactGroundPixelCount": 943706,
+          "exactGroundRatio": 0.921588,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-deceased__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -1307,10 +1172,7 @@
           "statusView": "Deceased customers.",
           "resolvedPath": "/legal/deceased"
         }
-      },
-      "successorRouteIds": [
-        "legal.deceased"
-      ]
+      }
     },
     {
       "route": "/legal/gina",
@@ -1319,16 +1181,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "b49d77cf9a9da3ccd4dd9df42df342ce500877840efc0ddc96488338a175d1fe",
+          "screenshotSha256": "b2deb42167e687f901b4e6b87af4d5e4fc3d0e70d216ca278d64699ee1e9c7f3",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 26230,
-          "inkCoverageRatio": 0.079688,
-          "whiteSpaceRatio": 0.920312,
-          "exactGroundPixelCount": 294266,
-          "exactGroundRatio": 0.893991,
+          "inkPixelCount": 35011,
+          "inkCoverageRatio": 0.106365,
+          "whiteSpaceRatio": 0.893635,
+          "exactGroundPixelCount": 287276,
+          "exactGroundRatio": 0.872755,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-gina__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1355,16 +1217,16 @@
           "resolvedPath": "/legal/gina"
         },
         "1280x800": {
-          "screenshotSha256": "c54d69b3bbfa2e97d85657936fbb0f0063a916cc7c2384d7d14924c847e7019e",
+          "screenshotSha256": "e879f8c19ee4fe543eaa485e74be05f29fdff7a32c9d1070539d6da6d6a9d493",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 56964,
-          "inkCoverageRatio": 0.055629,
-          "whiteSpaceRatio": 0.944371,
-          "exactGroundPixelCount": 947344,
-          "exactGroundRatio": 0.925141,
+          "inkPixelCount": 77667,
+          "inkCoverageRatio": 0.075847,
+          "whiteSpaceRatio": 0.924153,
+          "exactGroundPixelCount": 931034,
+          "exactGroundRatio": 0.909213,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-gina__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1390,10 +1252,7 @@
           "statusView": "GINA, explained.",
           "resolvedPath": "/legal/gina"
         }
-      },
-      "successorRouteIds": [
-        "legal.gina"
-      ]
+      }
     },
     {
       "route": "/legal/law-enforcement",
@@ -1402,16 +1261,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "78291e1d780e92e8fcbd8004c038fb4971ec9091ce9824c1201c416fb374a2e4",
+          "screenshotSha256": "08a09a8df7771f4ef9a1e663c3b8ecf294fd67019b9effa0f4415d40330e533e",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 25494,
-          "inkCoverageRatio": 0.077452,
-          "whiteSpaceRatio": 0.922548,
-          "exactGroundPixelCount": 295622,
-          "exactGroundRatio": 0.89811,
+          "inkPixelCount": 33497,
+          "inkCoverageRatio": 0.101765,
+          "whiteSpaceRatio": 0.898235,
+          "exactGroundPixelCount": 289479,
+          "exactGroundRatio": 0.879448,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-law-enforcement__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1438,16 +1297,16 @@
           "resolvedPath": "/legal/law-enforcement"
         },
         "1280x800": {
-          "screenshotSha256": "b6cb15adecdb352ca0fc69fbdddfbdac26fadede013b4c9344a1fc0aa37f190a",
+          "screenshotSha256": "e40c19de09e9eff4bc9e4b502e4747fdd62d2b500aa28bf2fa63c782603f5443",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 60912,
-          "inkCoverageRatio": 0.059484,
-          "whiteSpaceRatio": 0.940516,
-          "exactGroundPixelCount": 943077,
-          "exactGroundRatio": 0.920974,
+          "inkPixelCount": 82431,
+          "inkCoverageRatio": 0.080499,
+          "whiteSpaceRatio": 0.919501,
+          "exactGroundPixelCount": 926518,
+          "exactGroundRatio": 0.904803,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-law-enforcement__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -1473,10 +1332,7 @@
           "statusView": "Law enforcement & transparency.",
           "resolvedPath": "/legal/law-enforcement"
         }
-      },
-      "successorRouteIds": [
-        "legal.law-enforcement"
-      ]
+      }
     },
     {
       "route": "/legal/research-consent",
@@ -1485,16 +1341,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "36cdddfff0cb06fc278f9757abf3184edb42417910a60508f0947dbd1dfca5f1",
+          "screenshotSha256": "e79e1c73a6560fed510499d7f5812d1a24e92bc5972838cd12c912b6bb9f496a",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 26443,
-          "inkCoverageRatio": 0.080335,
-          "whiteSpaceRatio": 0.919665,
-          "exactGroundPixelCount": 294301,
-          "exactGroundRatio": 0.894097,
+          "inkPixelCount": 35174,
+          "inkCoverageRatio": 0.10686,
+          "whiteSpaceRatio": 0.89314,
+          "exactGroundPixelCount": 287371,
+          "exactGroundRatio": 0.873044,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-research-consent__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1521,16 +1377,16 @@
           "resolvedPath": "/legal/research-consent"
         },
         "1280x800": {
-          "screenshotSha256": "b9399fe9765e7200150bc4bb3d1a9f83ce46df88b15d056c79c2c87055d554f6",
+          "screenshotSha256": "4cfd2f8eff56e88f635c5cce1ed223a71aa30f550e760f5b27548265026efe4f",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 53502,
-          "inkCoverageRatio": 0.052248,
-          "whiteSpaceRatio": 0.947752,
-          "exactGroundPixelCount": 951998,
-          "exactGroundRatio": 0.929686,
+          "inkPixelCount": 72314,
+          "inkCoverageRatio": 0.070619,
+          "whiteSpaceRatio": 0.929381,
+          "exactGroundPixelCount": 937647,
+          "exactGroundRatio": 0.915671,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/legal-research-consent__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -1556,10 +1412,7 @@
           "statusView": "Research consent.",
           "resolvedPath": "/legal/research-consent"
         }
-      },
-      "successorRouteIds": [
-        "legal.research-consent"
-      ]
+      }
     },
     {
       "route": "/privacy",
@@ -1568,16 +1421,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "a6f813a9bffc1d4d2f5f14edb7f7eef8f0282b7300be2da2eb0a1e97ea159170",
+          "screenshotSha256": "aac734fea7af62b6f54bc1b05f9cb20661430c06cb05db9ac19f8cb9f3bac6d1",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 28006,
-          "inkCoverageRatio": 0.085083,
-          "whiteSpaceRatio": 0.914917,
-          "exactGroundPixelCount": 291797,
-          "exactGroundRatio": 0.88649,
+          "inkPixelCount": 37482,
+          "inkCoverageRatio": 0.113872,
+          "whiteSpaceRatio": 0.886128,
+          "exactGroundPixelCount": 284203,
+          "exactGroundRatio": 0.863419,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/privacy__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -1604,16 +1457,16 @@
           "resolvedPath": "/privacy"
         },
         "1280x800": {
-          "screenshotSha256": "fe9d213c055b536f032853fce89e4310352a6c74d93d5a0960866873f57b6f44",
+          "screenshotSha256": "f6340c658d0d49fded97cd0dbb6e2478d14152a674e696a02dad1136dce43c89",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 58155,
-          "inkCoverageRatio": 0.056792,
-          "whiteSpaceRatio": 0.943208,
-          "exactGroundPixelCount": 945435,
-          "exactGroundRatio": 0.923276,
+          "inkPixelCount": 78264,
+          "inkCoverageRatio": 0.07643,
+          "whiteSpaceRatio": 0.92357,
+          "exactGroundPixelCount": 929989,
+          "exactGroundRatio": 0.908192,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/privacy__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -1639,10 +1492,7 @@
           "statusView": "Privacy policy.",
           "resolvedPath": "/privacy"
         }
-      },
-      "successorRouteIds": [
-        "legal.privacy"
-      ]
+      }
     },
     {
       "route": "/providers",
@@ -1651,16 +1501,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "533d37a6752e87f488a4646818d0ad13cf41e643b2bcccb32467826b4d9bb2af",
+          "screenshotSha256": "1fe62a2800a71e5bab1713dc6db262646f82647f24d2c54d09ca79ad47a4d6c9",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 29483,
-          "inkCoverageRatio": 0.08957,
-          "whiteSpaceRatio": 0.91043,
-          "exactGroundPixelCount": 194925,
-          "exactGroundRatio": 0.592189,
+          "inkPixelCount": 39298,
+          "inkCoverageRatio": 0.119389,
+          "whiteSpaceRatio": 0.880611,
+          "exactGroundPixelCount": 191053,
+          "exactGroundRatio": 0.580426,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/providers__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1687,16 +1537,16 @@
           "resolvedPath": "/providers"
         },
         "1280x800": {
-          "screenshotSha256": "db4ff8941bad6b5efec0de9828a8eabc1baf5292d388b441efcd5f1a1041f6e3",
+          "screenshotSha256": "7051aac69823d8849887bf370df78b6281c12e7002b0926f829dee52512fd5fe",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 76066,
-          "inkCoverageRatio": 0.074283,
-          "whiteSpaceRatio": 0.925717,
-          "exactGroundPixelCount": 581979,
-          "exactGroundRatio": 0.568339,
+          "inkPixelCount": 90750,
+          "inkCoverageRatio": 0.088623,
+          "whiteSpaceRatio": 0.911377,
+          "exactGroundPixelCount": 577896,
+          "exactGroundRatio": 0.564352,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/providers__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 8,
@@ -1722,10 +1572,7 @@
           "statusView": "Buy sequencing from a real provider.",
           "resolvedPath": "/providers"
         }
-      },
-      "successorRouteIds": [
-        "marketing.providers"
-      ]
+      }
     },
     {
       "route": "/reports",
@@ -1734,16 +1581,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "d75859a168e51c9e69e670185be48e32ace7964f1e42249c11c0a29d871eaf3e",
+          "screenshotSha256": "34dd9549adc1b01f301f7ac339f398a3ac9744f3b1db266cb68ba59f595b30d0",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 60300,
-          "inkCoverageRatio": 0.183194,
-          "whiteSpaceRatio": 0.816806,
-          "exactGroundPixelCount": 143153,
-          "exactGroundRatio": 0.434904,
+          "inkPixelCount": 68646,
+          "inkCoverageRatio": 0.208549,
+          "whiteSpaceRatio": 0.791451,
+          "exactGroundPixelCount": 140624,
+          "exactGroundRatio": 0.427221,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/reports__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1770,16 +1617,16 @@
           "resolvedPath": "/reports"
         },
         "1280x800": {
-          "screenshotSha256": "b0c88946b561bd3f49464ff44ff740b7950f1176c7c2407f0a40e4e421169719",
+          "screenshotSha256": "5fd79c749810a3a999d06a1b46da4c1428d83cc870947d93dbfd04ed4eef1695",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 153637,
-          "inkCoverageRatio": 0.150036,
-          "whiteSpaceRatio": 0.849964,
-          "exactGroundPixelCount": 435173,
-          "exactGroundRatio": 0.424974,
+          "inkPixelCount": 164779,
+          "inkCoverageRatio": 0.160917,
+          "whiteSpaceRatio": 0.839083,
+          "exactGroundPixelCount": 432926,
+          "exactGroundRatio": 0.422779,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/reports__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 6,
@@ -1805,10 +1652,7 @@
           "statusView": "Reports",
           "resolvedPath": "/reports"
         }
-      },
-      "successorRouteIds": [
-        "genome.reports"
-      ]
+      }
     },
     {
       "route": "/reports/[slug]",
@@ -1817,16 +1661,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "1ebd16f56ae3bf0772c73d80dfa8c1b08a2194b845f73dd054857439af7326f7",
+          "screenshotSha256": "f100ba29679e576c0cfd5646907f94a547fe48c95e13648e322b668abb6e05e2",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 31835,
-          "inkCoverageRatio": 0.096716,
-          "whiteSpaceRatio": 0.903284,
-          "exactGroundPixelCount": 195754,
-          "exactGroundRatio": 0.594708,
+          "inkPixelCount": 42827,
+          "inkCoverageRatio": 0.13011,
+          "whiteSpaceRatio": 0.86989,
+          "exactGroundPixelCount": 190322,
+          "exactGroundRatio": 0.578205,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/reports-type-2-diabetes-tcf7l2-rs7903146__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -1838,7 +1682,7 @@
           "visibleTextCharacterCount": 971,
           "proseElementCount": 9,
           "maxProseMeasureCh": 47.29,
-          "minProseMeasureCh": 21.01,
+          "minProseMeasureCh": 21.002,
           "topLevelSectionCount": 2,
           "minimumAdjacentSectionGapPx": 32,
           "primaryContentLeftPaddingPx": 16,
@@ -1853,16 +1697,16 @@
           "resolvedPath": "/reports/type-2-diabetes-tcf7l2-rs7903146"
         },
         "1280x800": {
-          "screenshotSha256": "0a3c3463ce397156fc732c5f69877570233bcdcb0bce31a80cd9e91935280c2e",
+          "screenshotSha256": "64d4733960f67cc7ebaa9ffe0fa33dc09b644fd5cee97f1a12afc75592311036",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 48172,
-          "inkCoverageRatio": 0.047043,
-          "whiteSpaceRatio": 0.952957,
-          "exactGroundPixelCount": 666314,
-          "exactGroundRatio": 0.650697,
+          "inkPixelCount": 64300,
+          "inkCoverageRatio": 0.062793,
+          "whiteSpaceRatio": 0.937207,
+          "exactGroundPixelCount": 658200,
+          "exactGroundRatio": 0.642773,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/reports-type-2-diabetes-tcf7l2-rs7903146__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 7,
@@ -1874,7 +1718,7 @@
           "visibleTextCharacterCount": 1420,
           "proseElementCount": 11,
           "maxProseMeasureCh": 101.449,
-          "minProseMeasureCh": 21.01,
+          "minProseMeasureCh": 21.002,
           "topLevelSectionCount": 2,
           "minimumAdjacentSectionGapPx": 32,
           "primaryContentLeftPaddingPx": 368,
@@ -1888,10 +1732,7 @@
           "statusView": "Type 2 diabetes · TCF7L2",
           "resolvedPath": "/reports/type-2-diabetes-tcf7l2-rs7903146"
         }
-      },
-      "successorRouteIds": [
-        "genome.report"
-      ]
+      }
     },
     {
       "route": "/settings",
@@ -1900,16 +1741,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "cd1d1a455eed8ec4ed646342dd81d5ceb611466bae88647817e8a257eba54d77",
+          "screenshotSha256": "439f023818afe3dce20d79fd34982c1c38e5dea598a7f95790236bc01aa271d8",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 20757,
-          "inkCoverageRatio": 0.063061,
-          "whiteSpaceRatio": 0.936939,
-          "exactGroundPixelCount": 294737,
-          "exactGroundRatio": 0.895422,
+          "inkPixelCount": 27388,
+          "inkCoverageRatio": 0.083206,
+          "whiteSpaceRatio": 0.916794,
+          "exactGroundPixelCount": 292046,
+          "exactGroundRatio": 0.887246,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/settings__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 9,
@@ -1936,16 +1777,16 @@
           "resolvedPath": "/settings"
         },
         "1280x800": {
-          "screenshotSha256": "800c3500041c45d2f456d10a06583aa633d512530544f607db3f5ac97da1aa6b",
+          "screenshotSha256": "1a3324701861be12bf9dbc8a6ef7826d74c1888c6b23f804074457b5960e0de3",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 27662,
-          "inkCoverageRatio": 0.027014,
-          "whiteSpaceRatio": 0.972986,
-          "exactGroundPixelCount": 805359,
-          "exactGroundRatio": 0.786483,
+          "inkPixelCount": 34757,
+          "inkCoverageRatio": 0.033942,
+          "whiteSpaceRatio": 0.966058,
+          "exactGroundPixelCount": 804772,
+          "exactGroundRatio": 0.78591,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/settings__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 10,
@@ -1971,14 +1812,7 @@
           "statusView": "Settings",
           "resolvedPath": "/settings"
         }
-      },
-      "successorRouteIds": [
-        "settings.index",
-        "settings.data",
-        "settings.copilot",
-        "settings.people",
-        "settings.consents"
-      ]
+      }
     },
     {
       "route": "/terms",
@@ -1987,16 +1821,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "6c2cff3c4328c6100388e632b591b5d0c8f8dc26198e9cdae4e7f169225bdda6",
+          "screenshotSha256": "3385b99411b6918e4fef6affa180365eabb8aaaa0f5c38a4f332bc7fad5cd7c4",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 24256,
-          "inkCoverageRatio": 0.073691,
-          "whiteSpaceRatio": 0.926309,
-          "exactGroundPixelCount": 296689,
-          "exactGroundRatio": 0.901352,
+          "inkPixelCount": 32421,
+          "inkCoverageRatio": 0.098496,
+          "whiteSpaceRatio": 0.901504,
+          "exactGroundPixelCount": 289963,
+          "exactGroundRatio": 0.880918,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/terms__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 4,
@@ -2023,16 +1857,16 @@
           "resolvedPath": "/terms"
         },
         "1280x800": {
-          "screenshotSha256": "2fc4706aa9a7613c274706459d8740a70973e258c6d862e57fa884026d4d4511",
+          "screenshotSha256": "01def8e9be7b44ad14b4b8400bfa25daac81f593b81845181682cae19d4f228c",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 55902,
-          "inkCoverageRatio": 0.054592,
-          "whiteSpaceRatio": 0.945408,
-          "exactGroundPixelCount": 948167,
-          "exactGroundRatio": 0.925944,
+          "inkPixelCount": 74329,
+          "inkCoverageRatio": 0.072587,
+          "whiteSpaceRatio": 0.927413,
+          "exactGroundPixelCount": 934164,
+          "exactGroundRatio": 0.91227,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/terms__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 5,
@@ -2058,10 +1892,7 @@
           "statusView": "Terms of service.",
           "resolvedPath": "/terms"
         }
-      },
-      "successorRouteIds": [
-        "legal.terms"
-      ]
+      }
     },
     {
       "route": "/uploads",
@@ -2070,16 +1901,16 @@
       "state": "complete",
       "measurements": {
         "390x844": {
-          "screenshotSha256": "bcd8f272f9b2008113b32f1cae18d816bb3afe260adc48abb1432d7a4b75f0e7",
+          "screenshotSha256": "13dbe6f4d95fe54cf668794389e3ccbef211c42f41eaa215b2582eb573b6ab8e",
           "screenshotWidthPx": 390,
           "screenshotHeightPx": 844,
           "includedPixelCount": 329160,
           "excludedPixelCount": 0,
-          "inkPixelCount": 27486,
-          "inkCoverageRatio": 0.083503,
-          "whiteSpaceRatio": 0.916497,
-          "exactGroundPixelCount": 168838,
-          "exactGroundRatio": 0.512936,
+          "inkPixelCount": 37237,
+          "inkCoverageRatio": 0.113127,
+          "whiteSpaceRatio": 0.886873,
+          "exactGroundPixelCount": 165655,
+          "exactGroundRatio": 0.503266,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/uploads__390x844.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 8,
@@ -2091,7 +1922,7 @@
           "visibleTextCharacterCount": 831,
           "proseElementCount": 9,
           "maxProseMeasureCh": 47.29,
-          "minProseMeasureCh": 27.261,
+          "minProseMeasureCh": 27.253,
           "topLevelSectionCount": 0,
           "minimumAdjacentSectionGapPx": null,
           "primaryContentLeftPaddingPx": 16,
@@ -2106,16 +1937,16 @@
           "resolvedPath": "/uploads"
         },
         "1280x800": {
-          "screenshotSha256": "368f18df07f4a4c5700c32e980d36f56122d9b424d6fc5da8bd433b1a91d4558",
+          "screenshotSha256": "7d5263856a5e51d13adce2ea200d32b8fb64398591ea901cf489e6fdcb34908e",
           "screenshotWidthPx": 1280,
           "screenshotHeightPx": 800,
           "includedPixelCount": 1024000,
           "excludedPixelCount": 0,
-          "inkPixelCount": 36150,
-          "inkCoverageRatio": 0.035303,
-          "whiteSpaceRatio": 0.964697,
-          "exactGroundPixelCount": 578976,
-          "exactGroundRatio": 0.565406,
+          "inkPixelCount": 47319,
+          "inkCoverageRatio": 0.04621,
+          "whiteSpaceRatio": 0.95379,
+          "exactGroundPixelCount": 576107,
+          "exactGroundRatio": 0.562604,
           "screenshotPath": "docs/evidence/density-baseline/screenshots/uploads__1280x800.png",
           "pixelExclusionRectCount": 0,
           "interactiveElementCount": 10,
@@ -2141,501 +1972,7 @@
           "statusView": "My files",
           "resolvedPath": "/uploads"
         }
-      },
-      "successorRouteIds": [
-        "files.index",
-        "files.upload"
-      ]
-    }
-  ],
-  "fixture": {
-    "classification": "deterministic synthetic density fixture; no real human genome or production account",
-    "identity": "density-fixture@inherit.test",
-    "genomeSource": {
-      "path": "data/samples/synthetic_23andme.txt",
-      "sha256": "aa2cc50864d2447ff0ff8b32b7963142fddc122b15d3a5b7d9bc06673a84f1db",
-      "processedFileCount": 1,
-      "variantCount": 2135
-    },
-    "templateSource": {
-      "path": "data/templates/*.json",
-      "manifestSha256": "7cce25c85c41cfeb500d1bcdd326a1706d0f0717cc2c3567d6553ce847cbc84b",
-      "publishedTemplateCount": 151
-    },
-    "providerSource": {
-      "path": "data/providers/providers.json",
-      "sha256": "8ad31236d7e5f6067e2622418117e70dd29dbab77835b7ca03f78ec1620aa380",
-      "rowCount": 16
-    },
-    "prsSource": {
-      "path": "data/prs/*.json",
-      "manifestSha256": "4e8f435ca01d398a40f626ea4cca78a0b5f1bccb17a8c6fac355adf8f50d71ae",
-      "scoreCount": 3
-    },
-    "syntheticDerivedRows": {
-      "ancestry": "deterministic fixture-only values",
-      "haplogroup": "H",
-      "purpose": "render populated baseline states; not scientific evidence"
-    },
-    "deterministicClock": "2026-08-31T12:00:00.000Z",
-    "accessTokenSha256": "b8ea90c194b59ee2ab3f15d0d769bec35f04b2f400cd4112fd203257be4c341e",
-    "manifestHashAlgorithm": "sorted repository-relative POSIX paths; SHA-256 raw bytes; concatenate `<sha256>  <path>\\n`; SHA-256 UTF-8 manifest"
-  },
-  "relativeComparison": {
-    "rule": "For each successorRouteId above, post-change ink coverage must be no more than 60% of the mapped baseline route's ink coverage at the same viewport and state. This is brief X6.2 verbatim - \"where a route has a baseline predecessor, its ink coverage is <= 60% of that predecessor's\" - and the threshold is thresholds.whiteSpace.successorInkCoverageMaxFractionOfPredecessor, 0.6.",
-    "unmappedNewRoutes": "absolute budgets apply; relative comparison is not applicable because no honest baseline predecessor exists",
-    "routes": [
-      {
-        "baselineRoute": "/",
-        "successorRouteId": "marketing.home",
-        "successorPath": "/",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/about",
-        "successorRouteId": "marketing.about",
-        "successorPath": "/about",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/ancestry",
-        "successorRouteId": "genome.ancestry",
-        "successorPath": "/genome/[subject]/ancestry",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/auth/forgot-password",
-        "successorRouteId": "auth.forgot-password",
-        "successorPath": "/auth/forgot-password",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/auth/reset-password",
-        "successorRouteId": "auth.reset-password",
-        "successorPath": "/auth/reset-password",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/auth/sign-in",
-        "successorRouteId": "auth.sign-in",
-        "successorPath": "/auth/sign-in",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/auth/sign-up",
-        "successorRouteId": "auth.sign-up",
-        "successorPath": "/auth/sign-up",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/browse",
-        "successorRouteId": "genome.browser",
-        "successorPath": "/genome/[subject]/data/browser",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/changelog",
-        "successorRouteId": "marketing.changelog",
-        "successorPath": "/changelog",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/chat",
-        "successorRouteId": "copilot.scope",
-        "successorPath": "/copilot/[scope]",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/dashboard",
-        "successorRouteId": "app.overview",
-        "successorPath": "/overview",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/legal/deceased",
-        "successorRouteId": "legal.deceased",
-        "successorPath": "/legal/deceased",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/legal/gina",
-        "successorRouteId": "legal.gina",
-        "successorPath": "/legal/gina",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/legal/law-enforcement",
-        "successorRouteId": "legal.law-enforcement",
-        "successorPath": "/legal/law-enforcement",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/legal/research-consent",
-        "successorRouteId": "legal.research-consent",
-        "successorPath": "/legal/research-consent",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/privacy",
-        "successorRouteId": "legal.privacy",
-        "successorPath": "/privacy",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/providers",
-        "successorRouteId": "marketing.providers",
-        "successorPath": "/providers",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/reports",
-        "successorRouteId": "genome.reports",
-        "successorPath": "/genome/[subject]/reports",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/reports/[slug]",
-        "successorRouteId": "genome.report",
-        "successorPath": "/genome/[subject]/reports/[slug]",
-        "basis": "the register's own redirect disposition"
-      },
-      {
-        "baselineRoute": "/settings",
-        "successorRouteId": "settings.index",
-        "successorPath": "/settings",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/terms",
-        "successorRouteId": "legal.terms",
-        "successorPath": "/terms",
-        "basis": "kept at the same path"
-      },
-      {
-        "baselineRoute": "/uploads",
-        "successorRouteId": "files.index",
-        "successorPath": "/files",
-        "basis": "the register's own redirect disposition"
-      }
-    ],
-    "derivation": "Not authored here. Every row is read out of docs/route-register.json: a baseline route the register still carries with a redirect disposition maps to that disposition's target, and one the register keeps maps to itself. scripts/density-successors.test.ts rebuilds this list from the register and compares it, so a rename that moves a successor fails rather than leaving a comparison pointing at the wrong page. Derived 2026-09-11; all 22 baseline routes resolve, so `unmappedNewRoutes` describes no route today.",
-    "proposedChange": "PROPOSED, NOT APPLIED, 2026-09-14. Asked whether a successor should be held to 60% of its predecessor's ink or merely to no more than 100%, the operator chose no-denser: 1.0. That answer is recorded and it is not in force here, because it collides with the brief in two places the question did not put in front of them. X6.2 states the 60% as the rule and closes with \"ceilings may be lowered, never raised\", so 0.6 to 1.0 is the one direction that clause forbids; and the brief's summary line gives the reason for the number rather than leaving it unexplained - \"the brief asks for far more white space than today, so an absolute floor alone would let today's app pass unchanged\". A 60% rule is deliberately a demand that the rewrite be much sparser, not a transcription of \"no denser\". Raising it is the operator's to decide and is theirs to sign, so it is filed as item 14 of docs/protocol/brief-corrections-proposed.md with the measured consequence of each threshold, and nothing here or in ADR-0029 was changed to anticipate the signature. Note what the choice is worth: at 0.6 the comparison passes 3 of 44, at 1.0 it passes 26 of 44."
-  },
-  "postChange": {
-    "status": "measured-with-findings",
-    "reason": "Still pending, and the blocker is now MEASURED rather than asserted. Three facts stand from 2026-09-11: the successor map carries all 22 rows so the relative rule has something to compare against; the 44px control scale landed on 2026-09-11 and changes the rendered height of every surface carrying a link, so this capture is owed rather than optional; and ink coverage is a pixel measurement taken on macOS 26.5.1 arm64 with Google Chrome 151. MEASURED 2026-09-14. scripts/density-baseline/reproduce.sh was run on Linux (6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2) against the same frozen baseline commit, and the two captures were compared route by route. Ink coverage is systematically HIGHER on Linux: mean +28.5% relative at 390x844 (max +41.4%) and +26.5% at 1280x800 (max +36.6%), on identical markup. Against a relative rule whose threshold is 60% of the baseline, a platform shift of that size is not noise, so the equivalence requirement is confirmed with evidence rather than by argument. AND THE BLOCKER IS NARROWER THAN IT LOOKED. Every non-pixel measure was IDENTICAL across the two platforms: interactive element counts, visible text character counts and prose element counts matched on all 44 captures, zero differences. So only inkCoverageRatio, whiteSpaceRatio and exactGroundRatio need one machine; the element and text budgets never did. THE SECOND BLOCKER, WHICH WAS NOT RECORDED BEFORE AND IS THE LARGER ONE: there is no post-change capture harness. capture.mjs reads contract.routes, which are the BASELINE's 22 paths, and the post-change side must measure their successors - six of which are authenticated and three of which carry a dynamic segment (/genome/[subject]/ancestry, /genome/[subject]/data/browser, /genome/[subject]/reports, /copilot/[scope]) that needs a concrete value. supabase-fixture.mjs cannot serve them: it is built FROM the baseline checkout (it reads that tree's data/templates, providers and sample genome) and stubs that product's PostgREST tables, while HEAD's authenticated pages read a much larger surface through the service role. Completing this needs either a HEAD-shaped fixture or the real local stack the browser suite already builds, plus a successor route list with concrete parameters. That is the work; the platform equivalence is a constraint on where it runs, not the reason it has not been done. PROGRESS 2026-09-14, and the recorded blocker is now half closed. (1) THE MEASUREMENT CODE IS ONE COPY. `ready` and `measure` moved to scripts/density-baseline/measure.mjs and capture.mjs imports them, because a second driver with a second copy of the reading code would have made the two halves of this comparison incomparable by drift - the exact failure this document exists to prevent. Proven unchanged rather than assumed: the frozen baseline was re-captured on Linux with the extracted module and compared against the pre-extraction Linux capture of the same morning - 0 measurement differences across all 44 captures and all 44 screenshots byte-identical. (2) THE SUCCESSOR URLS ARE DECLARED. postChange.measurementPaths carries one row per baseline route with the concrete URL to capture, the surface that decides whether the capture signs in, and the parameters behind every dynamic segment. Five successors carry one - four take the account's own `me` subject segment, and the report takes the baseline's OWN slug (type-2-diabetes-tcf7l2-rs7903146, still published) so the comparison is one page against the page that replaced it rather than against a different report that happens to render. scripts/density-successors.test.ts checks all of it against the register and the baseline. WHAT REMAINS is the driver and the run: a capture that signs into a HEAD build on the real local stack, plus a synthetic source covering both the AIM panel and chr10:112998590 so the ancestry map and that one report are in the same state their predecessors were measured in. Both halves must also use one browser build, which the Linux baseline now fixes at the Playwright Chromium the e2e suite already installs. CAPTURED AND COMPARED 2026-09-14, AND THE RELATIVE RULE FAILS. Both halves were measured on one Linux machine with one browser build, 22 routes and 44 measurements on each side, and the row-by-row result is in postChange.comparison with its evidence under docs/evidence/density-post-change/. Against brief X6.2's rule - a successor's ink coverage at or below 60% of its predecessor's - THREE of the 44 measurements pass and 41 do not. The median ratio is 0.98: the rewrite is, at these 22 surfaces and in the first viewport, about as inky as the product it replaced, where X6.2 asks it to be 40% sparser. That is the finding, it is not a close call, and it is not fixable by re-capturing. The status is measured-with-findings rather than measured because the comparison exists and the rule it is measured against is not met, and because the two halves were fed different synthetic sources, which confounds 16 of the 44 rows. Neither the recorded baseline numbers nor the 44 evidence screenshots were swapped; see comparison.notSwapped.",
-    "routes": [],
-    "measurementPaths": [
-      {
-        "baselineRoute": "/",
-        "baselineMeasurementPath": "/",
-        "successorPath": "/",
-        "measurementPath": "/",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/about",
-        "baselineMeasurementPath": "/about",
-        "successorPath": "/about",
-        "measurementPath": "/about",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/ancestry",
-        "baselineMeasurementPath": "/ancestry",
-        "successorPath": "/genome/[subject]/ancestry",
-        "measurementPath": "/genome/me/ancestry",
-        "surface": "authenticated",
-        "basis": "`me` is the account's own subject segment, which is what the baseline's /ancestry showed: the signed-in person's own result.",
-        "parameters": {
-          "subject": "me"
-        }
-      },
-      {
-        "baselineRoute": "/auth/forgot-password",
-        "baselineMeasurementPath": "/auth/forgot-password",
-        "successorPath": "/auth/forgot-password",
-        "measurementPath": "/auth/forgot-password",
-        "surface": "auth",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/auth/reset-password",
-        "baselineMeasurementPath": "/auth/reset-password",
-        "successorPath": "/auth/reset-password",
-        "measurementPath": "/auth/reset-password",
-        "surface": "auth",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/auth/sign-in",
-        "baselineMeasurementPath": "/auth/sign-in",
-        "successorPath": "/auth/sign-in",
-        "measurementPath": "/auth/sign-in",
-        "surface": "auth",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/auth/sign-up",
-        "baselineMeasurementPath": "/auth/sign-up",
-        "successorPath": "/auth/sign-up",
-        "measurementPath": "/auth/sign-up",
-        "surface": "auth",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/browse",
-        "baselineMeasurementPath": "/browse",
-        "successorPath": "/genome/[subject]/data/browser",
-        "measurementPath": "/genome/me/data/browser",
-        "surface": "authenticated",
-        "basis": "The same segment. The baseline's /browse carried no query, so neither does this: the page at rest, before a search.",
-        "parameters": {
-          "subject": "me"
-        }
-      },
-      {
-        "baselineRoute": "/changelog",
-        "baselineMeasurementPath": "/changelog",
-        "successorPath": "/changelog",
-        "measurementPath": "/changelog",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/chat",
-        "baselineMeasurementPath": "/chat",
-        "successorPath": "/copilot/[scope]",
-        "measurementPath": "/copilot/me",
-        "surface": "authenticated",
-        "basis": "The scope segment is a subject segment, so the own-genome conversation is the successor to the baseline's /chat.",
-        "parameters": {
-          "scope": "me"
-        }
-      },
-      {
-        "baselineRoute": "/dashboard",
-        "baselineMeasurementPath": "/dashboard",
-        "successorPath": "/overview",
-        "measurementPath": "/overview",
-        "surface": "authenticated",
-        "basis": "Renamed but not parameterised: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/legal/deceased",
-        "baselineMeasurementPath": "/legal/deceased",
-        "successorPath": "/legal/deceased",
-        "measurementPath": "/legal/deceased",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/legal/gina",
-        "baselineMeasurementPath": "/legal/gina",
-        "successorPath": "/legal/gina",
-        "measurementPath": "/legal/gina",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/legal/law-enforcement",
-        "baselineMeasurementPath": "/legal/law-enforcement",
-        "successorPath": "/legal/law-enforcement",
-        "measurementPath": "/legal/law-enforcement",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/legal/research-consent",
-        "baselineMeasurementPath": "/legal/research-consent",
-        "successorPath": "/legal/research-consent",
-        "measurementPath": "/legal/research-consent",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/privacy",
-        "baselineMeasurementPath": "/privacy",
-        "successorPath": "/privacy",
-        "measurementPath": "/privacy",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/providers",
-        "baselineMeasurementPath": "/providers",
-        "successorPath": "/providers",
-        "measurementPath": "/providers",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/reports",
-        "baselineMeasurementPath": "/reports",
-        "successorPath": "/genome/[subject]/reports",
-        "measurementPath": "/genome/me/reports",
-        "surface": "authenticated",
-        "basis": "The same segment: the account's own report library, which is what /reports was.",
-        "parameters": {
-          "subject": "me"
-        }
-      },
-      {
-        "baselineRoute": "/reports/[slug]",
-        "baselineMeasurementPath": "/reports/type-2-diabetes-tcf7l2-rs7903146",
-        "successorPath": "/genome/[subject]/reports/[slug]",
-        "measurementPath": "/genome/me/reports/type-2-diabetes-tcf7l2-rs7903146",
-        "surface": "authenticated",
-        "basis": "THE SAME REPORT, not a convenient one. The baseline measured /reports/type-2-diabetes-tcf7l2-rs7903146 and that template is still published under that slug, so the comparison is one page against the page that replaced it rather than against a different report that happens to render.",
-        "parameters": {
-          "subject": "me",
-          "slug": "type-2-diabetes-tcf7l2-rs7903146"
-        }
-      },
-      {
-        "baselineRoute": "/settings",
-        "baselineMeasurementPath": "/settings",
-        "successorPath": "/settings",
-        "measurementPath": "/settings",
-        "surface": "authenticated",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/terms",
-        "baselineMeasurementPath": "/terms",
-        "successorPath": "/terms",
-        "measurementPath": "/terms",
-        "surface": "public",
-        "basis": "No dynamic segment: the successor path is the measurement path."
-      },
-      {
-        "baselineRoute": "/uploads",
-        "baselineMeasurementPath": "/uploads",
-        "successorPath": "/files",
-        "measurementPath": "/files",
-        "surface": "authenticated",
-        "basis": "Renamed but not parameterised: the successor path is the measurement path."
-      }
-    ],
-    "comparison": {
-      "comparedAt": "2026-09-14",
-      "rule": "ratio = post-change inkCoverageRatio / baseline inkCoverageRatio, at the same baseline route and the same viewport. withinBriefRule is ratio <= 0.6, which is brief X6.2's relative rule and the threshold docs/density-baseline.json carries. withinProposedRule is ratio <= 1.0, the operator's stated preference, which is not in force: X6.2 says ceilings may be lowered, never raised, so it needs a signed brief correction first.",
-      "platform": "Both halves on one machine: Linux 6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2, light theme, DPR 1, locale en-US, timezone UTC, service workers blocked. That is the requirement this document recorded on 2026-09-11 and it is met rather than waived: re-running the frozen baseline on Linux instead of macOS moves ink coverage by a mean of +28.5% at 390x844 and +26.5% at 1280x800 on identical markup, which is larger than most of the differences being looked for.",
-      "baselineHalf": "scripts/density-baseline/reproduce.sh against the frozen baseline commit 864736979c92a08ba77e8580d61946eba6864918.",
-      "postChangeHalf": "e2e/density-post-change.density.spec.ts against a HEAD build on the real local stack, with the account built through the real upload journey rather than inserted. The tree measured was f86e2f428b3b7b38dd867aedd9874e408c6c63b3, which is byte-identical to the tree of 445664bfbaafaa81327082be84e8b2ac5764304f. The computed file's own baseline.commitSha field is a header inherited from this contract and does not describe that half.",
-      "summary": {
-        "routes": 22,
-        "measurements": 44,
-        "briefRule": {
-          "threshold": 0.6,
-          "within": 3,
-          "over": 41
-        },
-        "proposedRule": {
-          "threshold": 1.0,
-          "within": 26,
-          "over": 18
-        },
-        "median": 0.9803,
-        "min": 0.3664,
-        "max": 1.8039,
-        "bySurface": {
-          "public": {
-            "measurements": 20,
-            "median": 0.9473,
-            "min": 0.6411,
-            "max": 1.1366,
-            "overBriefRule": 20,
-            "overProposedRule": 5
-          },
-          "auth": {
-            "measurements": 8,
-            "median": 1.1299,
-            "min": 1.1001,
-            "max": 1.1482,
-            "overBriefRule": 8,
-            "overProposedRule": 8
-          },
-          "authenticated": {
-            "measurements": 16,
-            "median": 0.9762,
-            "min": 0.3664,
-            "max": 1.8039,
-            "overBriefRule": 13,
-            "overProposedRule": 5
-          }
-        }
-      },
-      "named": [
-        {
-          "finding": "THE HEADLINE: the median ratio is 0.9803, so the rewrite is about as inky as the product it replaced.",
-          "rows": "All 44 measurements. Within brief X6.2 (<= 0.6): 3. Over it: 41. Range 0.3664 to 1.8039.",
-          "evidence": "Twenty-six of the 44 are at or below 1.0 and eighteen are above it, which is what a product that changed a great deal without getting systematically sparser looks like. Only three measurements reach 0.6, and all three are on the two authenticated surfaces most exposed to the fixture confound below - /genome/me/ancestry at 1280x800 (0.5387) and /genome/me/reports at both viewports (0.5128 and 0.3664) - so even the three that pass are the three least safe to claim.",
-          "reading": "X6.2 does not ask the successors to be no denser. It asks them to be 40% sparser, and says why: \"the brief asks for far more white space than today, so an absolute floor alone would let today's app pass unchanged\". Measured against that intent the answer is that today's app would indeed pass unchanged - the relative rule is not close to met, and no re-capture will change it. Either the surfaces get substantially sparser or the rule moves, and the second is the operator's signature rather than an engineering decision. See relativeComparison.proposedChange."
-        },
-        {
-          "finding": "The public surfaces did not get sparser; three of them got denser, and these rows carry no confound.",
-          "rows": "Twenty measurements, median 0.9473, none at or below 0.6. Above 1.0: /changelog 1.1366 and 1.0996, / 1.0782 and 1.0673, /providers 1.0711.",
-          "evidence": "No file feeds these pages, so the fixture difference cannot explain them, and interactive counts are flat (6 and 6, 6 and 6, 4 and 4; /changelog at 390x844 went 6 to 5). What moved is text: /changelog 949 to 1,022 characters at 1280x800 and 557 to 680 at 390x844, the home page 522 to 541 and 581 to 600, /providers 783 to 897. Between 2% and 22% more words in the first viewport, and ink follows.",
-          "reading": "No file feeds these pages and no accessibility collision explains them, so they are the cleanest reading of what the rewrite did to density: essentially nothing, with three surfaces drifting denser as sentences were added over five months. Twenty of twenty are outside X6.2's rule. If the 60% is kept, the public surfaces are where the work starts, because they are the only ones where the measurement is not arguable."
-        },
-        {
-          "finding": "The four auth surfaces are the clearest rise in the comparison, and the cause is the 44px control scale.",
-          "rows": "/auth/sign-in, /auth/sign-up, /auth/forgot-password, /auth/reset-password at both viewports; ratios 1.1001 to 1.1482, median 1.1299. Outside both the rule in force and the proposed one.",
-          "evidence": "These are the strongest rows in the comparison because they control themselves. Visible text character counts are IDENTICAL across the two halves on three of the four pages (141 and 141, 161 and 161, 192 and 192) and differ by two characters on the fourth (358 and 356). The same words, in the same layout, rendering 10% to 15% more ink. The 44px control scale landed on 2026-09-11 and is the only change that touches these pages; an auth page is a heading, a sentence and two or three controls, so raising every control to 44px raises its ink share by roughly this much by construction.",
-          "reading": "Not a defect and not a pass. ADR-0029 already decided this collision in terms: when the accessibility rule and the density budget conflict, the accessibility rule wins and the baseline is re-captured. A target a person cannot hit is a surface they cannot use; a density overrun is a surface that is harder to read. These eight rows are that decision showing up in the numbers, and the answer ADR-0029 prescribes is re-capture, not redesign."
-        },
-        {
-          "finding": "/dashboard -> /overview at 390x844 is the largest rise in the comparison: 1.8039.",
-          "rows": "inkCoverageRatio 0.064203 -> 0.115813; visible text 384 -> 574 characters.",
-          "evidence": "Read off the two first viewports rather than inferred. The predecessor showed four number cards above the fold - reports covered 151/151, polygenic scores 3, mtDNA haplogroup H, files 1 - each a label, a large numeral and one line. The successor shows the plain-language distinction between a statistical estimate and a specific-variant report, two headed paragraphs of it, then the primary action and the first two section cards, over a persistent bottom navigation bar that the predecessor did not have.",
-          "reading": "Both causes are deliberate and both were asked for. Separating specific variants from statistical estimates is a stated priority, and explaining the difference where a reader first meets it is the point of the surface; the bottom bar is the mobile navigation. So the honest question is not whether the page got denser - it did, by 80% - but whether that is the right trade on a 390px viewport for a beginner. That is an owner's judgement and it is recorded as open rather than answered here. Note the same route at 1280x800 is 0.9953: the rise is a mobile-only effect, which is what a fold-height argument predicts."
-        },
-        {
-          "finding": "/settings at 1280x800 is the second rise: 1.4275.",
-          "rows": "inkCoverageRatio 0.033942 -> 0.048452; visible text 612 -> 996 characters.",
-          "evidence": "The sex-chromosome section landed on 2026-09-14 and sits in the first viewport at this width: three short paragraphs saying what the record is used for, that Inherit does not work it out from the file, and what a family member can see if it is recorded, followed by the options. That is the 384 extra characters almost exactly.",
-          "reading": "The prose is the reason the section is allowed to exist at all - it is a declared record with a narrow stated use and a visible consequence, and removing the explanation to save ink would remove the part that makes it honest. The same route at 390x844 is 0.8825 - still outside X6.2's 0.6, but not a rise - because at mobile width the section falls below the fold. Open for the owner: whether a settings page may carry explanation of this length in its first viewport."
-        },
-        {
-          "finding": "The largest fall is /reports -> /genome/me/reports at 1280x800: 0.3664, with MORE text, not less - and it is one of only three rows that meet the brief.",
-          "rows": "inkCoverageRatio 0.160917 -> 0.058954; visible text 1853 -> 2944 characters.",
-          "evidence": "The predecessor's first viewport was three polygenic-score cards with filled progress bars and shaded ancestry-portability blocks - heavily inked components. The successor's first viewport is the coverage counts and the report-choice panel: four outlined cards, no fills, no bars. Sixty percent less ink carrying sixty percent more text is what that swap looks like.",
-          "reading": "Within X6.2's rule, and the number should still not be read as a 64% improvement in readability. It is mostly a change in what the first viewport is FOR, and it is the row most exposed to the fixture confound below. Two of the three passing measurements are this route."
-        }
-      ],
-      "fixtureConfound": {
-        "status": "OPEN, and it cannot be closed by argument.",
-        "what": "The two halves were not fed the same file. The baseline half serves data/samples/synthetic_23andme.txt - 2,135 variants, 151 published templates, 3 polygenic scores, fixture-only derived ancestry rows and haplogroup H - inserted directly into the out-of-tree stub at a frozen clock. The post-change half uploads e2e/fixtures/density-source-grch38.vcf - 309 rows, 97 usable panel markers - through the real journey with three purposes granted. Every measure that depends on how much a file supports is confounded by that difference.",
-        "whatBoundsIt": "Read off the post-change first viewports rather than argued, because the worry was that the smaller source left the successors measuring empty pages. It did not. The successor reports page states 11 of 11 specific-variant reports and 150 of 151 statistical estimates covered by the file, and the ancestry map renders its five regions rather than falling to the unsupported state. So the confound is about how many rows each page draws and which components render, not about one side being populated and the other blank.",
-        "whatItAffects": "Most exposed: /reports -> /genome/me/reports (0.5128 and 0.3664), /reports/[slug] -> the single report (0.9373 and 0.8403), /ancestry -> /genome/me/ancestry (1.0120 and 0.5387), /browse -> /genome/me/data/browser (1.1107 and 1.0316). Sixteen measurements in total, all of them on the authenticated surfaces. Unaffected, and therefore readable as results today: the four auth surfaces and the ten public ones, 28 of the 44 measurements, which no file feeds.",
-        "howToClose": "One file driven through both halves. That needs either a HEAD-shaped stub the baseline harness can serve, or the baseline's own sample uploaded through the real journey. The second takes less work, because the sample is in a format the product still accepts. Neither was attempted here; recording the confound was preferred to spending the run on a fix that might not hold."
-      },
-      "notSwapped": "Nothing in docs/density-baseline.json#routes changed, and no file under docs/evidence/density-baseline/ changed. The recorded baseline is still the macOS capture of 2026-08-31 and scripts/density-baseline/verify.mjs still checks it by hash. Swapping the recorded numbers and the 44 evidence screenshots is ONE change that has to be made together, after the fixture confound is closed, or the document would carry Linux numbers beside macOS images. Two practical notes for whoever does it: the two screenshot sets do not pair by filename, because the post-change set keys the single report by its baseline route id (reports-[slug]__*.png) while the baseline set keys it by the resolved slug (reports-type-2-diabetes-tcf7l2-rs7903146__*.png), so pair by baselineRoute; and the post-change computed file's captureEnvironment.browserName reads 'chromium' against the baseline's inherited 'Google Chrome' for the same 141.0.7390.37 build.",
-      "artifacts": [
-        {
-          "path": "docs/evidence/density-post-change/README.md",
-          "sha256": "7fceb8bf10077bd6f1301742153adbb97257315d5e216003d6c6acdb8427bb68"
-        },
-        {
-          "path": "docs/evidence/density-post-change/baseline-linux-computed-measurements.json",
-          "sha256": "59ba8fe69f03d2fd123460f531cf8e3cfbbb975a8f610e85e17e946d088b1ed4"
-        },
-        {
-          "path": "docs/evidence/density-post-change/post-change-computed-measurements.json",
-          "sha256": "c962f326deb2629c2c32d507d86c794d49e024e6a7a010e0d56c62b10dfd2859"
-        },
-        {
-          "path": "docs/evidence/density-post-change/comparison.json",
-          "sha256": "43023d9ce0de021f057872738a321afd9b232499f8809b60d62976284a62de6a"
-        }
-      ],
-      "thresholds": {
-        "inForce": 0.6,
-        "proposedAndUnsigned": 1.0
       }
     }
-  }
+  ]
 }
