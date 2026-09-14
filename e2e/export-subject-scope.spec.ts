@@ -75,9 +75,13 @@ test("every exported file names the subject the database resolved for it", async
   const recordEntry = archive.readFile("subject-record.json");
   expect(recordEntry, "the archive carries the subject record").not.toBeNull();
   const record = JSON.parse(recordEntry!.toString("utf8"));
+  // The exact set, not a subset: a table joining the archive is a disclosure
+  // question and must never arrive unnoticed. `subject_demographics` is the
+  // live example — it entered on 2026-09-14 with the chromosomal-sex
+  // declaration (D-031) and this assertion is what caught it.
   expect(Object.keys(record).sort()).toEqual([
     "provider_recipient_grants", "subject_account_bindings", "subject_consents",
-    "subject_principals", "subjects",
+    "subject_demographics", "subject_principals", "subjects",
   ]);
   expect(record.subjects.length, "the person's own subject is in their own record").toBeGreaterThan(0);
   for (const subject of record.subjects) {
@@ -89,11 +93,25 @@ test("every exported file names the subject the database resolved for it", async
       expect(row.account_id, `${table} row belongs to this account`).toBe(accountId);
     }
   }
+  // `subject_demographics` carries no account column, so its scoping is the
+  // subject hop `subjectRecordOf` makes: the ids the first query already
+  // narrowed to the subjects this account IS. Checked the same way as the rest.
+  for (const row of record.subject_demographics) {
+    expect(ours.has(row.subject_id), "a demographics row names a subject this account holds").toBe(true);
+  }
+  // And stated rather than left vacuous: this account declared no chromosomal
+  // sex, so the table is empty here and the loop above checks nothing. A row
+  // appearing would mean the export reached a subject this fixture never
+  // touched. `e2e/settings.spec.ts` is where a declaration is made and read
+  // back; this spec is about whose rows the archive carries.
+  expect(record.subject_demographics, "no declaration was made in this account").toHaveLength(0);
   // The manifest must not understate what the archive carries.
   const listed = (manifest.contents ?? []).find((entry: { path: string }) => entry.path === "subject-record.json");
   expect(listed, "the manifest lists the subject record").toBeTruthy();
+  // Every table in the record, which is what `subjectRecordRowCount` counts.
+  // The key-set assertion above is the pin that forces a deliberate look at a
+  // new table; this one asks only that the manifest not understate the total.
   expect(listed.count).toBe(
-    ["subjects", "subject_principals", "subject_account_bindings", "subject_consents",
-      "provider_recipient_grants"].reduce((total, table) => total + record[table].length, 0),
+    Object.values(record).reduce<number>((total, rows) => total + (rows as unknown[]).length, 0),
   );
 });
