@@ -39,7 +39,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* py-1 around the 44px search button keeps the header at the height
             the 32px account controls gave it (52px), so nothing below moves. */}
-        <header className="flex items-center justify-end gap-3 border-b border-line px-4 py-1 md:px-8">
+        <header className="flex items-center justify-end gap-3 border-b border-line px-6 py-1 md:px-8">
           {/* The global search is page chrome, outside the account landmark:
               its one button counts toward the first-viewport density budget. */}
           <GlobalSearch />
@@ -62,10 +62,16 @@ export function AppShell({
             </form>
           </nav>
         </header>
+        {/* px-6 below md, not px-4: the brief sets a 24px minimum on the left
+            edge of primary content at 390px (density
+            `thresholds.mobile390.primaryContentLeftPaddingPxMin`), and the
+            2026-09-14 measurement found all eight authenticated mobile
+            surfaces rendering 16px against it. The header matches so the
+            account controls stay in line with the content below them. */}
         <main
           id="main"
           tabIndex={-1}
-          className="min-w-0 flex-1 px-4 pt-8 pb-20 focus:outline-none md:px-8 md:pb-8"
+          className="min-w-0 flex-1 px-6 pt-8 pb-20 focus:outline-none md:px-8 md:pb-8"
         >
           {children}
         </main>

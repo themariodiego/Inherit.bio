@@ -2323,7 +2323,7 @@
   },
   "postChange": {
     "status": "measured-with-findings",
-    "reason": "Still pending, and the blocker is now MEASURED rather than asserted. Three facts stand from 2026-09-11: the successor map carries all 22 rows so the relative rule has something to compare against; the 44px control scale landed on 2026-09-11 and changes the rendered height of every surface carrying a link, so this capture is owed rather than optional; and ink coverage is a pixel measurement taken on macOS 26.5.1 arm64 with Google Chrome 151. MEASURED 2026-09-14. scripts/density-baseline/reproduce.sh was run on Linux (6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2) against the same frozen baseline commit, and the two captures were compared route by route. Ink coverage is systematically HIGHER on Linux: mean +28.5% relative at 390x844 (max +41.4%) and +26.5% at 1280x800 (max +36.6%), on identical markup. Against a relative rule whose threshold is 60% of the baseline, a platform shift of that size is not noise, so the equivalence requirement is confirmed with evidence rather than by argument. AND THE BLOCKER IS NARROWER THAN IT LOOKED. Every non-pixel measure was IDENTICAL across the two platforms: interactive element counts, visible text character counts and prose element counts matched on all 44 captures, zero differences. So only inkCoverageRatio, whiteSpaceRatio and exactGroundRatio need one machine; the element and text budgets never did. THE SECOND BLOCKER, WHICH WAS NOT RECORDED BEFORE AND IS THE LARGER ONE: there is no post-change capture harness. capture.mjs reads contract.routes, which are the BASELINE's 22 paths, and the post-change side must measure their successors - six of which are authenticated and three of which carry a dynamic segment (/genome/[subject]/ancestry, /genome/[subject]/data/browser, /genome/[subject]/reports, /copilot/[scope]) that needs a concrete value. supabase-fixture.mjs cannot serve them: it is built FROM the baseline checkout (it reads that tree's data/templates, providers and sample genome) and stubs that product's PostgREST tables, while HEAD's authenticated pages read a much larger surface through the service role. Completing this needs either a HEAD-shaped fixture or the real local stack the browser suite already builds, plus a successor route list with concrete parameters. That is the work; the platform equivalence is a constraint on where it runs, not the reason it has not been done. PROGRESS 2026-09-14, and the recorded blocker is now half closed. (1) THE MEASUREMENT CODE IS ONE COPY. `ready` and `measure` moved to scripts/density-baseline/measure.mjs and capture.mjs imports them, because a second driver with a second copy of the reading code would have made the two halves of this comparison incomparable by drift - the exact failure this document exists to prevent. Proven unchanged rather than assumed: the frozen baseline was re-captured on Linux with the extracted module and compared against the pre-extraction Linux capture of the same morning - 0 measurement differences across all 44 captures and all 44 screenshots byte-identical. (2) THE SUCCESSOR URLS ARE DECLARED. postChange.measurementPaths carries one row per baseline route with the concrete URL to capture, the surface that decides whether the capture signs in, and the parameters behind every dynamic segment. Five successors carry one - four take the account's own `me` subject segment, and the report takes the baseline's OWN slug (type-2-diabetes-tcf7l2-rs7903146, still published) so the comparison is one page against the page that replaced it rather than against a different report that happens to render. scripts/density-successors.test.ts checks all of it against the register and the baseline. WHAT REMAINS is the driver and the run: a capture that signs into a HEAD build on the real local stack, plus a synthetic source covering both the AIM panel and chr10:112998590 so the ancestry map and that one report are in the same state their predecessors were measured in. Both halves must also use one browser build, which the Linux baseline now fixes at the Playwright Chromium the e2e suite already installs. CAPTURED AND COMPARED 2026-09-14, AND THE RELATIVE RULE IS NOT MET ANYWHERE IT CAN HONESTLY BE APPLIED. Both halves were measured on one Linux machine with one browser build, 22 routes and 44 measurements on each side, and the row-by-row result is in postChange.comparison with its evidence under docs/evidence/density-post-change/. Against brief X6.2 - a successor's ink coverage at or below 60% of its predecessor's - three of the 44 pass and 41 do not, median ratio 0.9753. All three passes are on routes whose baseline predecessor was partly a fixture author's choice of numbers rather than a computed result, so among the 28 measurements with an honest predecessor there are none. The status is measured-with-findings rather than measured for that reason and for one more: 16 rows have no honest predecessor at all, which is recorded in comparison.noHonestPredecessor and which the absolute budgets answer instead - see comparison.absoluteBudgets, where the rewrite misses 92 against the baseline's 103, with exactly one new. Neither the recorded baseline numbers nor the 44 evidence screenshots were swapped; see comparison.notSwapped.",
+    "reason": "Still pending, and the blocker is now MEASURED rather than asserted. Three facts stand from 2026-09-11: the successor map carries all 22 rows so the relative rule has something to compare against; the 44px control scale landed on 2026-09-11 and changes the rendered height of every surface carrying a link, so this capture is owed rather than optional; and ink coverage is a pixel measurement taken on macOS 26.5.1 arm64 with Google Chrome 151. MEASURED 2026-09-14. scripts/density-baseline/reproduce.sh was run on Linux (6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2) against the same frozen baseline commit, and the two captures were compared route by route. Ink coverage is systematically HIGHER on Linux: mean +28.5% relative at 390x844 (max +41.4%) and +26.5% at 1280x800 (max +36.6%), on identical markup. Against a relative rule whose threshold is 60% of the baseline, a platform shift of that size is not noise, so the equivalence requirement is confirmed with evidence rather than by argument. AND THE BLOCKER IS NARROWER THAN IT LOOKED. Every non-pixel measure was IDENTICAL across the two platforms: interactive element counts, visible text character counts and prose element counts matched on all 44 captures, zero differences. So only inkCoverageRatio, whiteSpaceRatio and exactGroundRatio need one machine; the element and text budgets never did. THE SECOND BLOCKER, WHICH WAS NOT RECORDED BEFORE AND IS THE LARGER ONE: there is no post-change capture harness. capture.mjs reads contract.routes, which are the BASELINE's 22 paths, and the post-change side must measure their successors - six of which are authenticated and three of which carry a dynamic segment (/genome/[subject]/ancestry, /genome/[subject]/data/browser, /genome/[subject]/reports, /copilot/[scope]) that needs a concrete value. supabase-fixture.mjs cannot serve them: it is built FROM the baseline checkout (it reads that tree's data/templates, providers and sample genome) and stubs that product's PostgREST tables, while HEAD's authenticated pages read a much larger surface through the service role. Completing this needs either a HEAD-shaped fixture or the real local stack the browser suite already builds, plus a successor route list with concrete parameters. That is the work; the platform equivalence is a constraint on where it runs, not the reason it has not been done. PROGRESS 2026-09-14, and the recorded blocker is now half closed. (1) THE MEASUREMENT CODE IS ONE COPY. `ready` and `measure` moved to scripts/density-baseline/measure.mjs and capture.mjs imports them, because a second driver with a second copy of the reading code would have made the two halves of this comparison incomparable by drift - the exact failure this document exists to prevent. Proven unchanged rather than assumed: the frozen baseline was re-captured on Linux with the extracted module and compared against the pre-extraction Linux capture of the same morning - 0 measurement differences across all 44 captures and all 44 screenshots byte-identical. (2) THE SUCCESSOR URLS ARE DECLARED. postChange.measurementPaths carries one row per baseline route with the concrete URL to capture, the surface that decides whether the capture signs in, and the parameters behind every dynamic segment. Five successors carry one - four take the account's own `me` subject segment, and the report takes the baseline's OWN slug (type-2-diabetes-tcf7l2-rs7903146, still published) so the comparison is one page against the page that replaced it rather than against a different report that happens to render. scripts/density-successors.test.ts checks all of it against the register and the baseline. WHAT REMAINS is the driver and the run: a capture that signs into a HEAD build on the real local stack, plus a synthetic source covering both the AIM panel and chr10:112998590 so the ancestry map and that one report are in the same state their predecessors were measured in. Both halves must also use one browser build, which the Linux baseline now fixes at the Playwright Chromium the e2e suite already installs. CAPTURED AND COMPARED 2026-09-14, AND THE RELATIVE RULE IS NOT MET ANYWHERE IT CAN HONESTLY BE APPLIED. Both halves were measured on one Linux machine with one browser build, 22 routes and 44 measurements on each side, and the row-by-row result is in postChange.comparison with its evidence under docs/evidence/density-post-change/. Against brief X6.2 - a successor's ink coverage at or below 60% of its predecessor's - three of the 44 pass and 41 do not, median ratio 0.9703. All three passes are on routes whose baseline predecessor was partly a fixture author's choice of numbers rather than a computed result, so among the 28 measurements with an honest predecessor there are none. The status is measured-with-findings rather than measured for that reason and for one more: 16 rows have no honest predecessor at all, which is recorded in comparison.noHonestPredecessor and which the absolute budgets answer instead - see comparison.absoluteBudgets, where the rewrite misses 84 against the baseline's 103, with 20 fixed - eight of them in this change, every authenticated mobile surface's primary-content left padding - and exactly one new. Neither the recorded baseline numbers nor the 44 evidence screenshots were swapped; see comparison.notSwapped.",
     "routes": [],
     "measurementPaths": [
       {
@@ -2535,12 +2535,12 @@
         },
         "proposedRule": {
           "threshold": 1.0,
-          "within": 26,
-          "over": 18
+          "within": 27,
+          "over": 17
         },
-        "median": 0.9753,
-        "min": 0.366,
-        "max": 1.5001,
+        "median": 0.9703,
+        "min": 0.3657,
+        "max": 1.5002,
         "bySurface": {
           "public": {
             "measurements": 20,
@@ -2560,19 +2560,19 @@
           },
           "authenticated": {
             "measurements": 16,
-            "median": 0.9635,
-            "min": 0.366,
-            "max": 1.5001,
+            "median": 0.9204,
+            "min": 0.3657,
+            "max": 1.5002,
             "overBriefRule": 13,
-            "overProposedRule": 5
+            "overProposedRule": 4
           }
         }
       },
       "named": [
         {
           "finding": "THE HEADLINE: no measurement with an honest predecessor meets the rule. Zero of 28.",
-          "rows": "All 44. Within X6.2 (<= 0.6): 3. Over: 41. Median 0.9753, range 0.3660 to 1.5001.",
-          "evidence": "All three measurements that meet the rule are on the two routes whose baseline predecessor was partly a fixture author's choice of numbers rather than a computed result - /genome/me/ancestry at 1280x800 (0.5376) and /genome/me/reports at both viewports (0.5128 and 0.3660). See noHonestPredecessor below. Strip those out and the 28 measurements whose predecessors were real pages showing real content contain no passes at all: the public twenty run 0.6411 to 1.1366 (median 0.9473) and the auth eight 1.1001 to 1.1482.",
+          "rows": "All 44. Within X6.2 (<= 0.6): 3. Over: 41. Median 0.9703, range 0.3657 to 1.5002.",
+          "evidence": "All three measurements that meet the rule are on the two routes whose baseline predecessor was partly a fixture author's choice of numbers rather than a computed result - /genome/me/ancestry at 1280x800 (0.5375) and /genome/me/reports at both viewports (0.5126 and 0.3657). See noHonestPredecessor below. Strip those out and the 28 measurements whose predecessors were real pages showing real content contain no passes at all: the public twenty run 0.6411 to 1.1366 (median 0.9473) and the auth eight 1.1001 to 1.1482.",
           "reading": "X6.2 does not ask the successors to be no denser. It asks them to be 40% sparser, and says why: \"the brief asks for far more white space than today, so an absolute floor alone would let today's app pass unchanged\". Measured, today's app does pass the absolute floor - all 44 measurements clear the 0.62 white-space minimum on both halves, see absoluteBudgets - and fails the relative rule everywhere it can honestly be applied. The brief's own justification for having a relative rule at all is confirmed by the first measurement ever taken against it."
         },
         {
@@ -2588,16 +2588,22 @@
           "reading": "Not a defect. ADR-0029 already decided this collision in terms: when the accessibility rule and the density budget conflict, the accessibility rule wins and the baseline is re-captured. A target a person cannot hit is a surface they cannot use; a density overrun is a surface that is harder to read. These eight rows are that decision showing up in the numbers, and the answer it prescribes is re-capture, not redesign."
         },
         {
-          "finding": "/overview at 390x844 was the largest rise at 1.8039. It is 1.5001 now, and the change is in the product rather than in the measurement.",
-          "rows": "inkCoverageRatio 0.064203 -> 0.115813 -> 0.096310. At 1280x800, 0.9953 -> 0.8748.",
+          "finding": "/overview at 390x844 was the largest rise at 1.8039. It is 1.5002 now, and the change is in the product rather than in the measurement.",
+          "rows": "inkCoverageRatio 0.064203 -> 0.115813 -> 0.096315. At 1280x800, 0.9953 -> 0.8738.",
           "evidence": "The predecessor showed four number cards above the fold - reports covered 151/151, polygenic scores 3, mtDNA haplogroup H, files 1 - each a label, a large numeral and one line. The successor showed the plain-language distinction between a statistical estimate and a specific-variant report, two headed paragraphs of it, over a persistent bottom navigation bar the predecessor did not have. The operator called the mobile figure a defect and the desktop one not, and the fix is the pattern /genome/[subject]/reports already uses for these same two sentences: the count and its short gloss stay visible, the full definition is one keyboard-operable disclosure away. 245 of 574 visible characters left the first viewport; ink fell 17%. The character count went UP to 639, because the freed height pulled two more domain cards above the fold - which is why the ink measurement and the text measurement disagree here and the ink one is the answer.",
           "reading": "Still 1.50, and the remainder is structural: three domain cards with descriptions plus the bottom navigation bar, against a predecessor with four numerals and no bar. Getting below 1.0 means removing content or navigation, which is a product decision rather than a density fix, so it stops here and the number is recorded as it stands."
         },
         {
-          "finding": "/settings at 1280x800 is now the largest rise: 1.4238, and it is the only NEW absolute-budget miss in the rewrite.",
-          "rows": "inkCoverageRatio 0.033942 -> 0.048332; visible text 612 -> 996 characters, against a 700 cap.",
+          "finding": "/settings at 1280x800 is now the largest rise: 1.4208, and it is the only NEW absolute-budget miss in the rewrite.",
+          "rows": "inkCoverageRatio 0.033942 -> 0.048226; visible text 612 -> 996 characters, against a 700 cap.",
           "evidence": "The sex-chromosome section landed on 2026-09-14 and sits in the first viewport at this width: three short paragraphs saying what the record is used for, that Inherit does not work it out from the file, and what a family member can see if it is recorded, followed by the options. That is the 384 extra characters almost exactly, and it is the single row in absoluteBudgets marked new-in-the-rewrite.",
-          "reading": "The operator decided this one is not a defect: the prose is the reason the section is allowed to exist at all - a declared record with a narrow stated use and a visible consequence - and removing the explanation to save ink would remove the part that makes it honest. Recorded as an accepted breach of the 700-character budget rather than quietly dropped, because it is the only budget this rewrite newly broke. The same route at 390x844 is 0.8800: at mobile width the section falls below the fold."
+          "reading": "The operator decided this one is not a defect: the prose is the reason the section is allowed to exist at all - a declared record with a narrow stated use and a visible consequence - and removing the explanation to save ink would remove the part that makes it honest. Recorded as an accepted breach of the 700-character budget rather than quietly dropped, because it is the only budget this rewrite newly broke. The same route at 390x844 is 0.8699: at mobile width the section falls below the fold."
+        },
+        {
+          "finding": "The largest fall is /reports -> /genome/me/reports at 1280x800: 0.3657, with MORE text, not less - and it is one of only three rows that meet the brief, all of which have no honest predecessor.",
+          "rows": "inkCoverageRatio 0.160917 -> 0.058852; visible text 1,853 -> 2,944 characters.",
+          "evidence": "The predecessor's first viewport was three polygenic-score cards with filled progress bars and shaded ancestry-portability blocks - heavily inked components, and their percentiles were literals in the fixture. The successor's first viewport is the coverage counts and the report-choice panel: four outlined cards, no fills, no bars. Sixty percent less ink carrying sixty percent more text is what that swap looks like.",
+          "reading": "Within X6.2's rule and not a result. It is mostly a change in what the first viewport is FOR, and its predecessor is one of the pages noHonestPredecessor covers."
         }
       ],
       "notSwapped": "Nothing in docs/density-baseline.json#routes changed, and no file under docs/evidence/density-baseline/ changed. The recorded baseline is still the macOS capture of 2026-08-31 and scripts/density-baseline/verify.mjs still checks it by hash. Swapping the recorded numbers and the 44 evidence screenshots is ONE change that has to be made together, after the fixture confound is closed, or the document would carry Linux numbers beside macOS images. Two practical notes for whoever does it: the two screenshot sets do not pair by filename, because the post-change set keys the single report by its baseline route id (reports-[slug]__*.png) while the baseline set keys it by the resolved slug (reports-type-2-diabetes-tcf7l2-rs7903146__*.png), so pair by baselineRoute; and the post-change computed file's captureEnvironment.browserName reads 'chromium' against the baseline's inherited 'Google Chrome' for the same 141.0.7390.37 build.",
@@ -2612,15 +2618,15 @@
         },
         {
           "path": "docs/evidence/density-post-change/post-change-computed-measurements.json",
-          "sha256": "92dbebf518d66eebc02dce75d3c9188076edaaa393826fa3d26daac9b540eb31"
+          "sha256": "fd0dc8a0b98b8dbb9455647fe12370bafb2cb7f3e9b5dc6413ec0dd739a2e5ff"
         },
         {
           "path": "docs/evidence/density-post-change/comparison.json",
-          "sha256": "69b0d008a165f758ee6f67a02f6f84c444a3fa73204ab19300453bad6982ea80"
+          "sha256": "01f6bf64dd98efb49521ea88845216e23000e942ec325c23ee06b69c477309c9"
         },
         {
           "path": "docs/evidence/density-post-change/absolute-budgets.json",
-          "sha256": "99c682d780c0fdf8ad1c318bdafd13a50bcd798702d798c280b0e9076a9eff22"
+          "sha256": "600c3556eba10255cd66d68cecbfbdf4bda0847b3f41330f7de17d93bcf6710d"
         }
       ],
       "thresholds": {
@@ -2639,10 +2645,10 @@
         "summary": {
           "measurements": 44,
           "baselineMisses": 103,
-          "postChangeMisses": 92,
-          "preExisting": 91,
+          "postChangeMisses": 84,
+          "preExisting": 83,
           "newInTheRewrite": 1,
-          "fixedByTheRewrite": 12,
+          "fixedByTheRewrite": 20,
           "whiteSpaceFloorMisses": 0,
           "byMeasure": {
             "budgetedDecoratedElementCount": {
@@ -2671,9 +2677,9 @@
               "fixedByTheRewrite": 4
             },
             "primaryContentLeftPaddingPx": {
-              "preExisting": 8,
+              "preExisting": 0,
               "newInTheRewrite": 0,
-              "fixedByTheRewrite": 0
+              "fixedByTheRewrite": 8
             },
             "visibleTextCharacterCount": {
               "preExisting": 20,
@@ -2682,7 +2688,7 @@
             }
           }
         },
-        "reading": "THE WHITE-SPACE FLOOR CATCHES NOTHING: all 44 measurements clear 0.62 on both halves, by a wide margin - post-change ink runs 0.0265 to 0.1353, so white space runs 0.865 to 0.973. That is the brief's own argument for the relative rule, measured. THE REWRITE DID NOT DEGRADE THE ABSOLUTE BUDGETS: 103 misses on the baseline against 92 on the successors, 91 of them the same miss on both sides, 12 fixed and exactly ONE new - /settings' 996 characters against the 700 cap, which the operator has accepted. AND ROUGHLY 57 OF THE 91 ARE PROBABLY THE MEASUREMENT RATHER THAN THE PRODUCT, which is said as a reading and not as a finding: minProseMeasureCh misses on 21 of the 22 routes on both halves because it is the narrowest of every rendered p and li, so a three-character list item fails a 45-character floor meant for body prose; minimumAdjacentSectionGapPx reports exactly 0 on pages that plainly have gaps; and maxProseMeasureCh reads 85 to 131 characters where the widest element may be a container rather than a paragraph. A budget no version of this product has ever met, on either side of a rewrite, is a budget worth re-reading before it is worked. Filed as D-115. WHAT IS LEFT IS CRISP AND IS 35 ROWS: 8 authenticated mobile surfaces render 16px of primary-content left padding against a 24px minimum; /auth/sign-in and /auth/sign-up carry 9 and 10 first-viewport interactive elements against 7 for a single-purpose flow step; /genome/me/ancestry and /genome/me/reports carry 48 and 42 decorated elements at 390x844 against 40; and 21 measurements exceed the 700-character visible-text cap."
+        "reading": "THE WHITE-SPACE FLOOR CATCHES NOTHING: all 44 measurements clear 0.62 on both halves, by a wide margin - post-change ink runs 0.0265 to 0.1353, so white space runs 0.865 to 0.973. That is the brief's own argument for the relative rule, measured. THE REWRITE DID NOT DEGRADE THE ABSOLUTE BUDGETS AND HAS NOW IMPROVED THEM: 103 misses on the baseline against 84 on the successors, 83 of them the same miss on both sides, 20 fixed and exactly ONE new - /settings' 996 characters against the 700 cap, which the operator has accepted. Eight of the twenty were fixed in this change and are the only rows in this table that a measurement alone settled: every authenticated mobile surface rendered 16px of primary-content left padding against a 24px minimum, because the app shell's <main> carried px-4 below md. It carries px-6 now and all eight read 24. AND ROUGHLY 57 OF THE 83 THAT REMAIN ARE PROBABLY THE MEASUREMENT RATHER THAN THE PRODUCT, which is said as a reading and not as a finding: minProseMeasureCh misses on 21 of the 22 routes on both halves because it is the narrowest of every rendered p and li, so a three-character list item fails a 45-character floor meant for body prose; minimumAdjacentSectionGapPx reports exactly 0 on pages that plainly have gaps; and maxProseMeasureCh reads 85 to 131 characters where the widest element may be a container rather than a paragraph. A budget no version of this product has ever met, on either side of a rewrite, is a budget worth re-reading before it is worked. Filed as D-115. WHAT IS LEFT IS 27 ROWS AND THE WORD `crisp' WAS TOO GENEROUS FOR MOST OF THEM: 21 measurements exceed the 700-character visible-text cap, which is a copy decision on every surface; /auth/sign-in and /auth/sign-up carry 9 and 10 first-viewport interactive elements against 7, where the count includes the wordmark link and the footer's \"Back to Inherit\" - wrapping those in a navigation landmark, the pattern src/components/site/app-shell.tsx already uses, would take sign-in to 7, and whether that is honest marking or shaping the measurement is an owner's call rather than mine; and /genome/me/ancestry and /genome/me/reports carry 48 and 42 decorated elements at 390x844 against 40, which means removing visual chrome. None of those three is an engineering fix."
       }
     }
   }

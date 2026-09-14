@@ -12,10 +12,10 @@
   "summary": {
     "measurements": 44,
     "baselineMisses": 103,
-    "postChangeMisses": 92,
-    "preExisting": 91,
+    "postChangeMisses": 84,
+    "preExisting": 83,
     "newInTheRewrite": 1,
-    "fixedByTheRewrite": 12,
+    "fixedByTheRewrite": 20,
     "whiteSpaceFloorMisses": 0,
     "byMeasure": {
       "budgetedDecoratedElementCount": {
@@ -44,9 +44,9 @@
         "fixedByTheRewrite": 4
       },
       "primaryContentLeftPaddingPx": {
-        "preExisting": 8,
+        "preExisting": 0,
         "newInTheRewrite": 0,
-        "fixedByTheRewrite": 0
+        "fixedByTheRewrite": 8
       },
       "visibleTextCharacterCount": {
         "preExisting": 20,
@@ -168,7 +168,7 @@
       "baselineRoute": "/ancestry",
       "viewport": "390x844",
       "measure": "budgetedDecoratedElementCount",
-      "value": 48,
+      "value": 43,
       "comparison": "<=",
       "limit": 40,
       "status": "pre-existing"
@@ -180,15 +180,6 @@
       "value": 24,
       "comparison": ">=",
       "limit": 64,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/ancestry",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -264,15 +255,6 @@
       "status": "pre-existing"
     },
     {
-      "baselineRoute": "/browse",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
       "baselineRoute": "/changelog",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -329,15 +311,6 @@
     {
       "baselineRoute": "/chat",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/chat",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
       "value": 1122,
       "comparison": "<=",
@@ -360,15 +333,6 @@
       "value": 885,
       "comparison": "<=",
       "limit": 700,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/dashboard",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -680,15 +644,6 @@
     {
       "baselineRoute": "/reports",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/reports",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
       "value": 1385,
       "comparison": "<=",
@@ -720,15 +675,6 @@
       "value": 971,
       "comparison": "<=",
       "limit": 700,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/reports/[slug]",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -774,15 +720,6 @@
       "value": 40,
       "comparison": ">=",
       "limit": 64,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/settings",
-      "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
       "status": "pre-existing"
     },
     {
@@ -860,17 +797,8 @@
     {
       "baselineRoute": "/uploads",
       "viewport": "390x844",
-      "measure": "primaryContentLeftPaddingPx",
-      "value": 16,
-      "comparison": ">=",
-      "limit": 24,
-      "status": "pre-existing"
-    },
-    {
-      "baselineRoute": "/uploads",
-      "viewport": "390x844",
       "measure": "visibleTextCharacterCount",
-      "value": 867,
+      "value": 843,
       "comparison": "<=",
       "limit": 700,
       "status": "pre-existing"
@@ -903,6 +831,15 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/ancestry",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/browse",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
@@ -912,12 +849,39 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/browse",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/dashboard",
       "viewport": "1280x800",
       "measure": "maxProseMeasureCh",
       "value": 131.038,
       "comparison": "<=",
       "limit": 68,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
       "status": "fixed-by-the-rewrite"
     },
     {
@@ -975,6 +939,15 @@
       "status": "fixed-by-the-rewrite"
     },
     {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
       "baselineRoute": "/reports/[slug]",
       "viewport": "1280x800",
       "measure": "minimumAdjacentSectionGapPx",
@@ -990,6 +963,33 @@
       "value": 32,
       "comparison": ">=",
       "limit": 64,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
       "status": "fixed-by-the-rewrite"
     }
   ]

@@ -227,13 +227,80 @@ to a competitor that simply prints eleven confident labels, is a decision rather
 than a measurement, and it needs the reference-set inequality above stated on
 the surface beside it.
 
+## The full callset, and the answer the measurements actually support
+
+The operator's ruling was: get the bulk callset first, then re-measure. Done,
+and it changes two of the three findings above.
+
+**The callset is readable without downloading it.** Each chromosome's VCF is 50
+to 270 GB, but the release ships a tabix index, so a marker costs one HTTP range
+request over the ~16 kb of genome its smallest index bin covers.
+`scripts/ancestry-resolution/fetch-callset-frequencies.py` implements the index
+format directly — this container has no `tabix` or `bcftools` — and pulled all
+168 panel markers at about a second each, with no misses and no multi-allelic
+ambiguity. Every record carries all **78** populations.
+
+**Oceania is there, and so is everyone else the API omitted.** The sourced
+region mapping comes from the release's own sample metadata
+(`hgdp_tgp_meta.genetic_region`), not from a reading of population names. At a
+floor of ten people:
+
+| region | populations kept | dropped |
+| --- | --- | --- |
+| AFR | 11 | 3 |
+| AMR | 7 | 2 |
+| CSA | 13 | 0 |
+| EAS | 8 | **15** |
+| EUR | 12 | 1 |
+| MID | 4 | 0 |
+| OCE | **2** | 0 |
+
+Every region has at least two populations. The API route had none for Oceania at
+any floor. The one severe loss is East Asia, where fifteen HGDP populations sit
+at 6–10 people each. And the floor is load-bearing: at fifteen people Oceania
+falls to zero, because Papuan is 17 samples and Melanesian 13.
+
+**The naming gate still does not exist at 78 populations.** Best separation
+improves from +0.29 to +0.33, and that is all: at the threshold where the
+interval's low bound refuses two thirds of unrepresented people it also refuses
+a third of the correct names, and the log-likelihood is still flat.
+
+**But the region is right, and that is the finding.** Same 144 estimates, scored
+on the region of the top population rather than its name:
+
+| | population right | region right |
+| --- | --- | --- |
+| the person's population IS in the set | 59 of 72 (82%) | **71 of 72 (99%)** |
+| the person's population is NOT in the set | 0 of 72 | **62 of 72 (86%)** |
+
+And the ten region failures are not spread out. **Mozabite fails 6 of 6** —
+an Algerian whose population is absent is called Sardinian, French or Finnish,
+MID read as EUR. Bedouin fails 2 of 6. Every other target is 5 or 6 of 6,
+including both Oceanian populations.
+
+### What that supports, and it is not nothing
+
+Today the estimator reports five 1000 Genomes superpopulations: AFR, AMR, EAS,
+EUR, SAS. There is **no Middle East and no Oceania in it at all**, so a Bedouin
+or Papuan reader is currently told a mixture of regions none of which is theirs.
+The callset's seven regions include both.
+
+So the honest upgrade the measurements support is a change of *reference set*,
+not a change of resolution: seven regions instead of five, measured at 99%
+when the person is represented and 86% when they are not, with the specific
+limitation that this panel reads North African ancestry as European and must
+say so. The sub-continental names can be shown as what they are — the closest
+matches and how often each won across resamples — without being asserted.
+
 ## Reproducing
 
 ```
 python3 scripts/ancestry-resolution/fetch-reference.py      # writes gnomad-pops.json
 SEEDS=8 python3 scripts/ancestry-resolution/measure-accuracy.py
 SEEDS=6 python3 scripts/ancestry-resolution/measure-leave-one-out.py
-node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts
+python3 scripts/ancestry-resolution/fetch-callset-frequencies.py  # the full callset, through its tabix index
+SOURCE=api node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts
+node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts   # SOURCE=callset is the default
 ```
 
 The naming-rule run takes about 45 minutes and writes its rows to

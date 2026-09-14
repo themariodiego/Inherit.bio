@@ -103,6 +103,24 @@ describe("external hostname classification", () => {
     expect(scan(url("doi.org:invalid"))).toHaveLength(1);
   });
 
+  it("admits a path-scoped alias only on a line that carries the path", () => {
+    // Allowing a shared host allows everything served from it. A bucket alias
+    // has to admit its own bucket and refuse the rest of the host, or the
+    // entry is not an allowlist.
+    const bucket = [{
+      name: "public dataset bucket",
+      category: "public-reference-dataset",
+      aliases: ["storage.unreviewed.com/public--dataset"],
+    }];
+    const withBucket = (text: string) =>
+      scanExternalHosts(text, "src/fixture.test.ts", bucket);
+    expect(withBucket(url("storage.unreviewed.com/public--dataset/release/file.vcf.bgz"))).toEqual([]);
+    expect(withBucket(url("storage.unreviewed.com/someone-elses-bucket/file"))).toHaveLength(1);
+    expect(withBucket(url("storage.unreviewed.com"))).toHaveLength(1);
+    // A bare host alias is unchanged: it still admits the whole host.
+    expect(scan(url("doi.org/10.1000/anything"))).toEqual([]);
+  });
+
   it("keeps the private denylist independent of reserved hosts and credentials", () => {
     const denied = ["outside", "genome"].join("");
     for (const text of [url(`${denied}.invalid`), url(`${denied}:pass@inherit.bio`), url(`doi.org/${denied}`)]) {

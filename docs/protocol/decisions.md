@@ -3450,3 +3450,56 @@ not trust this session's TLS-interception CA. Verification was not disabled to
 get around it. The row also says the thing a licence does not settle — HGDP
 sampled small, named, often Indigenous communities, and unrestricted release
 governs what may be stored, not what may be said about a person.
+
+## 2026-09-14 · The bulk callset, and the upgrade the measurements actually support
+
+The operator ruled: get the bulk callset first, then re-measure; and read "equal
+granularity where possible" as give what the data supports and disclose the gap
+loudly. Both done, and the answer is better than the API route suggested.
+
+**The callset is readable without downloading it.** Each chromosome's VCF runs
+50 to 270 GB, but the release ships a tabix index, so a marker costs one HTTP
+range request over the ~16 kb its smallest index bin covers. This container has
+no `tabix` and no `bcftools`, so the index format is implemented directly in
+`scripts/ancestry-resolution/fetch-callset-frequencies.py`: all 168 panel
+markers, about a second each, no misses, no multi-allelic ambiguity, all **78**
+populations on every record. The region mapping is the release's own
+`hgdp_tgp_meta.genetic_region`, not a reading of population names.
+
+**D-116 closes.** Oceania is in the callset. At a ten-person floor every region
+keeps at least two populations: AFR 11, AMR 7, CSA 13, EAS 8, EUR 12, MID 4,
+OCE 2. **D-117 reduces** rather than closing: East Asia loses fifteen
+populations at 6–10 people, and the floor is load-bearing — at fifteen people
+Oceania falls to zero, because Papuan is 17 samples and Melanesian 13.
+
+**The naming gate still does not exist**, which was the thing worth checking.
+Best separation moves from +0.29 to +0.33 and the shape is unchanged: any
+threshold that refuses most unrepresented people also refuses a third of the
+correct names.
+
+**The region is right, and that is the finding.** Scored on the region of the
+top population rather than its name, over the same 144 estimates:
+
+| | population right | region right |
+| --- | --- | --- |
+| population IS in the set | 59 of 72 (82%) | **71 of 72 (99%)** |
+| population is NOT in the set | 0 of 72 | **62 of 72 (86%)** |
+
+And the ten failures concentrate: Mozabite fails **6 of 6** — an Algerian whose
+population is absent is called Sardinian, French or Finnish — and Bedouin 2 of
+6. Everything else, both Oceanian populations included, is 5 or 6 of 6. Filed
+as **D-120**, and it is a disclosure rather than a fix: 168 markers cannot
+separate North Africa from southern Europe.
+
+**So the upgrade the measurements support is a change of reference set, not a
+change of resolution.** Today's estimator reports five 1000 Genomes
+superpopulations — AFR, AMR, EAS, EUR, SAS — with **no Middle East and no
+Oceania in it at all**, so a Bedouin or Papuan reader is currently told a
+mixture of regions none of which is theirs. Seven regions, measured at 99% and
+86%, is a real improvement for exactly the people the current model serves
+worst, and it needs no name this product cannot support. The sub-continental
+names can still be shown as what the measurement says they are — the closest
+matches and how often each won across resamples — without being asserted.
+
+That is a design proposal and it has not been built. What is built is the
+measurement and the means to reproduce it.
