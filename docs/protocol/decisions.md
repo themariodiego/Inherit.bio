@@ -3223,3 +3223,74 @@ can tell. The estimator is consistent — the same simulation returns 0.993 at 3
 times the panel — so narrowing it means a larger ancestry-informative panel,
 which is the expensive option D-017 named and which remains the owner's call.
 The range now states that limit instead of hiding it behind a single number.
+
+## 2026-09-14 · The relative density rule is measured, fails 41 of 44, and the threshold is not mine to raise
+
+The post-change half of G2.5 exists now. Both sides of the relative comparison
+were measured on one Linux machine with one Chromium build — the frozen
+baseline through `scripts/density-baseline/reproduce.sh`, the successors through
+`e2e/density-post-change.density.spec.ts` against a HEAD build on the real local
+stack — 22 routes and 44 measurements each, with the row-by-row record in
+`docs/evidence/density-post-change/comparison.json`.
+
+**The result against the rule that is actually in force: 3 of 44.** Brief X6.2
+requires a successor's ink coverage to be at most 60% of its predecessor's. The
+median ratio is 0.9803 and the range is 0.3664 to 1.8039. At these 22 surfaces,
+in the first viewport, the rewrite is about as inky as the product it replaced —
+which is precisely what X6.2's summary line says the relative rule exists to
+prevent: *"an absolute floor alone would let today's app pass unchanged"*.
+
+**I nearly recorded the opposite, and the sequence is the point.** Asked which
+rule should hold, the operator chose "no denser (≤ 100%)". I applied it: the
+contract threshold moved 0.6 → 1.0, ADR-0029 was corrected, and the comparison
+was written up as 26 of 44 passing with two named regressions. Then the
+acceptance matrix's own G2.5 row turned out to quote the number as coming from
+X6, the brief was read, and X6.2 says ≤ 60% with a stated rationale and closes
+with **"ceilings may be lowered, never raised"**. So the change was not a
+transcription fix; it was the one direction the brief forbids, on a number whose
+purpose is stated. Everything was put back. The operator's answer is recorded as
+item 14 of `docs/protocol/brief-corrections-proposed.md`, unapplied, with the
+consequence of each threshold measured beside it: 3 of 44 at 0.6, 26 of 44 at
+1.0.
+
+The question I asked was the defect. It offered a choice between two thresholds
+without telling the operator that one of them was the brief's, why it was that
+number, or that the brief forbids raising it. An answer given without those
+three facts is a preference, not an amendment.
+
+**Both verdicts are recorded on every row**, `withinBriefRule` and
+`withinProposedRule`, so the signature — either way — changes no measurement.
+`verify.mjs` asserts the in-force threshold is 0.6 and recomputes both verdicts
+from the two ink coverages, so a later relaxation has to be deliberate rather
+than a tidy-up.
+
+**Three findings inside the result are worth keeping separate from the verdict.**
+The eight auth-surface rows fail by 10–15% with *identical* visible text on both
+sides — the same words, the same layout, more ink because every control is now
+44 px — which is the collision ADR-0029 already decided in favour of the
+accessibility rule. The twenty public rows are the cleanest reading available,
+because no file feeds them and no accessibility rule explains them: median
+0.9473, none within 0.6, and three drifting denser as sentences were added over
+five months. And `/overview` at 390×844 is the largest rise in the comparison at
+1.8039, where four sparse number cards were replaced by the plain-language
+distinction between a statistical estimate and a specific-variant report plus a
+persistent bottom navigation bar — both deliberate, both asked for, and whether
+that is the right trade on a phone is an owner's judgement rather than a defect.
+
+**What stops this being a verdict on the authenticated surfaces** is recorded
+rather than argued away: the two halves were fed different synthetic sources, so
+16 of the 44 rows are confounded (D-113). It is bounded — the successor reports
+page renders 11 of 11 specific-variant reports and 150 of 151 statistical
+estimates covered, and the ancestry map renders, so neither side measured an
+empty page — and it is open. Nothing was swapped: the recorded baseline numbers
+and the 44 evidence screenshots are still the macOS capture, because swapping
+numbers and images is one change to make after the confound closes, not before.
+
+**And the verifier caught two things by existing.** It failed on a stale
+`capture.mjs` hash the moment it was run, which exposed that three pinned
+harnesses had drifted and that nothing runs the verifier at all (D-111); and it
+refused the threshold change until the mirrored copy in
+`computed-measurements.json` moved with it, which corrected a claim in my own
+first draft that "no code reads the threshold". `pnpm density:verify` exists
+now. Wiring it into CI needs the history fetched, because it reads the frozen
+baseline commit through `git archive` and the job checks out at depth 1.
