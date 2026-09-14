@@ -28,6 +28,14 @@ if (!process.argv.includes("--list") && (!providerProxy || !signer)) {
   throw new Error("Run pnpm e2e through the real local Storage provider bootstrap");
 }
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
+/**
+ * The density capture (G2.5). It is not a test — it records what the product
+ * looks like — so it is excluded from every default project and runs only when
+ * asked, behind its own project. Left in the default suite it would cost 44
+ * screenshots on every push and would report a measurement as a passing test.
+ */
+const DENSITY = /\.density\.spec\.ts$/;
+const densityCapture = process.env.INHERIT_DENSITY_CAPTURE === "1";
 
 const localProject = localE2eProject(process.env);
 const SERVER_ENV = {
@@ -66,12 +74,33 @@ export default defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: NO_JURISDICTION },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY] },
     {
       name: "jurisdiction-off",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${OFF_PORT}` },
       testMatch: NO_JURISDICTION,
     },
+    // Every setting the baseline capture fixed, fixed the same way. Ink
+    // coverage is a pixel measurement: a different scale factor, colour scheme
+    // or locale changes it, and a comparison across that difference measures
+    // the browser rather than the page.
+    ...(densityCapture
+      ? [{
+          name: "density",
+          testMatch: DENSITY,
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 390, height: 844 },
+            deviceScaleFactor: 1,
+            colorScheme: "light" as const,
+            // `reducedMotion` reaches the context rather than `use` directly.
+            contextOptions: { reducedMotion: "reduce" as const },
+            locale: "en-US",
+            timezoneId: "UTC",
+            serviceWorkers: "block" as const,
+          },
+        }]
+      : []),
   ],
   webServer: [
     {
