@@ -3082,3 +3082,50 @@ The fixture now uses `renamed-away-v0`, a name no register would adopt.
 acceptable shape for adding a state: the pair was declared and then proven in
 the same commit, by a browser test that uploads a real file through the real
 journey rather than writing a prepared row into the database.
+
+## 2026-09-14 · The density blocker, measured — and the one nobody had written down
+
+The owner chose "re-capture both sides on Linux" for G2.5. The baseline half
+is done and the post-change half is not, and the reason is not the one the file
+recorded.
+
+**The baseline reproduces on Linux.** `scripts/density-baseline/reproduce.sh`
+ran against the frozen baseline commit on this machine (Linux 6.18.44 x86_64,
+Chromium 141.0.7390.37, Node 22.22.2) and produced all 44 captures. One real
+portability defect was in the way and is fixed: the default working root was
+`mktemp -d /private/tmp/…`, a path that exists only on macOS, so the script was
+unrunnable elsewhere even though every other path was already parameterised.
+
+**The platform cost is now a number rather than an argument.** The file said a
+capture taken elsewhere "would compare font rasterisers rather than designs".
+It does, and by this much: on identical markup at the same commit, ink coverage
+is **higher on Linux by a mean of 28.5% relative at 390×844 (max 41.4%) and
+26.5% at 1280×800 (max 36.6%)**. The relative rule's threshold is 60% of the
+baseline, so a shift of that size is not noise. The equivalence requirement
+stands, and it now stands on evidence.
+
+**And the blocker is narrower than it looked.** Every non-pixel measure was
+IDENTICAL across the two platforms — interactive element counts, visible text
+character counts, prose element counts, on all 44 captures, zero differences.
+So only `inkCoverageRatio`, `whiteSpaceRatio` and `exactGroundRatio` need one
+machine. The element and text budgets never did, and could have been captured
+anywhere at any point.
+
+**The larger blocker was not recorded at all.** There is no post-change capture
+harness. `capture.mjs` reads `contract.routes`, which are the baseline's 22
+paths; the post-change side must measure their successors, six of them
+authenticated and three carrying a dynamic segment that needs a concrete value.
+`supabase-fixture.mjs` cannot serve them: it is built FROM the baseline checkout
+— it reads that tree's templates, providers and sample genome — and stubs that
+product's PostgREST tables, while HEAD's authenticated pages read a much larger
+surface through the service role. So the work is a HEAD-shaped fixture, or the
+real local stack the browser suite already builds, plus a successor route list
+with concrete parameters. The platform equivalence is a constraint on WHERE
+that runs, not the reason it has not been done.
+
+**Nothing was swapped in.** The recorded baseline still carries the macOS
+numbers and `docs/evidence/density-baseline/` still holds the macOS
+screenshots, which match each other and which `verify.mjs` checks by hash.
+Replacing one half would leave the document claiming numbers its own evidence
+contradicts, so the Linux capture stays reproducible from the script rather
+than committed, and the swap happens when both halves can be taken together.

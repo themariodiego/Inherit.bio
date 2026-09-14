@@ -6,7 +6,11 @@ repository_root="$(CDPATH= cd -- "${script_directory}/../.." && pwd)"
 baseline_sha="864736979c92a08ba77e8580d61946eba6864918"
 capture_port="${DENSITY_CAPTURE_PORT:-3100}"
 next_port="${DENSITY_NEXT_PORT:-3102}"
-working_root="${DENSITY_WORKING_ROOT:-$(mktemp -d /private/tmp/inherit-density-baseline.XXXXXX)}"
+# `/private/tmp` exists only on macOS, so the default made the script
+# unrunnable elsewhere even though every other path is parameterised.
+# Reproduced on Linux 2026-09-14 with DENSITY_WORKING_ROOT and
+# DENSITY_BROWSER_EXECUTABLE set; this makes the default work there too.
+working_root="${DENSITY_WORKING_ROOT:-$(mktemp -d -t inherit-density-baseline.XXXXXX)}"
 baseline_checkout="${working_root}/baseline-checkout"
 output_root="${DENSITY_OUTPUT_ROOT:-${working_root}/evidence}"
 browser_executable="${DENSITY_BROWSER_EXECUTABLE:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
