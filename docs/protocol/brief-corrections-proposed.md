@@ -1093,7 +1093,7 @@ Filed as **D-108**.
 
 ---
 
-## Where the 27 unproven pairs stand
+## Where the 26 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1103,9 +1103,11 @@ fails if the bold figures below disagree with the register, so the claim holds
 because something checks it.
 
 **Items 6, 8, 10 and 13 are signed and applied.** Between them 58 pairs left
-the register, and two more were closed by proofs. The ratchet went 87 to 27 in
+the register, and four more were closed by proofs. The ratchet went 87 to 27 in
 one day, and **not one line of test code was written for 58 of those 60** —
-every one was the register describing behaviour the product does not have.
+every one was the register describing behaviour the product does not have. The
+two proofs since are the opposite: both are test work, and one of them declared
+a new state and proved it in the same change.
 
 | | pairs | what moved them |
 | --- | ---: | --- |
@@ -1114,9 +1116,10 @@ every one was the register describing behaviour the product does not have.
 | Applied from item 10 (`complete`, coverage, the public page) | 16 | done 2026-09-13 |
 | Applied from item 13 (G2.2 amended, D-108) | 7 | done 2026-09-13 |
 | **Retired from the register** | **58** | |
-| Closed by a proof | 2 | `/family/[person]`, `/family/health-picture` |
-| **Genuinely open** | **27** | test work, and for most of them item 11 first |
-| **Total unproven** | **27** | |
+| Closed by a proof | 4 | `/family/[person]`, `/family/health-picture`, `/overview awaiting-choice` (a ninth state id, declared and proven together), `/settings/copilot complete` |
+| Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
+| **Genuinely open** | **26** | test work |
+| **Total unproven** | **26** | |
 
 **Nothing in this number is a register correction any more.** The open count
 and the total are now the same figure, which is the point: every remaining
@@ -1137,17 +1140,27 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 27 that are open, 25 wait on item 11
+### And of the 26 that are open, none waits on item 11 any more
 
-| state | open | blocked by item 11? |
+**Item 11 is applied**, so the column this table used to carry — "blocked by
+item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
+definition in `docs/route-register.json#stateDefinitions`, the two readings of
+`partial-coverage` are named rather than one being declared correct, and the
+ninth id the item's own reading turned up (`awaiting-choice`) was added and
+proven in the same change. The rows below are what is left, and what each one
+actually waits on.
+
+| state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 9 | yes — renders identically to `empty` on three of them |
-| `partial-coverage` | 8 | yes — a coverage fact on some routes, a permission fact on others |
-| `complete` | 8 | yes — currently four different meanings |
-| `processing` | 2 | yes — neither page distinguishes a file in flight from no file, and the sentence that would is a disclosure decision (below) |
+| `not-covered` | 9 | test work; on three routes it still renders identically to `empty`, so the cause has to be established from the database as `/overview` already does |
+| `partial-coverage` | 8 | test work; the reading each route uses is now recorded, so a title can say which |
+| `complete` | 7 | test work; `/settings/copilot complete` came off this row on 2026-09-14 |
+| `processing` | 2 | a product branch that does not exist, and the sentence that would create it is a disclosure decision (below) — not a ruling on the id |
 | `empty` | 0 | proven 2026-09-13 |
+| `awaiting-choice` | 0 | added and proven 2026-09-14 |
 
-**No pair can be attempted today without a ruling.** This line said two could
+**The two `processing` pairs cannot be attempted today, and the reason is a
+branch rather than a definition.** This line said two could
 — both `processing`, on `/family/health-picture` and
 `/family/portrait/[pairId]` — and reading both pages on 2026-09-13 shows that
 neither can, for the same reason and in the same words:
@@ -1166,8 +1179,9 @@ the test: it tells one adult that another has a file being prepared, which is
 information about that person's record that the page does not otherwise carry.
 `scripts/route-gate.ts` already records that reasoning for Portrait, from
 corrections item 9; what is new here is that it is equally true of the health
-picture, and that this table said otherwise. The same question decides D-102's
-wording. **Nothing in the ratchet is now test work alone.**
+picture, and that this table said otherwise. **The rest of the ratchet is test
+work**, which is what it became once item 11 landed: those two pairs are the
+only ones in it waiting on a decision rather than on a browser test.
 
 The third of the three, `/family/portrait/[pairId] empty`, was proven on
 2026-09-13 — and it was attemptable, but not by the route anyone would try

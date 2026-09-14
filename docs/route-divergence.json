@@ -282,6 +282,7 @@
     "/settings/consents complete",
     "/settings/consents empty",
     "/settings/consents processing",
+    "/settings/copilot complete",
     "/settings/copilot processing",
     "/settings/data complete",
     "/settings/data processing",
