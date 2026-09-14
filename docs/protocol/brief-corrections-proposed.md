@@ -873,6 +873,25 @@ the reader's choice" and declare it where it occurs.
 
 ## 11. Eight state ids are carrying at least a dozen distinct meanings
 
+**SIGNED AND APPLIED 2026-09-14: define, not split.** The eight definitions are
+in `docs/route-register.json#stateDefinitions`, one sentence each, and
+`scripts/route-gate.ts` fails when an id has no definition, when a named
+reading does not say where it applies, or when a definition outlives its id.
+
+**They were read out of the proofs, not chosen.** Every existing test states in
+its header which reading it used, so no definition here contradicts a recorded
+proof and nothing already proven had to be re-read.
+
+Two things the application turned up that this item did not anticipate. First,
+**`processing` is not overloaded** — `e2e/embryos.spec.ts` had already recorded
+that it means work in flight on every route claiming it, so the id is marked
+`overloaded: false` rather than given readings it does not have. Second, this
+item's own proposal was insufficient for `partial-coverage`: it proposed
+recording the applicable reading **per profile**, and both readings sit on the
+same profile. `/genome/[subject]/data/browser` (coverage) and `/family/[person]`
+(permission) are both `product-result`. The owner's answer was to name both
+readings under one id, which is what shipped.
+
 A structural observation, not a proposal for any one route. It is here because
 it is what the last thirty proofs kept running into, and because the ~40 pairs
 still genuinely open cannot be decided consistently until it is settled.

@@ -2931,3 +2931,37 @@ follow is `profiles.jurisdiction`: user-declared, server-enforced, optional,
 purpose-bound, revocable, and every change writing an audit row. If the owner
 wants derivation instead, that reverses a principle and should be said
 explicitly.
+
+## 2026-09-14 · The eight ids are defined, and one was not overloaded after all
+
+Corrections item 11 is applied: `docs/route-register.json#stateDefinitions`
+carries one sentence per state id, and the route gate fails when an id has no
+definition, when a named reading does not say where it applies, or when a
+definition outlives its id. Three planted defects, one per rule.
+
+**The definitions were read out of the proofs rather than chosen.** Every
+existing test states in its header which reading it used, which is what made
+"define" the cheap option: not one recorded proof had to be re-read, and no
+definition here contradicts one. That is also the constraint that decided the
+wording — where a proof had already committed to a reading, the definition
+follows the proof, not the other way round.
+
+Two things the work turned up that the item did not anticipate.
+
+**`processing` is not overloaded.** `e2e/embryos.spec.ts` had already recorded
+that it means work in flight on every route that has claimed it, and that this
+is why three Embryo pairs could be titled while the `complete` and coverage
+pairs waited. So it is marked `overloaded: false` rather than given readings it
+does not have. It is also the id most often found implemented-and-untitled —
+auth-flow's four, five more in item 8 — so a zero in its proven column has
+never once meant the state was absent.
+
+**The item's own proposal was insufficient for `partial-coverage`.** It
+proposed recording the applicable reading per PROFILE. Both readings sit on the
+same profile: `/genome/[subject]/data/browser` is the coverage reading and
+`/family/[person]` is the permission reading, and both are `product-result`.
+Per-profile recording cannot separate them, which is why this went back as a
+question rather than being applied as written. The owner chose to name both
+readings under one id — the alternative, splitting `partial-coverage` in two,
+would have put both existing proofs up for re-reading to buy a distinction the
+ratchet does not need.

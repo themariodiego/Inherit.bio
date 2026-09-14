@@ -913,6 +913,8 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     briefSha256?: string;
     routes: RegisterEntry[];
     stateProfiles: Record<string, StateProfile>;
+    stateIds?: string[];
+    stateDefinitions?: Record<string, { means?: string; readings?: { reading?: string; where?: string }[] }>;
     storagePrefixes: { id: string; bucket: string }[];
   };
 
@@ -1092,6 +1094,43 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     (ledger.storageBucketDivergence ?? []).map((known) => `${known.direction} ${known.bucket}`),
     failures,
   );
+
+  // 4c. Every state id says what it means, and nothing says what an absent id
+  // means. Corrections item 11: eight ids were defined nowhere, so precedent
+  // supplied the meanings and supplied several per name — `complete` was
+  // carrying four. The definitions were read out of the proofs rather than
+  // chosen, and this keeps the two sets in step: an id added without a
+  // definition leaves the ratchet counting something nobody has described,
+  // and a definition left behind describes a column that no longer exists.
+  const definitions = register.stateDefinitions ?? {};
+  for (const state of register.stateIds ?? []) {
+    const definition = definitions[state];
+    if (!definition || typeof definition.means !== "string" || definition.means.trim().length < 20) {
+      failures.push(
+        `state definition: \`${state}\` is in stateIds with no definition worth the name. ` +
+          `An id the ratchet counts and nobody has defined is how one column came to mean four things.`,
+      );
+    }
+    // A named reading that does not say where it applies cannot be checked
+    // against a proof, which is the whole reason the readings are named.
+    for (const reading of definition?.readings ?? []) {
+      if (!(reading.where ?? "").trim()) {
+        failures.push(
+          `state definition: \`${state}\` names the reading "${reading.reading ?? "?"}" without saying ` +
+            `where it applies. A reading nobody can locate is not a definition.`,
+        );
+      }
+    }
+  }
+  for (const defined of Object.keys(definitions)) {
+    if (defined.startsWith("_")) continue;
+    if (!(register.stateIds ?? []).includes(defined)) {
+      failures.push(
+        `state definition: \`${defined}\` is defined but is not a state id. ` +
+          `Remove it, or the register describes a column that does not exist.`,
+      );
+    }
+  }
 
   // 5. The (route, state) ratchet.
   failures.push(...notApplicableFailures(register));

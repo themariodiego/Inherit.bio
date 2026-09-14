@@ -221,6 +221,50 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  /**
+   * Corrections item 11: eight ids were counted by the ratchet and defined
+   * nowhere, so precedent supplied the meanings and supplied four for
+   * `complete` alone. These three keep the definitions and the ids in step.
+   */
+  it("fails when a state id has no definition", async () => {
+    const root = plant({
+      register: (register) => {
+        delete (register.stateDefinitions as Record<string, unknown>)["not-covered"];
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "state definition: `not-covered` is in stateIds with no definition worth the name. " +
+        "An id the ratchet counts and nobody has defined is how one column came to mean four things.",
+    );
+  });
+
+  it("fails when a named reading does not say where it applies", async () => {
+    const root = plant({
+      register: (register) => {
+        const complete = (register.stateDefinitions as Record<string, { readings: { where: string }[] }>).complete;
+        complete.readings[0].where = "   ";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain("names the reading \"complete-for-the-question\" without saying where it applies");
+  });
+
+  it("fails when a definition outlives the id it defines", async () => {
+    const root = plant({
+      register: (register) => {
+        (register.stateDefinitions as Record<string, unknown>)["awaiting-choice"] = {
+          means: "A definition for an id that nothing declares, left behind by a rename.",
+        };
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "state definition: `awaiting-choice` is defined but is not a state id. " +
+        "Remove it, or the register describes a column that does not exist.",
+    );
+  });
+
   it("fails when a route exports a verb the register does not declare", async () => {
     const root = plant({
       register: (register) => {
