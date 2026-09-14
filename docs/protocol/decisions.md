@@ -3584,3 +3584,31 @@ it was caught is that the revert was re-measured rather than assumed.
 
 The relative comparison moves with it: median 0.9703 → **0.9371**, and the
 public surfaces' median 0.9473 → **0.8471**. Still no row within X6.2's 60%.
+
+## 2026-09-14 · The padding fix broke reflow, and the two rules are measured at different viewports
+
+CI run 561 failed the browser suite on the 24px primary-content padding fix
+(D-119), and the failure was mine and exact: `/genome/[subject]/data/browser` is
+recorded in `docs/accessibility-divergence.json` at **446 CSS px** of horizontal
+overflow at a 320px viewport — a known igv.js defect, ratcheted so it can never
+get worse — and raising the app shell's gutter from `px-4` to `px-6` took it to
+**454**. Reproduced locally before anything was changed.
+
+**Full-bleeding the widget was the first attempt and it moved nothing.** Giving
+the genome browser `-mx-6 md:mx-0` so it took the gutter back left the overflow
+at 454, which rules out the widget's own width as the cause and leaves the
+recorded "cause honestly unidentified" standing.
+
+**The answer was in the two rules' own wording.** The density minimum is
+specified at **390×844** (`thresholds.mobile390.primaryContentLeftPaddingPxMin`)
+and reflow at **320 CSS px**. They never both apply at the same width. So the
+gutter steps: `px-4` below 360px, `px-6` from 360px up. Verified both ways — all
+eight authenticated surfaces read 24px at 390, and the reflow sweep passes with
+the browser page back at 446.
+
+Worth naming because the obvious move was the wrong one: ADR-0029 says that when
+the accessibility rule and a density budget conflict, accessibility wins and the
+baseline is re-captured. That would have meant reverting D-119 and reopening
+eight rows. It was not needed, because there is no conflict at any viewport
+either rule actually names — and reaching for the precedence rule before reading
+the viewports would have cost a real fix for nothing.
