@@ -7,6 +7,27 @@ what was approved and when.
 - **D-103's five statements: approved VERBATIM**, including statement 5's
   pointer to the published deadlines rather than the figures. Wiring them into
   the confirm body is queued work, not done here.
+  - **BLOCKED 2026-09-14 on one sentence, and the measurement is the reason.**
+    Putting the five into `src/copy/family/` subjects them to the readability
+    gate, which holds a long block to grade 9. The approved `revocable`
+    sentence measures **9.08**. Approved copy is not edited to pass a gate
+    without the signature being renewed, so nothing was shipped and the module
+    was withdrawn rather than left half-applied. Three choices, and they are
+    yours:
+    1. **Split the sentence.** "I can take this back at any time. Inherit then
+       deletes what was built from my file, on the deadlines it publishes."
+       Grade **4.79**, same promise, two words changed.
+    2. **One word.** "…on the dates it publishes." Grade **8.54**, but
+       "dates" is weaker than "deadlines" and the sentence is about an
+       obligation.
+    3. **Rule that a consent statement is legal copy**, which the gate already
+       allows at grade 11 on a marketing legal path. That is the larger and
+       probably the right answer, because it settles D-110 at the same time:
+       the six statements already shipping in `co-parent-review-form.tsx` have
+       never been measured, and three of them are at 9.13, 11.68 and 11.70 —
+       all worse than the sentence being blocked here.
+
+    **D-102 is unaffected and is wired.**
 - **D-102: approved, and the owner chose ATTRIBUTION** over the unattributed
   wording recommended below. The recommendation is left standing rather than
   quietly deleted, so the trade-off that was weighed is still on the record;

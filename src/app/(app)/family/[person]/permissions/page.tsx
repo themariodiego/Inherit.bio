@@ -1,3 +1,4 @@
+import { adultOnRecord } from "@/lib/family/adult-on-record";
 import { prepareHealthPictureGrant } from "@/lib/family/health-picture-results";
 import { preparePortraitGrant } from "@/lib/family/portrait-source-readiness";
 import { prepareSharedReportGrant } from "@/lib/family/shared-report-results";
@@ -11,10 +12,13 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
 import { NAV_LABELS } from "@/copy/navigation";
 import {
+  GRANT_UNAVAILABLE,
   INDEPENDENT_LOGIN_REQUIRED,
   PERMISSIONS_H1,
   PERMISSION_ROWS,
   TOMBSTONE_ITEMS_HEADING,
+  YOUR_ADULT_DATE_REQUIRED,
+  adultDateRequiredFrom,
   asymmetryLine,
   onlyTheyCanTurnThisOn,
   theirColumnHeading,
@@ -182,6 +186,25 @@ export default async function FamilyPermissionsPage(
   const portraitEndpointReceipt = mayGrant && mySelf ? await preparePortraitGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const healthPictureEndpointReceipt = mayGrant && mySelf ? await prepareHealthPictureGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const canMint = Boolean(mySelf && myPrincipal && theirPrincipal && artifact && profile);
+
+  // Why a row with no control is locked (D-102). The three endpoint receipts
+  // above are `string | null` and a null swallows its cause, so the reason is
+  // read separately: `family_report_endpoint_v1(..., p_require_adult)` is
+  // called for BOTH sides, so either profile can be the one that fails it.
+  //
+  // This decides a SENTENCE, never an authority. The grant is withheld by the
+  // SQL whatever this says; without it the reader met an empty paragraph.
+  const adults = mayGrant
+    ? await adultOnRecord(admin, [user.id, person.counterpartAccountId])
+    : new Map<string, boolean>();
+  const lockedReason = (): string => {
+    if (!adults.get(user.id)) return YOUR_ADULT_DATE_REQUIRED;
+    if (!adults.get(person.counterpartAccountId)) {
+      return adultDateRequiredFrom(person.displayLabel);
+    }
+    return GRANT_UNAVAILABLE;
+  };
+
   function actionFor(purpose: Purpose): RowAction | undefined {
     const held = outbound.get(purpose);
     if (held && held.state === "on") return { kind: "revoke", grantId: held.grantId };
@@ -231,11 +254,19 @@ export default async function FamilyPermissionsPage(
       (purpose === "family.portrait" || purpose === "family.heritability") &&
       portraitLocked &&
       action?.kind !== "revoke";
+    // A row this reader may set, with no control and no reason yet: that is
+    // the empty paragraph D-102 found. The marker reason wins where it
+    // applies, because it names a step the reader can take right now.
+    const unexplained = !locked && action === undefined && mayGrant;
     return {
       id: row.id,
       state: outbound.get(purpose)?.state ?? "off",
       action: locked ? undefined : action,
-      lockedReason: locked ? INDEPENDENT_LOGIN_REQUIRED : undefined,
+      lockedReason: locked
+        ? INDEPENDENT_LOGIN_REQUIRED
+        : unexplained
+          ? lockedReason()
+          : undefined,
     };
   });
 

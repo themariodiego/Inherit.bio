@@ -16,6 +16,10 @@ import {
   PORTRAIT_H1,
   VIEWER_NO_FILE_YET,
 } from "@/copy/family/portrait";
+import { adultDateRequiredFrom } from "@/copy/family/permissions";
+
+/** B's self subject carries the default label, so A sees the invited record's name. */
+const B_AS_SEEN_BY_A = "Invited adult";
 
 /**
  * `/family/portrait/[pairId] empty` — the pair exists, both permissions are
@@ -143,15 +147,57 @@ test("two adults agree to compare before either has added a file", async ({ page
     page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
   });
 
-  // B's own account declaration, in B's own session. Both people need one
-  // before either can grant Portrait: `family_report_endpoint_v1` builds the
-  // grant presentation from BOTH profiles and requires a date of birth at or
-  // over eighteen on each, so a missing one on the RECIPIENT leaves the
-  // granter's control unsettable with no reason on screen — an empty
-  // `permission-locked` paragraph, filed as D-102. Measured 2026-09-13, after
-  // the first version of this fixture completed only A's account and A's
-  // "Turn on" control was simply absent. Completing both accounts is this
-  // fixture working around that defect, not a step the state needs.
+  // D-102, ON THE ONE STATE IT DESCRIBES, before the fixture works around it.
+  //
+  // `family_report_endpoint_v1` builds the grant presentation from BOTH
+  // profiles and requires a date of birth at or over eighteen on each, so
+  // right now — A completed, B not — A's Portrait control is unsettable. It
+  // used to render an empty `permission-locked` paragraph; since the signed
+  // copy of 2026-09-14 it names the reason and, by the owner's decision,
+  // names the person.
+  //
+  // What is asserted is the whole of what attribution accepts and the whole
+  // of what it refuses: the sentence names B, and it does not say which of
+  // the two non-adult answers applies. `adultOnRecord` collapses the
+  // database's three-valued `birthDateState` for exactly that reason, so the
+  // words below are the only ones a reader can get in either case.
+  const invitedSubjectForD102 = await (async () => {
+    const admin = adminClient();
+    const inviter = await admin.from("subject_principals").select("id")
+      .eq("account_id", accountA).eq("subject_id", await selfSubjectOf(accountA))
+      .eq("principal_kind", "account_subject").eq("status", "active").single();
+    expect(inviter.error).toBeNull();
+    const invitation = await admin.from("subject_invitations").select("target_id")
+      .eq("inviter_principal_id", inviter.data!.id).eq("invitation_kind", "adult_subject")
+      .eq("status", "accepted").single();
+    expect(invitation.error).toBeNull();
+    return (invitation.data as { target_id: string }).target_id;
+  })();
+  await page.request.post("/auth/sign-out");
+  await signIn(page, A.email, A.password);
+  await page.goto(`/family/s-${invitedSubjectForD102}/permissions`);
+  const beforeB = page
+    .locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
+    .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: /^Portrait$/ }) });
+  await expect(beforeB.locator('[data-slot="permission-control"]'),
+    "unsettable while the recipient has no date of birth on record").toHaveCount(0);
+  await expect(beforeB.locator('[data-slot="permission-locked"]'))
+    .toHaveText(adultDateRequiredFrom(B_AS_SEEN_BY_A));
+  // Never the empty paragraph the defect was, on any row of either column.
+  for (const locked of await page.locator('[data-slot="permission-locked"]').allTextContents()) {
+    expect(locked.trim(), "no locked row renders an empty reason").not.toBe("");
+  }
+  // And never a word that would tell a reader WHICH answer applies.
+  const body = (await page.locator("main").innerText()).toLowerCase();
+  for (const word of ["under 18", "under eighteen", "minor", "too young"]) {
+    expect(body, `the page never says "${word}"`).not.toContain(word);
+  }
+  await page.request.post("/auth/sign-out");
+  await signIn(page, B.email, B.password);
+
+  // B's own account declaration, in B's own session, which clears the state
+  // above. Completing both accounts is what the rest of this file needs; it
+  // is not a step the portrait state itself requires.
   await page.goto("/files/upload");
   await expect(page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true })).toBeVisible();
   await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1991-02-02");
