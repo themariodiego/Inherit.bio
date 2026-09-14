@@ -242,6 +242,7 @@
     "/genome/[subject]/reports jurisdiction-unavailable",
     "/genome/[subject]/reports partial-coverage",
     "/genome/[subject]/reports processing",
+    "/genome/[subject]/reports complete",
     "/genome/[subject]/reports/[slug] complete",
     "/genome/[subject]/reports/[slug] jurisdiction-unavailable",
     "/genome/[subject]/reports/[slug] empty",

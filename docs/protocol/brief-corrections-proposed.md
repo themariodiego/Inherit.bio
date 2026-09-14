@@ -1093,7 +1093,7 @@ Filed as **D-108**.
 
 ---
 
-## Where the 26 unproven pairs stand
+## Where the 25 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1116,10 +1116,10 @@ a new state and proved it in the same change.
 | Applied from item 10 (`complete`, coverage, the public page) | 16 | done 2026-09-13 |
 | Applied from item 13 (G2.2 amended, D-108) | 7 | done 2026-09-13 |
 | **Retired from the register** | **58** | |
-| Closed by a proof | 4 | `/family/[person]`, `/family/health-picture`, `/overview awaiting-choice` (a ninth state id, declared and proven together), `/settings/copilot complete` |
+| Closed by a proof | 5 | `/family/[person]`, `/family/health-picture`, `/overview awaiting-choice` (a ninth state id, declared and proven together), `/settings/copilot complete`, `/genome/[subject]/reports complete` |
 | Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
-| **Genuinely open** | **26** | test work |
-| **Total unproven** | **26** | |
+| **Genuinely open** | **25** | test work |
+| **Total unproven** | **25** | |
 
 **Nothing in this number is a register correction any more.** The open count
 and the total are now the same figure, which is the point: every remaining
@@ -1140,7 +1140,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 26 that are open, none waits on item 11 any more
+### And of the 25 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1154,7 +1154,7 @@ actually waits on.
 | --- | ---: | --- |
 | `not-covered` | 9 | test work; on three routes it still renders identically to `empty`, so the cause has to be established from the database as `/overview` already does |
 | `partial-coverage` | 8 | test work; the reading each route uses is now recorded, so a title can say which |
-| `complete` | 7 | test work; `/settings/copilot complete` came off this row on 2026-09-14 |
+| `complete` | 6 | test work; `/settings/copilot` and `/genome/[subject]/reports` came off this row on 2026-09-14, the second of them implemented and untitled |
 | `processing` | 2 | a product branch that does not exist, and the sentence that would create it is a disclosure decision (below) — not a ruling on the id |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
