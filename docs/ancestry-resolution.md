@@ -335,23 +335,23 @@ rule:
 
 | cohort | own region | largest share on a region that is not its own |
 | --- | --- | --- |
-| Hazara | CSA 0.394 | **EAS 0.326** |
-| Druze | MID 0.670 | **EUR 0.282** |
-| Balochi | CSA 0.545 | EUR 0.236 |
-| Makrani | CSA 0.560 | MID 0.234 |
-| Sardinian | EUR 0.733 | **MID 0.229** |
-| Brahui | CSA 0.620 | EUR 0.223 |
-| Uygur | EAS 0.455 | CSA 0.214 |
+| Hazara | CSA 0.396 | **EAS 0.326** |
+| Druze | MID 0.671 | **EUR 0.282** |
+| Balochi | CSA 0.546 | EUR 0.237 |
+| Makrani | CSA 0.561 | MID 0.233 |
+| Sardinian | EUR 0.734 | **MID 0.228** |
+| Brahui | CSA 0.621 | EUR 0.225 |
+| Uygur | EAS 0.455 | CSA 0.215 |
 | Mozabite | MID 0.677 | AFR 0.210 |
-| Kalash | CSA 0.614 | MID 0.179 |
-| Pathan | CSA 0.576 | EUR 0.178 |
-| Adygei | EUR 0.625 | CSA 0.175 |
-| Tuscan | EUR 0.810 | MID 0.162 |
-| Palestinian | MID 0.739 | EUR 0.156 |
+| Kalash | CSA 0.615 | MID 0.180 |
+| Pathan | CSA 0.578 | EUR 0.178 |
+| Adygei | EUR 0.627 | CSA 0.175 |
+| Tuscan | EUR 0.811 | MID 0.160 |
+| Palestinian | MID 0.742 | EUR 0.154 |
 
 **16 of the 69 non-AMR cohorts put at least 0.10 on a region that is not their
 own; 8 put at least 0.20.** The Europe/Middle East confusion runs in both
-directions — a Sardinian is told 22.9% Middle East, a Druze 28.2% Europe — and
+directions — a Sardinian is told 22.8% Middle East, a Druze 28.2% Europe — and
 it is a stronger claim than D-120, which found the same boundary failing only
 for people the set omits. This fails for people the set contains.
 
@@ -381,6 +381,72 @@ the worst wrong share reaches, excluding AMR:
 Capped is at least as good as unweighted everywhere and better at the tail, and
 better than pooled throughout. It is the rule, on the evidence.
 
+### Is it removable? Two candidate fixes, both measured, both dead
+
+A limitation more markers or a better model would lift is a build task, not a
+disclosure. Both were tried before anything was written down.
+
+**Candidate 1: more markers.** Subsample the 168 and watch the confusion shrink
+(`measure-marker-scaling.mts`), with each person's own population held out of
+the reference set — the real-world case, and the one the numbers above do not
+cover. Counting the 69 non-AMR cohorts by max-of-mean:
+
+| markers | ≥0.10 | ≥0.20 | ≥0.30 | mean worst | Druze |
+| --- | --- | --- | --- | --- | --- |
+| 21 | 32 | 21 | 9 | 0.141 | 0.484 |
+| 42 | 30 | 14 | 9 | 0.126 | 0.488 |
+| 84 | 22 | 11 | 4 | 0.099 | 0.485 |
+| 126 | 21 | 10 | 6 | 0.093 | 0.508 |
+| 168 | 21 | 11 | 5 | 0.090 | 0.482 |
+
+**Flat from 84 markers on.** Quadrupling 21 to 84 buys a great deal; doubling 84
+to 168 buys 0.009 of mean worst share and nothing at all in the counts. Druze
+does not move at any panel size: 0.48 at 21 markers and 0.48 at 168. Whatever
+separates the Levant from southern Europe, these markers do not carry more of it
+per marker. Two caveats travel with this: the 168 were *chosen* to be
+ancestry-informative, so a random subsample of them is not the same thing as a
+smaller panel someone would have designed; and each size is a single draw, so the
+per-cohort columns are noisy — Sardinian reads 0.196, 0.444, 0.463, 0.404, 0.330
+down the column, which is the draw talking, not the panel. The aggregate is the
+trustworthy part, and the aggregate is flat.
+
+**Candidate 2: fit fine, report coarse.** A seven-component mixture over region
+*averages* cannot represent a population that sits inside a region but far from
+its average — Europe's average is dominated by CEU, GBR, FIN, IBS and TSI, and a
+Sardinian is genuinely distant from it — so the fit may be explaining a real
+within-region distance by borrowing from a neighbour. Fitting all 78 populations
+and adding each population's share into its own region should remove that. It
+does, spectacularly, and the result is an artefact:
+
+| model | ≥0.10 | ≥0.20 | ≥0.30 |
+| --- | --- | --- | --- |
+| region fit, own population present | 16 of 69 | 8 | 1 |
+| **roll-up, own population present** | **10 of 69** | **2** | **0** |
+| region fit, own population held out | 20 of 69 | 11 | 2 |
+| **roll-up, own population held out** | 20 of 69 | **14** | **5** |
+
+With the person's own population in the table the roll-up looks like a free win:
+Sardinian's Middle East share falls from 0.228 to below 0.083 and its own region
+rises to 0.898, Tuscan's from 0.160 to 0.020. **Held out, it is worse than the
+model it was meant to replace** — 14 cohorts above 0.20 against 11, and 5 above
+0.30 against 2. A Druze without Druze in the set becomes 0.525 Europe against
+0.297 Middle East.
+
+The mechanism is plain once seen. Removing one population barely moves a
+regional average, so the region fit degrades gently. Removing it from a
+78-component table deletes the only component that could have represented that
+person, so the fit reaches for neighbours — and neighbours cross region borders.
+The roll-up's advantage *was* the person's own population, which is exactly the
+thing a real reader does not have.
+
+This is worth naming as a method point, not just a result: **a model evaluated
+only on people its reference set contains will prefer whichever variant
+memorises them best.** The held-out measurement was not a refinement of the
+first one. It reversed it.
+
+So the capped region fit stands, D-122 stands, and neither of the cheap fixes is
+available.
+
 ### What this forbids
 
 Printing "Middle East 22.9%" to a Sardinian reader is an invented magnitude.
@@ -392,14 +458,18 @@ So a region surface built on this panel ships only with one of:
    in a footnote — naming which regions this panel cannot separate and by how
    much, for the specific regions in that reader's own result; or
 2. **merged regions**, reporting the boundaries the panel can actually hold
-   (the measurements say AFR, EAS and OCE are separable at this marker count;
-   EUR/MID and CSA/EUR are not) rather than seven it cannot.
+   rather than seven it cannot. Measured held-out, AFR, EAS and OCE separate
+   cleanly; EUR/MID and CSA/EUR do not.
 
 Neither is chosen here. Both are honest; option 2 is a smaller claim and option
 1 is the owner's stated preference — "give what the data supports, disclose the
 gap loudly" — and the two are compatible if the merge is offered as the default
 with the finer split available behind the disclosure. **The decision is the
 owner's and has not been made.**
+
+What is settled is that waiting does not help. The two obvious routes out — a
+bigger panel and a finer model — were measured rather than assumed, and neither
+is one. Whatever ships, ships with this limitation in it.
 
 ## Reproducing
 
@@ -411,7 +481,8 @@ python3 scripts/ancestry-resolution/fetch-callset-frequencies.py  # the full cal
 SOURCE=api node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts
 node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts   # SOURCE=callset is the default
 node --import tsx scripts/ancestry-resolution/measure-region-weighting.mts
-node --import tsx scripts/ancestry-resolution/measure-region-confusion.mts  # RULE=pooled|unweighted|capped
+node --import tsx scripts/ancestry-resolution/measure-region-confusion.mts  # RULE=..., MODEL=region|rollup, HOLD_OUT=1
+node --import tsx scripts/ancestry-resolution/measure-marker-scaling.mts
 ```
 
 The naming-rule run takes about 45 minutes and writes its rows to
@@ -420,6 +491,10 @@ uses 100 resamples rather than the shipped estimator's 200 and says so in its
 own header: it asks whether two distributions separate, not what one person's
 published interval is. Any threshold it suggested would have to be re-measured
 at 200 before becoming a rule — none did.
+
+`measure-region-confusion.mts` caps the EM at 2000 iterations. The figures first
+published from it used 1000; every number moved by at most 0.003 and no count
+changed, and the tables here are the 2000-iteration run.
 
 The fetched frequencies are not committed: they are reference data, and
 reference data enters this repository through a licence audit, not through a
