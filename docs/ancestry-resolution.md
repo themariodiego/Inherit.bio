@@ -458,14 +458,53 @@ So a region surface built on this panel ships only with one of:
    in a footnote — naming which regions this panel cannot separate and by how
    much, for the specific regions in that reader's own result; or
 2. **merged regions**, reporting the boundaries the panel can actually hold
-   rather than seven it cannot. Measured held-out, AFR, EAS and OCE separate
-   cleanly; EUR/MID and CSA/EUR do not.
+   rather than seven it cannot — measured below, because it is not free and
+   the obvious merge is not the right one.
 
 Neither is chosen here. Both are honest; option 2 is a smaller claim and option
 1 is the owner's stated preference — "give what the data supports, disclose the
 gap loudly" — and the two are compatible if the merge is offered as the default
 with the finer split available behind the disclosure. **The decision is the
 owner's and has not been made.**
+
+### What a merge actually buys, and the one that backfires
+
+Option 2 was a hand-wave until it was measured. Held out, over the non-AMR
+cohorts, counting by the largest wrong-GROUP share:
+
+| grouping | groups | ≥0.10 | ≥0.20 | ≥0.30 | mean worst | worst cohort |
+| --- | --- | --- | --- | --- | --- | --- |
+| seven regions, as measured | 7 | 20 | 11 | 2 | 0.084 | Druze → EUR 0.457 |
+| EUR+MID | 6 | 14 | **10** | **7** | 0.077 | Balochi → EUR+MID 0.402 |
+| **EUR+MID+CSA** | 5 | **9** | **5** | 2 | **0.055** | Uygur → EUR+MID+CSA 0.437 |
+| EAS+OCE | 6 | 21 | 13 | 3 | 0.087 | Druze → EUR 0.456 |
+| EUR+MID, EAS+OCE | 5 | 16 | 11 | 8 | 0.080 | Balochi → EUR+MID 0.381 |
+| EUR+MID+CSA, EAS+OCE | 4 | 13 | 7 | 3 | 0.060 | Uygur → EUR+MID+CSA 0.438 |
+
+**Merging Europe with the Middle East — the obvious move, the one D-122 points
+straight at — makes the tail worse.** Cohorts above 0.30 go from 2 to 7. The
+reason is visible in the worst-cohort column: Balochi, Brahui, Pathan, Makrani
+and Kalash were previously splitting their error between EUR and MID, and
+merging the two collects it into one bucket. A merge does not only hide a
+confusion, it also **concentrates errors that were previously spread**, and
+whether that helps depends on who was confused with whom.
+
+Merging Europe, the Middle East and Central/South Asia together does work:
+9 cohorts above 0.10 against 20, 5 above 0.20 against 11, mean worst share
+0.055 against 0.084. Its remaining worst case is Uygur at 0.437, and Uygur is a
+population with genuinely mixed eastern and western Eurasian ancestry, so some
+of that is signal rather than confusion — this simulation cannot tell the two
+apart, and should not be read as though it could.
+
+But look at the cost column. Five groups — AFR, AMR, EAS, OCE and one western
+Eurasian bucket — is not a smaller version of seven, it is a **different trade
+against the five the estimator ships today** (AFR, AMR, EAS, EUR, SAS). It
+gains Oceania and an honest Middle East, and it loses the Europe/South Asia
+split that a great many readers currently get. That is a product decision, not
+a measurement, and it is not made here.
+
+Merging Oceania into East Asia is not worth discussing: it removes nothing
+(21/13/3) and costs a whole region.
 
 What is settled is that waiting does not help. The two obvious routes out — a
 bigger panel and a finer model — were measured rather than assumed, and neither
@@ -483,6 +522,7 @@ node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts   # SOURCE
 node --import tsx scripts/ancestry-resolution/measure-region-weighting.mts
 node --import tsx scripts/ancestry-resolution/measure-region-confusion.mts  # RULE=..., MODEL=region|rollup, HOLD_OUT=1
 node --import tsx scripts/ancestry-resolution/measure-marker-scaling.mts
+node --import tsx scripts/ancestry-resolution/measure-region-merges.mts  # MERGES="EUR+MID,EAS+OCE"
 ```
 
 The naming-rule run takes about 45 minutes and writes its rows to
