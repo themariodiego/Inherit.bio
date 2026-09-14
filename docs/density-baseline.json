@@ -2317,7 +2317,201 @@
   },
   "postChange": {
     "status": "pending",
-    "reason": "Still pending, and the blocker is now MEASURED rather than asserted. Three facts stand from 2026-09-11: the successor map carries all 22 rows so the relative rule has something to compare against; the 44px control scale landed on 2026-09-11 and changes the rendered height of every surface carrying a link, so this capture is owed rather than optional; and ink coverage is a pixel measurement taken on macOS 26.5.1 arm64 with Google Chrome 151. MEASURED 2026-09-14. scripts/density-baseline/reproduce.sh was run on Linux (6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2) against the same frozen baseline commit, and the two captures were compared route by route. Ink coverage is systematically HIGHER on Linux: mean +28.5% relative at 390x844 (max +41.4%) and +26.5% at 1280x800 (max +36.6%), on identical markup. Against a relative rule whose threshold is 60% of the baseline, a platform shift of that size is not noise, so the equivalence requirement is confirmed with evidence rather than by argument. AND THE BLOCKER IS NARROWER THAN IT LOOKED. Every non-pixel measure was IDENTICAL across the two platforms: interactive element counts, visible text character counts and prose element counts matched on all 44 captures, zero differences. So only inkCoverageRatio, whiteSpaceRatio and exactGroundRatio need one machine; the element and text budgets never did. THE SECOND BLOCKER, WHICH WAS NOT RECORDED BEFORE AND IS THE LARGER ONE: there is no post-change capture harness. capture.mjs reads contract.routes, which are the BASELINE's 22 paths, and the post-change side must measure their successors - six of which are authenticated and three of which carry a dynamic segment (/genome/[subject]/ancestry, /genome/[subject]/data/browser, /genome/[subject]/reports, /copilot/[scope]) that needs a concrete value. supabase-fixture.mjs cannot serve them: it is built FROM the baseline checkout (it reads that tree's data/templates, providers and sample genome) and stubs that product's PostgREST tables, while HEAD's authenticated pages read a much larger surface through the service role. Completing this needs either a HEAD-shaped fixture or the real local stack the browser suite already builds, plus a successor route list with concrete parameters. That is the work; the platform equivalence is a constraint on where it runs, not the reason it has not been done.",
-    "routes": []
+    "reason": "Still pending, and the blocker is now MEASURED rather than asserted. Three facts stand from 2026-09-11: the successor map carries all 22 rows so the relative rule has something to compare against; the 44px control scale landed on 2026-09-11 and changes the rendered height of every surface carrying a link, so this capture is owed rather than optional; and ink coverage is a pixel measurement taken on macOS 26.5.1 arm64 with Google Chrome 151. MEASURED 2026-09-14. scripts/density-baseline/reproduce.sh was run on Linux (6.18.44 x86_64, Chromium 141.0.7390.37, Node 22.22.2) against the same frozen baseline commit, and the two captures were compared route by route. Ink coverage is systematically HIGHER on Linux: mean +28.5% relative at 390x844 (max +41.4%) and +26.5% at 1280x800 (max +36.6%), on identical markup. Against a relative rule whose threshold is 60% of the baseline, a platform shift of that size is not noise, so the equivalence requirement is confirmed with evidence rather than by argument. AND THE BLOCKER IS NARROWER THAN IT LOOKED. Every non-pixel measure was IDENTICAL across the two platforms: interactive element counts, visible text character counts and prose element counts matched on all 44 captures, zero differences. So only inkCoverageRatio, whiteSpaceRatio and exactGroundRatio need one machine; the element and text budgets never did. THE SECOND BLOCKER, WHICH WAS NOT RECORDED BEFORE AND IS THE LARGER ONE: there is no post-change capture harness. capture.mjs reads contract.routes, which are the BASELINE's 22 paths, and the post-change side must measure their successors - six of which are authenticated and three of which carry a dynamic segment (/genome/[subject]/ancestry, /genome/[subject]/data/browser, /genome/[subject]/reports, /copilot/[scope]) that needs a concrete value. supabase-fixture.mjs cannot serve them: it is built FROM the baseline checkout (it reads that tree's data/templates, providers and sample genome) and stubs that product's PostgREST tables, while HEAD's authenticated pages read a much larger surface through the service role. Completing this needs either a HEAD-shaped fixture or the real local stack the browser suite already builds, plus a successor route list with concrete parameters. That is the work; the platform equivalence is a constraint on where it runs, not the reason it has not been done. PROGRESS 2026-09-14, and the recorded blocker is now half closed. (1) THE MEASUREMENT CODE IS ONE COPY. `ready` and `measure` moved to scripts/density-baseline/measure.mjs and capture.mjs imports them, because a second driver with a second copy of the reading code would have made the two halves of this comparison incomparable by drift - the exact failure this document exists to prevent. Proven unchanged rather than assumed: the frozen baseline was re-captured on Linux with the extracted module and compared against the pre-extraction Linux capture of the same morning - 0 measurement differences across all 44 captures and all 44 screenshots byte-identical. (2) THE SUCCESSOR URLS ARE DECLARED. postChange.measurementPaths carries one row per baseline route with the concrete URL to capture, the surface that decides whether the capture signs in, and the parameters behind every dynamic segment. Five successors carry one - four take the account's own `me` subject segment, and the report takes the baseline's OWN slug (type-2-diabetes-tcf7l2-rs7903146, still published) so the comparison is one page against the page that replaced it rather than against a different report that happens to render. scripts/density-successors.test.ts checks all of it against the register and the baseline. WHAT REMAINS is the driver and the run: a capture that signs into a HEAD build on the real local stack, plus a synthetic source covering both the AIM panel and chr10:112998590 so the ancestry map and that one report are in the same state their predecessors were measured in. Both halves must also use one browser build, which the Linux baseline now fixes at the Playwright Chromium the e2e suite already installs.",
+    "routes": [],
+    "measurementPaths": [
+      {
+        "baselineRoute": "/",
+        "baselineMeasurementPath": "/",
+        "successorPath": "/",
+        "measurementPath": "/",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/about",
+        "baselineMeasurementPath": "/about",
+        "successorPath": "/about",
+        "measurementPath": "/about",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/ancestry",
+        "baselineMeasurementPath": "/ancestry",
+        "successorPath": "/genome/[subject]/ancestry",
+        "measurementPath": "/genome/me/ancestry",
+        "surface": "authenticated",
+        "basis": "`me` is the account's own subject segment, which is what the baseline's /ancestry showed: the signed-in person's own result.",
+        "parameters": {
+          "subject": "me"
+        }
+      },
+      {
+        "baselineRoute": "/auth/forgot-password",
+        "baselineMeasurementPath": "/auth/forgot-password",
+        "successorPath": "/auth/forgot-password",
+        "measurementPath": "/auth/forgot-password",
+        "surface": "auth",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/auth/reset-password",
+        "baselineMeasurementPath": "/auth/reset-password",
+        "successorPath": "/auth/reset-password",
+        "measurementPath": "/auth/reset-password",
+        "surface": "auth",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/auth/sign-in",
+        "baselineMeasurementPath": "/auth/sign-in",
+        "successorPath": "/auth/sign-in",
+        "measurementPath": "/auth/sign-in",
+        "surface": "auth",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/auth/sign-up",
+        "baselineMeasurementPath": "/auth/sign-up",
+        "successorPath": "/auth/sign-up",
+        "measurementPath": "/auth/sign-up",
+        "surface": "auth",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/browse",
+        "baselineMeasurementPath": "/browse",
+        "successorPath": "/genome/[subject]/data/browser",
+        "measurementPath": "/genome/me/data/browser",
+        "surface": "authenticated",
+        "basis": "The same segment. The baseline's /browse carried no query, so neither does this: the page at rest, before a search.",
+        "parameters": {
+          "subject": "me"
+        }
+      },
+      {
+        "baselineRoute": "/changelog",
+        "baselineMeasurementPath": "/changelog",
+        "successorPath": "/changelog",
+        "measurementPath": "/changelog",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/chat",
+        "baselineMeasurementPath": "/chat",
+        "successorPath": "/copilot/[scope]",
+        "measurementPath": "/copilot/me",
+        "surface": "authenticated",
+        "basis": "The scope segment is a subject segment, so the own-genome conversation is the successor to the baseline's /chat.",
+        "parameters": {
+          "scope": "me"
+        }
+      },
+      {
+        "baselineRoute": "/dashboard",
+        "baselineMeasurementPath": "/dashboard",
+        "successorPath": "/overview",
+        "measurementPath": "/overview",
+        "surface": "authenticated",
+        "basis": "Renamed but not parameterised: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/legal/deceased",
+        "baselineMeasurementPath": "/legal/deceased",
+        "successorPath": "/legal/deceased",
+        "measurementPath": "/legal/deceased",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/legal/gina",
+        "baselineMeasurementPath": "/legal/gina",
+        "successorPath": "/legal/gina",
+        "measurementPath": "/legal/gina",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/legal/law-enforcement",
+        "baselineMeasurementPath": "/legal/law-enforcement",
+        "successorPath": "/legal/law-enforcement",
+        "measurementPath": "/legal/law-enforcement",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/legal/research-consent",
+        "baselineMeasurementPath": "/legal/research-consent",
+        "successorPath": "/legal/research-consent",
+        "measurementPath": "/legal/research-consent",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/privacy",
+        "baselineMeasurementPath": "/privacy",
+        "successorPath": "/privacy",
+        "measurementPath": "/privacy",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/providers",
+        "baselineMeasurementPath": "/providers",
+        "successorPath": "/providers",
+        "measurementPath": "/providers",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/reports",
+        "baselineMeasurementPath": "/reports",
+        "successorPath": "/genome/[subject]/reports",
+        "measurementPath": "/genome/me/reports",
+        "surface": "authenticated",
+        "basis": "The same segment: the account's own report library, which is what /reports was.",
+        "parameters": {
+          "subject": "me"
+        }
+      },
+      {
+        "baselineRoute": "/reports/[slug]",
+        "baselineMeasurementPath": "/reports/type-2-diabetes-tcf7l2-rs7903146",
+        "successorPath": "/genome/[subject]/reports/[slug]",
+        "measurementPath": "/genome/me/reports/type-2-diabetes-tcf7l2-rs7903146",
+        "surface": "authenticated",
+        "basis": "THE SAME REPORT, not a convenient one. The baseline measured /reports/type-2-diabetes-tcf7l2-rs7903146 and that template is still published under that slug, so the comparison is one page against the page that replaced it rather than against a different report that happens to render.",
+        "parameters": {
+          "subject": "me",
+          "slug": "type-2-diabetes-tcf7l2-rs7903146"
+        }
+      },
+      {
+        "baselineRoute": "/settings",
+        "baselineMeasurementPath": "/settings",
+        "successorPath": "/settings",
+        "measurementPath": "/settings",
+        "surface": "authenticated",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/terms",
+        "baselineMeasurementPath": "/terms",
+        "successorPath": "/terms",
+        "measurementPath": "/terms",
+        "surface": "public",
+        "basis": "No dynamic segment: the successor path is the measurement path."
+      },
+      {
+        "baselineRoute": "/uploads",
+        "baselineMeasurementPath": "/uploads",
+        "successorPath": "/files",
+        "measurementPath": "/files",
+        "surface": "authenticated",
+        "basis": "Renamed but not parameterised: the successor path is the measurement path."
+      }
+    ]
   }
 }
