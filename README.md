@@ -92,6 +92,14 @@ the self-hosting guide, secrets over the tracked tree *and its history*, plus
 jurisdictions, report templates, result headings, legal placeholders and
 comparator names.
 
+`gate:names` is the one that cannot run from a clean checkout: its comparator
+denylist is private, and it reads the path in `NAME_DENYLIST_FILE`. Point that
+at a file outside the repository and the gate runs — its other three rules
+(unreviewed external hosts, organisation-shaped names, evaluative words beside
+either) check the whole tree **and every commit message since the allowlist's
+baseline**, which is the half that catches things a file-only scan cannot.
+Skipping it locally is how a failure reaches CI.
+
 Ten run in CI. `gate:schema-drift` deliberately does not — it compares a
 deployed database against `supabase/migrations`, and in CI that database was
 built from those same files seconds earlier, so it could only ever confirm
