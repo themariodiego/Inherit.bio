@@ -120,13 +120,128 @@ population name may be printed at all:
 - An equal-granularity check has to compare what a person in each region can
   be told, and fail when one region is systematically better served.
 
+## Correction, 2026-09-14: the route proposed above reaches six regions, not seven
+
+The table above says gnomAD's HGDP+1kGP set carries "80 (4,094 genomes)" over
+"7: AFR, AMR, CSA, EAS, EUR, **MID**, **OCE**", and that sentence was used to
+rule out 1000 Genomes on the equal-granularity requirement. It is true of the
+**callset**. It is not true of the **public API** this document proposed
+reaching it through, and the difference matters because OCE was half the
+argument.
+
+Measured over all 168 panel markers: the API returns **73** named populations,
+47 from HGDP and 26 from 1kGP. **No Oceanian population appears at any marker** —
+no Papuan, no Bougainville, no Melanesian — and neither do San, Mbuti or Biaka.
+Not sparse: absent.
+
+So the set actually reachable this way gives a person of Papuan ancestry
+nothing at all, which is the same failure this document used to disqualify 1000
+Genomes. Reaching OCE means the bulk callset from gnomAD's downloads page,
+which is exactly the cost the API route was chosen to avoid.
+
+## And the sample-size floor falls on almost the same people
+
+Of the 73, **22 carry fewer than ten people** and were dropped by the floor the
+earlier measurement used. Checked rather than assumed: for almost all of them
+the median count across markers equals the minimum, so this is their size, not
+one badly-covered marker.
+
+| people | populations |
+| --- | --- |
+| 1 | Bantu South Africa, Surui |
+| 2 | Karitiana |
+| 4 | Colombian |
+| 5 | Bantu Kenya, Pima |
+| 6–7 | Uygur, Dai, Lahu, Naxi, Oroqen, Tujia, Tuscan |
+| 8 | Cambodian, Daur, Hezhen, Mongola, She, Xibo, Yizu |
+| 9 | Miaozu, Tu |
+
+Read against the 51 that survive: a European has roughly twelve candidate
+labels with 10 to 119 people behind each. Someone of Indigenous-American
+ancestry has **one** (Maya, 20 people). Someone of Papuan ancestry has none at
+any floor. The inequality is in the reference set, so no panel size and no
+model fixes it.
+
+*(The regional grouping of those names is the author's reading rather than a
+sourced mapping: the paper names its seven regions — "AFR=African, AMR=admixed
+American, CSA=Central/South Asian, EAS=East Asian, EUR=European, MID=Middle
+Eastern, OCE=Oceanian" — but puts the per-population assignment in supplementary
+tables. An equal-granularity gate needs that mapping from its source first.)*
+
+## The naming rule does not work. Measured 2026-09-14, and this is the finding
+
+The section above proposes: "A name only when its interval supports it;
+otherwise the region, and the reason", and asserts that the instability it
+measured "is exactly what they measure". **That assertion was wrong, and it was
+worth testing before anything was built on it.** The instability in that table
+is across simulated *people*; the interval resamples *markers* within one
+person. A bootstrap over markers cannot see that the reference set is missing
+the person's own population, because the misfit is in the set, not in the
+sample.
+
+`scripts/ancestry-resolution/measure-naming-rule.mts` draws a person from each
+of eight populations spanning the regions that behaved differently, estimates
+them twice — once with their own population in the reference set, once without —
+and asks of three candidate signals whether either case can be told from the
+other. 51 populations, 168 markers, 6 seeds, 100 resamples per estimate.
+
+| candidate | best separation | at that threshold |
+| --- | --- | --- |
+| interval's low bound ≥ t | +0.29 at t = 0.60 | names **45.8%** of represented people correctly, and still names **16.7%** of unrepresented ones |
+| log-likelihood per marker ≥ t | **negative almost everywhere** | the fit of an unrepresented person is indistinguishable from a represented one (medians −0.678 and −0.693) |
+| label agreement ≥ t | +0.27 at t = 0.60 | names **62.5%** correctly, and still names **35.4%** of unrepresented ones |
+
+**None of them separates the two cases.** And the reason is not that the signals
+are weak; it is that confidence runs the wrong way in exactly the cases that
+matter:
+
+| person | reference set | answer | interval | resamples agreeing |
+| --- | --- | --- | --- | --- |
+| Peru (PEL) | **without Peru** | Maya 0.80 | 0.720–1.000 | **100 of 100** |
+| French | **without France** | GBR 0.98 | 0.968–1.000 | 91 of 100 |
+| Han | **without Han** | CHS 0.93 | 0.861–1.000 | 85 of 100 |
+| Gujarati (GIH) | **with Gujarat** | GIH 0.32 | 0.000–0.638 | 26 of 100 |
+
+A Peruvian whose population the model does not contain is called Maya, and
+every single resample agrees. A Gujarati the model *does* contain is correctly
+called Gujarati, and three quarters of the resamples disagree. There is no
+threshold on any of these three measures that admits the fourth row and refuses
+the first.
+
+Worth recording alongside it: even when the population **is** in the reference
+set the top name is right only **41 of 48 times**, and one target (Han) came
+back *more* confident with its own population removed — share 0.633 → 0.831,
+interval low 0.317 → 0.692.
+
+### What this rules out, and what it leaves
+
+It rules out the design this document proposed: a single specific population
+name, gated on a confidence measure. The gate does not exist.
+
+It does not rule out showing the **distribution** rather than deciding from it.
+"In 100 resamples of your markers the closest match was Basque 43 times,
+Sardinian 27, CEU 18" is honest by construction — it shows the noise and the
+confidence together, which is what was asked for — and it never asserts a name
+the measurement cannot support. Whether that is a product worth building, next
+to a competitor that simply prints eleven confident labels, is a decision rather
+than a measurement, and it needs the reference-set inequality above stated on
+the surface beside it.
+
 ## Reproducing
 
 ```
 python3 scripts/ancestry-resolution/fetch-reference.py      # writes gnomad-pops.json
 SEEDS=8 python3 scripts/ancestry-resolution/measure-accuracy.py
 SEEDS=6 python3 scripts/ancestry-resolution/measure-leave-one-out.py
+node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts
 ```
+
+The naming-rule run takes about 45 minutes and writes its rows to
+`naming-rule-rows.jsonl` as it goes, so a killed run keeps what it measured. It
+uses 100 resamples rather than the shipped estimator's 200 and says so in its
+own header: it asks whether two distributions separate, not what one person's
+published interval is. Any threshold it suggested would have to be re-measured
+at 200 before becoming a rule — none did.
 
 The fetched frequencies are not committed: they are reference data, and
 reference data enters this repository through a licence audit, not through a

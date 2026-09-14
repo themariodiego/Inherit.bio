@@ -3377,3 +3377,76 @@ measured for the first time.** Every threshold in the contract, applied to all
   16px primary-content left padding against 24px, two auth pages at 9 and 10
   first-viewport interactives against 7, two mobile surfaces at 48 and 42
   decorated elements against 40, and 21 measurements over the 700-character cap.
+
+## 2026-09-14 · The ancestry naming rule was tested before it was built, and it does not work
+
+The owner compared Inherit against another service on the same file — eleven
+named groups there, two here — and asked for the quality to match or beat it.
+The investigation recorded on 2026-09-14 proposed a way: run the estimator over
+the ~51 gnomAD HGDP+1kGP populations rather than five superpopulations, and
+print a specific population name **only when its interval supports it**. It
+asserted that the leave-one-out instability it had measured "is exactly what
+they measure".
+
+**That assertion was mine, it was wrong, and testing it was the whole of this
+work.** The instability was across simulated people; the interval resamples
+markers within one person. A bootstrap over markers has no way to see that the
+reference set is missing the person's own population, because the misfit is in
+the set rather than in the sample.
+
+Three candidate gates were measured together — the interval's low bound, the
+fitted log-likelihood per marker (chosen because it *can* see a misfit a
+resample cannot) and label agreement (how often the top population survives a
+resample). **None separates a person the set contains from one it does not.**
+Best cases: the interval reaches +0.29 separation at a threshold that names only
+45.8% of represented people correctly and still names 16.7% of unrepresented
+ones; label agreement reaches +0.27 and still names 35.4%; the log-likelihood
+separates *negatively* almost everywhere.
+
+The four rows that make it concrete:
+
+| person | reference set | answer | interval | resamples agreeing |
+| --- | --- | --- | --- | --- |
+| Peru (PEL) | without Peru | Maya 0.80 | 0.720–1.000 | **100 of 100** |
+| French | without France | GBR 0.98 | 0.968–1.000 | 91 of 100 |
+| Han | without Han | CHS 0.93 | 0.861–1.000 | 85 of 100 |
+| Gujarati | **with** Gujarat | GIH 0.32 | 0.000–0.638 | 26 of 100 |
+
+Confidence runs the wrong way in exactly the cases that matter. No threshold
+admits the fourth row and refuses the first. Filed as D-118.
+
+**Two further findings, and both are about who the reference set leaves out.**
+
+The document's own argument for preferring gnomAD's HGDP+1kGP set over 1000
+Genomes was that it reaches seven regions including Oceania. That is true of the
+callset and **false of the public API the same document proposed reaching it
+through**: across all 168 panel markers the API returns 73 named populations and
+no Papuan, Bougainville or Melanesian at any marker, nor San, Mbuti or Biaka.
+Absent, not sparse (D-116).
+
+And the sample-size floor lands on almost the same people. Twenty-two of the 73
+carry fewer than ten people — Bantu South Africa and Surui 1, Karitiana 2,
+Colombian 4, Bantu Kenya and Pima 5, then fifteen East and Southeast Asian
+populations at 6–9 — checked against the median so it is their size and not one
+bad marker. A European has about twelve candidate labels; someone of
+Indigenous-American ancestry has one; someone of Papuan ancestry has none at any
+floor (D-117). The inequality is in the reference set, so no panel size and no
+model fixes it.
+
+**What this leaves.** It rules out the design that was proposed: one specific
+name, gated on confidence. The gate does not exist. It does **not** rule out
+showing the resample distribution rather than deciding from it — "in 100
+resamples of your markers the closest match was Basque 43 times, Sardinian 27,
+CEU 18" is honest by construction and shows noise and confidence together, which
+is what the owner asked for. Whether that is worth building next to a competitor
+that prints eleven confident labels is a decision, not a measurement, and it has
+to carry the reference-set inequality on the surface beside it.
+
+**The licence precondition is met with one gap named.** The audit row for the
+callset is verified from the peer-reviewed paper rather than asserted, and it
+records what could not be re-verified: gnomAD's own policies page is
+JavaScript-only, `curl` returns an 8.9 KB shell, and the bundled Chromium does
+not trust this session's TLS-interception CA. Verification was not disabled to
+get around it. The row also says the thing a licence does not settle — HGDP
+sampled small, named, often Indigenous communities, and unrestricted release
+governs what may be stored, not what may be said about a person.
