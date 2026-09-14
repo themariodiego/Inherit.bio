@@ -137,6 +137,7 @@ or arbitrary-target helper is authorized.
 | Item | Canonical home |
 | --- | --- |
 | `subjects`, `subject_demographics` | ordered Supabase migration series; exact required columns originate in X2 |
+| `subject_demographics.chromosomal_sex` — every read and every write | `src/lib/family/chromosomal-sex.ts` is the one reader; `public.declare_chromosomal_sex_v1`, reached only by `POST /api/chromosomal-sex`, is the one writer. Declared, never derived: no code path infers it from X or Y coverage (D-031) |
 | Consent artifacts, signatures, purposes, grants, subject consents, invitations and attestations | ordered Supabase migration series; X3; `subject_consents.jurisdiction` is mandatory |
 | `embryo_cohorts`, `embryos`, `embryo_qc` | ordered Supabase migration series; X3/X10 |
 | The only audit table, `legal_audit_log` | ordered Supabase migration series; X3.1 |

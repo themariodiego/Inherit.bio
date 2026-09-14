@@ -2965,3 +2965,71 @@ question rather than being applied as written. The owner chose to name both
 readings under one id — the alternative, splitting `partial-coverage` in two,
 would have put both existing proofs up for re-reading to buy a distinction the
 ratchet does not need.
+
+## 2026-09-14 · Chromosomal sex is recorded, and it is declared rather than derived (D-031)
+
+`subject_demographics.chromosomal_sex` has existed since 2026-08-31 with no
+writer. Two ADRs and the carrier rule all stated that as a fact about Inherit —
+"nothing records a person's chromosomal sex" — and answered an X-linked carrier
+pair with a refusal. The column now has one writer,
+`public.declare_chromosomal_sex_v1`, reached only by `POST /api/chromosomal-sex`
+from the control on `/settings`, and an X-linked pair whose two people have each
+declared theirs gets the hundred-pregnancy split the brief asks for
+(`brief:346`).
+
+**Declared, never derived, and this is a divergence from the brief's
+permission.** `brief:1833` says "An adult may see chromosomal sex derived from
+their own genome, on their own account, only." That is a permission, not a
+requirement, and this build does not take it. Two reasons, both already settled
+elsewhere in this repository. ADR 0003 forbids imputing a value Inherit did not
+read, and X and Y coverage is not a declaration. And a guess from coverage is
+simply wrong for people whose sex chromosomes are not XX or XY — the group for
+whom being told their own chromosomes by software that inferred them is worst,
+and the group the four-value column (`XX`, `XY`, `other`, `unknown`) exists to
+serve. The narrower build is compatible with the brief's prohibitions (nothing
+about an embryo, nothing on any other person's surface) and stops short of its
+permission on purpose. **If the owner wants derivation, that reverses a
+principle and should be said explicitly; nothing here forecloses it, and a
+derived value would still need a place to land other than the declaration.**
+
+**Authority is the subject, not the holder.** The writer accepts only a subject
+whose `subject_account_id` is the acting account — the account a subject IS,
+never `owner_account_id`, the account that HOLDS it. An uploader who controls
+another adult's record cannot record that adult's chromosomes from anywhere;
+that adult declares from their own session or the value stays blank. Minors are
+out of reach by subject class and embryos by a trigger that predates this work.
+
+**Withdrawal is the same call.** `chromosomalSex: null` through the same route
+clears the column, leaves any `date_of_birth` on the same row alone, and writes
+its own audit row. Recording a value already recorded writes nothing and appends
+no audit row: a revision that moved without the value moving would make every
+later audit read a change that did not happen.
+
+**The audit row carries the revision and the action, never the value.**
+`legal_audit_log` is append-only and hash-chained and its expired prefix is
+checkpointed rather than rewritten, so a value written there outlives the row it
+describes — including past a deletion. The audit question is whether the
+declaration changed and under which revision, and `revision` plus `action`
+answers it.
+
+**One reason became three, and that was not padding.** The old `sex-unknown`
+covered every X-linked refusal. Now a reader meets one of: nobody has declared
+(declaring would change the answer); both declared and the pair is not one XX
+and one XY (no further declaration fixes that, and saying so is better than
+treating a recorded `other` as an XY); or a file reads a change on the X in a
+way that does not fit what that person recorded, which Inherit names rather than
+resolving in either direction.
+
+**The rule now owns the cross.** `evaluateCarrierPairs` returns the `MendelCross`
+a match follows instead of a bare probability, and `portrait-card.tsx` reads it
+instead of re-deriving `autosomalCross("autosomal_recessive", …)` from the copies.
+That re-derivation was the live path by which a component could have drawn an
+X-linked pair with the recessive arithmetic once the split became reachable.
+
+**Two defects the browser proof found, neither visible to a unit test.** The
+radios were bound to the server's value with no local state, so a reader's own
+click appeared to do nothing until a refresh landed — and a click that never
+changes the control is indistinguishable from a click that was ignored. And the
+control never read the response body, which left the stream open and the value
+it records unused; it now shows what the row holds rather than what was asked
+for.

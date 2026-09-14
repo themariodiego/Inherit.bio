@@ -5,6 +5,23 @@
 - Date: 2026-09-03
 - G7.1 name: "the future-child preview scope"
 
+> **Amendment, 2026-09-14 — decision 3 is superseded on its own terms
+> (D-031).** Decision 3 said "When a sourced writer for chromosomal sex
+> exists, the page swaps the reason for the cross and this decision is
+> superseded." That writer now exists:
+> `public.declare_chromosomal_sex_v1`, reached by `POST /api/chromosomal-sex`
+> from the control on `/settings`, writing
+> `subject_demographics.chromosomal_sex`.
+>
+> It is DECLARED, never derived — the Context's "nothing records a person's
+> chromosomal sex (`subject_demographics` has no writer)" was the fact that
+> has changed, not the prohibition on inferring it from a file. So an
+> X-linked pair whose two people have each declared theirs renders
+> `xLinkedCross` and its hundred-pregnancy split; a pair where either has
+> not still renders a named reason, and there are now three of them rather
+> than one. Every other scope limit in this ADR stands.
+>
+
 ## Context
 
 Portrait is the third content of the Family domain and the brief calls it

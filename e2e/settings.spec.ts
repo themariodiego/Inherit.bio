@@ -463,3 +463,85 @@ test("/settings/consents complete: the grant names its recipient, its date, its 
   await expect(row, "not already withdrawn").not.toContainText("revoked");
   await expect(row.getByRole("button", { name: "Revoke", exact: true })).toBeVisible();
 });
+
+/**
+ * The chromosomal-sex declaration, end to end on the real route (D-031).
+ *
+ * This is the half of D-031 that unit tests cannot reach. The rule's side is
+ * proved without a database in `src/lib/family/carrier-pair.test.ts`, and the
+ * authority rules are proved in `supabase/tests/declared_chromosomal_sex.sql`.
+ * What is left is whether a person can actually record this and actually take
+ * it back, which is a claim about a browser, a route and a row.
+ *
+ * The test drives all three states a reader can put the row in: nothing
+ * recorded, a value recorded and surviving a reload, and the value removed.
+ * Withdrawal is not an afterthought here because it is not one in the
+ * product: `POST /api/chromosomal-sex` with null is the same call as
+ * recording, so a build where declaring works and withdrawing does not would
+ * fail on the same request.
+ *
+ * The title names no (route, state) pair on purpose. `/settings complete` is
+ * already proven above and this test is about a control on it, not about the
+ * page's state.
+ */
+test("the chromosomal sex declaration is recorded, read back and withdrawn", async ({ page }) => {
+  const email = `settings-chromosomal-sex-${randomUUID()}@e2e.local`;
+  const password = "e2e-settings-chromosomal-sex-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  await page.goto("/settings");
+
+  const section = page.locator('[data-slot="chromosomal-sex"]');
+  await expect(section.getByRole("heading", { name: "Sex chromosomes" })).toBeVisible();
+
+  // The three sentences that have to be in front of a reader BEFORE the
+  // control, not discovered afterwards: what it is for, that Inherit does not
+  // work it out from their file, and that recording it changes what a family
+  // member can see.
+  await expect(section, "what the one use is")
+    .toContainText("working out the chances for a pregnancy when a change sits on the X chromosome");
+  await expect(section, "that it is never derived")
+    .toContainText("Inherit does not work this out from your file.");
+  await expect(section, "what recording it discloses, before it is recorded")
+    .toContainText("a family member you share carrier results with can see the split");
+
+  // Nothing recorded: every choice is clear and there is nothing to remove.
+  const choices = section.getByRole("radio");
+  await expect(choices).toHaveCount(4);
+  for (const value of ["XX", "XY", "Another pattern", "I do not know"]) {
+    await expect(section.getByRole("radio", { name: value, exact: true })).not.toBeChecked();
+  }
+  await expect(section.getByRole("button", { name: "Remove this", exact: true }),
+    "nothing to withdraw before anything is declared").toHaveCount(0);
+
+  // Recording it. The response is asserted, not only the rendered control: a
+  // route that answered 404 would leave the radio visually checked by the
+  // browser's own default behaviour and prove nothing.
+  const declared = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/chromosomal-sex"
+    && response.request().method() === "POST");
+  await section.getByRole("radio", { name: "XX", exact: true }).check();
+  const declaredResponse = await declared;
+  expect(declaredResponse.status()).toBe(200);
+  expect(await declaredResponse.json()).toMatchObject({ chromosomalSex: "XX", action: "declared" });
+
+  // It survives a fresh render, so the row holds it rather than the page.
+  await page.goto("/settings");
+  await expect(section.getByRole("radio", { name: "XX", exact: true })).toBeChecked();
+  await expect(section.getByRole("radio", { name: "XY", exact: true })).not.toBeChecked();
+
+  // Withdrawing it, through the same route.
+  const withdrawn = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/chromosomal-sex"
+    && response.request().method() === "POST");
+  await section.getByRole("button", { name: "Remove this", exact: true }).click();
+  const withdrawnResponse = await withdrawn;
+  expect(withdrawnResponse.status()).toBe(200);
+  expect(await withdrawnResponse.json()).toMatchObject({ chromosomalSex: null, action: "withdrawn" });
+
+  // And the withdrawal is what the next render shows, which is the assertion
+  // that would catch a route that reported a withdrawal it did not perform.
+  await page.goto("/settings");
+  await expect(section.getByRole("radio", { name: "XX", exact: true })).not.toBeChecked();
+  await expect(section.getByRole("button", { name: "Remove this", exact: true })).toHaveCount(0);
+});

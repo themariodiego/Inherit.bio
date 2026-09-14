@@ -16,6 +16,7 @@ const copy = await import("../../copy/family/health-picture");
 
 import { EXACT_MARKER, MODELLED_MARKER } from "@/lib/figures/contract";
 import type { CarrierMatch } from "@/lib/family/carrier-pair";
+import { autosomalCross, xLinkedCross } from "@/lib/family/mendel";
 import type { HealthPictureColumn } from "./health-picture-table";
 
 /**
@@ -65,6 +66,7 @@ function match(overrides: Partial<CarrierMatch> = {}): CarrierMatch {
   return {
     kind: "probability",
     probability: 0.25,
+    cross: autosomalCross("autosomal_recessive", 1, 1),
     gene: "E2EGENE1",
     conditionId: "e2e-recessive",
     conditionName: "A synthetic condition",
@@ -280,6 +282,48 @@ describe("carrier match block", () => {
     expect(textOfSlot(html, "carrier-sentence")).toBe(
       "For each pregnancy, about 25 in 100 — a 1 in 4 chance — that a child inherits both copies. Each pregnancy is independent; this is not 1 in 4 of your children.",
     );
+  });
+
+  it("renders the X-linked split rather than the recessive sentence (D-031)", () => {
+    // The recessive sentence hard-codes "a 1 in 4 chance … that a child
+    // inherits both copies", which is false of an X-linked cross. The block
+    // keys on `probability` being absent, not on the match kind, so a cross
+    // with no single number cannot fall into that sentence.
+    const html = renderToStaticMarkup(
+      h(CarrierMatchBlock, {
+        match: match({ probability: null, cross: xLinkedCross(1, 1) }) as CarrierMatch,
+        people: PEOPLE,
+        viewerAccountId: VIEWER,
+      }),
+    );
+    expect(html).not.toContain("a 1 in 4 chance");
+    expect(html).not.toContain(copy.CARRIER_SENTENCE_TAIL);
+    expect(textOfSlot(html, "carrier-derivation")).toBe(
+      "1 in 4 (25%) boys affected · 1 in 4 (25%) boys neither · 1 in 4 (25%) girls affected · 1 in 4 (25%) girls carriers",
+    );
+    // One exact figure per outcome, and the mandated sentence for each.
+    expect(html.match(/data-slot="carrier-outcome"/g)).toHaveLength(4);
+    expect(html.match(/data-figure-basis="exact"/g)).toHaveLength(4);
+    expect(html).toContain("Out of 100 possible children, about 25 would be boys with the condition.");
+    // The declaration chose the cross and is never printed as a value.
+    for (const value of [">XX<", ">XY<", "chromosomal sex", "sex chromosomes"]) {
+      expect(html, `the block never prints ${value}`).not.toContain(value);
+    }
+  });
+
+  it("still refuses with a named reason where the pair cannot be split", () => {
+    for (const reason of ["sex-unknown", "sex-pattern-unsupported", "sex-reading-conflict"] as const) {
+      const html = renderToStaticMarkup(
+        h(CarrierMatchBlock, {
+          match: match({ kind: "no-probability", reason, uncovered: null }) as CarrierMatch,
+          people: PEOPLE,
+          viewerAccountId: VIEWER,
+        }),
+      );
+      expect(textOfSlot(html, "carrier-sentence"), reason)
+        .toBe(copy.carrierNoProbabilitySentence("E2EGENE1", reason));
+      expect(html, reason).not.toMatch(/data-figure-kind="natural-frequency"/);
+    }
   });
 
   it("labels the fraction as exact arithmetic, never as a model", () => {

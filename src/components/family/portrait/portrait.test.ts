@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { autosomalCross } from "@/lib/family/mendel";
+import { CANONICAL_CROSSES, autosomalCross, canonicalCross, xLinkedCross } from "@/lib/family/mendel";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: unknown }) =>
@@ -207,6 +207,57 @@ describe("the blocking screen", () => {
     );
     expect(html).toContain("Invited adult has not: opened their own Inherit account");
     expect(html.match(/data-slot="portrait-missing-step"/g)).toHaveLength(1);
+  });
+});
+
+describe("the carrier-pair card with the X-linked split (D-031)", () => {
+  /**
+   * The cross is on the match, which is the point of D-031's refactor: the
+   * rule chose it, and this card must draw what it was given rather than the
+   * recessive cross it used to derive from the copies. A card that ignored
+   * `cross` would render "1 in 4 (25%) affected" here and every assertion in
+   * this block would fail.
+   */
+  const html = renderCard(
+    match({ probability: null, cross: xLinkedCross(1, 1) }) as CarrierMatch,
+    "x_linked",
+  );
+
+  it("renders the four outcomes of the cross, each naming a sex, and no recessive words", () => {
+    expect(html).toContain(
+      "1 in 4 (25%) boys affected · 1 in 4 (25%) boys neither · 1 in 4 (25%) girls affected · 1 in 4 (25%) girls carriers",
+    );
+    // The recessive derivation's own words must not appear: they would mean
+    // the card fell back to the cross it used to build for itself.
+    expect(html).not.toContain("2 in 4 (50%) carriers");
+    expect(html).not.toContain("(25%) affected ");
+  });
+
+  it("carries one exact figure per outcome and the hundred dots, as the recessive card does", () => {
+    const exact = html.match(/data-figure-kind="natural-frequency"[^>]*data-figure-basis="exact"/g);
+    expect(exact).toHaveLength(4);
+    expect(html.match(/data-slot="outcome-dot"/g)).toHaveLength(100);
+    expect(html.match(/data-figure-kind="carrier-status"/g)).toHaveLength(2);
+  });
+
+  it("renders every canonical cross, so no cross can outgrow the dot treatments", () => {
+    // `OutcomeDots` throws above its treatment count rather than drawing two
+    // categories alike, so this is the assertion that the count is enough for
+    // the arithmetic that exists — not a claim about how many there are.
+    for (const id of CANONICAL_CROSSES) {
+      const cross = canonicalCross(id);
+      expect(() => renderCard(match({ probability: null, cross }) as CarrierMatch, cross.pattern), id)
+        .not.toThrow();
+    }
+  });
+
+  it("names the pattern and the assumption the split rests on, and nobody's own value", () => {
+    expect(html).toContain("A change on the X chromosome.");
+    expect(html).toContain("This split takes an X and a Y from the father as equally likely.");
+    // The declaration chose the cross; it is not a result and is never printed.
+    for (const value of [">XX<", ">XY<", "Another pattern", "chromosomal sex"]) {
+      expect(html, `the card never prints ${value}`).not.toContain(value);
+    }
   });
 });
 

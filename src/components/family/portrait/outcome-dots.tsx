@@ -31,11 +31,25 @@ import {
 import type { Distribution } from "@/lib/family/distribution";
 import { cn } from "@/lib/utils";
 
-/** The three treatments, by category position; a fourth category would need a fourth. */
+/**
+ * The treatments, by category position. Three were enough while the only
+ * cross this component drew was autosomal; an X-linked cross names up to five
+ * outcomes (D-031), and the old comment here said a fourth category would need
+ * a fourth treatment, so here are five.
+ *
+ * Every pair differs in BOTH fill and border style, because the identity is
+ * monochrome and a treatment told apart by shade alone disappears at low
+ * contrast. None of this is the accessible answer on its own: the legend names
+ * each outcome in words beside its swatch and the table fallback repeats every
+ * count as text, and the grid and bar are `aria-hidden` for exactly that
+ * reason.
+ */
 const TREATMENTS = [
   { dot: "bg-ink border-solid border-ink", bar: "bg-ink border-solid", swatch: "solid" },
   { dot: "bg-ink/40 border-dashed border-ink", bar: "bg-ink/40 border-dashed", swatch: "half" },
   { dot: "bg-transparent border-dotted border-ink", bar: "bg-transparent border-dotted", swatch: "empty" },
+  { dot: "bg-ink/70 border-dotted border-ink", bar: "bg-ink/70 border-dotted", swatch: "most" },
+  { dot: "bg-ink/15 border-double border-4 border-ink", bar: "bg-ink/15 border-double", swatch: "trace" },
 ] as const;
 
 /** One outlined dot: the sub-1-in-100 rule (line 360). */
