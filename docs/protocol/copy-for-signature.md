@@ -1,9 +1,16 @@
 # Copy drafted for signature — D-102 and D-103
 
-**Status: DRAFTED, NOT SHIPPED.** Owner decision 2026-09-13: "I draft, you
-sign." Nothing here is wired into a surface. D-103's statements in particular
-do not touch the consent transaction until the wording is approved verbatim or
-rewritten.
+**Status: SIGNED 2026-09-14, not yet wired.** Owner decision 2026-09-13: "I
+draft, you sign." Both are now approved and this file becomes the record of
+what was approved and when.
+
+- **D-103's five statements: approved VERBATIM**, including statement 5's
+  pointer to the published deadlines rather than the figures. Wiring them into
+  the confirm body is queued work, not done here.
+- **D-102: approved, and the owner chose ATTRIBUTION** over the unattributed
+  wording recommended below. The recommendation is left standing rather than
+  quietly deleted, so the trade-off that was weighed is still on the record;
+  the strings below are updated to the decided form.
 
 Each draft names the cause it answers, traced to the code or SQL that produces
 it, so the wording can be checked against what actually happens rather than
@@ -30,10 +37,12 @@ account completed, the granter's "Turn on" control was simply absent.
 ### Draft
 
 ```ts
-/** Neither side can be shown to be an adult yet (family_report_endpoint_v1,
- *  p_require_adult). Named without attribution on purpose — see the note. */
-export const ADULT_DATE_REQUIRED =
-  "This row needs a date of birth from both of you. Inherit shares between adults only.";
+/** The other person is not an adult on record (family_report_endpoint_v1,
+ *  p_require_adult). ATTRIBUTED, by owner decision 2026-09-14 — see the note
+ *  below for the disclosure this accepts. */
+export function adultDateRequiredFrom(name: string): string {
+  return `This row needs a date of birth from ${name}. Inherit shares between adults only.`;
+}
 
 /** The viewer's own profile is the one missing it: actionable, and it
  *  discloses nothing about anyone else. */
@@ -62,8 +71,14 @@ names per-person missing steps ("Bo has not: opened their own Inherit
 account"), so attribution is established on this surface; none of those steps
 is an age.
 
-**Recommended: leave it unattributed**, and tell me to attribute it if you
-disagree.
+**Recommended: leave it unattributed.** — **Owner decided 2026-09-14:
+attribute it.** The recommendation stays above so the trade-off is legible
+later; what was accepted is that a reader learns the named person either has
+not recorded a date of birth or is under 18. `adultDateRequiredFrom(name)` is
+the decided form. The `birthDateState` the database already computes has three
+values — `missing`, `adult`, `underage` — and the sentence must NOT distinguish
+the last two, or it stops being an inference a reader could draw and becomes
+Inherit telling them.
 
 ---
 
@@ -98,6 +113,16 @@ I have not proven that this path meets them end to end — the number belongs in
 the sentence only once it is true here, not merely registered. Say the word and
 I will either prove it and put the numbers in, or leave the pointer.
 
-**`no-inviter-access` is two promises**, and the second is the one worth
-checking: that the inviter cannot see the decision *before* it is made. If that
-is not enforced today, the statement should be one promise, not two.
+**`no-inviter-access` is two promises, and I checked the second rather than
+asking about it.** It claims the inviter cannot see the decision *before* it is
+made. That is true today, and true for a reason worth writing down: **there is
+no inviter-facing surface at all.** `/settings/people` renders `FeatureNotBuilt`,
+and nothing else in `src/app` reads a pending invitation's state — the
+surfaces that read invitations are the subject's own rights pages.
+
+So the statement can ship as two promises. But it is true by ABSENCE, not by
+enforcement, and `/settings/people` is designed to "list the people you share
+with". **The day that page is built, this sentence becomes a constraint on its
+design**: it may show that an invitation is outstanding, and it may not show
+what the person has chosen until they have chosen it. Recorded here so that
+constraint arrives with the page rather than being discovered after it.
