@@ -74,11 +74,42 @@ export const COLUMN_LABELS = {
 export const CLOSE_BUTTON = "Close";
 
 /**
- * Once per claim block, always visible (X13): no interval exists yet, and the
- * page says so instead of inventing one (G4.4).
+ * Once per claim block, always visible (X13). Until 2026-09-14 this was the
+ * only sentence here, because no interval existed and G4.4 asks a page with
+ * none to say so rather than invent one. It still renders for a result
+ * captured before that date, which genuinely has none.
  */
 export const RANGE_UNAVAILABLE =
   "Inherit can’t put a range on these shares yet, so each one is a single number. When a range can be computed it will appear beside every share.";
+
+/**
+ * What the range IS and how often it was measured to work — both, because one
+ * without the other is the number this product must not print.
+ *
+ * "About nine times in ten" is 91.5%, measured against the shipped estimator
+ * over 48 simulated ancestries at 60 draws each — 14,400 region-estimates,
+ * reproduced by `scripts/ancestry-interval/measure.mts` and recorded in
+ * `docs/ancestry-interval.md`. It is deliberately NOT the method’s nominal
+ * 95%: the same measurement puts the weakest band at 86.2% and the strongest
+ * at 94.9%, and a page claiming the nominal level would be claiming a number
+ * its own test did not return.
+ */
+export const RANGE_MEASURED =
+  "The range is how far a share moves when your markers are drawn again and again. On test files Inherit made up, the true share fell inside it about nine times in ten.";
+
+/**
+ * The limit of that measurement, beside it rather than in a footnote. The test
+ * drew people as mixtures of exactly these five references at exactly this
+ * panel’s frequencies — the estimator’s own assumption — so it is the
+ * friendliest test the method can be given, and the figure above is an upper
+ * bound rather than a promise.
+ */
+export const RANGE_TEST_LIMIT =
+  "Those test files were people made only of these five regions. Real people are not, so the true share may fall inside less often.";
+
+/** A region whose resamples all agreed has no spread to show, and says so. */
+export const RANGE_NONE_FOR_REGION =
+  "A region with no range came out the same in every draw.";
 
 /** Reference panel and version (G4.4), from the shipped constants. */
 export function panelLine(panel: PanelFacts): string {

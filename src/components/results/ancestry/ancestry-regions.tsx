@@ -33,6 +33,9 @@ import {
   NOISE,
   NOTHING_READ,
   NO_SEGMENTED_CONTROL,
+  RANGE_MEASURED,
+  RANGE_NONE_FOR_REGION,
+  RANGE_TEST_LIMIT,
   RANGE_UNAVAILABLE,
   RAW_NUMBERS_SUMMARY,
   RESOLUTION_LIMIT,
@@ -199,6 +202,10 @@ function ShownRegions({
   const chipShares = wellSupportedOnly ? chips.on : chips.off;
 
   const rowSpecs = rows.map((row) => shareSpec(row.share, row.range));
+  // How many regions actually carry an interval. Zero is a result captured
+  // before intervals existed; fewer than all is a result where some region's
+  // resamples never moved.
+  const rangedRows = rows.filter((row) => !("unavailable" in row.range)).length;
   const chipSpecs = [shareSpec(chipShares.unassignable, UNAVAILABLE), shareSpec(chipShares.hidden, UNAVAILABLE)];
   const coverageSpec: CoverageSpec = {
     kind: "coverage",
@@ -337,7 +344,19 @@ function ShownRegions({
             selectedCode={openCode}
           />
           <div className="space-y-2 text-sm text-ink-muted">
-            <p>{RANGE_UNAVAILABLE}</p>
+            {/* Three cases, and the middle one is why this is not a ternary on
+                one sentence: a result may carry intervals for some regions and
+                none for others, and a page that showed only the first sentence
+                would leave the range-less rows unexplained. */}
+            {rangedRows === 0 ? (
+              <p data-slot="range-note">{RANGE_UNAVAILABLE}</p>
+            ) : (
+              <>
+                <p data-slot="range-note">{RANGE_MEASURED}</p>
+                <p data-slot="range-limit">{RANGE_TEST_LIMIT}</p>
+                {rangedRows < rows.length ? <p data-slot="range-none">{RANGE_NONE_FOR_REGION}</p> : null}
+              </>
+            )}
             <p>{panelLine(panel)}</p>
             <p className="flex flex-wrap items-baseline gap-x-2">
               <span>{markersLine(result.markersUsed, panel, minMarkers)}</span>

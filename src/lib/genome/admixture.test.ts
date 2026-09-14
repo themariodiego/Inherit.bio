@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AIMS, POPS, estimateAdmixture, type Pop } from "./admixture";
+import { AIMS, POPS, RANGE_RESAMPLES, estimateAdmixture, type Pop } from "./admixture";
 
 // Deterministic PRNG (mulberry32) so synthetic genotypes are stable.
 function mulberry32(seed: number): () => number {
@@ -161,7 +161,9 @@ describe("EUR against AMR on the shipped panel (D-017)", () => {
     let eurBelowTenth = 0;
     const eur: number[] = [];
     for (let seed = 1; seed <= SEEDS; seed++) {
-      const r = estimateAdmixture(syntheticLookup(seed, TRUTH));
+      // The subject is the POINT estimate's distribution over 200 seeds; the
+      // interval is measured separately and would cost 200 fits per seed here.
+      const r = estimateAdmixture(syntheticLookup(seed, TRUTH), { withRanges: false });
       eur.push(r.proportions.EUR);
       if (r.proportions.AMR > r.proportions.EUR) amrOverEur++;
       if (r.proportions.EUR < 0.1) eurBelowTenth++;
@@ -177,13 +179,94 @@ describe("EUR against AMR on the shipped panel (D-017)", () => {
   });
 
   it("reproduces the recorded numbers only when the draw inverts REF and ALT", () => {
-    const inverted = estimateAdmixture(invertedLookup(1, TRUTH));
+    const inverted = estimateAdmixture(invertedLookup(1, TRUTH), { withRanges: false });
     // The signature D-017 recorded: EUR gone, AMR holding the bulk.
     expect(inverted.proportions.EUR).toBeLessThan(0.05);
     expect(inverted.proportions.AMR).toBeGreaterThan(inverted.proportions.EUR);
     // And the correct draw at the same seed does neither.
-    const correct = estimateAdmixture(syntheticLookup(1, TRUTH));
+    const correct = estimateAdmixture(syntheticLookup(1, TRUTH), { withRanges: false });
     expect(correct.proportions.EUR).toBeGreaterThan(0.3);
     expect(correct.proportions.EUR).toBeGreaterThan(correct.proportions.AMR);
+  });
+});
+
+/**
+ * The interval on each share (D-017's remaining half, 2026-09-14).
+ *
+ * WHY THE PIVOT AND NOT THE PERCENTILE, held by code because the percentile
+ * method is the one a reader of the phrase "bootstrap interval" would assume.
+ * At 168 markers the estimator is biased inward: a person drawn as entirely
+ * one population is estimated below 1.000, and the percentile interval around
+ * that estimate contained the true 1.000 in 0 of 30 seeds. The pivotal form -
+ * low = 2q̂ − q*97.5, high = 2q̂ − q*2.5 - reflects the replicate spread
+ * THROUGH the estimate, which is what corrects a bias, and it reached 95.7%
+ * coverage at half the width on the same measurement.
+ *
+ * The bias is finite-sample rather than structural: the same simulation at 32
+ * times the panel returns 0.993 for the same truth. So the interval is a
+ * measurement of how little 168 markers can pin down, which is what it is for,
+ * and the remedy for the width is a larger panel rather than a wider interval.
+ *
+ * THE COVERAGE FIGURE THE SURFACE PRINTS IS NOT MEASURED HERE. "About nine
+ * times in ten" is 91.5% over 14,400 region-estimates (48 simulated ancestries
+ * at 60 draws each), which costs about twenty minutes;
+ * `scripts/ancestry-interval/measure.mts` runs it and
+ * `docs/ancestry-interval.md` carries that run and the per-band table under
+ * it. What is here is the shape
+ * of the thing, on eight draws, so a change to the method fails a test rather
+ * than only a document.
+ */
+describe("the interval on each share", () => {
+  const TRUTH = { EUR: 0.6, AFR: 0.3, EAS: 0.1 } as const;
+
+  it("brackets a truth the point estimate itself misses", () => {
+    // A person drawn as entirely African. The estimate falls short of 1.000
+    // because 168 markers pull an edge of the simplex inward, and the interval
+    // reaches it anyway - which is the whole reason the pivotal form was
+    // chosen over the percentile one.
+    const result = estimateAdmixture(syntheticLookup(11, { AFR: 1 }));
+    expect(result.proportions.AFR).toBeLessThan(1);
+    const range = result.ranges?.AFR;
+    expect(range, "the dominant share carries an interval").toBeDefined();
+    expect(range!.low).toBeLessThanOrEqual(result.proportions.AFR);
+    expect(range!.high).toBe(1);
+  });
+
+  it("gives no interval to a share every resample agreed on", () => {
+    const result = estimateAdmixture(syntheticLookup(11, { AFR: 1 }));
+    const zero = POPS.filter((pop) => result.proportions[pop] === 0);
+    expect(zero.length, "an entirely-African draw leaves other regions at zero").toBeGreaterThan(0);
+    // Absent, never a zero-width interval: "0% to 0%" would print certainty
+    // that no measurement produced. The surface renders these rows exactly as
+    // it rendered every row before intervals existed.
+    for (const pop of zero) expect(result.ranges?.[pop], `${pop} has no spread to show`).toBeUndefined();
+  });
+
+  it("holds the true share in seven of eight draws", () => {
+    // Pinned exactly rather than as a floor. The full measurement is 91.2%
+    // over 14,400 region-estimates; eight draws cannot measure that, and this
+    // number moving means the method moved.
+    let held = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const range = estimateAdmixture(syntheticLookup(seed, TRUTH)).ranges?.EUR;
+      if (range && range.low <= TRUTH.EUR && TRUTH.EUR <= range.high) held++;
+    }
+    expect(held).toBe(7);
+  }, 60_000);
+
+  it("gives one file one interval, however often it is read", () => {
+    // The seed behind the resampling is a constant. A clock- or id-derived one
+    // would move a person's published range between two readings of the same
+    // stored result.
+    const lookup = syntheticLookup(3, TRUTH);
+    expect(estimateAdmixture(lookup).ranges).toEqual(estimateAdmixture(lookup).ranges);
+  });
+
+  it("computes none when the caller asks for none", () => {
+    const result = estimateAdmixture(syntheticLookup(3, TRUTH), { withRanges: false });
+    expect(result.ranges).toBeUndefined();
+    expect(result.proportions, "the point estimate is the same either way")
+      .toEqual(estimateAdmixture(syntheticLookup(3, TRUTH)).proportions);
+    expect(RANGE_RESAMPLES).toBeGreaterThan(0);
   });
 });

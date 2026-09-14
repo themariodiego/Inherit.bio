@@ -3170,3 +3170,56 @@ not a new panel, and no catalogue licence audit is owed for it.
 **Nothing about the panel was touched**, which is the point: the cheapest
 correct action here was to measure before selecting markers, and the
 measurement said not to.
+
+## 2026-09-14 · The ancestry share carries an interval, and it says 91.5% rather than 95%
+
+D-017's remaining half. The surface has said "Inherit can't put a range on
+these shares yet" since it shipped, which G4.4 permits and which was true. It
+is no longer true.
+
+**The method was chosen by measurement, not by name.** The obvious reading of
+"marker-subsampling interval" is a percentile bootstrap, and it does not work
+here. At 168 markers the estimator is biased inward — a simulated person who is
+entirely one population comes back at about 0.95 — and a percentile interval
+around 0.95 contained the true 1.000 in **0 of 30 seeds**. The pivotal (basic)
+form reflects the replicate spread *through* the estimate, which is exactly a
+bias correction, and on the same five truths it reached **95.7% coverage at
+half the width**. Simulating from the fit instead of resampling the markers
+made no difference (95.1%), so the cheaper scheme ships.
+
+**The figure on the page is the measured one.** Against the shipped estimator,
+over 48 simulated ancestries at 60 draws each — 14,400 region-estimates — the
+true share falls inside the interval **91.5%** of the time, with the weakest
+band at 86.2% and the strongest at 94.9%. The page says "about nine times in
+ten" and nowhere says 95%. Widening to reach 95% was measured too: a 1.5x
+inflation gets there, and makes a 50% share read "21% to 79%" on a factor that
+is fitted rather than derived. A number the product's own test did not return
+is not one it may print.
+
+**The limit is printed beside the figure, not filed here.** Every simulated
+person is a mixture of exactly these five references at exactly this panel's
+frequencies — the estimator's own assumption — so the coverage is an upper
+bound on what a real person gets, and the second sentence on the surface says
+so. One without the other is the reassurance this product must not give, so
+the browser proof asserts both.
+
+**A share with no spread gets no interval rather than a zero-width one.**
+"0% to 0%" states a certainty no resampling produced. 26% of region-estimates
+are in that position; they render exactly as every share did before intervals
+existed, and the copy explains why.
+
+**The database refused the field until it was asked**, which is the second time
+in one day that a closed contract earned its keep. `validate_own_ancestry_content_v1`
+admits exactly `proportions`, `markersUsed` and `note` on a stored result, so
+the capture failed with `invalid_ancestry_content` and the browser suite
+reported a 503 rather than quietly storing a fourth key. The migration admits
+`ranges`, optional — results captured before today have none and must keep
+re-validating — and adds the rules that make a present one real: bounds in
+order, inside [0,1], and bracketing the share printed beside it.
+
+**What is not fixed.** The interval is wide: a mean width of 0.135 overall and
+0.404 where the shown share is between 35% and 70%. That is what 168 markers
+can tell. The estimator is consistent — the same simulation returns 0.993 at 32
+times the panel — so narrowing it means a larger ancestry-informative panel,
+which is the expensive option D-017 named and which remains the owner's call.
+The range now states that limit instead of hiding it behind a single number.

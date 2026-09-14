@@ -100,6 +100,15 @@ either) check the whole tree **and every commit message since the allowlist's
 baseline**, which is the half that catches things a file-only scan cannot.
 Skipping it locally is how a failure reaches CI.
 
+`gate:secrets` has the opposite trap, and it is easy to walk into: it scans
+the **tracked** tree, so a file that is still untracked is invisible to it. A
+new genome fixture passes locally and then fails in CI on the very next push,
+because committing is what makes it tracked. Stage new files (`git add`)
+before running the gates, or run them again after committing — every fixture
+needs its classification, its generator and its current SHA-256 in
+`e2e/fixtures/PROVENANCE.md`, which is what stops a real person's file being
+committed as a synthetic one.
+
 Ten run in CI. `gate:schema-drift` deliberately does not — it compares a
 deployed database against `supabase/migrations`, and in CI that database was
 built from those same files seconds earlier, so it could only ever confirm

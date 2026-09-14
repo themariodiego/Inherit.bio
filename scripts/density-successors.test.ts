@@ -31,13 +31,26 @@ interface SuccessorRow {
   successorPath: string;
   basis: string;
 }
+interface MeasurementRow {
+  baselineRoute: string;
+  baselineMeasurementPath: string;
+  successorPath: string;
+  measurementPath: string;
+  surface: string;
+  basis: string;
+  parameters?: Record<string, string>;
+}
 
 const register = JSON.parse(
   readFileSync(path.join(ROOT, "docs/route-register.json"), "utf8"),
 ) as { routes: Route[] };
 const density = JSON.parse(
   readFileSync(path.join(ROOT, "docs/density-baseline.json"), "utf8"),
-) as { routes: { route: string }[]; relativeComparison: { rule: string; routes: SuccessorRow[] } };
+) as {
+  routes: { route: string; measurementPath: string; surface: string }[];
+  relativeComparison: { rule: string; routes: SuccessorRow[] };
+  postChange: { measurementPaths: MeasurementRow[] };
+};
 
 function derived(): SuccessorRow[] {
   const byId = new Map(register.routes.map((route) => [route.id, route]));
@@ -90,5 +103,69 @@ describe("the density contract's successor map is the register's, not a second o
     const redirected = density.relativeComparison.routes
       .filter((row) => row.successorPath !== row.baselineRoute);
     expect(redirected.length).toBe(7);
+  });
+});
+
+/**
+ * The successor map above is the register's fact: which route replaced which.
+ * It stops one step short of a capture, because five successors carry a
+ * dynamic segment and a screenshot needs a URL. Choosing those values IS a
+ * decision — which subject, which report — so it is declared in the contract
+ * where a reader can disagree with it, and checked here rather than buried in
+ * a capture script's string concatenation.
+ *
+ * The baseline was captured on 2026-08-31 and nothing measured its successors
+ * for two weeks, because there was no post-change harness at all. These rows
+ * are the first half of building one.
+ */
+describe("the post-change capture knows which URL replaces each baseline one", () => {
+  const measurementPaths = density.postChange.measurementPaths;
+  const bySuccessor = new Map(density.relativeComparison.routes.map((row) => [row.baselineRoute, row]));
+  const baseline = new Map(density.routes.map((entry) => [entry.route, entry]));
+
+  it("declares one measurement path per baseline route, in the successor map's order", () => {
+    expect(measurementPaths.map((row) => row.baselineRoute))
+      .toEqual(density.relativeComparison.routes.map((row) => row.baselineRoute));
+  });
+
+  it("names the successor the register named, never a second opinion", () => {
+    for (const row of measurementPaths) {
+      expect(row.successorPath, row.baselineRoute).toBe(bySuccessor.get(row.baselineRoute)?.successorPath);
+    }
+  });
+
+  it("carries the baseline's own measurement path and surface", () => {
+    // The surface decides whether the capture signs in before the shot. A row
+    // that quietly changed it would compare a signed-in page against a signed
+    // -out one and call the difference a density improvement.
+    for (const row of measurementPaths) {
+      const entry = baseline.get(row.baselineRoute);
+      expect(row.baselineMeasurementPath, row.baselineRoute).toBe(entry?.measurementPath);
+      expect(row.surface, row.baselineRoute).toBe(entry?.surface);
+    }
+  });
+
+  it("resolves every dynamic segment, and only from declared parameters", () => {
+    for (const row of measurementPaths) {
+      let resolved = row.successorPath;
+      for (const [name, value] of Object.entries(row.parameters ?? {})) {
+        expect(resolved, `${row.baselineRoute} declares ${name}`).toContain(`[${name}]`);
+        resolved = resolved.replaceAll(`[${name}]`, value);
+      }
+      // Substitution alone must produce the declared URL: no extra segment, no
+      // query string, nothing the successor path does not already say.
+      expect(resolved, row.baselineRoute).toBe(row.measurementPath);
+      expect(row.measurementPath, `${row.baselineRoute} is a concrete URL`).not.toContain("[");
+    }
+  });
+
+  it("keeps the one report the baseline measured", () => {
+    // Comparing a different report would compare different content and read as
+    // a density change. The slug is the baseline's own.
+    const report = measurementPaths.find((row) => row.successorPath.endsWith("/reports/[slug]"));
+    expect(report).toBeDefined();
+    const slug = report!.baselineMeasurementPath.split("/").pop();
+    expect(report!.parameters?.slug).toBe(slug);
+    expect(report!.measurementPath.endsWith(`/${slug}`)).toBe(true);
   });
 });

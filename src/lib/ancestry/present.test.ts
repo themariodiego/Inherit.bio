@@ -190,7 +190,10 @@ describe("presentShares and chipValues", () => {
         const pick = () => (rnd() < m.freqs.EUR ? m.alt : m.ref);
         byPos.set(`${m.chrom}:${m.pos38}`, `${pick()}/${pick()}`);
       }
-      const result = estimateAdmixture((chrom, pos) => byPos.get(`${chrom}:${pos}`) ?? null);
+      // Twenty draws, and this test is about the apportionment arithmetic that
+      // follows the estimate. The interval costs 200 further fits per call and
+      // `presentShares` here is given no ranges to present.
+      const result = estimateAdmixture((chrom, pos) => byPos.get(`${chrom}:${pos}`) ?? null, { withRanges: false });
       const presentation = presentShares(result);
       expect(presentation.unassignable.point).toBe(0);
       expect(presentation.unassignable.tenths).toBe(0);

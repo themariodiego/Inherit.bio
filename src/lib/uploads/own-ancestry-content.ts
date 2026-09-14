@@ -43,6 +43,10 @@ export const CURRENT_OWN_ANCESTRY_PANEL: OwnAncestryReferencePanel = Object.free
 type PositionState = "called" | "missing" | "noCall" | "filtered" | "conflicting" | "unsupported";
 const countSchema = z.number().int().min(0).max(AIMS.length);
 const shareSchema = z.number().min(0).max(1);
+/** One population's interval. Ordering is checked here; agreement with the
+ * proportion it belongs to is checked in `checkShared`, which can see both. */
+const rangeSchema = z.object({ low: shareSchema, high: shareSchema }).strict()
+  .refine(range => range.low < range.high, "an interval must have width");
 /** Everything both revisions agree on. Only `lineages` ever differed. */
 const sharedShape = {
   source: sourceSchema,
@@ -52,6 +56,15 @@ const sharedShape = {
     kind: z.literal("admixture"), result: z.object({
       proportions: z.object({ AFR: shareSchema, AMR: shareSchema, EAS: shareSchema, EUR: shareSchema, SAS: shareSchema }).strict(),
       markersUsed: countSchema, note: z.string().min(1).max(4096),
+      // OPTIONAL, AND THAT IS THE MODEL RATHER THAN A CONCESSION. Intervals
+      // arrived on 2026-09-14; a result captured before that date has none,
+      // and it is still exactly the result it was. A required field would
+      // retroactively invalidate real stored content, which is the one thing
+      // the revision comments above promise never happens. A population is
+      // likewise absent where every resample agreed, because a zero-width
+      // interval is not a measurement of spread.
+      ranges: z.object({ AFR: rangeSchema, AMR: rangeSchema, EAS: rangeSchema, EUR: rangeSchema, SAS: rangeSchema })
+        .partial().strict().optional(),
     }).strict(), support_note: z.string().min(1).max(4096), model_id: z.literal(PANEL.id), model_version: z.literal(PANEL.version),
     coverage: shareSchema, result_state: z.enum(["available", "partial", "not_covered"]),
     basis: z.literal("modelled"), range: z.object({ unavailable: z.literal(true) }).strict(), resolution: z.literal("five-broad-regions"),
@@ -60,6 +73,22 @@ const sharedShape = {
     filtered: countSchema, conflicting: countSchema, unsupported: countSchema }).strict(),
 } as const;
 
+/**
+ * Every interval brackets its own share. Measured before it was asserted: the
+ * pivotal interval contained the point estimate in 14,400 of 14,400 simulated
+ * results, so a stored range that does not is a corrupted capture rather than
+ * a rare draw. The tolerance is the 3-dp rounding plus the sum repair the
+ * estimator applies to its largest component, which moves that one share off
+ * the fit the interval was taken around.
+ */
+const RANGE_ROUNDING_TOLERANCE = 0.005;
+function rangesAgree(result: { proportions: Record<string, number>; ranges?: Partial<Record<string, { low: number; high: number }>> }): boolean {
+  if (result.ranges === undefined) return true;
+  return Object.entries(result.ranges).every(([pop, range]) => range === undefined
+    || (range.low - RANGE_ROUNDING_TOLERANCE <= result.proportions[pop]
+      && result.proportions[pop] <= range.high + RANGE_ROUNDING_TOLERANCE));
+}
+
 /** The admixture half, identical across revisions. */
 function checkShared(value: z.infer<z.ZodObject<typeof sharedShape>>): boolean {
   const used = value.admixture.result.markersUsed;
@@ -67,7 +96,8 @@ function checkShared(value: z.infer<z.ZodObject<typeof sharedShape>>): boolean {
     && value.panelPositions.called === used && value.admixture.coverage === used / AIMS.length
     && value.admixture.result_state === (used === 0 ? "not_covered" : used < MIN_MARKERS ? "partial" : "available")
     && value.admixture.support_note === value.admixture.result.note
-    && Math.abs(Object.values(value.admixture.result.proportions).reduce((a, b) => a + b, 0) - 1) <= 0.000001;
+    && Math.abs(Object.values(value.admixture.result.proportions).reduce((a, b) => a + b, 0) - 1) <= 0.000001
+    && rangesAgree(value.admixture.result);
 }
 
 /** Revision 1: lineages were never computed, only counted — and the count was
