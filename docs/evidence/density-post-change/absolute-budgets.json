@@ -1,0 +1,996 @@
+{
+  "schemaVersion": 1,
+  "evaluatedAt": "2026-09-14",
+  "what": "Every absolute budget in docs/density-baseline.json#thresholds, applied to all 44 measurements of BOTH halves of the G2.5 comparison. A row appears here only when a budget is missed. `status` says which half missed it: pre-existing means both halves miss it at the same route, viewport and measure; new-in-the-rewrite means only the successor does; fixed-by-the-rewrite means only the baseline did, and the value shown is the baseline's.",
+  "basis": {
+    "whiteSpaceFloor": "0.62 for all 22, because X6.2 names only two classes and none of these 22 successors is one of the two wide-data surfaces.",
+    "interactiveCap": "7 on the four register `flow` surfaces as single-purpose flow steps, 12 elsewhere; 24 is unused because no wide-data surface is in this set.",
+    "visibleTextCap": "700 everywhere. X6.2's tighter 480 applies to \"Overview and domain landings\" and this document does not define which routes those are, so applying it would be inventing a classification. Recorded as open rather than guessed; the 480 would add rows, never remove them.",
+    "proseMinimum": "Applied at 1280x800 only, which is what `minAppliesAtViewportWidthPx` 640 means for these two viewports.",
+    "sectionGap": "Skipped where a capture reports fewer than two top-level sections, since a single section has no adjacent pair."
+  },
+  "summary": {
+    "measurements": 44,
+    "baselineMisses": 103,
+    "postChangeMisses": 92,
+    "preExisting": 91,
+    "newInTheRewrite": 1,
+    "fixedByTheRewrite": 12,
+    "whiteSpaceFloorMisses": 0,
+    "byMeasure": {
+      "budgetedDecoratedElementCount": {
+        "preExisting": 2,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 0
+      },
+      "interactiveElementCount": {
+        "preExisting": 4,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 0
+      },
+      "maxProseMeasureCh": {
+        "preExisting": 16,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 2
+      },
+      "minProseMeasureCh": {
+        "preExisting": 21,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 0
+      },
+      "minimumAdjacentSectionGapPx": {
+        "preExisting": 20,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 4
+      },
+      "primaryContentLeftPaddingPx": {
+        "preExisting": 8,
+        "newInTheRewrite": 0,
+        "fixedByTheRewrite": 0
+      },
+      "visibleTextCharacterCount": {
+        "preExisting": 20,
+        "newInTheRewrite": 1,
+        "fixedByTheRewrite": 6
+      }
+    }
+  },
+  "rows": [
+    {
+      "baselineRoute": "/",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 112.152,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 24.6,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1704,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 110.222,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 3.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": -246,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "390x844",
+      "measure": "budgetedDecoratedElementCount",
+      "value": 48,
+      "comparison": "<=",
+      "limit": 40,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 24,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/forgot-password",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 37.111,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-in",
+      "viewport": "1280x800",
+      "measure": "interactiveElementCount",
+      "value": 9,
+      "comparison": "<=",
+      "limit": 7,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-in",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 37.111,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-in",
+      "viewport": "390x844",
+      "measure": "interactiveElementCount",
+      "value": 9,
+      "comparison": "<=",
+      "limit": 7,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-up",
+      "viewport": "1280x800",
+      "measure": "interactiveElementCount",
+      "value": 10,
+      "comparison": "<=",
+      "limit": 7,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-up",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 37.111,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/auth/sign-up",
+      "viewport": "390x844",
+      "measure": "interactiveElementCount",
+      "value": 10,
+      "comparison": "<=",
+      "limit": 7,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/browse",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 3.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/browse",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/changelog",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 77.222,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/changelog",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 27.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/changelog",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1022,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 89.75,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 21.875,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1794,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/chat",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 1122,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 21.875,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 885,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1128,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1643,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1810,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1384,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1869,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/privacy",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 717,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/providers",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 117.75,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/providers",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 27.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/providers",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1351,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/providers",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 897,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 110.222,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 3.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 2944,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "budgetedDecoratedElementCount",
+      "value": 42,
+      "comparison": "<=",
+      "limit": 40,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 1385,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 83.794,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 3.333,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 971,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 782,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 21.875,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 40,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 40,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/terms",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 85.333,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/terms",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 26.006,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/terms",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/terms",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1740,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/terms",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 0,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 112,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "1280x800",
+      "measure": "minProseMeasureCh",
+      "value": 21.824,
+      "comparison": ">=",
+      "limit": 45,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1024,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "390x844",
+      "measure": "primaryContentLeftPaddingPx",
+      "value": 16,
+      "comparison": ">=",
+      "limit": 24,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/uploads",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 867,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "pre-existing"
+    },
+    {
+      "baselineRoute": "/settings",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 996,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "new-in-the-rewrite"
+    },
+    {
+      "baselineRoute": "/about",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 936,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/ancestry",
+      "viewport": "1280x800",
+      "measure": "visibleTextCharacterCount",
+      "value": 1039,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/browse",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 131.038,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/dashboard",
+      "viewport": "1280x800",
+      "measure": "maxProseMeasureCh",
+      "value": 131.038,
+      "comparison": "<=",
+      "limit": 68,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/legal/deceased",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 863,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/legal/gina",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 708,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/legal/law-enforcement",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 851,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/legal/research-consent",
+      "viewport": "390x844",
+      "measure": "visibleTextCharacterCount",
+      "value": 817,
+      "comparison": "<=",
+      "limit": 700,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 32,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 32,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "1280x800",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 32,
+      "comparison": ">=",
+      "limit": 96,
+      "status": "fixed-by-the-rewrite"
+    },
+    {
+      "baselineRoute": "/reports/[slug]",
+      "viewport": "390x844",
+      "measure": "minimumAdjacentSectionGapPx",
+      "value": 32,
+      "comparison": ">=",
+      "limit": 64,
+      "status": "fixed-by-the-rewrite"
+    }
+  ]
+}

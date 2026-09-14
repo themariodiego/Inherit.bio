@@ -3294,3 +3294,159 @@ refused the threshold change until the mirrored copy in
 first draft that "no code reads the threshold". `pnpm density:verify` exists
 now. Wiring it into CI needs the history fetched, because it reads the frozen
 baseline commit through `git archive` and the job checks out at depth 1.
+
+## 2026-09-14 · Three owner decisions on density, and the one that turned out to be impossible
+
+The operator answered three questions about the G2.5 result. Two were taken and
+applied; the third could not be done as asked, and finding out why is the more
+useful half.
+
+**1. Keep the brief's 60%.** Asked again with X6.2's clause, its stated
+rationale and its "ceilings may be lowered, never raised" in front of them, the
+operator kept the brief's number. Item 14 of
+`docs/protocol/brief-corrections-proposed.md` is marked declined and kept whole.
+So the relative half of G2.5 is recorded as failing, and the twenty public rows
+are where the work starts — they are the only block where neither the
+measurement nor the predecessor is arguable.
+
+**2. `/overview` at 390×844 is a defect; `/settings` at 1280×800 is not.**
+Fixed in part. The two layer definitions on Overview became keyboard-operable
+disclosures whose summary is the count line and its short gloss, which is the
+pattern `/genome/[subject]/reports` already uses for these same two sentences —
+so nothing is deleted, nothing is summarised, and the plain-language gloss a
+beginner needs is the summary itself. 245 of 574 first-viewport characters moved
+behind them; **1.8039 → 1.5001** at 390×844 and 0.9953 → 0.8748 at 1280×800.
+
+Two things about that measurement are worth keeping. The visible character count
+went *up*, 574 to 639, because the freed height pulled two more domain cards
+above the fold — ink and text disagree here and ink is the measurement the rule
+is written in. And the remaining 1.50 is structural: three domain cards with
+descriptions plus a persistent bottom navigation bar, against a predecessor with
+four numerals and no bar. Going below 1.0 means removing content or navigation,
+which is a product decision rather than a density fix, so it stops there. Filed
+as D-114.
+
+The `/settings` rise stands as an accepted breach, not a hidden one: 996
+characters against the 700 cap is the **only** absolute budget this rewrite
+newly broke, and it is recorded that way.
+
+**3. "Close the fixture confound: one file, both halves" cannot be done, and
+the reason is bigger than the fixture.** Reading
+`scripts/density-baseline/supabase-fixture.mjs` settles it. The baseline half
+does not read a file for its derived results — it is a PostgREST stub, and three
+of the four derived layers its authenticated pages showed are literals in that
+file: the admixture result (EUR 0.54, AFR 0.18, EAS 0.12, SAS 0.10, AMR 0.06,
+`markersUsed` 82, "82 of 120 ancestry markers covered in this synthetic
+fixture"), the mtDNA and Y calls, and the three polygenic scores (percentiles
+62, 33 and 78). Only `variant_calls` came from the sample.
+
+**No upload can reproduce a number that was never computed.** The baseline's
+ancestry page names 120 markers; the shipped estimator reads 168. So those rows
+have no honest predecessor, and X6.2's own clause — already in this document as
+`relativeComparison.unmappedNewRoutes` — governs them: the absolute budgets
+stand and the relative comparison is not applicable.
+
+The suggested fix was also measured rather than assumed. Uploading the
+baseline's own sample to HEAD covers **5 of the 168** shipped ancestry markers,
+three percent, far below the reliability floor, so it would take the ancestry
+map off the page and trade one incomparable row for another. Filed as D-113,
+closed as not-applicable rather than fixed.
+
+**It changes no conclusion, which is the point of saying so.** Strike all 16
+authenticated rows and the remaining 28 still contain no row that meets the
+rule. That is the sharper headline this round produced: **0 of 28 measurements
+with an honest predecessor are within 60%**, and all three of the 44 that pass
+are rows whose predecessor was partly invented.
+
+**And the absolute budgets, which are what applies on those 16 rows, were
+measured for the first time.** Every threshold in the contract, applied to all
+44 measurements of both halves, each miss labelled pre-existing, new or fixed.
+
+- **The white-space floor catches nothing.** All 44 clear 0.62 on both halves,
+  by a wide margin. That is the brief's own argument for having a relative rule
+  at all — *"an absolute floor alone would let today's app pass unchanged"* —
+  confirmed by measurement.
+- **The rewrite did not degrade the budgets.** 103 misses on the baseline, 92 on
+  the successors; 91 the same miss on both sides, 12 fixed, exactly **one** new.
+- **Roughly 57 of the 91 are probably the measurement, not the product**, said
+  as a reading rather than a finding and filed as D-115: `minProseMeasureCh`
+  misses on 21 of 22 routes on both halves because it is the narrowest of every
+  rendered `p` and `li`, so a three-character list item fails a 45-character
+  floor meant for body prose.
+- **The crisp remainder is 35 rows**: eight authenticated mobile surfaces at
+  16px primary-content left padding against 24px, two auth pages at 9 and 10
+  first-viewport interactives against 7, two mobile surfaces at 48 and 42
+  decorated elements against 40, and 21 measurements over the 700-character cap.
+
+## 2026-09-14 · The ancestry naming rule was tested before it was built, and it does not work
+
+The owner compared Inherit against another service on the same file — eleven
+named groups there, two here — and asked for the quality to match or beat it.
+The investigation recorded on 2026-09-14 proposed a way: run the estimator over
+the ~51 gnomAD HGDP+1kGP populations rather than five superpopulations, and
+print a specific population name **only when its interval supports it**. It
+asserted that the leave-one-out instability it had measured "is exactly what
+they measure".
+
+**That assertion was mine, it was wrong, and testing it was the whole of this
+work.** The instability was across simulated people; the interval resamples
+markers within one person. A bootstrap over markers has no way to see that the
+reference set is missing the person's own population, because the misfit is in
+the set rather than in the sample.
+
+Three candidate gates were measured together — the interval's low bound, the
+fitted log-likelihood per marker (chosen because it *can* see a misfit a
+resample cannot) and label agreement (how often the top population survives a
+resample). **None separates a person the set contains from one it does not.**
+Best cases: the interval reaches +0.29 separation at a threshold that names only
+45.8% of represented people correctly and still names 16.7% of unrepresented
+ones; label agreement reaches +0.27 and still names 35.4%; the log-likelihood
+separates *negatively* almost everywhere.
+
+The four rows that make it concrete:
+
+| person | reference set | answer | interval | resamples agreeing |
+| --- | --- | --- | --- | --- |
+| Peru (PEL) | without Peru | Maya 0.80 | 0.720–1.000 | **100 of 100** |
+| French | without France | GBR 0.98 | 0.968–1.000 | 91 of 100 |
+| Han | without Han | CHS 0.93 | 0.861–1.000 | 85 of 100 |
+| Gujarati | **with** Gujarat | GIH 0.32 | 0.000–0.638 | 26 of 100 |
+
+Confidence runs the wrong way in exactly the cases that matter. No threshold
+admits the fourth row and refuses the first. Filed as D-118.
+
+**Two further findings, and both are about who the reference set leaves out.**
+
+The document's own argument for preferring gnomAD's HGDP+1kGP set over 1000
+Genomes was that it reaches seven regions including Oceania. That is true of the
+callset and **false of the public API the same document proposed reaching it
+through**: across all 168 panel markers the API returns 73 named populations and
+no Papuan, Bougainville or Melanesian at any marker, nor San, Mbuti or Biaka.
+Absent, not sparse (D-116).
+
+And the sample-size floor lands on almost the same people. Twenty-two of the 73
+carry fewer than ten people — Bantu South Africa and Surui 1, Karitiana 2,
+Colombian 4, Bantu Kenya and Pima 5, then fifteen East and Southeast Asian
+populations at 6–9 — checked against the median so it is their size and not one
+bad marker. A European has about twelve candidate labels; someone of
+Indigenous-American ancestry has one; someone of Papuan ancestry has none at any
+floor (D-117). The inequality is in the reference set, so no panel size and no
+model fixes it.
+
+**What this leaves.** It rules out the design that was proposed: one specific
+name, gated on confidence. The gate does not exist. It does **not** rule out
+showing the resample distribution rather than deciding from it — "in 100
+resamples of your markers the closest match was Basque 43 times, Sardinian 27,
+CEU 18" is honest by construction and shows noise and confidence together, which
+is what the owner asked for. Whether that is worth building next to a competitor
+that prints eleven confident labels is a decision, not a measurement, and it has
+to carry the reference-set inequality on the surface beside it.
+
+**The licence precondition is met with one gap named.** The audit row for the
+callset is verified from the peer-reviewed paper rather than asserted, and it
+records what could not be re-verified: gnomAD's own policies page is
+JavaScript-only, `curl` returns an 8.9 KB shell, and the bundled Chromium does
+not trust this session's TLS-interception CA. Verification was not disabled to
+get around it. The row also says the thing a licence does not settle — HGDP
+sampled small, named, often Indigenous communities, and unrestricted release
+governs what may be stored, not what may be said about a person.

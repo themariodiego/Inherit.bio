@@ -1,10 +1,13 @@
 # Brief and register corrections — proposed, signed and applied
 
 **Status, 2026-09-13: items 4, 5, 6, 8, 10 and 12 are SIGNED AND APPLIED.**
-Each of those carries a signature line at its own head saying what was applied
-and what was not. The rest are still proposals and are still unapplied, and
+**Status, 2026-09-14: item 14 is DECLINED.**
+
+Each decided item carries a line at its own head saying what was decided and
+what was applied. The rest are still proposals and are still unapplied, and
 this document is kept whole rather than pruned: the reasoning behind a signed
-item is the record of why the register says what it now says.
+item is the record of why the register says what it now says, and the reasoning
+behind a declined one is the record of why the brief still says what it says.
 
 The operator asked for these to be drafted for sign-off rather than made. Each
 item below gives the exact text to replace, the exact replacement, and why.
@@ -1095,9 +1098,19 @@ Filed as **D-108**.
 
 ## 14. X6.2's relative density rule: 60% asked for, 98% measured
 
-**This one is a decision the operator has already taken in conversation, and
-it is filed rather than applied because taking it raises a ceiling the brief
-says may never be raised.**
+**DECLINED 2026-09-14. The 60% stands and nothing in this item was applied.**
+The operator was asked again with X6.2's clause and its stated rationale in
+front of them, and kept the brief's number. So G2.5's relative half is
+recorded as failing, the successors are expected to become substantially
+sparser, and the public surfaces are where that work starts. The item is kept
+whole rather than deleted, because the reasoning below is the record of why the
+threshold is 0.6 and of how close it came to being changed without anyone
+reading the clause.
+
+**Original proposal follows, unapplied.**
+
+**This was a decision the operator had taken in conversation, filed rather than
+applied because taking it raises a ceiling the brief says may never be raised.**
 
 ### What the brief says
 

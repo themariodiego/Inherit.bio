@@ -376,8 +376,23 @@ test("/overview partial-coverage — State C: after one prepared file, the split
   await expect(page.getByText(/specific-variant reports?$/)).toHaveCount(1);
   await expect(page.getByText("What studies found about DNA and traits.", { exact: true })).toBeVisible();
   await expect(page.getByText("Results read from one spot in your DNA.", { exact: true })).toBeVisible();
-  await expect(page.getByText(ESTIMATE_DEFINITION, { exact: true })).toBeVisible();
-  await expect(page.getByText(VARIANT_CALL_DEFINITION, { exact: true })).toBeVisible();
+  // The full definition of each layer is one keyboard-operable disclosure
+  // away, the pattern `/genome/[subject]/reports` already uses for these same
+  // two sentences. Opened by focusing the summary and pressing Enter rather
+  // than by clicking or by setting `open`, so this still proves the sentence
+  // is REACHABLE and not merely present in the DOM — which is the claim the
+  // earlier `toBeVisible()` made and which must not weaken.
+  for (const [line, definition] of [
+    [countLine, ESTIMATE_DEFINITION],
+    [variantCallLine, VARIANT_CALL_DEFINITION],
+  ] as const) {
+    const summary = line.locator("xpath=ancestor::summary[1]");
+    await expect(summary, "the count line is the disclosure's summary").toHaveCount(1);
+    await expect(page.getByText(definition, { exact: true }), "closed before it is opened").toBeHidden();
+    await summary.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText(definition, { exact: true })).toBeVisible();
+  }
   // The tiny VCF retains one observed reference call among 168 ancestry markers.
   await expect(page.getByText(ANCESTRY_TOO_FEW, { exact: true })).toBeVisible();
 

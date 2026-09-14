@@ -47,3 +47,13 @@ worker/node_modules
 # playwright
 /test-results
 /playwright-report
+
+# ancestry-resolution research byproducts
+# Reference allele frequencies fetched at run time, and the rows a measurement
+# writes as it goes. Deliberately untracked: reference data enters this
+# repository through a licence audit (docs/dataset-licenses.md), not through a
+# research script, and `gate:secrets` only sees the tracked tree — so an
+# accidental `git add -A` is exactly how a large reference dump would arrive
+# without one.
+scripts/ancestry-resolution/gnomad-pops.json
+scripts/ancestry-resolution/naming-rule-rows.jsonl

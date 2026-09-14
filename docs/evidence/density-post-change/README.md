@@ -14,8 +14,11 @@ route has a baseline predecessor, its ink coverage is ≤ 60% of that
 predecessor's"*. Every row here is scored against that 0.6, and — because the
 operator has asked for a looser rule that is not signed yet — against 1.0 as
 well, in `withinBriefRule` and `withinProposedRule`. Only the first is in
-force. The result: **3 of 44 within the brief's rule, 26 of 44 within the
-proposed one, median ratio 0.98.**
+force — the operator was shown X6.2's clause and its rationale and kept the
+60%. The result: **3 of 44 within the brief's rule, 26 of 44 within the
+declined alternative, median ratio 0.9753** — and all three passes are on rows
+with no honest predecessor, so among the 28 measurements whose predecessors
+were real rendered pages there are **none**.
 
 Both sides have to be measured the same way for either number to mean
 anything.
@@ -47,6 +50,10 @@ blocked, at 390×844 and 1280×800.
 - `comparison.json` — one row per (baseline route × viewport), carrying both
   ink coverages, their ratio, both verdicts, both screenshot SHA-256 values,
   and the visible-text and interactive counts on each side.
+- `absolute-budgets.json` — every absolute threshold applied to all 44
+  measurements of both halves, with each miss labelled `pre-existing`,
+  `new-in-the-rewrite` or `fixed-by-the-rewrite`. This is what X6.2 says applies
+  where the relative rule cannot.
 
 One mismatch is deliberate and worth knowing about before it looks like a bug:
 `baseline-linux-computed-measurements.json` mirrors the contract's thresholds
@@ -77,15 +84,21 @@ Neither half's 44 PNGs are stored here. Each measurement in both computed
 files carries its own `screenshotSha256`, and `comparison.json` repeats both
 hashes on every row, so a regenerated image is checkable against what was
 measured. Committing 6.4 MB of PNGs for a comparison that is expected to be
-superseded — see the fixture confound in
-`docs/density-baseline.json#postChange` — was not worth the repository weight.
+superseded was not worth the repository weight.
 
 ## What this does not establish
 
-The two halves were not fed the same file. The baseline half serves a
-2,135-variant sample inserted directly into an out-of-tree stub; the
-post-change half uploads a 309-row synthetic VCF through the real journey.
-Every measure that depends on how much a file supports is confounded by that,
-and the confound is recorded in full, with what bounds it, in
-`docs/density-baseline.json#postChange.comparison.fixtureConfound`. No row
-here should be read as a verdict on a surface until it is closed.
+**Sixteen of the 44 rows have no honest predecessor**, and the reason is
+sharper than a choice of fixture file. `scripts/density-baseline/supabase-fixture.mjs`
+is a PostgREST stub, and three of the four derived layers the baseline's
+authenticated pages showed are literals inside it: the admixture result
+(EUR 0.54 … markersUsed 82, "82 of 120 ancestry markers covered in this
+synthetic fixture"), the mtDNA and Y calls, and the three polygenic scores
+(percentiles 62, 33, 78). Only `variant_calls` came from the sample. No upload
+on the successor side can reproduce a number that was never computed, so
+`docs/density-baseline.json#postChange.comparison.noHonestPredecessor` records
+those rows as not applicable — which is what X6.2 itself prescribes for a route
+with no honest predecessor — and the absolute budgets stand for them instead.
+
+It changes no conclusion. Strike all 16 and the remaining 28 still contain no
+row that meets the rule.

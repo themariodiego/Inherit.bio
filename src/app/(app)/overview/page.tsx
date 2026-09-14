@@ -347,26 +347,35 @@ export default async function OverviewPage() {
             hasReports ? (
               <>
                 {estimateCount > 0 ? (
-                  <>
-                    <p className="text-base leading-relaxed">
+                  /* The count and its 1-12-word note stay visible; the full
+                     definition is one disclosure away, exactly as
+                     `/genome/[subject]/reports` renders these same two
+                     sentences. Measured reason, not taste: this surface's
+                     first viewport at 390x844 was the densest rise in the
+                     G2.5 comparison at 1.80x its predecessor, and these two
+                     definitions are 245 of its 574 visible characters.
+                     Nothing is deleted and nothing is summarised — the plain
+                     gloss a beginner needs is the summary itself. */
+                  <details className="text-base leading-relaxed">
+                    <summary className="w-fit cursor-pointer">
                       <Count value={estimateCount} layerClass="estimate" describedBy="overview-estimate-definition" className="font-medium" />{" "}
                       <span data-metric-note className="text-ink-muted">{SPLIT_NOTE}</span>
-                    </p>
-                    <p id="overview-estimate-definition" className="text-sm leading-relaxed text-ink-muted">
+                    </summary>
+                    <p id="overview-estimate-definition" className="mt-2 max-w-prose text-sm leading-relaxed text-ink-muted">
                       {ESTIMATE_DEFINITION}
                     </p>
-                  </>
+                  </details>
                 ) : null}
                 {variantCallCount > 0 ? (
-                  <>
-                    <p className="text-base leading-relaxed">
+                  <details className="text-base leading-relaxed">
+                    <summary className="w-fit cursor-pointer">
                       <Count value={variantCallCount} layerClass="variant-call" describedBy="overview-variant-call-definition" className="font-medium" />{" "}
                       <span data-metric-note className="text-ink-muted">{SPLIT_NOTE_VARIANT_CALL}</span>
-                    </p>
-                    <p id="overview-variant-call-definition" className="text-sm leading-relaxed text-ink-muted">
+                    </summary>
+                    <p id="overview-variant-call-definition" className="mt-2 max-w-prose text-sm leading-relaxed text-ink-muted">
                       {VARIANT_CALL_DEFINITION}
                     </p>
-                  </>
+                  </details>
                 ) : null}
                 {ancestryTooFew ? (
                   <p className="text-base leading-relaxed text-ink">
