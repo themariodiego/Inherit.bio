@@ -74,10 +74,13 @@ describe("the route gate holds the register to the code", () => {
     // items 6, 8 and 10, five profiles giving a state up wholesale and 26 routes
     // waiving one their profile keeps. 162 -> 155 on 2026-09-13: G2.2 amended
     // (D-108), and the seven Family and Embryo routes that declared
-    // consent-required with nothing to require stopped declaring it. Pinned
+    // consent-required with nothing to require stopped declaring it. 155 -> 156
+    // on 2026-09-14: the ninth state id, `awaiting-choice`, supported on
+    // `product-result` and waived on the thirteen routes of that profile which
+    // are not /overview, so it adds exactly the one pair it names. Pinned
     // exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(155);
+    expect(result.requiredStateCount).toBe(156);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
   });
 
@@ -250,17 +253,21 @@ describe("the route gate holds the register to the code", () => {
     expect(failures.join("\n")).toContain("names the reading \"complete-for-the-question\" without saying where it applies");
   });
 
+  // The planted id was `awaiting-choice` until 2026-09-14, when that became a
+  // real state id and the defect stopped biting. The fixture now uses a name
+  // no register could plausibly adopt, so the next id to be added does not
+  // quietly disarm this check the way the last one did.
   it("fails when a definition outlives the id it defines", async () => {
     const root = plant({
       register: (register) => {
-        (register.stateDefinitions as Record<string, unknown>)["awaiting-choice"] = {
+        (register.stateDefinitions as Record<string, unknown>)["renamed-away-v0"] = {
           means: "A definition for an id that nothing declares, left behind by a rename.",
         };
       },
     });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "state definition: `awaiting-choice` is defined but is not a state id. " +
+      "state definition: `renamed-away-v0` is defined but is not a state id. " +
         "Remove it, or the register describes a column that does not exist.",
     );
   });

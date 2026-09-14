@@ -3033,3 +3033,52 @@ changes the control is indistinguishable from a click that was ignored. And the
 control never read the response body, which left the stream open and the value
 it records unused; it now shows what the row holds rather than what was asked
 for.
+
+## 2026-09-14 · A ninth state id: `awaiting-choice`
+
+The owner's decision of 2026-09-13 was to name this shape rather than leave it
+unnamed or fold it into `empty`. It is applied here.
+
+**The shape.** `needsReportChoice` in `src/app/(app)/overview/page.tsx` is true
+when a file has finished preparation and neither a report nor an ancestry
+result exists. The page's whole body becomes "Choose your reports — Your file
+is prepared. Choose report types and generate your results." with one link to
+`/genome/me/reports`. **Every reader who uploads a file passes through it**, and
+the ratchet had no name to count it under.
+
+**Why not `empty`.** An empty page has nothing to show AND no step this reader
+can take; the rule was written down by `e2e/family-health-picture.spec.ts` when
+it declined to claim `consent-required` and it decides this too. This page has a
+prepared file and exactly one step, named and linked. The two render alike — no
+results, no figures — and mean different things, which is the same trap
+`empty`/`not-covered` set on this route and was solved by establishing the cause
+from the database rather than from the render. The browser proof does the same
+here: it reads `single_logical_sample_verified_at` before asserting anything.
+
+**It does not spread, and the counter-case is the interesting one.**
+`/genome/[subject]/reports` is where the choice is actually made, and it was the
+obvious candidate for a second declaration. It does not take one: its body is
+the report library, which renders in full whether or not anything has been
+chosen, so its shape is `complete`. Declaring `awaiting-choice` there would
+claim a call-to-action page that route never becomes. The Family surfaces offer
+no analysis for this reader to choose, and an embryo cohort's analysis is
+chosen in the request flow that creates it rather than on any of the three
+result routes. So the state is supported on `product-result` and waived on the
+thirteen other routes that carry that profile, each with the reason above.
+
+**Every profile had to answer.** `src/lib/claims/capture-plan.ts` fails on a
+state id a profile neither supports nor waives, so all twelve profiles carry the
+id now. That check is why adding an id is not a one-line change, and it is
+working as intended: a state nobody declared a position on is exactly the kind
+of thing that drifts.
+
+**One planted defect had to be re-armed.** `scripts/route-gate.test.ts` proved
+the "a definition outlives its id" rule by planting a definition for
+`awaiting-choice`, chosen at the time because no such id existed. Making the id
+real disarmed the check silently — the test still passed, for the wrong reason.
+The fixture now uses `renamed-away-v0`, a name no register would adopt.
+
+**The ratchet went 27 → 28 → 27 inside this change**, which is the only
+acceptable shape for adding a state: the pair was declared and then proven in
+the same commit, by a browser test that uploads a real file through the real
+journey rather than writing a prepared row into the database.
