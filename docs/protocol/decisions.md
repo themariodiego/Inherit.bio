@@ -3129,3 +3129,44 @@ screenshots, which match each other and which `verify.mjs` checks by hash.
 Replacing one half would leave the document claiming numbers its own evidence
 contradicts, so the Linux capture stays reproducible from the script rather
 than committed, and the swap happens when both halves can be taken together.
+
+## 2026-09-14 · D-017 blamed the panel; it was the fixture, and the expensive fix is not needed
+
+The owner chose "the real fix" for D-017 on 2026-09-13 — select enough
+ancestry-informative markers to separate EUR from AMR, re-fit, and gate the
+whole thing behind a licence audit of whatever catalogue the markers come from.
+That was the right call given what the defect said. The defect was wrong.
+
+**Measured, not argued.** Over 200 seeds of exactly the fixture D-017
+describes — EUR 0.6 / AFR 0.3 / EAS 0.1 per allele copy, drawn by the helper
+already committed in `admixture.test.ts` — the recorded outcome does not occur
+once. EUR comes back at mean **0.522** (median 0.530, range 0.293–0.800), AMR
+at mean **0.042** (median 0.000), and **AMR exceeds EUR in 0 of 200 seeds**.
+The recorded result was AMR 0.652 with EUR 0.005.
+
+**One character of the draw reproduces it.** Taking the ALT allele with
+probability `1 - freqs[pop]` instead of `freqs[pop]` gives EUR 0.000 / AMR
+0.588 / AFR 0.139 / EAS 0.273 — the same signature, EUR collapsed and AMR
+holding the bulk. The defect's own AREA column says "W7 part B (fixture
+generation)", and its description then blames the panel; the area column was
+right and the description sent the remedy in the wrong direction.
+
+**It is not a fix that landed in between.** `src/lib/genome/admixture.ts` and
+`data/ref/aims.json` are byte-identical to what the defect measured on
+2026-09-03: the single commit touching either since (`319a214`) only added the
+`RELIABLE_FRACTION` constant.
+
+**Both draws are now exercised by the test suite**, so the distinction is held
+by code rather than by this note, and the panel cannot be re-condemned from a
+fixture nobody checked.
+
+**What remains is real and much smaller.** At 168 markers the spread is wide —
+0.293 to 0.800 for a truth of 0.600 — and a mild downward bias persists as the
+marker count rises: mean EUR 0.522 at 168 markers, 0.551 at 336, 0.565 at 672,
+0.580 at 1,344, 0.584 at 2,688. That is a precision problem, and the work is
+the marker-subsampling interval this row's own remedy line already named. It is
+not a new panel, and no catalogue licence audit is owed for it.
+
+**Nothing about the panel was touched**, which is the point: the cheapest
+correct action here was to measure before selecting markers, and the
+measurement said not to.
