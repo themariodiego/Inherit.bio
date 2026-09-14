@@ -76,8 +76,23 @@ the branch; `anc` the base it carries when it does not.
 
 ## Terms
 
-- PhyloTree: free for academic/non-commercial use with citation
-  (van Oven M, Kayser M. 2009. Hum Mutat 30:E386-E394).
+- PhyloTree: **the publisher states no copyright, licence or terms of use**,
+  and asks only that the paper be cited (van Oven M, Kayser M. 2009. Hum Mutat
+  30:E386-E394). Read from https://www.phylotree.org/ on 2026-09-03 and
+  corrected here on 2026-09-13.
+
+  This line previously read "free for academic/non-commercial use with
+  citation". **That restriction was ours, not theirs** — the publisher never
+  imposed it — and it mattered, because the licence audit bars a
+  non-commercially-licensed source from the reference store, so an invented
+  term was disqualifying a source on its own say-so (D-022).
+
+  Stated precisely, because the two are not the same: data published with NO
+  terms is not data published permissively. This is a correction to a factual
+  claim about what the publisher's page says, not a legal opinion about what
+  rights attach to it. The MIT licence on the machine-readable copy
+  (`data/phylotree/phylotree17_FU1a.xml`) covers that copy's packaging, not
+  the underlying tree.
 - ISOGG tree/SNP index: publicly available, citation requested.
 - yhaplo data files: MIT-licensed repository. HaploGrep phylotree XML:
   MIT-licensed repository.

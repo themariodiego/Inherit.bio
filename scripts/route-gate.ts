@@ -504,6 +504,31 @@ const BROWSER_TESTS = "e2e";
  *               it is why this sentence can be written at all without
  *               telling one adult something new about the other.
  *
+ *    34 -> 27   NOT A PROOF, and the last move a register correction can make
+ *               to this number. The operator amended G2.2 on 2026-09-13 on
+ *               the D-108 measurement, and the seven Family and Embryo routes
+ *               that declared `consent-required` with nothing to require
+ *               stopped declaring it. Required 162 -> 155; proven unchanged
+ *               at 128.
+ *
+ *               The amendment is narrow and the guard above got NARROWER with
+ *               it, not looser. Before, any consent waiver on those paths
+ *               failed. Now it fails unless the register names which of three
+ *               exceptions applies — the consent belongs to an ITEM the page
+ *               lists, the page is where that consent is GIVEN, or the page
+ *               reads no consent at all — and an item-level claim additionally
+ *               has to name what carries the refusal in its place. `/family`
+ *               names `/family/[person] consent-required`; `/embryos` names
+ *               the two Embryo result surfaces. Both of those are proven, so
+ *               the claim is checkable rather than a sentence.
+ *
+ *               Two of the original nine were closed by work rather than by
+ *               this: `/family/[person]`, which was implemented and untitled,
+ *               and `/family/health-picture`, which was built. Those went
+ *               first, which is why this entry moves seven and not nine — the
+ *               measurement that produced the amendment was only trustworthy
+ *               because the two reachable ones had already been reached.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -513,7 +538,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 34;
+const UNPROVEN_ROUTE_STATE_PAIRS = 25;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -527,6 +552,9 @@ interface RegisterEntry {
   stateProfile?: string;
   /** States this ONE route cannot reach, though its profile supports them. */
   notApplicableStates?: Record<string, string>;
+  /** Which G2.2 exception lets a Family or Embryo route waive consent-required. */
+  consentRequiredException?: { kind?: string; carriedBy?: string };
+  requestContract?: unknown;
   parameterContract?: unknown;
 }
 
@@ -793,20 +821,36 @@ function isFamilyOrEmbryoRoute(routePath: string): boolean {
     || routePath === "/embryos" || routePath.startsWith("/embryos/");
 }
 
+/** The three cases G2.2's consent prohibition does not reach (amended 2026-09-13). */
+const CONSENT_EXCEPTION_KINDS = ["item-level", "consent-is-given-here", "reads-no-consent"] as const;
+
 /**
  * Three ways a not-applicable declaration goes wrong, and one the brief
- * forbids outright.
+ * forbids unless a named exception is claimed.
  *
  * G2.2 ends with four `n/a` declarations that are forbidden however well
- * argued. One of them is machine-decidable from the path alone —
- * `consent-required` on any Family or Embryo Analysis route — and corrections
- * item 7 was written because a proposal walked straight into it: items 5 and 6
- * were both measured against the product and neither against the brief, which
- * is the thing that says what the product owes. That miss is now a gate
- * failure rather than a reading. The other three forbidden declarations turn
- * on whether a route renders a result derived from an uploaded file and on
- * which capabilities appear in data/jurisdictions.json; neither is decidable
- * here, so neither is claimed.
+ * argued. One is machine-decidable from the path alone — `consent-required` on
+ * a Family or Embryo Analysis route — and corrections item 7 was written
+ * because a proposal walked straight into it: items 5 and 6 were both measured
+ * against the product and neither against the brief, which is the thing that
+ * says what the product owes.
+ *
+ * D-108 then measured the other side of it. Seven routes declared the state
+ * and none had a consent a page-level refusal could require, so the blanket
+ * forced a permanent unproven pair and invited someone to close it by building
+ * a refusal nobody asked for. The operator amended G2.2 on 2026-09-13: the
+ * prohibition holds wherever consent is a property of the page, and does not
+ * reach three cases — consent that belongs to an ITEM the page lists, the page
+ * where that consent is GIVEN, and a page that reads no consent at all.
+ *
+ * So the check is no longer "never"; it is "never without saying which". A
+ * waiver on one of these routes must carry `consentRequiredException.kind`
+ * from the closed list, and an item-level claim must name what carries the
+ * refusal instead — which is what makes it reviewable rather than a sentence
+ * anyone can write. The other three forbidden declarations turn on whether a
+ * route renders a result derived from an uploaded file and on which
+ * capabilities appear in data/jurisdictions.json; neither is decidable here,
+ * so neither is claimed.
  */
 function notApplicableFailures(register: StateRegister): string[] {
   const failures: string[] = [];
@@ -829,11 +873,32 @@ function notApplicableFailures(register: StateRegister): string[] {
     }
     const waivedConsent = (entry.notApplicableStates ?? {})["consent-required"] !== undefined
       || (register.stateProfiles[entry.stateProfile ?? ""]?.notApplicable ?? {})["consent-required"] !== undefined;
+    const claimed = entry.consentRequiredException;
     if (waivedConsent && isFamilyOrEmbryoRoute(entry.path)) {
+      if (!claimed || !CONSENT_EXCEPTION_KINDS.includes(claimed.kind as typeof CONSENT_EXCEPTION_KINDS[number])) {
+        failures.push(
+          `route state exemption: ${entry.path} waives consent-required without claiming one of ` +
+            `G2.2's exceptions (${CONSENT_EXCEPTION_KINDS.join(", ")}). On a Family or Embryo ` +
+            `Analysis route the prohibition holds unless the register says which case applies.`,
+        );
+      } else if (claimed.kind === "item-level" && !(claimed.carriedBy ?? "").trim()) {
+        failures.push(
+          `route state exemption: ${entry.path} claims G2.2's item-level exception without naming ` +
+            `what carries the refusal instead. An item-level claim is only reviewable if it says ` +
+            `which item state a reader meets in its place.`,
+        );
+      }
+    }
+    if (claimed && !waivedConsent) {
       failures.push(
-        `route state exemption: ${entry.path} waives consent-required, and G2.2 forbids that ` +
-          `n/a on any Family or Embryo Analysis route outright. The correction for these ` +
-          `routes is to build the gate, not to stop declaring it.`,
+        `route state exemption: ${entry.path} carries a consentRequiredException but does not waive ` +
+          `consent-required. An exception with nothing to except is a stale exemption; remove it.`,
+      );
+    }
+    if (claimed && !isFamilyOrEmbryoRoute(entry.path)) {
+      failures.push(
+        `route state exemption: ${entry.path} carries a consentRequiredException and is not a Family ` +
+          `or Embryo Analysis route, so G2.2's prohibition never reached it and there is nothing to except.`,
       );
     }
   }
@@ -848,6 +913,8 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     briefSha256?: string;
     routes: RegisterEntry[];
     stateProfiles: Record<string, StateProfile>;
+    stateIds?: string[];
+    stateDefinitions?: Record<string, { means?: string; readings?: { reading?: string; where?: string }[] }>;
     storagePrefixes: { id: string; bucket: string }[];
   };
 
@@ -880,6 +947,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     redirectStatusDivergence?: { routeId: string; expectedStatus: number; emitsStatus: number }[];
     kindDivergence?: { routeId: string; path: string; declaredKind: string; builtKind: string }[];
     storageBucketDivergence?: { bucket: string; direction: string }[];
+    unhashableAttestationFields?: { routeId: string; fields: string[] }[];
     provenRouteStates?: string[];
   };
 
@@ -994,12 +1062,75 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
       .filter((bucket) => !declaredBuckets.has(bucket))
       .map((bucket) => `created-not-declared ${bucket}`),
   ];
+  // 4b. Request fields the register requires that nothing can honestly
+  // produce. `policy.jurisdiction` does not exist anywhere in this
+  // repository, so no body can name its published version or hash it, and
+  // these routes send a plain `jurisdictionCode` instead (D-083). The owner
+  // chose to record that rather than author a legal artifact to satisfy a
+  // field. Recording it is only worth anything if something checks it, so it
+  // is compared in BOTH directions like every other row: a sixth route
+  // declaring the fields fails until it is recorded, and the day the artifact
+  // exists and the fields are really served, every stale row fails too.
+  const attestationFields = ["jurisdictionAttestationVersion", "jurisdictionAttestationHash"];
+  const declaredAttestations: string[] = [];
+  for (const entry of register.routes) {
+    const contract = entry.requestContract as
+      | { closedBody?: Record<string, unknown>; oneOfClosedBodies?: Record<string, unknown>[] }
+      | undefined;
+    const bodies = [contract?.closedBody, ...(contract?.oneOfClosedBodies ?? [])];
+    const found = attestationFields.filter((field) => bodies.some((body) => body && field in body));
+    if (found.length > 0) declaredAttestations.push(`${entry.id} ${found.sort().join("+")}`);
+  }
+  compareLedger(
+    "unhashable attestation field",
+    declaredAttestations,
+    (ledger.unhashableAttestationFields ?? []).map((known) => `${known.routeId} ${[...known.fields].sort().join("+")}`),
+    failures,
+  );
+
   compareLedger(
     "storage bucket",
     bucketDivergence,
     (ledger.storageBucketDivergence ?? []).map((known) => `${known.direction} ${known.bucket}`),
     failures,
   );
+
+  // 4c. Every state id says what it means, and nothing says what an absent id
+  // means. Corrections item 11: eight ids were defined nowhere, so precedent
+  // supplied the meanings and supplied several per name — `complete` was
+  // carrying four. The definitions were read out of the proofs rather than
+  // chosen, and this keeps the two sets in step: an id added without a
+  // definition leaves the ratchet counting something nobody has described,
+  // and a definition left behind describes a column that no longer exists.
+  const definitions = register.stateDefinitions ?? {};
+  for (const state of register.stateIds ?? []) {
+    const definition = definitions[state];
+    if (!definition || typeof definition.means !== "string" || definition.means.trim().length < 20) {
+      failures.push(
+        `state definition: \`${state}\` is in stateIds with no definition worth the name. ` +
+          `An id the ratchet counts and nobody has defined is how one column came to mean four things.`,
+      );
+    }
+    // A named reading that does not say where it applies cannot be checked
+    // against a proof, which is the whole reason the readings are named.
+    for (const reading of definition?.readings ?? []) {
+      if (!(reading.where ?? "").trim()) {
+        failures.push(
+          `state definition: \`${state}\` names the reading "${reading.reading ?? "?"}" without saying ` +
+            `where it applies. A reading nobody can locate is not a definition.`,
+        );
+      }
+    }
+  }
+  for (const defined of Object.keys(definitions)) {
+    if (defined.startsWith("_")) continue;
+    if (!(register.stateIds ?? []).includes(defined)) {
+      failures.push(
+        `state definition: \`${defined}\` is defined but is not a state id. ` +
+          `Remove it, or the register describes a column that does not exist.`,
+      );
+    }
+  }
 
   // 5. The (route, state) ratchet.
   failures.push(...notApplicableFailures(register));

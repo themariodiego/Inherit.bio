@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "ef61154015c1768e622bba0ae1302a7b3e37c4cd3cde24d9d42fec8f12498961",
+  "briefSha256": "6b9f8b56ecbcf0f49cfd7d402e008dfa8cff727d1f6eb9d43f417447e3b10a6d",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -11714,6 +11714,34 @@
       },
       "unknownFieldsRecursively": "forbidden"
     },
+    "chromosomal-sex-declared-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "chromosomalSex": {
+          "enum": [
+            "XX",
+            "XY",
+            "other",
+            "unknown",
+            null
+          ]
+        },
+        "revision": "positive-integer-demographics_revision-or-0-when-no-row-exists",
+        "updatedAt": "ISO-8601-UTC-server-timestamp-or-null-when-no-row-exists",
+        "action": {
+          "enum": [
+            "declared",
+            "replaced",
+            "withdrawn",
+            "unchanged"
+          ]
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "carriesNoOtherPerson": "the-response-names-only-the-acting-account-own-subject-declaration; an-unauthorized-or-unknown-subject-answers-the-same-404-so-a-caller-learns-nothing-by-guessing"
+    },
     "family-acknowledged-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -12299,6 +12327,11 @@
         "capability-denied-api-v1",
         "resource-not-found-v1"
       ],
+      "api.chromosomal-sex": [
+        "chromosomal-sex-declared-v1",
+        "invalid-request-v1",
+        "resource-not-found-v1"
+      ],
       "api.family-acknowledge": [
         "family-acknowledged-v1",
         "invalid-request-v1",
@@ -12632,6 +12665,7 @@
   "stateIds": [
     "empty",
     "processing",
+    "awaiting-choice",
     "partial-coverage",
     "complete",
     "not-covered",
@@ -12639,12 +12673,94 @@
     "consent-required",
     "jurisdiction-unavailable"
   ],
+  "stateDefinitions": {
+    "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired \u2014 owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
+    "empty": {
+      "means": "The page has nothing to show, and there is no step this reader can take to change that.",
+      "separatedFrom": {
+        "consent-required": "A consent-required page names an outstanding consent step and links to where it is given; an empty page has neither. The rule was written down by e2e/family-health-picture.spec.ts when it DECLINED to claim consent-required, and it decided both gates built on 2026-09-13.",
+        "not-covered": "They render alike on /overview and both /genome/[subject]/data* routes and mean opposites: nothing uploaded, against a prepared file that covers nothing. Three tests added 2026-09-12 establish the cause FROM THE DATABASE because no assertion on the rendered page can tell them apart."
+      }
+    },
+    "processing": {
+      "means": "Work the reader started is in flight, and the page says so rather than looking finished.",
+      "overloaded": false,
+      "note": "The one id item 11 examined and found NOT overloaded: it means the same thing on every route that has claimed it (recorded in e2e/embryos.spec.ts). It is also the id most often found implemented-and-untitled \u2014 auth-flow's four, and five more measured in item 8 \u2014 so a zero in its proven column has never once meant the state was absent."
+    },
+    "partial-coverage": {
+      "means": "Some of what this page could show is absent, and the page names which part and why.",
+      "readings": [
+        {
+          "reading": "coverage",
+          "is": "the file does not carry positions the page would otherwise report",
+          "where": "/genome/[subject]/data/browser, where the gene search lists reference positions the file lacks"
+        },
+        {
+          "reading": "permission",
+          "is": "one layer was granted and another was not, so cells read \u201cNot shared with you\u201d",
+          "where": "/family/[person] and /family/health-picture"
+        }
+      ],
+      "note": "Both readings are proven and both routes sit on the `product-result` profile, so recording the reading per PROFILE cannot separate them \u2014 which is why item 11's own proposal was insufficient and the owner chose to name both readings under one id instead. Nothing about a file's coverage differs between the two Family cases."
+    },
+    "complete": {
+      "means": "The page is showing everything it can honestly show for what was asked.",
+      "readings": [
+        {
+          "reading": "complete-for-the-question",
+          "is": "the answer is complete for what was asked, which is all a search surface can claim",
+          "where": "/genome/[subject]/data/browser \u2014 the browser never claims the file covers the genome"
+        },
+        {
+          "reading": "permitted-and-able",
+          "is": "everything the page is permitted AND able to show, with no cell absent for want of a permission or a source",
+          "where": "/family/health-picture \u2014 it cannot mean every report covered, because no real file covers the catalogue; /genome/[subject]/reports \u2014 both layers granted and generated, so no group is absent for want of a permission or a source"
+        },
+        {
+          "reading": "everything-it-has",
+          "is": "the page showing everything it has, on a route with no data-dependent shape",
+          "where": "/settings/data, /genome/[subject]"
+        },
+        {
+          "reading": "committed-document",
+          "is": "a committed document, long enough and free of placeholder text",
+          "where": "/legal/* via assertDocumentComplete"
+        }
+      ]
+    },
+    "not-covered": {
+      "means": "The file is here and prepared, and the data does not support a result.",
+      "note": "Distinct from `empty`, which is the absence of a file rather than of an answer, and the two render alike on several routes. On /family/portrait/[pairId] and /family/health-picture the difference is structural rather than textual and the proofs assert the branch from the DOM: the health picture's `empty` renders neither the carrier panel nor the comparison table, while its `not-covered` renders both."
+    },
+    "error": {
+      "means": "A fault a request can actually reach.",
+      "note": "Declared only where a fault is reachable. A route that answers bad input with notFound() does not declare it, and the reason may name that convention rather than a structural property \u2014 the one exception G2.2 allows to its own n/a rule (operator decision 2026-09-12, corrections item 4, which took this id off nine profiles)."
+    },
+    "consent-required": {
+      "means": "A recorded, revocable consent is missing; the page names the outstanding step and links to where it is given.",
+      "note": "The consent must be a RECORDED, REVOCABLE artifact. The Family Tier-2 gate is deliberately not this state: it is a session-scoped acknowledgement asserted never to reach device storage, and calling it a consent would blur a distinction the product keeps on purpose. Where the consent belongs to an item the page lists rather than to the page, the route waives this state under a G2.2 exception and names the item state that carries the refusal instead."
+    },
+    "jurisdiction-unavailable": {
+      "means": "The capability is not permitted in the jurisdiction resolved for this reader and every contributor, so the page renders the register's own refusal copy and fetches no result.",
+      "note": "Jurisdiction is user-declared and server-enforced, never inferred from IP, locale, timezone or Accept-Language (X12.1). The refusal is resolved before consent, so a page that refuses here never reveals whether a consent was also missing."
+    },
+    "awaiting-choice": {
+      "means": "The reader's file is prepared and no analysis has been chosen yet, and the whole page is the invitation to choose one.",
+      "separatedFrom": {
+        "empty": "An empty page has nothing to show and no step this reader can take. This page has a prepared file and exactly one step, named and linked. Both render as a page with no results on it, which is why the id exists rather than the shape being folded into `empty`.",
+        "processing": "Nothing is in flight. The preparation finished; what is waiting is a decision only the reader can make.",
+        "complete": "The page is not showing everything it can: it is showing that it can show nothing until a choice is made. /genome/[subject]/reports is the counter-case and the reason this id does not spread \u2014 its body IS the choosing surface, so it is `complete` whether or not anything has been chosen."
+      },
+      "note": "Added 2026-09-14 on the owner's decision of 2026-09-13, taken after the shape was found unnamed rather than mis-named. Every reader who uploads a file passes through it and the ratchet could not see it. Reachable on /overview alone: `needsReportChoice` in overview/page.tsx is the only branch in the product whose whole body is a call to choose an analysis."
+    }
+  },
   "stateProfiles": {
     "static-document": {
       "supported": [
         "complete"
       ],
       "notApplicable": {
+        "awaiting-choice": "A committed public document has no reader's file and offers no analysis to choose.",
         "empty": "A versioned public document always has committed content.",
         "processing": "A static public document performs no user processing.",
         "partial-coverage": "A static public document renders no uploaded-file result.",
@@ -12660,6 +12776,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
+        "awaiting-choice": "A public marketing page has no reader's file to have prepared and offers no analysis to choose; its reader may not have an account at all.",
         "empty": "The public legality-first page always has committed explanatory content.",
         "processing": "The public branch starts no user-data processing.",
         "partial-coverage": "The public branch renders no uploaded-file result.",
@@ -12675,6 +12792,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
+        "awaiting-choice": "A public explanatory page has no reader's file to have prepared and offers nothing to choose; its reader may not have an account at all.",
         "empty": "/embryo-analysis is 35 lines of public copy with one link styled as a button. No form, no state, no fetch. Corrections item 8, signed 2026-09-13.",
         "processing": "The same 35 lines start nothing. Corrections item 8, signed 2026-09-13.",
         "complete": "The page's one render is already proven as jurisdiction-unavailable. Counting the same render twice would inflate the proven column without proving anything. Corrections item 10, signed 2026-09-13.",
@@ -12698,6 +12816,7 @@
         "complete"
       ],
       "notApplicable": {
+        "awaiting-choice": "A versioned public document has no reader's file and offers no analysis to choose.",
         "empty": "All six routes were read end to end; each is between nine and fourteen lines. Every one renders a committed body or answers notFound(), and not one carries a branch that renders nothing. The diff pages render both versions side by side and fall back to “No change summary was recorded.” for a missing summary field, which is a fallback inside a populated page rather than an empty state. Corrections item 8, signed 2026-09-13.",
         "processing": "A versioned document performs no asynchronous user-data processing.",
         "partial-coverage": "A versioned document renders no uploaded-file result.",
@@ -12713,6 +12832,7 @@
         "complete"
       ],
       "notApplicable": {
+        "awaiting-choice": "Signing in, signing up or resetting a password knows of no prepared file and offers no analysis, so there is nothing for this reader to choose here.",
         "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders “Check your email”, which is a complete shape. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "Authentication does not render an uploaded-file result.",
         "not-covered": "Authentication does not render an uploaded-file result.",
@@ -12725,6 +12845,7 @@
       "supported": [
         "empty",
         "processing",
+        "awaiting-choice",
         "partial-coverage",
         "complete",
         "not-covered",
@@ -12745,6 +12866,7 @@
         "consent-required"
       ],
       "notApplicable": {
+        "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
         "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault \u2014 bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) \u2014 and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table."
       }
@@ -12757,6 +12879,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
+        "awaiting-choice": "These flows carry an invitation or a claim through to a decision. No analysis is on offer in any of their steps.",
         "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
@@ -12770,6 +12893,7 @@
         "complete"
       ],
       "notApplicable": {
+        "awaiting-choice": "These pages manage the account itself \u2014 its settings, consents, Copilot model and own data \u2014 and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
         "partial-coverage": "Account management does not render an uploaded-file result.",
         "not-covered": "Account management does not render an uploaded-file result.",
         "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
@@ -12782,6 +12906,7 @@
         "complete"
       ],
       "notApplicable": {
+        "awaiting-choice": "A rights request is about data already held. It offers no analysis to choose and does not read whether a file is prepared.",
         "empty": "All three routes read 2026-09-12. /legal/appeals is a static legal page with no form and no button. /future-person/claim is sixteen lines whose whole body is “Claims are not open yet”, which is what the page is rather than an absence. /withdraw/[token] renders an outcome or the invitation; its “empty” word is copy about a closed reserved subject. Corrections item 8, signed 2026-09-13.",
         "processing": "/legal/appeals and /future-person/claim perform no request at all. /withdraw/[token] is PERMANENT AND CORRECT: its accept and refuse controls are plain form action=\"/api/withdraw\" method=\"post\" submissions with hidden inputs — a native full-page POST with no client JavaScript. It has no pending state and should not get one; a rights surface that works without JavaScript is a feature and the browser's own navigation indicator is the feedback. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "The rights flow verifies identity and disposition, not file coverage.",
@@ -12794,6 +12919,7 @@
     "redirect": {
       "supported": [],
       "notApplicable": {
+        "awaiting-choice": "A redirect renders no page state at all.",
         "empty": "A permanent redirect emits no product state.",
         "processing": "A permanent redirect emits no product state.",
         "partial-coverage": "A permanent redirect emits no product state.",
@@ -12807,6 +12933,7 @@
     "endpoint": {
       "supported": [],
       "notApplicable": {
+        "awaiting-choice": "An endpoint returns a protocol response rather than a rendered page state.",
         "empty": "An endpoint returns a protocol response rather than a rendered page state.",
         "processing": "An endpoint returns a protocol response rather than a rendered page state.",
         "partial-coverage": "An endpoint returns a protocol response rather than a rendered page state.",
@@ -13402,6 +13529,7 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
+        "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry.",
         "partial-coverage": "The hub renders tiles, a file count and a link per tool. It never renders a result, so there is nothing that could be partly covered. Corrections item 10, signed 2026-09-13.",
         "not-covered": "The same: coverage is a property of a report against a file, and this page shows no report. Corrections item 10, signed 2026-09-13.",
@@ -13429,6 +13557,9 @@
           "allowedOnlyWhenRouteSubject": "me"
         }
       },
+      "notApplicableStates": {
+        "awaiting-choice": "This IS the page where the choice is made. Its body is the report library, which renders in full whether or not anything has been chosen \u2014 so the shape here is `complete`, and an `awaiting-choice` declaration would claim a call-to-action page this route never becomes."
+      },
       "stateProfile": "product-result",
       "policy": {
         "mode": "resolved",
@@ -13450,6 +13581,7 @@
       "width": "44rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
+        "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry. This route serves genetic findings, which is exactly why the measurement is recorded rather than assumed."
       },
       "policy": {
@@ -13469,6 +13601,7 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
+        "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "policy": {
@@ -13488,6 +13621,7 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
+        "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "policy": {
@@ -13507,6 +13641,7 @@
       "width": "64rem",
       "stateProfile": "product-result",
       "notApplicableStates": {
+        "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "consent-required": "Measured 2026-09-11 three ways, because a negative is easy to get wrong: the page component itself, the call sites of both shared blocking components, and the absence of any gate above it — there is no src/middleware.ts and the (app) layout carries no consent check, so a route refusing by redirect rather than by render would still have been caught. This route renders no consent refusal. Corrections item 6, signed 2026-09-13. This does not say the route should never gate on consent; if it should, the correction is to build the gate, which is a product decision and not this register entry."
       },
       "policy": {
@@ -13525,6 +13660,14 @@
       "surface": "hub",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file.",
+        "consent-required": "Consent here is a property of a PERSON, not of this page: `familyPersonState` returns `paused` for one card and the hub renders every other card, tile and panel around it. The route-level refusal on this page is the jurisdiction one, which suppresses the whole surface and is proven. There is no account-level Family consent that could put the hub itself into this state. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "item-level",
+        "carriedBy": "/family/[person] consent-required, and the card's own “Sharing paused” state"
+      },
       "policy": {
         "mode": "public-first-then-authenticated",
         "publicBranch": {
@@ -13598,6 +13741,12 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "consent-required": "61 lines. A form for inviting an adult, which reads a jurisdiction and nothing else. No consent artifact exists that a person must sign before they may invite someone, and inventing one to satisfy this declaration would be adding a product requirement to serve a register entry. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -13623,6 +13772,9 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
+      "notApplicableStates": {
+        "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file."
+      },
       "stateProfile": "product-result",
       "policy": {
         "mode": "layer-resolved",
@@ -13663,6 +13815,12 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "notApplicableStates": {
+        "consent-required": "This is the page on which the consent is GIVEN. A page-level consent refusal here would send the reader to the page they are already on. Its per-row `onlyTheyCanTurnThisOn` lock is a row state, not a page state, and D-102 covers that row's own empty-reason defect. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "consent-is-given-here"
+      },
       "policy": {
         "mode": "mixed",
         "guardedActions": {
@@ -13704,6 +13862,9 @@
       "auth": "authenticated",
       "surface": "wide-data",
       "width": "90rem",
+      "notApplicableStates": {
+        "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file."
+      },
       "stateProfile": "product-result",
       "policy": {
         "mode": "guarded",
@@ -13746,6 +13907,9 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
+      "notApplicableStates": {
+        "awaiting-choice": "The Family surfaces are about other people's shared results and about permissions. Nothing on any of them asks this reader to choose an analysis for their own file."
+      },
       "stateProfile": "product-result",
       "policy": {
         "mode": "guarded",
@@ -13787,6 +13951,12 @@
       "surface": "marketing",
       "width": "64rem",
       "stateProfile": "public-embryo-analysis",
+      "notApplicableStates": {
+        "consent-required": "36 lines of public copy with one render, already proven as `jurisdiction-unavailable`, and the profile's `zeroUserDataRule` forbids it reading an account, a subject or a consent at all. The register's own projection for this state here is a panel of prerequisites rather than a refusal, and a page with one render cannot also be in a second state. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "policy": {
         "mode": "public-legality-first",
         "userDataFetch": "forbidden",
@@ -13829,6 +13999,14 @@
       "surface": "hub",
       "width": "64rem",
       "stateProfile": "product-result",
+      "notApplicableStates": {
+        "awaiting-choice": "An embryo cohort's analysis is chosen in the request flow that creates it, not on any of the three cohort result routes, so none of them can render an invitation to choose one.",
+        "consent-required": "The same shape: the analysis grant is a property of a COHORT. `analysisConsent` already renders a waiting line per cohort, and `/embryos complete` was proven on a hub carrying a per-cohort jurisdiction line for exactly this reason — a per-item line is what the page HAS, not a state the page is in. Read 2026-09-13; corrections item 13, signed."
+      },
+      "consentRequiredException": {
+        "kind": "item-level",
+        "carriedBy": "/embryos/[embryoId] consent-required and /embryos/compare consent-required, both proven"
+      },
       "policy": {
         "mode": "guarded",
         "guards": [
@@ -13879,7 +14057,11 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "notApplicableStates": {
+        "consent-required": "TEMPORARY, WITH THE SAME EXPIRY AS THIS ROUTE'S `processing` WAIVER. The artifacts this flow needs — `consent.upload-embryo` and `attestation.embryo-parentage` — are signed DURING the flow, per draft, against a draft route (E0) that does not exist, so there is nothing to check before it does. When E0 lands, this waiver must come off with the other one. Read 2026-09-13; corrections item 13, signed.",
         "processing": "TEMPORARY, WITH AN EXPIRY. upload-flow.tsx is 405 lines containing no async, no fetch and no form action: a useReducer decision tree that ends in links. It performs no request because the route it would post to does not exist yet. WHEN THAT ROUTE LANDS, processing becomes real again and this entry must come off. Corrections item 8, signed 2026-09-13."
       },
       "policy": {
@@ -13909,7 +14091,11 @@
       "surface": "flow",
       "width": "64rem",
       "stateProfile": "restricted-flow",
+      "consentRequiredException": {
+        "kind": "reads-no-consent"
+      },
       "notApplicableStates": {
+        "consent-required": "81 lines. A letter to print or paste into a clinic's inbox; it reads no cohort, no subject and no consent, and its one render is proven as `complete`. Read 2026-09-13; corrections item 13, signed.",
         "processing": "Its copy button writes to the clipboard, which is not a network request. Corrections item 8, signed 2026-09-13."
       },
       "policy": {
@@ -13949,6 +14135,9 @@
         },
         "absent": "resolve-the-most-recent-readable-eligible-cohort-by-created_at-descending-then-id-ascending-or-render-the-registered-zero-cohort-blocking-state-with-no-private-row-fetch",
         "unknownNoncanonicalOrUnreadable": "resource-not-found-page-v1"
+      },
+      "notApplicableStates": {
+        "awaiting-choice": "An embryo cohort's analysis is chosen in the request flow that creates it, not on any of the three cohort result routes, so none of them can render an invitation to choose one."
       },
       "stateProfile": "product-result",
       "policy": {
@@ -14002,6 +14191,9 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
+      "notApplicableStates": {
+        "awaiting-choice": "An embryo cohort's analysis is chosen in the request flow that creates it, not on any of the three cohort result routes, so none of them can render an invitation to choose one."
+      },
       "stateProfile": "product-result",
       "policy": {
         "mode": "guarded",
@@ -15857,6 +16049,57 @@
         ]
       },
       "successResponseContract": "sharing-updated-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.chromosomal-sex",
+      "path": "/api/chromosomal-sex",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "subjectId": "required-canonical-lowercase-UUID-of-a-subject-whose-subject_account_id-is-the-acting-account",
+          "chromosomalSex": {
+            "enum": [
+              "XX",
+              "XY",
+              "other",
+              "unknown",
+              null
+            ]
+          }
+        },
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "ownerAccountId",
+          "counterpartSubjectId",
+          "revision",
+          "updatedAt",
+          "derivedFrom"
+        ]
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": true,
+        "actorRole": "acting-account",
+        "rpc": "public.declare_chromosomal_sex_v1(p_account_id, p_subject_id, p_chromosomal_sex)",
+        "effect": "record-or-withdraw-the-declared-chromosomal-sex-of-a-subject-the-acting-account-IS; null-withdraws-through-the-same-call; a-repeat-of-the-same-value-writes-nothing-and-appends-no-audit-row; any-other-subject-is-resource-not-found-v1-with-zero-writes",
+        "declaredNeverDerived": "no-code-path-infers-this-value-from-X-or-Y-coverage-or-from-any-file; ADR-0003-forbids-imputing-a-value-Inherit-did-not-read-and-a-guess-is-wrong-for-a-person-whose-chromosomes-are-not-XX-or-XY",
+        "readBy": "family.health-picture-family.portrait-and-app.overview-read-it-only-through-src-lib-family-chromosomal-sex-to-choose-which-Mendelian-cross-an-X-linked-carrier-pair-follows; no-surface-renders-it-as-a-value-and-portrait_results-refuses-a-sex-key-by-check-constraint",
+        "auditEvent": "demographics.chromosomal-sex-with-revision-and-action-only-never-the-value",
+        "protectedFetchSerializeEnqueueOrModelCall": "forbidden",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "chromosomal-sex-declared-v1",
       "disposition": "kept"
     },
     {

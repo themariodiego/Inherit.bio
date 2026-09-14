@@ -181,3 +181,33 @@ export const SHARING_ERROR_STATUS = "That did not save. Nothing was changed.";
  */
 export const INDEPENDENT_LOGIN_REQUIRED =
   "This row needs a sign-in of your own first. Sign out, sign in again, and it can be turned on.";
+
+/**
+ * The three reasons a row can be locked with no control and nothing else to
+ * say (D-102, signed 2026-09-14). Before these, `actionFor()` returned
+ * `undefined` with no reason set and the reader met an empty paragraph.
+ *
+ * The cause is `private.family_report_endpoint_v1(..., p_require_adult)`,
+ * which requires a date of birth at least eighteen years old and is called
+ * for BOTH sides of the pair, so either profile can be the one that fails it.
+ *
+ * ATTRIBUTED, by owner decision. The unattributed wording was recommended and
+ * overruled, and the record of that trade-off is
+ * `docs/protocol/copy-for-signature.md`. What attribution accepts is that a
+ * reader learns the named person either has not recorded a date of birth or
+ * is under 18. What it must never do is say which: `adultOnRecord` collapses
+ * the database's three-valued `birthDateState` to one boolean for that reason.
+ */
+export function adultDateRequiredFrom(name: string): string {
+  return `This row needs a date of birth from ${name}. Inherit shares between adults only.`;
+}
+
+/** The viewer's own profile is the one missing it: actionable, and it
+ *  discloses nothing about anyone else. */
+export const YOUR_ADULT_DATE_REQUIRED =
+  "This row needs your date of birth. Inherit shares between adults only.";
+
+/** Every other cause: a principal, artifact or profile the page could not
+ *  read. A fault, and it says so rather than looking like a rule. */
+export const GRANT_UNAVAILABLE =
+  "This row cannot be turned on right now. Nothing has changed; please try again.";

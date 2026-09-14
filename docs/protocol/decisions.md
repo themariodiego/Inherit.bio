@@ -2834,3 +2834,339 @@ blocked on E0; and `/family/invite`, `/family/[person]/permissions` and
 `/embryos/request-data` have no recorded revocable artifact to require at all,
 which may be a genuine conflict with G2.2's blanket prohibition rather than
 a gap to fill.
+
+## 2026-09-13 · Four owner decisions, and a standing authorization
+
+**Migrations are applied to production on every merge.** Not this one
+migration: a standing authorization, and it is the ordering that would have
+prevented D-106. From here, a merge to main is followed by applying whatever
+`supabase/migrations` holds that the deployed ledger does not, one at a time
+with verification after each, and a report of exactly what ran.
+
+`20260913080000_research_publication_due_work` was applied under it
+immediately. Production now holds 108 ledger rows — 107 repository files plus
+the operator-only `install_own_report_retention_scheduler` that has no file and
+is recorded as such — the function is present, and the grants are the ones the
+pgTAP suite asserts: `service_role` may execute, `anon` and `authenticated` may
+not. `apply_migration` stamps a row with the current time, so the version was
+rewritten from `20260913181700` to the repository's `20260913080000`, matched
+by name, exactly as the twelve were. The drift is cleared.
+
+**G2.2's consent prohibition is amended, not lifted** (D-108, item 13). The
+blanket became a rule with three named exceptions, and the enforcement got
+STRICTER in the process rather than looser. Before, any `consent-required`
+waiver on a Family or Embryo route failed the gate. Now it fails unless the
+register names which exception applies, from a closed list, and an item-level
+claim additionally has to name what a reader meets instead — which for
+`/family` and `/embryos` is a state that is itself proven. A prohibition that
+can be argued around in prose has been replaced by one that has to be answered
+in a field.
+
+**The eight state ids will be defined rather than split** (item 11). One
+sentence each in the register, plus which reading applies per profile. The
+alternative — splitting the overloaded ids — is truer to the product and moves
+the declared states on most profiles, which would put every existing proof up
+for re-reading. Definition is the cheaper of the two and makes the remaining 27
+a reading rather than a judgement call. Not yet done; next.
+
+**Blocked copy: I draft, the owner signs.** D-102's locked-permission reason
+and D-103's five adult-consent statements have been blocked all session. The
+standing position was that the owner writes them, on the ground that the
+wording a person is told they agreed to is not an implementation detail. That
+ground still holds for what SHIPS: candidates are drafted here for signature,
+and nothing reaches a consent surface unsigned. The five statements in
+particular remain the owner's to approve verbatim or rewrite.
+
+**Where the ratchet stands.** 87 to 27 in one day. 58 of those 60 pairs left
+because the register stopped describing behaviour the product does not have,
+and 2 were proofs. Nothing left in the number is a register correction: every
+remaining pair is a state the product has and no test names, or one item 11
+must first make decidable.
+
+## 2026-09-13 · Four more, and one that changes the data model
+
+**D-022: the wrong record was ours.** Our provenance note asserted PhyloTree
+is "free for academic/non-commercial use with citation"; the publisher's page
+states no copyright, licence or terms at all and asks only for a citation. The
+licence audit bars a non-commercially-licensed source from the reference
+store, so for months an invented restriction was disqualifying a source on our
+own say-so, and the maternal-line capability was carrying the risk. The note
+now says what the page says, with the read date and the correction date. Stated
+in both files because it is the whole of what changed: data published with no
+terms is not data published permissively. This is a correction to a claim about
+someone else's page, not counsel's opinion on what rights attach, and counsel
+may revisit.
+
+**D-083: record the divergence, keep the code.** Five routes require a
+jurisdiction attestation version and hash; `policy.jurisdiction` exists nowhere
+in the repository, so nothing can name a version or hash a body, and they send
+a plain `jurisdictionCode`. Rather than author a legal artifact to satisfy a
+field, or drop a commitment the brief made about proving which jurisdiction a
+person accepted under, the mismatch is now written down — and compared. The
+route gate checks `unhashableAttestationFields` against the register in both
+directions, so a sixth route declaring the fields fails until it is recorded,
+and every row fails the day the artifact exists and the fields are really
+served. A record nothing checks is a sentence; this one is a ratchet.
+
+**D-017: expand the panel.** The shipped 168-marker panel cannot separate EUR
+from AMR — a fixture drawn at EUR 0.6 is reported as EUR 0.005, with the
+European-drawn alleles landing on admixed-American. The owner chose the real
+fix over merging the two references or withholding the estimate. That is marker
+selection, which is science work, and the catalogue it draws from needs a
+licence check before a single marker enters the reference store — the rule
+D-022 just demonstrated the cost of getting wrong. Not started; scoped next.
+
+**D-031: record chromosomal sex.** A change of plan rather than a choice among
+the three offered. The carrier panel refuses the X-linked arithmetic with
+`sex-unknown` because nothing records it, and Portrait's `xLinkedCross` is
+built and waiting.
+
+One judgement call is mine and is flagged rather than buried: **declared, not
+derived.** Inferring chromosomal sex from X/Y coverage would be inference on a
+sensitive attribute, which this product refuses elsewhere on principle —
+ADR-0003 refuses imputation, and X12.1 refuses inferring jurisdiction from IP,
+locale or timezone — and it is wrong for some people, which is precisely the
+population a genomics product must not quietly mislabel. The precedent to
+follow is `profiles.jurisdiction`: user-declared, server-enforced, optional,
+purpose-bound, revocable, and every change writing an audit row. If the owner
+wants derivation instead, that reverses a principle and should be said
+explicitly.
+
+## 2026-09-14 · The eight ids are defined, and one was not overloaded after all
+
+Corrections item 11 is applied: `docs/route-register.json#stateDefinitions`
+carries one sentence per state id, and the route gate fails when an id has no
+definition, when a named reading does not say where it applies, or when a
+definition outlives its id. Three planted defects, one per rule.
+
+**The definitions were read out of the proofs rather than chosen.** Every
+existing test states in its header which reading it used, which is what made
+"define" the cheap option: not one recorded proof had to be re-read, and no
+definition here contradicts one. That is also the constraint that decided the
+wording — where a proof had already committed to a reading, the definition
+follows the proof, not the other way round.
+
+Two things the work turned up that the item did not anticipate.
+
+**`processing` is not overloaded.** `e2e/embryos.spec.ts` had already recorded
+that it means work in flight on every route that has claimed it, and that this
+is why three Embryo pairs could be titled while the `complete` and coverage
+pairs waited. So it is marked `overloaded: false` rather than given readings it
+does not have. It is also the id most often found implemented-and-untitled —
+auth-flow's four, five more in item 8 — so a zero in its proven column has
+never once meant the state was absent.
+
+**The item's own proposal was insufficient for `partial-coverage`.** It
+proposed recording the applicable reading per PROFILE. Both readings sit on the
+same profile: `/genome/[subject]/data/browser` is the coverage reading and
+`/family/[person]` is the permission reading, and both are `product-result`.
+Per-profile recording cannot separate them, which is why this went back as a
+question rather than being applied as written. The owner chose to name both
+readings under one id — the alternative, splitting `partial-coverage` in two,
+would have put both existing proofs up for re-reading to buy a distinction the
+ratchet does not need.
+
+## 2026-09-14 · Chromosomal sex is recorded, and it is declared rather than derived (D-031)
+
+`subject_demographics.chromosomal_sex` has existed since 2026-08-31 with no
+writer. Two ADRs and the carrier rule all stated that as a fact about Inherit —
+"nothing records a person's chromosomal sex" — and answered an X-linked carrier
+pair with a refusal. The column now has one writer,
+`public.declare_chromosomal_sex_v1`, reached only by `POST /api/chromosomal-sex`
+from the control on `/settings`, and an X-linked pair whose two people have each
+declared theirs gets the hundred-pregnancy split the brief asks for
+(`brief:346`).
+
+**Declared, never derived, and this is a divergence from the brief's
+permission.** `brief:1833` says "An adult may see chromosomal sex derived from
+their own genome, on their own account, only." That is a permission, not a
+requirement, and this build does not take it. Two reasons, both already settled
+elsewhere in this repository. ADR 0003 forbids imputing a value Inherit did not
+read, and X and Y coverage is not a declaration. And a guess from coverage is
+simply wrong for people whose sex chromosomes are not XX or XY — the group for
+whom being told their own chromosomes by software that inferred them is worst,
+and the group the four-value column (`XX`, `XY`, `other`, `unknown`) exists to
+serve. The narrower build is compatible with the brief's prohibitions (nothing
+about an embryo, nothing on any other person's surface) and stops short of its
+permission on purpose. **If the owner wants derivation, that reverses a
+principle and should be said explicitly; nothing here forecloses it, and a
+derived value would still need a place to land other than the declaration.**
+
+**Authority is the subject, not the holder.** The writer accepts only a subject
+whose `subject_account_id` is the acting account — the account a subject IS,
+never `owner_account_id`, the account that HOLDS it. An uploader who controls
+another adult's record cannot record that adult's chromosomes from anywhere;
+that adult declares from their own session or the value stays blank. Minors are
+out of reach by subject class and embryos by a trigger that predates this work.
+
+**Withdrawal is the same call.** `chromosomalSex: null` through the same route
+clears the column, leaves any `date_of_birth` on the same row alone, and writes
+its own audit row. Recording a value already recorded writes nothing and appends
+no audit row: a revision that moved without the value moving would make every
+later audit read a change that did not happen.
+
+**The audit row carries the revision and the action, never the value.**
+`legal_audit_log` is append-only and hash-chained and its expired prefix is
+checkpointed rather than rewritten, so a value written there outlives the row it
+describes — including past a deletion. The audit question is whether the
+declaration changed and under which revision, and `revision` plus `action`
+answers it.
+
+**One reason became three, and that was not padding.** The old `sex-unknown`
+covered every X-linked refusal. Now a reader meets one of: nobody has declared
+(declaring would change the answer); both declared and the pair is not one XX
+and one XY (no further declaration fixes that, and saying so is better than
+treating a recorded `other` as an XY); or a file reads a change on the X in a
+way that does not fit what that person recorded, which Inherit names rather than
+resolving in either direction.
+
+**The rule now owns the cross.** `evaluateCarrierPairs` returns the `MendelCross`
+a match follows instead of a bare probability, and `portrait-card.tsx` reads it
+instead of re-deriving `autosomalCross("autosomal_recessive", …)` from the copies.
+That re-derivation was the live path by which a component could have drawn an
+X-linked pair with the recessive arithmetic once the split became reachable.
+
+**Two defects the browser proof found, neither visible to a unit test.** The
+radios were bound to the server's value with no local state, so a reader's own
+click appeared to do nothing until a refresh landed — and a click that never
+changes the control is indistinguishable from a click that was ignored. And the
+control never read the response body, which left the stream open and the value
+it records unused; it now shows what the row holds rather than what was asked
+for.
+
+## 2026-09-14 · A ninth state id: `awaiting-choice`
+
+The owner's decision of 2026-09-13 was to name this shape rather than leave it
+unnamed or fold it into `empty`. It is applied here.
+
+**The shape.** `needsReportChoice` in `src/app/(app)/overview/page.tsx` is true
+when a file has finished preparation and neither a report nor an ancestry
+result exists. The page's whole body becomes "Choose your reports — Your file
+is prepared. Choose report types and generate your results." with one link to
+`/genome/me/reports`. **Every reader who uploads a file passes through it**, and
+the ratchet had no name to count it under.
+
+**Why not `empty`.** An empty page has nothing to show AND no step this reader
+can take; the rule was written down by `e2e/family-health-picture.spec.ts` when
+it declined to claim `consent-required` and it decides this too. This page has a
+prepared file and exactly one step, named and linked. The two render alike — no
+results, no figures — and mean different things, which is the same trap
+`empty`/`not-covered` set on this route and was solved by establishing the cause
+from the database rather than from the render. The browser proof does the same
+here: it reads `single_logical_sample_verified_at` before asserting anything.
+
+**It does not spread, and the counter-case is the interesting one.**
+`/genome/[subject]/reports` is where the choice is actually made, and it was the
+obvious candidate for a second declaration. It does not take one: its body is
+the report library, which renders in full whether or not anything has been
+chosen, so its shape is `complete`. Declaring `awaiting-choice` there would
+claim a call-to-action page that route never becomes. The Family surfaces offer
+no analysis for this reader to choose, and an embryo cohort's analysis is
+chosen in the request flow that creates it rather than on any of the three
+result routes. So the state is supported on `product-result` and waived on the
+thirteen other routes that carry that profile, each with the reason above.
+
+**Every profile had to answer.** `src/lib/claims/capture-plan.ts` fails on a
+state id a profile neither supports nor waives, so all twelve profiles carry the
+id now. That check is why adding an id is not a one-line change, and it is
+working as intended: a state nobody declared a position on is exactly the kind
+of thing that drifts.
+
+**One planted defect had to be re-armed.** `scripts/route-gate.test.ts` proved
+the "a definition outlives its id" rule by planting a definition for
+`awaiting-choice`, chosen at the time because no such id existed. Making the id
+real disarmed the check silently — the test still passed, for the wrong reason.
+The fixture now uses `renamed-away-v0`, a name no register would adopt.
+
+**The ratchet went 27 → 28 → 27 inside this change**, which is the only
+acceptable shape for adding a state: the pair was declared and then proven in
+the same commit, by a browser test that uploads a real file through the real
+journey rather than writing a prepared row into the database.
+
+## 2026-09-14 · The density blocker, measured — and the one nobody had written down
+
+The owner chose "re-capture both sides on Linux" for G2.5. The baseline half
+is done and the post-change half is not, and the reason is not the one the file
+recorded.
+
+**The baseline reproduces on Linux.** `scripts/density-baseline/reproduce.sh`
+ran against the frozen baseline commit on this machine (Linux 6.18.44 x86_64,
+Chromium 141.0.7390.37, Node 22.22.2) and produced all 44 captures. One real
+portability defect was in the way and is fixed: the default working root was
+`mktemp -d /private/tmp/…`, a path that exists only on macOS, so the script was
+unrunnable elsewhere even though every other path was already parameterised.
+
+**The platform cost is now a number rather than an argument.** The file said a
+capture taken elsewhere "would compare font rasterisers rather than designs".
+It does, and by this much: on identical markup at the same commit, ink coverage
+is **higher on Linux by a mean of 28.5% relative at 390×844 (max 41.4%) and
+26.5% at 1280×800 (max 36.6%)**. The relative rule's threshold is 60% of the
+baseline, so a shift of that size is not noise. The equivalence requirement
+stands, and it now stands on evidence.
+
+**And the blocker is narrower than it looked.** Every non-pixel measure was
+IDENTICAL across the two platforms — interactive element counts, visible text
+character counts, prose element counts, on all 44 captures, zero differences.
+So only `inkCoverageRatio`, `whiteSpaceRatio` and `exactGroundRatio` need one
+machine. The element and text budgets never did, and could have been captured
+anywhere at any point.
+
+**The larger blocker was not recorded at all.** There is no post-change capture
+harness. `capture.mjs` reads `contract.routes`, which are the baseline's 22
+paths; the post-change side must measure their successors, six of them
+authenticated and three carrying a dynamic segment that needs a concrete value.
+`supabase-fixture.mjs` cannot serve them: it is built FROM the baseline checkout
+— it reads that tree's templates, providers and sample genome — and stubs that
+product's PostgREST tables, while HEAD's authenticated pages read a much larger
+surface through the service role. So the work is a HEAD-shaped fixture, or the
+real local stack the browser suite already builds, plus a successor route list
+with concrete parameters. The platform equivalence is a constraint on WHERE
+that runs, not the reason it has not been done.
+
+**Nothing was swapped in.** The recorded baseline still carries the macOS
+numbers and `docs/evidence/density-baseline/` still holds the macOS
+screenshots, which match each other and which `verify.mjs` checks by hash.
+Replacing one half would leave the document claiming numbers its own evidence
+contradicts, so the Linux capture stays reproducible from the script rather
+than committed, and the swap happens when both halves can be taken together.
+
+## 2026-09-14 · D-017 blamed the panel; it was the fixture, and the expensive fix is not needed
+
+The owner chose "the real fix" for D-017 on 2026-09-13 — select enough
+ancestry-informative markers to separate EUR from AMR, re-fit, and gate the
+whole thing behind a licence audit of whatever catalogue the markers come from.
+That was the right call given what the defect said. The defect was wrong.
+
+**Measured, not argued.** Over 200 seeds of exactly the fixture D-017
+describes — EUR 0.6 / AFR 0.3 / EAS 0.1 per allele copy, drawn by the helper
+already committed in `admixture.test.ts` — the recorded outcome does not occur
+once. EUR comes back at mean **0.522** (median 0.530, range 0.293–0.800), AMR
+at mean **0.042** (median 0.000), and **AMR exceeds EUR in 0 of 200 seeds**.
+The recorded result was AMR 0.652 with EUR 0.005.
+
+**One character of the draw reproduces it.** Taking the ALT allele with
+probability `1 - freqs[pop]` instead of `freqs[pop]` gives EUR 0.000 / AMR
+0.588 / AFR 0.139 / EAS 0.273 — the same signature, EUR collapsed and AMR
+holding the bulk. The defect's own AREA column says "W7 part B (fixture
+generation)", and its description then blames the panel; the area column was
+right and the description sent the remedy in the wrong direction.
+
+**It is not a fix that landed in between.** `src/lib/genome/admixture.ts` and
+`data/ref/aims.json` are byte-identical to what the defect measured on
+2026-09-03: the single commit touching either since (`319a214`) only added the
+`RELIABLE_FRACTION` constant.
+
+**Both draws are now exercised by the test suite**, so the distinction is held
+by code rather than by this note, and the panel cannot be re-condemned from a
+fixture nobody checked.
+
+**What remains is real and much smaller.** At 168 markers the spread is wide —
+0.293 to 0.800 for a truth of 0.600 — and a mild downward bias persists as the
+marker count rises: mean EUR 0.522 at 168 markers, 0.551 at 336, 0.565 at 672,
+0.580 at 1,344, 0.584 at 2,688. That is a precision problem, and the work is
+the marker-subsampling interval this row's own remedy line already named. It is
+not a new panel, and no catalogue licence audit is owed for it.
+
+**Nothing about the panel was touched**, which is the point: the cheapest
+correct action here was to measure before selecting markers, and the
+measurement said not to.

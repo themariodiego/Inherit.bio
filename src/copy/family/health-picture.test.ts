@@ -164,9 +164,9 @@ describe("health-picture copy", () => {
     );
   });
 
-  it("names every reason in the closed table of ten, and no other", () => {
+  it("names every reason in the closed table of twelve, and no other", () => {
     expect(Object.keys(copy.CARRIER_REASON_PHRASES).sort()).toEqual([...CARRIER_REASONS].sort());
-    expect(CARRIER_REASONS).toHaveLength(10);
+    expect(CARRIER_REASONS).toHaveLength(12);
     expect(copy.CARRIER_REASON_PHRASES.dominant).toBe("the change runs in a dominant pattern");
     expect(copy.CARRIER_REASON_PHRASES.harmless).toBe("the change is classed as harmless");
     expect(copy.CARRIER_REASON_PHRASES["unknown-meaning"]).toBe(
@@ -189,11 +189,30 @@ describe("health-picture copy", () => {
     expect(copy.CARRIER_REASON_PHRASES["not-covered"]).toBe(
       "one file does not cover the position the other person’s change is at",
     );
-    // The two beyond the design's six: what is not recorded, said truly
-    // (D-031), and two changed copies named rather than dropped (D-035).
+    // Beyond the design's six: the three X-linked answers (D-031) and two
+    // changed copies named rather than dropped (D-035).
+    //
+    // Each X-linked phrase says something different about what could change
+    // the answer. `sex-unknown` leaves the next move with the two people,
+    // because declaring is theirs to do. `sex-pattern-unsupported` states
+    // Inherit's own limit as Inherit's, so a pair who recorded something
+    // other than one XX and one XY is not left thinking they answered wrong.
+    // `sex-reading-conflict` is about a file, and says so.
     expect(copy.CARRIER_REASON_PHRASES["sex-unknown"]).toBe(
-      "this pattern depends on which parent carries the change on the X, and Inherit does not record that",
+      "one of you has not recorded their sex chromosomes, and this pattern depends on them",
     );
+    expect(copy.CARRIER_REASON_PHRASES["sex-pattern-unsupported"]).toBe(
+      "Inherit works this pattern out for one XX and one XY parent, and that is not what you have both recorded",
+    );
+    expect(copy.CARRIER_REASON_PHRASES["sex-reading-conflict"]).toBe(
+      "one file reads this change in a way that does not fit the sex chromosomes recorded for that person",
+    );
+    // No phrase tells a reader which of the two people declared what: the
+    // panel needs the declaration to pick a cross and never renders it as a
+    // value. A phrase that names one pattern names both.
+    for (const phrase of Object.values(copy.CARRIER_REASON_PHRASES)) {
+      expect(phrase.includes("XX")).toBe(phrase.includes("XY"));
+    }
     expect(copy.CARRIER_REASON_PHRASES["two-copies"]).toBe(
       "one file shows two changed copies, not one",
     );

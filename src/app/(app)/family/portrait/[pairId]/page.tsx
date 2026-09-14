@@ -34,6 +34,10 @@ import {
 import { NAV_LABELS } from "@/copy/navigation";
 import { familyCapability, permits } from "@/lib/family/access";
 import {
+  readDeclaredChromosomalSex,
+  type DeclaredChromosomalSex,
+} from "@/lib/family/chromosomal-sex";
+import {
   readCarrierConditions,
   readClassifiedVariants,
   resolveCarrierPair,
@@ -192,10 +196,17 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
     if (noFile.length === 0 && carrierAllowed && legacyPair) {
       const refVariants = await readClassifiedVariants(admin);
       const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+      // Each person's own declaration, read under the pair authority this
+      // branch already established, and only where a classified position could
+      // produce a cross. It chooses the cross an X-linked pair follows and is
+      // never written into a result (D-031).
+      const declaredSex = refVariants.length > 0
+        ? await readDeclaredChromosomalSex(admin, [rows.a.id, rows.b.id])
+        : new Map<string, DeclaredChromosomalSex>();
       const summary = await resolveCarrierPair(
         admin,
-        { dataSubjectId: rows.a.id, displayLabel: labelOf(rows.a) },
-        { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b) },
+        { dataSubjectId: rows.a.id, displayLabel: labelOf(rows.a), chromosomalSex: declaredSex.get(rows.a.id) ?? null },
+        { dataSubjectId: rows.b.id, displayLabel: labelOf(rows.b), chromosomalSex: declaredSex.get(rows.b.id) ?? null },
         refVariants,
         conditions,
         { a: sourceSnapshot.state.a.legacyFileIds, b: sourceSnapshot.state.b.legacyFileIds },

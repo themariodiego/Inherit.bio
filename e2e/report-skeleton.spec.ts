@@ -378,7 +378,24 @@ test("/genome/[subject]/reports/[slug] not-covered: a report keeps the not-cover
   await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
 });
 
-test("the reports list's estimate group renders its one layer definition, layer-labelled counts for both layers, the layer tabs and the eight estimate categories", async ({
+/**
+ * RETITLED 2026-09-14, not rewritten. Every assertion below already proved
+ * `/genome/[subject]/reports complete`; the title named no pair, so the route
+ * gate could not count it. That is the `/overview empty` and
+ * `/family/[person] consent-required` case again — a state implemented and
+ * never titled — and not the `/settings/people` case, where a title certified
+ * a render the route could not produce.
+ *
+ * WHICH READING IT CLAIMS, because `complete` carries four. This is
+ * `permitted-and-able` (register `stateDefinitions.complete`): everything the
+ * page is permitted AND able to show, with nothing absent for want of a
+ * permission or a source. The fixture grants and generates BOTH layers, which
+ * is what makes that true here — the layer tabs exist only because both are
+ * populated, and the assertion that no category states an absence is the other
+ * half of it. It is not `everything-it-has`: this route has a data-dependent
+ * shape, and one layer renders a different page with no tabs at all.
+ */
+test("/genome/[subject]/reports complete: both layers generated, so the list renders its layer definition, layer-labelled counts for both, the tabs and the eight estimate categories", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);

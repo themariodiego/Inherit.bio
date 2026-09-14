@@ -38,6 +38,10 @@ import {
 import { NAV_LABELS } from "@/copy/navigation";
 import { LAYER_PURPOSES, familyCapability, permits, viewerMaySee } from "@/lib/family/access";
 import {
+  readDeclaredChromosomalSex,
+  type DeclaredChromosomalSex,
+} from "@/lib/family/chromosomal-sex";
+import {
   readCarrierConditions,
   readClassifiedVariants,
   resolveCarrierPair,
@@ -263,11 +267,22 @@ export default async function FamilyHealthPicturePage() {
     const refVariants = permits(carrierMatch) && ownCaptured && permittedLegacy(self.id).length > 0
       ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+    // The declared chromosomal sex of the people this viewer's live grants
+    // already authorise the joint comparison for, read only where a classified
+    // position could produce a cross at all (D-031). It picks which Mendelian
+    // cross an X-linked pair follows and is never rendered as a value.
+    const declaredSex = refVariants.length > 0
+      ? await readDeclaredChromosomalSex(admin, [self.id, ...shared.map((person) => person.dataSubjectId)])
+      : new Map<string, DeclaredChromosomalSex>();
     for (const person of permits(carrierMatch) && snapshot.state.authorized ? shared : []) {
       const summary = await resolveCarrierPair(
         admin,
-        { dataSubjectId: self.id, displayLabel: self.displayLabel },
-        { dataSubjectId: person.dataSubjectId, displayLabel: person.displayLabel },
+        { dataSubjectId: self.id, displayLabel: self.displayLabel, chromosomalSex: declaredSex.get(self.id) ?? null },
+        {
+          dataSubjectId: person.dataSubjectId,
+          displayLabel: person.displayLabel,
+          chromosomalSex: declaredSex.get(person.dataSubjectId) ?? null,
+        },
         permittedLegacy(self.id).length && permittedLegacy(person.dataSubjectId).length ? refVariants : [], conditions, { a: permittedLegacy(self.id), b: permittedLegacy(person.dataSubjectId) },
       );
       const pairInputsA = [...(summary.checkedFileIds?.a ?? []), ...(summary.runsInputFileIds?.a ?? [])];

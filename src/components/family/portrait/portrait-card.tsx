@@ -61,7 +61,7 @@ import {
 } from "@/copy/family/portrait";
 import type { CarrierMatch, CarrierReason } from "@/lib/family/carrier-pair";
 import { distribute } from "@/lib/family/distribution";
-import { autosomalCross, crossShares, type MendelCross, type MendelOutcome } from "@/lib/family/mendel";
+import { crossShares, type MendelOutcome } from "@/lib/family/mendel";
 import type { GeneCoverage, OneSidedReading } from "@/lib/family/portrait";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import { SubjectChip, type HealthPictureColumn } from "../health-picture-table";
@@ -179,13 +179,6 @@ export interface CarrierPairCardProps extends PortraitCardPeople {
   id: string;
 }
 
-/** The cross a match with the one fraction stands for: one changed copy in each file. */
-export function crossForMatch(match: CarrierMatch): MendelCross {
-  const copies = (reading: "one copy" | "two copies" | "copies not shown"): 1 | 2 =>
-    reading === "two copies" ? 2 : 1;
-  return autosomalCross("autosomal_recessive", copies(match.a.variant.copies), copies(match.b.variant.copies));
-}
-
 export function CarrierPairCard({
   match,
   conditionMode,
@@ -212,7 +205,12 @@ export function CarrierPairCard({
   );
 
   if (match.kind === "probability") {
-    const cross = crossForMatch(match);
+    // The rule chose the cross (D-031): an X-linked pair whose two people have
+    // each declared a chromosomal sex gets the hundred-pregnancy split, a
+    // recessive pair gets the recessive cross. The card reads that choice and
+    // never re-derives one, which is how a card could otherwise have drawn an
+    // X-linked pair with the recessive arithmetic.
+    const cross = match.cross;
     const distribution = distribute<MendelOutcome>(crossShares(cross), OUTCOME_PHRASES);
     const figures = [
       ...statuses,

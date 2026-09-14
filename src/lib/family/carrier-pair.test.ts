@@ -14,6 +14,7 @@ import {
   type CarrierPerson,
   type CarrierRefVariant,
 } from "./carrier-pair";
+import { autosomalCross, xLinkedCross } from "./mendel";
 import { measureRunsOfHomozygosity, rohColumns, storedRohMeasure, type StoredRohMeasure } from "./roh";
 import { CARRIER_REASON_PHRASES, carrierNoProbabilitySentence } from "@/copy/family/health-picture";
 
@@ -77,6 +78,9 @@ function person(
   return {
     genotypes: new Map([[900_001, "A/G"]]),
     runs: [RUNS_BELOW],
+    // Nobody has declared anything unless a case says so: the default is the
+    // state every pair is in until someone records their own (D-031).
+    chromosomalSex: null,
     ...overrides,
   };
 }
@@ -177,6 +181,105 @@ describe("how many changed copies one file shows", () => {
   });
 });
 
+describe("the X-linked split, once both people have declared (D-031)", () => {
+  const xLinked = (a: Partial<CarrierPerson>, b: Partial<CarrierPerson>) =>
+    evaluate({ condition: { inheritanceMode: "x_linked" }, a, b });
+  /** An XY person's one X, read under the usual diploid convention. */
+  const HEMIZYGOUS = new Map([[900_001, "G/G"]]);
+
+  it("splits a hundred pregnancies when one person declared XX and the other XY", () => {
+    const matches = xLinked({ chromosomalSex: "XX" }, { chromosomalSex: "XY", genotypes: HEMIZYGOUS });
+    expect(matches).toHaveLength(1);
+    expect(matches[0].kind).toBe("probability");
+    if (matches[0].kind !== "probability") return;
+    // No single fraction exists for this pattern, and the match says so by
+    // carrying none: a `probability` here is what would let a surface print
+    // "a 1 in 4 chance" over an X-linked cross.
+    expect(matches[0].probability).toBeNull();
+    expect(matches[0].cross.pattern).toBe("x_linked");
+    expect(matches[0].cross.parents).toEqual({ kind: "x_linked", mother: 1, father: 1 });
+    expect(matches[0].cross).toEqual(xLinkedCross(1, 1));
+    expect(countCarrierMatches(matches)).toBe(1);
+  });
+
+  it("reads the XX person's two changed copies as two, whichever side they are on", () => {
+    const left = xLinked(
+      { chromosomalSex: "XX", genotypes: new Map([[900_001, "G/G"]]) },
+      { chromosomalSex: "XY", genotypes: HEMIZYGOUS },
+    );
+    const right = xLinked(
+      { chromosomalSex: "XY", genotypes: HEMIZYGOUS },
+      { chromosomalSex: "XX", genotypes: new Map([[900_001, "G/G"]]) },
+    );
+    for (const matches of [left, right]) {
+      expect(matches[0].kind).toBe("probability");
+      if (matches[0].kind !== "probability") continue;
+      expect(matches[0].cross).toEqual(xLinkedCross(2, 1));
+    }
+  });
+
+  it("gives the same cross whichever person is asked about first", () => {
+    const forward = xLinked({ chromosomalSex: "XX" }, { chromosomalSex: "XY", genotypes: HEMIZYGOUS });
+    const reversed = xLinked({ chromosomalSex: "XY", genotypes: HEMIZYGOUS }, { chromosomalSex: "XX" });
+    expect(forward[0].kind).toBe("probability");
+    expect(reversed[0].kind).toBe("probability");
+    if (forward[0].kind !== "probability" || reversed[0].kind !== "probability") return;
+    expect(reversed[0].cross).toEqual(forward[0].cross);
+  });
+
+  it("returns to sex-unknown the moment one declaration is withdrawn", () => {
+    const declared = xLinked({ chromosomalSex: "XX" }, { chromosomalSex: "XY", genotypes: HEMIZYGOUS });
+    expect(declared[0].kind).toBe("probability");
+    const withdrawn = xLinked({ chromosomalSex: null }, { chromosomalSex: "XY", genotypes: HEMIZYGOUS });
+    expect(withdrawn[0].kind).toBe("no-probability");
+    if (withdrawn[0].kind !== "no-probability") return;
+    expect(withdrawn[0].reason).toBe("sex-unknown");
+  });
+
+  it("never derives a declaration from the file: the same genotypes with nothing declared refuse", () => {
+    const matches = xLinked(
+      { genotypes: HEMIZYGOUS },
+      { genotypes: HEMIZYGOUS },
+    );
+    expect(matches[0].kind).toBe("no-probability");
+    if (matches[0].kind !== "no-probability") return;
+    expect(matches[0].reason).toBe("sex-unknown");
+  });
+
+  it("still applies the coverage and runs refusals to a declared X-linked pair", () => {
+    const above = evaluate({
+      condition: { inheritanceMode: "x_linked" },
+      a: { chromosomalSex: "XX", runs: [RUNS_ABOVE] },
+      b: { chromosomalSex: "XY", genotypes: HEMIZYGOUS },
+    });
+    expect(above[0].kind).toBe("no-probability");
+    if (above[0].kind === "no-probability") expect(above[0].reason).toBe("runs-above-threshold");
+
+    const uncovered = evaluate({
+      condition: { inheritanceMode: "x_linked" },
+      a: { chromosomalSex: "XX", genotypes: new Map([[900_001, "A/G"]]) },
+      b: { chromosomalSex: "XY", genotypes: new Map([[900_002, "T/T"]]) },
+      refVariants: [
+        refVariant({ rsid: 900_001, clinvarSignificance: "Pathogenic" }),
+        refVariant({ rsid: 900_002, alt: "T", clinvarSignificance: "Pathogenic" }),
+      ],
+    });
+    expect(uncovered[0].kind).toBe("no-probability");
+    if (uncovered[0].kind === "no-probability") expect(uncovered[0].reason).toBe("not-covered");
+  });
+
+  it("does not apply the recessive two-copies refusal to an X-linked pair", () => {
+    // Two changed copies stop a recessive cross because every child then gets
+    // one (D-035). An XX parent with both X copies changed is arithmetic the
+    // X-linked cross already covers, so the refusal must not fire here.
+    const matches = xLinked(
+      { chromosomalSex: "XX", genotypes: new Map([[900_001, "G/G"]]) },
+      { chromosomalSex: "XY", genotypes: HEMIZYGOUS },
+    );
+    expect(matches[0].kind).toBe("probability");
+  });
+});
+
 describe("the one probability", () => {
   it("gives 1 in 4 when both files read one changed copy of a recessive change", () => {
     const matches = evaluate();
@@ -185,6 +288,7 @@ describe("the one probability", () => {
     if (matches[0].kind !== "probability") return;
     expect(matches[0].probability).toBe(BOTH_CHANGED_COPIES_PROBABILITY);
     expect(matches[0].probability).toBe(0.25);
+    expect(matches[0].cross).toEqual(autosomalCross("autosomal_recessive", 1, 1));
     expect(matches[0].gene).toBe("TESTGENE");
     expect(matches[0].a.variant).toEqual({
       rsid: 900_001,
@@ -326,9 +430,58 @@ describe("every other case: no probability and a named reason", () => {
       reason: "no-pattern",
     },
     {
-      name: "a pattern that depends on which parent carries the change on the X",
+      name: "an X-linked pattern where neither person has declared a chromosomal sex",
       overrides: { condition: { inheritanceMode: "x_linked" } },
       reason: "sex-unknown",
+    },
+    {
+      name: "an X-linked pattern where only one of the two has declared",
+      overrides: { condition: { inheritanceMode: "x_linked" }, a: { chromosomalSex: "XX" } },
+      reason: "sex-unknown",
+    },
+    {
+      // "unknown" is a value the column allows and a person can choose. It is
+      // a declaration that says nothing, so it answers like no declaration.
+      name: "an X-linked pattern where one person declared unknown",
+      overrides: {
+        condition: { inheritanceMode: "x_linked" },
+        a: { chromosomalSex: "XX" },
+        b: { chromosomalSex: "unknown" },
+      },
+      reason: "sex-unknown",
+    },
+    {
+      name: "an X-linked pattern between two people who both declared XX",
+      overrides: {
+        condition: { inheritanceMode: "x_linked" },
+        a: { chromosomalSex: "XX" },
+        b: { chromosomalSex: "XX" },
+      },
+      reason: "sex-pattern-unsupported",
+    },
+    {
+      // A recorded answer, not a missing one. The hundred-pregnancy split is
+      // derived for one XX and one XY parent, and treating "other" as XY
+      // would be Inherit deciding something it was not told (D-031).
+      name: "an X-linked pattern where one person declared other",
+      overrides: {
+        condition: { inheritanceMode: "x_linked" },
+        a: { chromosomalSex: "other" },
+        b: { chromosomalSex: "XY", genotypes: new Map([[900_001, "G/G"]]) },
+      },
+      reason: "sex-pattern-unsupported",
+    },
+    {
+      // The XY person's file reads one changed copy of two at a position on
+      // a chromosome they have one of. Inherit does not pick between the
+      // declaration and the file.
+      name: "an X-linked pattern where the XY person's file reads a heterozygous call",
+      overrides: {
+        condition: { inheritanceMode: "x_linked" },
+        a: { chromosomalSex: "XX" },
+        b: { chromosomalSex: "XY" },
+      },
+      reason: "sex-reading-conflict",
     },
     {
       name: "two changed copies in one file (D-035)",
@@ -404,8 +557,8 @@ describe("every other case: no probability and a named reason", () => {
     });
   }
 
-  it("covers every reason the closed table names, and the table has ten", () => {
-    expect(CARRIER_REASONS).toHaveLength(10);
+  it("covers every reason the closed table names, and the table has twelve", () => {
+    expect(CARRIER_REASONS).toHaveLength(12);
     expect(new Set(cases.map((testCase) => testCase.reason))).toEqual(new Set(CARRIER_REASONS));
   });
 

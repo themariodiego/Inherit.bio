@@ -11,18 +11,27 @@ import { subjectRecordOf, subjectRecordRowCount, type SubjectRecord } from "./su
 
 type Call = { table: string; column: string; value: string };
 
+const SUBJECT = "99999999-9999-4999-8999-999999999999";
+
 function admin(calls: Call[], failing?: string): SupabaseClient {
+  const answer = (table: string, column: string, value: string) => {
+    calls.push({ table, column, value });
+    if (table === failing) return { data: null, error: { message: "unavailable" } };
+    return table === "subjects"
+      ? { data: [{ id: SUBJECT, table, column, value }], error: null }
+      : { data: [{ table, column, value }], error: null };
+  };
   return {
     from(table: string) {
       return {
         select() {
           return {
-            eq(column: string, value: string) {
-              calls.push({ table, column, value });
-              return table === failing
-                ? { data: null, error: { message: "unavailable" } }
-                : { data: [{ table, column, value }], error: null };
-            },
+            eq: (column: string, value: string) => answer(table, column, value),
+            // The demographics hop filters by the subject ids the first query
+            // returned, so the test records the same shape of call and the
+            // "five queries, each filtered exactly once" count still holds an
+            // unfiltered read out.
+            in: (column: string, values: string[]) => answer(table, column, values.join(",")),
           };
         },
       };
@@ -53,10 +62,18 @@ describe("the subject record in the free export", () => {
       expect(calls).toContainEqual({ table, column: "account_id", value: ACCOUNT });
     }
 
-    // Five tables, five queries, each filtered exactly once: an unfiltered read
+    // The declaration is keyed by subject, so it is filtered by the subject
+    // ids `subjects` returned rather than by the account (D-031).
+    expect(calls).toContainEqual({
+      table: "subject_demographics",
+      column: "subject_id",
+      value: SUBJECT,
+    });
+
+    // Six tables, six queries, each filtered exactly once: an unfiltered read
     // would not appear here at all, so the count is part of the assertion.
-    expect(calls).toHaveLength(5);
-    expect(new Set(calls.map((call) => call.value))).toEqual(new Set([ACCOUNT]));
+    expect(calls).toHaveLength(6);
+    expect(new Set(calls.map((call) => call.value))).toEqual(new Set([ACCOUNT, SUBJECT]));
   });
 
   it("refuses the whole record when any one read fails, rather than understating what is held", async () => {
@@ -66,6 +83,7 @@ describe("the subject record in the free export", () => {
       "subject_account_bindings",
       "subject_consents",
       "provider_recipient_grants",
+      "subject_demographics",
     ]) {
       expect(await subjectRecordOf(admin([], failing), ACCOUNT), failing).toBeNull();
     }
@@ -74,15 +92,16 @@ describe("the subject record in the free export", () => {
   it("counts every row it carries, so the manifest cannot understate the archive", () => {
     const record: SubjectRecord = {
       subjects: [1],
+      subject_demographics: [1],
       subject_principals: [1, 2],
       subject_account_bindings: [],
       subject_consents: [1, 2, 3],
       provider_recipient_grants: [1],
     };
-    expect(subjectRecordRowCount(record)).toBe(7);
+    expect(subjectRecordRowCount(record)).toBe(8);
     expect(subjectRecordRowCount({
-      subjects: [], subject_principals: [], subject_account_bindings: [],
-      subject_consents: [], provider_recipient_grants: [],
+      subjects: [], subject_demographics: [], subject_principals: [],
+      subject_account_bindings: [], subject_consents: [], provider_recipient_grants: [],
     })).toBe(0);
   });
 });

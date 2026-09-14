@@ -8,7 +8,7 @@ import {
   seededTemplateCount,
   signIn,
 } from "./helpers";
-import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
+import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 
 // Overview (`/overview`) — brief §2 §3 and X9: one h1 and three domain h2s
 // (four headings, never more), nine entry boxes whose accessible names are
@@ -132,6 +132,75 @@ let accountId = "";
 
 test.beforeAll(async () => {
   accountId = await createConfirmedUser(USER.email, USER.password);
+});
+
+/**
+ * `/overview awaiting-choice`, the ninth state id and the only route that can
+ * occupy it (register `stateDefinitions.awaiting-choice`, added 2026-09-14).
+ *
+ * THE SHAPE WAS UNNAMED, NOT MIS-NAMED, which is why the answer was a new id
+ * rather than a correction. `needsReportChoice` in `overview/page.tsx` renders
+ * when a file is prepared and neither a report nor an ancestry result exists:
+ * every reader who uploads passes through it, and the ratchet had no name to
+ * count it under. Folding it into `empty` would have been the cheaper move and
+ * would have been false — an empty page has nothing to show AND no step this
+ * reader can take, and this page has a prepared file and exactly one step.
+ *
+ * The account is its own rather than the shared one above, because the state
+ * sits between that account's `empty` and `partial-coverage` and a serial file
+ * would have to be uploaded and then left unused by the test that follows.
+ *
+ * What separates it from `empty` is asserted from BOTH sides, the way the
+ * empty test establishes its own cause from the database: a prepared file
+ * exists, and the Start-here strip that belongs to `empty` is absent.
+ */
+test("/overview awaiting-choice: a prepared file with nothing chosen shows the one step it names, and not the empty state's strip", async ({
+  page,
+}) => {
+  const email = `overview-awaiting-${randomUUID()}@e2e.local`;
+  const password = "e2e-overview-awaiting-pw";
+  const ownAccountId = await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  await uploadOwnFilePrepared(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), {
+    fileType: "vcf",
+  });
+
+  // The cause, from the database rather than from the rendered page: a file
+  // that finished preparation and no report or ancestry result at all. Without
+  // it these assertions would pass for an account still processing.
+  const admin = adminClient();
+  const { data: files, error } = await admin
+    .from("genome_files")
+    .select("id, single_logical_sample_verified_at")
+    .eq("user_id", ownAccountId);
+  expect(error).toBeNull();
+  expect(files, "one file").toHaveLength(1);
+  expect(files?.[0].single_logical_sample_verified_at, "prepared, not in flight").not.toBeNull();
+
+  await page.goto("/overview");
+
+  // The one step, named and linked, and nothing else offered.
+  const prepared = page.locator('section[aria-labelledby="prepared-reports-title"]');
+  await expect(prepared.locator("#prepared-reports-title")).toHaveText("Choose your reports");
+  await expect(prepared).toContainText(
+    "Your file is prepared. Choose report types and generate your results.",
+  );
+  await expectExactlyOnePrimary(page, "Choose reports", "/genome/me/reports");
+
+  // Not `empty`: the strip and the lede that belong to State A are gone.
+  await expect(page.getByText("Start here", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(STATE_A_LEDE, { exact: true })).toHaveCount(0);
+
+  // Not `complete` and not `partial-coverage`: nothing has been generated, so
+  // the page carries no count and no figure of any kind.
+  await expect(page.locator("[data-metric-value]")).toHaveCount(0);
+  await expectNoFiguresOrDashes(page);
+  await expect(page.locator('section[aria-labelledby="starter-title"]')).toHaveCount(0);
+
+  // The page is still the hub it always is.
+  await expect(page.getByRole("heading")).toHaveText(HEADINGS);
+  await expectNineBoxes(page);
+  await expect(page.getByText(NOT_DIAGNOSTIC, { exact: true })).toBeAttached();
 });
 
 /**

@@ -175,13 +175,19 @@ export function carrierProbabilitySentence(figureText: string): string {
 
 /**
  * The closed reason table (design §2.3; ADR 0017 §5-6). Six phrases are the
- * design's own; `sex-unknown` is for an X-linked pattern, whose hundred-
- * pregnancy split needs to know which parent carries the change on the X —
- * Inherit records no person's chromosomal sex (`subject_demographics` has
- * no writer), and the split belongs to Portrait rather than to this page
- * (D-031); `two-copies` is for a file that shows two changed copies rather
- * than one, which the brief says must render with a reason, never be
- * dropped (D-035).
+ * design's own; three answer an X-linked pattern the rule cannot split;
+ * `two-copies` is for a file that shows two changed copies rather than one,
+ * which the brief says must render with a reason, never be dropped (D-035).
+ *
+ * The three X-linked phrases say who could change the answer and how, which
+ * is the point of naming a reason at all (D-031). `sex-unknown` is now a
+ * statement about a declaration nobody has made rather than about a column
+ * Inherit never wrote to, so it says so and leaves the next move with the
+ * two people. `sex-pattern-unsupported` is Inherit's own limit, stated as
+ * Inherit's: the split is derived for one XX and one XY parent, and a pair
+ * who recorded something else is owed that fact rather than a number that
+ * does not describe them. `sex-reading-conflict` is about a file, and is
+ * worded so that the file is what the sentence is about.
  */
 export const CARRIER_REASON_PHRASES: Record<CarrierReason, string> = {
   dominant: "the change runs in a dominant pattern",
@@ -190,7 +196,11 @@ export const CARRIER_REASON_PHRASES: Record<CarrierReason, string> = {
   "copies-unknown": "one file does not show how many copies were read",
   "no-pattern": "Inherit has no recorded inheritance pattern for this gene",
   "sex-unknown":
-    "this pattern depends on which parent carries the change on the X, and Inherit does not record that",
+    "one of you has not recorded their sex chromosomes, and this pattern depends on them",
+  "sex-pattern-unsupported":
+    "Inherit works this pattern out for one XX and one XY parent, and that is not what you have both recorded",
+  "sex-reading-conflict":
+    "one file reads this change in a way that does not fit the sex chromosomes recorded for that person",
   "two-copies": "one file shows two changed copies, not one",
   "not-covered": "one file does not cover the position the other person’s change is at",
   "runs-above-threshold":

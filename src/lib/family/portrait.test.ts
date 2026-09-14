@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PORTRAIT_STEPS, cannotCalculate, noSecondCopy } from "@/copy/family/portrait";
 import type { CarrierCondition, CarrierMatch, CarrierRefVariant } from "./carrier-pair";
+import { autosomalCross } from "./mendel";
 import {
   PORTRAIT_STEP_ORDER,
   answeredGenes,
@@ -286,6 +287,7 @@ describe("the one-sided readings", () => {
     const match = {
       kind: "probability",
       probability: 0.25,
+      cross: autosomalCross("autosomal_recessive", 1, 1),
       gene: "GENEA",
       conditionId: "a",
       conditionName: "A",

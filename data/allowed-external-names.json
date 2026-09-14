@@ -207,9 +207,10 @@
         "anthropic",
         "anthropic.com",
         "claude",
-        "claude.ai"
+        "claude.ai",
+        "claude.com"
       ],
-      "reason": "Supported bring-your-own-key model API and installed SDK adapter.",
+      "reason": "Supported bring-your-own-key model API and installed SDK adapter. The two hosts also appear in this repository's own history: every commit trailer carries a claude.ai session link, and a squash-merge copies the pull-request body's claude.com attribution line into the commit message on main. Same organisation, already reviewed here; the alias list simply predated the second domain.",
       "evidence": [
         "package.json"
       ]

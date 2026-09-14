@@ -1,8 +1,39 @@
 # ADR 0017: The Family health picture: people side by side without arithmetic between them
 
-- Status: Accepted
+- Status: Accepted; point 6 amended 2026-09-14 (D-031)
 - Date: 2026-09-03
 - G7.1 name: "the health picture"
+
+> **Amendment, 2026-09-14 — chromosomal sex is recorded, so the X-linked
+> split exists.** This ADR's Context said "Nothing records a person's
+> chromosomal sex", and point 6 turned that into the single reason
+> `sex-unknown`. `subject_demographics.chromosomal_sex` now has a writer
+> (`public.declare_chromosomal_sex_v1`, `POST /api/chromosomal-sex`, the
+> control on `/settings`), so an X-linked pair whose two people have each
+> declared theirs gets the hundred-pregnancy cross instead of a reason.
+>
+> It is DECLARED, never derived. Inherit holds X and Y coverage for many
+> files and does not look at it: ADR 0003 forbids imputing a value Inherit
+> did not read, and a guess from coverage is wrong for exactly the people a
+> guess would hurt most. Only the subject may declare — the account that
+> HOLDS another adult's record cannot — and withdrawal is the same call with
+> null.
+>
+> Point 6's one reason becomes three, because a reader can act on each
+> differently: `sex-unknown` (at least one person has declared nothing, and
+> declaring would change the answer), `sex-pattern-unsupported` (both
+> declared and the pair is not one XX and one XY, which no further
+> declaration fixes) and `sex-reading-conflict` (a file reads a change on
+> the X in a way that does not fit what that person recorded, which Inherit
+> names rather than resolving in either direction). Nothing else in this
+> ADR moves: no surface renders the value, and `portrait_results` keeps its
+> check constraint refusing a `sex` key.
+>
+> The Consequences section's "a sourced writer for chromosomal sex for the
+> X-linked cross" is met by a DECLARED one. The brief permits an adult to
+> see chromosomal sex "derived from their own genome, on their own account"
+> (`brief:1833`); this build is narrower than that permission on purpose and
+> the divergence is recorded in `docs/protocol/decisions.md`.
 
 ## Context
 
