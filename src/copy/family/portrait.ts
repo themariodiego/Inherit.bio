@@ -18,7 +18,6 @@ import { REPORT_HEADINGS } from "@/copy/reports/headings";
 import { COUNSELLOR_NO_ROUTE, DATA_AND_METHODS, NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { EXACT_MARKER } from "@/lib/figures/contract";
 import type {
-  AutosomalOutcome,
   CrossOutcome,
   MendelAssumption,
   MendelOutcome,
@@ -185,11 +184,24 @@ export const CHANCE_NOT_PREDICTION = "This is a chance, not a prediction about a
 /** The exactness label (line 1254), rendered by the claim block from its one home. */
 export const EXACTNESS_LABEL = EXACT_MARKER;
 
-/** The three words of the mandated derivation (line 1349). */
-export const DERIVATION_WORDS: Record<AutosomalOutcome, string> = {
+/**
+ * The three words of the mandated derivation (line 1349), and the five an
+ * X-linked cross needs (D-031).
+ *
+ * The X-linked words name a sex because the cross does: a boy's one X decides
+ * his outcome and a girl has two, so an X-linked split that did not say which
+ * would not be the split at all. They are the words of a hundred imagined
+ * pregnancies, not a statement about any living person.
+ */
+export const DERIVATION_WORDS: Record<MendelOutcome, string> = {
   affected: "affected",
   carrier: "carriers",
   neither: "neither",
+  boy_affected: "boys affected",
+  boy_neither: "boys neither",
+  girl_affected: "girls affected",
+  girl_carrier: "girls carriers",
+  girl_neither: "girls neither",
 };
 
 /**
@@ -200,7 +212,7 @@ export const DERIVATION_WORDS: Record<AutosomalOutcome, string> = {
 export function derivationLine(outcomes: readonly CrossOutcome[]): string {
   return outcomes
     .map((part) => {
-      const word = DERIVATION_WORDS[part.outcome as AutosomalOutcome];
+      const word = DERIVATION_WORDS[part.outcome];
       if (word === undefined) throw new Error(`derivationLine: ${part.outcome} has no derivation word`);
       return `${part.fraction.numerator} in ${part.fraction.denominator} (${part.inHundred}%) ${word}`;
     })

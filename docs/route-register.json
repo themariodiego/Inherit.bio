@@ -11714,6 +11714,34 @@
       },
       "unknownFieldsRecursively": "forbidden"
     },
+    "chromosomal-sex-declared-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "chromosomalSex": {
+          "enum": [
+            "XX",
+            "XY",
+            "other",
+            "unknown",
+            null
+          ]
+        },
+        "revision": "positive-integer-demographics_revision-or-0-when-no-row-exists",
+        "updatedAt": "ISO-8601-UTC-server-timestamp-or-null-when-no-row-exists",
+        "action": {
+          "enum": [
+            "declared",
+            "replaced",
+            "withdrawn",
+            "unchanged"
+          ]
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "carriesNoOtherPerson": "the-response-names-only-the-acting-account-own-subject-declaration; an-unauthorized-or-unknown-subject-answers-the-same-404-so-a-caller-learns-nothing-by-guessing"
+    },
     "family-acknowledged-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -12297,6 +12325,11 @@
         "invalid-request-v1",
         "consent-required-v1",
         "capability-denied-api-v1",
+        "resource-not-found-v1"
+      ],
+      "api.chromosomal-sex": [
+        "chromosomal-sex-declared-v1",
+        "invalid-request-v1",
         "resource-not-found-v1"
       ],
       "api.family-acknowledge": [
@@ -15969,6 +16002,57 @@
         ]
       },
       "successResponseContract": "sharing-updated-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.chromosomal-sex",
+      "path": "/api/chromosomal-sex",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "subjectId": "required-canonical-lowercase-UUID-of-a-subject-whose-subject_account_id-is-the-acting-account",
+          "chromosomalSex": {
+            "enum": [
+              "XX",
+              "XY",
+              "other",
+              "unknown",
+              null
+            ]
+          }
+        },
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "ownerAccountId",
+          "counterpartSubjectId",
+          "revision",
+          "updatedAt",
+          "derivedFrom"
+        ]
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": true,
+        "actorRole": "acting-account",
+        "rpc": "public.declare_chromosomal_sex_v1(p_account_id, p_subject_id, p_chromosomal_sex)",
+        "effect": "record-or-withdraw-the-declared-chromosomal-sex-of-a-subject-the-acting-account-IS; null-withdraws-through-the-same-call; a-repeat-of-the-same-value-writes-nothing-and-appends-no-audit-row; any-other-subject-is-resource-not-found-v1-with-zero-writes",
+        "declaredNeverDerived": "no-code-path-infers-this-value-from-X-or-Y-coverage-or-from-any-file; ADR-0003-forbids-imputing-a-value-Inherit-did-not-read-and-a-guess-is-wrong-for-a-person-whose-chromosomes-are-not-XX-or-XY",
+        "readBy": "family.health-picture-family.portrait-and-app.overview-read-it-only-through-src-lib-family-chromosomal-sex-to-choose-which-Mendelian-cross-an-X-linked-carrier-pair-follows; no-surface-renders-it-as-a-value-and-portrait_results-refuses-a-sex-key-by-check-constraint",
+        "auditEvent": "demographics.chromosomal-sex-with-revision-and-action-only-never-the-value",
+        "protectedFetchSerializeEnqueueOrModelCall": "forbidden",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "chromosomal-sex-declared-v1",
       "disposition": "kept"
     },
     {

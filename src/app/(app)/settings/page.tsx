@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChromosomalSexControl } from "@/components/settings/chromosomal-sex-control";
 import { DigestToggle } from "@/components/settings/digest-toggle";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
+import { declaredChromosomalSexFrom } from "@/lib/family/chromosomal-sex";
 import { route } from "@/lib/primary-routes";
+import { resolveSubjectForAccount } from "@/lib/subjects";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -20,6 +24,24 @@ export default async function SettingsPage() {
     supabase.auth.getUser(),
     supabase.from("profiles").select("digest_opt_in").maybeSingle(),
   ]);
+
+  // The declaration is per subject, and the only subject in scope on this page
+  // is the one this account IS (D-031). An account that also holds another
+  // adult's record cannot declare for them from here, and nothing on this page
+  // offers to: that adult declares from their own session or their value stays
+  // blank.
+  const self = user ? await resolveSubjectForAccount(user.id, "me") : null;
+  const declaredSex =
+    self && user
+      ? declaredChromosomalSexFrom(
+          (
+            await createAdminClient().rpc("own_chromosomal_sex_v1", {
+              p_account_id: user.id,
+              p_subject_id: self.id,
+            })
+          ).data,
+        )
+      : null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-10">
@@ -42,6 +64,7 @@ export default async function SettingsPage() {
           <DigestToggle userId={user.id} optIn={profile?.digest_opt_in ?? false} />
         </section>
       ) : null}
+      {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
       <footer className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm text-ink-muted">
         <Link href="/about#accessibility" className="link-target underline underline-offset-4 hover:text-ink">Accessibility</Link>
         {/* The third of the expert path's three entry points (brief §7.3); the

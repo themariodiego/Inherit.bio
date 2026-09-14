@@ -7852,6 +7852,14 @@ export type Database = {
           recipient_set_revision: number
         }[]
       }
+      declare_chromosomal_sex_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+          p_chromosomal_sex: string | null
+        }
+        Returns: Json
+      }
       enqueue_account_mail: {
         Args: {
           p_account_id: string
@@ -7961,6 +7969,13 @@ export type Database = {
       }
       prepare_embryo_ingest_unwind_v1: {
         Args: { p_cohort_id: string; p_ingest_revision: number }
+        Returns: Json
+      }
+      own_chromosomal_sex_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
         Returns: Json
       }
       processing_time_stats: {

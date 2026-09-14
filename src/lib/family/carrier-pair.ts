@@ -3,6 +3,8 @@ import "server-only";
 import { genotypeKey } from "@/lib/genome/reports";
 import { getSubjectGenotypesByRsid, type Db } from "@/lib/genome/load";
 import { readSubjectRuns, subjectRunsState, type StoredRohMeasure } from "./roh";
+import { xLinkedRoles, type DeclaredChromosomalSex } from "./chromosomal-sex";
+import { autosomalCross, xLinkedCross, type MendelCross } from "./mendel";
 
 /**
  * Carrier pairs: the one home of the trigger rule (design §2.3; brief line
@@ -34,9 +36,10 @@ import { readSubjectRuns, subjectRunsState, type StoredRohMeasure } from "./roh"
  * (`subjectRunsBelowThreshold` takes one person's files), never against
  * the other person's (X15, brief line 348, acceptance 20).
  *
- * The only number this module produces is 1 in 4, which is arithmetic, not
- * a statistic: no frequency, penetrance, prevalence or threshold is read
- * from anywhere but the brief's own two runs numbers in ./roh.
+ * Every number this module produces is counted from equally likely gametes
+ * in ./mendel, which is arithmetic, not a statistic: no frequency,
+ * penetrance, prevalence or threshold is read from anywhere but the brief's
+ * own two runs numbers in ./roh.
  */
 
 /** The one Mendelian fraction this module can produce (brief §3 §8.4). */
@@ -66,12 +69,23 @@ export type CarrierCopies = "one copy" | "two copies" | "copies not shown";
 
 /**
  * The closed reason table (design §2.3; ADR 0017 §5-6): the design's six,
- * `sex-unknown` for an X-linked pattern, `two-copies` for a file that shows
- * two changed copies rather than one, `not-covered` for a file that does
- * not report the other person's position (never imputed, brief line 1349),
- * and the two runs answers told apart: `runs-above-threshold` for a file
- * Inherit measured and found above a threshold, `runs-unchecked` for a
- * person whose runs were not established at all.
+ * three for an X-linked pattern the rule cannot split, `two-copies` for a
+ * file that shows two changed copies rather than one, `not-covered` for a
+ * file that does not report the other person's position (never imputed,
+ * brief line 1349), and the two runs answers told apart:
+ * `runs-above-threshold` for a file Inherit measured and found above a
+ * threshold, `runs-unchecked` for a person whose runs were not established
+ * at all.
+ *
+ * The three X-linked reasons are kept apart because they are three
+ * different facts about the pair and the reader can act on each
+ * differently (D-031): `sex-unknown` means at least one of the two has
+ * declared nothing, and declaring would change the answer;
+ * `sex-pattern-unsupported` means both have declared and the split Inherit
+ * computes is not derived for what they declared, which no further
+ * declaration fixes; `sex-reading-conflict` means a file reads a change on
+ * the X in a way that does not fit the chromosomal sex recorded for that
+ * person, which is a fact about the file, not about the person.
  */
 export const CARRIER_REASONS = [
   "dominant",
@@ -80,6 +94,8 @@ export const CARRIER_REASONS = [
   "copies-unknown",
   "no-pattern",
   "sex-unknown",
+  "sex-pattern-unsupported",
+  "sex-reading-conflict",
   "two-copies",
   "not-covered",
   "runs-above-threshold",
@@ -96,6 +112,12 @@ export interface CarrierPerson {
   genotypes: ReadonlyMap<number, string>;
   /** The stored runs measure of each of that person's own files; never compared with the other person's. */
   runs: readonly StoredRohMeasure[];
+  /**
+   * What this person declared about their own chromosomes, or null where
+   * they declared nothing. Never derived from their file (D-031): the rule
+   * reads the declaration or refuses.
+   */
+  chromosomalSex: DeclaredChromosomalSex;
 }
 
 /** One person's own change in the gene: the variant the block names for them. */
@@ -131,7 +153,18 @@ interface CarrierMatchCommon {
 }
 
 export type CarrierMatch =
-  | (CarrierMatchCommon & { kind: "probability"; probability: number })
+  | (CarrierMatchCommon & {
+      kind: "probability";
+      /**
+       * The one recessive fraction, kept for the health picture's own
+       * sentence. It is present only on an autosomal-recessive cross: an
+       * X-linked split has no single number, and a `probability` that
+       * pretended otherwise is exactly the mistake `cross` exists to stop.
+       */
+      probability: number | null;
+      /** The arithmetic this match follows, chosen by the rule (D-031). */
+      cross: MendelCross;
+    })
   | (CarrierMatchCommon & {
       kind: "no-probability";
       reason: CarrierReason;
@@ -293,48 +326,93 @@ export function uncoveredPosition(
   return null;
 }
 
-function reasonFor(
+/**
+ * The X-linked cross for a pair both of whom declared a chromosomal sex, or
+ * the reason there is none (D-031).
+ *
+ * The father's side is the delicate half. An XY person has one X, so a file
+ * that reports a changed copy at an X-linked position under the usual diploid
+ * convention shows it as `two copies` — that is one changed X, hemizygous,
+ * and `FatherCopies = 1`. A file that reports `one copy` for the same person
+ * is claiming a heterozygous call on a chromosome they have one of. Inherit
+ * does not pick a winner between the declaration and the file: it names the
+ * disagreement and prints no number (`sex-reading-conflict`).
+ *
+ * The mother's side has no such ambiguity: an XX person's `one copy` is one
+ * changed X of two and `two copies` is both.
+ */
+function xLinkedCrossFor(
+  a: CarrierPerson,
+  b: CarrierPerson,
+  readingA: CarrierVariantReading,
+  readingB: CarrierVariantReading,
+): { cross: MendelCross } | { reason: CarrierReason } {
+  const roles = xLinkedRoles(a, b);
+  if ("refusal" in roles) return { reason: roles.refusal };
+  const readingOf = (dataSubjectId: string) =>
+    dataSubjectId === a.dataSubjectId ? readingA : readingB;
+  const motherReading = readingOf(roles.mother);
+  const fatherReading = readingOf(roles.father);
+  if (fatherReading.copies !== "two copies") return { reason: "sex-reading-conflict" };
+  return { cross: xLinkedCross(motherReading.copies === "two copies" ? 2 : 1, 1) };
+}
+
+/**
+ * The cross a pair earns, or the one reason it does not. A cross rather than
+ * a bare `null` so the rule, not a component, decides which arithmetic a
+ * match follows.
+ */
+function crossFor(
   condition: CarrierCondition | null,
   a: CarrierPerson,
   b: CarrierPerson,
   readingA: CarrierVariantReading,
   readingB: CarrierVariantReading,
-): CarrierReason | null {
+): { cross: MendelCross } | { reason: CarrierReason } {
   // A file that does not show how many copies it read cannot support any of
   // the questions below, so it is answered first.
   if (readingA.copies === "copies not shown" || readingB.copies === "copies not shown") {
-    return "copies-unknown";
+    return { reason: "copies-unknown" };
   }
   const classifications = [readingA.classification, readingB.classification];
-  if (classifications.some(isHarmlessClassification)) return "harmless";
-  if (!classifications.every(isPathogenicClassification)) return "unknown-meaning";
+  if (classifications.some(isHarmlessClassification)) return { reason: "harmless" };
+  if (!classifications.every(isPathogenicClassification)) return { reason: "unknown-meaning" };
 
   const mode = condition === null ? null : normalise(condition.inheritanceMode ?? "");
-  if (mode === "autosomal_dominant") return "dominant";
-  // An X-linked pattern: the hundred-pregnancy split (brief line 346) needs
-  // which parent carries the change on the X, and Inherit records no
-  // person's chromosomal sex (`subject_demographics` has no writer; the
-  // Y positions a file happens to hold are not a recorded fact about the
-  // person). The panel says so rather than printing a fraction that does
-  // not apply (ADR 0017 §6, D-031).
-  if (mode === "x_linked") return "sex-unknown";
-  if (mode !== "autosomal_recessive") return "no-pattern";
+  if (mode === "autosomal_dominant") return { reason: "dominant" };
+  if (mode !== "x_linked" && mode !== "autosomal_recessive") return { reason: "no-pattern" };
 
-  // Two changed copies in either file: every child gets one from that
-  // parent, so 1 in 4 is not the arithmetic. The panel names it rather than
-  // dropping the pair (brief line 346, D-035).
-  if (readingA.copies === "two copies" || readingB.copies === "two copies") return "two-copies";
+  // An X-linked pattern: the hundred-pregnancy split (brief line 346) needs
+  // which parent carries the change on the X. Since D-031 that is answerable
+  // when both people have declared their own chromosomal sex, and only then.
+  // Nothing is read from the Y positions a file happens to hold: those are a
+  // fact about a file, not a declaration by a person.
+  //
+  // `two-copies` is an autosomal-recessive refusal and is not applied here.
+  // An XX parent with both X copies changed is arithmetic the cross already
+  // handles, and an XY parent's hemizygous call is the normal case, not a
+  // reason to withhold.
+  const chosen =
+    mode === "x_linked"
+      ? xLinkedCrossFor(a, b, readingA, readingB)
+      : // Two changed copies in either file: every child gets one from that
+        // parent, so 1 in 4 is not the arithmetic. The panel names it rather
+        // than dropping the pair (brief line 346, D-035).
+        readingA.copies === "two copies" || readingB.copies === "two copies"
+        ? { reason: "two-copies" as CarrierReason }
+        : { cross: autosomalCross("autosomal_recessive", 1, 1) };
+  if ("reason" in chosen) return chosen;
 
   // Each file must report the other person's position; nothing is imputed.
-  if (uncoveredPosition(a, b, readingA, readingB) !== null) return "not-covered";
+  if (uncoveredPosition(a, b, readingA, readingB) !== null) return { reason: "not-covered" };
 
   // Each person's files are asked on their own; the two are never compared.
   // A measured file above a threshold is the brief's refusal; a person whose
   // runs were never established is a different, weaker answer.
   const states = [subjectRunsState(a.runs), subjectRunsState(b.runs)];
-  if (states.includes("above")) return "runs-above-threshold";
-  if (states.includes("unchecked")) return "runs-unchecked";
-  return null;
+  if (states.includes("above")) return { reason: "runs-above-threshold" };
+  if (states.includes("unchecked")) return { reason: "runs-unchecked" };
+  return chosen;
 }
 
 /**
@@ -383,11 +461,24 @@ export function evaluateCarrierPairs(input: CarrierPairInput): CarrierMatch[] {
       positionsBothCovered: uncovered === null,
     };
 
-    const reason = reasonFor(condition, a, b, readingA, readingB);
+    const chosen = crossFor(condition, a, b, readingA, readingB);
     matches.push(
-      reason === null
-        ? { ...common, kind: "probability", probability: BOTH_CHANGED_COPIES_PROBABILITY }
-        : { ...common, kind: "no-probability", reason, uncovered: reason === "not-covered" ? uncovered : null },
+      "cross" in chosen
+        ? {
+            ...common,
+            kind: "probability",
+            probability:
+              chosen.cross.pattern === "autosomal_recessive"
+                ? BOTH_CHANGED_COPIES_PROBABILITY
+                : null,
+            cross: chosen.cross,
+          }
+        : {
+            ...common,
+            kind: "no-probability",
+            reason: chosen.reason,
+            uncovered: chosen.reason === "not-covered" ? uncovered : null,
+          },
     );
   }
 
@@ -475,6 +566,8 @@ export async function readCarrierConditions(supabase: Db): Promise<CarrierCondit
 export interface CarrierPairPerson {
   dataSubjectId: string;
   displayLabel: string;
+  /** Read once by the caller through `./chromosomal-sex`, under the pair's own authority. */
+  chromosomalSex: DeclaredChromosomalSex;
 }
 
 /**

@@ -40,6 +40,7 @@ import {
   readClassifiedVariants,
   resolveCarrierPair,
 } from "@/lib/family/carrier-pair";
+import { readDeclaredChromosomalSex, type DeclaredChromosomalSex } from "@/lib/family/chromosomal-sex";
 import { listFamilyPeople, type FamilyPerson } from "@/lib/family/graph";
 import { acknowledged } from "@/lib/family/tier2";
 import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
@@ -257,11 +258,21 @@ export default async function OverviewPage() {
     if (!allowed) carrierRefusal = decisions.find((decision) => !permits(decision))!.userFacingCopy;
     const refVariants = allowed ? await readClassifiedVariants(admin) : [];
     const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
+    // Only the count of matches reaches this page, but the count depends on
+    // which cross each pair earns, so the same declarations the panels read
+    // are read here too (D-031). Nothing about them is rendered.
+    const declaredSex = refVariants.length > 0
+      ? await readDeclaredChromosomalSex(admin, [self.id, ...sharedSideBySide.map((person) => person.dataSubjectId)])
+      : new Map<string, DeclaredChromosomalSex>();
     for (const person of refVariants.length > 0 ? sharedSideBySide : []) {
       const summary = await resolveCarrierPair(
         admin,
-        { dataSubjectId: self.id, displayLabel: self.displayLabel },
-        { dataSubjectId: person.dataSubjectId, displayLabel: person.displayLabel },
+        { dataSubjectId: self.id, displayLabel: self.displayLabel, chromosomalSex: declaredSex.get(self.id) ?? null },
+        {
+          dataSubjectId: person.dataSubjectId,
+          displayLabel: person.displayLabel,
+          chromosomalSex: declaredSex.get(person.dataSubjectId) ?? null,
+        },
         refVariants,
         conditions,
       );

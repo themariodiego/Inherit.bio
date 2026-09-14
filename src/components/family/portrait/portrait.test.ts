@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { autosomalCross } from "@/lib/family/mendel";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: unknown }) =>
@@ -13,7 +14,7 @@ vi.mock("next/navigation", () => ({
 const { PortraitBanner } = await import("./portrait-banner");
 const { PairBar } = await import("./pair-bar");
 const { PortraitBlocking } = await import("./portrait-blocking");
-const { CarrierPairCard, OneSidedCard, crossForMatch } = await import("./portrait-card");
+const { CarrierPairCard, OneSidedCard } = await import("./portrait-card");
 const { TraitCard } = await import("./trait-card");
 const { RefusalsList } = await import("./refusals-list");
 const { DeletePortrait } = await import("./delete-portrait");
@@ -78,6 +79,7 @@ function match(overrides: Partial<CarrierMatch> = {}): CarrierMatch {
   return {
     kind: "probability",
     probability: 0.25,
+    cross: autosomalCross("autosomal_recessive", 1, 1),
     gene: "E2EGENE1",
     conditionId: "e2e-recessive",
     conditionName: "A synthetic condition",
@@ -228,7 +230,7 @@ describe("the carrier-pair card with the one fraction", () => {
     expect(html).toContain("about 25 in 100");
     expect(html).toContain("about 50 in 100");
     expect(html.match(/data-figure-kind="carrier-status"/g)).toHaveLength(2);
-    expect(crossForMatch(match()).parents).toEqual({ kind: "autosomal", a: 1, b: 1 });
+    expect(html).not.toContain("boys");
   });
 
   it("draws 100 outcome dots as spans, a stacked bar, a legend and a table fallback, with no image", () => {

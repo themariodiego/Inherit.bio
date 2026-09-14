@@ -25,8 +25,16 @@ import {
   carrierNoProbabilitySentence,
   personVariantLine,
 } from "@/copy/family/health-picture";
+import {
+  DOTS_LEGEND_LABEL,
+  OUTCOME_LEGEND,
+  OUTCOME_PHRASES,
+  derivationLine,
+} from "@/copy/family/portrait";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import type { CarrierMatch } from "@/lib/family/carrier-pair";
+import { distribute } from "@/lib/family/distribution";
+import { crossShares, type MendelOutcome } from "@/lib/family/mendel";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import { SubjectChip, type HealthPictureColumn } from "./health-picture-table";
 
@@ -54,19 +62,28 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
   const statuses: StandaloneFigureSpec[] = readings.map((person) =>
     statusSpec(person.variant.copies),
   );
+  // An X-linked cross has no single number: it is a split across five
+  // outcomes, so the block renders every outcome the cross produces instead
+  // of one fraction. `probability` is null exactly there, which is why this
+  // reads the number rather than the kind (D-031).
+  const recessive = match.kind === "probability" ? match.probability : null;
+  const split =
+    match.kind === "probability" && recessive === null
+      ? distribute<MendelOutcome>(crossShares(match.cross), OUTCOME_PHRASES)
+      : null;
+  const frequency = (value: number): StandaloneFigureSpec => ({
+    kind: "natural-frequency",
+    class: "variant-call",
+    basis: "exact",
+    provenance: CARRIER_PROVENANCE,
+    value,
+  });
   const figures: StandaloneFigureSpec[] =
-    match.kind === "probability"
-      ? [
-          ...statuses,
-          {
-            kind: "natural-frequency",
-            class: "variant-call",
-            basis: "exact",
-            provenance: CARRIER_PROVENANCE,
-            value: match.probability,
-          },
-        ]
-      : statuses;
+    recessive !== null
+      ? [...statuses, frequency(recessive)]
+      : split
+        ? [...statuses, ...split.categories.map((category) => frequency(category.share))]
+        : statuses;
 
   return (
     <ClaimBlock
@@ -91,16 +108,48 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
               </span>
             ))}
           </div>
-          {match.kind === "probability" ? (
+          {recessive !== null ? (
             // inherit-figure-exempt: the "1 in 4" fragment restates this block's own figure as a fraction
             <p data-slot="carrier-sentence" className="text-base leading-relaxed text-ink">
               {CARRIER_SENTENCE_LEAD} {nodes[2]} {CARRIER_SENTENCE_TAIL}
             </p>
-          ) : (
+          ) : split && match.kind === "probability" ? (
+            <>
+              <p
+                data-slot="carrier-derivation"
+                data-finding="true"
+                className="text-base font-medium text-ink tabular-nums"
+              >
+                {derivationLine(match.cross.outcomes)}
+              </p>
+              <ul
+                data-slot="carrier-outcomes"
+                aria-label={DOTS_LEGEND_LABEL}
+                className="space-y-2 text-sm text-ink"
+              >
+                {split.categories.map((category, index) => (
+                  <li
+                    key={category.key}
+                    data-slot="carrier-outcome"
+                    data-outcome={category.key}
+                    className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+                  >
+                    <span data-slot="outcome-word" className="font-medium">
+                      {OUTCOME_LEGEND[category.key]}
+                    </span>
+                    {nodes[2 + index]}
+                    <span data-slot="outcome-sentence" data-finding="true" className="basis-full">
+                      {category.sentence}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : match.kind === "no-probability" ? (
             <p data-slot="carrier-sentence" className="text-base leading-relaxed text-ink">
               {carrierNoProbabilitySentence(match.gene, match.reason)}
             </p>
-          )}
+          ) : null}
         </>
       )}
     >

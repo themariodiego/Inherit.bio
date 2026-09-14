@@ -34,7 +34,10 @@ function database(files: Row[]) {
 }
 const reference: CarrierRefVariant[] = [{ rsid: 1, geneSymbol: "SYNTHETIC", alt: "G", clinvarSignificance: "Pathogenic" }];
 const condition = [{ conditionId: "synthetic", conditionName: "Synthetic", geneSymbols: ["SYNTHETIC"], inheritanceMode: "autosomal_recessive" }];
-const sides = [{ dataSubjectId: "a", displayLabel: "A" }, { dataSubjectId: "b", displayLabel: "B" }] as const;
+const sides = [
+  { dataSubjectId: "a", displayLabel: "A", chromosomalSex: null },
+  { dataSubjectId: "b", displayLabel: "B", chromosomalSex: null },
+] as const;
 const selection = { a: ["legacy-a"], b: ["legacy-b"] };
 
 describe("Portrait exact legacy inputs", () => {
