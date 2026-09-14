@@ -5,7 +5,7 @@ import path from "node:path";
 import { axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
-  LINEAGE_UNREADABLE, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+  LINEAGE_UNREADABLE, RANGE_MEASURED, RANGE_TEST_LIMIT, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
 import { LINEAGE_TREES } from "../src/lib/ancestry/panel";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
@@ -350,6 +350,7 @@ test("/genome/[subject]/ancestry complete: the shown state's figure contract, su
   const shares = page.locator('[data-figure-kind="ancestry-share"]');
   const shareCount = await shares.count();
   expect(shareCount).toBeGreaterThanOrEqual(7); // five rows and two chips
+  let ranged = 0;
   for (let index = 0; index < shareCount; index++) {
     const share = shares.nth(index);
     await expect(share).toHaveAttribute("data-figure-class", "ancestry");
@@ -358,7 +359,23 @@ test("/genome/[subject]/ancestry complete: the shown state's figure contract, su
     await expect(share.locator('[data-slot="figure-value"]')).toHaveText(SHARE_VALUE);
     const unit = ((await share.locator('[data-slot="figure-unit"]').textContent()) ?? "").trim();
     expect(unit === NO_RANGE_YET || RANGE_UNIT.test(unit), `unit ${JSON.stringify(unit)}`).toBe(true);
+    if (RANGE_UNIT.test(unit)) ranged++;
   }
+  // The disjunction above was written before an interval existed and would
+  // stay green if every share lost its range tomorrow. This fixture supplies
+  // all 168 panel markers, so the regions the estimate puts weight on carry a
+  // measured interval and the two chips - which are sums, not estimates -
+  // carry none. Pinned as a floor rather than exactly: which regions the draw
+  // puts weight on is the estimator's business, not this test's.
+  expect(ranged, "the shares this file supports carry a measured range").toBeGreaterThanOrEqual(2);
+
+  // And the sentences beside them. The range is a number about a person's
+  // ancestry, so the page states how often it was measured to hold AND what
+  // the test that measured it assumed, together: either alone is the claim
+  // this product must not make.
+  await expect(page.locator('[data-slot="range-note"]')).toHaveText(RANGE_MEASURED);
+  await expect(page.locator('[data-slot="range-limit"]')).toHaveText(RANGE_TEST_LIMIT);
+  await expect(page.locator('[data-slot="range-note"]')).toHaveCount(1);
   expect(await percentTextNodes(page, { visibleOnly: false, outside: '[data-figure-kind="ancestry-share"]' })).toEqual([]);
 
   // G4.2, on a rendered surface rather than in a component test. The rule is

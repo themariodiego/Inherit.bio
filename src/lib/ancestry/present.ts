@@ -9,7 +9,7 @@
  * display rounding never feeds back into them.
  */
 import { ANCESTRY_RANGE_UNAVAILABLE } from "@/lib/figures/contract";
-import { POPS, type AdmixtureResult, type Pop } from "@/lib/genome/admixture";
+import { POPS, type AdmixtureResult, type Pop, type ShareRange } from "@/lib/genome/admixture";
 import { REGIONS, type Region } from "./regions";
 
 export type Band = "a large part" | "a noticeable part" | "a small part" | "possible but not established";
@@ -26,10 +26,11 @@ export function band(share: number): Band {
   return "possible but not established";
 }
 
-export interface ShareRange {
-  low: number;
-  high: number;
-}
+/**
+ * The estimator owns this shape: an interval is produced there and only
+ * presented here, so one definition rather than two that could drift.
+ */
+export type { ShareRange };
 
 export interface Share {
   point: number;

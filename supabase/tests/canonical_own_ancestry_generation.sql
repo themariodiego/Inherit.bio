@@ -195,6 +195,39 @@ select throws_ok($$select pg_temp.check_v2('{lineages,0,call,support}','"very st
  '22023','invalid_ancestry_content','support is one of the three labels the classifier produces');
 select throws_ok($$select pg_temp.check_v2('{schemaVersion}','3')$$,
  '22023','invalid_ancestry_content','an unknown revision is refused rather than read as the newest');
+
+-- The interval on each share (2026-09-14). Optional by design: the baseline
+-- above carries no `ranges` at all and is accepted, which is what a result
+-- captured before intervals existed looks like on re-check.
+create function pg_temp.ranges(pop text,low numeric,high numeric) returns jsonb language sql as $$
+ select jsonb_build_object(pop,jsonb_build_object('low',low,'high',high));
+$$;
+create function pg_temp.around(pop text,width numeric default 0.1) returns jsonb language sql as $$
+ select pg_temp.ranges(pop,
+  greatest(0,(c#>>array['admixture','result','proportions',pop])::numeric-width),
+  least(1,(c#>>array['admixture','result','proportions',pop])::numeric+width)) from v2_content;
+$$;
+select lives_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.around('EUR'))$$,
+ 'an interval around its own share is accepted');
+select lives_ok($$select pg_temp.check_v2('{admixture,result,ranges}','{}')$$,
+ 'a result whose every share agreed under resampling carries an empty set, not a zero-width interval');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.ranges('EUR',0.9,0.95))$$,
+ '22023','invalid_ancestry_content','an interval that does not contain the share printed beside it is refused');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.ranges('EUR',0.4,0.4))$$,
+ '22023','invalid_ancestry_content','a zero-width interval states certainty no resampling produced');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.ranges('EUR',0.6,0.2))$$,
+ '22023','invalid_ancestry_content','a reversed interval is refused rather than silently sorted');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.ranges('EUR',-0.1,1.2))$$,
+ '22023','invalid_ancestry_content','a share cannot run below none of a person or above all of them');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',pg_temp.ranges('XYZ',0.1,0.2))$$,
+ '22023','invalid_ancestry_content','an interval cannot name a region the panel does not model');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}',
+ jsonb_set(pg_temp.around('EUR'),'{EUR,middle}','0.5'))$$,
+ '22023','invalid_ancestry_content','an interval carries two bounds and nothing else');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,ranges}','"wide"')$$,
+ '22023','invalid_ancestry_content','the interval set is an object, never a word');
+select throws_ok($$select pg_temp.check_v2('{admixture,result,unexpected}','1')$$,
+ '22023','invalid_ancestry_content','the stored result stays closed: admitting ranges admitted nothing else');
 savepoint withdrawn_in_flight;
 select public.revoke_directional_purpose_v1('78700000-0000-4000-8000-000000000001',
  (select grant_id from public.purpose_grants where target_id=(select id from ancestry_subject) and purpose='ancestry'));

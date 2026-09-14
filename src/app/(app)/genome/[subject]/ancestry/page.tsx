@@ -32,7 +32,7 @@ import { MIN_MARKERS, PANEL, SOURCES, LINEAGE_TREES } from "@/lib/ancestry/panel
 import { presentShares } from "@/lib/ancestry/present";
 import { tierQualifies } from "@/lib/ancestry/regions";
 import { regionsView } from "@/lib/ancestry/view";
-import { POPS, type Pop } from "@/lib/genome/admixture";
+import { POPS, type Pop, type ShareRange } from "@/lib/genome/admixture";
 import { getSubjectFileCount, hasFileInPreparation } from "@/lib/genome/load";
 import { viewerMaySee } from "@/lib/family/access";
 import { resolveSubjectRoute } from "@/lib/family/subject-route";
@@ -66,6 +66,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * The stored intervals, checked as strictly as the proportions beside them.
+ *
+ * A population is skipped rather than the whole result refused: results
+ * captured before 2026-09-14 carry no `ranges` at all, a population whose
+ * resamples all agreed carries none of its own, and both render as the "no
+ * range yet" row the page has always had. What is NOT tolerated is a range
+ * that is present and wrong — reversed, out of bounds, or not bracketing its
+ * own share — because that would print a number about a person's ancestry
+ * that no measurement produced.
+ */
+function admixtureRanges(raw: unknown, proportions: Record<Pop, number>): Partial<Record<Pop, ShareRange>> {
+  if (!isRecord(raw)) return {};
+  const ranges: Partial<Record<Pop, ShareRange>> = {};
+  for (const pop of POPS) {
+    const value = raw[pop];
+    if (!isRecord(value)) continue;
+    const { low, high } = value;
+    if (typeof low !== "number" || typeof high !== "number") continue;
+    if (!Number.isFinite(low) || !Number.isFinite(high)) continue;
+    if (low < 0 || high > 1 || low >= high) continue;
+    if (proportions[pop] < low - RANGE_TOLERANCE || proportions[pop] > high + RANGE_TOLERANCE) continue;
+    ranges[pop] = { low, high };
+  }
+  return ranges;
+}
+
+/** The 3-dp rounding and sum repair between the fit and the stored share. */
+const RANGE_TOLERANCE = 0.005;
+
 /** The stored `AdmixtureResult`, checked field by field; anything else renders as no result. */
 function admixtureView(raw: unknown, supportNote: string): AncestryResultView | null {
   if (!isRecord(raw) || !isRecord(raw.proportions) || typeof raw.markersUsed !== "number") return null;
@@ -80,7 +110,7 @@ function admixtureView(raw: unknown, supportNote: string): AncestryResultView | 
     markersUsed,
     supportNote,
     shown: tierQualifies("continental", markersUsed),
-    view: regionsView(presentShares({ proportions })),
+    view: regionsView(presentShares({ proportions }, { ranges: admixtureRanges(raw.ranges, proportions) })),
   };
 }
 
