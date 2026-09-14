@@ -3612,3 +3612,43 @@ baseline is re-captured. That would have meant reverting D-119 and reopening
 eight rows. It was not needed, because there is no conflict at any viewport
 either rule actually names — and reaching for the precedence rule before reading
 the viewports would have cost a real fix for nothing.
+
+## 2026-09-14 · A region frequency is a capped per-person average, and the metric that chose it is not the one that looked obvious
+
+The region-level ancestry model needs one frequency per region per marker from a
+callset that publishes them per population. Three rules were measured over 168
+markers, 7 regions, 78 populations and 20 simulated people each: pooled (Σac/Σan,
+every sampled person counts once), unweighted (mean of the population
+frequencies, every population counts once) and capped (weight by sampled people,
+capped at 30).
+
+On "does the largest share land on the right region" they are nearly tied —
+93.8%, 94.9%, **95.2%** — and a tenth of a point is not a reason to prefer
+anything. The rule was chosen on the second measurement instead: how large the
+**wrong** shares get, which is what a reader is actually shown. Excluding the
+admixed-American cohorts, whose label denotes admixture rather than a place:
+
+| rule | cohorts with ≥0.10 on a wrong region | ≥0.20 | ≥0.30 |
+| --- | --- | --- | --- |
+| pooled | 19 of 69 | 11 | 1 |
+| unweighted | 16 of 69 | 8 | 2 |
+| capped | 16 of 69 | 8 | **1** |
+
+Capped is at least as good as unweighted everywhere and strictly better at the
+tail, and better than pooled throughout. The mechanism is plain once measured:
+1kGP cohorts carry ~100 people and HGDP populations ~20, so pooling lets CEU,
+IBS, TSI, FIN and GBR speak for Europe while Basque, Sardinian, Orcadian and
+Adygei barely register — and it is exactly the quiet populations whose readers
+get the largest wrong numbers.
+
+**The choice does not rescue the model.** D-122 stands under the winning rule: a
+Sardinian is still told 22.9% Middle East and a Druze 28.2% Europe. Settling the
+weighting was a precondition for measuring the confusion honestly, not a fix for
+it. No region surface ships on the strength of this decision alone.
+
+Also worth recording: the capped branch silently did not apply on its first
+edit — the anchor string did not match, so `capped` fell through to the
+unweighted branch and produced byte-identical numbers. It was caught by reading
+the `build` function rather than by the output, because identical output is
+exactly what a tied rule would also produce. Two rules agreeing is not evidence
+that both ran.

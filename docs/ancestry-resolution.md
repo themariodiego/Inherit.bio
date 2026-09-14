@@ -292,6 +292,115 @@ limitation that this panel reads North African ancestry as European and must
 say so. The sub-continental names can be shown as what they are — the closest
 matches and how often each won across resamples — without being asserted.
 
+**Read the two sections below before acting on that paragraph.** Both the 99%
+and the 86% are argmax rates, and a later measurement shows the mixture behind
+them carries wrong-region shares above 0.20 for 8 of 69 cohorts — including
+people the reference set contains. North Africa is not the only boundary that
+fails.
+
+## How a region's frequency is built from its populations. Measured, 2026-09-14
+
+The callset publishes counts per POPULATION. A region-level model needs one
+frequency per region per marker, and the choice is not cosmetic: 1kGP cohorts
+carry roughly 100 people each and HGDP populations roughly 20, so pooling lets
+the 1kGP cohorts speak for their whole region — Europe pooled is mostly CEU,
+IBS, TSI, FIN and GBR, with Basque, Sardinian, Orcadian and Adygei barely
+audible. Three rules were measured over 168 markers, 7 regions, 78 populations,
+20 simulated people each (1,560 fits per rule):
+
+| rule | how | top region right | mean share on the right region |
+| --- | --- | --- | --- |
+| pooled | Σac / Σan — every sampled PERSON counts once | 1464/1560 (93.8%) | 0.843 |
+| unweighted | mean of the population frequencies — every POPULATION counts once | 1480/1560 (94.9%) | 0.866 |
+| **capped** | weight by sampled people, capped at 30 | **1485/1560 (95.2%)** | 0.864 |
+
+The headline margin is thin, and per region they diverge much further than the
+total suggests — Central and South Asia is 81% pooled against 90% unweighted,
+while the admixed-American cohorts run the other way, 86% pooled against 79%.
+The capped rule is not a compromise for its own sake: it keeps a 13-person
+Melanesian sample audible without pretending it is measured as well as a
+176-person CEU one, and it wins on the second measurement below, which matters
+more than this one.
+
+**These rates are the ceiling, not the expectation.** Every simulated person
+here is drawn from a population the reference set contains, so the model is
+being asked the easiest version of the question.
+
+## The number the reader sees is not the number that was scored (D-122)
+
+"Top region right" asks whether the largest share lands in the right place. No
+reader is shown an argmax; they are shown a mixture, and the wrong entries in
+it are large. The same simulation, reporting the whole vector under the capped
+rule:
+
+| cohort | own region | largest share on a region that is not its own |
+| --- | --- | --- |
+| Hazara | CSA 0.394 | **EAS 0.326** |
+| Druze | MID 0.670 | **EUR 0.282** |
+| Balochi | CSA 0.545 | EUR 0.236 |
+| Makrani | CSA 0.560 | MID 0.234 |
+| Sardinian | EUR 0.733 | **MID 0.229** |
+| Brahui | CSA 0.620 | EUR 0.223 |
+| Uygur | EAS 0.455 | CSA 0.214 |
+| Mozabite | MID 0.677 | AFR 0.210 |
+| Kalash | CSA 0.614 | MID 0.179 |
+| Pathan | CSA 0.576 | EUR 0.178 |
+| Adygei | EUR 0.625 | CSA 0.175 |
+| Tuscan | EUR 0.810 | MID 0.162 |
+| Palestinian | MID 0.739 | EUR 0.156 |
+
+**16 of the 69 non-AMR cohorts put at least 0.10 on a region that is not their
+own; 8 put at least 0.20.** The Europe/Middle East confusion runs in both
+directions — a Sardinian is told 22.9% Middle East, a Druze 28.2% Europe — and
+it is a stronger claim than D-120, which found the same boundary failing only
+for people the set omits. This fails for people the set contains.
+
+Northern and western Europe is clean by comparison: CEU 0.004 MID, FIN 0.000,
+GBR 0.012, Russian 0.000, Basque 0.017, Orcadian 0.015. The confusion is
+concentrated on the Mediterranean, the Levant, North Africa and the Iranian
+plateau — which is to say, on precisely the readers the five-superpopulation
+model already serves worst.
+
+The admixed-American cohorts are excluded from that count on purpose. "Admixed
+American" denotes admixture rather than a place, so a mixture answer is not
+necessarily wrong for CLM or PUR, and the "top region right" metric is not a
+fair question for them at all — PUR scoring 0% there is partly the metric's
+fault. Their numbers are still the largest in the table (CLM 0.397 EUR against
+0.379 its own; PUR 0.373 EUR against 0.209), and PUR's 0.246 on the Middle East
+is the same Mediterranean/Levant confusion leaking through a third region.
+
+This is also where the weighting choice is settled. Counting cohorts by how far
+the worst wrong share reaches, excluding AMR:
+
+| rule | ≥0.10 | ≥0.20 | ≥0.30 |
+| --- | --- | --- | --- |
+| pooled | 19 of 69 | 11 | 1 |
+| unweighted | 16 of 69 | 8 | 2 |
+| **capped** | **16 of 69** | **8** | **1** |
+
+Capped is at least as good as unweighted everywhere and better at the tail, and
+better than pooled throughout. It is the rule, on the evidence.
+
+### What this forbids
+
+Printing "Middle East 22.9%" to a Sardinian reader is an invented magnitude.
+The project's own rule — no imputation, no invented numbers, keep limitations
+visible — does not have an exception for numbers a model produced confidently.
+So a region surface built on this panel ships only with one of:
+
+1. **a disclosure carrying these figures**, at the point of reading rather than
+   in a footnote — naming which regions this panel cannot separate and by how
+   much, for the specific regions in that reader's own result; or
+2. **merged regions**, reporting the boundaries the panel can actually hold
+   (the measurements say AFR, EAS and OCE are separable at this marker count;
+   EUR/MID and CSA/EUR are not) rather than seven it cannot.
+
+Neither is chosen here. Both are honest; option 2 is a smaller claim and option
+1 is the owner's stated preference — "give what the data supports, disclose the
+gap loudly" — and the two are compatible if the merge is offered as the default
+with the finer split available behind the disclosure. **The decision is the
+owner's and has not been made.**
+
 ## Reproducing
 
 ```
@@ -301,6 +410,8 @@ SEEDS=6 python3 scripts/ancestry-resolution/measure-leave-one-out.py
 python3 scripts/ancestry-resolution/fetch-callset-frequencies.py  # the full callset, through its tabix index
 SOURCE=api node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts
 node --import tsx scripts/ancestry-resolution/measure-naming-rule.mts   # SOURCE=callset is the default
+node --import tsx scripts/ancestry-resolution/measure-region-weighting.mts
+node --import tsx scripts/ancestry-resolution/measure-region-confusion.mts  # RULE=pooled|unweighted|capped
 ```
 
 The naming-rule run takes about 45 minutes and writes its rows to
