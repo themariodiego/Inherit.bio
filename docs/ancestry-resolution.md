@@ -456,12 +456,15 @@ So a region surface built on this panel ships only with one of:
 
 1. **a disclosure carrying these figures**, at the point of reading rather than
    in a footnote — naming which regions this panel cannot separate and by how
-   much, for the specific regions in that reader's own result; or
+   much, for the specific regions in that reader's own result;
 2. **merged regions**, reporting the boundaries the panel can actually hold
    rather than seven it cannot — measured below, because it is not free and
-   the obvious merge is not the right one.
+   the obvious merge is not the right one; or
+3. **merging per reader** rather than per product, which the measurements below
+   say buys the whole of option 2's honesty at roughly a fifth of its cost, and
+   is the one this document ends up pointing at.
 
-Neither is chosen here. Both are honest; option 2 is a smaller claim and option
+None is chosen here. Both are honest; option 2 is a smaller claim and option
 1 is the owner's stated preference — "give what the data supports, disclose the
 gap loudly" — and the two are compatible if the merge is offered as the default
 with the finer split available behind the disclosure. **The decision is the
@@ -506,6 +509,49 @@ a measurement, and it is not made here.
 Merging Oceania into East Asia is not worth discussing: it removes nothing
 (21/13/3) and costs a whole region.
 
+### Merging per reader instead of per product
+
+Both options above are global: either everyone sees seven regions with a
+disclosure, or everyone loses the Europe/South Asia split. But the confusion is
+not evenly distributed — a Finnish result is clean and a Sardinian one is not —
+so the choice does not have to be made once for everybody.
+
+The adaptive rule fits the seven regions as usual, then asks, **of this
+reader's own result**, whether two or more of the regions this panel is known to
+confuse carry a non-trivial share. If they do, those regions are reported as one
+combined row for this reader only. A clean result never triggers it.
+
+Measured held out, by mean-of-max — the stricter statistic, the average over
+people of that person's largest wrong reported row, where a reported row counts
+as right if it contains their own region:
+
+| trigger threshold | ≥0.10 | ≥0.20 | ≥0.30 | mean worst | readers merged | mean rows |
+| --- | --- | --- | --- | --- | --- | --- |
+| never (seven regions today) | 27 | 14 | 11 | 0.115 | 0% | 2.3 |
+| 0.30 | 24 | 8 | 3 | 0.091 | 7% | 2.2 |
+| 0.20 | 16 | 4 | 2 | 0.074 | 14% | 2.2 |
+| 0.15 | 11 | 4 | 2 | 0.068 | 18% | 2.1 |
+| **0.10** | **10** | **4** | **2** | **0.063** | **21%** | **2.1** |
+| always (global EUR+MID+CSA merge) | 10 | 4 | 2 | 0.061 | 100% | 1.9 |
+
+**At a 0.10 trigger the adaptive rule matches the global merge** — 10/4/2 against
+10/4/2, mean worst 0.063 against 0.061 — **while merging for 21% of readers
+instead of all of them.** The other 79% keep the full seven regions. Cohorts with
+a wrong row above 0.10 fall from 27 to 10, and above 0.30 from 11 to 2.
+
+This is not free and the cost should be stated plainly: **the rule cannot tell
+genuine two-region ancestry from confusion, and merges both.** A reader with
+real European and South Asian parentage triggers it and is shown one combined
+figure where two would have been true. The panel cannot distinguish those cases,
+so the rule declines to guess — which is the correct behaviour under "no
+invented numbers", but it is a loss, not a free lunch, and the people it costs
+are disproportionately the people of mixed ancestry.
+
+The remaining worst case at 0.10 is Uygur reaching 0.417 on Central/South Asia,
+outside the confusable set. Uygur has genuinely mixed eastern and western
+Eurasian ancestry, so part of that is signal; this simulation cannot separate
+signal from confusion and must not be read as though it could.
+
 What is settled is that waiting does not help. The two obvious routes out — a
 bigger panel and a finer model — were measured rather than assumed, and neither
 is one. Whatever ships, ships with this limitation in it.
@@ -523,6 +569,7 @@ node --import tsx scripts/ancestry-resolution/measure-region-weighting.mts
 node --import tsx scripts/ancestry-resolution/measure-region-confusion.mts  # RULE=..., MODEL=region|rollup, HOLD_OUT=1
 node --import tsx scripts/ancestry-resolution/measure-marker-scaling.mts
 node --import tsx scripts/ancestry-resolution/measure-region-merges.mts  # MERGES="EUR+MID,EAS+OCE"
+node --import tsx scripts/ancestry-resolution/measure-adaptive-merge.mts  # CONFUSABLE="EUR,MID,CSA"
 ```
 
 The naming-rule run takes about 45 minutes and writes its rows to
