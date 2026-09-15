@@ -1,5 +1,25 @@
 # Test diff register
 
+## Separate Family ancestry authority · 2026-09-15
+
+New tests cover the recipient reader independently of the own-account reader:
+actual consent dispatch, current recipient/session/directional/owner-purpose
+checks, exact captured v1/v2/v3 source and provenance, complete pagination and
+final locked confirmation. The actual ancestry-page regression preserves the
+initially selected own result if that result disappears before confirmation;
+an older surviving result cannot inherit its provenance.
+
+The synthetic browser journey requires ancestry-only discoverability, explicit
+fresh confirmation of an old grant, five saved merged rows matching the owner's
+values, the uncertainty disclosure, both withdrawal directions and unchanged
+source metadata. Review strengthened a potentially empty-array comparison and
+made the owner-withdrawal check await the successful revoke response. SQL review
+replaced an invalid attempt to rewrite an immutable completed report with real
+withdrawal, fresh grant and completion transitions. All original historical
+reader/refusal assertions remain; an explicit immutable-write rejection is added.
+The 57 rollback-only SQL assertions and full browser journey await fresh CI.
+No assertion, trigger, timeout, threshold or existing test is weakened or skipped.
+
 ## Synthetic gzip header is independent of its build host · 2026-09-15
 
 CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:

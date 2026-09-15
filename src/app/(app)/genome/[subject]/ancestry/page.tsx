@@ -1,3 +1,6 @@
+import { loadSharedAncestrySnapshot } from "@/lib/family/shared-ancestry-results";
+import type { AncestryResultRow } from "@/lib/ancestry/captured-rows";
+import type { InputSourceView } from "@/lib/genome/input-sources";
 /**
  * /genome/[subject]/ancestry — what the file supports about broad regions
  * and parent lines (brief §4.6, §4 §7.3–7.6, A.8, G4.4, X16.5). Server
@@ -154,27 +157,40 @@ export default async function AncestryPage(
   if (person && !viewerMaySee(person, "ancestry")) notFound();
 
   const admin = createAdminClient();
-  // Canonical results come from the checked private journal; legacy own rows
-  // retain RLS. The separate counterpart reader remains tracked in D-123.
-  const resultClient = person ? admin : await createClient();
-  const [fileCount, captured, preparing] = await Promise.all([
-    getSubjectFileCount(admin, dataSubjectId),
-    loadAncestryResultSnapshot(admin, resultClient, dataSubjectId),
-    // A narrower question than the count: a rejected or retired file is
-    // counted and is no reason to say regions are coming.
-    hasFileInPreparation(admin, dataSubjectId),
-  ]);
-  let admix = captured.rows.find((row) => row.kind === "admixture");
-  let mt = captured.rows.find((row) => row.kind === "mtdna");
-  let y = captured.rows.find((row) => row.kind === "ydna");
-  const [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
-    [admix, mt, y].map((result) => loadInputSources(admin, dataSubjectId, result?.result != null ? [result.file_id] : [], { kind: "report", purpose: "ancestry" })),
-  );
-
-  const current = new Set(await captured.confirm());
-  if (admix && !current.has(admix)) admix = undefined;
-  if (mt && !current.has(mt)) mt = undefined;
-  if (y && !current.has(y)) y = undefined;
+  let rows: AncestryResultRow[], fileCount: number | null, preparing: boolean;
+  let regionInputs: InputSourceView[], maternalInputs: InputSourceView[], paternalInputs: InputSourceView[];
+  let confirmationRequired = false, preparedUnavailable = false;
+  if (person) {
+    const captured = await loadSharedAncestrySnapshot(admin, {
+      subjectId: dataSubjectId, counterpartAccountId: person.counterpartAccountId,
+    });
+    const current = await captured.confirm();
+    if (!current.authorized) notFound();
+    rows = current.rows; fileCount = current.fileCount; preparing = current.preparing;
+    confirmationRequired = current.confirmationRequired; preparedUnavailable = current.preparedUnavailable;
+    [regionInputs, maternalInputs, paternalInputs] = ["admixture", "mtdna", "ydna"].map(kind => {
+      const result = rows.find(row => row.kind === kind);
+      return result?.result != null ? current.sources.filter(source => source.fileId === result.file_id) : [];
+    });
+  } else {
+    const resultClient = await createClient();
+    const [count, captured, inPreparation] = await Promise.all([
+      getSubjectFileCount(admin, dataSubjectId), loadAncestryResultSnapshot(admin, resultClient, dataSubjectId),
+      hasFileInPreparation(admin, dataSubjectId),
+    ]);
+    const selectedRows = ["admixture", "mtdna", "ydna"].map(kind => captured.rows.find(row => row.kind === kind));
+    [regionInputs, maternalInputs, paternalInputs] = await Promise.all(
+      selectedRows.map(result => {
+        return loadInputSources(admin, dataSubjectId, result?.result != null ? [result.file_id] : [], { kind: "report", purpose: "ancestry" });
+      }),
+    );
+    const current = new Set(await captured.confirm());
+    rows = selectedRows.filter((row): row is AncestryResultRow => row !== undefined && current.has(row));
+    fileCount = count; preparing = inPreparation;
+  }
+  const admix = rows.find(row => row.kind === "admixture");
+  const mt = rows.find(row => row.kind === "mtdna");
+  const y = rows.find(row => row.kind === "ydna");
   const sevenRegion = isSevenRegionPanel(admix);
   const regions = admix && !sevenRegion ? admixtureView(admix.result, admix.support_note ?? "") : null;
   const subjectParams = { subject: subject.routeSegment };
@@ -195,6 +211,15 @@ export default async function AncestryPage(
       />
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{H1}</h1>
+      {confirmationRequired ? <p role="status" data-slot="ancestry-sharing-confirmation" className="max-w-prose text-sm leading-relaxed text-ink">
+        {person!.displayLabel} needs to confirm ancestry sharing again from their permissions page before newer saved results can appear here.
+      </p> : null}
+      {preparedUnavailable ? <p role="status" data-slot="ancestry-prepared-unavailable" className="max-w-prose text-sm leading-relaxed text-ink">
+        Ancestry from a prepared genome is not yet available in Family. Other authorized results are shown below.
+      </p> : null}
+      {person && rows.length === 0 ? <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">
+        No completed ancestry result is shared yet.
+      </p> : null}
       {preparing ? (
         <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{ANCESTRY_PREPARING}</p>
       ) : null}
