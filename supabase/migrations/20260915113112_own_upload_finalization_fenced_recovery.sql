@@ -1,5 +1,7 @@
 -- Fenced finalization attempts, including interruption before validation ends.
 -- No upload ceiling, admission, source identity, consent or retention change.
+-- There is no session-independent finalization: retry requires the same
+-- currently authorized originating session within the original upload expiry.
 -- V1 remains readable/callable for its existing sessions. The application uses
 -- V2; a V1 caller cannot enter a V2 attempt or bypass its ownership fence.
 create table private.own_upload_finalization_attempts (
