@@ -187,7 +187,14 @@ select throws_ok($$select pg_temp.shared()$$,'42501','not_found','either side ca
 select is(pg_temp.confirm((select receipt->>'pageReceipt' from permission_capture),'permission'),false,'pause removes the ancestry-only link');
 rollback to paused;
 savepoint drift;
-update public.genome_files set upload_revision=upload_revision+1 where id='79120000-0000-4000-8000-000000000040';
+select throws_ok($$update public.genome_files set upload_revision=upload_revision+1
+ where id='79120000-0000-4000-8000-000000000040'$$,'23514',
+ 'new row for relation "genome_files" violates check constraint "normalization_source_completion"',
+ 'a partial source revision change is rejected before shared-reader validation');
+-- Keep the completed-file constraint valid while making the stored capture stale.
+update public.genome_files set upload_revision=upload_revision+1,
+ normalization_source_revision=normalization_source_revision+1
+ where id='79120000-0000-4000-8000-000000000040';
 select is(jsonb_array_length(pg_temp.shared()->'sources'),1,'source drift preserves independently valid legacy sibling');
 select is(pg_temp.confirm((select receipt->>'pageReceipt' from captured_share)),false,'a valid sibling cannot mask earlier source drift');
 rollback to drift;

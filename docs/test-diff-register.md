@@ -1,5 +1,16 @@
 # Test diff register
 
+## Family ancestry source-drift fixture · 2026-09-15
+
+CI `34978684167` at `3c3d65f` applied the migration and passed the first 37
+Family SQL assertions. The next fixture update changed only the upload
+revision, violating the existing completed-file consistency constraint before
+the reader could be tested. An added assertion preserves that exact constraint
+refusal. The drift fixture then changes both upload and normalization source
+revisions together, as existing source-authority suites already do. Both
+original stale-reader and final-confirmation assertions remain unchanged.
+The suite now has 92 assertions; fresh database execution remains required.
+
 ## Family ancestry file-status handling · 2026-09-15
 
 Fresh CI `34976060395` applied the migration, then the first legacy-result
