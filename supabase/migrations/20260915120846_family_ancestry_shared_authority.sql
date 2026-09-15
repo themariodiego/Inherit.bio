@@ -260,7 +260,7 @@ begin
    and (p_after_file is null or gf.id>p_after_file) order by gf.id limit 100 loop
    v_last:=f.id; v_count:=v_count+1;
    if exists(select 1 from private.genome_file_deletions where file_id=f.id) then continue; end if;
-   if f.status is null or f.status not in('uploaded','processing','stored','annotated') then continue; end if;
+   if f.status is null or f.status not in('uploading','uploaded','parsing','parsed','stored','annotated') then continue; end if;
    -- These private identities also cover absent results and preparation state.
    identities:=identities||jsonb_build_array(to_jsonb(f));
    file_count:=file_count+1;
@@ -269,7 +269,10 @@ begin
     prepared_unavailable:=true; continue;
    end if;
    if f.single_logical_sample_verified_at is null then
-    if f.status<>'annotated' then preparing:=true; continue; end if;
+    -- Match the shared file-preparation states. Storage alone is not analysis.
+    if f.status<>'annotated' then
+     preparing:=preparing or f.status in('uploading','uploaded','parsing','parsed'); continue;
+    end if;
     select coalesce(jsonb_agg(jsonb_build_object('kind',ar.kind,'result',ar.result,'support_note',ar.support_note,
      'file_id',ar.file_id,'model_id',ar.model_id,'model_version',ar.model_version,'created_at',ar.created_at)
      order by ar.created_at desc,ar.id),'[]'::jsonb) into legacy_rows from public.ancestry_results ar

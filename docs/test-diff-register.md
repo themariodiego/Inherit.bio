@@ -1,5 +1,21 @@
 # Test diff register
 
+## Family ancestry file-status handling · 2026-09-15
+
+Fresh CI `34976060395` applied the migration, then the first legacy-result
+read failed because its source filter compared the file-status enum with
+`processing`, which is not an enum value. The reader now uses the four actual
+preparation states: uploading, uploaded, parsing and parsed. A stored legacy
+file keeps its source count without claiming that analysis is running; only
+annotated legacy files expose saved ancestry. Failed files remain excluded.
+
+All 84 existing SQL assertions remain unchanged. Seven added assertions
+exercise every enum value with a stale legacy result still present, exact
+preparing/source counts, preservation of the authorized canonical sibling,
+final confirmation, permission-only non-disclosure and invalidation after an
+annotated-to-stored transition. No assertion or guard is weakened or skipped.
+These database cases require fresh CI; static review is not execution proof.
+
 ## Family ancestry migration condition syntax · 2026-09-15
 
 Fresh CI `34973036948` at `2212f0b` passed all 5,092 unit checks but stopped

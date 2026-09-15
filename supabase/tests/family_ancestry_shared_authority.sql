@@ -365,5 +365,42 @@ set constraints purpose_grants_pair_check,directional_grants_pair_check immediat
 select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'direction deletion preserves unrelated ancestry proof');
 rollback to proof_direction_deleted;
 
+-- Every real file enum value must be readable without an enum-cast exception.
+-- Keep the existing legacy result in place to prove that an in-flight or
+-- storage-only file cannot leak that stale result. The canonical sibling stays.
+savepoint legacy_status_matrix;
+create function pg_temp.legacy_status_snapshot(p_status public.genome_file_status)
+returns jsonb language plpgsql as $$
+declare observed jsonb;
+begin
+ update public.genome_files set status=p_status where id='79120000-0000-4000-8000-000000000041';
+ observed:=pg_temp.shared();
+ return jsonb_build_object('page',observed,'confirmed',pg_temp.confirm(observed->>'pageReceipt'),
+  'permission',pg_temp.shared('permission'));
+end; $$;
+create temporary table legacy_status_matrix as
+ select status,pg_temp.legacy_status_snapshot(status) observed
+ from unnest(enum_range(null::public.genome_file_status)) as states(status);
+select is((select jsonb_object_agg(status,observed#>'{page,preparing}') from legacy_status_matrix),
+ '{"uploading":true,"uploaded":true,"parsing":true,"parsed":true,"annotated":false,"failed":false,"stored":false}'::jsonb,
+ 'legacy preparing matches the four actual in-flight states; stored and failed promise no processing');
+select is((select jsonb_object_agg(status,observed#>'{page,fileCount}') from legacy_status_matrix),
+ '{"uploading":2,"uploaded":2,"parsing":2,"parsed":2,"annotated":2,"failed":1,"stored":2}'::jsonb,
+ 'each non-failed legacy state counts its source while failed stays excluded');
+select is((select jsonb_object_agg(status,jsonb_array_length(observed#>'{page,sources}')) from legacy_status_matrix),
+ '{"uploading":1,"uploaded":1,"parsing":1,"parsed":1,"annotated":2,"failed":1,"stored":1}'::jsonb,
+ 'only annotated legacy files expose saved ancestry; other states withhold stale rows');
+select is((select bool_and(observed#>'{page,sources,0}'=(select receipt#>'{sources,0}' from captured_share)) from legacy_status_matrix),
+ true,'every legacy state preserves the exact independently authorized canonical sibling');
+select is((select bool_and((observed->>'confirmed')::boolean) from legacy_status_matrix),true,
+ 'final locked confirmation accepts each unchanged current file-state receipt');
+select is((select bool_and(observed#>'{permission,sources}'='[]'::jsonb
+ and observed#>'{permission,fileCount}'='0'::jsonb and observed#>'{permission,preparing}'='false'::jsonb)
+ from legacy_status_matrix),true,'ancestry-only permission capture exposes no file state or preparing signal');
+update public.genome_files set status='stored' where id='79120000-0000-4000-8000-000000000041';
+select is(pg_temp.confirm((select receipt->>'pageReceipt' from captured_share)),false,
+ 'an annotated-to-stored legacy transition invalidates the earlier result receipt');
+rollback to legacy_status_matrix;
+
 select * from finish();
 rollback;
