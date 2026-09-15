@@ -3,7 +3,7 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
@@ -143,9 +143,9 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
 /** Statuses the finalize route never answers with, so they come from the edge
  * rather than the application: the request reached no decision at all. A host
  * that kills a long invocation reports it as one of these, or drops the
- * connection, which makes `fetch` reject. Every status the route does answer —
- * 200, 401, 403, 404, 413, 415, 422 and 503 — is its decision and is final,
- * and its 503 has already aborted the upload and removed both objects. */
+ * connection, which makes `fetch` reject. The v2 route can also explicitly
+ * preserve source bytes with a marked 503. Unmarked 503 retains the previous
+ * terminal/cleanup-failure interpretation. */
 const NO_DECISION_STATUSES = new Set([408, 502, 504]);
 
 /** Finish an upload whose bytes already reached private storage.
@@ -170,9 +170,13 @@ export async function finishStagedUpload(uploadId: string) {
   const finalized = await fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
     credentials: "same-origin", cache: "no-store", redirect: "error" }).catch(() => null);
   if (!finalized || NO_DECISION_STATUSES.has(finalized.status)) throw staged("unavailable");
-  // A refusal that names the upload rather than the file leaves the bytes
-  // where they are; every other refusal has already cleaned them up.
+  // Preserve the existing handle on upload-level refusal or on the new explicit
+  // retry response. Other application failures make no promise of resumability.
   if (finalized.status === 404) throw staged("unavailable");
+  if (finalized.status === 503 && finalized.headers.get("Retry-After") === "60"
+    && subjectFinalizationRetryBody.safeParse(await finalized.clone().json().catch(() => null)).success) {
+    throw staged("unavailable");
+  }
   if (!finalized.ok) await responseFailure(finalized);
   const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
   if (!receipt.success) throw new BrowserUploadError("unavailable");

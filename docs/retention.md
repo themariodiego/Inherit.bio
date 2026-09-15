@@ -84,6 +84,8 @@ The retention job computes targets by immutable database identifiers and joins, 
 
 For canonical own uploads, `upload.staging-2h` is a deletion deadline, not a wait-until time. An unpromoted upload becomes eligible for its exact staging/final working-object purge when its existing upload authority expires (normally within 30 minutes). This leaves time for scheduled cleanup and retries before the unchanged creation-time-plus-two-hours maximum. The claim preserves the original phase clock and manifest binding, skips live finalization transactions and active cleanup claims, excludes promoted sources, and completes only after Storage acknowledgement and zero-residual checks.
 
+The fenced finalization attempt is an operational cascade child of the registered `public.upload_sessions` target: `private.own_upload_finalization_attempts` stores the upload ID, current claim and lease expiry, and disappears when its parent is deleted. Because promotion keeps the parent and cancels staging cleanup, a successful `validating` → `promoted` transition also deletes its exact matching attempt in the publication transaction. Rejection keeps the lease fence until parent cleanup so an expired holder cannot reacquire deletion keys. This adds no retention clock and does not resolve the existing gap for retained promoted upload-session metadata. Checkpoints already have terminal cleanup; no historical checkpoint residuals were measured in this review. See `docs/finalization-fenced-recovery.md` for the boundary and focused verification.
+
 ## Cron transport adapter
 
 `GET /api/cron/retention` is a separate transport for the existing bodyless

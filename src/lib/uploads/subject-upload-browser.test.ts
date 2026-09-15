@@ -212,6 +212,18 @@ describe("finishing an upload whose bytes are already stored", () => {
     await expect(finishStagedUpload("../another-upload")).rejects.toMatchObject({ code: "unavailable" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
+  it("retains the same upload handle only for an explicitly retryable closed 503", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "unavailable" }, {
+      status: 503, headers: { "Retry-After": "60" },
+    }));
+    await expect(finishStagedUpload(uploadId)).rejects.toMatchObject({ code: "unavailable", stagedUploadId: uploadId });
+  });
+  it.each([{ error: "unavailable", fileId }, { error: "uploads_paused" }, null])(
+    "does not turn a different response body into a retry receipt: %j", async body => {
+      fetchMock.mockReset().mockResolvedValueOnce(Response.json(body, { status: 503, headers: { "Retry-After": "60" } }));
+      const failure = await finishStagedUpload(uploadId).catch((error: unknown) => error);
+      expect(failure).toMatchObject({ stagedUploadId: undefined });
+    });
   it("hands the whole upload back when its own finalization is interrupted", async () => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(receipt, { status: 201 }))
       .mockRejectedValueOnce(new TypeError("network error"));

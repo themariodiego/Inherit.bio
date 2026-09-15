@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSHA256 } from "hash-wasm";
+import { FinalizationInterrupted, startFinalizationLease, waitForFinalization } from "./finalization-lease";
 import { z } from "zod";
 import { hasEmptyRequestBody } from "../empty-request-body";
 import { createAdminClient } from "../supabase/admin";
@@ -30,6 +31,16 @@ function fail(): never { throw new FinalizationUnavailable(); }
 
 /** Bodyless mutation: the browser never chooses a bucket, path, format or tier. */
 export async function finalizeSubjectUpload(request: Request, uploadId: string) {
+  return runFinalization(request, uploadId, false);
+}
+
+/** Current route: expiring, exclusive attempts with source-preserving retries.
+ * The v1 entry point stays available for historical contract verification. */
+export async function finalizeSubjectUploadV2(request: Request, uploadId: string) {
+  return runFinalization(request, uploadId, true);
+}
+
+async function runFinalization(request: Request, uploadId: string, fenced: boolean) {
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   if (new URL(request.url).search || !uuid.safeParse(uploadId).success || !(await hasEmptyRequestBody(request))) {
@@ -42,10 +53,30 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_upload_id: uploadId };
   let manifest: Manifest | undefined;
+  let attemptLease: ReturnType<typeof startFinalizationLease> | undefined;
+  // New RPCs are additive; keep their unchecked wire data behind closed schemas.
+  const invoke = admin.rpc.bind(admin) as unknown as (name: string, params: Record<string, unknown>) =>
+    PromiseLike<{ data: unknown; error: { code?: string } | null }> & { abortSignal?: (signal: AbortSignal) => PromiseLike<{ data: unknown; error: { code?: string } | null }> };
+  function signal() { return AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]); }
+  function retryableFailure() {
+    const response = ownUploadJson({ error: "unavailable" }, 503);
+    // The same upload may be retried after its current lease expires. Unmarked
+    // 503 responses retain the historical terminal/cleanup-failure contract.
+    if (fenced) response.headers.set("Retry-After", String(FINALIZATION_LEASE_SECONDS));
+    return response;
+  }
+  function work<T>(pending: PromiseLike<T>) { return fenced ? waitForFinalization(pending, signal()) : Promise.resolve(pending); }
+  async function call(name: string, params: Record<string, unknown>) {
+    if (fenced && request.signal.aborted) throw new FinalizationInterrupted();
+    const pending = invoke(name, params);
+    if (!fenced) return await pending;
+    const deadline = signal();
+    return waitForFinalization(pending.abortSignal?.(deadline) ?? pending, deadline);
+  }
   try {
-    const begin = await admin.rpc("begin_own_upload_finalization_v1", args);
-    if (begin.error) return ownUploadJson(begin.error.code === "42501"
-      ? { error: "not_found" } : { error: "unavailable" }, begin.error.code === "42501" ? 404 : 503);
+    const begin = await call(fenced ? "begin_own_upload_finalization_v2" : "begin_own_upload_finalization_v1", args);
+    if (begin.error) return begin.error.code === "42501"
+      ? ownUploadJson({ error: "not_found" }, 404) : retryableFailure();
     const prior = alreadyComplete.safeParse(begin.data);
     if (prior.success) return ownUploadJson(completed.parse({ fileId: prior.data.fileId,
       status: "finalized_ready_for_processing", analysisState: "ready_for_processing",
@@ -56,16 +87,18 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
     const lease = manifest;
     const authorization = { ...args, p_claim: lease.claim };
     const storage = admin.storage.from("genomes");
-    async function recheck() {
-      const result = await admin.rpc("authorize_own_upload_finalization_v1", authorization);
+    async function renew() {
+      const result = await call(fenced ? "authorize_own_upload_finalization_v2" : "authorize_own_upload_finalization_v1", authorization);
       const current = manifestSchema.safeParse(result.data);
       if (result.error || !current.success || JSON.stringify(current.data) !== JSON.stringify(lease)) fail();
     }
+    if (fenced) attemptLease = startFinalizationLease(renew);
+    async function recheck() { await (attemptLease ? attemptLease.check() : renew()); }
     /** One authorized range, whole, in memory. Nothing here is yielded. */
     async function fetchRange(key: string, start: number, end: number): Promise<Uint8Array[]> {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/authenticated/genomes/${key}`, {
         headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, Range: `bytes=${start}-${end}` },
-        cache: "no-store", redirect: "error", signal: AbortSignal.timeout(30_000),
+        cache: "no-store", redirect: "error", signal: fenced ? signal() : AbortSignal.timeout(30_000),
       });
       if (response.status !== 206 || !response.body
         || response.headers.get("content-range") !== `bytes ${start}-${end}/${lease.expectedSize}`) {
@@ -78,7 +111,12 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
         if (received > end - start + 1) fail();
         parts.push(bytes);
       }
-      if (received !== end - start + 1) throw new SubjectStructureError("upload_integrity_mismatch");
+      if (received !== end - start + 1) {
+        // A short response proves an incomplete transfer, not invalid stored
+        // bytes. V2 keeps the exact source for retry; v1 keeps its old contract.
+        if (fenced) fail();
+        throw new SubjectStructureError("upload_integrity_mismatch");
+      }
       return parts;
     }
 
@@ -110,7 +148,7 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
      * It costs one round trip per call, not per range.
      */
     const READ_AHEAD_DEPTH = 3;
-    async function* ranges(key: string, from = 0) {
+    async function* ranges(key: string, from = 0, consumed?: () => Promise<void>) {
       await recheck();
       const queue: { body: Promise<Uint8Array[]> }[] = [];
       let next = from;
@@ -140,6 +178,7 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
           // used and after every earlier range has already been consumed.
           await recheck();
           for (const bytes of parts) yield bytes;
+          await consumed?.();
           enqueue();
         }
       } finally {
@@ -154,18 +193,20 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
     // object again. An explicit failure still aborts and cleans up below, which
     // retires the checkpoint with the session, exactly as before.
     async function readCheckpoint() {
-      const result = await admin.rpc("read_own_upload_finalization_checkpoint_v1", authorization);
+      const result = await call("read_own_upload_finalization_checkpoint_v1", authorization);
       const parsed = finalizationCheckpointReceiptSchema.safeParse(result.data);
       if (result.error || !parsed.success || parsed.data.uploadId !== uploadId) fail();
       return parsed.data;
     }
     async function record(next: FinalizationCheckpoint, revision: number) {
-      const result = await admin.rpc("write_own_upload_finalization_checkpoint_v1", {
+      const result = await call("write_own_upload_finalization_checkpoint_v1", {
         ...authorization, p_expected_revision: revision, p_checkpoint: next,
         p_lease_seconds: FINALIZATION_LEASE_SECONDS,
       });
       const parsed = finalizationCheckpointReceiptSchema.safeParse(result.data);
       if (result.error || !parsed.success) fail();
+      if (fenced && (parsed.data.uploadId !== uploadId || parsed.data.revision !== revision + 1
+        || JSON.stringify(parsed.data.checkpoint) !== JSON.stringify(next))) fail();
       return parsed.data.revision;
     }
     let { revision, checkpoint } = await readCheckpoint();
@@ -189,8 +230,14 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
 
     if (reached() < finalizationPhaseRank("copied")) {
       await recheck();
-      const copied = await storage.copy(lease.stagingKey, lease.finalKey);
-      if (copied.error) fail();
+      const copied = await work(storage.copy(lease.stagingKey, lease.finalKey));
+      if (copied.error) {
+        if (!fenced) fail();
+        // A killed copy may have completed before its checkpoint was written.
+        // Existence permits the full independent hash pass below, never publish.
+        const existing = await work(storage.info(lease.finalKey));
+        if (existing.error || !uuid.safeParse(existing.data?.id).success) fail();
+      }
       checkpoint = advance("copied");
       revision = await record(checkpoint, revision);
     }
@@ -204,7 +251,14 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
         copyHash.load(Buffer.from(checkpoint!.digestState, "base64"));
         verified = checkpoint!.verifiedBytes;
       }
-      for await (const bytes of ranges(lease.finalKey, verified)) { copyHash.update(bytes); verified += bytes.length; }
+      const saveRange = fenced ? async () => {
+        if (verified >= lease.expectedSize) return;
+        checkpoint = advance("verifying", verified, Buffer.from(copyHash.save()).toString("base64"));
+        revision = await record(checkpoint, revision);
+      } : undefined;
+      for await (const bytes of ranges(lease.finalKey, verified, saveRange)) {
+        copyHash.update(bytes); verified += bytes.length;
+      }
       if (verified !== lease.expectedSize || copyHash.digest("hex") !== evidence.rawSha256) {
         throw new SubjectStructureError("upload_integrity_mismatch");
       }
@@ -213,29 +267,37 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
     }
     if (reached() < finalizationPhaseRank("staging-removed")) {
       await recheck();
-      const removed = await storage.remove([lease.stagingKey]);
+      const removed = await work(storage.remove([lease.stagingKey]));
       if (removed.error) fail();
       checkpoint = advance("staging-removed", lease.expectedSize);
       // Last phase to record; publication below is the only step after it.
       await record(checkpoint, revision);
     }
     await recheck();
-    const object = await storage.info(lease.finalKey);
+    const object = await work(storage.info(lease.finalKey));
     if (object.error || !uuid.safeParse(object.data?.id).success) fail();
-    const result = await admin.rpc("complete_own_upload_finalization_v1", { ...authorization,
+    if (fenced) {
+      await recheck();
+      await attemptLease!.stop();
+    }
+    const result = await call("complete_own_upload_finalization_v1", { ...authorization,
       p_storage_object_id: object.data!.id, p_raw_sha256: evidence.rawSha256, p_decoded_sha256: evidence.decodedSha256 });
     const receipt = completed.safeParse(result.data);
     if (result.error || !receipt.success) fail();
     return ownUploadJson(receipt.data);
   } catch (error) {
-    if (manifest) {
+    await attemptLease?.stop();
+    // A network interruption, expired claim or uncertain response proves no
+    // invalid source. Preserve its bytes/progress for the next fenced attempt.
+    // Definite structural failures still claim terminal cleanup before deleting.
+    if (manifest && (!fenced || (error instanceof SubjectStructureError && !request.signal.aborted))) {
       try {
-        const cleanup = await admin.rpc("abort_own_upload_finalization_v1", { ...args, p_claim: manifest.claim });
+        const cleanup = await call("abort_own_upload_finalization_v1", { ...args, p_claim: manifest.claim });
         const target = cleanupSchema.safeParse(cleanup.data);
         if (cleanup.error || !target.success || target.data.stagingKey !== manifest.stagingKey || target.data.finalKey !== manifest.finalKey) fail();
-        const removed = await admin.storage.from("genomes").remove([target.data.stagingKey, target.data.finalKey]);
+        const removed = await work(admin.storage.from("genomes").remove([target.data.stagingKey, target.data.finalKey]));
         if (removed.error) fail();
-        const ack = await admin.rpc("ack_own_upload_finalization_cleanup_v1", { ...args, p_claim: manifest.claim });
+        const ack = await call("ack_own_upload_finalization_cleanup_v1", { ...args, p_claim: manifest.claim });
         if (ack.error || ack.data !== true) fail();
       } catch { return ownUploadJson({ error: "unavailable" }, 503); }
     }
@@ -249,6 +311,8 @@ export async function finalizeSubjectUpload(request: Request, uploadId: string) 
       return ownUploadJson(error.code === "subject_source_not_single_sample"
         ? { error: error.code, messageCopyId: "upload.subject.single-sample-required" } : { error: error.code }, status);
     }
-    return ownUploadJson({ error: "unavailable" }, 503);
+    return retryableFailure();
+  } finally {
+    await attemptLease?.stop();
   }
 }
