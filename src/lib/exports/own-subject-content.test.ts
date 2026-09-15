@@ -4,6 +4,8 @@ import { gzipSync } from "node:zlib";
 import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, type OwnExportSnapshot } from "./own-subject-content";
 import gastrointestinal from "../../../data/templates/gastrointestinal.json";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
+import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
 const preparedExport = vi.hoisted(() => vi.fn());
 vi.mock("../genome/prepared-source/export-source", () => ({ exportOwnPreparedRecords: preparedExport }));
 const id = (n: number) => `12345678-1234-4234-8234-${String(n).padStart(12, "0")}`;
@@ -31,6 +33,24 @@ function ancestryResult() {
       normalizedBuild: "GRCh38", callEncoding: "vcf-literal" }, calls: [], panel: CURRENT_OWN_ANCESTRY_PANEL }) };
 }
 describe("own-subject export content", () => {
+  it("exports the exact seven-region capture and caveat, then refuses a withdrawn capture", async () => {
+    const previous = ancestryResult();
+    const result = computeOwnAncestryContentV3({ source: previous.result.source,
+      calls: REGIONAL_AIMS.map(marker => ({ file_id: source.file.id, chrom: marker.chrom, pos: marker.pos38,
+        ref: marker.ref, alt: marker.alt, genotype: `${marker.ref}/${marker.ref}`, usable: true })),
+      panel: SEVEN_OWN_ANCESTRY_PANEL });
+    const row = { ...previous, result };
+    const rpc = db(a => a.p_operation === "check" ? source : [row]);
+    const exported = await ownSubjectExportContent(rpc, actor).ancestry(source);
+    expect(exported).toEqual([{ file_id: source.file.id, subject_id: source.file.subject_id,
+      purpose: "ancestry", completed_at: row.completed_at, result }]);
+    expect(JSON.stringify(exported)).toContain(REGIONAL_CAVEAT);
+    expect(JSON.stringify(exported)).not.toContain('"ranges"');
+    let reads = 0;
+    const revoked = db(a => a.p_operation === "check" ? source : ++reads === 1 ? [row] : []);
+    await expect(ownSubjectExportContent(revoked, actor).ancestry(source)).rejects.toThrow("export unavailable");
+  });
+
   it("exports exact stored ancestry with source binding and preserves the unavailable coverage state", async () => {
     const row = ancestryResult();
     const rpc = db(a => a.p_operation === "check" ? source : [row]);

@@ -953,6 +953,19 @@
         "docs/reviews/jurisdictions/research/README.md",
         "docs/reviews/jurisdictions/research/US.md"
       ]
+    },
+    {
+      "name": "RFC Editor",
+      "category": "cited-organisation",
+      "aliases": [
+        "rfc-editor.org",
+        "www.rfc-editor.org"
+      ],
+      "reason": "Official publisher of RFC 1952, cited for the gzip header OS byte used by deterministic synthetic fixtures.",
+      "evidence": [
+        "data/samples/PROVENANCE.md",
+        "e2e/fixtures/PROVENANCE.md"
+      ]
     }
   ]
 }

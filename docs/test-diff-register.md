@@ -1,5 +1,138 @@
 # Test diff register
 
+## Adaptive ancestry figure states and panel focus · 2026-09-15
+
+CI `34968643349` at `115bec4` passed 5,043 units, 2,992 SQL assertions,
+the production build and 405 browser cases. Five browser cases failed and
+one subsequent serial case did not run. The existing panel focus, mouse-hit,
+same-figure-key and figure-count assertions exposed real integration gaps;
+the run is retained as failure evidence.
+
+The former canonical figure pair has 168 markers in A and 154 in B. The new
+versioned policy requires 168 for the normal view, so B correctly enters the
+grey/raw state while A enters the combined normal view. New deterministic
+synthetic pairs cover combined and separate reporting in both normal and raw
+states. Each normal pair retains all 168 markers. Raw pairs have 147 and 126.
+An additional invented non-panel call changes B's source count without
+changing its fit. Existing fixture bytes, old generators, historical estimator,
+component and v1/v2 reader assertions remain intact.
+
+`assertEveryFigureMoved` remains byte-for-byte unchanged. Each pair must have
+identical figure keys, every regional share must move at displayed precision,
+and the normal view's hidden-small-share chip must move. Split components now
+have collector identities from their existing region attributes. Both normal
+pairs additionally require the exact 0.0% unassignable chip and 168/168 marker
+coverage: these two precise v3 keys have structural reasons in the register.
+No region share or source-count exemption is added. Both raw pairs require
+their actual insufficient-coverage counts, grey state, absent normal controls,
+closed-then-open raw disclosure and explicit uncertainty. All four pairs open
+the uncertain split where present and require stable region identities.
+
+The cross-surface source is unchanged. Its v3 view contains five reported rows,
+three uncertain split components, two chips, marker coverage and source
+coverage: 12 figures. The register now records that composition and the spec
+requires the combined v3 state before collecting. The collector still includes
+hidden figures, and all existing same-source/value assertions remain.
+
+Seven focused fixture checks pass, including exact regeneration, actual parser
+counts, convergence, branch selection, every displayed share changing and
+non-panel-call exclusion. Final browser execution remains required.
+
+The panel bug reproduces with AppShell's focusable `main`: clicking its plain
+heading focuses that container, which the old body/Close predicate did not
+recognize. A shared interaction hook now returns focus after plain-content
+clicks and leaves a chosen control focused. Activation records the map viewport;
+Escape and Close restore it so the same pointer coordinate remains a hit.
+Hover preview uses actual mouse movement, avoiding a panel reopening when
+scroll restoration moves the map under a stationary pointer. Both historical
+and v3 surfaces use this interaction hook with their own versioned data.
+
+Nine new isolated Chromium checks pass across historical, combined and separate
+views: hover, Enter/Space, outside-content and other-control focus, repeated
+same-point mouse clicks after Escape/Close, exact viewport restoration and
+single-touch activation. The original full ancestry browser specs remain
+unchanged. The component harness proves interactions, not the authenticated
+journey, geographic evidence or the application stylesheet.
+
+## Synthetic gzip header is independent of its build host · 2026-09-15
+
+CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:
+zlib emitted gzip OS byte 19 on the generating host and byte 3 on Linux. The
+generator now emits OS byte 255 (unspecified), retaining zero timestamp and
+requiring no optional header fields or header checksum. Both synthetic gzip
+fixtures and their receipts/provenance were regenerated. Each binary changes
+only at offset 9; decoded bytes, compressed data, CRC/size trailer and record
+counts remain identical. Historic benchmark files are untouched.
+
+The existing byte-for-byte assertions are unchanged. A new regression pins all
+ten fixed header bytes, compares the complete compressed data and trailer with
+the compressor's output, and verifies lossless decompression. The two focused
+suites now contain four tests. No test timeout, threshold or assertion is
+relaxed; Linux CI must verify the resulting release commit.
+
+## Synthetic VCF inputs and versioned ancestry assertions · 2026-09-15
+
+The completion objective requires synthetic-only verification. The two active
+public HG001 consumers were `e2e/upload-vcf.spec.ts` and
+`src/lib/genome/pipeline-integration.test.ts`; both now read independently
+generated synthetic gzip VCFs. `scripts/generate-synthetic-vcf-fixtures.ts`
+reads no benchmark file or person's calls. Historic HG001 artifacts, hashes,
+provenance and the extraction utility remain untouched. The utility is not
+invoked by current tests, package scripts or CI. A source/path search found no
+other active test consumer of those benchmark files. Provenance gates may
+still hash retained artifacts; that is not genetic fixture ingestion.
+
+The browser spec retains all four serial cases and its substantive transport,
+SHA/size declaration, preparation, explicit report-choice, locus, exact call,
+track, two-source, rsID/gene, provenance and lineage-absence assertions. The
+invented window has the same 144-record shape: 127 supported calls and 17
+unsupported indels, with zero ancestry markers. Positions use an arithmetic
+sequence and letters/GTs cycle independently of any sample; the first exact
+call now belongs to that synthetic input. Numeric count checks remain 144
+and 127. The separate synthetic caffeine source and A/C positive stay intact.
+
+The pipeline spec retains `records.length > 100000`, GRCh38 and every-template
+resolution. It adds exact 120,073-record and 73-rsID checks, byte-for-byte
+regeneration, no skipped rows, and explicit genotyped/not-covered outcomes
+across the full catalogue. Its 120,000 arithmetic filler calls and 73 included
+public template positions carry invented GTs; the other 73 template rsIDs are
+deliberately absent. New fixture tests pin compressed/decoded hashes and real
+parser counts and require zero-marker null shares from the actual estimator.
+Focused verification: 3 tests pass across the two unit files, and scoped lint
+passes with zero warnings. Browser execution is not claimed by this entry.
+
+The final zero-marker browser case changes its expected result because v3
+stores null proportions when no usable marker exists. It now requires the
+exact empty note and zero ancestry-share figures, raw-number lists and raw
+disclosures. The previous five uniform raw percentages had no input evidence;
+partial results with actual markers still retain the G5.3a disclosure path.
+
+Canonical ancestry E2E now follows the current writer's v3 capture and requires
+zero fabricated intervals plus its exact version, provenance and caveat. The
+existing sum, focus, figure and geometry assertions remain. Historical
+component and v1/v2 reader tests remain. New v3 schema tests reject internally
+inconsistent lineage evidence and neighboring JavaScript/SQL coverage values.
+These changes bind assertions to the intentionally versioned behavior; no
+test is skipped, disabled or weakened to manufacture a green result. Full
+browser/release evidence must be recorded separately after the current journey
+passes against a database with the full migration chain.
+
+The report-choice component test also follows the corrected admission copy:
+seven broad regions, conditional combination and lineage checks only where
+the file has usable positions. Its former assertion said parent lines were
+not computed, contradicting the existing version-2 lineage implementation and
+the populated lineage capture tests. The replacement requires the actual
+coverage limit and rejects the old false statement. Its independent opt-in,
+generation-control and result-link assertions remain unchanged.
+
+Component browser inspection found disappearing base continents under the
+small-share filter and lost focus after clicking outside the map panel. New
+v3 checks now require a complete muted base and distinguish returning focus
+after a plain-content click from preserving focus on another chosen control.
+The v3 filter labels describe hiding small estimates; the adjacent note states
+the two-percent display threshold. They no longer imply validated support.
+Historical filter wording and component tests remain versioned as before.
+
 ## Export wording follows actual original availability · 2026-09-09
 
 Full CI at `f31682a` passed 230 browser cases but caught a changed manifest

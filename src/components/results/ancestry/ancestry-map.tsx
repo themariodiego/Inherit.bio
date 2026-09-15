@@ -32,6 +32,9 @@ export function gradientId(code: string): string {
 }
 
 export interface AncestryMapProps {
+  /** Version-specific wording; historical captures keep the five-region defaults. */
+  label?: string;
+  caption?: string;
   shapes: MapShapes;
   /** Visible rows in descending share order; ignored in grey mode. */
   rows: RegionRowView[];
@@ -45,7 +48,8 @@ export interface AncestryMapProps {
   onActivate?: (code: string) => void;
 }
 
-export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover, onActivate }: AncestryMapProps) {
+export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover, onActivate,
+  label = MAP_LABEL, caption = MAP_CAPTION }: AncestryMapProps) {
   const shapeByCode = new Map(shapes.regions.map((shape) => [shape.code, shape]));
   const shown = mode === "shown";
   const stopStyle = { stopColor: "var(--forest)" };
@@ -62,7 +66,7 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
       <svg
         viewBox={VIEWBOX}
         role="group"
-        aria-label={MAP_LABEL}
+        aria-label={label}
         data-slot="ancestry-map"
         data-mode={mode}
         data-density-pixel-exclusion="map-tile"
@@ -119,7 +123,9 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
                     "cursor-pointer outline-none",
                     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-forest",
                   )}
-                  onMouseEnter={() => onHover?.(row.code)}
+                  // Scrolling back from Close can put this path under a still
+                  // pointer. Only actual pointer movement should reopen it.
+                  onPointerMove={(event) => { if (event.pointerType === "mouse") onHover?.(row.code); }}
                   onFocus={() => onHover?.(row.code)}
                   onClick={() => onActivate?.(row.code)}
                   onKeyDown={(event) => onKeyDown(event, row.code)}
@@ -141,7 +147,7 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
             ))}
       </svg>
       <figcaption data-slot="map-caption" className="mt-2 text-sm text-ink-muted">
-        {MAP_CAPTION}
+        {caption}
       </figcaption>
     </figure>
   );

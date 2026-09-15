@@ -586,3 +586,30 @@ changed, and the tables here are the 2000-iteration run.
 The fetched frequencies are not committed: they are reference data, and
 reference data enters this repository through a licence audit, not through a
 research script.
+
+
+## 15 September 2026 — Accepted rule and versioned production fit
+
+The earlier adaptive experiment used `>= 0.10` and combined only the components
+meeting that trigger. The owner-selected rule uses unrounded shares strictly
+`> 0.10`; when two of EUR/MID/CSA qualify, all three are combined. The disclosure
+shows uncertain components and repeats the mixed-ancestry limitation. Earlier
+references to “21% of readers” describe an equally sampled synthetic reference
+simulation, not prevalence among actual readers.
+
+The fresh comparison imports the production fitter from
+`src/lib/genome/regional-admixture.ts`; its bound is 50,000 iterations with early
+stopping. The old 2,000-step experiment above remains historical. The committed
+`accepted-adaptive-measurement.json` records paired 42/84/126/168-marker hold-out,
+a separately labelled population-present ceiling and iteration sensitivity.
+See `data/ref/AIMS_SEVEN_REGION_PROVENANCE.md` for the final table, exact
+denominators, subgroup limits and reproduction commands. The accepted rule
+and earlier hot-only rule merge the same 329 of 1,560 full-panel held-out draws,
+but 265 displayed results differ. Neither measurement calibrates component
+confidence ranges or establishes specific population identities.
+
+The full 168-marker normal-display requirement is a conservative release policy,
+not a measured reliability cutoff. Partial raw estimates remain available under
+a warning. The adaptive rule cannot tell real mixed ancestry from reference
+confusion and combines both; people with mixed ancestry lose separate region
+detail more often. D-122's scientific limitation survives this reporting change.

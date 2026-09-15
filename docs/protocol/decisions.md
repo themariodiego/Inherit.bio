@@ -3687,3 +3687,80 @@ non-AMR counts go 32/21/9 at 21 markers, 30/14/9 at 42, 22/11/4 at 84, 21/10/6 a
 126 and 21/11/5 at 168 — flat from 84 on, with Druze pinned at 0.48 throughout.
 Doubling the panel again is not a fix either. Both routes out were measured
 rather than assumed, and the limitation is real.
+
+
+## 2026-09-15 — Owner decision: adaptive seven-region ancestry at 0.10
+
+- Authority: the owner's completion objective supplied on 15 September 2026.
+  These are accepted product decisions, recorded before implementation.
+- Fit seven regions using the HGDP+1kGP reference frequencies and the recorded
+  per-population weighting capped at 30 sampled people. Use a new estimator
+  module and analysis version; do not change `src/lib/genome/admixture.ts` or
+  reinterpret stored five-region results as new seven-region analyses.
+- For an individual result, if at least two of Europe, Middle East and
+  Central/South Asia have an unrounded fitted share strictly above 0.10,
+  report all three together as one combined row. Otherwise keep seven rows.
+  The trigger is applied before display rounding.
+- This follows the owner's wording. The earlier measurement script uses
+  `>=` and merges only the members passing its trigger. That is a different
+  rule: rerun held-out measurement for the accepted rule and label its
+  evidence explicitly; do not borrow the earlier 21% figure as validation.
+- Generate the reference table under `data/ref/` with a committed generator,
+  document provenance, then implement the new estimator, tests and surface.
+  The licence audit remains the HGDP+1kGP row in `docs/dataset-licenses.md`.
+- Limitation wherever the figures travel: this adaptive rule cannot tell
+  genuine mixed ancestry from this panel's confusion. It merges both, and
+  people with mixed ancestry disproportionately lose separate region detail.
+
+## 2026-09-15 — Owner decision: expandable combined ancestry rows
+
+- Show the combined row by default. A disclosure control reveals the fitted
+  per-region split together with a plain statement that the panel cannot tell
+  genuine mixed ancestry from its own confusion here; the numbers may be either.
+- Expanded figures are uncertain model components, not restored resolution or
+  evidence of ancestry from each listed region. Keep their provenance, coverage,
+  uncertainty and the adaptive-rule limitation attached in results, saved
+  content, downloads and any other surface that carries the numbers.
+- Retain derived ancestry rows (the standing G5.3a decision). Historical
+  analyses keep their original source, permissions, panel and analysis version.
+
+
+## 2026-09-15 — Seven-region coverage and numerical convergence
+
+The initial normal display requires all 168 usable markers. The authority is
+`data/ref/regions/regions-v3.json`; the capture, result state and surface consume
+it. The old five-region registry and its 42-marker threshold remain unchanged.
+This is a conservative coverage policy, not calibrated reliability. The paired
+held-out sweep tests only one nested missing-marker pattern and does not justify
+declaring an arbitrary 84- or 126-marker subset reliable. Partial estimates stay
+behind the unreliable-raw-numbers disclosure under the standing G5.3a decision.
+Zero usable markers produce null proportions, with no invented uniform mixture.
+
+The new fitter stops when its largest component change is below `1e-7`, with a
+50,000-step bound. At 2,000 steps, 476 of 1,560 full-panel held-out draws had not
+settled. Extending to 10,000 changed a component by up to 1.94 percentage points
+and left 24 unsettled. Those all settled within 50,000 steps, with an additional
+maximum change of 0.228 percentage points; the slowest needed 19,152 steps. No
+full-panel merge trigger changed in either comparison. All 7,800 main fits in
+the four-size held-out sweep plus the full-panel ceiling converged. Future
+unsettled results retain an explicit warning. Convergence is numerical evidence,
+not ancestry accuracy or interval calibration.
+
+The actual-fitter measurement is committed in
+`scripts/ancestry-resolution/accepted-adaptive-measurement.json`. At 168 markers,
+the accepted strict/all-three rule merges 329/1,560 held-out synthetic draws
+(21.09%), with top-row agreement 96.54% and non-AMR mean-largest-wrong-row tail
+counts 10/4/2 at 10/20/30 percent. A larger combined row is easier to count as
+correct; this does not validate its component split. Population-present ceiling:
+97.18% agreement, 8/3/2 tails and 18.27% merged. The cohorts are equally sampled,
+so these are not real-reader prevalence or calibrated accuracy claims. The
+reference provenance records the substantial subgroup limitations and the
+unresolved publication-versus-release sample-count discrepancy.
+
+The new capture is revision 3. Historical captures remain bound to their
+original reference; the original estimator is unchanged. The new validator
+checks the strict unrounded trigger, exact caveat, fit diagnostics, coverage and
+lineage consistency. Exports retain the captured data after current-authority
+rechecks. This implementation entry does not assert browser, release or hosted
+verification; those receipts belong in the release evidence. D-122's underlying
+scientific ambiguity and G5.5's required human reviews remain open.

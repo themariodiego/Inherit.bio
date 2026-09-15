@@ -1,0 +1,253 @@
+{
+  "kind": "deterministic-synthetic-vcf",
+  "build": "GRCh38",
+  "generator": "scripts/generate-synthetic-vcf-fixtures.ts",
+  "source": "Arithmetic filler plus public report-template positions/alleles; all genotypes are independently invented.",
+  "transformation": "Gzip level 9, timestamp zero, no optional header fields, OS byte 255 (unspecified). No decoded artifact is written.",
+  "catalogue": {
+    "sources": [
+      {
+        "path": "data/templates/addiction.json",
+        "sha256": "da3b5f3bb123752b32d9a677a9581839bfe50db3a5ec65fc2bbd22983c7054fb"
+      },
+      {
+        "path": "data/templates/aesthetic-cosmetic.json",
+        "sha256": "2e9f8745aa8cfc5962070ce2c98cd0d8b81438d7859e6c992dab85bf2b3c60e6"
+      },
+      {
+        "path": "data/templates/autoimmune.json",
+        "sha256": "b9cab36e549d7a4b8a26824270ace55070289debbbfd7b9690b29cd7716ef395"
+      },
+      {
+        "path": "data/templates/basic-traits.json",
+        "sha256": "549d9d477415684c9ceefb7330c7806f064e3c352ec7448c659047a74e31ac20"
+      },
+      {
+        "path": "data/templates/brain-health.json",
+        "sha256": "dc197ffd07c5d2e747cca78ec381a21711696dc9e3bdd6a61ac5e4f665a62bac"
+      },
+      {
+        "path": "data/templates/cancer-risk.json",
+        "sha256": "02f0d5b53845b647ac12e1cf58d79d9bf7464937d6bf6cfac1283cdc9ed6ddce"
+      },
+      {
+        "path": "data/templates/environmental-sensitivity.json",
+        "sha256": "0a2d51741134c569ce3faca61e027c2658f54cd3f05b4dad016ab554da4f6785"
+      },
+      {
+        "path": "data/templates/gastrointestinal.json",
+        "sha256": "3f60ea62bad042b439ef78c2c904c15a351bbffbd2b2dde95cd412471fe382e4"
+      },
+      {
+        "path": "data/templates/heart-cardiovascular.json",
+        "sha256": "b3b79336b5a7645cdda829d7e03553e9329b85350e9950187bf19e9f29d4097a"
+      },
+      {
+        "path": "data/templates/lifestyle-wellness.json",
+        "sha256": "c144ac5c0fa949a49bd3f630d7a917fc72c0eed5390a6cdad980ba1e27090bba"
+      },
+      {
+        "path": "data/templates/longevity.json",
+        "sha256": "dd3d04c70d61b02c249c1b9a9aa35a3f30d0246c6aa4ba44b2f00552f03450a1"
+      },
+      {
+        "path": "data/templates/medicines.json",
+        "sha256": "ac35004f24f588e87be554de3bfae54e46f7eb2d1ea9a25b149b3916c88100f2"
+      },
+      {
+        "path": "data/templates/mental-health.json",
+        "sha256": "13f2bf7b1653687c338e6836f58924d44d4502ea39bce3141235e28fe3aee643"
+      },
+      {
+        "path": "data/templates/metabolic-obesity.json",
+        "sha256": "a5d8356d40de7780a6ec411e33094541f8425017c78fe30c077ff9f70975a7ce"
+      },
+      {
+        "path": "data/templates/neurodegenerative.json",
+        "sha256": "1b6990d413dada62ff1ebdb10ac5fa9edd4c7f43678943be633e4f6e30a8d699"
+      },
+      {
+        "path": "data/templates/reproductive-family.json",
+        "sha256": "eea02e843e204c719491d0966e4cadd24554076583a5b1d6009986a22121d706"
+      }
+    ],
+    "includedRsids": [
+      662,
+      699,
+      4680,
+      5219,
+      6025,
+      6166,
+      7412,
+      20541,
+      174537,
+      228697,
+      356182,
+      516134,
+      601338,
+      708272,
+      738409,
+      776746,
+      887829,
+      1042522,
+      1051730,
+      1160312,
+      1333049,
+      1360780,
+      1799853,
+      1799963,
+      1800460,
+      1800497,
+      1800795,
+      1801133,
+      1801260,
+      1805007,
+      1815739,
+      2023239,
+      2066845,
+      2187668,
+      2229765,
+      2287019,
+      2479106,
+      2802292,
+      2943641,
+      3087243,
+      3827760,
+      4149056,
+      4349859,
+      4481887,
+      4939827,
+      5751876,
+      6733839,
+      7454108,
+      7574865,
+      7895833,
+      8070723,
+      9536314,
+      9939609,
+      10427255,
+      10484554,
+      10830963,
+      10936599,
+      10994336,
+      11046205,
+      11209026,
+      11928865,
+      12203592,
+      12608932,
+      12913832,
+      16891982,
+      16991615,
+      17300539,
+      17822931,
+      34637584,
+      61729907,
+      72921001,
+      76763715,
+      113993960
+    ],
+    "absentRsids": [
+      671,
+      1695,
+      5082,
+      5882,
+      6152,
+      6265,
+      12552,
+      53576,
+      182549,
+      324420,
+      429358,
+      599839,
+      602662,
+      713598,
+      762551,
+      855791,
+      1006737,
+      1044396,
+      1057910,
+      1229984,
+      1344706,
+      1726866,
+      1799945,
+      1799971,
+      1800462,
+      1800562,
+      1800955,
+      1801155,
+      1801282,
+      1805008,
+      1990622,
+      2066844,
+      2153535,
+      2200733,
+      2282679,
+      2476601,
+      2736100,
+      2937573,
+      2981582,
+      3135388,
+      3918290,
+      4244285,
+      4410790,
+      4570625,
+      4988235,
+      6511720,
+      6983267,
+      7521902,
+      7759938,
+      7903146,
+      8192678,
+      9923231,
+      10166942,
+      10455872,
+      10741657,
+      10835638,
+      10993994,
+      11031006,
+      11136000,
+      11803731,
+      11940694,
+      12248560,
+      12821256,
+      13387042,
+      16969968,
+      17070145,
+      17782313,
+      33972313,
+      35744813,
+      66800491,
+      75932628,
+      112782763,
+      116855232
+    ],
+    "selection": "Sort unique rsIDs ascending; include even zero-based indices, omit odd indices. Alternate included GT 0/1 and 1/1."
+  },
+  "fixture": {
+    "path": "data/samples/synthetic-pipeline-grch38.vcf.gz",
+    "sha256": "46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a2b44",
+    "compressedBytes": 499855,
+    "decodedSha256": "93eaae6d89497012ef43e8ddd9dc7834bff36d95b9323536c24cabb616b85a86",
+    "decodedBytes": 4481882,
+    "records": 120073,
+    "counts": {
+      "called": 120072,
+      "noCall": 0,
+      "unsupported": 1,
+      "failedFilter": 0,
+      "blocks": 0,
+      "singleSample": true,
+      "buildClaim": true
+    },
+    "firstPoint": {
+      "rsid": 228697,
+      "chrom": 1,
+      "pos": 7827519,
+      "ref": "C",
+      "alt": "G",
+      "genotype": "G/G"
+    },
+    "ancestryMarkerCount": 3
+  },
+  "scope": "Synthetic streaming parser and all-template resolution proof at over 100,000 records. No biological accuracy or hosted capacity claim."
+}

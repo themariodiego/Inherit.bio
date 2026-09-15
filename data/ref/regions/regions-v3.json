@@ -1,0 +1,28 @@
+{
+  "release_id": "ancestry-regions-v3",
+  "name": "Seven broad reference regions with adaptive reporting",
+  "provenance": "data/ref/regions/PROVENANCE_V3.md",
+  "panel": {
+    "id": "aims-hgdp-tgp-168",
+    "version": "hgdp-1kg-v3.1.2-cap30-168-v1",
+    "markers": 168,
+    "minimum_markers": 168,
+    "manifest": "data/ref/aims-seven-region-manifest.json",
+    "provenance": "data/ref/AIMS_SEVEN_REGION_PROVENANCE.md"
+  },
+  "geometry": {
+    "version": "hgdp-tgp-regions-v1",
+    "file": "public/geo/regions-v3.topo.json",
+    "manifest": "public/geo/regions-v3.manifest.json",
+    "provenance": "public/geo/REGIONAL_GEOMETRY_PROVENANCE.md"
+  },
+  "regions": [
+    { "code": "AFR", "display_name": "Africa", "tier": "continental", "min_markers": 168, "sort_order": 0, "geometry_recipe": "Physical AFRICA south of 17 degrees north; a broad locator, not sample sites." },
+    { "code": "AMR", "display_name": "Americas", "tier": "continental", "min_markers": 168, "sort_order": 1, "geometry_recipe": "Physical NORTH AMERICA, SOUTH AMERICA and CENTRAL AMERICA; a broad locator, not sample sites." },
+    { "code": "CSA", "display_name": "Central–South Asia", "tier": "continental", "min_markers": 168, "sort_order": 2, "geometry_recipe": "Physical ASIA within 55–97 degrees east and 0–50 degrees north; a broad locator, not sample sites." },
+    { "code": "EAS", "display_name": "East Asia", "tier": "continental", "min_markers": 168, "sort_order": 3, "geometry_recipe": "Physical ASIA east of 97 degrees east; a broad locator, not sample sites." },
+    { "code": "EUR", "display_name": "Europe", "tier": "continental", "min_markers": 168, "sort_order": 4, "geometry_recipe": "Physical EUROPE; a broad locator, not sample sites." },
+    { "code": "MID", "display_name": "Middle East and North Africa", "tier": "continental", "min_markers": 168, "sort_order": 5, "geometry_recipe": "Physical AFRICA north of 17 degrees north plus ASIA west of 55 degrees east and south of 42 degrees north; a broad locator, not sample sites." },
+    { "code": "OCE", "display_name": "Oceania", "tier": "continental", "min_markers": 168, "sort_order": 6, "geometry_recipe": "Physical MELANESIA within 129–157 degrees east and 11 degrees south–0, excluding physical AUSTRALIA; a western Melanesian locator, not sample sites. No Australia or Polynesia." }
+  ]
+}

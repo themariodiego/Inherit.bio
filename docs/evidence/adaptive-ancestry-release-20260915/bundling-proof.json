@@ -1,0 +1,182 @@
+{
+  "formatVersion": 1,
+  "checkedAt": "2026-09-15T12:09:48.961Z",
+  "sourceHead": "2ebbf6c60a947fe15572324e1fa94670531efc01",
+  "scope": "Minimal isolated Next.js 16.3.3 default Turbopack production build, importing actual estimator, reference manifest and v3 capture module. No full application build or hosted deployment is asserted.",
+  "before": {
+    "nativeHash": "54279a25c01e72ed3c22caab0ffe778735a97fae8dffd0df498072a3f9857163",
+    "bundledHash": "e82f4d148b9750695cdbd03a211633d0ee70fd5fab33fb932c228d915512406d",
+    "keyOrderMatches": true,
+    "markerCount": 168,
+    "numericDifferences": 122,
+    "firstDifferences": [
+      {
+        "index": 1,
+        "rsid": "rs6541030",
+        "pop": "OCE",
+        "native": 0.23333333333333334,
+        "bundled": 0.23333333333333336,
+        "nativeDoubleHex": "3fcdddddddddddde",
+        "bundledDoubleHex": "3fcddddddddddddf"
+      },
+      {
+        "index": 4,
+        "rsid": "rs1325502",
+        "pop": "AMR",
+        "native": 0.10980417589287333,
+        "bundled": 0.10980417589287332,
+        "nativeDoubleHex": "3fbc1c20606c934c",
+        "bundledDoubleHex": "3fbc1c20606c934b"
+      },
+      {
+        "index": 4,
+        "rsid": "rs1325502",
+        "pop": "CSA",
+        "native": 0.22974322294925623,
+        "bundled": 0.22974322294925625,
+        "nativeDoubleHex": "3fcd6839d685b879",
+        "bundledDoubleHex": "3fcd6839d685b87a"
+      },
+      {
+        "index": 4,
+        "rsid": "rs1325502",
+        "pop": "EAS",
+        "native": 0.39008129618650245,
+        "bundled": 0.3900812961865025,
+        "nativeDoubleHex": "3fd8f7178a79bf92",
+        "bundledDoubleHex": "3fd8f7178a79bf93"
+      },
+      {
+        "index": 5,
+        "rsid": "rs12130799",
+        "pop": "MID",
+        "native": 0.011699507389162563,
+        "bundled": 0.011699507389162565,
+        "nativeDoubleHex": "3f87f5e94ced1571",
+        "bundledDoubleHex": "3f87f5e94ced1572"
+      },
+      {
+        "index": 7,
+        "rsid": "rs3737576",
+        "pop": "AFR",
+        "native": 0.012100781939796145,
+        "bundled": 0.012100781939796143,
+        "nativeDoubleHex": "3f88c84b757fe6c6",
+        "bundledDoubleHex": "3f88c84b757fe6c5"
+      },
+      {
+        "index": 7,
+        "rsid": "rs3737576",
+        "pop": "EAS",
+        "native": 0.09686650317589625,
+        "bundled": 0.09686650317589623,
+        "nativeDoubleHex": "3fb8cc3e3f37e615",
+        "bundledDoubleHex": "3fb8cc3e3f37e614"
+      },
+      {
+        "index": 9,
+        "rsid": "rs2814778",
+        "pop": "AMR",
+        "native": 0.049662715116910644,
+        "bundled": 0.04966271511691064,
+        "nativeDoubleHex": "3fa96d643283f0bc",
+        "bundledDoubleHex": "3fa96d643283f0bb"
+      }
+    ]
+  },
+  "after": {
+    "markerCount": 168,
+    "frequencyCount": 1176,
+    "numericDifferences": 0,
+    "fullSerializedTableExactlyEqual": true,
+    "markerSha256": "54279a25c01e72ed3c22caab0ffe778735a97fae8dffd0df498072a3f9857163",
+    "tableFileSha256": "fe47ed15f8573ca82925d002aa4f8615492e2cb3ee809d847c2d3f82d2f44253",
+    "capturedPanelHash": "54279a25c01e72ed3c22caab0ffe778735a97fae8dffd0df498072a3f9857163",
+    "capturedState": "available",
+    "syntheticGenotypes": "One literal REF/ALT call at each of 168 reference markers; no real person.",
+    "fittedResultExactlyEqual": true,
+    "fittedResultSha256": "e15dbcd0606c5cece86660c9151092242ec9700d0c45d383aeafd966e9b2a9fd",
+    "fit": {
+      "converged": true,
+      "iterations": 435
+    },
+    "referenceVersion": "hgdp-1kg-v3.1.2-cap30-168-v1"
+  },
+  "unchanged": [
+    {
+      "path": "data/ref/aims-seven-region.json",
+      "sha256": "fe47ed15f8573ca82925d002aa4f8615492e2cb3ee809d847c2d3f82d2f44253",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "data/ref/aims-seven-region-manifest.json",
+      "sha256": "15ca97a0654ff0a546654f579060bb4518f908636a82520db0ce73b1b4d0330b",
+      "unchangedFromHead": true
+    },
+    {
+      "path": "src/lib/genome/admixture.ts",
+      "sha256": "4fe258c5d0f063d49f190bf843f16ba08a0482f6636d8ecc132d36b5c26ad958",
+      "unchangedFromHead": true
+    }
+  ],
+  "sources": [
+    {
+      "path": "src/lib/genome/regional-admixture.ts",
+      "sha256": "7b7a4f20e97b9c8d24a700e4425f998430d76fff103da9227d6cd20d6641763d"
+    },
+    {
+      "path": "src/lib/genome/regional-reference-json.ts",
+      "sha256": "d87de03b7c07f9fccab6cc16a24dba2bf4a26b118aca64fa1055896a321f0d8c"
+    },
+    {
+      "path": "src/lib/uploads/own-ancestry-content-v3.test.ts",
+      "sha256": "f97a8015781830b03b7cb28d87063ec23758dd0c46d97ef7c348a006f05479b1"
+    },
+    {
+      "path": "scripts/ancestry-resolution/generate-seven-region-reference.mts",
+      "sha256": "cd41859564ac93fc8847da38e289d11b7ce90cb0eb74d14e702b2bc20e2fbde7"
+    },
+    {
+      "path": "scripts/ancestry-resolution/seven-region-artifact.test.ts",
+      "sha256": "32141b3f535bae8d1e15ecbb587015f1b6365ef7eec2dad9b5b953886bb6ec6b"
+    },
+    {
+      "path": "data/ref/AIMS_SEVEN_REGION_PROVENANCE.md",
+      "sha256": "099a866a7f277acfdfc7229a12aaa6d0dff871aeb2cd32995efc36cda314d7cd"
+    }
+  ],
+  "fix": "Generator emits compact JSON as a TypeScript string. Native JSON.parse restores the original doubles after bundling. Existing full-content capture hash and input-panel checks remain intact; original table, manifest and historical estimator are unchanged.",
+  "validation": [
+    {
+      "command": "corepack pnpm exec vitest run src/lib/genome/regional-admixture.test.ts src/lib/uploads/own-ancestry-content-v3.test.ts scripts/ancestry-resolution/seven-region-artifact.test.ts --maxWorkers=1",
+      "result": "21 tests passed"
+    },
+    {
+      "command": "corepack pnpm exec tsx scripts/ancestry-resolution/generate-seven-region-reference.mts --check --frequencies ../preserved-ancestry-runtime/ancestry-resolution/hgdp-tgp-freqs.json --populations ../preserved-ancestry-runtime/ancestry-resolution/hgdp-tgp-populations.json",
+      "result": "passed against preserved aggregate inputs; no ignored inputs created for this check"
+    },
+    {
+      "command": "corepack pnpm exec eslint src/lib/genome/regional-admixture.ts src/lib/genome/regional-reference-json.ts src/lib/uploads/own-ancestry-content-v3.test.ts scripts/ancestry-resolution/generate-seven-region-reference.mts scripts/ancestry-resolution/seven-region-artifact.test.ts",
+      "result": "passed"
+    },
+    {
+      "command": "corepack pnpm exec tsc --noEmit --incremental false",
+      "result": "passed"
+    },
+    {
+      "command": "NEXT_TELEMETRY_DISABLED=1 node node_modules/next/dist/bin/next build",
+      "directory": "work/ancestry-hash-repro",
+      "result": "passed optimized build, TypeScript, page-data collection and static generation; actual full-panel v3 capture initialized during build"
+    }
+  ],
+  "logs": [
+    "before-build.log",
+    "values-build.log",
+    "after-build.log"
+  ],
+  "limits": [
+    "Original checkout .next and shared node_modules were not changed by production probes.",
+    "Only independent synthetic marker calls were evaluated. No service calls, credentials, deployment, commit, push or force deployment occurred.",
+    "The isolated build uses about 43 MiB; final hosted build must verify complete application integration."
+  ]
+}

@@ -1,0 +1,172 @@
+# Adaptive ancestry release verification
+
+Status: release candidate implemented; database checks and component review
+pass. The first full browser run exposed interaction and versioned-fixture
+failures. Fixes require fresh full-suite CI before merge and application
+deployment verification. This
+record is not release approval or a new acceptance-gate closure.
+
+## Scope
+
+The owner decisions were committed before implementation (`f8571e1`). The
+reference generator was committed next (`2c465ee`), followed by the generated
+table and provenance (`8b3f2bc`). New analyses use seven reference regions and
+strict unrounded shares above 0.10 to trigger an all-three EUR/MID/CSA row. A
+closed disclosure reveals the uncertain components. Captures, display and
+exports retain the mixed-ancestry caveat.
+
+Historical five-region estimator, region registry and geometry remain unchanged.
+Readers accept saved revisions 1/2/3 and dispatch the new view only for its exact
+reference version. The initial 168-marker normal-display policy comes from the
+versioned region registry; partial derived rows remain under the unreliable-raw
+disclosure and zero-marker captures contain null proportions. There is no tested
+seven-region confidence range.
+
+## Scientific evidence
+
+The production-fitter evaluation and subgroup limitations are recorded in
+`data/ref/AIMS_SEVEN_REGION_PROVENANCE.md` and the adjacent measurement JSON
+under `scripts/ancestry-resolution/`. All 7,800 main fits converged. The full-panel
+held-out accepted rule merged 329/1,560 synthetic draws (21.09%); its top-row
+agreement was 96.54% with 10/4/2 wrong-row tail counts. Population-present figures
+are the ceiling, not the expectation. These are conditional simulation results,
+not accuracy or prevalence estimates for real readers. D-122 remains open for
+the scientific ambiguity and unequal loss of detail.
+
+## Review and local checks
+
+- Automated independent review checked estimator arithmetic, saved-version
+  compatibility, authority rechecks, database validation and presentation. It
+  found and fixed v3 lineage-consistency and coverage-roundtrip mismatches.
+- Initial new database contract: 86/86 pgTAP checks. Unchanged historical canonical
+  ancestry integration: 86/86. Actual TypeScript writer→schema→SQL captures
+  passed at 0/1/167/168 markers. All ran inside rolled-back local transactions.
+  A final review then aligned SQL's strict merge comparison with JavaScript's
+  floating-point parsing. Five boundary decisions and ten full-schema checks
+  pass in JavaScript; ten additional SQL assertions await fresh CI because
+  local Docker returned stopped-container/runtime I/O errors. No restart or
+  unrelated-container change was attempted. The earlier SQL counts do not
+  certify this final change.
+- Reference generation is deterministic; its 14 reference/rule/artifact checks
+  pass. New presentation/component/geometry checks pass 18/18, with 42 related
+  new/historical checks passing. A final focused run passed 173 checks across
+  11 estimator, capture, reader, export and presentation files; full-suite
+  suite at `64ab970` passed 5,040 tests across 301 files, with no skips.
+  The earlier run exposed a stale report-choice assertion and blocked email
+  capture because ignored runtime files were present. The assertion now states
+  the implemented lineage coverage limit; the runtime files were preserved
+  outside the checkout. No guard, timeout or assertion was weakened.
+- Full typecheck and lint pass. Readability, claims, routes, names, secrets,
+  legal-source, first-glance, templates, environment and jurisdiction gates
+  have been checked; final staged-tree checks remain part of the release run.
+- The current local browser databases lack required upload/checkpoint/purpose
+  RPCs and contain unrecorded migration applications. A broad migration replay
+  could overwrite later installed behavior. No reset or local disposable
+  override was used. Fresh CI must prove the actual browser journey.
+
+The two new browser scenarios cover combined/separate real upload and analysis
+flows, keyboard disclosure, mobile overflow, figure attribution and withdrawal
+that preserves the source. Existing ancestry browser checks retain their
+geometry, sum, focus, access and label contracts; their reference-specific range
+assertion now requires explicit unavailability for v3. This is not permission
+to fabricate intervals or weaken the historical component tests.
+
+## Component browser review
+
+The actual new component and stylesheet passed 24 Chromium checks and four
+touch-emulation checks at 1280×900 and 390×844. The checks cover both merge
+branches, exact caveats, native disclosure, map keyboard and outside-click
+focus, filter behavior, all share attribution, 1/167/0-marker states, overflow
+and external requests. Review fixed missing muted continents under the filter
+and lost focus after outside clicks. The filter now describes hiding small
+estimates without implying validated confidence. After the map correction,
+33 focused new/historical checks passed; the final component's eight checks
+and touched-file lint passed again after the focus and wording changes.
+
+Four inspected synthetic screenshots and source hashes are retained in
+[`component-review/receipt.json`](component-review/receipt.json). This harness
+uses local Arial/Georgia fallbacks and does not certify production fonts,
+physical devices, the authenticated journey or the final Next client bundle.
+Its 246,558-byte client bundle contains no estimator or marker-table input.
+
+## Still required
+
+The first PR run, `34965226260`, stopped at TypeScript validation before SQL
+or browser execution: the generator passed generic coordinate arrays to a
+library requiring two-number tuples. The generator now validates and converts
+those coordinates explicitly. Nonincremental TypeScript and generator lint
+pass; regeneration preserves the exact 54,102-byte geometry and manifest.
+The failed run remains evidence, not a completed journey check.
+
+The next run, `34965659515` at `2ebbf6c`, passed TypeScript and lint but failed
+two exact-byte synthetic-fixture checks: the gzip compressor recorded a
+different host OS byte on Linux. Both fixtures now use the unspecified OS byte;
+only that metadata byte changes. Complete-byte assertions remain unchanged,
+and all four focused fixture/pipeline tests pass.
+
+The corresponding Vercel build stopped at the reference integrity check.
+An isolated Next.js 16.3.3 production build reproduced 122 changed frequency
+doubles in the JSON import, with key order unchanged. The generated runtime
+JSON string now preserves the original decimal text through bundling. The
+table, manifest hash, version and measured reference inputs are unchanged.
+The isolated build now initializes the actual v3 capture module, retains the
+exact table hash and produces the same complete synthetic fitted result as
+native execution (SHA-256
+`e15dbcd0606c5cece86660c9151092242ec9700d0c45d383aeafd966e9b2a9fd`).
+Its 168-marker result converges in 435 iterations. Twenty-one focused tests,
+generator checks, scoped lint and nonincremental TypeScript pass. This probe
+does not replace the full application build, fresh SQL tests or browser suite.
+
+Run `34967555135` at `ddd04f6` passed units, gates, fresh database tests,
+independent lock checks and the full production build. Browser preflights also
+passed, but Playwright then refused a generator's `import.meta` during test
+discovery. The browser now imports shared case data from a module with no CLI
+entry point; the generator and its exact-regeneration assertions are retained.
+Local discovery finds all 411 tests in 67 files, including both new ancestry
+journeys, without starting servers or setting a disposable override. Both
+fixture-regeneration checks and scoped lint pass. CI now discovers browser tests
+before provisioning its database, while the full execution step remains intact.
+
+Attach the final reviewed commit, fresh CI run, migration receipt, exact
+deployed commit and hosted checks. Inspect the built Next client bundles and
+actual authenticated journey before claiming the release verified.
+G4.4 was already YES and needs regression evidence; its status does not increase
+the gate count. G5.5 remains a required human review. WGS capacity, automatic
+recovery, deadline delivery and Family's separate ancestry reader are outside
+this release's proof.
+
+## Database and full-browser checkpoint
+
+The backwards-compatible v3 validator migration was applied to production as
+`20260915124207_ancestry_seven_region_capture`. A read-only, rolled-back probe
+passed 132 validation checks across 66 actual/malformed/historical captures.
+The guarded canonical probe then verified exact saving and reading of a real
+TypeScript-generated 168-marker synthetic capture, refusal before selection,
+malformed-content refusal, immediate read denial after withdrawal, one exact
+derived-row deletion within 60 seconds and unchanged source metadata plus
+168 observed calls. All synthetic application rows were already rolled back
+before the receipt returned. Exact function, trigger and implicit database
+metadata matched before and after. No provider bytes or mail were sent.
+[`hosted-database-proof.json`](hosted-database-proof.json) records hashes,
+receipts, unchanged advisor findings and the limits of this evidence.
+
+Full CI `34968643349` at `115bec4` passed 5,043 units in 301 files, 2,992 SQL
+assertions in 80 files, the production build and 405 browser cases. It failed
+five browser cases; one dependent serial case did not run. Two failures came
+from outside-click focus, one from viewport drift after map-panel dismissal,
+and two from using historical figure fixtures/counts with the new v3 policy.
+The separate test-diff register describes the fixes and preserved assertions.
+Nine isolated interaction checks and seven fixture checks now pass; this does
+not certify the repaired full browser run. Preview builds are ready, but their
+access protection prevented authenticated inspection. Production application
+deployment remains on the prior main commit at this checkpoint.
+
+An independent Chromium collection of the actual regional component and
+InputProvenance passes all eight new figure fixtures. Native disclosure clicks,
+exact figure keys, non-null regional identities, state/caveat text and all
+non-invariant values pass. Counts are 12/11 for combined/separate normal
+results and 9/8 for the raw states. The only normal-state constants are pinned
+to 0.0% unassignable and 168/168 marker coverage. The current collector,
+component and fixture hashes accompany the full observations in
+[`component-review/figure-differencing.json`](component-review/figure-differencing.json).
+This static component check does not replace actual upload/generation CI.

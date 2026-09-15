@@ -1,12 +1,70 @@
 # Browser-test genome fixture provenance
 
-These fixtures are synthetic test data or explicitly identified public reference
-benchmarks. Synthetic fixtures describe no real person; the public HG001
-benchmark is not synthetic. Never substitute private customer, patient, or
-personal genome data.
+Active browser fixtures are synthetic and describe no real person. The historic
+public HG001 benchmark is retained with its provenance but is not an active
+browser input. Never substitute private customer, patient, or personal genome
+data. Public benchmark genotypes are also excluded from current test inputs.
+
+## synthetic-browser-grch38.vcf.gz
+
+- Classification: independently invented single-sample VCF. No genotype,
+  position, header or allele was read from a person or benchmark sample.
+- Generator: `scripts/generate-synthetic-vcf-fixtures.ts`. For index 0–143,
+  positions are `chr20:(1000003 + 613 * index)`. REF cycles A/C/G/T; ALT is
+  the next cycling letter for the first 127 rows, then REF plus that next
+  letter for 17 insertion rows. GT is 1/1 at every third index and 0/1
+  elsewhere. IDs are absent. These invented REF values are parser inputs,
+  not an assertion about the biological GRCh38 reference base.
+- The real parser returns 144 variant records. Listed-call provenance counts
+  exactly 127 supported calls and 17 unsupported indels, with no no-calls,
+  failed filters or blocks. No ancestry-panel or MT/Y positions are present.
+  The first displayed call is chr20:1000003 A→C, genotype C/C.
+- The browser test retains actual compressed-byte hash/size declaration,
+  preparation, explicit report choice, locus/track response and two-source
+  provenance checks. Its separate `tiny-grch38.vcf` supplies the rsID/gene
+  positives. Zero usable markers yield null shares and the explicit empty
+  note; no numeric estimate or raw-number disclosure is expected.
+- Regenerate or verify with
+  `corepack pnpm exec tsx scripts/generate-synthetic-vcf-fixtures.ts [--check]`.
+  Gzip level 9, timestamp zero, no optional header fields and OS byte 255
+  (unspecified), following [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952).
+  This fixes the platform-dependent header byte without changing the VCF or
+  compressed payload; 985 compressed / 5,619 decoded bytes. The generator
+  writes no decoded artifact. The JSON receipt pins
+  byte hashes, counts, scope and the exact first call; unit tests compare
+  committed bytes to the independent generator and run the parser/fitter.
+- Repository SHA-256:
+  `eb4c2cc7168fe5708b2f48327373776e5812bd59c86b5daac0d510bc84cb6157`.
+
+## aims-regional-merged-grch38.vcf and aims-regional-separate-grch38.vcf
+
+- Classification: deterministic synthetic single-sample GRCh38 files. No
+  genotype came from a person, customer file or benchmark sample.
+- Generator: `e2e/fixtures/generate-regional-aims-vcf.ts`, using only the public
+  allele frequencies in the separately versioned seven-region reference.
+  Each allele copy picks a study region according to declared synthetic
+  weights, then draws its allele with a seeded mulberry32 generator. Every
+  marker is explicitly called, including homozygous reference calls.
+- Merged case: seed 7, intended synthetic weights AFR 0.10 / CSA 0.15 /
+  EUR 0.40 / MID 0.35. The fitted EUR and MID shares both exceed 0.10, so
+  the reporting rule combines all three EUR/MID/CSA shares.
+- Separate case: seed 11, intended synthetic weights AFR 0.90 / EAS 0.10.
+  The fit does not trigger the adaptive merge. These design weights are not
+  expected result values and are not evidence of ancestry accuracy.
+- Both pass the real VCF parser and seven-region estimator, use all 168
+  markers and converge. Generator assertions reject a fixture that fails
+  its intended branch; existing browser fixtures are never rewritten.
+- SHA-256, merged:
+  `048a7e52a8d5c4af2316d91b820fed41f4f30745934506bb4089873bc7d76714`.
+- SHA-256, separate:
+  `da3f79a0aaa8361d46fac5c9422d7e16fb4cb6eb98bd39d8dbef3bbd46d738e4`.
 
 ## HG001_GRCh38_chr20_1000000-1100000.vcf.gz
 
+- Historical artifact only: no current browser or pipeline test uses this file
+  as genetic input.
+  Retained without modification; the synthetic fixture above replaces its
+  active transport and locus role as of 15 September 2026.
 - Classification: public GIAB / NIST HG001 (NA12878) reference benchmark window,
   not invented genotypes. The checked-in parent and upstream source hashes,
   retrieval date and terms are recorded in `data/samples/PROVENANCE.md` and
@@ -343,3 +401,35 @@ personal genome data.
   generator's output and asserts those two calls.
 - Repository SHA-256:
   `8a48094145f0483b80dfd7fb89a87883149215c5d42efdf7d17667cd3bb2c067`.
+
+## Versioned ancestry figure pairs
+
+- Classification: eight independent synthetic single-sample VCFs for the four
+  combined/separate and normal/raw states. No personal genotype is read.
+- `generate-regional-figure-vcf.ts` uses the committed seven-region marker
+  table and deterministic allele draws from `generate-regional-aims-vcf.ts`.
+  Exact seeds, weights and subset rules live in `regional-figure-fixtures.ts`.
+  All normal cases retain 168 markers. Raw A/B cases retain 147/126 by dropping
+  zero-based index 1 modulo 8/4 after drawing all calls.
+- Each B adds one invented parser call at chr20:1000003, A/C, GT 0/1, ID dot.
+  It matches no shipped AIM, report or PGS position and cannot supply MT/Y
+  lineage evidence. Its REF and ALT are invented parser data, with no claim
+  about the biological reference base or functional neutrality. Its removal
+  leaves the complete ancestry fit unchanged; it makes source counts vary.
+- Every displayed regional share changes within each pair. Normal hidden-share
+  chips also change. The fixtures demonstrate data dependence and state
+  handling, not accuracy, prevalence, ancestry identity or interval calibration.
+- `scripts/ancestry-resolution/regional-figure-fixture.test.ts` requires exact
+  regeneration, actual parser counts, correct state, convergence and all share
+  differences. Existing fixture bytes and generators are unchanged.
+
+| Fixture | Repository SHA-256 |
+| --- | --- |
+| `aims-figures-merged-partial-a-grch38.vcf` | `1fb90592b1e1ca75e9f57668fe13ce5a82c4faa431e7d9da1a8ee58fb835ac86` |
+| `aims-figures-merged-partial-b-grch38.vcf` | `1dc743fc84bbc96d8c6bc44ab95d064b16510d036281a2475d442f5cd5e12a9b` |
+| `aims-figures-merged-shown-a-grch38.vcf` | `1c550a6f2cf8fbb6c5378a9cddb2ddc4d0a5b05eefd8905c5ac2d8bc3806a37a` |
+| `aims-figures-merged-shown-b-grch38.vcf` | `5e45c024173d2e85fdbc0e7af07f562b7634ce99a61300ad10da234fc9c0892f` |
+| `aims-figures-separate-partial-a-grch38.vcf` | `c5bb0b1b75d70dcb84036570a71c6e0622aa6764e822ec6b286fa50a55d7b402` |
+| `aims-figures-separate-partial-b-grch38.vcf` | `36cec13ca3cddb7ccb84c6c74f882df86a568616e98c6dbeb8accbbc5d5002c5` |
+| `aims-figures-separate-shown-a-grch38.vcf` | `9ccb8e7b3af0786f6937ebb2622c88f8ad222686dba651fb5db80d0f962e28c0` |
+| `aims-figures-separate-shown-b-grch38.vcf` | `4bf6bdb38b9cb5cfdcf2afb2ef3e0271ae78abdb7927bcebd925dfca5a076586` |

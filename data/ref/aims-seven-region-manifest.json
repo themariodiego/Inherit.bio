@@ -1,0 +1,60 @@
+{
+  "panelId": "aims-hgdp-tgp-168",
+  "referenceVersion": "hgdp-1kg-v3.1.2-cap30-168-v1",
+  "genomeBuild": "GRCh38",
+  "markerCount": 168,
+  "populationCount": 78,
+  "referenceSampleCount": 4097,
+  "frequency": "ALT allele copies / called allele copies, averaged across populations",
+  "populationWeight": "min(30, called allele copies / 2), recomputed for each marker",
+  "probabilityClipping": "None in this table. The estimator clips likelihood frequencies to [0.001, 0.999].",
+  "sourceRelease": "gnomAD v3.1.2 HGDP+1kGP",
+  "sourceVcfPattern": "https://storage.googleapis.com/gcp-public-data--gnomad/release/3.1.2/vcf/genomes/gnomad.genomes.v3.1.2.hgdp_tgp.chr{chrom}.vcf.bgz",
+  "sourceMetadataUrl": "https://storage.googleapis.com/gcp-public-data--gnomad/release/3.1.2/vcf/genomes/gnomad.genomes.v3.1.2.hgdp_1kg_subset_sample_meta.tsv.bgz",
+  "sourceCanonicalSha256": {
+    "markers": "04d47bb12f10013fd70cc279be1581bc9894c06b12f8c2d243d797ba1e01910c",
+    "frequencies": "8fd15a068b9c311a4cadaab1c3e10ee012999edfdf03c5400544474190514389",
+    "populations": "26c2acb3a41bc31d31fbc4b2eefc5b76f50110c9439cdfe273a57d21fc5328a5"
+  },
+  "markerSha256": "54279a25c01e72ed3c22caab0ffe778735a97fae8dffd0df498072a3f9857163",
+  "tableSha256": "fe47ed15f8573ca82925d002aa4f8615492e2cb3ee809d847c2d3f82d2f44253",
+  "regions": [
+    {
+      "code": "AFR",
+      "populationCount": 14,
+      "referenceSampleCount": 989
+    },
+    {
+      "code": "AMR",
+      "populationCount": 9,
+      "referenceSampleCount": 549
+    },
+    {
+      "code": "CSA",
+      "populationCount": 13,
+      "referenceSampleCount": 783
+    },
+    {
+      "code": "EAS",
+      "populationCount": 23,
+      "referenceSampleCount": 817
+    },
+    {
+      "code": "EUR",
+      "populationCount": 13,
+      "referenceSampleCount": 771
+    },
+    {
+      "code": "MID",
+      "populationCount": 4,
+      "referenceSampleCount": 158
+    },
+    {
+      "code": "OCE",
+      "populationCount": 2,
+      "referenceSampleCount": 30
+    }
+  ],
+  "provenance": "data/ref/AIMS_SEVEN_REGION_PROVENANCE.md",
+  "generator": "scripts/ancestry-resolution/generate-seven-region-reference.mts"
+}

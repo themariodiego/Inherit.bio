@@ -37,7 +37,10 @@ describe("independent report choice panel", () => {
   });
   it("enables ancestry independently and links its results while describing the lineage limit", () => {
     const html = render(["ancestry"]);
-    expect(html).toContain("Parent lines are not computed yet.");
+    expect(html).toContain("Compares your file with seven broad reference regions.");
+    expect(html).toContain("Some regions are combined when the panel cannot tell them apart.");
+    expect(html).toContain("Parent lines are checked where your file has usable positions.");
+    expect(html).not.toContain("Parent lines are not computed yet.");
     expect(html).toContain('href="/genome/me/ancestry"');
     expect(html.match(/type="checkbox"/g)).toHaveLength(2);
     expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Generate selected reports<\/button>/);

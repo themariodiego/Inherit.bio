@@ -1,16 +1,12 @@
 # Acceptance matrix
 
-## Current interpretation (2026-09-08)
+## Current interpretation (2026-09-15)
 
-The full-resolution G1–G8 ledger below is the completion measure: **25/65
-verified**, not a development percentage. (Corrected 2026-09-11: the headline
-read 23 while the table below tallied 24. The table is the measure, and a
-mechanical count of its YES/NO column over the 65 G-rows gives 24 YES and 41
-NO. The stale figure predated G1.14, whose closure this very section
-announces. Updated later the same day: G4.4 closes, so the count is 25 YES and
-40 NO, and then G8.4 closes on evidence already produced, making it 26 YES and
-39 NO. Every figure here is the mechanical count of the table, taken after the
-change rather than asserted before it.) The A1–A18 table and its dated
+The full-resolution G1–G8 ledger below is the completion measure: **26/65
+verified**, with 39 still NO. This is the mechanical count of the YES/NO column
+over the 65 G-rows, checked on 2026-09-15. Correcting this stale headline closes
+no gate. The dated release notes below preserve their historical counts and
+deployment evidence; they are not the current total. The A1–A18 table and its dated
 57-test run are historical baseline evidence, not current production claims.
 Later work can supersede that behavior without completing the stricter gates.
 

@@ -4,7 +4,8 @@ import type { Db } from "../genome/load";
 import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles, type AnalysisFileBoundary } from "../genome/own-analysis-access";
 import { currentOwnUploadAccount } from "../uploads/own-upload-context";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_UNREADABLE } from "@/copy/ancestry";
-import { ownAncestryContentSchema, type OwnAncestryContentV2 } from "../uploads/own-ancestry-content";
+import type { OwnAncestryContentV2 } from "../uploads/own-ancestry-content";
+import { ownAncestryCapturedContentSchema } from "../uploads/own-ancestry-captured-content";
 
 export interface AncestryResultRow {
   kind: "admixture" | "mtdna" | "ydna";
@@ -15,7 +16,7 @@ export interface AncestryResultRow {
   model_version: string | null;
   created_at: string;
 }
-const captured = z.object({ content: ownAncestryContentSchema,
+const captured = z.object({ content: ownAncestryCapturedContentSchema,
   completedAt: z.iso.datetime({ offset: true }),
 }).strict();
 export const UNCOMPUTED_LINEAGE = "Lineage has not been computed from this file.";
@@ -71,7 +72,7 @@ async function readOwnCaptures(db: Db, subjectId: string,
       rows.push({ kind: "admixture", result: content.admixture.result,
         support_note: content.admixture.support_note, file_id: fileId,
         model_id: content.admixture.model_id, model_version: content.admixture.model_version, created_at: completedAt });
-      for (const lineage of content.schemaVersion === 2 ? content.lineages : [])
+      for (const lineage of content.schemaVersion !== 1 ? content.lineages : [])
         rows.push({ ...computedLineageRow(lineage), file_id: fileId, created_at: completedAt });
       // Revision 1 captured no lineage at all and must not be dressed up as
       // one: it says so, in the same words it always has.

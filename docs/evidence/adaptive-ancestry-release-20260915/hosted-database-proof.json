@@ -1,0 +1,105 @@
+{
+  "status": "Database checks passed; application release pending",
+  "observedAt": "2026-09-15 13:18:30 UTC",
+  "sourceCommit": "115bec458b86cbdebb0dfb5d3322fcd8a3460d80",
+  "migration": {
+    "version": "20260915124207",
+    "name": "ancestry_seven_region_capture",
+    "sourceSha256": "99e0288b1422070c4dd3dd3568af4dd5509aadca92e24ab52536ecb4bf136e67"
+  },
+  "validatorProbe": {
+    "sha256": "2c3f60936a73e8e6871c6a3b611a2a1c1b69c35e89956b284354ff34b582ae79",
+    "checks": 132,
+    "cases": 66,
+    "completedWithoutError": true,
+    "transaction": "repeatable read read only; rollback",
+    "applicationRowsRead": 0,
+    "applicationRowsWritten": 0,
+    "mailFunctionsCalled": 0,
+    "scope": "Pure captured-content validation and exact body/ACL guards. Not authorization, canonical report generation or a hosted user journey.",
+    "responseNote": "Provider returned the final function metadata SELECT; preceding DO block enforces all132 cases and matching catalog metadata before that final SELECT."
+  },
+  "canonicalProbe": {
+    "sql": {
+      "sha256": "8d6ebde29ce0aea9f81dffb3bbfd6fe4ae1f3b79849a8a4e8e528b88c13daca5",
+      "bytes": 329382
+    },
+    "observed": {
+      "markers": 168,
+      "canonicalProbe": "synthetic-v3-ancestry",
+      "browserEvidence": false,
+      "fixtureMailRows": 0,
+      "unselectedDenied": true,
+      "savedCaptureExact": true,
+      "derivedRowsDeleted": 1,
+      "withdrawnReadDenied": true,
+      "providerBytesWritten": false,
+      "purgeWithin60Seconds": true,
+      "triggerMetadataSha256": "69009ca162bfec42f679f715d66d33a66d0dcc189b1dbbf9734c339a989eb83f",
+      "functionMetadataSha256": "0d27548a133c68aeef3e9e781ccbdc4444b3f1e0b71f87c088ae296f203d15ec",
+      "implicitMetadataSha256": "09396f73ceb413b3126e98dbcc9d605198953eef33d5e2caa622f401f66b70bc",
+      "malformedCaptureDenied": true,
+      "catalogBeforeAfterEqual": true,
+      "fixtureAlreadyRolledBack": true,
+      "sourceMetadataAnd168CallsPreserved": true
+    },
+    "guards": {
+      "functions": 123,
+      "noninternalTriggers": 89,
+      "implicitWritableTables": 29,
+      "readRelationKindChecks": 51,
+      "globalMailSettingsChanged": false,
+      "coreWriterOnly": true
+    },
+    "rawEvidenceSha256": "f279060813b325fbe8c1c787ea97eb0a2da7f6f44ff2c3d8f4d9347051aa97f8",
+    "limits": [
+      "No browser evidence.",
+      "No provider bytes uploaded/read/deleted; storage was synthetic metadata.",
+      "No Auth API/signup/email delivery evidence.",
+      "No durable worker dispatch or WGS evidence.",
+      "No actual mail transport measurement: absence of invoked mail/external paths follows the reviewed closure and exact guards; fixture mail rows remained zero."
+    ]
+  },
+  "advisorComparison": {
+    "securityFindingsUnchanged": true,
+    "security": [
+      {
+        "name": "rls_enabled_no_policy",
+        "level": "INFO",
+        "count": 150
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "level": "WARN",
+        "count": 1
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "level": "WARN",
+        "count": 1
+      }
+    ],
+    "performance": [
+      {
+        "name": "unindexed_foreign_keys",
+        "level": "INFO",
+        "count": 169
+      },
+      {
+        "name": "unused_index",
+        "level": "INFO",
+        "count": 32
+      },
+      {
+        "name": "auth_db_connections_absolute",
+        "level": "INFO",
+        "count": 1
+      }
+    ]
+  },
+  "releaseLimits": [
+    "Production application still uses pre-release main.",
+    "Preview builds succeeded, but authenticated preview inspection was blocked by access protection.",
+    "Full browser CI34968643349 failed5 cases with1 serial case not run; no merge approval is inferred from database proof."
+  ]
+}

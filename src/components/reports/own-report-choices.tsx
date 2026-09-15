@@ -33,7 +33,7 @@ function ReportChoice({ choice, subjectId, onSaved }: {
   return <div className="space-y-3 rounded-xl border border-line p-4">
     <h3 className="font-medium">{choice.label} <span className="text-sm text-ink-muted">· {choice.granted ? "On" : "Off"}</span></h3>
     <p className="text-sm text-ink-muted">{choice.description}</p>
-    {choice.purposeKey === "ancestry" ? <p className="text-sm text-ink-muted">Uses the positions your file covers to estimate five broad regions. Parent lines are not computed yet.</p> : null}
+    {choice.purposeKey === "ancestry" ? <p className="text-sm text-ink-muted">Compares your file with seven broad reference regions. Some regions are combined when the panel cannot tell them apart. Parent lines are checked where your file has usable positions.</p> : null}
     <details className="text-sm">
       <summary className="min-h-11 cursor-pointer py-3 underline underline-offset-2">Permission details · version {choice.artifact.version}</summary>
       <div className="whitespace-pre-wrap leading-relaxed">{choice.artifact.body}</div>

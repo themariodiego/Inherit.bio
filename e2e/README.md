@@ -27,7 +27,7 @@ pointed at the in-test mock Resend API.
 | --- | --- | --- |
 | `auth.spec.ts` | A2 | sign-up → Mailpit verification link → session; password reset |
 | `providers.spec.ts` | A3 | ≥12 providers, source+date metadata, US→NY exclusion flags |
-| `upload-vcf.spec.ts` | A5, A8 | GIAB VCF upload→parse→annotate; rsID/gene search; igv browser; honest ancestry labels |
+| `upload-vcf.spec.ts` | A5, A8 | Synthetic gzip VCF upload→prepare→explicit ancestry generation; rsID/gene search; first-party genome browser; zero-marker ancestry/lineage absence |
 | `copilot.spec.ts` | A9 | local-mode instructions; consent dialog names provider+data classes; tool call + cited answer; revocation |
 | `copilot-refusal.spec.ts` | brief 2262 / 402 / 1040 | the intent gate refuses supplement, dosage, diet, embryo-selection, cross-subject, diagnosis and prognosis prompts with the exact registry string and zero provider calls; an allowed prompt still reaches the provider; a fabricated number in a completion is replaced whole |
 | `tier2-upload.spec.ts` | A10 | BAM resumable TUS upload interrupted+resumed, hashed, re-downloadable |

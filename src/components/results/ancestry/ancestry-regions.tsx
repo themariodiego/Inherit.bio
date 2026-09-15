@@ -24,7 +24,7 @@
  * click outside closes it and returns focus to the region path. Never
  * modal, never a navigation.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import {
   CHIP_LABELS,
@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { AncestryMap } from "./ancestry-map";
 import { RegionList } from "./region-list";
 import { RegionPanel } from "./region-panel";
+import { useAncestryRegionPanel } from "./use-ancestry-region-panel";
 
 /** Where every share on this surface is computed. */
 const ADMIXTURE_MODULE = "src/lib/genome/admixture.ts";
@@ -186,19 +187,10 @@ function ShownRegions({
 }) {
   const { rows, chips } = result.view;
   const [wellSupportedOnly, setWellSupportedOnly] = useState(initialWellSupportedOnly);
-  const [selectedCode, setSelectedCode] = useState<string | null>(null);
-  const pathRefs = useRef(new Map<string, SVGPathElement>());
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const closeRef = useRef<HTMLButtonElement | null>(null);
-  /** Set while focus is returned to a path, so its focus handler does not reopen the panel. */
-  const suppressOpen = useRef(false);
-  /** Counts activations (click, Enter, Space): each one moves focus to Close once the panel has rendered. */
-  const [activation, setActivation] = useState(0);
-
   const visibleRows = rows.filter((row) => !wellSupportedOnly || row.wellSupported);
   const visibleCodes = new Set(visibleRows.map((row) => row.code));
-  const selectedRow = visibleRows.find((row) => row.code === selectedCode) ?? null;
-  const openCode = selectedRow?.code ?? null;
+  const { openCode, pathRef, panelRef, closeRef, onHover, onActivate, close } = useAncestryRegionPanel([...visibleCodes]);
+  const selectedRow = visibleRows.find((row) => row.code === openCode) ?? null;
   const chipShares = wellSupportedOnly ? chips.on : chips.off;
 
   const rowSpecs = rows.map((row) => shareSpec(row.share, row.range));
@@ -220,64 +212,6 @@ function ShownRegions({
   const chipIndex = rows.length;
   const coverageIndex = chipIndex + 2;
   const panelIndex = coverageIndex + (panel.known === false ? 0 : 1);
-
-  const pathRef = useCallback((code: string, element: SVGPathElement | null) => {
-    if (element) pathRefs.current.set(code, element);
-    else pathRefs.current.delete(code);
-  }, []);
-
-  const close = useCallback(
-    (returnFocus: boolean) => {
-      setSelectedCode(null);
-      if (!returnFocus || !openCode) return;
-      const path = pathRefs.current.get(openCode);
-      if (!path) return;
-      suppressOpen.current = true;
-      path.focus();
-      suppressOpen.current = false;
-    },
-    [openCode],
-  );
-
-  const onHover = useCallback((code: string) => {
-    if (suppressOpen.current) return;
-    setSelectedCode(code);
-  }, []);
-
-  const onActivate = useCallback((code: string) => {
-    setSelectedCode(code);
-    setActivation((count) => count + 1);
-  }, []);
-
-  // After an activation the panel has rendered (it may already have been
-  // open from hover or focus): move focus to Close.
-  useEffect(() => {
-    if (activation === 0) return;
-    closeRef.current?.focus();
-  }, [activation]);
-
-  // Escape and clicks outside close the panel and return focus to the path.
-  useEffect(() => {
-    if (!openCode) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      close(true);
-    }
-    function onPointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (panelRef.current?.contains(target)) return;
-      if (target.closest('[data-slot="ancestry-map"] path[data-region]')) return;
-      close(true);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [openCode, close]);
 
   function renderFigures(nodes: ReactNode[]) {
     return (
