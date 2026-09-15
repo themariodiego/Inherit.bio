@@ -3687,3 +3687,39 @@ non-AMR counts go 32/21/9 at 21 markers, 30/14/9 at 42, 22/11/4 at 84, 21/10/6 a
 126 and 21/11/5 at 168 — flat from 84 on, with Druze pinned at 0.48 throughout.
 Doubling the panel again is not a fix either. Both routes out were measured
 rather than assumed, and the limitation is real.
+
+
+## 2026-09-15 — Owner decision: adaptive seven-region ancestry at 0.10
+
+- Authority: the owner's completion objective supplied on 15 September 2026.
+  These are accepted product decisions, recorded before implementation.
+- Fit seven regions using the HGDP+1kGP reference frequencies and the recorded
+  per-population weighting capped at 30 sampled people. Use a new estimator
+  module and analysis version; do not change `src/lib/genome/admixture.ts` or
+  reinterpret stored five-region results as new seven-region analyses.
+- For an individual result, if at least two of Europe, Middle East and
+  Central/South Asia have an unrounded fitted share strictly above 0.10,
+  report all three together as one combined row. Otherwise keep seven rows.
+  The trigger is applied before display rounding.
+- This follows the owner's wording. The earlier measurement script uses
+  `>=` and merges only the members passing its trigger. That is a different
+  rule: rerun held-out measurement for the accepted rule and label its
+  evidence explicitly; do not borrow the earlier 21% figure as validation.
+- Generate the reference table under `data/ref/` with a committed generator,
+  document provenance, then implement the new estimator, tests and surface.
+  The licence audit remains the HGDP+1kGP row in `docs/dataset-licenses.md`.
+- Limitation wherever the figures travel: this adaptive rule cannot tell
+  genuine mixed ancestry from this panel's confusion. It merges both, and
+  people with mixed ancestry disproportionately lose separate region detail.
+
+## 2026-09-15 — Owner decision: expandable combined ancestry rows
+
+- Show the combined row by default. A disclosure control reveals the fitted
+  per-region split together with a plain statement that the panel cannot tell
+  genuine mixed ancestry from its own confusion here; the numbers may be either.
+- Expanded figures are uncertain model components, not restored resolution or
+  evidence of ancestry from each listed region. Keep their provenance, coverage,
+  uncertainty and the adaptive-rule limitation attached in results, saved
+  content, downloads and any other surface that carries the numbers.
+- Retain derived ancestry rows (the standing G5.3a decision). Historical
+  analyses keep their original source, permissions, panel and analysis version.
