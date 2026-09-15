@@ -116,6 +116,16 @@ Its 168-marker result converges in 435 iterations. Twenty-one focused tests,
 generator checks, scoped lint and nonincremental TypeScript pass. This probe
 does not replace the full application build, fresh SQL tests or browser suite.
 
+Run `34967555135` at `ddd04f6` passed units, gates, fresh database tests,
+independent lock checks and the full production build. Browser preflights also
+passed, but Playwright then refused a generator's `import.meta` during test
+discovery. The browser now imports shared case data from a module with no CLI
+entry point; the generator and its exact-regeneration assertions are retained.
+Local discovery finds all 411 tests in 67 files, including both new ancestry
+journeys, without starting servers or setting a disposable override. Both
+fixture-regeneration checks and scoped lint pass. CI now discovers browser tests
+before provisioning its database, while the full execution step remains intact.
+
 Attach the final reviewed commit, fresh CI run, migration receipt, exact
 deployed commit and hosted checks. Inspect the built Next client bundles and
 actual authenticated journey before claiming the release verified.

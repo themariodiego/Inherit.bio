@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { adminClient, axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { REGIONAL_FIXTURES } from "./fixtures/generate-regional-aims-vcf";
+import { REGIONAL_FIXTURES } from "./fixtures/regional-aims-fixtures";
 import { REGIONAL_CAVEAT, REGIONAL_RANGE_NOTE } from "../src/lib/genome/regional-admixture";
 import registry from "../data/ref/regions/regions-v3.json";
 

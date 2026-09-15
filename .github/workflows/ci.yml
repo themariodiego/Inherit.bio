@@ -49,6 +49,8 @@ jobs:
         run: pnpm typecheck
       - name: Lint
         run: pnpm lint
+      - name: Browser test discovery
+        run: pnpm exec playwright test --list --reporter=list
       - name: Unit tests
         run: pnpm test
       - name: Legal placeholder gate
