@@ -28,6 +28,9 @@ export type CollectedFigure = {
    * unassignable chip named an ordinal and would have silently moved to the
    * other chip if their order ever changed.
    *
+   * `data-split-region` identifies an uncertain component inside an adaptive
+   * combined row. Its displayed position cannot identify a region either.
+   *
    * `data-cell` is the Family side-by-side surface's own: one table cell is
    * one report for one person, and 660 of them render figures of just three
    * shapes, so without it 324 report-coverage figures are separated by
@@ -44,14 +47,14 @@ export function collectFigures(): CollectedFigure[] {
   const nodes = document.querySelectorAll<HTMLElement>("[data-figure-kind]");
   return [...nodes].map((node) => {
     const valueNode = node.querySelector<HTMLElement>('[data-slot="figure-value"]');
-    const identified = node.closest<HTMLElement>("[data-region], [data-chip], [data-claim-id], [data-cell]");
+    const identified = node.closest<HTMLElement>("[data-region], [data-split-region], [data-chip], [data-claim-id], [data-cell]");
     return {
       kind: node.getAttribute("data-figure-kind") ?? "",
       figureClass: node.getAttribute("data-figure-class"),
       basis: node.getAttribute("data-figure-basis"),
       provenance: node.getAttribute("data-provenance"),
       context: identified
-        ? identified.getAttribute("data-region") ?? identified.getAttribute("data-chip")
+        ? identified.getAttribute("data-region") ?? identified.getAttribute("data-split-region") ?? identified.getAttribute("data-chip")
           ?? identified.getAttribute("data-claim-id") ?? identified.getAttribute("data-cell")
         : null,
       value: (valueNode ?? node).innerText.replace(/\s+/g, " ").trim(),

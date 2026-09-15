@@ -14,6 +14,8 @@ import { assertEveryFigureMoved } from "./figure-differencing";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { GATE_BUTTON } from "../src/copy/family/person";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
+import { REGIONAL_FIGURE_PAIRS } from "./fixtures/regional-figure-fixtures";
+import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
 
 /**
  * G8.3: every number is seeded, proved by differencing.
@@ -44,7 +46,8 @@ const BROWSER = "/genome/me/data/browser?q=rs762551";
  * here, and that person's whole account is what the surfaces render.
  */
 async function figuresFor(page: Page, label: string, fixture: string,
-  purposes: [OwnReportPurpose, ...OwnReportPurpose[]], surfaces: readonly string[]) {
+  purposes: [OwnReportPurpose, ...OwnReportPurpose[]], surfaces: readonly string[],
+  ancestry?: { merged: boolean; shown: boolean; markers: number }) {
   const user = { email: `figures-${label}-${RUN_ID}@e2e.local`, password: `e2e-figures-${label}-pw` };
   await createConfirmedUser(user.email, user.password);
   await signIn(page, user.email, user.password);
@@ -53,7 +56,44 @@ async function figuresFor(page: Page, label: string, fixture: string,
   const collected = new Map<string, Map<string, CollectedFigure>>();
   for (const surface of surfaces) {
     await page.goto(surface);
-    collected.set(surface, keyed(await page.evaluate(collectFigures)));
+    if (ancestry && surface === ANCESTRY) {
+      const regional = page.locator('[data-slot="regional-ancestry"]');
+      await expect(regional).toHaveCount(1);
+      if (ancestry.shown) {
+        await expect(regional).toHaveAttribute("data-fit-converged", "true");
+        await expect(regional.locator('[data-slot="region-row"]')).toHaveCount(ancestry.merged ? 5 : 7);
+        await expect(regional.locator('[data-slot="raw-numbers"]')).toHaveCount(0);
+        await expect(regional.locator('[data-chip="unassignable"] [data-slot="figure-value"]')).toHaveText("0.0%");
+        await expect(regional.locator('[data-figure-kind="coverage"]')).toHaveText("read 168 of the 168 positions this needs");
+      } else {
+        await expect(regional.locator('[data-slot="grey-state"]')).toContainText(`only ${ancestry.markers} of 168`);
+        await expect(regional.getByRole("switch")).toHaveCount(0);
+        await expect(regional.locator('[data-slot="ancestry-chip"]')).toHaveCount(0);
+        await expect(regional.locator('[data-figure-kind="coverage"]')).toHaveCount(0);
+        const raw = regional.locator('details[data-slot="raw-numbers"]');
+        await expect(raw).not.toHaveAttribute("open", "");
+        await raw.locator("summary").first().click();
+        await expect(raw).toHaveAttribute("open", "");
+        await expect(raw.locator('[data-slot="raw-numbers-list"] > li')).toHaveCount(ancestry.merged ? 5 : 7);
+        await expect(raw).toContainText(`Only ${ancestry.markers} of the required 168 usable markers were read.`);
+      }
+      await expect(regional.locator('[data-slot="regional-caveat"]')).toHaveText(REGIONAL_CAVEAT);
+      const split = regional.locator('details[data-slot="regional-split"]');
+      await expect(split).toHaveCount(ancestry.merged ? 1 : 0);
+      if (ancestry.merged) {
+        await split.locator("summary").click();
+        await expect(split).toHaveAttribute("open", "");
+        await expect(split.locator('[data-slot="regional-split-caveat"]')).toHaveText(REGIONAL_CAVEAT);
+        for (const code of ["EUR", "MID", "CSA"]) await expect(split.locator(`[data-split-region="${code}"]`)).toBeVisible();
+      }
+      await expect(regional.getByRole("dialog")).toHaveCount(0);
+    }
+    const figures = await page.evaluate(collectFigures);
+    if (ancestry && surface === ANCESTRY) {
+      expect(figures).toHaveLength(ancestry.shown ? (ancestry.merged ? 12 : 11) : (ancestry.merged ? 9 : 8));
+      expect(figures.filter(figure => figure.kind === "ancestry-share" && figure.context === null)).toEqual([]);
+    }
+    collected.set(surface, keyed(figures));
   }
   return collected;
 }
@@ -61,23 +101,28 @@ async function figuresFor(page: Page, label: string, fixture: string,
 /** Two isolated accounts, because a seed is a person here and not a parameter. */
 async function bothSeeds(browser: Browser, surfaces: readonly string[],
   purposes: [OwnReportPurpose, ...OwnReportPurpose[]],
-  seedA: { label: string; fixture: string },
-  seedB: { label: string; fixture: string }) {
+  seedA: { label: string; fixture: string; markers?: number },
+  seedB: { label: string; fixture: string; markers?: number },
+  ancestry?: { merged: boolean; shown: boolean }) {
   const contexts = [await browser.newContext(), await browser.newContext()];
   try {
-    const a = await figuresFor(await contexts[0]!.newPage(), seedA.label, seedA.fixture, purposes, surfaces);
-    const b = await figuresFor(await contexts[1]!.newPage(), seedB.label, seedB.fixture, purposes, surfaces);
+    const a = await figuresFor(await contexts[0]!.newPage(), seedA.label, seedA.fixture, purposes, surfaces,
+      ancestry ? { ...ancestry, markers: seedA.markers! } : undefined);
+    const b = await figuresFor(await contexts[1]!.newPage(), seedB.label, seedB.fixture, purposes, surfaces,
+      ancestry ? { ...ancestry, markers: seedB.markers! } : undefined);
     return { a, b };
   } finally {
     for (const context of contexts) await context.close();
   }
 }
 
-test("every figure on the ancestry surface moves between two seeds", async ({ browser }) => {
+// Each pair reaches the same intentional v3 display state through real uploads.
+// Historic five-region fixture bytes and their estimator tests stay unchanged.
+for (const pair of REGIONAL_FIGURE_PAIRS) test(`every figure on the ancestry surface moves between two seeds: ${pair.id}`, async ({ browser }) => {
   test.setTimeout(300_000);
   const { a, b } = await bothSeeds(browser, [ANCESTRY], ["ancestry"],
-    { label: "ancestry-a", fixture: "e2e/fixtures/aims-mixed-grch38.vcf" },
-    { label: "ancestry-b", fixture: "e2e/fixtures/aims-mixed-b-grch38.vcf" });
+    { label: `${pair.id}-a`, fixture: `e2e/fixtures/${pair.a.name}`, markers: pair.a.markers },
+    { label: `${pair.id}-b`, fixture: `e2e/fixtures/${pair.b.name}`, markers: pair.b.markers }, pair);
   assertEveryFigureMoved(ANCESTRY, a.get(ANCESTRY)!, b.get(ANCESTRY)!);
 });
 

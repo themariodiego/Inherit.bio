@@ -1,0 +1,715 @@
+{
+  "browser": "151.0.7922.34",
+  "scope": "Static actual React components plus parsed InputProvenance; current collector; no application or database",
+  "invariants": {
+    "ancestry-share|ancestry|modelled|computed:src/lib/genome/regional-admixture.ts|unassignable|1": "0.0%",
+    "coverage|quality|observed|computed:src/lib/genome/regional-admixture.ts|-|1": "read 168 of the 168 positions this needs"
+  },
+  "results": [
+    {
+      "pair": "merged-shown",
+      "fixture": "aims-figures-merged-shown-a-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "unassignable",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "hidden",
+          "value": "1.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR-MID-CSA",
+          "value": "53.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "19.3%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "33.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "26.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "18.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "1.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": null,
+          "value": "read 168 of the 168 positions this needs"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 168 of 168 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "merged-shown",
+      "fixture": "aims-figures-merged-shown-b-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "unassignable",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "hidden",
+          "value": "1.8%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR-MID-CSA",
+          "value": "65.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "31.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "34.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "28.6%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "3.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "1.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "0.6%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": null,
+          "value": "read 168 of the 168 positions this needs"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 169 of 169 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "separate-shown",
+      "fixture": "aims-figures-separate-shown-a-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "unassignable",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "hidden",
+          "value": "2.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "46.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "44.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "6.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "2.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "0.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": null,
+          "value": "read 168 of the 168 positions this needs"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 168 of 168 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "separate-shown",
+      "fixture": "aims-figures-separate-shown-b-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "unassignable",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "hidden",
+          "value": "1.4%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "35.1%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "32.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "28.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "3.3%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "1.4%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": null,
+          "value": "read 168 of the 168 positions this needs"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 169 of 169 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "merged-partial",
+      "fixture": "aims-figures-merged-partial-a-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR-MID-CSA",
+          "value": "60.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "32.6%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "5.9%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "0.6%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "47.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "13.7%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 147 of 147 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "merged-partial",
+      "fixture": "aims-figures-merged-partial-b-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR-MID-CSA",
+          "value": "49.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "26.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "12.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "11.2%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "0.4%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "31.6%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "18.1%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 127 of 127 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "separate-partial",
+      "fixture": "aims-figures-separate-partial-a-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "44.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "29.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "14.8%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "9.4%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "1.4%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 147 of 147 listed, supported records"
+        }
+      ]
+    },
+    {
+      "pair": "separate-partial",
+      "fixture": "aims-figures-separate-partial-b-grch38.vcf",
+      "figures": [
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AFR",
+          "value": "46.3%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EAS",
+          "value": "36.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "AMR",
+          "value": "14.5%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "CSA",
+          "value": "2.5%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "EUR",
+          "value": "0.7%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "MID",
+          "value": "0.0%"
+        },
+        {
+          "kind": "ancestry-share",
+          "figureClass": "ancestry",
+          "basis": "modelled",
+          "provenance": "computed:src/lib/genome/regional-admixture.ts",
+          "context": "OCE",
+          "value": "0.0%"
+        },
+        {
+          "kind": "coverage",
+          "figureClass": "quality",
+          "basis": "observed",
+          "provenance": "computed:genome/input-provenance",
+          "context": null,
+          "value": "calls in 127 of 127 listed, supported records"
+        }
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "e2e/figure-collector.ts": "2000588622c3d1b5a1835f2ff17d80ed0a1755e81b781966b53d4ecf4af158b8",
+    "src/components/results/ancestry/regional-ancestry-regions.tsx": "b723f2b5cb9282fd6ccbc70cd812d7446e2e1bb55f79e172f75e31e4d96a0d49",
+    "src/components/reports/input-provenance.tsx": "8c5b4f3190601a090d0e86e864919497893ad067a8ff331ae58907d56c597b20",
+    "e2e/fixtures/aims-figures-merged-partial-a-grch38.vcf": "1fb90592b1e1ca75e9f57668fe13ce5a82c4faa431e7d9da1a8ee58fb835ac86",
+    "e2e/fixtures/aims-figures-merged-partial-b-grch38.vcf": "1dc743fc84bbc96d8c6bc44ab95d064b16510d036281a2475d442f5cd5e12a9b",
+    "e2e/fixtures/aims-figures-merged-shown-a-grch38.vcf": "1c550a6f2cf8fbb6c5378a9cddb2ddc4d0a5b05eefd8905c5ac2d8bc3806a37a",
+    "e2e/fixtures/aims-figures-merged-shown-b-grch38.vcf": "5e45c024173d2e85fdbc0e7af07f562b7634ce99a61300ad10da234fc9c0892f",
+    "e2e/fixtures/aims-figures-separate-partial-a-grch38.vcf": "c5bb0b1b75d70dcb84036570a71c6e0622aa6764e822ec6b286fa50a55d7b402",
+    "e2e/fixtures/aims-figures-separate-partial-b-grch38.vcf": "36cec13ca3cddb7ccb84c6c74f882df86a568616e98c6dbeb8accbbc5d5002c5",
+    "e2e/fixtures/aims-figures-separate-shown-a-grch38.vcf": "9ccb8e7b3af0786f6937ebb2622c88f8ad222686dba651fb5db80d0f962e28c0",
+    "e2e/fixtures/aims-figures-separate-shown-b-grch38.vcf": "4bf6bdb38b9cb5cfdcf2afb2ef3e0271ae78abdb7927bcebd925dfca5a076586"
+  },
+  "scopeLimits": [
+    "Static actual components in Chromium; no authenticated application, database or Storage transport.",
+    "Full four-pair upload and generation journeys await fresh CI."
+  ]
+}
