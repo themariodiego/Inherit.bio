@@ -15,6 +15,11 @@ lease expiry and cleanup exclusion. It supplements the historical SQL suites.
 The 145 focused unit tests and six existing retry-policy tests passed without
 skips. SQL and complete browser execution remain required in fresh CI; the
 change does not establish hosted capacity or automatic background recovery.
+Review added atomic retirement of only the current successful attempt. All
+original 44 SQL assertions remain unchanged; 22 additional checks exercise
+publication refusal/success/rollback, stale cleanup denial, unrelated attempts
+and parent cascade. A lost-success-response retry unit also passes. Rejected
+attempts retain their cleanup fence; no existing assertion or guard is relaxed.
 See `docs/finalization-fenced-recovery.md` for the implementation limits.
 
 ## Synthetic gzip header is independent of its build host · 2026-09-15

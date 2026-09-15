@@ -11,8 +11,31 @@ create table private.own_upload_finalization_attempts (
 );
 alter table private.own_upload_finalization_attempts enable row level security;
 revoke all on private.own_upload_finalization_attempts from public,anon,authenticated,inherit_upload_only,service_role;
--- The lease is not genetic payload and cascades with the already registered
--- upload-session cleanup/account deletion; there is no new retained object.
+-- An operational child of the already registered upload session. Parent purge
+-- and account deletion cascade to it, but promotion retains the parent and
+-- cancels its staging purge, so successful publication must retire this child.
+create function private.retire_promoted_own_upload_finalization_attempt_v1() returns trigger
+language plpgsql security definer set search_path=pg_catalog,private as $function$
+begin
+ delete from private.own_upload_finalization_attempts
+  where upload_id=new.id and claim=old.finalization_claim;
+ return new;
+end;
+$function$;
+revoke all on function private.retire_promoted_own_upload_finalization_attempt_v1()
+ from public,anon,authenticated,inherit_upload_only,service_role;
+-- Completion checks the live claim, storage identity and staging absence under
+-- the upload row lock before promotion. Deletion is part of that transaction:
+-- a failed completion restores ownership. A lost success response can retry
+-- the retained promoted parent, which returns the existing file without a lease.
+create trigger retire_promoted_own_upload_finalization_attempt
+ after update of status on public.upload_sessions
+ for each row when (old.status='validating' and new.status='promoted'
+  and new.finalized_file_id is not null
+  and new.finalization_claim is not distinct from old.finalization_claim)
+ execute function private.retire_promoted_own_upload_finalization_attempt_v1();
+-- Keep rejected attempts until parent cleanup: abort still needs their lease
+-- fence before handing out provider deletion keys, including repeated aborts.
 
 create or replace function private.own_upload_finalization_v1(p_account_id uuid,p_session_id uuid,p_upload_id uuid,p_claim uuid,p_start boolean)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private

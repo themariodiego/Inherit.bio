@@ -27,6 +27,32 @@ provider deletion. The old abort RPC is also fenced: a superseded or expired v2
 holder cannot obtain cleanup keys. Once abort marks the upload rejected, a new
 finalizer cannot enter while provider cleanup is pending.
 
+## Attempt lifecycle
+
+`private.own_upload_finalization_attempts` is an operational cascade child of
+the registered `public.upload_sessions` target. It holds only the upload ID,
+claim and lease expiry. Existing parent deletion cascades to this child; no
+independent retention clock or provider object is introduced.
+
+Successful promotion retains the upload session and cancels its staging purge.
+It therefore retires the exact current attempt atomically when the parent moves
+from `validating` to `promoted`, keeps the same claim and binds a finalized file.
+The existing completion function still checks current authority, a live lease,
+the final object's identity and size, the raw hash, and staging absence before
+that transition. Any transaction failure restores the attempt and publication
+together. A lost success response retries the retained parent and receives its
+existing file without creating another attempt or requesting cleanup keys.
+
+Rejection preserves the attempt until parent cleanup. Removing it at rejection
+would bypass the lease check used by repeated abort requests. Expired or stale
+holders must still fail that check before receiving provider deletion targets.
+No failed or uncertain validation/copy response deletes the current attempt.
+
+This change does not resolve the pre-existing retention gap for promoted
+upload-session metadata. The existing checkpoint trigger already retires
+checkpoints on transitions out of validation and remains unchanged. No
+historical checkpoint residuals were measured in this review.
+
 ## Compatibility and limits
 
 - The application route uses v2. Existing v1 contracts and their assertions are
@@ -72,8 +98,16 @@ current migration retains their required explanation that recovery still needs
 the originating session. No assertion, guard or timeout was weakened.
 Hosted recovery and capacity remain unmeasured.
 
-The 44 pgTAP assertions cover actual claim rotation, initial-validation restart,
+The original 44 pgTAP assertions cover actual claim rotation, initial-validation restart,
 legacy takeover, stale read/write/publication/abort refusal, lease renewal,
 terminal cleanup exclusion, session withdrawal, upload expiry and ACLs. It has
 not been run locally: database access and DDL were explicitly excluded because
 the host is unstable. Fresh CI must run it and the historical SQL suites.
+The lifecycle extension preserves those assertions and adds actual publication,
+rollback, exact-attempt retirement, unrelated-attempt isolation, parent cascade,
+lost-response retry and rejected-owner fencing cases. The route unit adds a lost
+successful-publication response followed by a same-upload retry after attempt
+retirement. The SQL file now has 66 assertions; all original 44 remain byte-for-byte
+unchanged and in order. The focused v2 route suite passed all 12 tests, and scoped
+ESLint passed with zero warnings. SQL execution remains pending; no local database
+was started.

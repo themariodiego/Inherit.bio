@@ -143,17 +143,109 @@ savepoint expired_upload;
 update public.upload_sessions set expires_at=created_at+interval '1 microsecond' where id=pg_temp.upload_id();
 select throws_ok($$select pg_temp.begin_v2()$$,'42501','not_found','re-entry cannot extend an expired upload session');
 rollback to expired_upload;
+
+-- Promotion retains the upload parent and cancels staging retention, so the
+-- exact operational attempt must retire in the same publication transaction.
+-- Preserve the original lifecycle fixture below by rolling this branch back.
+savepoint promotion_lifecycle;
+create temporary table unrelated_upload as select public.issue_own_storage_upload_v1(
+ '76500000-0000-4000-8000-000000000001','76500000-0000-4000-8000-000000000010',
+ (select id from checkpoint_subject),'VCF',8,repeat('a',64)) receipt;
+grant select on unrelated_upload to service_role;
+set local role service_role;
+insert into storage.objects(bucket_id,name,owner_id,metadata)
+ values('genomes',(select receipt->>'stagingKey' from unrelated_upload),
+  '76500000-0000-4000-8000-000000000001','{"size":8}');
+insert into storage.objects(id,bucket_id,name,metadata)
+ values('76500000-0000-4000-8000-000000000098','genomes',
+  (select receipt->>'finalKey' from attempts where label='third'),'{"size":8}');
+reset role;
+create temporary table unrelated_attempt as select public.begin_own_upload_finalization_v2(
+ '76500000-0000-4000-8000-000000000001','76500000-0000-4000-8000-000000000010',
+ (select (receipt->>'uploadId')::uuid from unrelated_upload)) receipt;
+create function pg_temp.complete_current(p_hash text default repeat('a',64)) returns jsonb language sql as $$
+ select public.complete_own_upload_finalization_v1('76500000-0000-4000-8000-000000000001',
+  '76500000-0000-4000-8000-000000000010',pg_temp.upload_id(),pg_temp.claim('third'),
+  '76500000-0000-4000-8000-000000000098',p_hash,repeat('b',64)); $$;
+select throws_ok($$select pg_temp.complete_current()$$,'42501','upload_unavailable',
+ 'failed publication with staging present preserves the attempt');
+select is((select claim from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ pg_temp.claim('third'),'publication refusal retains exact current ownership');
+-- Synthetic metadata only, as in the historical completion fixture. No actual
+-- provider object is created or removed by this SQL test.
+select set_config('storage.allow_delete_query','true',true);
+delete from storage.objects where bucket_id='genomes' and name=(select receipt->>'stagingKey' from checkpoint_upload);
+select throws_ok($$select pg_temp.complete_current(repeat('c',64))$$,'42501','upload_unavailable',
+ 'invalid whole-object evidence cannot retire ownership');
+select is((select claim from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ pg_temp.claim('third'),'hash refusal retains the exact current attempt');
+
+savepoint atomic_promotion;
+create temporary table rolled_back_receipt as select pg_temp.complete_current() receipt;
+select is((select count(*) from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ 0::bigint,'successful completion retires the attempt before its transaction returns');
+rollback to atomic_promotion;
+select is((select claim from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ pg_temp.claim('third'),'rolling back publication also restores its exact attempt');
+select is((select status::text from public.upload_sessions where id=pg_temp.upload_id()),'validating',
+ 'publication rollback restores the validating parent');
+select is((select count(*) from public.genome_files where storage_object_id='76500000-0000-4000-8000-000000000098'),
+ 0::bigint,'publication rollback leaves no file from the abandoned transaction');
+
+create temporary table promoted_receipt as select pg_temp.complete_current() receipt;
+select is((select receipt->>'status' from promoted_receipt),'finalized_ready_for_processing',
+ 'the fenced holder completes through the unchanged publication contract');
+select is((select count(*) from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ 0::bigint,'successful v2 publication removes its operational attempt');
+select is((select count(*) from public.upload_sessions where id=pg_temp.upload_id() and status='promoted'
+ and finalized_file_id=(select (receipt->>'fileId')::uuid from promoted_receipt)),1::bigint,
+ 'attempt retirement preserves the promoted parent and exact file binding');
+select is((select count(*) from private.own_upload_finalization_checkpoints where upload_id=pg_temp.upload_id()),
+ 0::bigint,'the existing terminal checkpoint trigger still retires current progress');
+select is((select claim from private.own_upload_finalization_attempts
+ where upload_id=(select (receipt->>'uploadId')::uuid from unrelated_upload)),
+ (select (receipt->>'claim')::uuid from unrelated_attempt),'promotion leaves another upload attempt unchanged');
+select is(pg_temp.begin_v2(),jsonb_build_object('status','complete','fileId',(select receipt->>'fileId' from promoted_receipt)),
+ 'an uncertain success response retries the retained parent without creating another attempt');
+select is((select count(*) from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ 0::bigint,'successful retry does not recreate a retired lease');
+select throws_ok($$select pg_temp.authorize(pg_temp.claim('third'))$$,'42501','not_found',
+ 'retired ownership cannot authorize more work after promotion');
+select throws_ok($$select pg_temp.abort(pg_temp.claim('third'))$$,'42501','not_found',
+ 'retired ownership cannot obtain deletion keys for the committed file');
+-- Exercise the FK itself on the second synthetic parent. This is a cascade
+-- assertion, not an assertion that a provider purge or account deletion ran.
+delete from public.upload_sessions where id=(select (receipt->>'uploadId')::uuid from unrelated_upload);
+select is((select count(*) from private.own_upload_finalization_attempts
+ where upload_id=(select (receipt->>'uploadId')::uuid from unrelated_upload)),0::bigint,
+ 'deleting a registered parent cascades to its remaining attempt');
+select is((select count(*) from public.upload_sessions where id=pg_temp.upload_id()),1::bigint,
+ 'cascading another parent does not remove the promoted parent');
+rollback to promotion_lifecycle;
+
 set local role service_role;
 select is(pg_temp.abort(pg_temp.claim('third'))->>'stagingKey',(select receipt->>'stagingKey' from checkpoint_upload),'current holder receives only exact cleanup target');
 select throws_ok($$select pg_temp.begin_v2()$$,'42501','not_found','terminal cleanup claim prevents takeover before provider removal');
 reset role;
 select is((select status::text from public.upload_sessions where id=pg_temp.upload_id()),'rejected','abort marks terminal state before returning keys');
 select ok((select finalization_cleanup_pending from public.upload_sessions where id=pg_temp.upload_id()),'cleanup remains pending until provider evidence');
+select is((select claim from private.own_upload_finalization_attempts where upload_id=pg_temp.upload_id()),
+ pg_temp.claim('third'),'rejection keeps the attempt needed to fence repeated cleanup requests');
+savepoint rejected_attempt_expired;
+update private.own_upload_finalization_attempts set lease_expires_at=clock_timestamp()-interval '1 second'
+ where upload_id=pg_temp.upload_id();
+select throws_ok($$select pg_temp.abort(pg_temp.claim('third'))$$,'42501','not_found',
+ 'retaining the rejected attempt prevents an expired cleanup holder from reacquiring keys');
+rollback to rejected_attempt_expired;
 select ok(exists(select 1 from storage.objects where name=(select receipt->>'stagingKey' from checkpoint_upload)),'SQL ownership tests do not imply provider deletion');
 select ok(not has_table_privilege('service_role','private.own_upload_finalization_attempts','update'),'worker cannot forge its lease by table write');
 select ok(not has_function_privilege('authenticated','public.begin_own_upload_finalization_v2(uuid,uuid,uuid)','execute'),'browser cannot start privileged finalization');
 select ok(not has_function_privilege('inherit_upload_only','public.authorize_own_upload_finalization_v2(uuid,uuid,uuid,uuid)','execute'),'upload token cannot renew finalization');
 select ok((select relrowsecurity from pg_class where oid='private.own_upload_finalization_attempts'::regclass),'private lease table also enables RLS');
+select ok(not has_function_privilege('service_role','private.retire_promoted_own_upload_finalization_attempt_v1()','execute')
+ and not has_function_privilege('authenticated','private.retire_promoted_own_upload_finalization_attempt_v1()','execute')
+ and not has_function_privilege('inherit_upload_only','private.retire_promoted_own_upload_finalization_attempt_v1()','execute'),
+ 'attempt retirement is trigger-only, not a worker or browser cleanup bypass');
 select ok(exists(select 1 from pg_constraint where conrelid='private.own_upload_finalization_attempts'::regclass
  and confrelid='public.upload_sessions'::regclass and contype='f' and confdeltype='c'),'lease cascades with registered upload-session cleanup');
 select * from finish();

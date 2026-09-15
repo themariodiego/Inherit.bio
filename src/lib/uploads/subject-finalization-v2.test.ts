@@ -160,6 +160,42 @@ it("preserves a valid stored source after a short range response and retries it"
   expect((await send()).status).toBe(200);
 });
 
+it("recovers a lost promotion response from the retained parent after its attempt is retired", async () => {
+  let promoted = false;
+  mocks.rpc.mockImplementation(async (name, params) => {
+    if (promoted && name === "begin_own_upload_finalization_v2") {
+      return { data: { status: "complete", fileId }, error: null };
+    }
+    const result = rpc(name, params);
+    if (name === "complete_own_upload_finalization_v1") {
+      expect(result.error).toBeNull();
+      promoted = true;
+      activeClaim = null; // SQL promotion retires only this attempt atomically.
+      throw new Error("synthetic lost successful promotion response");
+    }
+    return result;
+  });
+  const uncertain = await send();
+  expect(uncertain.status).toBe(503);
+  expect(uncertain.headers.get("Retry-After")).toBe("60");
+  expect(activeClaim).toBeNull();
+  expect(mocks.rpc.mock.calls.some(([name]) => name === "abort_own_upload_finalization_v1")).toBe(false);
+  expect(mocks.remove).toHaveBeenCalledExactlyOnceWith([stagingKey]);
+  mocks.rpc.mockClear(); mocks.fetch.mockClear(); mocks.copy.mockClear(); mocks.remove.mockClear(); mocks.info.mockClear();
+
+  const retry = await send();
+  expect(retry.status).toBe(200);
+  expect(await retry.json()).toEqual(receipt);
+  expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("begin_own_upload_finalization_v2", {
+    p_account_id: accountId, p_session_id: sessionId, p_upload_id: uploadId,
+  });
+  expect(activeClaim).toBeNull();
+  expect(mocks.fetch).not.toHaveBeenCalled();
+  expect(mocks.copy).not.toHaveBeenCalled();
+  expect(mocks.remove).not.toHaveBeenCalled();
+  expect(mocks.info).not.toHaveBeenCalled();
+});
+
 it("writes a real partial digest and resumes from its exact complete-range offset after a lost acknowledgement", async () => {
   setSource(Buffer.from(vcf + row.repeat(Math.ceil(INGEST_CHUNK_MAXIMUM_BYTES / row.length) + 1)));
   let loseAck = true;
