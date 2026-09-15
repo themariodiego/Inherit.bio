@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import { CHIP_LABELS, IDENTITY, MARKER_GLOSS, RAW_NUMBERS_SUMMARY } from "@/copy/ancestry";
 import {
@@ -14,6 +14,7 @@ import { REGIONAL_COMBINED_CODE, REGIONAL_SPLIT_CODES, type RegionalReferenceFac
 import type { RegionalAdmixtureResult } from "@/lib/genome/regional-admixture";
 import type { AncestryShareSpec, StandaloneFigureSpec } from "@/lib/figures/spec";
 import { AncestryMap } from "./ancestry-map";
+import { useAncestryRegionPanel } from "./use-ancestry-region-panel";
 
 const PROVENANCE = { kind: "computed", module: "src/lib/genome/regional-admixture.ts" } as const;
 function shareSpec(share: number): AncestryShareSpec {
@@ -80,15 +81,9 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
   const { rows, split } = presentRegionalShares(result);
   const reportingShapes = regionalReportingShapes(shapes, result.reporting.merged);
   const [wellSupportedOnly, setWellSupportedOnly] = useState(initialWellSupportedOnly);
-  const [selectedCode, setSelectedCode] = useState<string | null>(null);
-  const [activation, setActivation] = useState(0);
-  const pathRefs = useRef(new Map<string, SVGPathElement>());
-  const panelRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const suppressOpen = useRef(false);
   const visibleRows = rows.filter(row => !wellSupportedOnly || row.wellSupported);
-  const selectedRow = visibleRows.find(row => row.code === selectedCode) ?? null;
-  const openCode = selectedRow?.code ?? null;
+  const { openCode, pathRef, panelRef, closeRef, onHover, onActivate, close } = useAncestryRegionPanel(visibleRows.map(row => row.code));
+  const selectedRow = visibleRows.find(row => row.code === openCode) ?? null;
   const chips = regionalChipShares(rows, wellSupportedOnly);
   const splitIndex = rows.length;
   const chipIndex = splitIndex + split.length;
@@ -101,44 +96,6 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
       read: result.markersUsed, needed: panel.markers },
     ...(selectedRow ? [shareSpec(selectedRow.share)] : []),
   ];
-  const pathRef = useCallback((code: string, element: SVGPathElement | null) => {
-    if (element) pathRefs.current.set(code, element);
-    else pathRefs.current.delete(code);
-  }, []);
-  const close = useCallback((returnFocus: boolean) => {
-    setSelectedCode(null);
-    if (!returnFocus || !openCode) return;
-    suppressOpen.current = true;
-    pathRefs.current.get(openCode)?.focus();
-    suppressOpen.current = false;
-  }, [openCode, setSelectedCode]);
-  function onHover(code: string) {
-    if (!suppressOpen.current) setSelectedCode(code);
-  }
-  function onActivate(code: string) {
-    setSelectedCode(code);
-    setActivation(count => count + 1);
-  }
-  useEffect(() => {
-    if (activation > 0) closeRef.current?.focus();
-  }, [activation]);
-  useEffect(() => {
-    if (!openCode) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") { event.preventDefault(); close(true); }
-    }
-    function onClick(event: MouseEvent) {
-      if (!(event.target instanceof Element) || panelRef.current?.contains(event.target)
-        || event.target.closest('[data-slot="ancestry-map"] path[data-region]')) return;
-      // Click runs after the browser's pointer focus change. Restore plain-content
-      // clicks without taking focus from a control the person just chose.
-      close(document.activeElement === document.body || document.activeElement === closeRef.current);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("click", onClick);
-    return () => { document.removeEventListener("keydown", onKeyDown); document.removeEventListener("click", onClick); };
-  }, [openCode, close]);
-
   function renderFigures(nodes: ReactNode[]) {
     const selectedCodes: readonly string[] = selectedRow?.code === REGIONAL_COMBINED_CODE
       ? REGIONAL_SPLIT_CODES : [selectedRow?.code ?? ""];
@@ -193,7 +150,7 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
           </Fragment>)}</tbody>
         </table>
         {selectedRow ? <div ref={panelRef} role="dialog" aria-modal="false" aria-label={`${selectedRow.name} region`}
-          data-slot="region-panel" className="space-y-3 rounded-2xl border border-line bg-card p-4">
+          data-slot="region-panel" data-region={selectedRow.code} className="space-y-3 rounded-2xl border border-line bg-card p-4">
           <div className="flex flex-wrap items-center justify-between gap-3"><h3 data-slot="region-title" className="font-medium">{selectedRow.name}</h3>
             <button ref={closeRef} type="button" onClick={() => close(true)}
               className="min-h-11 min-w-11 rounded-full border border-line px-3 focus-visible:outline-3 focus-visible:outline-forest">Close</button>

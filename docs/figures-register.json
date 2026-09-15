@@ -2,8 +2,9 @@
   "schemaVersion": 1,
   "rule": "G8.3: every figure asserted on a result surface must differ between seed A and seed B, or be listed here with the reason it cannot.",
   "seeds": {
-    "A": "e2e/fixtures/aims-mixed-grch38.vcf (ancestry)",
-    "B": "e2e/fixtures/aims-mixed-b-grch38.vcf (ancestry)",
+    "A": "e2e/fixtures/aims-mixed-grch38.vcf (historical five-region ancestry)",
+    "B": "e2e/fixtures/aims-mixed-b-grch38.vcf (historical five-region ancestry)",
+    "regionalPairs": "e2e/fixtures/regional-figure-fixtures.ts (v3 combined/separate, full/partial pairs; deterministic generator and exact-byte tests)",
     "report-A": "e2e/fixtures/tiny-grch38.vcf",
     "report-B": "e2e/fixtures/tiny-b-grch38.vcf",
     "family-pair-A": "e2e/fixtures/carrier-pair-grch38.vcf (both adults of pair A)",
@@ -15,6 +16,18 @@
       "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/admixture.ts|unassignable|1",
       "name": "the unassignable chip",
       "reason": "estimateAdmixture returns five proportions that sum to 1, and src/lib/ancestry/present.ts computes this chip as max(0, 1 - assigned), so it is 0.0% for every genome. It is registered rather than dropped from collection because a non-zero value would mean the estimator had begun leaving mass unattributed, which is worth seeing. The key names the chip through its `data-chip` attribute rather than its position among the shares: the surface renders a second chip, hidden, that carries no region either, and an ordinal would have moved this entry onto it if their order changed."
+    },
+    {
+      "surface": "/genome/me/ancestry",
+      "key": "ancestry-share|ancestry|modelled|computed:src/lib/genome/regional-admixture.ts|unassignable|1",
+      "name": "the v3 unassignable chip",
+      "reason": "The seven-region fit assigns all mass across its seven components and regionalChipShares returns an unassignable remainder of zero. Both shown-state browser pairs require the exact 0.0% value before differencing. No region share or hidden-small-share chip is exempt: each must move in both the combined and separate pairs. Partial states render no chips, and their raw rows must move without this exemption. The historical five-region key is separate and remains above."
+    },
+    {
+      "surface": "/genome/me/ancestry",
+      "key": "coverage|quality|observed|computed:src/lib/genome/regional-admixture.ts|-|1",
+      "name": "usable-marker coverage while the v3 normal result is shown",
+      "reason": "The versioned region registry requires all 168 of this panel's 168 markers before showing the normal result. This figure can therefore only read 'read 168 of the 168 positions this needs' while it exists; below that boundary the surface becomes grey, removes this figure and retains unreliable raw estimates behind a disclosure. The shown-state browser pairs require that exact value, and separate partial pairs require the dynamic 147/126-marker refusal counts, raw disclosures and absence of the normal coverage figure. This is a display-policy constraint, not a claim of validated accuracy. The source file's independent listed-call count is not exempt and moves from 168 to 169 in each full pair and 147 to 127 in each partial pair."
     },
     {
       "surface": "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551",
@@ -76,7 +89,8 @@
       },
       {
         "surface": "/genome/me/ancestry",
-        "figures": 9
+        "figures": 12,
+        "note": "The unchanged synthetic cross-surface source now produces a v3 combined result: five reported rows, three uncertain split components in the closed disclosure, two chips, usable-marker coverage and source listed-call coverage. The collector includes hidden figures as before. The previous nine-figure count described the historical five-region view; historical fixture and estimator/reader tests remain."
       },
       {
         "surface": "/genome/me/reports",

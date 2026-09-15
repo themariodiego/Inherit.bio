@@ -22,6 +22,60 @@ and parent cascade. A lost-success-response retry unit also passes. Rejected
 attempts retain their cleanup fence; no existing assertion or guard is relaxed.
 See `docs/finalization-fenced-recovery.md` for the implementation limits.
 
+## Adaptive ancestry figure states and panel focus · 2026-09-15
+
+CI `34968643349` at `115bec4` passed 5,043 units, 2,992 SQL assertions,
+the production build and 405 browser cases. Five browser cases failed and
+one subsequent serial case did not run. The existing panel focus, mouse-hit,
+same-figure-key and figure-count assertions exposed real integration gaps;
+the run is retained as failure evidence.
+
+The former canonical figure pair has 168 markers in A and 154 in B. The new
+versioned policy requires 168 for the normal view, so B correctly enters the
+grey/raw state while A enters the combined normal view. New deterministic
+synthetic pairs cover combined and separate reporting in both normal and raw
+states. Each normal pair retains all 168 markers. Raw pairs have 147 and 126.
+An additional invented non-panel call changes B's source count without
+changing its fit. Existing fixture bytes, old generators, historical estimator,
+component and v1/v2 reader assertions remain intact.
+
+`assertEveryFigureMoved` remains byte-for-byte unchanged. Each pair must have
+identical figure keys, every regional share must move at displayed precision,
+and the normal view's hidden-small-share chip must move. Split components now
+have collector identities from their existing region attributes. Both normal
+pairs additionally require the exact 0.0% unassignable chip and 168/168 marker
+coverage: these two precise v3 keys have structural reasons in the register.
+No region share or source-count exemption is added. Both raw pairs require
+their actual insufficient-coverage counts, grey state, absent normal controls,
+closed-then-open raw disclosure and explicit uncertainty. All four pairs open
+the uncertain split where present and require stable region identities.
+
+The cross-surface source is unchanged. Its v3 view contains five reported rows,
+three uncertain split components, two chips, marker coverage and source
+coverage: 12 figures. The register now records that composition and the spec
+requires the combined v3 state before collecting. The collector still includes
+hidden figures, and all existing same-source/value assertions remain.
+
+Seven focused fixture checks pass, including exact regeneration, actual parser
+counts, convergence, branch selection, every displayed share changing and
+non-panel-call exclusion. Final browser execution remains required.
+
+The panel bug reproduces with AppShell's focusable `main`: clicking its plain
+heading focuses that container, which the old body/Close predicate did not
+recognize. A shared interaction hook now returns focus after plain-content
+clicks and leaves a chosen control focused. Activation records the map viewport;
+Escape and Close restore it so the same pointer coordinate remains a hit.
+Hover preview uses actual mouse movement, avoiding a panel reopening when
+scroll restoration moves the map under a stationary pointer. Both historical
+and v3 surfaces use this interaction hook with their own versioned data.
+
+Nine new isolated Chromium checks pass across historical, combined and separate
+views: hover, Enter/Space, outside-content and other-control focus, repeated
+same-point mouse clicks after Escape/Close, exact viewport restoration and
+single-touch activation. The original full ancestry browser specs remain
+unchanged. The component harness proves interactions, not the authenticated
+journey, geographic evidence or the application stylesheet.
+
 ## Synthetic gzip header is independent of its build host · 2026-09-15
 
 CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:

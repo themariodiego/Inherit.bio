@@ -123,7 +123,9 @@ export function AncestryMap({ shapes, rows, mode, selectedCode, pathRef, onHover
                     "cursor-pointer outline-none",
                     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-forest",
                   )}
-                  onMouseEnter={() => onHover?.(row.code)}
+                  // Scrolling back from Close can put this path under a still
+                  // pointer. Only actual pointer movement should reopen it.
+                  onPointerMove={(event) => { if (event.pointerType === "mouse") onHover?.(row.code); }}
                   onFocus={() => onHover?.(row.code)}
                   onClick={() => onActivate?.(row.code)}
                   onKeyDown={(event) => onKeyDown(event, row.code)}
