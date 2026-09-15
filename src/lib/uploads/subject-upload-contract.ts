@@ -43,6 +43,9 @@ export const subjectFinalizationReceipt = z.object({ fileId: uuid, status: z.lit
   analysisState: z.literal("ready_for_processing"),
   next: z.object({ routeId: z.literal("api.file-process"), operation: z.literal("process") }).strict(),
 }).strict();
+/** Retry is advertised only with HTTP 503 and Retry-After: 60. The body carries
+ * no source identifiers or new result state; unmarked 503 remains terminal. */
+export const subjectFinalizationRetryBody = z.object({ error: z.literal("unavailable") }).strict();
 export const subjectNormalizationReceipt = z.object({ fileId: uuid,
   status: z.literal("normalization_complete"), analysisState: z.literal("not_generated"),
 }).strict();
