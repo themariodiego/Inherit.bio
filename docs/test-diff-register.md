@@ -47,6 +47,14 @@ test is skipped, disabled or weakened to manufacture a green result. Full
 browser/release evidence must be recorded separately after the current journey
 passes against a database with the full migration chain.
 
+The report-choice component test also follows the corrected admission copy:
+seven broad regions, conditional combination and lineage checks only where
+the file has usable positions. Its former assertion said parent lines were
+not computed, contradicting the existing version-2 lineage implementation and
+the populated lineage capture tests. The replacement requires the actual
+coverage limit and rejects the old false statement. Its independent opt-in,
+generation-control and result-link assertions remain unchanged.
+
 ## Export wording follows actual original availability · 2026-09-09
 
 Full CI at `f31682a` passed 230 browser cases but caught a changed manifest
