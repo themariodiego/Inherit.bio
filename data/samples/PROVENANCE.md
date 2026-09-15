@@ -28,11 +28,14 @@ public benchmark genotypes as inputs.
   hosted processing capacity evidence.
 - Regenerate or verify with
   `corepack pnpm exec tsx scripts/generate-synthetic-vcf-fixtures.ts [--check]`.
-  Gzip level 9, timestamp zero, no filename; 499,855 compressed / 4,481,882
-  decoded bytes. No decoded artifact is written. The adjacent receipt pins
+  Gzip level 9, timestamp zero, no optional header fields and OS byte 255
+  (unspecified), following [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952).
+  This fixes the platform-dependent header byte without changing the VCF or
+  compressed payload; 499,855 compressed / 4,481,882 decoded bytes.
+  No decoded artifact is written. The adjacent receipt pins
   every catalogue source hash, included/absent rsID sets and output hashes.
 - Repository SHA-256:
-  `cb3510403bdf1f613cefac301011db456e4081fc1fb01ee0e105b6a2efe9ad7e`.
+  `46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a2b44`.
 
 ## HG001_GRCh38_chr20-22.vcf.gz
 

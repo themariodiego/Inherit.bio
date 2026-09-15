@@ -3,10 +3,10 @@
   "build": "GRCh38",
   "generator": "scripts/generate-synthetic-vcf-fixtures.ts",
   "source": "Arithmetic positions and cycling alleles; no source genome or reference sequence is read.",
-  "transformation": "Gzip level 9, timestamp zero, no filename. No decoded artifact is written.",
+  "transformation": "Gzip level 9, timestamp zero, no optional header fields, OS byte 255 (unspecified). No decoded artifact is written.",
   "fixture": {
     "path": "e2e/fixtures/synthetic-browser-grch38.vcf.gz",
-    "sha256": "bb9eb56796d406ea66569b31468037872dfc9c34a0f4065d2412ad5d4073a5e5",
+    "sha256": "eb4c2cc7168fe5708b2f48327373776e5812bd59c86b5daac0d510bc84cb6157",
     "compressedBytes": 985,
     "decodedSha256": "42dcd95ba1e82106feaac1354a7efcf80cacecc2745fefb8b23f2075eadf1015",
     "decodedBytes": 5619,

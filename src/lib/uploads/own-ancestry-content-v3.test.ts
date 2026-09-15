@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { parseVcf } from "../genome/parsers/vcf";
 import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
@@ -16,6 +17,22 @@ function call(index = 0): OwnAncestryCall {
 }
 const compute = (calls: OwnAncestryCall[] = []) => computeOwnAncestryContentV3({ source, panel, calls });
 describe("captured seven-region ancestry", () => {
+  it("keeps the committed reference hash and rejects even one changed floating-point bit", async () => {
+    const bytes = await readFile("data/ref/aims-seven-region.json", "utf8");
+    const manifest = JSON.parse(await readFile("data/ref/aims-seven-region-manifest.json", "utf8"));
+    const exactJson = JSON.stringify(JSON.parse(bytes));
+    expect(JSON.stringify(panel.markers)).toBe(exactJson);
+    expect(compute().panel.markerSha256).toBe(manifest.markerSha256);
+    expect(createHash("sha256").update(exactJson).digest("hex")).toBe(manifest.markerSha256);
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(manifest.tableSha256);
+    // Actual Turbopack 16.3.3 JSON-import drift: adjacent IEEE-754 doubles.
+    const exact = panel.markers.find(marker => marker.rsid === "rs6541030")!;
+    expect(exact.freqs.OCE).toBe(0.23333333333333334);
+    const changed = panel.markers.map(marker => marker === exact
+      ? { ...marker, freqs: { ...marker.freqs, OCE: 0.23333333333333336 } } : marker);
+    expect(() => computeOwnAncestryContentV3({ source, calls: [], panel: { ...panel, markers: changed } }))
+      .toThrow("ancestry_panel_mismatch");
+  });
   it("round-trips v3 and preserves both historical content revisions", () => {
     const current = compute();
     expect(current.admixture.result.proportions).toBeNull();

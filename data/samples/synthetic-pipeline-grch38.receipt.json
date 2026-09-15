@@ -3,7 +3,7 @@
   "build": "GRCh38",
   "generator": "scripts/generate-synthetic-vcf-fixtures.ts",
   "source": "Arithmetic filler plus public report-template positions/alleles; all genotypes are independently invented.",
-  "transformation": "Gzip level 9, timestamp zero, no filename. No decoded artifact is written.",
+  "transformation": "Gzip level 9, timestamp zero, no optional header fields, OS byte 255 (unspecified). No decoded artifact is written.",
   "catalogue": {
     "sources": [
       {
@@ -225,7 +225,7 @@
   },
   "fixture": {
     "path": "data/samples/synthetic-pipeline-grch38.vcf.gz",
-    "sha256": "cb3510403bdf1f613cefac301011db456e4081fc1fb01ee0e105b6a2efe9ad7e",
+    "sha256": "46c46da43500f3b1ad5f01524c4ac9bcb52b2bd9a1dcc5b3c33aa8dbbc6a2b44",
     "compressedBytes": 499855,
     "decodedSha256": "93eaae6d89497012ef43e8ddd9dc7834bff36d95b9323536c24cabb616b85a86",
     "decodedBytes": 4481882,

@@ -1,5 +1,5 @@
 /** Seven-region reference fit. Historical five-region analyses keep admixture.ts. */
-import table from "../../../data/ref/aims-seven-region.json";
+import { REGIONAL_REFERENCE_JSON } from "./regional-reference-json";
 
 export const REGIONAL_POPS = ["AFR", "AMR", "CSA", "EAS", "EUR", "MID", "OCE"] as const;
 export type RegionalPop = (typeof REGIONAL_POPS)[number];
@@ -8,6 +8,9 @@ export interface RegionalMarker {
   rsid: string; chrom: number; pos38: number; ref: string; alt: string;
   freqs: RegionalProportions;
 }
+// Native JSON.parse preserves the exact reference doubles. The production JSON
+// importer changed low bits in 122 frequencies; see the reference provenance.
+const table = JSON.parse(REGIONAL_REFERENCE_JSON) as RegionalMarker[];
 export const REGIONAL_AIMS: readonly RegionalMarker[] = Object.freeze(table.map(marker =>
   Object.freeze({ ...marker, freqs: Object.freeze({ ...marker.freqs }) })));
 // Held-out fits still moved by 0.23 percentage points after 10,000 steps;

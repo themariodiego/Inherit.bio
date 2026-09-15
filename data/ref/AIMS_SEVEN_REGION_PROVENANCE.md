@@ -30,6 +30,25 @@ from that panel; see `data/ref/AIMS_PROVENANCE.md`. Only its reference frequenci
 change. The five-region table remains available for its original analysis
 versions and is not reinterpreted as this reference.
 
+## Exact runtime representation
+
+The generator also emits `src/lib/genome/regional-reference-json.ts`, a compact
+JSON string parsed by native `JSON.parse` when the seven-region estimator loads.
+Generator `--check` and artifact tests bind this string to every value and the
+row/key order in the committed table. The original table, reference version,
+manifest hashes and measured fits are unchanged; the capture's full-content
+integrity check still rejects any altered reference value.
+
+A minimal Next.js 16.3.3 production build reproduced its Turbopack JSON import
+changing 122 of the table's 1,176 frequency doubles while retaining all key
+orders. For example, `rs6541030` / `OCE` changed from
+`0.23333333333333334` (IEEE-754 hex `3fcdddddddddddde`) to
+`0.23333333333333336` (`3fcddddddddddddf`). That changed the compact table hash
+from the manifest's `54279a25c01e72ed3c22caab0ffe778735a97fae8dffd0df498072a3f9857163`
+to `e82f4d148b9750695cdbd03a211633d0ee70fd5fab33fb932c228d915512406d` and correctly
+stopped capture-module initialization. The generated string preserves the exact
+decimal text through bundling; it does not round values to bypass that check.
+
 ## How frequencies are calculated
 
 `scripts/ancestry-resolution/fetch-callset-frequencies.py` reads the callset's

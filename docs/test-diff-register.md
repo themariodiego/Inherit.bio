@@ -1,5 +1,21 @@
 # Test diff register
 
+## Synthetic gzip header is independent of its build host · 2026-09-15
+
+CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:
+zlib emitted gzip OS byte 19 on the generating host and byte 3 on Linux. The
+generator now emits OS byte 255 (unspecified), retaining zero timestamp and
+requiring no optional header fields or header checksum. Both synthetic gzip
+fixtures and their receipts/provenance were regenerated. Each binary changes
+only at offset 9; decoded bytes, compressed data, CRC/size trailer and record
+counts remain identical. Historic benchmark files are untouched.
+
+The existing byte-for-byte assertions are unchanged. A new regression pins all
+ten fixed header bytes, compares the complete compressed data and trailer with
+the compressor's output, and verifies lossless decompression. The two focused
+suites now contain four tests. No test timeout, threshold or assertion is
+relaxed; Linux CI must verify the resulting release commit.
+
 ## Synthetic VCF inputs and versioned ancestry assertions · 2026-09-15
 
 The completion objective requires synthetic-only verification. The two active

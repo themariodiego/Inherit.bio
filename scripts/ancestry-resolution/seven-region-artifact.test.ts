@@ -3,6 +3,8 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { REFERENCE_VERSION, REGION_CODES, type Marker, type ReferenceMarker } from "./seven-region-reference";
+import { REGIONAL_REFERENCE_JSON } from "../../src/lib/genome/regional-reference-json";
+import { REGIONAL_AIMS } from "../../src/lib/genome/regional-admixture";
 
 describe("committed seven-region reference", () => {
   it("binds every exact original marker and its frequencies to both manifest hashes", () => {
@@ -26,6 +28,11 @@ describe("committed seven-region reference", () => {
     const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
     expect(manifest.markerSha256).toBe(sha256(JSON.stringify(markers)));
     expect(manifest.tableSha256).toBe(sha256(bytes));
+    // The runtime string must retain every scalar and its original key/row order,
+    // rather than accepting a bundler's slightly different floating-point values.
+    expect(REGIONAL_REFERENCE_JSON).toBe(JSON.stringify(markers));
+    expect(JSON.stringify(REGIONAL_AIMS)).toBe(REGIONAL_REFERENCE_JSON);
+    expect(REGIONAL_AIMS).toEqual(markers);
     expect(manifest.panelId).toBe("aims-hgdp-tgp-168");
     expect(manifest.referenceVersion).toBe(REFERENCE_VERSION);
     expect(manifest.markerCount).toBe(168);

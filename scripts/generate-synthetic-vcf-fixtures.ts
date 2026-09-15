@@ -93,7 +93,11 @@ export function buildPipelineVcf(repositoryRoot: string): string {
 export function compressSyntheticVcf(text: string): Buffer {
   const compressed = gzipSync(text, { level: 9 });
   assert.equal(compressed.readUInt32LE(4), 0, "No gzip timestamp");
-  assert.equal(compressed[3] & 8, 0, "No gzip filename");
+  assert.equal(compressed[3], 0, "No optional gzip header fields or header checksum");
+  // RFC 1952 OS=255 leaves the origin unspecified. zlib otherwise records
+  // its build platform here, changing exact fixture bytes between hosts.
+  // With FHCRC absent, this metadata byte changes no checksum or payload.
+  compressed[9] = 255;
   return compressed;
 }
 
@@ -127,7 +131,7 @@ export async function generateSyntheticVcfFixtures(repositoryRoot: string, check
       kind: "deterministic-synthetic-vcf", build: "GRCh38", generator: GENERATOR,
       source: browser ? "Arithmetic positions and cycling alleles; no source genome or reference sequence is read."
         : "Arithmetic filler plus public report-template positions/alleles; all genotypes are independently invented.",
-      transformation: "Gzip level 9, timestamp zero, no filename. No decoded artifact is written.",
+      transformation: "Gzip level 9, timestamp zero, no optional header fields, OS byte 255 (unspecified). No decoded artifact is written.",
       ...(browser ? {} : { catalogue: { sources: catalogue.sources,
         includedRsids: catalogue.included.map(variant => variant.rsid), absentRsids: catalogue.absent.map(variant => variant.rsid),
         selection: "Sort unique rsIDs ascending; include even zero-based indices, omit odd indices. Alternate included GT 0/1 and 1/1." } }),

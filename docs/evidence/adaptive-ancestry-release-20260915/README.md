@@ -97,6 +97,25 @@ those coordinates explicitly. Nonincremental TypeScript and generator lint
 pass; regeneration preserves the exact 54,102-byte geometry and manifest.
 The failed run remains evidence, not a completed journey check.
 
+The next run, `34965659515` at `2ebbf6c`, passed TypeScript and lint but failed
+two exact-byte synthetic-fixture checks: the gzip compressor recorded a
+different host OS byte on Linux. Both fixtures now use the unspecified OS byte;
+only that metadata byte changes. Complete-byte assertions remain unchanged,
+and all four focused fixture/pipeline tests pass.
+
+The corresponding Vercel build stopped at the reference integrity check.
+An isolated Next.js 16.3.3 production build reproduced 122 changed frequency
+doubles in the JSON import, with key order unchanged. The generated runtime
+JSON string now preserves the original decimal text through bundling. The
+table, manifest hash, version and measured reference inputs are unchanged.
+The isolated build now initializes the actual v3 capture module, retains the
+exact table hash and produces the same complete synthetic fitted result as
+native execution (SHA-256
+`e15dbcd0606c5cece86660c9151092242ec9700d0c45d383aeafd966e9b2a9fd`).
+Its 168-marker result converges in 435 iterations. Twenty-one focused tests,
+generator checks, scoped lint and nonincremental TypeScript pass. This probe
+does not replace the full application build, fresh SQL tests or browser suite.
+
 Attach the final reviewed commit, fresh CI run, migration receipt, exact
 deployed commit and hosted checks. Inspect the built Next client bundles and
 actual authenticated journey before claiming the release verified.

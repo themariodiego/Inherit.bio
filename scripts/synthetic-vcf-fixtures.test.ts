@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createReadStream, readFileSync } from "node:fs";
 import path from "node:path";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import receipt from "../e2e/fixtures/synthetic-browser-grch38.receipt.json";
 import { countInputLines, emptyReadCounts } from "../src/lib/genome/input-provenance";
@@ -10,6 +11,15 @@ import { estimateRegionalAdmixture, REGIONAL_EMPTY_NOTE } from "../src/lib/genom
 import { BROWSER_FIXTURE, buildBrowserVcf, compressSyntheticVcf } from "./generate-synthetic-vcf-fixtures";
 
 describe("independently generated synthetic browser VCF", () => {
+  it("writes a platform-independent gzip header without changing compressed data or its trailer", () => {
+    const text = buildBrowserVcf();
+    const native = gzipSync(text, { level: 9 });
+    const compressed = compressSyntheticVcf(text);
+    expect(compressed.subarray(0, 10)).toEqual(Buffer.from([0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 2, 255]));
+    expect(compressed.subarray(10)).toEqual(native.subarray(10));
+    expect(gunzipSync(compressed)).toEqual(Buffer.from(text));
+  });
+
   it("pins the committed compressed transport bytes and their declaration receipt", () => {
     const compressed = readFileSync(path.join(process.cwd(), BROWSER_FIXTURE));
     const decoded = Buffer.from(buildBrowserVcf());

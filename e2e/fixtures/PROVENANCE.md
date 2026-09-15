@@ -26,12 +26,15 @@ data. Public benchmark genotypes are also excluded from current test inputs.
   note; no numeric estimate or raw-number disclosure is expected.
 - Regenerate or verify with
   `corepack pnpm exec tsx scripts/generate-synthetic-vcf-fixtures.ts [--check]`.
-  Gzip level 9, timestamp zero, no filename; 985 compressed / 5,619 decoded
-  bytes. The generator writes no decoded artifact. The JSON receipt pins
+  Gzip level 9, timestamp zero, no optional header fields and OS byte 255
+  (unspecified), following [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952).
+  This fixes the platform-dependent header byte without changing the VCF or
+  compressed payload; 985 compressed / 5,619 decoded bytes. The generator
+  writes no decoded artifact. The JSON receipt pins
   byte hashes, counts, scope and the exact first call; unit tests compare
   committed bytes to the independent generator and run the parser/fitter.
 - Repository SHA-256:
-  `bb9eb56796d406ea66569b31468037872dfc9c34a0f4065d2412ad5d4073a5e5`.
+  `eb4c2cc7168fe5708b2f48327373776e5812bd59c86b5daac0d510bc84cb6157`.
 
 ## aims-regional-merged-grch38.vcf and aims-regional-separate-grch38.vcf
 
