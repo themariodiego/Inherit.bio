@@ -1,7 +1,8 @@
 # Adaptive ancestry release verification
 
-Status: release candidate implemented; final database boundary checks, full
-clean-tree units, fresh-database browser/CI, merge and hosted verification pending. This
+Status: release candidate implemented; full clean-tree units and component
+browser review pass. Final database boundary checks, fresh-database journey CI,
+merge and hosted verification remain pending. This
 record is not release approval or a new acceptance-gate closure.
 
 ## Scope
@@ -49,7 +50,11 @@ the scientific ambiguity and unequal loss of detail.
   pass. New presentation/component/geometry checks pass 18/18, with 42 related
   new/historical checks passing. A final focused run passed 173 checks across
   11 estimator, capture, reader, export and presentation files; full-suite
-  totals will be attached after the clean-tree run.
+  suite at `64ab970` passed 5,040 tests across 301 files, with no skips.
+  The earlier run exposed a stale report-choice assertion and blocked email
+  capture because ignored runtime files were present. The assertion now states
+  the implemented lineage coverage limit; the runtime files were preserved
+  outside the checkout. No guard, timeout or assertion was weakened.
 - Full typecheck and lint pass. Readability, claims, routes, names, secrets,
   legal-source, first-glance, templates, environment and jurisdiction gates
   have been checked; final staged-tree checks remain part of the release run.
@@ -65,11 +70,29 @@ geometry, sum, focus, access and label contracts; their reference-specific range
 assertion now requires explicit unavailability for v3. This is not permission
 to fabricate intervals or weaken the historical component tests.
 
+## Component browser review
+
+The actual new component and stylesheet passed 24 Chromium checks and four
+touch-emulation checks at 1280×900 and 390×844. The checks cover both merge
+branches, exact caveats, native disclosure, map keyboard and outside-click
+focus, filter behavior, all share attribution, 1/167/0-marker states, overflow
+and external requests. Review fixed missing muted continents under the filter
+and lost focus after outside clicks. The filter now describes hiding small
+estimates without implying validated confidence. After the map correction,
+33 focused new/historical checks passed; the final component's eight checks
+and touched-file lint passed again after the focus and wording changes.
+
+Four inspected synthetic screenshots and source hashes are retained in
+[`component-review/receipt.json`](component-review/receipt.json). This harness
+uses local Arial/Georgia fallbacks and does not certify production fonts,
+physical devices, the authenticated journey or the final Next client bundle.
+Its 246,558-byte client bundle contains no estimator or marker-table input.
+
 ## Still required
 
-Attach the reviewed implementation commit, clean unit/static outputs, fresh CI
-run, migration receipt, exact deployed commit and hosted checks. Inspect browser
-captures and built client bundles before claiming the new surface verified.
+Attach the final reviewed commit, fresh CI run, migration receipt, exact
+deployed commit and hosted checks. Inspect the built Next client bundles and
+actual authenticated journey before claiming the release verified.
 G4.4 was already YES and needs regression evidence; its status does not increase
 the gate count. G5.5 remains a required human review. WGS capacity, automatic
 recovery, deadline delivery and Family's separate ancestry reader are outside

@@ -26,6 +26,9 @@ describe("seven-region ancestry surface", () => {
     expect(figures).toHaveLength(10);
     for (const figure of figures) expect(figure).toContain('data-provenance="computed:src/lib/genome/regional-admixture.ts"');
     expect(html).toContain("no tested range yet"); expect(html).not.toContain("nine times in ten");
+    expect(html).toContain("Keep small estimates hidden");
+    expect(html).toContain("Hidden small estimates:");
+    expect(html).not.toContain("well supported");
     expect(html).toContain('data-fit-converged="true"');
   });
   it("has one combined default row and path, with a native closed disclosure holding all three shares and the exact caveat", () => {
@@ -47,6 +50,13 @@ describe("seven-region ancestry surface", () => {
     expect(paths(on)).toHaveLength(3); expect(paths(off)).toHaveLength(5);
     const rows = (html: string) => [...html.matchAll(/<tr data-slot="region-row"[^>]*>([\s\S]*?)<\/tr>/g)].map(match => match[1]);
     expect(rows(on)).toEqual(rows(off));
+  });
+  it("keeps muted continents in the base when their estimated rows are filtered out", () => {
+    const html = render(result), shapes = regionalMapShapes();
+    const base = /<path d="([^"]+)" fill="var\(--line\)"/.exec(html)![1];
+    for (const shape of shapes.regions) expect(base).toContain(shape.d);
+    expect(html).not.toContain('data-region="AMR" data-lower-bound=');
+    expect(html).not.toContain('data-region="OCE" data-lower-bound=');
   });
   it.each([1, 167])("keeps %i-marker raw derived rows inside a closed disclosure and shows a grey map without chips", markersUsed => {
     const html = render({ ...result, markersUsed });

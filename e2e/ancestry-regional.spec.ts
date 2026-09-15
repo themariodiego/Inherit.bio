@@ -65,6 +65,14 @@ for (const fixture of REGIONAL_FIXTURES) test(`seven-region ancestry: ${fixture.
   const close = surface.getByRole("button", { name: "Close", exact: true });
   await expect(close).toBeFocused(); await close.press("Escape");
   await expect(firstPath).toBeFocused(); await expect(surface.getByRole("dialog")).toHaveCount(0);
+  await firstPath.press("Enter"); await expect(close).toBeFocused();
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(surface.getByRole("dialog")).toHaveCount(0); await expect(firstPath).toBeFocused();
+  await firstPath.press("Enter"); await expect(close).toBeFocused();
+  await toggle.click();
+  await expect(surface.getByRole("dialog")).toHaveCount(0); await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await toggle.click(); await expect(toggle).toHaveAttribute("aria-checked", "false");
   const attributions = await surface.locator('[data-figure-kind="ancestry-share"]').evaluateAll(figures => figures.map(figure => {
     let attributed = 0, blocks = 0;
     for (let node: Element | null = figure; node; node = node.parentElement) {

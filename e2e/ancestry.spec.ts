@@ -72,9 +72,9 @@ const DENYLIST = JSON.parse(
 
 const GREY_SENTENCE = `Your file covers only 1 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`;
 const RAW_NUMBERS_SUMMARY = "Show the unreliable raw numbers anyway";
-const TOGGLE_LABEL = "Show only what’s well supported";
+const TOGGLE_LABEL = "Keep small estimates hidden";
 const CHIP_UNASSIGNABLE = "Not assignable to any region:";
-const CHIP_HIDDEN = "Hidden as not well supported:";
+const CHIP_HIDDEN = "Hidden small estimates:";
 const NO_RANGE_YET = "no range yet";
 const CLOSE = "Close";
 

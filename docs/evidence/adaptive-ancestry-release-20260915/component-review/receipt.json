@@ -1,0 +1,376 @@
+{
+  "formatVersion": 1,
+  "checkedAt": "2026-09-15T11:42:29.411Z",
+  "sourceHead": "64ab97064be6dc155c135fd0aa050726ea423043",
+  "sourceState": "Tracked final map, focus and copy changes on top of sourceHead; exact bytes bound by sources.",
+  "scope": "Actual RegionalAncestryRegions component and actual globals.css built with installed esbuild and Tailwind PostCSS. Actual parser and estimator execute server-side on independent synthetic fixtures; only result props and map SVG paths enter the browser.",
+  "limitations": [
+    "Isolated component harness: no Next shell, authentication, upload, preparation, saved capture, exports, withdrawal or hosted deployment verified.",
+    "Arial and Georgia local fallbacks replace Next-generated Inter and Fraunces fonts.",
+    "Responsive desktop Chromium and Chromium touch emulation are not physical-device or Safari evidence.",
+    "Full typecheck passed after focus fix but before final plain-copy/import edits; focused component tests and lint passed after final copy."
+  ],
+  "browser": {
+    "engine": "Chromium",
+    "version": "151.0.7922.34",
+    "headless": true,
+    "responsiveViewports": [
+      {
+        "width": 1280,
+        "height": 900
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "touchEmulation": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "isMobile": true,
+      "hasTouch": true,
+      "deviceScaleFactor": 1
+    }
+  },
+  "syntheticInputs": [
+    {
+      "name": "merged",
+      "markersUsed": 168,
+      "merged": true,
+      "fit": {
+        "converged": true,
+        "iterations": 1494
+      }
+    },
+    {
+      "name": "separate",
+      "markersUsed": 168,
+      "merged": false,
+      "fit": {
+        "converged": true,
+        "iterations": 301
+      }
+    },
+    {
+      "name": "partial",
+      "markersUsed": 167,
+      "merged": true,
+      "fit": {
+        "converged": true,
+        "iterations": 1287
+      }
+    },
+    {
+      "name": "one",
+      "markersUsed": 1,
+      "merged": false,
+      "fit": {
+        "converged": true,
+        "iterations": 36
+      }
+    },
+    {
+      "name": "zero",
+      "markersUsed": 0,
+      "merged": false,
+      "fit": {
+        "converged": false,
+        "iterations": 0
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "Desktop merged default: combined row, closed split, caveat, default filter and equivalent table",
+      "detail": true
+    },
+    {
+      "name": "Desktop overflow",
+      "detail": {
+        "viewport": 1280,
+        "documentWidth": 1280,
+        "surfaceWidth": 926,
+        "surfaceScrollWidth": 926,
+        "tableWidth": 926
+      }
+    },
+    {
+      "name": "Keyboard split opens with exact caveat and displayed split sum",
+      "detail": {
+        "sum": 97.60000000000001,
+        "combined": 97.6
+      }
+    },
+    {
+      "name": "Map focus opens without moving focus; Enter moves to panel Close; panel retains caveat",
+      "detail": true
+    },
+    {
+      "name": "Map Escape and Close return focus; Space activation works",
+      "detail": true
+    },
+    {
+      "name": "Filter off reveals all combined-branch rows/map paths and shares sum to 100",
+      "detail": [
+        "AFR",
+        "AMR",
+        "EAS",
+        "EUR-MID-CSA",
+        "OCE"
+      ]
+    },
+    {
+      "name": "Merged attribution",
+      "detail": 10
+    },
+    {
+      "name": "Separate branch retains exact seven region set; no merged disclosure",
+      "detail": [
+        "AFR",
+        "AMR",
+        "CSA",
+        "EAS",
+        "EUR",
+        "MID",
+        "OCE"
+      ]
+    },
+    {
+      "name": "Separate attribution",
+      "detail": 9
+    },
+    {
+      "name": "Mobile merged default overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 324,
+        "surfaceScrollWidth": 324,
+        "tableWidth": 324
+      }
+    },
+    {
+      "name": "Mobile expanded overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 324,
+        "surfaceScrollWidth": 324,
+        "tableWidth": 324
+      }
+    },
+    {
+      "name": "Mobile map panel overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 324,
+        "surfaceScrollWidth": 324,
+        "tableWidth": 324
+      }
+    },
+    {
+      "name": "Mobile map keyboard activation and outside click preserve focus",
+      "detail": true
+    },
+    {
+      "name": "Outside click on switch keeps the switch focused and executes its action",
+      "detail": true
+    },
+    {
+      "name": "Mobile dark overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 324,
+        "surfaceScrollWidth": 324,
+        "tableWidth": 324
+      }
+    },
+    {
+      "name": "partial grey overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 358,
+        "surfaceScrollWidth": 358,
+        "tableWidth": null
+      }
+    },
+    {
+      "name": "partial raw attribution",
+      "detail": 8
+    },
+    {
+      "name": "partial raw expanded overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 358,
+        "surfaceScrollWidth": 358,
+        "tableWidth": null
+      }
+    },
+    {
+      "name": "one grey overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 358,
+        "surfaceScrollWidth": 358,
+        "tableWidth": null
+      }
+    },
+    {
+      "name": "one raw attribution",
+      "detail": 7
+    },
+    {
+      "name": "one raw expanded overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 358,
+        "surfaceScrollWidth": 358,
+        "tableWidth": null
+      }
+    },
+    {
+      "name": "zero grey overflow",
+      "detail": {
+        "viewport": 390,
+        "documentWidth": 390,
+        "surfaceWidth": 358,
+        "surfaceScrollWidth": 358,
+        "tableWidth": null
+      }
+    },
+    {
+      "name": "Zero markers: no raw disclosure and no numbers",
+      "detail": true
+    },
+    {
+      "name": "No console errors, page errors, or external requests",
+      "detail": true
+    }
+  ],
+  "touchChecks": [
+    "Actual touchscreen tap on map opens panel; tap on heading closes and returns focus",
+    "Touching outside switch keeps switch focus and applies filtering action",
+    "Touch opens native split disclosure",
+    "Mobile emulation remains390CSS pixels without horizontal overflow"
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "externalRequests": [],
+  "regressionsResolved": [
+    {
+      "id": "base-land",
+      "fix": "Version3 loader includes every physical region in muted base; filtering no longer removes continents."
+    },
+    {
+      "id": "outside-focus",
+      "fix": "Version3 dismissal runs on click after browser focus changes; restores plain-content opener focus and preserves other controls."
+    },
+    {
+      "id": "filter-wording",
+      "fix": "Control says Keep small estimates hidden with adjacent explicit two-percent display rule and no measured-confidence wording."
+    }
+  ],
+  "validation": [
+    {
+      "command": "corepack pnpm exec vitest run src/components/results/ancestry/regional-ancestry.test.ts --maxWorkers=1",
+      "result": "8 passed after final copy"
+    },
+    {
+      "command": "corepack pnpm exec vitest run src/lib/ancestry/regional-present.test.ts --maxWorkers=1",
+      "result": "5 passed after focus fix; presentation unchanged afterward"
+    },
+    {
+      "command": "corepack pnpm exec eslint src/components/results/ancestry/regional-ancestry-regions.tsx e2e/ancestry-regional.spec.ts src/copy/regional-ancestry.ts src/components/results/ancestry/regional-ancestry.test.ts",
+      "result": "passed after final copy"
+    },
+    {
+      "command": "corepack pnpm typecheck",
+      "result": "passed after focus fix, before final plain-copy/import edits"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed for changed component and v3 spec"
+    }
+  ],
+  "v3E2EChange": "Adds real outside heading click with returned-opener-focus assertion and outside switch click with retained-switch-focus/action assertion; preserves original filter end state. Authenticated spec not run in this harness.",
+  "clientBundle": {
+    "bytes": 246558,
+    "sha256": "9c506e1f945d4a9cb83eaf0543fef87e95b115f9fc695f58ee64404945398e5c",
+    "inputCount": 29,
+    "forbiddenEstimatorTableInputs": []
+  },
+  "sources": [
+    {
+      "path": "src/components/results/ancestry/regional-ancestry-regions.tsx",
+      "sha256": "42f90a921b613da3d08c2e88f877d446944343fad8e7f9fbac803ec6e3ff2ebc"
+    },
+    {
+      "path": "src/lib/ancestry/regional-geometry.ts",
+      "sha256": "9c31266d26b389d079dcc5f101a5e51caff509b4251e9852f87e062b43e1ed69"
+    },
+    {
+      "path": "src/copy/regional-ancestry.ts",
+      "sha256": "3a90cb5195d07fa212a358697bceb43706fb276b99ebbbeab540934bbb415785"
+    },
+    {
+      "path": "src/app/globals.css",
+      "sha256": "acfb29a6e7c930936f7c8667d922705855fb2862c0c10e2f50508a803cec0f43"
+    },
+    {
+      "path": "src/lib/genome/regional-admixture.ts",
+      "sha256": "f3e4cd867957bf91ce3178507010d5295017182c06cb9e795e2de3550ea9a934"
+    },
+    {
+      "path": "src/lib/ancestry/regional-present.ts",
+      "sha256": "a02e1308d036ba241787a0ca49000841a587c0f5e351e1a1c067b6ac5978195b"
+    },
+    {
+      "path": "data/ref/regions/regions-v3.json",
+      "sha256": "12a7bb27448f514b3e2860e08b52d8e4bd0c72f8db15e409cc6418daa631bd97"
+    },
+    {
+      "path": "data/ref/aims-seven-region-manifest.json",
+      "sha256": "15ca97a0654ff0a546654f579060bb4518f908636a82520db0ce73b1b4d0330b"
+    },
+    {
+      "path": "public/geo/regions-v3.topo.json",
+      "sha256": "09a36c8374a545a784cf6d59d83bc50099e76243b8879ff46fd7f59e7204f645"
+    },
+    {
+      "path": "e2e/ancestry-regional.spec.ts",
+      "sha256": "6f9bcbf7639e25afcbe11185fa92e89f809ebe0280851075ec8befdcc013ed59"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "desktop-merged-default.png",
+      "sha256": "8eaeaf9c8b3ce5f36c14c32849e0607edf77234c1d9ccb72560998f1f002705e",
+      "bytes": 246886
+    },
+    {
+      "file": "mobile-merged-expanded.png",
+      "sha256": "596c4386f8b19ac179913dde1034fb15d52e6977b73f6b2db537263cc4f64488",
+      "bytes": 219700
+    },
+    {
+      "file": "mobile-partial-raw.png",
+      "sha256": "81d39e98ff37cff80364bbab1a05392205b44031572e2fd7fb3df52205878f85",
+      "bytes": 198918
+    },
+    {
+      "file": "mobile-zero-default.png",
+      "sha256": "325e5b9f33c3588d6d2f692805150671bc1edc6dc31357083a00f396d8bd740f",
+      "bytes": 92417
+    }
+  ],
+  "retentionNote": "Four selected synthetic screenshots are retained here. The review checked thirteen screenshots in total."
+}

@@ -10,10 +10,12 @@ let cached: MapShapes | undefined;
 export function regionalMapShapes(): MapShapes {
   if (cached) return cached;
   const topology = committed as unknown as Topology;
-  cached = { land: pathData(polygonsOf(topology, "land")), regions: REGIONAL_REGIONS.map(({ code }) => {
+  const regions = REGIONAL_REGIONS.map(({ code }) => {
     const polygons = polygonsOf(topology, code), bbox = pathBBox(polygons);
     if (!bbox) throw new Error(`Missing seven-region map geometry: ${code}`);
     return { code, d: pathData(polygons), bbox };
-  }) };
+  });
+  // Filtering estimates must not remove their continents from the muted base.
+  cached = { land: pathData(polygonsOf(topology, "land")) + regions.map(region => region.d).join(""), regions };
   return cached;
 }

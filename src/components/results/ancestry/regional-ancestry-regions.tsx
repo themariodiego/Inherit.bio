@@ -2,11 +2,11 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ClaimBlock } from "@/components/figures/claim-block";
-import { CHIP_LABELS, IDENTITY, MARKER_GLOSS, RAW_NUMBERS_SUMMARY, TOGGLE_LABEL } from "@/copy/ancestry";
+import { CHIP_LABELS, IDENTITY, MARKER_GLOSS, RAW_NUMBERS_SUMMARY } from "@/copy/ancestry";
 import {
-  REGIONAL_FILTER_NOTE, REGIONAL_FIT_LIMIT, REGIONAL_MAP_CAPTION, REGIONAL_MAP_LABEL,
+  REGIONAL_FILTER_NOTE, REGIONAL_FIT_LIMIT, REGIONAL_HIDDEN_LABEL, REGIONAL_MAP_CAPTION, REGIONAL_MAP_LABEL,
   REGIONAL_MAP_LIMIT, REGIONAL_NO_RANGE, REGIONAL_NO_RESULT, REGIONAL_SPLIT_SUMMARY,
-  REGIONAL_UNASSIGNABLE_NOTE, regionalBelowMinimum, regionalPanelLine,
+  REGIONAL_TOGGLE_LABEL, REGIONAL_UNASSIGNABLE_NOTE, regionalBelowMinimum, regionalPanelLine,
 } from "@/copy/regional-ancestry";
 import type { MapShapes } from "@/lib/ancestry/geometry";
 import { presentRegionalShares, regionalChipShares, regionalReportingShapes } from "@/lib/ancestry/regional-present";
@@ -127,14 +127,16 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") { event.preventDefault(); close(true); }
     }
-    function onPointerDown(event: PointerEvent) {
+    function onClick(event: MouseEvent) {
       if (!(event.target instanceof Element) || panelRef.current?.contains(event.target)
         || event.target.closest('[data-slot="ancestry-map"] path[data-region]')) return;
-      close(true);
+      // Click runs after the browser's pointer focus change. Restore plain-content
+      // clicks without taking focus from a control the person just chose.
+      close(document.activeElement === document.body || document.activeElement === closeRef.current);
     }
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => { document.removeEventListener("keydown", onKeyDown); document.removeEventListener("pointerdown", onPointerDown); };
+    document.addEventListener("click", onClick);
+    return () => { document.removeEventListener("keydown", onKeyDown); document.removeEventListener("click", onClick); };
   }, [openCode, close]);
 
   function renderFigures(nodes: ReactNode[]) {
@@ -154,13 +156,13 @@ function ShownRegionalRegions({ subjectId, result, panel, reference, shapes, min
             <span aria-hidden="true" className={`relative inline-block h-5 w-9 shrink-0 rounded-full ${wellSupportedOnly ? "bg-forest" : "bg-line"}`}>
               <span className={`absolute top-0.5 left-0 size-4 rounded-full bg-paper ${wellSupportedOnly ? "translate-x-4" : "translate-x-0.5"}`} />
             </span>
-            {TOGGLE_LABEL}
+            {REGIONAL_TOGGLE_LABEL}
           </button>
           <p data-slot="ancestry-chip" data-chip="unassignable" className="inline-flex flex-wrap items-baseline gap-x-2 rounded-full border border-line px-3 py-1 text-sm text-ink-muted">
             <span>{CHIP_LABELS.unassignable}</span>{nodes[chipIndex]}
           </p>
           <p data-slot="ancestry-chip" data-chip="hidden" className="inline-flex flex-wrap items-baseline gap-x-2 rounded-full border border-line px-3 py-1 text-sm text-ink-muted">
-            <span>{CHIP_LABELS.hidden}</span>{nodes[chipIndex + 1]}
+            <span>{REGIONAL_HIDDEN_LABEL}</span>{nodes[chipIndex + 1]}
           </p>
         </div>
         <p data-slot="regional-filter-note" className="text-sm text-ink-muted">{REGIONAL_FILTER_NOTE}</p>

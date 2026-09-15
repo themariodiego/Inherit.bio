@@ -55,6 +55,14 @@ the populated lineage capture tests. The replacement requires the actual
 coverage limit and rejects the old false statement. Its independent opt-in,
 generation-control and result-link assertions remain unchanged.
 
+Component browser inspection found disappearing base continents under the
+small-share filter and lost focus after clicking outside the map panel. New
+v3 checks now require a complete muted base and distinguish returning focus
+after a plain-content click from preserving focus on another chosen control.
+The v3 filter labels describe hiding small estimates; the adjacent note states
+the two-percent display threshold. They no longer imply validated support.
+Historical filter wording and component tests remain versioned as before.
+
 ## Export wording follows actual original availability · 2026-09-09
 
 Full CI at `f31682a` passed 230 browser cases but caught a changed manifest
