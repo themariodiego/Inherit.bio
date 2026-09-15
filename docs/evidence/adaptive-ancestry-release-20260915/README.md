@@ -90,6 +90,13 @@ Its 246,558-byte client bundle contains no estimator or marker-table input.
 
 ## Still required
 
+The first PR run, `34965226260`, stopped at TypeScript validation before SQL
+or browser execution: the generator passed generic coordinate arrays to a
+library requiring two-number tuples. The generator now validates and converts
+those coordinates explicitly. Nonincremental TypeScript and generator lint
+pass; regeneration preserves the exact 54,102-byte geometry and manifest.
+The failed run remains evidence, not a completed journey check.
+
 Attach the final reviewed commit, fresh CI run, migration receipt, exact
 deployed commit and hosted checks. Inspect the built Next client bundles and
 actual authenticated journey before claiming the release verified.

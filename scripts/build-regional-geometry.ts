@@ -115,7 +115,13 @@ async function main() {
   const repaired: Record<string, MultiPolygon> = {};
   const accepted: Polys[] = [];
   for (const code of [...priority, "land"]) {
-    const original = polygonsOf(grid, code);
+    const original: Polys = polygonsOf(grid, code).map(polygon => polygon.map(ring =>
+      ring.map((point): clipping.Pair => {
+        if (point.length !== 2 || point.some(value => !Number.isFinite(value))) {
+          throw new Error(`Invalid two-dimensional region coordinate: ${code}`);
+        }
+        return [point[0], point[1]];
+      })));
     const disjoint = accepted.length ? clipping.difference(original, ...accepted) : original;
     repaired[code] = geo(disjoint); accepted.push(disjoint);
   }
