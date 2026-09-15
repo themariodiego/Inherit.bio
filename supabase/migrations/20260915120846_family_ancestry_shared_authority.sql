@@ -224,7 +224,7 @@ returns jsonb language plpgsql security definer set search_path=pg_catalog as $$
 declare snapshot jsonb; finished timestamptz;
 begin
  finished:=case when legacy then f.processing_finished_at else f.normalization_completed_at end;
- if p->>'version'='listed-calls-v1' and p->>'sourceSha256'=case when legacy then f.input_source_sha256 else f.sha256 end
+ if p->>'version'='listed-calls-v1' and p->>'sourceSha256'=(case when legacy then f.input_source_sha256 else f.sha256 end)
   and p->>'sourceBuild' in('GRCh37','GRCh38') and p->>'buildBasis' in('source-declared','format-assumption')
   and p->>'targetBuild'='GRCh38' and p->>'sourceSha256'~'^[0-9a-f]{64}$'
   and (not legacy or (f.status='annotated' and (p->>'completedAt')::timestamptz=finished))

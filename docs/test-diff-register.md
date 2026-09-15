@@ -1,5 +1,16 @@
 # Test diff register
 
+## Family ancestry migration condition syntax · 2026-09-15
+
+Fresh CI `34973036948` at `2212f0b` passed all 5,092 unit checks but stopped
+while applying the Family migration. A bare `CASE ... THEN` expression in a
+PL/pgSQL `IF` condition was parsed as the condition's terminating `THEN`.
+The source-hash comparison now parenthesizes that `CASE` expression. These
+two parentheses are the only SQL change; no assertion is changed. The other
+two `CASE` expressions occur in an assignment or already inside function-call
+parentheses. All 24 focused shared-reader tests pass. Fresh migration
+application and SQL/browser execution remain required.
+
 ## Separate Family ancestry authority · 2026-09-15
 
 New tests cover the recipient reader independently of the own-account reader:
