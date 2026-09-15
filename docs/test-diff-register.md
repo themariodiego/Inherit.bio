@@ -1,5 +1,89 @@
 # Test diff register
 
+## Family ancestry final rollback assertion · 2026-09-15
+
+CI `34980023938` at `096b267` executed all 92 Family SQL assertions with zero
+failures. The final savepoint rollback restored pgTAP’s transactional
+current-test cache to 62, while its result sequence and emitted assertions
+reached 92. `no_plan()` therefore emitted an incorrect final count.
+
+A new assertion after the final rollback verifies that the exact shared page,
+source rows and authority receipt equal the original capture. This meaningful
+93rd assertion also records the current sequence number before `finish()`.
+All previous assertions, savepoints and failure handling remain unchanged;
+no test-harness state is rewritten directly. The runner source documents this
+sequence/cache distinction in `ok()`, `add_result()` and `finish()`:
+[pgTAP source](https://raw.githubusercontent.com/theory/pgtap/main/sql/pgtap.sql.in).
+Fresh full CI remains required.
+
+## Family ancestry source-drift fixture · 2026-09-15
+
+CI `34978684167` at `3c3d65f` applied the migration and passed the first 37
+Family SQL assertions. The next fixture update changed only the upload
+revision, violating the existing completed-file consistency constraint before
+the reader could be tested. An added assertion preserves that exact constraint
+refusal. The drift fixture then changes both upload and normalization source
+revisions together, as existing source-authority suites already do. Both
+original stale-reader and final-confirmation assertions remain unchanged.
+The suite now has 92 assertions; fresh database execution remains required.
+
+## Family ancestry file-status handling · 2026-09-15
+
+Fresh CI `34976060395` applied the migration, then the first legacy-result
+read failed because its source filter compared the file-status enum with
+`processing`, which is not an enum value. The reader now uses the four actual
+preparation states: uploading, uploaded, parsing and parsed. A stored legacy
+file keeps its source count without claiming that analysis is running; only
+annotated legacy files expose saved ancestry. Failed files remain excluded.
+
+All 84 existing SQL assertions remain unchanged. Seven added assertions
+exercise every enum value with a stale legacy result still present, exact
+preparing/source counts, preservation of the authorized canonical sibling,
+final confirmation, permission-only non-disclosure and invalidation after an
+annotated-to-stored transition. No assertion or guard is weakened or skipped.
+These database cases require fresh CI; static review is not execution proof.
+
+## Family ancestry migration condition syntax · 2026-09-15
+
+Fresh CI `34973036948` at `2212f0b` passed all 5,092 unit checks but stopped
+while applying the Family migration. A bare `CASE ... THEN` expression in a
+PL/pgSQL `IF` condition was parsed as the condition's terminating `THEN`.
+The source-hash comparison now parenthesizes that `CASE` expression. These
+two parentheses are the only SQL change; no assertion is changed. The other
+two `CASE` expressions occur in an assignment or already inside function-call
+parentheses. All 24 focused shared-reader tests pass. Fresh migration
+application and SQL/browser execution remain required.
+
+## Separate Family ancestry authority · 2026-09-15
+
+New tests cover the recipient reader independently of the own-account reader:
+actual consent dispatch, current recipient/session/directional/owner-purpose
+checks, exact captured v1/v2/v3 source and provenance, complete pagination and
+final locked confirmation. The actual ancestry-page regression preserves the
+initially selected own result if that result disappears before confirmation;
+an older surviving result cannot inherit its provenance.
+
+The synthetic browser journey requires ancestry-only discoverability, explicit
+fresh confirmation of an old grant, five saved merged rows matching the owner's
+values, the uncertainty disclosure, both withdrawal directions and unchanged
+source metadata. Review strengthened a potentially empty-array comparison and
+made the owner-withdrawal check await the successful revoke response. SQL review
+replaced an invalid attempt to rewrite an immutable completed report with real
+withdrawal, fresh grant and completion transitions. All original historical
+reader/refusal assertions remain; an explicit immutable-write rejection is added.
+The original 57 rollback-only SQL assertions remain unchanged; 27 further checks
+verify exact operational-proof cleanup, unrelated data, signed history, pause
+and parent cascades. All 84 assertions and the full browser journey await fresh CI.
+No assertion, trigger, timeout, threshold or existing test is weakened or skipped.
+
+CI run 34971302376 found three readability failures in the new Family copy.
+The fresh-confirmation notice now uses three short sentences, the empty status
+reads “No ancestry result is shared yet.”, and the pending button says “Saving…”.
+The browser withdrawal check changes only its exact expected status text from
+“No completed ancestry result is shared yet.” to the new sentence; it still
+requires that status to be visible after the successful owner-purpose revoke.
+No behavior or asserted condition changes; readability thresholds and the wordlist stay unchanged.
+
 ## Exclusive original-finalization retries · 2026-09-15
 
 The current upload-completion route uses a new v2 finalizer. Its tests exercise

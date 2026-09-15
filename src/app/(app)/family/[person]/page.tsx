@@ -1,3 +1,4 @@
+import { loadSharedAncestrySnapshot } from "@/lib/family/shared-ancestry-results";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -88,6 +89,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
   const allowed = permits(decision);
   const gated = !(await acknowledged(user));
   const layers = allowed ? grantedLayers(person) : [];
+  let hasAncestry = allowed && viewerMaySee(person, "ancestry");
 
   // Every read below happens only after the gate and only for a granted
   // layer: no file count, template or genotype is fetched otherwise.
@@ -144,6 +146,14 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
     }
   }
 
+  // An ancestry-only permission is a shared purpose too. This source-free
+  // receipt confirms its current direction without reading DNA before the gate.
+  if (hasAncestry && !gated && layers.length === 0) {
+    const ancestry = await loadSharedAncestrySnapshot(createAdminClient(), {
+      subjectId: person.dataSubjectId, counterpartAccountId: person.counterpartAccountId,
+    }, "permission");
+    hasAncestry = (await ancestry.confirm()).authorized;
+  }
   const subject = { ...person.handle, displayLabel: person.displayLabel };
 
   return (
@@ -182,7 +192,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
         >
           {PAUSED_BODY}
         </p>
-      ) : layers.length === 0 ? (
+      ) : layers.length === 0 && !hasAncestry ? (
         <p
           role="status"
           data-slot="person-blocking"
@@ -195,7 +205,7 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
         <ResultGate />
       ) : (
         <>
-          <section aria-labelledby="family-reports-heading" className="space-y-4">
+          {layers.length > 0 ? <section aria-labelledby="family-reports-heading" className="space-y-4">
             <h2 id="family-reports-heading" className="text-lg font-semibold">
               {REPORTS_HEADING}
             </h2>
@@ -250,9 +260,9 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
             <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
               <TermDefinition term="baseline" />
             </p>
-          </section>
+          </section> : null}
 
-          {viewerMaySee(person, "ancestry") ? (
+          {hasAncestry ? (
             <section aria-labelledby="family-ancestry-heading" className="space-y-2">
               <h2 id="family-ancestry-heading" className="text-lg font-semibold">
                 <Link

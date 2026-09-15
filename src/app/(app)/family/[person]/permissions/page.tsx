@@ -1,3 +1,5 @@
+import { prepareSharedAncestryGrant } from "@/lib/family/shared-ancestry-results";
+import { AncestrySharingConfirmation } from "@/components/family/ancestry-sharing-confirmation";
 import { adultOnRecord } from "@/lib/family/adult-on-record";
 import { prepareHealthPictureGrant } from "@/lib/family/health-picture-results";
 import { preparePortraitGrant } from "@/lib/family/portrait-source-readiness";
@@ -182,6 +184,7 @@ export default async function FamilyPermissionsPage(
     }
   }
 
+  const ancestryPresentation = mayGrant && mySelf ? await prepareSharedAncestryGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const reportEndpointReceipt = mayGrant && mySelf ? await prepareSharedReportGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const portraitEndpointReceipt = mayGrant && mySelf ? await preparePortraitGrant(admin, mySelf.id, person.counterpartAccountId) : null;
   const healthPictureEndpointReceipt = mayGrant && mySelf ? await prepareHealthPictureGrant(admin, mySelf.id, person.counterpartAccountId) : null;
@@ -205,11 +208,12 @@ export default async function FamilyPermissionsPage(
     return GRANT_UNAVAILABLE;
   };
 
-  function actionFor(purpose: Purpose): RowAction | undefined {
+  function actionFor(purpose: Purpose, confirmAncestry = false): RowAction | undefined {
     const held = outbound.get(purpose);
-    if (held && held.state === "on") return { kind: "revoke", grantId: held.grantId };
+    if (held && held.state === "on" && !confirmAncestry) return { kind: "revoke", grantId: held.grantId };
     if (!mayGrant || !canMint) return undefined;
     const isReport = purpose === "reports.monogenic" || purpose === "reports.polygenic";
+    if (purpose === "ancestry" && !ancestryPresentation) return undefined;
     if (isReport && !reportEndpointReceipt) return undefined;
     if (purpose === "family.portrait" && !portraitEndpointReceipt) return undefined;
     if (purpose === "family.heritability" && !healthPictureEndpointReceipt) return undefined;
@@ -219,6 +223,7 @@ export default async function FamilyPermissionsPage(
       purposeKey: purpose,
       artifactVersion: artifact!.version,
       artifactPresentationToken: mintGrantPresentation({
+        ...(purpose === "ancestry" ? { ancestryEndpointReceipt: ancestryPresentation!.receipt } : {}),
         ...(isReport ? { reportEndpointReceipt: reportEndpointReceipt! } : {}),
         ...(purpose === "family.portrait" ? { portraitEndpointReceipt: portraitEndpointReceipt! } : {}),
         ...(purpose === "family.heritability" ? { healthPictureEndpointReceipt: healthPictureEndpointReceipt! } : {}),
@@ -238,6 +243,9 @@ export default async function FamilyPermissionsPage(
     };
     return { kind: "grant", request };
   }
+
+  const ancestryConfirmation = ancestryPresentation?.requiresConfirmation && outbound.get("ancestry")?.state === "on"
+    ? actionFor("ancestry", true) : undefined;
 
   const theirColumn: ColumnRow[] = PERMISSION_ROWS.map((row) => ({
     id: row.id,
@@ -293,6 +301,8 @@ export default async function FamilyPermissionsPage(
         ]}
       />
       <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
+      {ancestryConfirmation?.kind === "grant" ? <AncestrySharingConfirmation
+        personName={person.displayLabel} request={ancestryConfirmation.request} /> : null}
 
       <header className="space-y-3">
         <h1 className="display text-3xl">{PERMISSIONS_H1}</h1>

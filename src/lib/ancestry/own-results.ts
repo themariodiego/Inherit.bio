@@ -3,46 +3,13 @@ import { z } from "zod";
 import type { Db } from "../genome/load";
 import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles, type AnalysisFileBoundary } from "../genome/own-analysis-access";
 import { currentOwnUploadAccount } from "../uploads/own-upload-context";
-import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_UNREADABLE } from "@/copy/ancestry";
-import type { OwnAncestryContentV2 } from "../uploads/own-ancestry-content";
 import { ownAncestryCapturedContentSchema } from "../uploads/own-ancestry-captured-content";
 
-export interface AncestryResultRow {
-  kind: "admixture" | "mtdna" | "ydna";
-  result: unknown;
-  support_note: string | null;
-  file_id: string;
-  model_id: string | null;
-  model_version: string | null;
-  created_at: string;
-}
+import { capturedAncestryRows, type AncestryResultRow } from "./captured-rows";
+export { UNCOMPUTED_LINEAGE, type AncestryResultRow } from "./captured-rows";
 const captured = z.object({ content: ownAncestryCapturedContentSchema,
   completedAt: z.iso.datetime({ offset: true }),
 }).strict();
-export const UNCOMPUTED_LINEAGE = "Lineage has not been computed from this file.";
-
-/**
- * One captured revision-2 lineage, as the card wants it.
- *
- * A read line becomes the stored `HaplogroupCall` the card already renders.
- * An unread one becomes `{ haplogroup: null }` — the same shape the legacy
- * process route writes — so the card's existing no-call branch, its Y lead and
- * its XX gloss all keep working rather than being reimplemented beside them.
- *
- * The tree is named in both states, because it is what was consulted either
- * way, and a reader deserves to know which tree failed to match as much as
- * which one matched.
- */
-function computedLineageRow(lineage: OwnAncestryContentV2["lineages"][number]) {
-  const parent = lineage.kind === "mtdna" ? "mother" : "father";
-  const model = { model_id: lineage.tree.id, model_version: lineage.tree.version };
-  if (lineage.state === "available" && lineage.call !== null) {
-    return { kind: lineage.kind, result: lineage.call, support_note: lineage.call.note, ...model };
-  }
-  const support_note = lineage.reason === "no_supplied_positions" ? LINEAGE_NO_POSITIONS[parent]
-    : lineage.reason === "no_readable_genotypes" ? LINEAGE_UNREADABLE : LINEAGE_NO_BRANCH;
-  return { kind: lineage.kind, result: { haplogroup: null }, support_note, ...model };
-}
 type AncestryRpc = (name: "own_ancestry_content_v1", args: {
   p_account_id: string; p_session_id: string; p_file_id: string;
 }) => PromiseLike<{ data: unknown; error: unknown }>;
@@ -69,16 +36,7 @@ async function readOwnCaptures(db: Db, subjectId: string,
         || parsed.data.content.source.subjectId !== subjectId) continue;
       const { content, completedAt } = parsed.data;
       receipts.set(fileId, JSON.stringify(parsed.data));
-      rows.push({ kind: "admixture", result: content.admixture.result,
-        support_note: content.admixture.support_note, file_id: fileId,
-        model_id: content.admixture.model_id, model_version: content.admixture.model_version, created_at: completedAt });
-      for (const lineage of content.schemaVersion !== 1 ? content.lineages : [])
-        rows.push({ ...computedLineageRow(lineage), file_id: fileId, created_at: completedAt });
-      // Revision 1 captured no lineage at all and must not be dressed up as
-      // one: it says so, in the same words it always has.
-      for (const lineage of content.schemaVersion === 1 ? content.lineages : [])
-        rows.push({ kind: lineage.kind, result: null, support_note: UNCOMPUTED_LINEAGE,
-          file_id: fileId, model_id: null, model_version: null, created_at: completedAt });
+      rows.push(...capturedAncestryRows(content, completedAt));
     } catch { /* One unavailable source does not conceal independently valid results. */ }
   }
   return { rows, confirm: async (allowed?: ReadonlySet<string>) => {
