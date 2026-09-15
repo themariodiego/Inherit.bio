@@ -62,6 +62,14 @@ test("every figure that appears on more than one surface shows one value, from o
   const collected = new Map<string, CollectedFigure[]>();
   for (const { surface } of CROSS.surfaces) {
     await page.goto(surface);
+    if (surface === "/genome/me/ancestry") {
+      const regional = page.locator('[data-slot="regional-ancestry"]');
+      await expect(regional).toHaveAttribute("data-fit-converged", "true");
+      await expect(regional.locator('[data-slot="region-row"]')).toHaveCount(5);
+      await expect(regional.locator('[data-region="EUR-MID-CSA"][data-slot="region-row"]')).toHaveCount(1);
+      await expect(regional.locator('[data-split-region]')).toHaveCount(3);
+      await expect(regional.getByRole("dialog")).toHaveCount(0);
+    }
     collected.set(surface, await page.evaluate(collectFigures));
   }
 

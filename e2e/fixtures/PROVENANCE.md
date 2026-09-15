@@ -401,3 +401,35 @@ data. Public benchmark genotypes are also excluded from current test inputs.
   generator's output and asserts those two calls.
 - Repository SHA-256:
   `8a48094145f0483b80dfd7fb89a87883149215c5d42efdf7d17667cd3bb2c067`.
+
+## Versioned ancestry figure pairs
+
+- Classification: eight independent synthetic single-sample VCFs for the four
+  combined/separate and normal/raw states. No personal genotype is read.
+- `generate-regional-figure-vcf.ts` uses the committed seven-region marker
+  table and deterministic allele draws from `generate-regional-aims-vcf.ts`.
+  Exact seeds, weights and subset rules live in `regional-figure-fixtures.ts`.
+  All normal cases retain 168 markers. Raw A/B cases retain 147/126 by dropping
+  zero-based index 1 modulo 8/4 after drawing all calls.
+- Each B adds one invented parser call at chr20:1000003, A/C, GT 0/1, ID dot.
+  It matches no shipped AIM, report or PGS position and cannot supply MT/Y
+  lineage evidence. Its REF and ALT are invented parser data, with no claim
+  about the biological reference base or functional neutrality. Its removal
+  leaves the complete ancestry fit unchanged; it makes source counts vary.
+- Every displayed regional share changes within each pair. Normal hidden-share
+  chips also change. The fixtures demonstrate data dependence and state
+  handling, not accuracy, prevalence, ancestry identity or interval calibration.
+- `scripts/ancestry-resolution/regional-figure-fixture.test.ts` requires exact
+  regeneration, actual parser counts, correct state, convergence and all share
+  differences. Existing fixture bytes and generators are unchanged.
+
+| Fixture | Repository SHA-256 |
+| --- | --- |
+| `aims-figures-merged-partial-a-grch38.vcf` | `1fb90592b1e1ca75e9f57668fe13ce5a82c4faa431e7d9da1a8ee58fb835ac86` |
+| `aims-figures-merged-partial-b-grch38.vcf` | `1dc743fc84bbc96d8c6bc44ab95d064b16510d036281a2475d442f5cd5e12a9b` |
+| `aims-figures-merged-shown-a-grch38.vcf` | `1c550a6f2cf8fbb6c5378a9cddb2ddc4d0a5b05eefd8905c5ac2d8bc3806a37a` |
+| `aims-figures-merged-shown-b-grch38.vcf` | `5e45c024173d2e85fdbc0e7af07f562b7634ce99a61300ad10da234fc9c0892f` |
+| `aims-figures-separate-partial-a-grch38.vcf` | `c5bb0b1b75d70dcb84036570a71c6e0622aa6764e822ec6b286fa50a55d7b402` |
+| `aims-figures-separate-partial-b-grch38.vcf` | `36cec13ca3cddb7ccb84c6c74f882df86a568616e98c6dbeb8accbbc5d5002c5` |
+| `aims-figures-separate-shown-a-grch38.vcf` | `9ccb8e7b3af0786f6937ebb2622c88f8ad222686dba651fb5db80d0f962e28c0` |
+| `aims-figures-separate-shown-b-grch38.vcf` | `4bf6bdb38b9cb5cfdcf2afb2ef3e0271ae78abdb7927bcebd925dfca5a076586` |

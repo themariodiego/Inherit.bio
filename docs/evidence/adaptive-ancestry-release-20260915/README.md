@@ -1,8 +1,9 @@
 # Adaptive ancestry release verification
 
-Status: release candidate implemented; full clean-tree units and component
-browser review pass. Final database boundary checks, fresh-database journey CI,
-merge and hosted verification remain pending. This
+Status: release candidate implemented; database checks and component review
+pass. The first full browser run exposed interaction and versioned-fixture
+failures. Fixes require fresh full-suite CI before merge and application
+deployment verification. This
 record is not release approval or a new acceptance-gate closure.
 
 ## Scope
@@ -133,3 +134,39 @@ G4.4 was already YES and needs regression evidence; its status does not increase
 the gate count. G5.5 remains a required human review. WGS capacity, automatic
 recovery, deadline delivery and Family's separate ancestry reader are outside
 this release's proof.
+
+## Database and full-browser checkpoint
+
+The backwards-compatible v3 validator migration was applied to production as
+`20260915124207_ancestry_seven_region_capture`. A read-only, rolled-back probe
+passed 132 validation checks across 66 actual/malformed/historical captures.
+The guarded canonical probe then verified exact saving and reading of a real
+TypeScript-generated 168-marker synthetic capture, refusal before selection,
+malformed-content refusal, immediate read denial after withdrawal, one exact
+derived-row deletion within 60 seconds and unchanged source metadata plus
+168 observed calls. All synthetic application rows were already rolled back
+before the receipt returned. Exact function, trigger and implicit database
+metadata matched before and after. No provider bytes or mail were sent.
+[`hosted-database-proof.json`](hosted-database-proof.json) records hashes,
+receipts, unchanged advisor findings and the limits of this evidence.
+
+Full CI `34968643349` at `115bec4` passed 5,043 units in 301 files, 2,992 SQL
+assertions in 80 files, the production build and 405 browser cases. It failed
+five browser cases; one dependent serial case did not run. Two failures came
+from outside-click focus, one from viewport drift after map-panel dismissal,
+and two from using historical figure fixtures/counts with the new v3 policy.
+The separate test-diff register describes the fixes and preserved assertions.
+Nine isolated interaction checks and seven fixture checks now pass; this does
+not certify the repaired full browser run. Preview builds are ready, but their
+access protection prevented authenticated inspection. Production application
+deployment remains on the prior main commit at this checkpoint.
+
+An independent Chromium collection of the actual regional component and
+InputProvenance passes all eight new figure fixtures. Native disclosure clicks,
+exact figure keys, non-null regional identities, state/caveat text and all
+non-invariant values pass. Counts are 12/11 for combined/separate normal
+results and 9/8 for the raw states. The only normal-state constants are pinned
+to 0.0% unassignable and 168/168 marker coverage. The current collector,
+component and fixture hashes accompany the full observations in
+[`component-review/figure-differencing.json`](component-review/figure-differencing.json).
+This static component check does not replace actual upload/generation CI.
