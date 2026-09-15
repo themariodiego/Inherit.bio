@@ -20,6 +20,6 @@ export function AncestrySharingConfirmation({ personName, request }: { personNam
       try {
         if (await submitFamilyPermission({ kind: "grant", request })) router.refresh(); else setFailed(true);
       } catch { setFailed(true); } finally { setPending(false); }
-    }}>{pending ? "Confirming…" : "Confirm ancestry sharing"}</Button>
+    }}>{pending ? "Saving…" : "Confirm ancestry sharing"}</Button>
   </section>;
 }

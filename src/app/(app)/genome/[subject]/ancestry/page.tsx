@@ -212,13 +212,13 @@ export default async function AncestryPage(
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{H1}</h1>
       {confirmationRequired ? <p role="status" data-slot="ancestry-sharing-confirmation" className="max-w-prose text-sm leading-relaxed text-ink">
-        {person!.displayLabel} needs to confirm ancestry sharing again from their permissions page before newer saved results can appear here.
+        {person!.displayLabel} needs to confirm ancestry sharing again. They can do this on their permissions page. Newer saved results can then appear here.
       </p> : null}
       {preparedUnavailable ? <p role="status" data-slot="ancestry-prepared-unavailable" className="max-w-prose text-sm leading-relaxed text-ink">
         Ancestry from a prepared genome is not yet available in Family. Other authorized results are shown below.
       </p> : null}
       {person && rows.length === 0 ? <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">
-        No completed ancestry result is shared yet.
+        No ancestry result is shared yet.
       </p> : null}
       {preparing ? (
         <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{ANCESTRY_PREPARING}</p>

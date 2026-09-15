@@ -124,7 +124,7 @@ test("ancestry-only sharing: historical grant, fresh confirmation, exact saved r
     const ownerRevocation = await ownerRevoked;
     expect(ownerRevocation.status()).toBe(200); expect(await ownerRevocation.json()).toMatchObject({ revoked: true });
     await viewer.reload(); await expect(viewer.locator('[data-figure-kind="ancestry-share"]')).toHaveCount(0);
-    await expect(viewer.getByText("No completed ancestry result is shared yet.", { exact: true })).toBeVisible();
+    await expect(viewer.getByText("No ancestry result is shared yet.", { exact: true })).toBeVisible();
     expect(await receipt()).toEqual(before);
   } finally { await viewerContext.close(); }
 });

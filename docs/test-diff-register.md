@@ -22,6 +22,14 @@ verify exact operational-proof cleanup, unrelated data, signed history, pause
 and parent cascades. All 84 assertions and the full browser journey await fresh CI.
 No assertion, trigger, timeout, threshold or existing test is weakened or skipped.
 
+CI run 34971302376 found three readability failures in the new Family copy.
+The fresh-confirmation notice now uses three short sentences, the empty status
+reads “No ancestry result is shared yet.”, and the pending button says “Saving…”.
+The browser withdrawal check changes only its exact expected status text from
+“No completed ancestry result is shared yet.” to the new sentence; it still
+requires that status to be visible after the successful owner-purpose revoke.
+No behavior or asserted condition changes; readability thresholds and the wordlist stay unchanged.
+
 ## Synthetic gzip header is independent of its build host · 2026-09-15
 
 CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:
