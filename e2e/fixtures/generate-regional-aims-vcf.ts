@@ -8,13 +8,8 @@ import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { REGIONAL_AIMS, REGIONAL_POPS, estimateRegionalAdmixture, type RegionalProportions } from "../../src/lib/genome/regional-admixture";
 import { parseVcf } from "../../src/lib/genome/parsers/vcf";
-
-export const REGIONAL_FIXTURES = [
-  { name: "aims-regional-merged-grch38.vcf", seed: 7, merged: true,
-    weights: { AFR: 0.1, AMR: 0, CSA: 0.15, EAS: 0, EUR: 0.4, MID: 0.35, OCE: 0 } },
-  { name: "aims-regional-separate-grch38.vcf", seed: 11, merged: false,
-    weights: { AFR: 0.9, AMR: 0, CSA: 0, EAS: 0.1, EUR: 0, MID: 0, OCE: 0 } },
-] as const;
+import { REGIONAL_FIXTURES } from "./regional-aims-fixtures";
+export { REGIONAL_FIXTURES } from "./regional-aims-fixtures";
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
