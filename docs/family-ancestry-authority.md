@@ -36,6 +36,7 @@ Family ancestry does not yet validate the complete prepared publication/membersh
 
 ## Verification
 
+- The combined upload-recovery and Family implementation at `b932d60` passed all 5,092 unit tests across 305 files with zero skips (150.90 seconds, two workers), full nonincremental TypeScript, claims, readability, naming and secret gates. The merge changed only the two documentation conflicts; it retained both defect records and test histories. Fresh CI must verify the combined database and browser journey.
 - The integrated clean-tree implementation at `f65ff12` passed all 5,072 unit tests across 303 files, with zero skips (136.02 seconds, two workers). This includes the 120 focused own/Family reader, consent, grant-token, permission and actual ancestry-page regression checks. Subsequent lifecycle edits affect only SQL and documentation; their 84 assertions require fresh CI.
 - Full TypeScript passed after generating current Next route types, with incremental checking disabled. ESLint checked all 13 changed TypeScript files without warnings. Full browser discovery found 412 tests across 68 files; no full local build or browser journey was run.
 - ESLint passed with zero warnings; `git diff --check` is clean.
