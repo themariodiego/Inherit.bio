@@ -57,7 +57,20 @@ The six existing retry-policy tests also passed unchanged.
 TypeScript passed for the nine changed roots and their dependencies after Next
 type generation; ESLint passed with zero warnings. An earlier full TypeScript
 invocation encountered missing generated Next route types in the fresh worktree.
-No full repository suite, hosted run or capacity measurement was attempted.
+After integration with the reviewed ancestry fixes, commit `3a372ad` passed the
+full repository suite: 5,062 tests across 303 files, with no skips, in 153.99
+seconds with two workers. Full nonincremental TypeScript and scoped ESLint also
+passed. An earlier run passed 5,055 tests but its email-capture setup refused
+five downstream cases because the new worktree contained an ignored CLI cache
+and a top-level dependency symlink. The cache and symlink were preserved outside
+the checkout; existing dependencies are now linked inside a real installation
+directory. The unchanged guard then passed all ten email-capture tests before
+the successful full run. No packages were installed or deleted.
+
+The eleven existing retry-policy and recovery-window checks also pass. The
+current migration retains their required explanation that recovery still needs
+the originating session. No assertion, guard or timeout was weakened.
+Hosted recovery and capacity remain unmeasured.
 
 The 44 pgTAP assertions cover actual claim rotation, initial-validation restart,
 legacy takeover, stale read/write/publication/abort refusal, lease renewal,
