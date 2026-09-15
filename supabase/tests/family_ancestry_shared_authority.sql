@@ -259,5 +259,111 @@ select is(public.confirm_family_shared_ancestry_results_v1('79120000-0000-4000-8
  jsonb_build_object('afterFile',first_page->'nextAfter','receipt',second_page->>'pageReceipt')) from pages)),true,
  'one locked operation confirms the complete cursor chain including an empty result page');
 rollback to pagination;
+-- Operational proof lifecycle. A second actual endpoint-proof grant establishes
+-- that cleanup targets one direction; no snapshot fixture is inserted by hand.
+create temporary table sibling_grant as select public.grant_family_ancestry_purpose_v1(
+ '79120000-0000-4000-8000-000000000001','79120000-0000-4000-8000-000000000010',(select id from ancestry_subject),
+ (select id from public.subject_principals where account_id='79120000-0000-4000-8000-000000000003'
+  and principal_kind='account_subject' and status='active'),
+ '79120000-0000-4000-8000-000000000003','ancestry',1,
+ (select body_sha256 from public.consent_artifacts where artifact_key='consent.share-with-adult' and version=1),
+ 'ancestry-sibling-proof-nonce-0000',public.family_ancestry_grant_presentation_v1(
+  '79120000-0000-4000-8000-000000000001','79120000-0000-4000-8000-000000000010',
+  (select id from ancestry_subject),'79120000-0000-4000-8000-000000000003')->>'receipt') id;
+create temporary table proof_before as select * from private.family_ancestry_grant_snapshots
+ where grant_id in(select id from shared_grant union all select id from sibling_grant);
+create temporary table signed_before as select pg.grant_id,to_jsonb(cs) signature from public.purpose_grants pg
+ join public.consent_signatures cs on cs.id=pg.signature_id where pg.grant_id=(select id from shared_grant);
+create function pg_temp.proof(id uuid) returns jsonb language sql as $$
+ select endpoints from private.family_ancestry_grant_snapshots where grant_id=$1; $$;
+create function pg_temp.original_proof(id uuid) returns jsonb language sql as $$
+ select endpoints from proof_before where grant_id=$1; $$;
+select is((select count(*) from proof_before),2::bigint,'two current independently signed directions each hold operational proof');
+select is(has_function_privilege('service_role','private.clear_family_ancestry_snapshot_v1()','execute'),false,'service clients cannot invoke the cleanup helper');
+select is(has_function_privilege('authenticated','private.clear_family_ancestry_snapshot_v1()','execute'),false,'browser roles cannot invoke the cleanup helper');
+select is(has_table_privilege('service_role','private.family_ancestry_grant_snapshots','delete'),false,'service clients cannot delete endpoint proof directly');
+
+savepoint proof_current;
+update public.purpose_grants set grant_revision=grant_revision where grant_id=(select id from shared_grant);
+update public.directional_grants set status=status,grant_revision=grant_revision where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),pg_temp.original_proof((select id from shared_grant)),'unchanged current grant writes retain exact endpoint proof');
+select public.pause_family_sharing_v1('79120000-0000-4000-8000-000000000002','79120000-0000-4000-8000-000000000001');
+select is(pg_temp.proof((select id from shared_grant)),pg_temp.original_proof((select id from shared_grant)),'pause preserves proof without terminalizing the grant');
+select public.resume_family_sharing_v1('79120000-0000-4000-8000-000000000002','79120000-0000-4000-8000-000000000001');
+select is(pg_temp.proof((select id from shared_grant)),pg_temp.original_proof((select id from shared_grant)),'resume uses the same exact proof');
+select is(pg_temp.shared()->>'legacyOnly','false','resume retains canonical access without a new signature');
+rollback to proof_current;
+
+savepoint proof_revoked;
+select public.revoke_directional_purpose_v1('79120000-0000-4000-8000-000000000001',(select id from shared_grant));
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'actual grant withdrawal atomically removes obsolete ancestry endpoint JSON');
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'withdrawal preserves the unrelated recipient proof byte for byte');
+select is((select to_jsonb(cs) from public.consent_signatures cs join public.purpose_grants pg on pg.signature_id=cs.id
+ where pg.grant_id=(select id from shared_grant)),(select signature from signed_before),'withdrawal retains the exact signed consent history');
+select ok(exists(select 1 from public.purpose_grants where grant_id=(select id from shared_grant) and revoked_at is not null),'cleanup retains the terminal parent grant');
+rollback to proof_revoked;
+
+savepoint proof_base_revision;
+update public.purpose_grants set grant_revision=grant_revision+1 where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'base revision change removes old proof in that statement');
+update public.directional_grants set grant_revision=grant_revision+1 where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'paired base revision transition preserves unrelated proof');
+rollback to proof_base_revision;
+
+savepoint proof_direction_revision;
+update public.directional_grants set grant_revision=grant_revision+1 where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'direction revision change independently removes old proof');
+update public.purpose_grants set grant_revision=grant_revision+1 where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'paired direction revision transition preserves unrelated proof');
+rollback to proof_direction_revision;
+
+savepoint proof_direction_revoked;
+update public.directional_grants set status='revoked',ended_at=clock_timestamp() where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'direction revoked removes ancestry proof before any base update');
+update public.purpose_grants set revoked_at=clock_timestamp(),revocation_reason='lifecycle-test' where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'direction revoked cleanup leaves unrelated proof intact');
+rollback to proof_direction_revoked;
+
+savepoint proof_direction_superseded;
+update public.directional_grants set status='superseded',ended_at=clock_timestamp() where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'direction superseded removes ancestry proof before any base update');
+update public.purpose_grants set revoked_at=clock_timestamp(),revocation_reason='lifecycle-test' where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'direction superseded cleanup leaves unrelated proof intact');
+rollback to proof_direction_superseded;
+
+savepoint proof_direction_expired;
+update public.directional_grants set status='expired',ended_at=clock_timestamp() where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'direction expired removes ancestry proof before any base update');
+update public.purpose_grants set revoked_at=clock_timestamp(),revocation_reason='lifecycle-test' where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'direction expired cleanup leaves unrelated proof intact');
+rollback to proof_direction_expired;
+
+savepoint proof_parent_deleted;
+-- The registered parent cleanup first removes its exact replay-nonce child;
+-- that existing FK is RESTRICT, independently of the snapshot's CASCADE.
+delete from public.purpose_grant_nonces where grant_id=(select id from shared_grant);
+delete from public.purpose_grants where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'registered parent deletion cascades to only its operational proof');
+delete from public.directional_grants where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'parent cascade preserves unrelated ancestry proof');
+select is((select to_jsonb(cs) from public.consent_signatures cs where cs.id=((select signature from signed_before)->>'id')::uuid),
+ (select signature from signed_before),'operational-child deletion does not erase separately retained signed history');
+rollback to proof_parent_deleted;
+
+savepoint proof_direction_deleted;
+delete from public.directional_grants where grant_id=(select id from shared_grant);
+select is(pg_temp.proof((select id from shared_grant)),null::jsonb,'direction deletion removes its proof before parent deletion');
+delete from public.purpose_grant_nonces where grant_id=(select id from shared_grant);
+delete from public.purpose_grants where grant_id=(select id from shared_grant);
+set constraints purpose_grants_pair_check,directional_grants_pair_check immediate;
+select is(pg_temp.proof((select id from sibling_grant)),pg_temp.original_proof((select id from sibling_grant)),'direction deletion preserves unrelated ancestry proof');
+rollback to proof_direction_deleted;
+
 select * from finish();
 rollback;

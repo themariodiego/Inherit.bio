@@ -17,7 +17,9 @@ made the owner-withdrawal check await the successful revoke response. SQL review
 replaced an invalid attempt to rewrite an immutable completed report with real
 withdrawal, fresh grant and completion transitions. All original historical
 reader/refusal assertions remain; an explicit immutable-write rejection is added.
-The 57 rollback-only SQL assertions and full browser journey await fresh CI.
+The original 57 rollback-only SQL assertions remain unchanged; 27 further checks
+verify exact operational-proof cleanup, unrelated data, signed history, pause
+and parent cascades. All 84 assertions and the full browser journey await fresh CI.
 No assertion, trigger, timeout, threshold or existing test is weakened or skipped.
 
 ## Synthetic gzip header is independent of its build host · 2026-09-15

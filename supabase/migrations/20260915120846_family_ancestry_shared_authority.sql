@@ -380,3 +380,32 @@ revoke all on function private.family_ancestry_recipient_v1(uuid,uuid,uuid,text)
 revoke all on function private.family_source_ancestry_grant_v1(uuid,uuid) from public,anon,authenticated,inherit_upload_only,service_role;
 revoke all on function private.family_source_ancestry_authority_v1(uuid,uuid) from public,anon,authenticated,inherit_upload_only,service_role;
 revoke all on function private.family_ancestry_input_view_v1(public.genome_files,jsonb,boolean) from public,anon,authenticated,inherit_upload_only,service_role;
+
+-- Operational proof is a child of the registered purpose-grant lifecycle, not
+-- retained consent evidence. Terminal grants keep their signed history, while
+-- this copied endpoint JSON loses its purpose and is removed in that same write.
+-- A pause changes no grant row and therefore preserves proof for later resume.
+create function private.clear_family_ancestry_snapshot_v1()
+returns trigger language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ delete from private.family_ancestry_grant_snapshots where grant_id=old.grant_id;
+ if tg_op='DELETE' then return old; end if;
+ return new;
+end; $$;
+revoke all on function private.clear_family_ancestry_snapshot_v1()
+ from public,anon,authenticated,inherit_upload_only,service_role;
+
+create trigger clear_family_ancestry_snapshot_on_purpose_change
+ after update of revoked_at,grant_revision on public.purpose_grants
+ for each row when (new.revoked_at is not null or new.grant_revision is distinct from old.grant_revision)
+ execute function private.clear_family_ancestry_snapshot_v1();
+create trigger clear_family_ancestry_snapshot_on_direction_change
+ after update of status,grant_revision on public.directional_grants
+ for each row when (new.status is distinct from 'current' or new.grant_revision is distinct from old.grant_revision)
+ execute function private.clear_family_ancestry_snapshot_v1();
+create trigger clear_family_ancestry_snapshot_on_direction_delete
+ after delete on public.directional_grants
+ for each row execute function private.clear_family_ancestry_snapshot_v1();
+-- Purpose-grant deletion already deletes this exact child through its FK.
+comment on table private.family_ancestry_grant_snapshots is
+ 'Operational child of public.purpose_grants: subject-bound-authority-and-lifecycle-terminalization. Remove on revocation, revision change, direction terminalization/deletion, or parent deletion; pause preserves proof. Not retained signed evidence or an export of counterpart endpoint identifiers. Time-only expiry denies reads but awaits a terminal transition or parent deletion for cleanup.';
