@@ -1,5 +1,22 @@
 # Test diff register
 
+## Exclusive original-finalization retries · 2026-09-15
+
+The current upload-completion route uses a new v2 finalizer. Its tests exercise
+exclusive attempts, initial validation restart, saved copy-hash progress,
+interruption, stale cleanup refusal and same-upload browser retries. The v1
+entry point and its existing assertions remain intact. Browser assertions for
+an unmarked 503 remain terminal; new assertions require both the exact closed
+failure body and `Retry-After: 60` before retaining the upload handle. Malformed
+or different bodies cannot acquire that retry meaning.
+
+The new SQL suite checks actual claim rotation, authority, checkpoint transfer,
+lease expiry and cleanup exclusion. It supplements the historical SQL suites.
+The 145 focused unit tests and six existing retry-policy tests passed without
+skips. SQL and complete browser execution remain required in fresh CI; the
+change does not establish hosted capacity or automatic background recovery.
+See `docs/finalization-fenced-recovery.md` for the implementation limits.
+
 ## Synthetic gzip header is independent of its build host · 2026-09-15
 
 CI run 34965659515 at `2ebbf6c` failed the two complete-byte fixture comparisons:
