@@ -409,5 +409,10 @@ select is(pg_temp.confirm((select receipt->>'pageReceipt' from captured_share)),
  'an annotated-to-stored legacy transition invalidates the earlier result receipt');
 rollback to legacy_status_matrix;
 
+-- Assert after the final savepoint rollback: pgTAP's result sequence survives
+-- rollback, while its current-test cache is transactional.
+select is(pg_temp.shared(),(select receipt from captured_share),
+ 'all rollback-only probes restore the exact shared ancestry page and authority');
+
 select * from finish();
 rollback;

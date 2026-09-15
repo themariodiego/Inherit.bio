@@ -1,5 +1,21 @@
 # Test diff register
 
+## Family ancestry final rollback assertion · 2026-09-15
+
+CI `34980023938` at `096b267` executed all 92 Family SQL assertions with zero
+failures. The final savepoint rollback restored pgTAP’s transactional
+current-test cache to 62, while its result sequence and emitted assertions
+reached 92. `no_plan()` therefore emitted an incorrect final count.
+
+A new assertion after the final rollback verifies that the exact shared page,
+source rows and authority receipt equal the original capture. This meaningful
+93rd assertion also records the current sequence number before `finish()`.
+All previous assertions, savepoints and failure handling remain unchanged;
+no test-harness state is rewritten directly. The runner source documents this
+sequence/cache distinction in `ok()`, `add_result()` and `finish()`:
+[pgTAP source](https://raw.githubusercontent.com/theory/pgtap/main/sql/pgtap.sql.in).
+Fresh full CI remains required.
+
 ## Family ancestry source-drift fixture · 2026-09-15
 
 CI `34978684167` at `3c3d65f` applied the migration and passed the first 37
