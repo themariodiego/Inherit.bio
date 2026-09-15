@@ -2,10 +2,9 @@
  * /genome/[subject]/ancestry — what the file supports about broad regions
  * and parent lines (brief §4.6, §4 §7.3–7.6, A.8, G4.4, X16.5). Server
  * composition: auth and subject resolution, the three stored ancestry
- * results, the region arithmetic (`presentShares` → `regionsView`) and the
- * committed map geometry decoded once per process, handed to the client
- * regions section as plain data. The engines (`src/lib/genome/admixture.ts`,
- * `haplogroups.ts`) are untouched; nothing here recomputes an estimate.
+ * results and the versioned region geometry. Captured model/version selects
+ * the historical or seven-region presentation. Geometry is decoded on the
+ * server and passed as plain data; nothing here recomputes an estimate.
  *
  * Six headings: the h1 and five h2s (regions, mother’s line, father’s line,
  * Neanderthals, where this comes from). No segmented control renders while
@@ -19,6 +18,7 @@ import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
 import { AncestryRegions, type AncestryResultView } from "@/components/results/ancestry/ancestry-regions";
+import { RegionalAncestryRegions } from "@/components/results/ancestry/regional-ancestry-regions";
 import { LineageCard, type LineageCall } from "@/components/results/ancestry/lineage-card";
 import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -28,6 +28,9 @@ import { NAV_LABELS } from "@/copy/navigation";
 import { ANCESTRY_PREPARING } from "@/copy/genome/preparation";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
 import { mapShapes } from "@/lib/ancestry/geometry";
+import { regionalMapShapes } from "@/lib/ancestry/regional-geometry";
+import { isSevenRegionPanel, sevenRegionResult, REGIONAL_REFERENCE, REGIONAL_SOURCES } from "@/lib/ancestry/regional-panel";
+import { SEVEN_ANCESTRY_PANEL } from "@/lib/uploads/own-ancestry-content-v3";
 import { MIN_MARKERS, PANEL, SOURCES, LINEAGE_TREES } from "@/lib/ancestry/panel";
 import { presentShares } from "@/lib/ancestry/present";
 import { tierQualifies } from "@/lib/ancestry/regions";
@@ -151,8 +154,8 @@ export default async function AncestryPage(
   if (person && !viewerMaySee(person, "ancestry")) notFound();
 
   const admin = createAdminClient();
-  // Canonical results come from the checked private journal. Legacy own rows
-  // retain RLS; Family keeps its separately authorized legacy reader.
+  // Canonical results come from the checked private journal; legacy own rows
+  // retain RLS. The separate counterpart reader remains tracked in D-123.
   const resultClient = person ? admin : await createClient();
   const [fileCount, captured, preparing] = await Promise.all([
     getSubjectFileCount(admin, dataSubjectId),
@@ -172,7 +175,8 @@ export default async function AncestryPage(
   if (admix && !current.has(admix)) admix = undefined;
   if (mt && !current.has(mt)) mt = undefined;
   if (y && !current.has(y)) y = undefined;
-  const regions = admix ? admixtureView(admix.result, admix.support_note ?? "") : null;
+  const sevenRegion = isSevenRegionPanel(admix);
+  const regions = admix && !sevenRegion ? admixtureView(admix.result, admix.support_note ?? "") : null;
   const subjectParams = { subject: subject.routeSegment };
 
   return (
@@ -199,13 +203,20 @@ export default async function AncestryPage(
         <h2 id="regions-heading" className="text-lg font-semibold text-ink">
           {REGIONS_HEADING}
         </h2>
-        <AncestryRegions
+        {sevenRegion ? <RegionalAncestryRegions
+          subjectId={dataSubjectId}
+          shapes={regionalMapShapes()}
+          panel={SEVEN_ANCESTRY_PANEL}
+          minMarkers={SEVEN_ANCESTRY_PANEL.minimumMarkers}
+          reference={REGIONAL_REFERENCE}
+          result={sevenRegionResult(admix)}
+        /> : <AncestryRegions
           subjectId={dataSubjectId}
           shapes={mapShapes()}
           panel={{ markers: PANEL.markers, version: PANEL.version, known: admix?.model_id === PANEL.id && admix.model_version === PANEL.version }}
           minMarkers={MIN_MARKERS}
           result={regions}
-        />
+        />}
         {admix ? <InputProvenance nested sources={regionInputs} subject={{ subjectId: dataSubjectId }} /> : null}
         {admix ? <p className="text-sm text-ink-muted">{storedModelLine(admix.model_id, admix.model_version)}</p> : null}
       </section>
@@ -249,7 +260,7 @@ export default async function AncestryPage(
           {SOURCES_HEADING}
         </h2>
         <ul data-slot="ancestry-sources" className="space-y-2 text-sm leading-relaxed">
-          {SOURCES.map((source) => (
+          {(sevenRegion ? REGIONAL_SOURCES : SOURCES).map((source) => (
             <li key={source.id}>
               <span className="font-medium text-ink">{source.title}</span>
               <span className="text-ink-muted">{` — ${source.detail}`}</span>

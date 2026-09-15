@@ -1,12 +1,67 @@
 # Browser-test genome fixture provenance
 
-These fixtures are synthetic test data or explicitly identified public reference
-benchmarks. Synthetic fixtures describe no real person; the public HG001
-benchmark is not synthetic. Never substitute private customer, patient, or
-personal genome data.
+Active browser fixtures are synthetic and describe no real person. The historic
+public HG001 benchmark is retained with its provenance but is not an active
+browser input. Never substitute private customer, patient, or personal genome
+data. Public benchmark genotypes are also excluded from current test inputs.
+
+## synthetic-browser-grch38.vcf.gz
+
+- Classification: independently invented single-sample VCF. No genotype,
+  position, header or allele was read from a person or benchmark sample.
+- Generator: `scripts/generate-synthetic-vcf-fixtures.ts`. For index 0–143,
+  positions are `chr20:(1000003 + 613 * index)`. REF cycles A/C/G/T; ALT is
+  the next cycling letter for the first 127 rows, then REF plus that next
+  letter for 17 insertion rows. GT is 1/1 at every third index and 0/1
+  elsewhere. IDs are absent. These invented REF values are parser inputs,
+  not an assertion about the biological GRCh38 reference base.
+- The real parser returns 144 variant records. Listed-call provenance counts
+  exactly 127 supported calls and 17 unsupported indels, with no no-calls,
+  failed filters or blocks. No ancestry-panel or MT/Y positions are present.
+  The first displayed call is chr20:1000003 A→C, genotype C/C.
+- The browser test retains actual compressed-byte hash/size declaration,
+  preparation, explicit report choice, locus/track response and two-source
+  provenance checks. Its separate `tiny-grch38.vcf` supplies the rsID/gene
+  positives. Zero usable markers yield null shares and the explicit empty
+  note; no numeric estimate or raw-number disclosure is expected.
+- Regenerate or verify with
+  `corepack pnpm exec tsx scripts/generate-synthetic-vcf-fixtures.ts [--check]`.
+  Gzip level 9, timestamp zero, no filename; 985 compressed / 5,619 decoded
+  bytes. The generator writes no decoded artifact. The JSON receipt pins
+  byte hashes, counts, scope and the exact first call; unit tests compare
+  committed bytes to the independent generator and run the parser/fitter.
+- Repository SHA-256:
+  `bb9eb56796d406ea66569b31468037872dfc9c34a0f4065d2412ad5d4073a5e5`.
+
+## aims-regional-merged-grch38.vcf and aims-regional-separate-grch38.vcf
+
+- Classification: deterministic synthetic single-sample GRCh38 files. No
+  genotype came from a person, customer file or benchmark sample.
+- Generator: `e2e/fixtures/generate-regional-aims-vcf.ts`, using only the public
+  allele frequencies in the separately versioned seven-region reference.
+  Each allele copy picks a study region according to declared synthetic
+  weights, then draws its allele with a seeded mulberry32 generator. Every
+  marker is explicitly called, including homozygous reference calls.
+- Merged case: seed 7, intended synthetic weights AFR 0.10 / CSA 0.15 /
+  EUR 0.40 / MID 0.35. The fitted EUR and MID shares both exceed 0.10, so
+  the reporting rule combines all three EUR/MID/CSA shares.
+- Separate case: seed 11, intended synthetic weights AFR 0.90 / EAS 0.10.
+  The fit does not trigger the adaptive merge. These design weights are not
+  expected result values and are not evidence of ancestry accuracy.
+- Both pass the real VCF parser and seven-region estimator, use all 168
+  markers and converge. Generator assertions reject a fixture that fails
+  its intended branch; existing browser fixtures are never rewritten.
+- SHA-256, merged:
+  `048a7e52a8d5c4af2316d91b820fed41f4f30745934506bb4089873bc7d76714`.
+- SHA-256, separate:
+  `da3f79a0aaa8361d46fac5c9422d7e16fb4cb6eb98bd39d8dbef3bbd46d738e4`.
 
 ## HG001_GRCh38_chr20_1000000-1100000.vcf.gz
 
+- Historical artifact only: no current browser or pipeline test uses this file
+  as genetic input.
+  Retained without modification; the synthetic fixture above replaces its
+  active transport and locus role as of 15 September 2026.
 - Classification: public GIAB / NIST HG001 (NA12878) reference benchmark window,
   not invented genotypes. The checked-in parent and upstream source hashes,
   retrieval date and terms are recorded in `data/samples/PROVENANCE.md` and

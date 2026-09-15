@@ -5,7 +5,9 @@ import path from "node:path";
 import { axeViolations, createConfirmedUser, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
-  LINEAGE_UNREADABLE, RANGE_MEASURED, RANGE_TEST_LIMIT, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+  LINEAGE_UNREADABLE, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+import { REGIONAL_CAVEAT, REGIONAL_RANGE_NOTE } from "../src/lib/genome/regional-admixture";
+import regionalManifest from "../data/ref/aims-seven-region-manifest.json";
 import { LINEAGE_TREES } from "../src/lib/ancestry/panel";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports, expectNoOwnAncestryResult } from "./own-report-helpers";
 
@@ -355,27 +357,20 @@ test("/genome/[subject]/ancestry complete: the shown state's figure contract, su
     const share = shares.nth(index);
     await expect(share).toHaveAttribute("data-figure-class", "ancestry");
     await expect(share).toHaveAttribute("data-figure-basis", "modelled");
-    await expect(share).toHaveAttribute("data-provenance", /^computed:/);
+    await expect(share).toHaveAttribute("data-provenance", "computed:src/lib/genome/regional-admixture.ts");
     await expect(share.locator('[data-slot="figure-value"]')).toHaveText(SHARE_VALUE);
     const unit = ((await share.locator('[data-slot="figure-unit"]').textContent()) ?? "").trim();
     expect(unit === NO_RANGE_YET || RANGE_UNIT.test(unit), `unit ${JSON.stringify(unit)}`).toBe(true);
     if (RANGE_UNIT.test(unit)) ranged++;
   }
-  // The disjunction above was written before an interval existed and would
-  // stay green if every share lost its range tomorrow. This fixture supplies
-  // all 168 panel markers, so the regions the estimate puts weight on carry a
-  // measured interval and the two chips - which are sums, not estimates -
-  // carry none. Pinned as a floor rather than exactly: which regions the draw
-  // puts weight on is the estimator's business, not this test's.
-  expect(ranged, "the shares this file supports carry a measured range").toBeGreaterThanOrEqual(2);
-
-  // And the sentences beside them. The range is a number about a person's
-  // ancestry, so the page states how often it was measured to hold AND what
-  // the test that measured it assumed, together: either alone is the claim
-  // this product must not make.
-  await expect(page.locator('[data-slot="range-note"]')).toHaveText(RANGE_MEASURED);
-  await expect(page.locator('[data-slot="range-limit"]')).toHaveText(RANGE_TEST_LIMIT);
-  await expect(page.locator('[data-slot="range-note"]')).toHaveCount(1);
+  // This real workflow now writes the separately versioned seven-region
+  // method. Its held-out measurement does not provide per-reader intervals;
+  // the legacy five-region interval contract remains covered by legacy tests.
+  expect(ranged, "new seven-region captures must not invent measured ranges").toBe(0);
+  await expect(page.locator('[data-slot="stored-support-note"]')).toHaveText(REGIONAL_RANGE_NOTE);
+  await expect(page.locator('[data-slot="regional-caveat"]')).toHaveText(REGIONAL_CAVEAT);
+  await expect(page.getByTestId("admixture")).toContainText(regionalManifest.referenceVersion);
+  await expect(page.locator('[data-slot="range-limit"]')).toHaveCount(0);
   expect(await percentTextNodes(page, { visibleOnly: false, outside: '[data-figure-kind="ancestry-share"]' })).toEqual([]);
 
   // G4.2, on a rendered surface rather than in a component test. The rule is

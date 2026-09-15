@@ -8,7 +8,7 @@ import {
 import { AIMS, POPS, estimateAdmixture, type AimMarker } from "../genome/admixture";
 import { classify, lineageBaseFromGenotype } from "../genome/haplogroups";
 
-const sourceSchema = z.object({
+export const sourceSchema = z.object({
   fileId: z.uuid(), subjectId: z.uuid(), normalizedBuild: z.literal("GRCh38"), sourceRevision: z.number().int().positive().safe(),
   callEncoding: z.enum(["vcf-literal", "array-genotype"]),
   sourceSha256: z.string().regex(/^[0-9a-f]{64}$/), normalizedAt: z.iso.datetime({ offset: true }),
@@ -126,7 +126,7 @@ const haplogroupCallSchema = z.object({
 
 /** `call` and `reason` are always present and nullable rather than optional,
  * so every stored lineage has the same key set whichever state it is in. */
-const lineageV2Schema = z.object({
+export const lineageV2Schema = z.object({
   kind: z.enum(LINEAGE_KINDS), state: z.enum(["available", "unavailable"]),
   tree: z.object({ id: z.string().min(1).max(64), version: z.string().min(1).max(128),
     sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict(),
@@ -137,12 +137,8 @@ const lineageV2Schema = z.object({
   reason: z.enum(["no_supplied_positions", "no_readable_genotypes", "no_branch_matched"]).nullable(),
 }).strict();
 
-/** Revision 2 reads the lineage markers and classifies them. */
-export const ownAncestryContentV2Schema = z.object({
-  schemaVersion: z.literal(2), computationRevision: z.literal("own-ancestry-content-v2"), ...sharedShape,
-  lineages: z.array(lineageV2Schema).length(2),
-}).strict().superRefine((value, ctx) => {
-  const lineageOk = value.lineages.every((lineage, index) => {
+export function validAncestryLineages(lineages: z.infer<typeof lineageV2Schema>[]): boolean {
+  return lineages.every((lineage, index) => {
     const kind = LINEAGE_KINDS[index];
     return lineage.kind === kind
       && lineage.tree.id === treeOf(kind).id && lineage.tree.version === treeOf(kind).version
@@ -155,10 +151,18 @@ export const ownAncestryContentV2Schema = z.object({
         : lineage.call === null && lineage.reason === (lineage.observedPositions === 0 ? "no_supplied_positions"
           : lineage.readablePositions === 0 ? "no_readable_genotypes" : "no_branch_matched"));
   });
+}
+
+/** Revision 2 reads the lineage markers and classifies them. */
+export const ownAncestryContentV2Schema = z.object({
+  schemaVersion: z.literal(2), computationRevision: z.literal("own-ancestry-content-v2"), ...sharedShape,
+  lineages: z.array(lineageV2Schema).length(2),
+}).strict().superRefine((value, ctx) => {
+  const lineageOk = validAncestryLineages(value.lineages);
   if (!checkShared(value) || !lineageOk) ctx.addIssue({ code: "custom", message: "Inconsistent ancestry content" });
 });
 
-/** What a reader accepts. What a writer produces is always the latest. */
+/** Historical captures through revision 2; the current reader union also accepts v3. */
 export const ownAncestryContentSchema = z.union([ownAncestryContentV2Schema, ownAncestryContentV1Schema]);
 export type OwnAncestryContent = z.infer<typeof ownAncestryContentSchema>;
 export type OwnAncestryContentV2 = z.infer<typeof ownAncestryContentV2Schema>;
@@ -167,7 +171,7 @@ function normalizedDiploid(value: string): string | null {
   if (!/^[ACGT](?:[/|]?[ACGT])$/.test(value)) return null;
   return value.replace(/[/|]/g, "").split("").sort().join("/");
 }
-function positionCall(rows: readonly OwnAncestryCall[], marker: AimMarker, encoding: OwnAncestrySource["callEncoding"]): { state: PositionState; genotype: string | null } {
+function positionCall(rows: readonly OwnAncestryCall[], marker: Pick<AimMarker, "ref" | "alt">, encoding: OwnAncestrySource["callEncoding"]): { state: PositionState; genotype: string | null } {
   if (!rows.length) return { state: "missing", genotype: null };
   const calls = new Set(rows.map(row => normalizedDiploid(row.genotype)).filter(value => value !== null));
   if (calls.size > 1) return { state: "conflicting", genotype: null };
@@ -190,22 +194,10 @@ function positionCall(rows: readonly OwnAncestryCall[], marker: AimMarker, encod
   return { state: "called", genotype: [...calls][0] ?? null };
 }
 
-/** Pure content computation, NOT an authorization or persistence boundary.
- * The caller must supply the complete checked source-call set, resolve live
- * ancestry consent, and recheck exact source/grant authority before publication.
- * This function never infers omitted reference calls, merges files, or grants
- * lineage authority. GRCh38 normalization is a prerequisite of its input;
- * callEncoding must derive from the same checked source file type. */
-export function computeOwnAncestryContent(input: {
-  source: OwnAncestrySource; calls: readonly OwnAncestryCall[]; panel: OwnAncestryReferencePanel;
-  /** Rows read at the lineage trees' own defining positions, and nowhere else.
-   * Kept separate from `calls` so the admixture accounting cannot be moved by
-   * them: the panel tally below is proved against the AIMs alone. */
-  lineageCalls?: readonly OwnAncestryCall[];
-  // Always the latest revision. The union is what a READER accepts; a writer
-  // has no reason to produce anything but the newest, and saying so here keeps
-  // callers from having to narrow a revision this function never emits.
-}): OwnAncestryContentV2 {
+/** Shared admission checks for versioned estimators; not an authority boundary. */
+export function parseOwnAncestryInputs(input: {
+  source: OwnAncestrySource; calls: readonly OwnAncestryCall[]; lineageCalls?: readonly OwnAncestryCall[];
+}) {
   const parsedSource = sourceSchema.safeParse(input.source);
   const parsedCalls = z.array(callSchema).safeParse(input.calls);
   const parsedLineage = z.array(callSchema).safeParse(input.lineageCalls ?? []);
@@ -228,26 +220,52 @@ export function computeOwnAncestryContent(input: {
     const kind = kindOfChrom.get(row.chrom);
     return kind === undefined || !lineagePositions.get(kind)!.has(row.pos);
   })) throw new Error("ancestry_lineage_locus_unexpected");
-  const panel = input.panel;
-  try {
-    if (!panel || panel.id !== PANEL.id || panel.version !== PANEL.version || panel.provenance !== PANEL.provenance
-      || panel.minimumMarkers !== MIN_MARKERS || markerJson(panel.markers) !== EXPECTED_MARKERS
-      || markerJson(AIMS) !== EXPECTED_MARKERS) throw new Error("ancestry_panel_mismatch");
-  } catch { throw new Error("ancestry_panel_mismatch"); }
+  return { source, calls: parsedCalls.data, lineageCalls: parsedLineage.data };
+}
+
+export function resolveOwnAncestryPositions(calls: readonly OwnAncestryCall[],
+  markers: readonly Pick<AimMarker, "chrom" | "pos38" | "ref" | "alt">[], encoding: OwnAncestrySource["callEncoding"]) {
   const byPosition = new Map<string, OwnAncestryCall[]>();
-  for (const row of parsedCalls.data) {
+  for (const row of calls) {
     const key = `${row.chrom}:${row.pos}`;
     const group = byPosition.get(key) ?? [];
     group.push(row); byPosition.set(key, group);
   }
   const panelPositions: Record<PositionState, number> = { called: 0, missing: 0, noCall: 0, filtered: 0, conflicting: 0, unsupported: 0 };
   const genotypes = new Map<string, string>();
-  for (const marker of panel.markers) {
+  for (const marker of markers) {
     const key = `${marker.chrom}:${marker.pos38}`;
-    const call = positionCall(byPosition.get(key) ?? [], marker, source.callEncoding);
+    const call = positionCall(byPosition.get(key) ?? [], marker, encoding);
     panelPositions[call.state]++;
     if (call.genotype !== null) genotypes.set(key, call.genotype);
   }
+  return { genotypes, panelPositions };
+}
+
+/** Pure content computation, NOT an authorization or persistence boundary.
+ * The caller must supply the complete checked source-call set, resolve live
+ * ancestry consent, and recheck exact source/grant authority before publication.
+ * This function never infers omitted reference calls, merges files, or grants
+ * lineage authority. GRCh38 normalization is a prerequisite of its input;
+ * callEncoding must derive from the same checked source file type. */
+export function computeOwnAncestryContent(input: {
+  source: OwnAncestrySource; calls: readonly OwnAncestryCall[]; panel: OwnAncestryReferencePanel;
+  /** Rows read at the lineage trees' own defining positions, and nowhere else.
+   * Kept separate from `calls` so the admixture accounting cannot be moved by
+   * them: the panel tally below is proved against the AIMs alone. */
+  lineageCalls?: readonly OwnAncestryCall[];
+  // Always the latest revision. The union is what a READER accepts; a writer
+  // has no reason to produce anything but the newest, and saying so here keeps
+  // callers from having to narrow a revision this function never emits.
+}): OwnAncestryContentV2 {
+  const { source, calls, lineageCalls } = parseOwnAncestryInputs(input);
+  const panel = input.panel;
+  try {
+    if (!panel || panel.id !== PANEL.id || panel.version !== PANEL.version || panel.provenance !== PANEL.provenance
+      || panel.minimumMarkers !== MIN_MARKERS || markerJson(panel.markers) !== EXPECTED_MARKERS
+      || markerJson(AIMS) !== EXPECTED_MARKERS) throw new Error("ancestry_panel_mismatch");
+  } catch { throw new Error("ancestry_panel_mismatch"); }
+  const { genotypes, panelPositions } = resolveOwnAncestryPositions(calls, panel.markers, source.callEncoding);
   const result = estimateAdmixture((chrom, pos) => genotypes.get(`${chrom}:${pos}`) ?? null);
   // The existing estimator owns strand/panel-allele compatibility. Genotypes it
   // cannot use are unsupported positions, never extra coverage or reference.
@@ -262,7 +280,7 @@ export function computeOwnAncestryContent(input: {
       result_state: result.markersUsed === 0 ? "not_covered" : result.markersUsed < panel.minimumMarkers ? "partial" : "available",
       basis: "modelled", range: { unavailable: true }, resolution: "five-broad-regions" },
     panelPositions,
-    lineages: LINEAGE_KINDS.map(kind => computeLineage(kind, parsedLineage.data)),
+    lineages: LINEAGE_KINDS.map(kind => computeLineage(kind, lineageCalls)),
   };
 }
 
@@ -281,7 +299,7 @@ export function computeOwnAncestryContent(input: {
  * Nothing here fills a gap. An absent position is absent; it is never read as
  * carrying the ancestral allele, which would enter branches on missing data.
  */
-function computeLineage(kind: LineageKind, rows: readonly OwnAncestryCall[]) {
+export function computeLineage(kind: LineageKind, rows: readonly OwnAncestryCall[]) {
   const chrom = LINEAGE_CHROM[kind];
   const mine = rows.filter(row => row.chrom === chrom);
   const bases = new Map<number, string>();

@@ -4,32 +4,31 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createConfirmedUser, signIn } from "./helpers";
 import { expectNoOwnAncestryResult, generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
-import receipt from "./fixtures/HG001_GRCh38_chr20_1000000-1100000.receipt.json";
+import receipt from "./fixtures/synthetic-browser-grch38.receipt.json";
 import { LINEAGE_NO_POSITIONS } from "../src/copy/ancestry";
 
-// A5: a byte-verbatim window of the public GIAB benchmark, plus a separate
-// synthetic source for rsID/gene positives (GIAB's original IDs are all '.').
-// The 99,744,915-byte parent exceeds the approved 50 MiB decoder limit.
-// Computed zero-AIM ancestry is covered; A8 MT/Y coverage remains NOT closed:
-// canonical lineage generation is unimplemented, not a chromosome-absence test.
+// A5: independently invented calls exercise gzip/hash/preparation and locus
+// transport; a separate synthetic source supplies public rsID/gene positives.
+// This fixture has no ancestry or lineage positions. It proves the empty
+// result state, not biological accuracy or populated MT/Y coverage.
 const USER = { email: `vcf-user-${randomUUID()}@e2e.local`, password: "e2e-vcf-pw" };
 const PANEL_SIZE = (JSON.parse(readFileSync(path.join(process.cwd(), "data/ref/aims.json"), "utf8")) as unknown[]).length;
-const GIAB_RATE = "calls in 127 of 127 listed, supported records";
+const SYNTHETIC_RATE = "calls in 127 of 127 listed, supported records";
 const RATE = '[data-provenance="computed:genome/input-provenance"] [data-slot="figure-value"]';
-let giabFileId: string;
+let syntheticFileId: string;
 
 test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => { await createConfirmedUser(USER.email, USER.password); });
 
-test("GIAB window: real hashed upload → preparation → explicit ancestry generation", async ({ page }) => {
+test("synthetic gzip VCF: hashed upload → preparation → explicit ancestry generation", async ({ page }) => {
   test.setTimeout(600_000);
   await signIn(page, USER.email, USER.password);
-  // No result permission exists during either upload. Upload GIAB last so its
+  // No result permission exists during either upload. Upload the window last so its
   // exact source is the active locus/track file, independently of the tiny SNPs.
   const tinyId = await uploadOwnFilePrepared(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
   const declared = page.waitForRequest(request => new URL(request.url()).pathname === "/api/files/upload-session" && request.method() === "POST");
   void declared.catch(() => {});
-  giabFileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), receipt.fixture.path), { fileType: "vcf" });
+  syntheticFileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), receipt.fixture.path), { fileType: "vcf" });
   // Observe the real browser hash declaration; a tiny file's transient hashing
   // label is not a stable checkpoint. The helper also compares the stored SHA.
   expect((await declared).postDataJSON()).toMatchObject({
@@ -49,13 +48,13 @@ test("GIAB window: real hashed upload → preparation → explicit ancestry gene
   await expect(file).toContainText("GRCh38 · 144 variants");
   await expect(file).toContainText(`sha256 ${receipt.fixture.sha256.slice(0, 32)}`);
   await expect(page.getByText(/median \d+(\.\d+)?s/)).toBeVisible();
-  await expectNoOwnAncestryResult(giabFileId);
+  await expectNoOwnAncestryResult(syntheticFileId);
   await expectNoOwnAncestryResult(tinyId);
-  await generateOwnFileWithChosenReports(page, giabFileId, ["ancestry"]);
+  await generateOwnFileWithChosenReports(page, syntheticFileId, ["ancestry"]);
   await expectNoOwnAncestryResult(tinyId);
 });
 
-test("GIAB locus and first-party track preserve benchmark calls; rsID search uses the distinct synthetic source", async ({ page }) => {
+test("locus and first-party track preserve synthetic calls; rsID search uses the distinct synthetic source", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   // The parameters must be in the body and the URL must carry none of them:
   // a query string reaches server logs, referrers and traces, and this request
@@ -65,14 +64,14 @@ test("GIAB locus and first-party track preserve benchmark calls; rsID search use
     if (url.pathname !== "/api/browse/region" || url.search !== "") return false;
     if (response.request().method() !== "POST") return false;
     const body = JSON.parse(response.request().postData() ?? "{}") as Record<string, unknown>;
-    return body.file === giabFileId && body.chromosome === "chr20"
+    return body.file === syntheticFileId && body.chromosome === "chr20"
       && body.start === 1_000_000 && body.end === 1_100_000;
   });
   void region.catch(() => {});
   await page.goto("/genome/me/data/browser?q=chr20:1000000-1100000");
   const rows = page.locator("table tbody tr");
   await expect(rows).toHaveCount(receipt.fixture.records);
-  // The exact window's IDs were not annotated; test a real immutable point.
+  // Invented positions have no rsIDs; preserve the generator's exact first call.
   for (const row of await rows.all()) await expect(row.locator("td").first()).toHaveText("—");
   const point = receipt.fixture.firstPoint;
   const firstPoint = rows.filter({ hasText: `chr20:${point.pos} ${point.ref}→${point.alt}` });
@@ -83,13 +82,13 @@ test("GIAB locus and first-party track preserve benchmark calls; rsID search use
   await expect(page.locator("[data-claim-block] table")).toHaveCount(1);
   const subjectId = await result.getAttribute("data-subject-id");
   expect(subjectId).toBeTruthy();
-  // These are two views of ONE GIAB input, not evidence of two uploaded files.
+  // These are two views of one synthetic input, not evidence of two uploaded files.
   for (const slot of ["table-input-provenance", "track-input-provenance"]) {
     const context = page.locator(`[data-slot="${slot}"]`);
     await expect(context).toBeVisible();
     await expect(context.locator('details, [hidden], [aria-hidden="true"]')).toHaveCount(0);
     await expect(context.locator('[data-slot="input-source"]')).toHaveCount(1);
-    await expect(context.locator(RATE)).toHaveText(GIAB_RATE);
+    await expect(context.locator(RATE)).toHaveText(SYNTHETIC_RATE);
     await expect(context).toContainText("No change of genome coordinates was needed.");
     await expect(context).toContainText("cannot verify where they came from");
     await expect(context).toContainText("Those records are outside this read-rate count.");
@@ -126,12 +125,12 @@ async function expectSyntheticCaffeineCall(page: Page) {
   await expect(tableInputs.locator('[data-slot="input-source"]')).toHaveCount(2);
   await expect(tableInputs.locator(RATE)).toHaveCount(2);
   expect(await tableInputs.locator(RATE).allTextContents()).toEqual(expect.arrayContaining([
-    GIAB_RATE, "calls in 4 of 4 listed, supported records",
+    SYNTHETIC_RATE, "calls in 4 of 4 listed, supported records",
   ]));
   await expect(tableInputs.getByText("This file was checked but supplied no record at this result's positions.", { exact: true })).toHaveCount(1);
   const trackInputs = page.locator('[data-slot="track-input-provenance"]');
   await expect(trackInputs.locator('[data-slot="input-source"]')).toHaveCount(1);
-  await expect(trackInputs.locator(RATE)).toHaveText(GIAB_RATE);
+  await expect(trackInputs.locator(RATE)).toHaveText(SYNTHETIC_RATE);
 }
 
 test("gene search joins the actual synthetic source's call with CYP1A2 reference annotations", async ({ page }) => {
@@ -140,7 +139,7 @@ test("gene search joins the actual synthetic source's call with CYP1A2 reference
   await expectSyntheticCaffeineCall(page);
 });
 
-test("GIAB ancestry has computed zero-marker coverage and reads the lineage markers without finding one", async ({ page }) => {
+test("synthetic ancestry has computed zero-marker coverage and reads the lineage markers without finding one", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   await page.goto("/ancestry");
   // The lineage read happens for this file and returns nothing, which is a
@@ -157,10 +156,10 @@ test("GIAB ancestry has computed zero-marker coverage and reads the lineage mark
   await expect(admixture.locator('[data-slot="grey-state"]')).toHaveText(
     `Your file covers only 0 of ${PANEL_SIZE} ancestry markers — too few to draw a map. This is a limit of the file, not a result about you.`,
   );
-  const rawList = admixture.getByRole("list");
-  await expect(rawList).toBeHidden();
-  await admixture.getByText("Show the unreliable raw numbers anyway").click();
-  await expect(admixture).toContainText(/proportions are unreliable/i);
-  await expect(rawList).toBeVisible();
-  await expect(rawList.getByRole("listitem")).toHaveCount(5);
+  await expect(admixture.locator('[data-slot="stored-support-note"]')).toHaveText(
+    "No usable ancestry markers were read. No region shares were computed.",
+  );
+  await expect(admixture.locator('[data-slot="raw-numbers"], [data-slot="raw-numbers-list"], [data-figure-kind="ancestry-share"]')).toHaveCount(0);
+  await expect(admixture.getByText("Show the unreliable raw numbers anyway")).toHaveCount(0);
+  await expect(admixture.getByRole("list")).toHaveCount(0);
 });

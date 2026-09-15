@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../genome/load";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
+import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
 import { LINEAGE_NO_POSITIONS } from "@/copy/ancestry";
 import { loadAncestryResults, loadOwnAncestryRows, UNCOMPUTED_LINEAGE } from "./own-results";
 
@@ -28,6 +30,22 @@ beforeEach(() => {
 });
 
 describe("checked own ancestry result projection", () => {
+  it("keeps seven-region shares, their caveat and lineages bound to the saved reference", async () => {
+    const saved = computeOwnAncestryContentV3({ source: content().source,
+      calls: REGIONAL_AIMS.map(marker => ({ file_id: fileId, chrom: marker.chrom, pos: marker.pos38,
+        ref: marker.ref, alt: marker.alt, genotype: `${marker.ref}/${marker.ref}`, usable: true })),
+      panel: SEVEN_OWN_ANCESTRY_PANEL });
+    mocks.rpc.mockResolvedValue({ data: { ...receipt(), content: saved }, error: null });
+    const rows = await loadAncestryResults(db, db, subjectId);
+    expect(rows.map(row => row.kind)).toEqual(["admixture", "mtdna", "ydna"]);
+    expect(rows[0]).toMatchObject({ model_id: saved.panel.id, model_version: saved.panel.version,
+      result: { ...saved.admixture.result, reporting: { ...saved.admixture.result.reporting, caveat: REGIONAL_CAVEAT } } });
+    expect(rows.slice(1).map(row => row.model_id)).toEqual(["inherit-mtdna-curated-subset", "inherit-ydna-curated-subset"]);
+    expect(JSON.stringify(rows)).not.toMatch(/sourceSha256|sourceRevision|callEncoding/);
+    mocks.filter.mockResolvedValueOnce([file]).mockResolvedValueOnce([]);
+    expect(await loadAncestryResults(db, db, subjectId)).toEqual([]);
+  });
+
   it("uses the actual account/session and strips private source facts from display rows", async () => {
     const rows = await loadOwnAncestryRows(db, subjectId, [file]);
     expect(mocks.rpc).toHaveBeenCalledTimes(2);
@@ -37,6 +55,9 @@ describe("checked own ancestry result projection", () => {
     expect(rows.map(row => row.kind)).toEqual(["admixture", "mtdna", "ydna"]);
     expect(rows[0].created_at).toBe("2026-09-07T01:00:00Z");
     expect(rows[0].result).toEqual(content().admixture.result);
+    expect(rows[0]).toMatchObject({ model_id: "aims-kidd-seldin-168", model_version: "2026-08-28" });
+    expect(Object.keys((rows[0].result as { proportions: object }).proportions).sort())
+      .toEqual(["AFR", "AMR", "EAS", "EUR", "SAS"]);
     // No lineage rows were read for this file, so both lines say which of the
     // three reasons applies and neither pretends to a call. The tree is still
     // named: it is what was consulted either way.

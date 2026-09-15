@@ -1,10 +1,46 @@
 # Sample data provenance
 
-Public reference materials only. No real individual's private genome is or may
-ever be committed to this repository.
+Active test inputs are synthetic and describe no real person. Historic public
+reference material remains identified below. No real individual's private genome
+is or may ever be committed to this repository; current tests also exclude
+public benchmark genotypes as inputs.
+
+## synthetic-pipeline-grch38.vcf.gz
+
+- Classification: independently invented single-sample VCF. No person's
+  genotype or benchmark record is read by its generator or tests.
+- Generator: `scripts/generate-synthetic-vcf-fixtures.ts`. It creates 120,000
+  arithmetic filler positions, 40,000 each on chr20, chr21 and chr22,
+  starting at 3000001 and spaced 257 bases apart. REF cycles A/C/G/T and ALT
+  is the next letter; GT is 1/1 at every third index and 0/1 elsewhere.
+  These filler alleles are invented parser inputs, not reference-aligned calls.
+- Public report metadata comes only from `data/templates/*.json`: sort the
+  146 unique rsIDs numerically, include the 73 at even zero-based indices,
+  and leave the other 73 absent. At included positions, keep the catalogue
+  coordinate/REF/ALT and invent GT alternating 0/1 and 1/1. Conflicting
+  catalogue identities or coordinate collisions cause generation to fail.
+- Total: 120,073 variant records, including the catalogue's CFTR indel.
+  Listed-call provenance counts 120,072 supported calls and one unsupported
+  indel. The pipeline test retains the greater-than-100,000-record and
+  every-template-resolution assertions, adds an exact total and rsID set,
+  and checks explicit genotyped and not-covered outcomes across all templates.
+  This is parser/report integration evidence, not biological accuracy or
+  hosted processing capacity evidence.
+- Regenerate or verify with
+  `corepack pnpm exec tsx scripts/generate-synthetic-vcf-fixtures.ts [--check]`.
+  Gzip level 9, timestamp zero, no filename; 499,855 compressed / 4,481,882
+  decoded bytes. No decoded artifact is written. The adjacent receipt pins
+  every catalogue source hash, included/absent rsID sets and output hashes.
+- Repository SHA-256:
+  `cb3510403bdf1f613cefac301011db456e4081fc1fb01ee0e105b6a2efe9ad7e`.
 
 ## HG001_GRCh38_chr20-22.vcf.gz
 
+- Historical artifact only: no current browser or pipeline test uses this file
+  as genetic input.
+  Its old extraction utility remains available for historical reproduction
+  and is not invoked by tests or CI. The synthetic pipeline fixture above
+  replaces its active parser role as of 15 September 2026.
 - Repository SHA-256:
   `3717fc164ef9137a4eec6a2ab48711f2478881ca55fbb230964764be48a78a83`.
 

@@ -1,0 +1,34 @@
+{
+  "kind": "deterministic-synthetic-vcf",
+  "build": "GRCh38",
+  "generator": "scripts/generate-synthetic-vcf-fixtures.ts",
+  "source": "Arithmetic positions and cycling alleles; no source genome or reference sequence is read.",
+  "transformation": "Gzip level 9, timestamp zero, no filename. No decoded artifact is written.",
+  "fixture": {
+    "path": "e2e/fixtures/synthetic-browser-grch38.vcf.gz",
+    "sha256": "bb9eb56796d406ea66569b31468037872dfc9c34a0f4065d2412ad5d4073a5e5",
+    "compressedBytes": 985,
+    "decodedSha256": "42dcd95ba1e82106feaac1354a7efcf80cacecc2745fefb8b23f2075eadf1015",
+    "decodedBytes": 5619,
+    "records": 144,
+    "counts": {
+      "called": 127,
+      "noCall": 0,
+      "unsupported": 17,
+      "failedFilter": 0,
+      "blocks": 0,
+      "singleSample": true,
+      "buildClaim": true
+    },
+    "firstPoint": {
+      "rsid": null,
+      "chrom": 20,
+      "pos": 1000003,
+      "ref": "A",
+      "alt": "C",
+      "genotype": "C/C"
+    },
+    "ancestryMarkerCount": 0
+  },
+  "scope": "Synthetic transport/hash/preparation/locus proof, including unsupported calls and zero ancestry/lineage positions. No biological accuracy claim."
+}

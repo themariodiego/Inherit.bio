@@ -1,0 +1,65 @@
+{
+  "version": "hgdp-tgp-regions-v1",
+  "referenceVersion": "hgdp-1kg-v3.1.2-cap30-168-v1",
+  "sources": [
+    {
+      "file": "ne_110m_land.geojson",
+      "sha256": "9e0729ee253ca7d7a5c4ae9395fb1902264c5377c52e224d13dd85010e2835d9",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson"
+    },
+    {
+      "file": "ne_110m_geography_regions_polys.geojson",
+      "sha256": "4182af773bcc891f8ddbf4b34ac02e87f17b35456269695e07258cf0b4877ec9",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_geography_regions_polys.geojson"
+    }
+  ],
+  "output": "public/geo/regions-v3.topo.json",
+  "outputSha256": "09a36c8374a545a784cf6d59d83bc50099e76243b8879ff46fd7f59e7204f645",
+  "bytes": 54102,
+  "objects": [
+    "land",
+    "AFR",
+    "AMR",
+    "CSA",
+    "EAS",
+    "EUR",
+    "MID",
+    "OCE"
+  ],
+  "priority": [
+    "OCE",
+    "AMR",
+    "EUR",
+    "MID",
+    "CSA",
+    "EAS",
+    "AFR"
+  ],
+  "cuts": {
+    "africaLatitude": 17,
+    "middleEastEast": 55,
+    "middleEastNorth": 42,
+    "centralSouthAsia": [
+      55,
+      0,
+      97,
+      50
+    ],
+    "eastAsiaWest": 97,
+    "westernMelanesia": [
+      129,
+      -11,
+      157,
+      0
+    ]
+  },
+  "parameters": {
+    "maskSimplificationDeg2": 0.0005,
+    "maskDilationDeg": 0.4,
+    "minimumPolygonAreaDeg2": 0.01,
+    "topologySimplificationDeg2": 0.0025,
+    "preQuantization": 100000,
+    "quantization": 10000,
+    "boundaryRepair": "subtract overlaps on the output grid without resnapping new vertices"
+  }
+}

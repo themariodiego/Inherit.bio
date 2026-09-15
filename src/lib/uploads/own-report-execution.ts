@@ -15,7 +15,8 @@ import { ownReportSnapshot } from "./own-report-token";
 import type { ownReportReadyEnvelope } from "./own-report-ready-envelope";
 import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
 import { lineageLoci } from "../ancestry/lineage-panel";
-import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall } from "./own-ancestry-content";
+import type { OwnAncestryCall } from "./own-ancestry-content";
+import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "./own-ancestry-content-v3";
 
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
 const PURPOSES = [...REPORT_PURPOSES, "ancestry"] as const;
@@ -104,7 +105,7 @@ export async function generateOwnReportResults({ actor, fileId, signal, readyMai
         const source = claim.source;
         const encoding = source.fileType === "vcf" || source.fileType === "gvcf" ? "vcf-literal" : "array-genotype";
         if (source.fileId !== fileId || source.callEncoding !== encoding) throw new Error("unavailable");
-        const points = CURRENT_OWN_ANCESTRY_PANEL.markers.map(marker => ({ chrom: marker.chrom, pos: marker.pos38 }));
+        const points = SEVEN_OWN_ANCESTRY_PANEL.markers.map(marker => ({ chrom: marker.chrom, pos: marker.pos38 }));
         const calls: OwnAncestryCall[] = [];
         const operation = encoding === "vcf-literal" ? "read-observed" : "read-variants";
         for (let index = 0; index < points.length; index += 200) {
@@ -160,10 +161,10 @@ export async function generateOwnReportResults({ actor, fileId, signal, readyMai
         }
         const checked = await call("check"), same = claimSchema.safeParse(checked.data);
         if (checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim)) throw new Error("unavailable");
-        const ancestry = computeOwnAncestryContent({ source: { fileId, subjectId: claim.authorization.subjectId,
+        const ancestry = computeOwnAncestryContentV3({ source: { fileId, subjectId: claim.authorization.subjectId,
           normalizedBuild: source.normalizedBuild, callEncoding: encoding, sourceRevision: claim.authorization.sourceRevision,
           sourceSha256: claim.authorization.sourceSha256, normalizedAt: claim.authorization.normalizedAt },
-          calls, lineageCalls, panel: CURRENT_OWN_ANCESTRY_PANEL });
+          calls, lineageCalls, panel: SEVEN_OWN_ANCESTRY_PANEL });
         const finished = await call("complete", { ancestry, readyMail: await envelope() });
         const done = doneSchema.safeParse(finished.data);
         if (finished.error || !done.success || done.data.purpose !== purpose) throw new Error("unavailable");

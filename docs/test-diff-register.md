@@ -1,5 +1,52 @@
 # Test diff register
 
+## Synthetic VCF inputs and versioned ancestry assertions · 2026-09-15
+
+The completion objective requires synthetic-only verification. The two active
+public HG001 consumers were `e2e/upload-vcf.spec.ts` and
+`src/lib/genome/pipeline-integration.test.ts`; both now read independently
+generated synthetic gzip VCFs. `scripts/generate-synthetic-vcf-fixtures.ts`
+reads no benchmark file or person's calls. Historic HG001 artifacts, hashes,
+provenance and the extraction utility remain untouched. The utility is not
+invoked by current tests, package scripts or CI. A source/path search found no
+other active test consumer of those benchmark files. Provenance gates may
+still hash retained artifacts; that is not genetic fixture ingestion.
+
+The browser spec retains all four serial cases and its substantive transport,
+SHA/size declaration, preparation, explicit report-choice, locus, exact call,
+track, two-source, rsID/gene, provenance and lineage-absence assertions. The
+invented window has the same 144-record shape: 127 supported calls and 17
+unsupported indels, with zero ancestry markers. Positions use an arithmetic
+sequence and letters/GTs cycle independently of any sample; the first exact
+call now belongs to that synthetic input. Numeric count checks remain 144
+and 127. The separate synthetic caffeine source and A/C positive stay intact.
+
+The pipeline spec retains `records.length > 100000`, GRCh38 and every-template
+resolution. It adds exact 120,073-record and 73-rsID checks, byte-for-byte
+regeneration, no skipped rows, and explicit genotyped/not-covered outcomes
+across the full catalogue. Its 120,000 arithmetic filler calls and 73 included
+public template positions carry invented GTs; the other 73 template rsIDs are
+deliberately absent. New fixture tests pin compressed/decoded hashes and real
+parser counts and require zero-marker null shares from the actual estimator.
+Focused verification: 3 tests pass across the two unit files, and scoped lint
+passes with zero warnings. Browser execution is not claimed by this entry.
+
+The final zero-marker browser case changes its expected result because v3
+stores null proportions when no usable marker exists. It now requires the
+exact empty note and zero ancestry-share figures, raw-number lists and raw
+disclosures. The previous five uniform raw percentages had no input evidence;
+partial results with actual markers still retain the G5.3a disclosure path.
+
+Canonical ancestry E2E now follows the current writer's v3 capture and requires
+zero fabricated intervals plus its exact version, provenance and caveat. The
+existing sum, focus, figure and geometry assertions remain. Historical
+component and v1/v2 reader tests remain. New v3 schema tests reject internally
+inconsistent lineage evidence and neighboring JavaScript/SQL coverage values.
+These changes bind assertions to the intentionally versioned behavior; no
+test is skipped, disabled or weakened to manufacture a green result. Full
+browser/release evidence must be recorded separately after the current journey
+passes against a database with the full migration chain.
+
 ## Export wording follows actual original availability · 2026-09-09
 
 Full CI at `f31682a` passed 230 browser cases but caught a changed manifest

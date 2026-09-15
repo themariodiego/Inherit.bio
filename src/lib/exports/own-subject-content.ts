@@ -9,7 +9,7 @@ import { isFixtureSlug } from "../../components/reports/library";
 import { preparedReportSourceSchema } from "../genome/prepared-source/report-call-pages";
 import { exportOwnPreparedRecords, type OwnPreparedExportHeader } from "../genome/prepared-source/export-source";
 import type { CanonicalRecord } from "../genome/prepared-source/canonical-schema";
-import { ownAncestryContentSchema } from "../uploads/own-ancestry-content";
+import { ownAncestryCapturedContentSchema } from "../uploads/own-ancestry-captured-content";
 
 const uuid = z.uuid(), hash = z.string().regex(/^[0-9a-f]{64}$/);
 const revision = z.number().int().positive().safe();
@@ -50,7 +50,7 @@ const resultSchema = z.object({ purpose: z.enum(["reports.monogenic", "reports.p
 const prsSchema = z.object({ pgs_id: z.string(), matched: z.number(), computed_at: z.string(), name: z.string().nullable(),
   trait: z.string().nullable(), ancestry_note: z.string().nullable(), n_variants: z.number().nullable() }).strict();
 const ancestrySchema = z.array(z.object({ purpose: z.literal("ancestry"), completed_at: z.string(),
-  grant_id: uuid, grant_revision: revision, result: ownAncestryContentSchema }).strict()).max(1);
+  grant_id: uuid, grant_revision: revision, result: ownAncestryCapturedContentSchema }).strict()).max(1);
 
 /** A content reader for the own-subject slice. This neither creates an export
  * capability nor implements the nonce/worker/chunk delivery contract. Every

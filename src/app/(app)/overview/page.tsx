@@ -46,6 +46,8 @@ import { acknowledged } from "@/lib/family/tier2";
 import { CARRIER_MATCHES_ID } from "@/copy/family/health-picture";
 import { subjectAttributes } from "@/lib/figures/contract";
 import { AIMS, RELIABLE_FRACTION } from "@/lib/genome/admixture";
+import { isSevenRegionPanel } from "@/lib/ancestry/regional-panel";
+import { SEVEN_ANCESTRY_PANEL } from "@/lib/uploads/own-ancestry-content-v3";
 import { PREPARATION_STEP_FOR_STATUS, type FileStatus } from "@/lib/genome/load";
 import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
 import { loadOwnOverviewReports } from "@/components/overview/own-report-summary";
@@ -288,7 +290,8 @@ export default async function OverviewPage() {
   state = resolveState();
   const needsReportChoice = !hasReports && !hasAncestry && (ownReports?.hasPreparedSource ?? false);
   const ancestryTooFew = ownAncestry
-    ? ((ownAncestry.result as StoredAdmixture).markersUsed ?? 0) / AIMS.length < RELIABLE_FRACTION
+    ? ((ownAncestry.result as StoredAdmixture).markersUsed ?? 0) < (isSevenRegionPanel(ownAncestry)
+      ? SEVEN_ANCESTRY_PANEL.minimumMarkers : Math.ceil(AIMS.length * RELIABLE_FRACTION))
     : false;
 
   const firstAdultSegment = family[0]?.handle.routeSegment ?? null;

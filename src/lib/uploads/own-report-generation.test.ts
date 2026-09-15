@@ -12,7 +12,7 @@ vi.mock("@/lib/genome/prepared-source/report-call-pages", async importOriginal =
 import { generateOwnReports } from "./own-report-generation";
 import { lineageLoci } from "../ancestry/lineage-panel";
 import { AIMS } from "../genome/admixture";
-import { ownAncestryContentSchema } from "./own-ancestry-content";
+import { ownAncestryCapturedContentSchema } from "./own-ancestry-captured-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
 import { ALL_PRS_SCORES } from "../genome/prs-data";
 
@@ -161,7 +161,7 @@ describe("independent synchronous own reports", () => {
     expect((await generateOwnReports(request(), fileId)).status).toBe(503);
     expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation === "complete")).toBe(false);
   });
-  it("feeds prepared VCF observations into the existing ancestry computation", async () => {
+  it("feeds prepared VCF observations into the versioned ancestry computation", async () => {
     prepared = true; selected = new Set(["ancestry"]); preparedRpc();
     const marker = AIMS[0];
     mocks.prepared.mockImplementation(async function* (_actor, _source, loci, options) {
@@ -173,7 +173,10 @@ describe("independent synchronous own reports", () => {
     });
     expect((await generateOwnReports(request(), fileId)).status).toBe(200);
     const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
-    expect(ownAncestryContentSchema.safeParse(completed.ancestry).success).toBe(true);
+    expect(ownAncestryCapturedContentSchema.parse(completed.ancestry)).toMatchObject({
+      schemaVersion: 3, computationRevision: "own-ancestry-content-v3",
+      panel: { id: "aims-hgdp-tgp-168", version: "hgdp-1kg-v3.1.2-cap30-168-v1", minimumMarkers: 168 },
+    });
     expect(completed.ancestry.panelPositions.noCall).toBe(1);
     expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
   });
@@ -371,7 +374,9 @@ describe("explicit canonical ancestry generation", () => {
     expect(mocks.templates).not.toHaveBeenCalled();
     const payload = ancestryPayload();
     expect(Object.keys(payload).sort()).toEqual(["ancestry", "readyMail"]);
-    expect(ownAncestryContentSchema.parse(payload.ancestry)).toMatchObject({ source: { fileId, subjectId: subject,
+    expect(ownAncestryCapturedContentSchema.parse(payload.ancestry)).toMatchObject({
+      schemaVersion: 3, computationRevision: "own-ancestry-content-v3",
+      source: { fileId, subjectId: subject,
       sourceSha256: authorization.sourceSha256, sourceRevision: 1, normalizedAt: authorization.normalizedAt, callEncoding: "vcf-literal" },
       admixture: { result_state: "partial", result: { markersUsed: 1 }, coverage: 1 / 168 } });
     const reads = mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-"));

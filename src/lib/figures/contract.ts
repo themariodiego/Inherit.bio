@@ -63,6 +63,7 @@ export const COMPUTED_MODULES = [
   "genome/prs",
   "genome/reports",
   "src/lib/genome/admixture.ts",
+  "src/lib/genome/regional-admixture.ts",
   "src/lib/genome/haplogroups.ts",
 ] as const;
 export type ComputedModule = (typeof COMPUTED_MODULES)[number];

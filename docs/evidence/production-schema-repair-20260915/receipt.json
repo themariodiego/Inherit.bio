@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-09-15T09:49:49Z",
+  "project": {
+    "supabase": "zuvloczwgrayonqabnss",
+    "vercelTeam": "team_XInx0PxxHVKb2DXdL3asLX8R",
+    "vercelProject": "prj_K7bVowhjFr0uIapXraH41hthJkgy",
+    "productionDeployment": "dpl_7tuQpg3o4CmPBWbuYRkQ2XVQsNRU",
+    "productionCommit": "75729f070603334975ab08d211bb16fbac6b053b"
+  },
+  "scope": "Post-apply verification of the two missing migrations applied by parent. Does not cover a later adaptive ancestry v3 migration.",
+  "functionAndMigrationEvidence": [
+    {
+      "kind": "migration",
+      "evidence": {
+        "name": "declared_chromosomal_sex",
+        "version": "20260915094332"
+      }
+    },
+    {
+      "kind": "migration",
+      "evidence": {
+        "name": "ancestry_share_ranges",
+        "version": "20260915094341"
+      }
+    },
+    {
+      "kind": "function",
+      "evidence": {
+        "args": "c jsonb, f uuid, s uuid, a jsonb, encoding text",
+        "name": "validate_own_ancestry_content_v1",
+        "owner": "postgres",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "schema": "private",
+        "body_md5": "90f5b79b44e7ea9006eb415da739aa46",
+        "anon_execute": false,
+        "service_execute": true,
+        "security_definer": true,
+        "normalized_body_md5": "9a85c89f44583357bc0f544d777939cb",
+        "upload_only_execute": false,
+        "authenticated_execute": false
+      }
+    },
+    {
+      "kind": "function",
+      "evidence": {
+        "args": "p_account_id uuid, p_subject_id uuid",
+        "name": "own_chromosomal_sex_v1",
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "schema": "public",
+        "body_md5": "2ffb7a8e9269d591b3b6ff6dd9071a51",
+        "anon_execute": false,
+        "service_execute": true,
+        "security_definer": true,
+        "normalized_body_md5": "514d1cb12508fd24b098787c0ddff1ad",
+        "upload_only_execute": false,
+        "authenticated_execute": false
+      }
+    },
+    {
+      "kind": "function",
+      "evidence": {
+        "args": "p_account_id uuid, p_subject_id uuid, p_chromosomal_sex text",
+        "name": "declare_chromosomal_sex_v1",
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "schema": "public",
+        "body_md5": "74f49fb7721880081afb79b58457d9e3",
+        "anon_execute": false,
+        "service_execute": true,
+        "security_definer": true,
+        "normalized_body_md5": "0ee736305704fa4d9ed01371b2c94e49",
+        "upload_only_execute": false,
+        "authenticated_execute": false
+      }
+    }
+  ],
+  "migrationDrift": {
+    "repository_migrations": 109,
+    "operator_migrations": 1,
+    "applied_migrations": 110,
+    "discrepancies": []
+  },
+  "securityAdvisors": {
+    "observedBefore": "2026-09-15T09:41:32Z",
+    "findingsUnchanged": true,
+    "before": [
+      {
+        "name": "rls_enabled_no_policy",
+        "level": "INFO",
+        "count": 150,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "level": "WARN",
+        "count": 1,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "findings": [
+          {
+            "detail": "Function `public.job_time_stats(p_kind text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/job_time_stats`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "job_time_stats",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_kind text",
+              "security_definer": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "level": "WARN",
+        "count": 1,
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ],
+    "after": [
+      {
+        "name": "rls_enabled_no_policy",
+        "level": "INFO",
+        "count": 150,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "level": "WARN",
+        "count": 1,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "findings": [
+          {
+            "detail": "Function `public.job_time_stats(p_kind text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/job_time_stats`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "job_time_stats",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_kind text",
+              "security_definer": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "level": "WARN",
+        "count": 1,
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "verification": {
+    "pureValidator": {
+      "accepted": 4,
+      "rejected": 12,
+      "passed": true
+    },
+    "declaration": {
+      "checks": 17,
+      "passed": true,
+      "afterRollbackResiduals": [
+        {
+          "relation": "auth.users",
+          "remaining": 0
+        },
+        {
+          "relation": "public.profiles",
+          "remaining": 0
+        },
+        {
+          "relation": "public.subjects",
+          "remaining": 0
+        },
+        {
+          "relation": "public.subject_principals",
+          "remaining": 0
+        },
+        {
+          "relation": "public.subject_account_bindings",
+          "remaining": 0
+        },
+        {
+          "relation": "public.subject_demographics",
+          "remaining": 0
+        },
+        {
+          "relation": "public.embryo_cohort_drafts",
+          "remaining": 0
+        },
+        {
+          "relation": "public.embryo_cohorts",
+          "remaining": 0
+        }
+      ]
+    }
+  }
+}

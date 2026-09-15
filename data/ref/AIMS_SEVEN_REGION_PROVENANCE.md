@@ -12,13 +12,17 @@
   15 September 2026. The manifest records exact VCF and metadata URLs.
 - Attribution: Koenig et al., *A harmonized public resource of deeply sequenced
   diverse human genomes*, Genome Research 34(5):796 (2024),
-  [DOI 10.1101/gr.278378.123](https://genome.cshlp.org/content/34/5/796), and
+  [DOI 10.1101/gr.278378.123](https://doi.org/10.1101/gr.278378.123), and
   [gnomAD HGDP+1kGP downloads](https://gnomad.broadinstitute.org/downloads#v3-hgdp-1kg).
 
 The allele-frequency use is covered by the HGDP+1kGP entry in
-`docs/dataset-licenses.md`. That entry distinguishes the article's CC BY 4.0
-licence from the callset's data terms and records the remaining policies-page
-recheck. This provenance does not replace that audit or claim it was rechecked.
+`docs/dataset-licenses.md`. The data-policy page was read in the browser on 15 September 2026: primary
+exome/genome data are released under CC0 1.0, with attribution requested and
+no participant reidentification allowed. Third-party annotations can have
+separate restrictions; this table contains primary allele frequencies only.
+The journal article's CC BY-NC 4.0 licence governs its text, not these data.
+The earlier audit confused that article with its CC BY 4.0 preprint; see the
+correction in the audit.
 
 Every marker has the same rsid, chromosome, one-based GRCh38 position, REF and
 ALT as `data/ref/aims.json`, in the same order. Marker ascertainment is inherited
