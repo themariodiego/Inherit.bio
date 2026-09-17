@@ -1,5 +1,44 @@
 # Test diff register
 
+## Storage-prefix attacks in every bucket · 17 September 2026
+
+`e2e/rls.spec.ts` previously planted one victim object in `genomes` and
+attacked it as a signed-in stranger through download, listing and upload.
+The migrations create two more private buckets, `genomes-staging` and
+`generated-artifacts`, and the stranger's remaining verbs (signed URL,
+overwrite, delete, move, copy) and the anonymous role (raw Storage REST read,
+create, overwrite and delete; client listing and signed URL) had no browser
+evidence. The suite now plants a victim in every bucket, runs both rounds
+against every prefix, and after each round a service-role control proves the
+victim kept its exact bytes, its folder holds only the victim and the
+attacker's prefix gained nothing, so an accepted write cannot pass as a
+denial. The `chats` and `chat_messages` loop now requires the privilege error
+(42501) that the SQL attack suite already asserts, rather than accepting an
+empty page. Every original case remains; nothing was relaxed or skipped. No
+local Supabase stack was available in this session, so the first execution of
+the new cases is the CI run of the pull request that carries them; the G1.6 row
+of `docs/acceptance-matrix.md` records that run when the row closes.
+
+## Family ancestry contested confirmation retry (D-125) · 17 September 2026
+
+CI run `35260238418` on the documentation-only tree of pull request #129
+failed one browser case in 424: after the owner withdrew their own ancestry
+purpose, the viewer saw the not-found page instead of the empty-state
+sentence. The same tree passed the case in runs `34981687918` and
+`35258394909` and in the re-run of the failed job (attempt 2, on a slower
+runner still). The shared reader denies a capture whose single locked
+confirmation returns false, and the page renders that as not-found.
+
+The reader now retries once after an unconfirmed locked check: a 250 ms
+pause, a fresh session and capability check, a fresh capture of every page and
+a fresh locked confirmation of that capture. Three unit tests were added: the
+retried confirmation confirms the fresh pages and later confirmations check
+the fresh receipts; a second unconfirmed check denies and closes the reader;
+a refused fresh capture is not retried. Existing tests pass
+`retryDelayMs: 0` where they exercise denial; their assertions are unchanged.
+The browser case itself is unchanged. One green run cannot show that the
+retry covers a failure seen once in four runs, so the case stays watched.
+
 ## Family ancestry production release · 17 September 2026
 
 The exact-head CI run `34981687918` at `12807a9` passed 306 unit files
