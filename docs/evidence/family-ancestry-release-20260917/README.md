@@ -28,8 +28,12 @@ assertions including `family_ancestry_shared_authority.sql`; 424 browser cases
 passed with no skips and no retries, including the synthetic Family ancestry
 journey in `e2e/family-ancestry.spec.ts`; no `not ok` line anywhere in the log.
 The job checked out the merge of `12807a9` into `6a4c751`, whose tree is the
-tree that now sits on `main`. The post-merge run on `main` is recorded in the
-same file once it completes.
+tree that now sits on `main`. The post-merge run on `main`,
+[35258394909](https://github.com/themariodiego/Inherit.bio/actions/runs/35258394909)
+at `6588ca2`, completed 19:04 UTC with the same totals: 306 unit files with
+5,097 tests, 82 pgTAP files with 3,151 assertions, 424 browser cases passed
+with no skips and no retries, 89 provider uploads and no `not ok` line. Its
+figures are recorded in the same file from its downloaded job log.
 
 ## Database release, in order
 
