@@ -1,6 +1,8 @@
 /** Local or disposable-CI production-browser proof with the installed Storage provider.
  * Full standard gate: pnpm e2e; focused local proof: node --import tsx scripts/run-upload-browser.mts
  * Append local-only Playwright selectors after --; CI never permits narrowing.
+ * Lighthouse gate (G1.14 contract on the same served build, database and
+ * Storage proxy, G1.16 when it runs on integration CI): pnpm e2e:lighthouse.
  * No key files, Auth rotation, database resets or application test switches.
  * The browser's HTTP proxy routes Storage to an isolated provider process;
  * the app continues using the normal local stack and its identical DB/backend.
@@ -15,16 +17,18 @@ import { fileURLToPath } from "node:url";
 import { localE2eProject, disposableProjectWorkdir, validateDisposableProjectConfig, disposableBootstrapKeys } from "./local-e2e-project";
 import http, { type IncomingMessage } from "node:http";
 import { createInterface } from "node:readline";
+import { chromium } from "@playwright/test";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
 import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 
 const arguments_ = process.argv.slice(2);
 const fullSuite = arguments_[0] === "--full";
 const bootstrapOnly = arguments_[0] === "--bootstrap-only";
-if (fullSuite || bootstrapOnly) arguments_.shift();
+const lighthouseGate = arguments_[0] === "--lighthouse";
+if (fullSuite || bootstrapOnly || lighthouseGate) arguments_.shift();
 assert(arguments_.length === 0 || arguments_[0] === "--", "Pass local Playwright selectors after --");
 const selectors = arguments_.slice(1);
-assertLocalProviderEnvironment(process.env, fullSuite, selectors);
+assertLocalProviderEnvironment(process.env, fullSuite, selectors, lighthouseGate);
 const configuredProject = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
 assert(configuredProject === "sequence", "Expected the unchanged canonical repository project");
@@ -296,16 +300,22 @@ try {
   console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
   if (!bootstrapOnly) {
     if (process.env.CI) ciRuntime = await startCiBrowserRuntime();
-    tests = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
-      `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
-      detached: process.platform !== "win32",
-      stdio: "inherit", env: { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
-        INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
-    });
+    const runtimeEnvironment = { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
+      INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` };
+    // The Lighthouse gate audits the same served build, seeded database and
+    // Storage proxy the suite uses, in the suite's own Chromium unless
+    // SEQ_LH_CHROME names another. Its fixture upload must cross the proxy too.
+    tests = lighthouseGate
+      ? spawn(process.execPath, ["--experimental-strip-types", "scripts/lighthouse-check.ts"], {
+        detached: process.platform !== "win32", stdio: "inherit",
+        env: { ...runtimeEnvironment, SEQ_LH_CHROME: process.env.SEQ_LH_CHROME ?? chromium.executablePath() } })
+      : spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
+        `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
+        detached: process.platform !== "win32", stdio: "inherit", env: runtimeEnvironment });
     const code = await new Promise<number>(resolve => {
       tests!.once("error", () => resolve(1)); tests!.once("exit", code => resolve(code ?? 1));
     });
-    assert.equal(code, 0, "Browser suite or no-skip/no-retry gate failed");
+    assert.equal(code, 0, lighthouseGate ? "Lighthouse gate failed" : "Browser suite or no-skip/no-retry gate failed");
     assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
     console.log(`PASS ${forwardedUploads} browser upload(s) reached the installed provider through the loopback proxy.`);
   }

@@ -117,6 +117,15 @@ jobs:
         env:
           INHERIT_DISPOSABLE_LOCAL_E2E: "true"
         run: pnpm e2e
+      # G1.16: the G1.14 Lighthouse contract (three exact routes, three cold
+      # runs each, median performance >= 90, accessibility 100 on every run,
+      # exact URLs, Document 200 and signed-in content) executed on the same
+      # served build, seeded database and Storage proxy the suite just used.
+      # Its one fixture upload crosses the real local provider like the rest.
+      - name: Lighthouse gate on the isolated runtime
+        env:
+          INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+        run: pnpm e2e:lighthouse
       # D-106's sibling gap, found while root-causing a browser failure that
       # could not be reproduced: the blocking screen names which precondition
       # was missing, Playwright writes that to test-results/error-context.md,
