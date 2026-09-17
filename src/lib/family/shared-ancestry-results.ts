@@ -31,7 +31,13 @@ const pageSchema = z.object({ authority: hash, ownerAccountId: z.uuid(), subject
 }).strict();
 const presentationSchema = z.object({ receipt: hash, requiresConfirmation: z.boolean() }).strict();
 type Rpc = (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
-export interface SharedAncestryOptions { subjectId: string; counterpartAccountId: string }
+export interface SharedAncestryOptions {
+  subjectId: string; counterpartAccountId: string;
+  /** Pause before the one retry of a capture whose locked confirmation came back unconfirmed. */
+  retryDelayMs?: number;
+}
+/** D-125: one bounded retry, so a contested lock costs a round trip rather than a not-found page. */
+export const CONTESTED_CONFIRMATION_RETRY_DELAY_MS = 250;
 export interface SharedAncestryState {
   authorized: boolean; rows: AncestryResultRow[]; sources: InputSourceView[];
   fileCount: number; preparing: boolean; preparedUnavailable: boolean; confirmationRequired: boolean;
@@ -62,50 +68,67 @@ export async function loadSharedAncestrySnapshot(db: Db, options: SharedAncestry
       return now?.accountId === actor.accountId && now.sessionId === actor.sessionId
         && (await familyCapability(actor.accountId, [options.counterpartAccountId], "third_party_adult_analysis")).status === "permitted";
     };
-    if (!await scope()) throw new Error("unavailable");
     const rpc = db.rpc.bind(db) as unknown as Rpc;
-    const state = { ...denied(), authorized: true };
-    const expected: { afterFile: string | null; receipt: string }[] = [];
-    const seen = new Set<string>();
-    let after: string | null = null, authority: string | null = null;
-    do {
-      if (expected.length >= 1000) throw new Error("unavailable");
-      const response = await rpc("family_shared_ancestry_results_v1", { p_account_id: actor.accountId,
-        p_session_id: actor.sessionId, p_subject_id: options.subjectId, p_after_file: after, p_mode: mode });
-      const parsed = pageSchema.safeParse(response.data);
-      if (response.error || !parsed.success) throw new Error("unavailable");
-      const page = parsed.data;
-      if (page.subjectId !== options.subjectId || page.ownerAccountId !== options.counterpartAccountId
-        || (authority !== null && page.authority !== authority) || page.sources.length > page.fileCount
-        || (page.nextAfter !== null && after !== null && page.nextAfter <= after)
-        || (mode === "permission" && (page.sources.length || page.fileCount || page.preparing || page.preparedUnavailable || page.nextAfter))) throw new Error("unavailable");
-      for (const item of page.sources) {
-        if (seen.has(item.fileId) || item.source.fileId !== item.fileId || (after !== null && item.fileId <= after)
-          || (page.nextAfter !== null && item.fileId > page.nextAfter)) throw new Error("unavailable");
-        seen.add(item.fileId);
-        if (item.kind === "canonical") {
-          if (page.legacyOnly || item.content.source.fileId !== item.fileId || item.content.source.subjectId !== options.subjectId) throw new Error("unavailable");
-          state.rows.push(...capturedAncestryRows(item.content, item.completedAt));
-        } else {
-          if (item.rows.some(row => row.file_id !== item.fileId)) throw new Error("unavailable");
-          state.rows.push(...item.rows);
+    /** Every page of the current capture, validated; throws on any mismatch. */
+    const capture = async () => {
+      if (!await scope()) throw new Error("unavailable");
+      const state = { ...denied(), authorized: true };
+      const expected: { afterFile: string | null; receipt: string }[] = [];
+      const seen = new Set<string>();
+      let after: string | null = null, authority: string | null = null;
+      do {
+        if (expected.length >= 1000) throw new Error("unavailable");
+        const response = await rpc("family_shared_ancestry_results_v1", { p_account_id: actor.accountId,
+          p_session_id: actor.sessionId, p_subject_id: options.subjectId, p_after_file: after, p_mode: mode });
+        const parsed = pageSchema.safeParse(response.data);
+        if (response.error || !parsed.success) throw new Error("unavailable");
+        const page = parsed.data;
+        if (page.subjectId !== options.subjectId || page.ownerAccountId !== options.counterpartAccountId
+          || (authority !== null && page.authority !== authority) || page.sources.length > page.fileCount
+          || (page.nextAfter !== null && after !== null && page.nextAfter <= after)
+          || (mode === "permission" && (page.sources.length || page.fileCount || page.preparing || page.preparedUnavailable || page.nextAfter))) throw new Error("unavailable");
+        for (const item of page.sources) {
+          if (seen.has(item.fileId) || item.source.fileId !== item.fileId || (after !== null && item.fileId <= after)
+            || (page.nextAfter !== null && item.fileId > page.nextAfter)) throw new Error("unavailable");
+          seen.add(item.fileId);
+          if (item.kind === "canonical") {
+            if (page.legacyOnly || item.content.source.fileId !== item.fileId || item.content.source.subjectId !== options.subjectId) throw new Error("unavailable");
+            state.rows.push(...capturedAncestryRows(item.content, item.completedAt));
+          } else {
+            if (item.rows.some(row => row.file_id !== item.fileId)) throw new Error("unavailable");
+            state.rows.push(...item.rows);
+          }
+          state.sources.push(item.source);
         }
-        state.sources.push(item.source);
-      }
-      state.fileCount += page.fileCount; state.preparing ||= page.preparing;
-      state.preparedUnavailable ||= page.preparedUnavailable; state.confirmationRequired ||= page.legacyOnly;
-      authority = page.authority; expected.push({ afterFile: after, receipt: page.pageReceipt }); after = page.nextAfter;
-    } while (after !== null);
-    state.rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || a.file_id.localeCompare(b.file_id));
+        state.fileCount += page.fileCount; state.preparing ||= page.preparing;
+        state.preparedUnavailable ||= page.preparedUnavailable; state.confirmationRequired ||= page.legacyOnly;
+        authority = page.authority; expected.push({ afterFile: after, receipt: page.pageReceipt }); after = page.nextAfter;
+      } while (after !== null);
+      state.rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || a.file_id.localeCompare(b.file_id));
+      return { state, expected };
+    };
+    /** One locked check covers every page, including empty results. */
+    const confirmed = async (expected: { afterFile: string | null; receipt: string }[]) => {
+      const response = await rpc("confirm_family_shared_ancestry_results_v1", { p_account_id: actor.accountId,
+        p_session_id: actor.sessionId, p_subject_id: options.subjectId, p_mode: mode, p_expected: expected });
+      return !response.error && response.data === true;
+    };
+    let current = await capture();
     let closed = false;
-    return { ...state, confirm: async (): Promise<SharedAncestryState> => {
+    return { ...current.state, confirm: async (): Promise<SharedAncestryState> => {
       if (closed) return denied();
       try {
         if (await scope()) {
-          // Final awaited operation: one locked check covers every page, including empty results.
-          const response = await rpc("confirm_family_shared_ancestry_results_v1", { p_account_id: actor.accountId,
-            p_session_id: actor.sessionId, p_subject_id: options.subjectId, p_mode: mode, p_expected: expected });
-          if (!response.error && response.data === true) return state;
+          // Final awaited operation for this capture.
+          if (await confirmed(current.expected)) return current.state;
+          // D-125: an unconfirmed locked check can be a contested row lock or
+          // a change that landed mid-request, and the page cannot tell which.
+          // One fresh capture and one fresh locked check decide it again; a
+          // genuine loss of authority denies here too. A scope failure above is
+          // definitive and is never retried.
+          await new Promise<void>(resolve => setTimeout(resolve, options.retryDelayMs ?? CONTESTED_CONFIRMATION_RETRY_DELAY_MS));
+          const again = await capture();
+          if (await confirmed(again.expected)) { current = again; return again.state; }
         }
       } catch { /* Current authority or the exact saved source changed. */ }
       closed = true; return denied();

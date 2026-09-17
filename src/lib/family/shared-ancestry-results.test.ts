@@ -52,10 +52,43 @@ describe("separate Family ancestry captured authority", () => {
     expect(await (await loadSharedAncestrySnapshot(db, options)).confirm()).toMatchObject({ authorized: true, rows: [], sources: [], preparedUnavailable: true });
   });
   it.each(["grant", "owner-purpose", "source", "completion", "pause"])("withholds every captured row when terminal %s confirmation fails", async () => {
-    const captured = await loadSharedAncestrySnapshot(db, options);
+    const captured = await loadSharedAncestrySnapshot(db, { ...options, retryDelayMs: 0 });
     mocks.rpc.mockResolvedValue(ok(false));
     expect(await captured.confirm()).toMatchObject({ authorized: false, rows: [], sources: [], fileCount: 0 });
     mocks.rpc.mockResolvedValue(ok(true)); expect((await captured.confirm()).authorized).toBe(false);
+  });
+  it("retries a contested confirmation once with a fresh capture and confirms the fresh pages", async () => {
+    const fresh = { ...page(), pageReceipt: "d".repeat(64), sources: [{ ...canonical(), completedAt: "2026-09-15T03:00:00Z" }] };
+    let reads = 0, confirms = 0;
+    mocks.rpc.mockImplementation(async name => {
+      if (name.startsWith("confirm_")) return ok(++confirms >= 2);
+      return ok(++reads === 1 ? page() : fresh);
+    });
+    const captured = await loadSharedAncestrySnapshot(db, { ...options, retryDelayMs: 0 });
+    const state = await captured.confirm();
+    expect(state.authorized).toBe(true); expect(state.rows[0].created_at).toBe("2026-09-15T03:00:00Z");
+    expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual(["family_shared_ancestry_results_v1", "confirm_family_shared_ancestry_results_v1",
+      "family_shared_ancestry_results_v1", "confirm_family_shared_ancestry_results_v1"]);
+    expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_expected: [{ afterFile: null, receipt: page().pageReceipt }] });
+    expect(mocks.rpc.mock.calls[3][1]).toMatchObject({ p_expected: [{ afterFile: null, receipt: fresh.pageReceipt }] });
+    // The fresh capture is what later confirmations check, not the stale first one.
+    expect((await captured.confirm()).rows[0].created_at).toBe("2026-09-15T03:00:00Z");
+    expect(mocks.rpc.mock.calls[4][1]).toMatchObject({ p_expected: [{ afterFile: null, receipt: fresh.pageReceipt }] });
+  });
+  it("denies after the one retry is also unconfirmed and stays closed", async () => {
+    const captured = await loadSharedAncestrySnapshot(db, { ...options, retryDelayMs: 0 });
+    mocks.rpc.mockImplementation(async name => ok(name.startsWith("confirm_") ? false : page()));
+    expect(await captured.confirm()).toMatchObject({ authorized: false, rows: [], sources: [], fileCount: 0 });
+    expect(mocks.rpc.mock.calls.map(([name]) => name).filter(name => name.startsWith("confirm_"))).toHaveLength(2);
+    const calls = mocks.rpc.mock.calls.length;
+    mocks.rpc.mockResolvedValue(ok(true)); expect((await captured.confirm()).authorized).toBe(false);
+    expect(mocks.rpc.mock.calls).toHaveLength(calls);
+  });
+  it("does not retry when the fresh capture itself is refused", async () => {
+    const captured = await loadSharedAncestrySnapshot(db, { ...options, retryDelayMs: 0 });
+    mocks.rpc.mockImplementation(async name => ok(name.startsWith("confirm_") ? false : { ...page(), ownerAccountId: viewer }));
+    expect((await captured.confirm()).authorized).toBe(false);
+    expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual(["family_shared_ancestry_results_v1", "confirm_family_shared_ancestry_results_v1", "family_shared_ancestry_results_v1"]);
   });
   it.each(["session", "jurisdiction"])("rechecks current %s before final RPC", async boundary => {
     const captured = await loadSharedAncestrySnapshot(db, options);
@@ -93,7 +126,7 @@ describe("separate Family ancestry captured authority", () => {
   });
   it("uses a source-free current permission capture for the ancestry-only link, and withdrawal removes it", async () => {
     mocks.rpc.mockImplementation(async name => ok(name.startsWith("confirm_") ? true : { ...page(), sources: [], fileCount: 0 }));
-    const captured = await loadSharedAncestrySnapshot(db, options, "permission");
+    const captured = await loadSharedAncestrySnapshot(db, { ...options, retryDelayMs: 0 }, "permission");
     expect((await captured.confirm()).authorized).toBe(true);
     expect(mocks.rpc.mock.calls.every(([, args]) => args.p_mode === "permission")).toBe(true);
     mocks.rpc.mockResolvedValue(ok(false)); expect((await captured.confirm()).authorized).toBe(false);
