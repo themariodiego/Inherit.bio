@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "kind": "read-only production catalog preflight",
+  "observedAt": "2026-09-17T17:54:40Z",
+  "project": "zuvloczwgrayonqabnss",
+  "executedAs": { "role": "postgres", "superuser": false, "bypassrls": true, "postgres": "17.6" },
+  "migration": {
+    "file": "supabase/migrations/20260915120846_family_ancestry_shared_authority.sql",
+    "sourceSha256": "5a4de2062fd9c5979ee292bc7d8084db89a38a77619b379968a1118d149e8e6b",
+    "sourceBytes": 34237,
+    "creates": { "functions": 13, "tables": 1, "rowTriggers": 3 }
+  },
+  "ledger": {
+    "count": 112,
+    "familyPresent": false,
+    "columns": ["version", "statements", "name", "created_by", "idempotency_key", "rollback"],
+    "last5": [
+      { "version": "20260913080000", "name": "research_publication_due_work" },
+      { "version": "20260915094332", "name": "declared_chromosomal_sex" },
+      { "version": "20260915094341", "name": "ancestry_share_ranges" },
+      { "version": "20260915124207", "name": "ancestry_seven_region_capture" },
+      { "version": "20260915140144", "name": "own_upload_finalization_fenced_recovery" }
+    ]
+  },
+  "newObjectsAbsent": { "allThirteenFunctions": true, "table": true, "triggers": true },
+  "prerequisiteFunctions": [
+    { "schema": "private", "name": "family_report_endpoints_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "defMd5": "70683c77cef0f00c9803414a394fbd64", "bodyMd5": "c9c032b5a5ff1027d106906b70426215" },
+    { "schema": "private", "name": "family_report_session_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "defMd5": "ea133f42c429244bc25781d8329a9d69", "bodyMd5": "cf7e8199aae4337c4496fdc8e38af88b" },
+    { "schema": "private", "name": "family_source_report_context_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "defMd5": "7655c6adef89defc6e69325839a42940", "bodyMd5": "0f38bd0b654db4885e3efa817d89ce1f" },
+    { "schema": "private", "name": "own_analysis_completion_matches_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog, private"], "defMd5": "21fc418c1566f7e70241780a6c5e8d49", "bodyMd5": "62262ee52ae6295ebf5857fcb4a954d2" },
+    { "schema": "private", "name": "validate_own_ancestry_content_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "defMd5": "15e0e9b7198fec45816812d36f4a3db9", "bodyMd5": "ce1e4d7869eb918d79f9a5282e84c6a6" },
+    { "schema": "public", "name": "grant_directional_purpose_v1", "owner": "postgres", "secdef": true, "config": ["search_path=\"\""], "defMd5": "a2578b450aecc8819e18702554b738ed", "bodyMd5": "159fd4cc42a81e4a12325ae1f03366a2" },
+    { "schema": "public", "name": "revoke_directional_purpose_v1", "owner": "postgres", "secdef": true, "config": ["search_path=\"\""], "defMd5": "4f27d161fa534eee20f4c099eef2e61e", "bodyMd5": "1ff8fdb419f57bdcdc2129f196020647" },
+    { "schema": "public", "name": "pause_family_sharing_v1", "owner": "postgres", "secdef": true, "config": ["search_path=\"\""], "defMd5": "1d1dcfcec73f35c5f9fd94987c563306", "bodyMd5": "f74fcfc4893f2106e2244928b0f9c68d" },
+    { "schema": "public", "name": "resume_family_sharing_v1", "owner": "postgres", "secdef": true, "config": ["search_path=\"\""], "defMd5": "c4112cfaeff8dacd2c5a58e904f04716", "bodyMd5": "0b819195ac569c7adb079d8f4242a646" },
+    { "schema": "public", "name": "sign_own_upload_artifact_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "0789ad2690f6c41b0d47013fb7740dea", "bodyMd5": "2a205598e07d358ebb1679355d739c45" },
+    { "schema": "public", "name": "own_upload_normalization_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog", "statement_timeout=45s"], "defMd5": "6d0b73e24f127aabcfbbe429b48da707", "bodyMd5": "4a4899d2595bfe20736a7b849edae9a1" },
+    { "schema": "public", "name": "own_report_generation_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "9bc070d38e31927df6559c289a6315e0", "bodyMd5": "3e619c506bbdab42fb2c75a81dbc3817" },
+    { "schema": "public", "name": "grant_own_report_purpose_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "3f7798587c2d682c921f985c93f51f42", "bodyMd5": "85935ef46a0244b4e3987dea38d2c64f" },
+    { "schema": "public", "name": "own_report_context_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "5bb0a10ee76fd3eaceacbcedbcb40003", "bodyMd5": "9b3301d6dba21ec06552d46e4c0997e9" },
+    { "schema": "public", "name": "own_ancestry_content_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "3f86c02bd5be32411f6bc9a53a8d135b", "bodyMd5": "5969513e4c81687aa53724592004a9f2" },
+    { "schema": "public", "name": "filter_own_analysis_files_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "defMd5": "630b10d1d9ee1b6a1938c01c4b440b50", "bodyMd5": "86b256fb032367992b500d8dd0acc785" },
+    { "schema": "extensions", "name": "digest(text,text)", "owner": "postgres", "defMd5": "95de9cf8798b911a1fe38c27bdb570de" },
+    { "schema": "extensions", "name": "digest(bytea,text)", "owner": "postgres", "defMd5": "85b88685f74a398b1ff164ad33eeaaca" }
+  ],
+  "prerequisiteTablesPresent": 25,
+  "genomeFilesColumnsPresent": 19,
+  "roles": { "anon": "present", "authenticated": "present", "inherit_upload_only": "present", "service_role": "present (bypassrls)", "postgres": "login, bypassrls, not superuser" },
+  "enumGenomeFileStatus": ["uploading", "uploaded", "parsing", "parsed", "annotated", "failed", "stored"],
+  "grantTableTriggers": {
+    "public.purpose_grants": ["clear_revoked_own_report_outputs (after update of revoked_at)", "freeze_own_copilot_purpose_recipient (before update)", "invalidate_ancestry_ready_purpose (after update when purpose='ancestry' and revoked_at is null)", "prepare_own_copilot_revocation (before update of revoked_at)", "purpose_grants_pair_check (constraint, deferrable initially deferred)"],
+    "public.directional_grants": ["clear_ended_own_report_outputs (after update of status)", "directional_grants_pair_check (constraint, deferrable initially deferred)", "invalidate_ancestry_ready_direction (after insert or update when direction='self' and status='current')"]
+  },
+  "otherReachedTriggers": {
+    "auth.users": ["invalidate_own_ready_auth_contact (after update of email, email_confirmed_at)", "on_auth_user_created (after insert → public.handle_new_user: profile, self subject, principal, binding; no mail)"],
+    "storage.objects": ["guard_own_preparation_object", "guard_own_upload_final_copy", "guard_retiring_original_storage", "inherit_consume_storage_upload (after insert)", "inherit_guard_storage_upload", "protect_objects_delete (before delete, statement)", "refuse_committed_preparation_probe (constraint, deferred, prepared/% only)", "update_objects_updated_at"],
+    "public.genome_files": ["freeze_deleting_genome_file", "guard_input_provenance", "guard_structural_file_identity"],
+    "public.profiles": ["guard_copilot_profile_revision", "profiles_birth_date_server_only", "profiles_mail_contact_revision_server_only"],
+    "private.own_analysis_runs": ["capture_own_report_catalog_v1 (before insert or update)", "invalidate_changed_own_ready_mail (after delete or update)"],
+    "public.consent_signatures": ["consent_signatures_immutable (before update)"]
+  },
+  "eventTriggersEnabled": ["embryo_forbidden_columns_guard (ddl_command_end: CREATE TABLE, ALTER TABLE, CREATE TABLE AS)", "issue_graphql_placeholder", "issue_pg_cron_access", "issue_pg_graphql_access", "issue_pg_net_access", "pgrst_ddl_watch", "pgrst_drop_watch"],
+  "constraints": {
+    "purpose_grants_pair_check": "constraint trigger, deferrable initially deferred",
+    "directional_grants_pair_check": "constraint trigger, deferrable initially deferred",
+    "normalization_source_completion": "check on genome_files (completed normalization requires matching source revision and verified single sample)",
+    "purpose_grant_nonces_grant_id_fkey": "references purpose_grants(grant_id) on delete restrict"
+  },
+  "privateSchema": { "owner": "postgres", "acl": "postgres=UC, service_role=U, inherit_upload_only=U, authenticated=U" },
+  "privateTablesWithoutRls": ["family_report_grant_snapshots", "family_portrait_grant_snapshots", "health_picture_grant_snapshots"],
+  "pgtapInstalled": false,
+  "genomesBucket": true,
+  "cronJobs": [{ "name": "inherit-own-report-retention-15s-v1", "schedule": "15 seconds", "active": true, "statementTimeout": "20s", "lockTimeout": "2s" }],
+  "uploadConfig": { "issuerHost": "zuvloczwgrayonqabnss.supabase.co", "maximumVcfBytes": 25165824, "maximumArrayBytes": 25165824, "maximumAccountBytes": 134217728, "maximumActiveUploads": 2, "note": "not modified by the proof; only own_upload_storage_authorization reads auth_issuer" },
+  "consentArtifacts": { "consent.own-ancestry": "v1 current", "consent.share-with-adult": "v1 current", "consent.upload-self": "v1 current", "disclosure.insurance-and-discrimination": "v1 current" },
+  "existingAncestrySharing": { "ancestryPurposeGrants": 3, "currentSubjectToRecipient": 0, "note": "no live Family ancestry direction exists, so no customer is forced into fresh confirmation by this release" },
+  "externalEffectReview": {
+    "pgNetInMigrations": false,
+    "mailTransport": "public.mail_outbox rows dispatched by the application job route, never by database triggers",
+    "legalAudit": "private.append_legal_audit_event takes pg_advisory_xact_lock(1229866068,1); a proof transaction must stay short",
+    "revokePurge": "private.enqueue_family_revoke_purge_v1 writes public.worker_jobs rows only"
+  }
+}

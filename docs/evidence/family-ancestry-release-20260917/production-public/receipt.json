@@ -1,0 +1,469 @@
+{
+  "base": "https://www.inherit.bio",
+  "observedAt": "2026-09-17T18:28:53.824Z",
+  "chromium": "141.0.7390.37",
+  "routes": [
+    {
+      "route": "/",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Your genome, on your terms.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 2937,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/about?_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Your genome, on your terms.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 2897,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/providers?_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/auth/sign-in",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "PRERENDER",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/auth/sign-in",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=BqC5Rm_FjqLxjyN3 net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/privacy",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/privacy",
+      "title": "Privacy policy · Inherit",
+      "h1": "Privacy policy.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 11251,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/about?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/gina?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/terms?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/terms?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/gina?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/privacy",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/privacy",
+      "title": "Privacy policy · Inherit",
+      "h1": "Privacy policy.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 11211,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/terms?_rsc=WzUDN3am5ctH078F net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED",
+        "GET https://www.inherit.bio/terms?_rsc=UnGutxUMZihRxjHi net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/genome/me/ancestry",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Fgenome%2Fme%2Fancestry",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=BqC5Rm_FjqLxjyN3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/genome/me/ancestry",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Fgenome%2Fme%2Fancestry",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/family",
+      "title": "Family · Inherit",
+      "h1": "Family",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 1336,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/providers?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/future-person?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/privacy?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/terms?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/gina?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/family",
+      "title": "Family · Inherit",
+      "h1": "Family",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 1296,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/future-person?_rsc=ri89z-7LfgsnF5kD net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED",
+        "GET https://www.inherit.bio/legal/future-person?_rsc=QJyhuqzs1VxqN71R net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family/invite",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Ffamily%2Finvite",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=BqC5Rm_FjqLxjyN3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family/invite",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Ffamily%2Finvite",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family/permissions",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Ffamily%2Fpermissions",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=BqC5Rm_FjqLxjyN3 net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/family/permissions",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/auth/sign-in?next=%2Ffamily%2Fpermissions",
+      "title": "Inherit — your genome, on your terms",
+      "h1": "Welcome back",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 210,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "HIT",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/about",
+      "viewport": "desktop",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/about",
+      "title": "About Inherit & the Plus Bio relationship · Inherit",
+      "h1": "About Inherit.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "buildId": "immutable",
+      "bodyTextLength": 5179,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/providers?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/privacy?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/privacy?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED"
+      ]
+    },
+    {
+      "route": "/about",
+      "viewport": "mobile",
+      "status": 200,
+      "finalUrl": "https://www.inherit.bio/about",
+      "title": "About Inherit & the Plus Bio relationship · Inherit",
+      "h1": "About Inherit.",
+      "statuses": [],
+      "horizontalOverflow": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "buildId": "immutable",
+      "bodyTextLength": 5139,
+      "serverHeaders": {
+        "server": "Vercel",
+        "xVercelCache": "MISS",
+        "xVercelId": "present",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [
+        "GET https://www.inherit.bio/?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=Sdev7PUlRw12F58X net::ERR_ABORTED",
+        "GET https://www.inherit.bio/?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/providers?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/about?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED",
+        "GET https://www.inherit.bio/changelog?_rsc=yMFZbW3py_RmPDJX net::ERR_ABORTED"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Family ancestry authority — D-123
 
-Status: implementation under verification. D-123 remains open until fresh SQL and browser end-to-end evidence passes.
+Status: released 17 September 2026. PR #128 merged to `main` as `6588ca2` with the exact CI-tested tree, the migration is applied to the Inherit project as hosted version `20260917180516`, and a 93-check rollback-only production probe passed. D-123 is fixed; the explicit limits below and in `docs/evidence/family-ancestry-release-20260917/README.md` remain open on their own records.
 
 ## Defect and scope
 
@@ -43,3 +43,16 @@ Family ancestry does not yet validate the complete prepared publication/membersh
 - Playwright discovers the new synthetic journey. It exercises invitation acceptance, actual upload/preparation/explicit ancestry choice, an explicitly historical directional grant, fresh UI confirmation, ancestry-only discovery, saved v3 disclosure, directional withdrawal/regrant and owner-purpose withdrawal with source preservation. Its mail provider is the established local capture server; it must run only in the isolated browser environment.
 - New rollback-only pgTAP tests exercise service ACLs, unchanged signed statement keys, owner logout, live recipient session, historical grant replacement, legacy and v1/v2/v3 captures, exact provenance, owner/directional withdrawal, pause, stale bindings/source/result, prepared refusal and complete pagination. Historical v1/v2 payloads complete through real withdrawal/regrant/new-claim transitions inside savepoints; the completed-row immutability trigger remains active and is checked explicitly. Additional lifecycle checks preserve current proof, pause/resume, unrelated proof and signed history while proving exact revocation, revision, terminal-direction and parent-cascade cleanup. They have not run locally.
 - No local database or Docker operation, dependency install, production action, email delivery or full build was used for this slice. Fresh CI must supply SQL and browser evidence before D-123 can close.
+
+## Production release evidence
+
+`docs/evidence/family-ancestry-release-20260917/` holds the read-only catalog
+preflight, the DDL guard, the exact postflight with per-function body hashes,
+the name-based ledger comparison, the executable rollback-only probe with its
+receipt, the CI evidence for the exact head, and the anonymous production
+browser receipt. The probe proved current sharing, canonical and legacy reads,
+fresh confirmation, pause/resume, both withdrawal directions, immediate refusal,
+operational-proof cleanup and preservation of an unrelated direction on the
+hosted database, all inside a discarded transaction. Not established there: an
+authenticated production browser journey, time-only expiry cleanup and
+prepared-source Family ancestry.

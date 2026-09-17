@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "GitHub Actions evidence for PR #128 and its merge",
+  "pullRequest": {
+    "number": 128,
+    "title": "Read shared ancestry through current Family permissions",
+    "head": "12807a9aac9c2012319945625811f83a62caf141",
+    "headTree": "7aec4a036b126d34976efe1f50b8f6c6d2cf9f04",
+    "baseAtMerge": "6a8612b7698fd9e697eb268632493593b7ba1007",
+    "baseTree": "7d7d0ef8b62b4bd722d69e0943c666d104aa96a6",
+    "mergeBase": "6a4c7514b6614aba1d15fa7e57fe6f17f7a234ab",
+    "mergeBaseTree": "7d7d0ef8b62b4bd722d69e0943c666d104aa96a6"
+  },
+  "exactHeadRun": {
+    "run": 34981687918,
+    "job": 104423323249,
+    "checkedOut": "f1bb02744147d974bafc3c5523712703416163a2 (merge of 12807a9 into 6a4c751)",
+    "checkedOutTree": "7aec4a036b126d34976efe1f50b8f6c6d2cf9f04",
+    "conclusion": "success",
+    "startedAt": "2026-09-15T14:26:52Z",
+    "completedAt": "2026-09-15T15:03:46Z",
+    "unitTests": { "files": 306, "tests": 5097, "skipped": 0 },
+    "databaseTests": { "files": 82, "assertions": 3151, "result": "PASS", "familyFile": "supabase/tests/family_ancestry_shared_authority.sql ok" },
+    "browserSuite": { "discovered": 424, "passed": 424, "skips": 0, "retries": 0, "durationMinutes": 30.8, "providerUploads": 89 },
+    "notOkLines": 0,
+    "steps": "37 steps success; only the failure-evidence upload step was skipped, as it runs on failure only"
+  },
+  "treeEquality": {
+    "statement": "main's tree before the merge equals the CI merge base's tree, and the CI merge commit's tree equals the PR head tree, so the merge commit created on main carries exactly the tree CI tested.",
+    "mergeCommit": "6588ca2d509ce3231178c5aab1901afad83210d9",
+    "mergeCommitTree": "7aec4a036b126d34976efe1f50b8f6c6d2cf9f04"
+  },
+  "postMergeRun": { "run": 35258394909, "headSha": "6588ca2d509ce3231178c5aab1901afad83210d9", "startedAt": "2026-09-17T18:22:10Z", "status": "recorded below when complete" }
+}

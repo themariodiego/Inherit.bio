@@ -1,5 +1,27 @@
 # Test diff register
 
+## Family ancestry production release · 17 September 2026
+
+The exact-head CI run `34981687918` at `12807a9` passed 306 unit files
+(5,097 tests, no skips), 82 pgTAP files (3,151 assertions, including all 93
+Family assertions) and 424 browser cases with no skips or retries. Its checked-out
+merge tree equals the tree merged to `main` as `6588ca2`.
+
+A new rollback-only production probe, `docs/evidence/family-ancestry-release-20260917/probe.sql`,
+ports the 93 Family assertions to the hosted database without pgTAP: fresh
+random synthetic identities, the actual consent, normalization and generation
+writers, nested blocks that stand in for savepoints, a sentinel that discards
+every write, and a residue check over 22 fixture-keyed tables before the
+receipt returns. It passed 93/93 in 671 ms with zero residue; one worker row and
+five audit rows existed only inside the discarded transaction and no mail row
+was created. The probe does not run the CI pgTAP file against production and
+changes no global setting. No assertion, guard, timeout or threshold was
+weakened or skipped, in CI or in the probe.
+
+Anonymous Chromium checks against the deployed merge cover eight public routes
+at two viewports (`production-public/receipt.json`). No authenticated
+production journey was run; that evidence remains the CI browser suite.
+
 ## Family ancestry final rollback assertion · 2026-09-15
 
 CI `34980023938` at `096b267` executed all 92 Family SQL assertions with zero

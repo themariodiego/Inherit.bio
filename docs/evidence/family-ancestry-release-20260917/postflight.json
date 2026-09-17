@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "exact production postflight after applying family_ancestry_shared_authority",
+  "observedAt": "2026-09-17T18:05:55Z",
+  "project": "zuvloczwgrayonqabnss",
+  "ddlGuard": { "sha256": "29a60cc8d80ab89b65e93a6fc30b0260e77ab26b452117107bed3608a45d2e84", "passedAt": "2026-09-17T18:00:45Z", "ledgerCountBefore": 112, "ledgerHeadBefore": "own_upload_finalization_fenced_recovery" },
+  "transcriptionCheck": { "serverMd5OfPastedText": "6aabaa66e1d31b4d128b39848ed516ed", "localMd5OfFile": "6aabaa66e1d31b4d128b39848ed516ed", "identical": true },
+  "ledger": {
+    "countAfter": 113,
+    "applied": { "name": "family_ancestry_shared_authority", "version": "20260917180516", "statementCount": 1 },
+    "repositoryFile": "supabase/migrations/20260915120846_family_ancestry_shared_authority.sql",
+    "sourceSha256": "5a4de2062fd9c5979ee292bc7d8084db89a38a77619b379968a1118d149e8e6b",
+    "nameDrift": { "expectedNames": 112, "operatorNames": 1, "appliedNames": 113, "cOrderMd5Expected": "a662037098df1965157e6e7bf5892df5", "cOrderMd5Applied": "a662037098df1965157e6e7bf5892df5", "behind": [], "ahead": [] }
+  },
+  "functions": [
+    { "fn": "private.grant_family_ancestry_purpose_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "dd859c39e008c5b49d09a1aa91e831cf", "expectedFromFile": "dd859c39e008c5b49d09a1aa91e831cf", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "private.family_ancestry_recipient_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "804e101b67f37a0de85e46b6c13f8368", "expectedFromFile": "804e101b67f37a0de85e46b6c13f8368", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": false, "public": false } },
+    { "fn": "private.family_source_ancestry_grant_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog, private"], "prosrcMd5": "8f6c19122e8907b9ffc0920314c2eb9b", "expectedFromFile": "8f6c19122e8907b9ffc0920314c2eb9b", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": false, "public": false } },
+    { "fn": "private.family_source_ancestry_authority_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog, private"], "prosrcMd5": "1184cb018f9e76343da1f8d7d73f8508", "expectedFromFile": "1184cb018f9e76343da1f8d7d73f8508", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": false, "public": false } },
+    { "fn": "private.family_ancestry_grant_presentation_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "11d0aff78df3079283c9422e75f1683e", "expectedFromFile": "11d0aff78df3079283c9422e75f1683e", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "private.family_ancestry_input_view_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "ee5667bc731ba992521af0f509c3449b", "expectedFromFile": "ee5667bc731ba992521af0f509c3449b", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": false, "public": false } },
+    { "fn": "private.family_shared_ancestry_results_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "e7bbe309556ff2eab0cdc9d57c2b161a", "expectedFromFile": "e7bbe309556ff2eab0cdc9d57c2b161a", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "private.confirm_family_shared_ancestry_results_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "f5f02bc518cf01db97c1b20ac89a59c5", "expectedFromFile": "f5f02bc518cf01db97c1b20ac89a59c5", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "public.family_ancestry_grant_presentation_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "prosrcMd5": "314eb0c90957f4efe5434e590170b2ea", "expectedFromFile": "314eb0c90957f4efe5434e590170b2ea", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "public.grant_family_ancestry_purpose_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "prosrcMd5": "cd4a6e8e679bdac5ec979604326d1d3d", "expectedFromFile": "cd4a6e8e679bdac5ec979604326d1d3d", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "public.family_shared_ancestry_results_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "prosrcMd5": "f70e92963468dcebe49a43aeade5b203", "expectedFromFile": "f70e92963468dcebe49a43aeade5b203", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "public.confirm_family_shared_ancestry_results_v1", "owner": "postgres", "secdef": false, "config": ["search_path=pg_catalog"], "prosrcMd5": "836d4bb740c091ce612309e3457ed03f", "expectedFromFile": "836d4bb740c091ce612309e3457ed03f", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": true, "public": false } },
+    { "fn": "private.clear_family_ancestry_snapshot_v1", "owner": "postgres", "secdef": true, "config": ["search_path=pg_catalog"], "prosrcMd5": "eb4c3973b6e0368470234a8c90be0475", "expectedFromFile": "eb4c3973b6e0368470234a8c90be0475", "exec": { "anon": false, "authenticated": false, "inherit_upload_only": false, "service_role": false, "public": false } }
+  ],
+  "allThirteenBodiesMatchFile": true,
+  "table": {
+    "name": "private.family_ancestry_grant_snapshots", "owner": "postgres", "acl": "{postgres=arwdDxtm/postgres}", "rlsEnabled": true, "rlsForced": false,
+    "columns": [ { "name": "grant_id", "type": "uuid", "notnull": true }, { "name": "endpoints", "type": "jsonb", "notnull": true } ],
+    "constraints": [ "PRIMARY KEY (grant_id)", "FOREIGN KEY (grant_id) REFERENCES purpose_grants(grant_id) ON DELETE CASCADE" ],
+    "commentMd5": "48b6f7953d5cb265e0b18ae04f0cf49a", "commentLength": 390, "commentMatchesFile": true,
+    "privileges": { "service_role": { "select": false, "insert": false, "update": false, "delete": false }, "authenticated": { "select": false, "insert": false }, "anon": { "select": false }, "inherit_upload_only": { "select": false } }
+  },
+  "triggers": [
+    { "name": "clear_family_ancestry_snapshot_on_purpose_change", "table": "public.purpose_grants", "enabled": "O", "def": "AFTER UPDATE OF revoked_at, grant_revision FOR EACH ROW WHEN ((new.revoked_at IS NOT NULL) OR (new.grant_revision IS DISTINCT FROM old.grant_revision)) EXECUTE FUNCTION private.clear_family_ancestry_snapshot_v1()" },
+    { "name": "clear_family_ancestry_snapshot_on_direction_change", "table": "public.directional_grants", "enabled": "O", "def": "AFTER UPDATE OF status, grant_revision FOR EACH ROW WHEN ((new.status IS DISTINCT FROM 'current') OR (new.grant_revision IS DISTINCT FROM old.grant_revision)) EXECUTE FUNCTION private.clear_family_ancestry_snapshot_v1()" },
+    { "name": "clear_family_ancestry_snapshot_on_direction_delete", "table": "public.directional_grants", "enabled": "O", "def": "AFTER DELETE FOR EACH ROW EXECUTE FUNCTION private.clear_family_ancestry_snapshot_v1()" }
+  ],
+  "grantTableTriggerCount": { "before": 8, "after": 11 },
+  "advisors": {
+    "security": { "rls_enabled_no_policy": { "level": "INFO", "count": 152, "note": "150 in the 15 September receipt; +1 own_upload_finalization_attempts from the recovery release, +1 family_ancestry_grant_snapshots from this release" },
+      "authenticated_security_definer_function_executable": { "level": "WARN", "count": 1, "note": "pre-existing public.job_time_stats" },
+      "auth_leaked_password_protection": { "level": "WARN", "count": 1, "note": "pre-existing" }, "errorLevelFindings": 0 },
+    "performance": { "unindexed_foreign_keys": 169, "unused_index": 32, "auth_db_connections_absolute": 1, "note": "identical to the 15 September baseline; the new foreign key is the primary key" }
+  }
+}
