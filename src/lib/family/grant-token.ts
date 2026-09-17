@@ -65,6 +65,7 @@ const HEX_DIGEST = /^[0-9a-f]{64}$/;
 export interface GrantPresentation {
   /** DB-owned endpoint revisions, captured before the report permission prompt. */
   reportEndpointReceipt?: string;
+  ancestryEndpointReceipt?: string;
   portraitEndpointReceipt?: string;
   healthPictureEndpointReceipt?: string;
   /** The account that signs: the data subject's own account, never the recipient's. */
@@ -162,6 +163,8 @@ export function readGrantPresentation(
     return null;
   }
   if (claims.expiresAt <= now) return null;
+  if (claims.ancestryEndpointReceipt !== undefined && (typeof claims.ancestryEndpointReceipt !== "string"
+    || !HEX_DIGEST.test(claims.ancestryEndpointReceipt))) return null;
   if (claims.healthPictureEndpointReceipt !== undefined && (typeof claims.healthPictureEndpointReceipt !== "string"
     || !HEX_DIGEST.test(claims.healthPictureEndpointReceipt))) return null;
   if (claims.portraitEndpointReceipt !== undefined && (typeof claims.portraitEndpointReceipt !== "string"

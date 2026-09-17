@@ -70,6 +70,18 @@ describe("actual consent POST dispatcher", () => {
     });
     expect(mocks.report).not.toHaveBeenCalled(); expect(mocks.copilot).not.toHaveBeenCalled();
   });
+  it.each([true, false])("requires fresh ancestry endpoint proof: %s", async proof => {
+    const token = mintGrantPresentation({ accountId, dataSubjectId: subjectId, subjectBindingRevision: 1,
+      recipientPrincipalId: grantId, recipientAccountId: grantId, purpose: "ancestry", artifactKey: artifact.artifact_key,
+      artifactVersion: 1, artifactBodySha256: artifact.body_sha256, jurisdictionRevision: 1,
+      ...(proof ? { ancestryEndpointReceipt: "e".repeat(64) } : {}) });
+    expect((await POST(request({ action: "grant-purpose", subjectId, purposeKey: "ancestry", artifactVersion: 1,
+      artifactPresentationToken: token, affirmed: true, statementKeys: [...SHARE_WITH_ADULT_STATEMENT_KEYS] }))).status).toBe(proof ? 201 : 409);
+    if (proof) expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("grant_family_ancestry_purpose_v1", expect.objectContaining({
+      p_account_id: accountId, p_session_id: subjectId, p_endpoint_receipt: "e".repeat(64), p_purpose: "ancestry",
+      p_artifact_body_sha256: artifact.body_sha256, p_token_nonce: expect.any(String),
+    })); else expect(mocks.rpc).not.toHaveBeenCalled();
+  });
   it.each([true, false])("requires an exact Portrait presentation: %s", async proof => {
     const token = mintGrantPresentation({ accountId, dataSubjectId: subjectId, subjectBindingRevision: 1,
       recipientPrincipalId: grantId, recipientAccountId: grantId, purpose: "family.portrait", artifactKey: artifact.artifact_key,
