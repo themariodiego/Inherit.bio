@@ -7,20 +7,48 @@ import {
   createConfirmedUser,
 } from "./helpers";
 
-// A12 — RLS proof against the REAL PostgREST and Storage APIs: user A tries
-// to read user B's data directly (no app in the way); anonymous is denied
+// A12 / G1.6 — RLS proof against the REAL PostgREST and Storage APIs: user A
+// tries to read user B's data directly (no app in the way); anonymous is denied
 // everywhere private. Victim data is planted with the service role.
+//
+// Storage is attacked in every bucket the migrations create, not only
+// `genomes`: `genomes-staging` and `generated-artifacts` carry their own
+// per-account prefixes, and a policy added to one bucket says nothing about the
+// others. Every attack is paired with a service-role control that proves the
+// victim object exists, keeps its bytes and gains no neighbour, so "denied" is
+// never confused with "absent" and a write that silently succeeded cannot pass.
 
 const A = { email: "rls-a@e2e.local", password: "e2e-password-a" };
 const B = { email: "rls-b@e2e.local", password: "e2e-password-b" };
 
+/** Every private bucket the migrations create, with a victim object in B's prefix. */
+const BUCKETS = ["genomes", "genomes-staging", "generated-artifacts"] as const;
+type Bucket = (typeof BUCKETS)[number];
+const victimContent = (bucket: Bucket) => `victim data in ${bucket}`;
+
+let aId: string;
 let bId: string;
 let bFileId: string;
 let bSubjectId: string;
 const bObjectPath = () => `${bId}/rls-test/victim.txt`;
+const victimFolder = (bucket: Bucket) => (bucket === "genomes" ? `${bId}/rls-test` : `${bId}/rls-${bucket}`);
+const victimPath = (bucket: Bucket) => `${victimFolder(bucket)}/victim.txt`;
+
+async function victimBytes(bucket: Bucket): Promise<string | null> {
+  const { data, error } = await adminClient().storage.from(bucket).download(victimPath(bucket));
+  if (error || !data) return null;
+  return data.text();
+}
+
+/** Object names under a folder as the service role sees them. */
+async function namesUnder(bucket: Bucket, folder: string): Promise<string[]> {
+  const { data, error } = await adminClient().storage.from(bucket).list(folder);
+  if (error) throw new Error(`service listing of ${bucket}/${folder}: ${error.message}`);
+  return (data ?? []).map((entry) => entry.name).sort();
+}
 
 test.beforeAll(async () => {
-  await createConfirmedUser(A.email, A.password);
+  aId = await createConfirmedUser(A.email, A.password);
   bId = await createConfirmedUser(B.email, B.password);
 
   const admin = adminClient();
@@ -82,9 +110,20 @@ test.beforeAll(async () => {
     provider_key: "anthropic",
     data_classes: ["x"],
   });
-  await admin.storage
-    .from("genomes")
-    .upload(bObjectPath(), new Blob(["victim data"]), { upsert: true });
+  for (const bucket of BUCKETS) {
+    // A leftover attack artefact from an earlier local run must not pass as
+    // "nothing was created": clear both prefixes before planting.
+    for (const folder of [victimFolder(bucket), `${aId}/rls-${bucket}`]) {
+      const stale = await namesUnder(bucket, folder);
+      if (stale.length) await admin.storage.from(bucket).remove(stale.map((name) => `${folder}/${name}`));
+    }
+    const { error: plantError } = await admin.storage
+      .from(bucket)
+      .upload(victimPath(bucket), new Blob([victimContent(bucket)]), { upsert: true });
+    if (plantError) throw new Error(`plant ${bucket} object: ${plantError.message}`);
+    // Anti-vacuity: the victim is really there before anyone attacks it.
+    expect(await victimBytes(bucket), `${bucket} victim must exist before the attack`).toBe(victimContent(bucket));
+  }
 });
 
 async function clientAs(email: string, password: string) {
@@ -93,6 +132,9 @@ async function clientAs(email: string, password: string) {
   if (error) throw new Error(error.message);
   return c;
 }
+
+/** The two tables no browser role holds a privilege on: denial is 42501, never an empty page. */
+const PRIVILEGE_DENIED = new Set(["chats", "chat_messages"]);
 
 test("cross-user reads return zero rows on every user table", async () => {
   const a = await clientAs(A.email, A.password);
@@ -115,6 +157,14 @@ test("cross-user reads return zero rows on every user table", async () => {
     "embryo_operation_nonces",
   ]) {
     const { data, error } = await a.from(table).select("*").limit(10);
+    if (PRIVILEGE_DENIED.has(table)) {
+      // `chats_select_own` and `chat_messages_select_own` exist but no browser
+      // role can reach them: the tables carry no grant, so the real behaviour
+      // is a privilege error. Asserting "zero rows" here would also pass the
+      // day a grant reappears and the dead policy starts deciding access.
+      expect(error?.code, `${table} must deny by privilege, not by an empty policy result`).toBe("42501");
+      continue;
+    }
     if (error) {
       expect(error.code, `${table} hard denial must be a privilege error`).toBe("42501");
       continue;
@@ -188,6 +238,76 @@ test("cross-user storage reads are denied", async () => {
 
   const { data: listing } = await a.storage.from("genomes").list(bId);
   expect(listing ?? []).toHaveLength(0);
+});
+
+test("a signed-in stranger is denied every storage operation on another account's prefix in every bucket", async () => {
+  const a = await clientAs(A.email, A.password);
+  for (const bucket of BUCKETS) {
+    const victim = victimPath(bucket);
+    const store = a.storage.from(bucket);
+    const why = (operation: string) => `${bucket}: ${operation} on B's prefix must be denied for A`;
+
+    const { data: downloaded, error: downloadError } = await store.download(victim);
+    expect(downloaded, why("download")).toBeNull();
+    expect(downloadError, why("download")).not.toBeNull();
+
+    const { data: signed } = await store.createSignedUrl(victim, 60);
+    expect(signed?.signedUrl ?? null, why("signed URL")).toBeNull();
+
+    expect((await store.list(bId)).data ?? [], why("listing the account prefix")).toHaveLength(0);
+    expect((await store.list(victimFolder(bucket))).data ?? [], why("listing the object folder")).toHaveLength(0);
+
+    const { error: createError } = await store.upload(`${victimFolder(bucket)}/stranger.txt`, new Blob(["planted by A"]));
+    expect(createError, why("creating an object")).not.toBeNull();
+
+    const { error: overwriteError } = await store.upload(victim, new Blob(["overwritten by A"]), { upsert: true });
+    expect(overwriteError, why("overwriting the object")).not.toBeNull();
+
+    // Storage answers a delete that RLS filtered out with an empty list rather
+    // than an error, so the proof is the service-role read below, not this call.
+    const { data: removed } = await store.remove([victim]);
+    expect((removed ?? []).map((entry) => entry.name), why("deleting the object")).not.toContain(victim);
+
+    const { error: moveError } = await store.move(victim, `${aId}/rls-${bucket}/stolen.txt`);
+    expect(moveError, why("moving the object into A's prefix")).not.toBeNull();
+
+    const { error: copyError } = await store.copy(victim, `${aId}/rls-${bucket}/copied.txt`);
+    expect(copyError, why("copying the object into A's prefix")).not.toBeNull();
+
+    // Controls: the victim still exists with its exact bytes, nothing joined it
+    // in B's folder, and nothing landed in A's prefix.
+    expect(await victimBytes(bucket), `${bucket}: victim bytes must be unchanged after the attacks`).toBe(victimContent(bucket));
+    expect(await namesUnder(bucket, victimFolder(bucket)), `${bucket}: B's folder must hold only the victim`).toEqual(["victim.txt"]);
+    expect(await namesUnder(bucket, `${aId}/rls-${bucket}`), `${bucket}: A's prefix must have gained nothing`).toEqual([]);
+  }
+});
+
+test("anonymous is denied every storage operation in every bucket", async () => {
+  const anon = anonClient(); // never signed in
+  const headers = { apikey: ANON_KEY, authorization: `Bearer ${ANON_KEY}` };
+  for (const bucket of BUCKETS) {
+    const victim = victimPath(bucket);
+    const object = `${SUPABASE_URL}/storage/v1/object/${bucket}/`;
+    const why = (operation: string) => `${bucket}: anonymous ${operation} must be refused`;
+
+    expect((await fetch(object + victim, { headers })).status, why("read")).toBeGreaterThanOrEqual(400);
+    expect(
+      (await fetch(object + `${victimFolder(bucket)}/anonymous.txt`, { method: "POST", headers, body: "planted anonymously" })).status,
+      why("create"),
+    ).toBeGreaterThanOrEqual(400);
+    expect(
+      (await fetch(object + victim, { method: "PUT", headers: { ...headers, "x-upsert": "true" }, body: "overwritten anonymously" })).status,
+      why("overwrite"),
+    ).toBeGreaterThanOrEqual(400);
+    expect((await fetch(object + victim, { method: "DELETE", headers })).status, why("delete")).toBeGreaterThanOrEqual(400);
+
+    expect((await anon.storage.from(bucket).list(bId)).data ?? [], why("listing")).toHaveLength(0);
+    const { data: signed } = await anon.storage.from(bucket).createSignedUrl(victim, 60);
+    expect(signed?.signedUrl ?? null, why("signed URL")).toBeNull();
+
+    expect(await victimBytes(bucket), `${bucket}: victim bytes must be unchanged after anonymous attacks`).toBe(victimContent(bucket));
+    expect(await namesUnder(bucket, victimFolder(bucket)), `${bucket}: B's folder must hold only the victim`).toEqual(["victim.txt"]);
+  }
 });
 
 test("anonymous is denied on every private table and the storage object", async () => {
