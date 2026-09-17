@@ -1,0 +1,67 @@
+{
+ "private.grant_family_ancestry_purpose_v1": {
+  "prosrcMd5": "dd859c39e008c5b49d09a1aa91e831cf",
+  "bodyBytes": 3365,
+  "tag": "$$"
+ },
+ "private.family_ancestry_recipient_v1": {
+  "prosrcMd5": "804e101b67f37a0de85e46b6c13f8368",
+  "bodyBytes": 3304,
+  "tag": "$$"
+ },
+ "private.family_source_ancestry_grant_v1": {
+  "prosrcMd5": "8f6c19122e8907b9ffc0920314c2eb9b",
+  "bodyBytes": 2384,
+  "tag": "$fn$"
+ },
+ "private.family_source_ancestry_authority_v1": {
+  "prosrcMd5": "1184cb018f9e76343da1f8d7d73f8508",
+  "bodyBytes": 4347,
+  "tag": "$function$"
+ },
+ "private.family_ancestry_grant_presentation_v1": {
+  "prosrcMd5": "11d0aff78df3079283c9422e75f1683e",
+  "bodyBytes": 943,
+  "tag": "$$"
+ },
+ "private.family_ancestry_input_view_v1": {
+  "prosrcMd5": "ee5667bc731ba992521af0f509c3449b",
+  "bodyBytes": 1290,
+  "tag": "$$"
+ },
+ "private.family_shared_ancestry_results_v1": {
+  "prosrcMd5": "e7bbe309556ff2eab0cdc9d57c2b161a",
+  "bodyBytes": 5405,
+  "tag": "$$"
+ },
+ "private.confirm_family_shared_ancestry_results_v1": {
+  "prosrcMd5": "f5f02bc518cf01db97c1b20ac89a59c5",
+  "bodyBytes": 4141,
+  "tag": "$$"
+ },
+ "public.family_ancestry_grant_presentation_v1": {
+  "prosrcMd5": "314eb0c90957f4efe5434e590170b2ea",
+  "bodyBytes": 118,
+  "tag": "$$"
+ },
+ "public.grant_family_ancestry_purpose_v1": {
+  "prosrcMd5": "cd4a6e8e679bdac5ec979604326d1d3d",
+  "bodyBytes": 228,
+  "tag": "$$"
+ },
+ "public.family_shared_ancestry_results_v1": {
+  "prosrcMd5": "f70e92963468dcebe49a43aeade5b203",
+  "bodyBytes": 111,
+  "tag": "$$"
+ },
+ "public.confirm_family_shared_ancestry_results_v1": {
+  "prosrcMd5": "836d4bb740c091ce612309e3457ed03f",
+  "bodyBytes": 117,
+  "tag": "$$"
+ },
+ "private.clear_family_ancestry_snapshot_v1": {
+  "prosrcMd5": "eb4c3973b6e0368470234a8c90be0475",
+  "bodyBytes": 151,
+  "tag": "$$"
+ }
+}
