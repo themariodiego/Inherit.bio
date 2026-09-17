@@ -47,8 +47,17 @@ async function main() {
     try {
       await promisify(execFile)(process.execPath, [path.join(root, 'node_modules/tsx/dist/cli.mjs'),
         path.join(root, 'scripts/lighthouse-fixture.ts'), mode, String(chrome.port), base, receipt, target],
-      { cwd: root, timeout: 240_000, maxBuffer: 8192 });
-    } catch { throw new Error(`Lighthouse ${mode} prerequisite failed; no authenticated result can be claimed`); }
+      { cwd: root, timeout: 240_000, maxBuffer: 65_536 });
+    } catch (error) {
+      // Only the exit shape and the child's fixed-format markers are repeated
+      // here; its output, which can carry auth state, never is.
+      const failure = error as { code?: unknown; signal?: unknown; stderr?: unknown };
+      const stderr = typeof failure?.stderr === 'string' ? failure.stderr : '';
+      const last = (marker: string) => [...stderr.matchAll(new RegExp(`^${marker}=([A-Za-z0-9 /,.-]{1,96})$`, 'gm'))].at(-1)?.[1] ?? 'unknown';
+      const code = typeof failure?.code === 'number' || typeof failure?.code === 'string' ? String(failure.code) : 'unknown';
+      const signal = typeof failure?.signal === 'string' ? `, signal ${failure.signal}` : '';
+      throw new Error(`Lighthouse ${mode} prerequisite failed (exit ${code}${signal}; phase ${last('LIGHTHOUSE_FIXTURE_PHASE')}; error ${last('LIGHTHOUSE_FIXTURE_ERROR')}); no authenticated result can be claimed`);
+    }
   };
   try {
     console.log('Preparing one synthetic account and covered saved report through the real UI.');
@@ -81,8 +90,11 @@ async function main() {
   }
 }
 
-main().catch(() => {
+main().catch((error: unknown) => {
   // Do not dump subprocess errors, Chrome headers, auth state or page contents.
+  // Our own prerequisite message is built from fixed fields only and is repeated.
+  const message = (error as { message?: unknown })?.message;
+  if (typeof message === 'string' && /^Lighthouse (prepare|verify) prerequisite failed \(/.test(message)) console.error(message);
   console.error('Lighthouse G1.14 failed. Check sanitized route scores and local prerequisites.');
   process.exitCode = 1;
 });
