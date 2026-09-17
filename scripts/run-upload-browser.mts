@@ -3,6 +3,9 @@
  * Append local-only Playwright selectors after --; CI never permits narrowing.
  * Lighthouse gate (G1.14 contract on the same served build, database and
  * Storage proxy, G1.16 when it runs on integration CI): pnpm e2e:lighthouse.
+ * In CI it starts the main app variant through the same launcher the suite's
+ * Playwright web server uses; locally the production build must already be
+ * serving on http://localhost:3100.
  * No key files, Auth rotation, database resets or application test switches.
  * The browser's HTTP proxy routes Storage to an isolated provider process;
  * the app continues using the normal local stack and its identical DB/backend.
@@ -20,6 +23,7 @@ import { createInterface } from "node:readline";
 import { chromium } from "@playwright/test";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
 import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
+import { appServerEnvironment } from "./ci-browser-app-environment";
 
 const arguments_ = process.argv.slice(2);
 const fullSuite = arguments_[0] === "--full";
@@ -241,8 +245,23 @@ const proxy = http.createServer(async (request, response) => {
 });
 proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, including external TLS. APIRequest stays direct.
 let tests: ChildProcess | undefined;
+let appServer: ChildProcess | undefined;
 let ciRuntime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
 let stopping = false;
+/** The served document the suite's web server also waits for before any test runs. */
+async function waitForDocument(url: string, timeoutMs: number, exited: () => boolean) {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    assert(!exited(), "The app server exited before it served its first document");
+    const status = await new Promise<number>(resolve => {
+      const request = http.get(url, response => { response.resume(); resolve(response.statusCode ?? 0); });
+      request.on("error", () => resolve(0)); request.setTimeout(5000, () => request.destroy(new Error("Document timeout")));
+    });
+    if (status >= 200 && status < 400) return;
+    assert(Date.now() < deadline, `No document at ${url} within ${timeoutMs} ms`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+}
 async function stop() {
   if (stopping) return;
   stopping = true;
@@ -250,6 +269,7 @@ async function stop() {
     // Kill the dedicated test process group, including its Next child servers.
     try { if (process.platform !== "win32") process.kill(-tests.pid, "SIGTERM"); else tests.kill("SIGTERM"); } catch {}
   }
+  if (appServer && appServer.exitCode === null) appServer.kill("SIGTERM");
   proxy.closeAllConnections();
   await new Promise<void>(resolve => proxy.close(() => resolve()));
   if (provider.exitCode === null) {
@@ -302,6 +322,21 @@ try {
     if (process.env.CI) ciRuntime = await startCiBrowserRuntime();
     const runtimeEnvironment = { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
       INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` };
+    if (lighthouseGate) {
+      // The suite's Playwright configuration starts the main app variant as its
+      // first web server; there is no Playwright here, so the same launcher is
+      // started with the same configuration and the same document is awaited.
+      // Locally the production build is expected to be serving already.
+      const document = "http://localhost:3100/auth/sign-in";
+      if (process.env.CI) {
+        appServer = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/ci-browser/server.mts", "host", "3100"], {
+          stdio: ["ignore", "inherit", "inherit"], env: { ...runtimeEnvironment, ...appServerEnvironment(runtimeEnvironment, 3100) } });
+        const server = appServer;
+        await waitForDocument(document, 300_000, () => server.exitCode !== null);
+      } else {
+        await waitForDocument(document, 5_000, () => false);
+      }
+    }
     // The Lighthouse gate audits the same served build, seeded database and
     // Storage proxy the suite uses, in the suite's own Chromium unless
     // SEQ_LH_CHROME names another. Its fixture upload must cross the proxy too.
