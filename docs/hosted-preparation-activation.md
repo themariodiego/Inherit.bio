@@ -65,16 +65,38 @@ the preview Worker needs the preview project's values once step 4 exists).
    preview-target variables to the branch's URL, anon key, service-role key
    and a signer, or installs the Supabase and Vercel integration that syncs
    them. Deployment protection stays on; the proof uses a bypass link.
-3. Point the preview gateway's `TOKEN_ISSUER` and the preview container's
+3. The preview signer is a fresh P-256 key, never the production one. The
+   owner generates it (`docs/self-hosting.md`, *Generating the upload signing
+   key*), saves it as `INHERIT_UPLOAD_SIGNING_JWK` on the Vercel preview
+   target and as the preview container's secret (`--env preview`), and
+   imports it as a standby signing key on the branch project in the Supabase
+   dashboard, the way production's key was imported
+   (`docs/hosted-own-upload-readiness.md`); the connected tools have no
+   signing-key operation. Engineering then reads the public half from the
+   preview deployment's `/.well-known/inherit-upload-jwks.json` and commits it
+   into the preview gateway's `SIGNING_PUBLIC_KEYS` (the deploy guard checks
+   only the production list against the live endpoint).
+4. Point the preview gateway's `TOKEN_ISSUER` and the preview container's
    `NEXT_PUBLIC_SUPABASE_URL` at the branch, commit, deploy `preview`.
-4. Enable preparation on the branch only: `own_preparation_config` with
+5. Enable preparation on the branch only: `own_preparation_config` with
    `enabled = true`, `artifact_provider = 'r2'`,
    `r2_bucket = 'inherit-prepared-preview'`, and set
    `INHERIT_PREPARED_WGS_ENABLED=true` on the Vercel preview target.
 
 ## 5. Engineering: the hosted proof
 
-Synthetic files only. Run the whole journey against the preview stack:
+Synthetic files only, from `scripts/synthetic-wgs-fixture.mts`, which sizes a
+file by the decoded bytes the ceilings are measured in and emits either
+shape (`--plain` for VCF, gzip by default for VCF.gz, `--gvcf` for a gVCF of
+reference blocks and called sites the sniffer classifies `gvcf`):
+
+```sh
+node --conditions=react-server --import tsx scripts/synthetic-wgs-fixture.mts --plain --bytes 2147483648 --out <vcf path>
+node --conditions=react-server --import tsx scripts/synthetic-wgs-fixture.mts --bytes 2147483648 --out <vcf.gz path>
+node --conditions=react-server --import tsx scripts/synthetic-wgs-fixture.mts --gvcf --bytes 8589934592 --out <gvcf path>
+```
+
+Run the whole journey against the preview stack:
 browser upload → authorization → Storage → preparation in the container →
 result → withdrawal, for VCF, VCF.gz and gVCF, including one file at each
 ceiling the owner chose (2 GiB VCF, 8 GiB gVCF). Record job durations, peak
@@ -110,8 +132,23 @@ agreement is in place. The notice must be live before step 8.
 
 ## 9. Engineering: ceilings
 
-Only after step 8: raise `private.upload_authorization_config` to the
-owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active
+Before this step the schema needs a ceiling of its own for gVCF: until the
+migration below is applied, one `maximum_vcf_bytes` governs VCF, VCF.gz and
+gVCF alike in issuance, normalization, preparation admission and the limit
+disclosure. `20260918150000_own_upload_gvcf_ceiling.sql` adds a nullable
+`maximum_gvcf_bytes`, selects it for the `gVCF` declaration and the `gvcf`
+file type with the VCF ceiling as the fallback while it is null (so applying
+it changes no limit), and discloses it as `maximumGvcfBytes`;
+`supabase/tests/own_upload_gvcf_ceiling.sql` proves each reader. The app
+accepts the extra disclosure key before the database sends it, so this
+migration is applied *after* the deployment that carries it, the reverse of
+the usual order, with the same preflight, postflight and receipt. Until it is
+applied and `maximum_gvcf_bytes` is set, a gVCF is measured against the VCF
+ceiling; the uploader's limit sentence names the array and VCF ceilings and
+gains a gVCF clause when the two values diverge.
+
+Only after step 8 and that migration: raise `private.upload_authorization_config`
+to the owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active
 uploads as decided) with a read-only preflight and a receipt. Original
 retention (`own_original_retention_config`) is already enabled and applies
 to every prepared-source original from its creation.
@@ -120,4 +157,6 @@ to every prepared-source original from its creation.
 
 FASTQ, BAM and CRAM; the cohort source executor (no embryo source can exist
 before ingest); the Supabase-provider guard on `own_preparation_config`
-(D-126); and any limit change before its proof.
+(D-126); the provenance counter's reading of a gVCF's called sites as blocks
+(D-128, its own change; the row says what it needs); and any limit change
+before its proof.

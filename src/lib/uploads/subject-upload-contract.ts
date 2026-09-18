@@ -21,17 +21,23 @@ const byteCeiling = z.number().int().positive().safe();
  * never a browser assertion; nothing here is a promise about a future limit. */
 export const ownUploadLimitsSchema = z.object({
   maximumArrayBytes: byteCeiling, maximumVcfBytes: byteCeiling, maximumAccountBytes: byteCeiling,
+  /** Absent from a deployment whose database predates the gVCF ceiling; then
+   * the VCF ceiling applies to a gVCF, as the database itself applies it. */
+  maximumGvcfBytes: byteCeiling.optional(),
   maximumActiveUploads: z.number().int().positive().safe(),
   reservedBytes: z.number().int().nonnegative().safe(), activeUploads: z.number().int().nonnegative().safe(),
 }).strict();
 export type OwnUploadLimits = z.infer<typeof ownUploadLimitsSchema>;
 
 /** The one ceiling that applies to a declared format, split exactly as
- * `private.issue_own_storage_upload_v1` splits it. Issuance stores this same
- * number as the session's `maximum_decoded_bytes`, so a compressed source is
- * measured against it twice: as stored bytes now, as decompressed bytes later. */
+ * `private.issue_own_storage_upload_v1` splits it: arrays, gVCF, then every
+ * other VCF. Issuance stores this same number as the session's
+ * `maximum_decoded_bytes`, so a compressed source is measured against it
+ * twice: as stored bytes now, as decompressed bytes later. */
 export function uploadCeilingBytes(format: SubjectUploadFormat, limits: OwnUploadLimits): number {
-  return format.startsWith("consumer-array-text-v") ? limits.maximumArrayBytes : limits.maximumVcfBytes;
+  if (format.startsWith("consumer-array-text-v")) return limits.maximumArrayBytes;
+  if (format === "gVCF") return limits.maximumGvcfBytes ?? limits.maximumVcfBytes;
+  return limits.maximumVcfBytes;
 }
 
 /** What this account could still add, never below zero. */

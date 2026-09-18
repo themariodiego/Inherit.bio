@@ -22,6 +22,16 @@ describe("the applicable own-upload ceiling", () => {
     const expected = format.startsWith("consumer-array-text-v") ? limits.maximumArrayBytes : limits.maximumVcfBytes;
     expect(uploadCeilingBytes(format, limits)).toBe(expected);
   });
+  it("measures a gVCF against its own ceiling once the deployment discloses one, and nothing else against it", () => {
+    const split: OwnUploadLimits = { ...limits, maximumGvcfBytes: 8_589_934_592 };
+    expect(uploadCeilingBytes("gVCF", split)).toBe(8_589_934_592);
+    expect(uploadCeilingBytes("VCF", split)).toBe(limits.maximumVcfBytes);
+    expect(uploadCeilingBytes("VCF.GZ", split)).toBe(limits.maximumVcfBytes);
+    expect(uploadCeilingBytes("consumer-array-text-v1", split)).toBe(limits.maximumArrayBytes);
+    // A database without the column discloses no gVCF ceiling; the VCF one applies, as it does there.
+    expect(uploadCeilingBytes("gVCF", limits)).toBe(limits.maximumVcfBytes);
+    expect(ownUploadLimitsSchema.safeParse(split).success).toBe(true);
+  });
   it("reports what an account can still hold and never a negative remainder", () => {
     expect(remainingAccountBytes(limits)).toBe(134_217_728);
     expect(remainingAccountBytes({ ...limits, reservedBytes: 134_217_720 })).toBe(8);
@@ -30,7 +40,7 @@ describe("the applicable own-upload ceiling", () => {
     expect(remainingAccountBytes({ ...limits, reservedBytes: 200_000_000 })).toBe(0);
   });
   it.each([
-    { maximumVcfBytes: 0 }, { maximumVcfBytes: -1 }, { maximumVcfBytes: 1.5 },
+    { maximumVcfBytes: 0 }, { maximumVcfBytes: -1 }, { maximumVcfBytes: 1.5 }, { maximumGvcfBytes: 0 }, { maximumGvcfBytes: null },
     { maximumArrayBytes: null }, { maximumAccountBytes: Number.MAX_SAFE_INTEGER + 1 },
     { reservedBytes: -1 }, { activeUploads: -1 }, { maximumActiveUploads: 0 }, { extra: 1 },
   ])("refuses an unusable disclosure (%j)", patch => {
