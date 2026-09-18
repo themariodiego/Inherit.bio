@@ -1,9 +1,34 @@
 import { expect, test } from "@playwright/test";
+import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { readFileSync } from "node:fs";
+import { promisify } from "node:util";
+import { localE2eProject } from "../scripts/local-e2e-project";
 import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
+import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET, jobRanCleanly, signIn } from "./helpers";
+
+/** Every private bucket the migrations create (the set `e2e/rls.spec.ts`
+ * plants in). A source is gone only when the exact object name and the
+ * account's own prefix are absent in all three as the service role sees them;
+ * the same helper must first see the object, so an absence is never vacuous. */
+const BUCKETS = ["genomes", "genomes-staging", "generated-artifacts"] as const;
+async function storageResidue(objectName: string, accountId: string): Promise<string[]> {
+  const admin = adminClient();
+  const slash = objectName.lastIndexOf("/");
+  const folder = slash === -1 ? "" : objectName.slice(0, slash);
+  const leaf = slash === -1 ? objectName : objectName.slice(slash + 1);
+  const residue: string[] = [];
+  for (const bucket of BUCKETS) {
+    const exact = await admin.storage.from(bucket).list(folder, { search: leaf });
+    if (exact.error) throw new Error(`service listing of ${bucket}/${folder}: ${exact.error.message}`);
+    residue.push(...(exact.data ?? []).filter((entry) => entry.name === leaf).map(() => `${bucket}/${objectName}`));
+    const prefix = await admin.storage.from(bucket).list(accountId);
+    if (prefix.error) throw new Error(`service listing of ${bucket}/${accountId}: ${prefix.error.message}`);
+    residue.push(...(prefix.data ?? []).map((entry) => `${bucket}/${accountId}/${entry.name}`));
+  }
+  return residue.sort();
+}
 
 test("file deletion shows failure, retries, and removes the exact source and file-based rows", async ({ page }) => {
   const email = `file-delete-${randomUUID()}@e2e.local`;
@@ -35,6 +60,8 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect(readyMail.data).toHaveLength(1);
   expect(readyMail.data![0].state).toBe("queued");
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
+  // The residue helper sees the planted object before it may report absence.
+  expect(await storageResidue(file!.bucket_path, userId)).toEqual([`genomes/${file!.bucket_path}`]);
   expect((await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId)).count).toBeGreaterThan(0);
   const readObservedCalls = () => admin.from("report_observed_calls")
     .select("file_id", { count: "exact", head: true }).eq("file_id", fileId);
@@ -83,6 +110,8 @@ test("file deletion shows failure, retries, and removes the exact source and fil
   expect((await deleted).status()).toBe(204);
   await expect(row).toHaveCount(0);
   expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).not.toBeNull();
+  // source.revocation-7d: zero residue in every private bucket, exact name and account prefix.
+  expect(await storageResidue(file!.bucket_path, userId)).toEqual([]);
   for (const table of ["user_variants", "user_prs", "ancestry_results", "worker_jobs"] as const) {
     const result = await admin.from(table).select("id", { count: "exact", head: true }).eq("file_id", fileId);
     expect(result.error).toBeNull();
@@ -165,4 +194,69 @@ test("foreign account, active processing and another adult cannot use the self-f
   expect(await remove()).toBe(204);
   expect((await admin.storage.from("genomes").download(file.bucket_path)).error).not.toBeNull();
   expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(0);
+});
+
+// source.revocation-7d (D-126): the seven-day backstop. A deletion the owner
+// started but never retried is finished by the unattended retention job from
+// every bucket, with no owner session. The composite worker selects multiple
+// queues globally, so this case carries the same disposable-stack precondition
+// as e2e/account-deletion-purge.spec.ts: it fails, never skips, elsewhere.
+test("a deletion the owner never retried is finished by the retention job from every bucket", async ({ page, request }) => {
+  expect(process.env.INHERIT_DISPOSABLE_LOCAL_E2E,
+    "Composite retention requires a clean disposable stack; never preserved local sequence fixtures").toBe("true");
+  const email = `file-strand-${randomUUID()}@e2e.local`;
+  const password = "synthetic-delete-password";
+  const userId = await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
+  expect(fileId).toMatch(/^[0-9a-f-]{36}$/);
+  const admin = adminClient();
+  const { data: file, error } = await admin.from("genome_files").select("bucket_path").eq("id", fileId).single();
+  expect(error).toBeNull();
+  expect(await storageResidue(file!.bucket_path, userId)).toEqual([`genomes/${file!.bucket_path}`]);
+  const variantsBefore = await admin.from("user_variants").select("id", { count: "exact", head: true }).eq("file_id", fileId);
+  expect(variantsBefore.count).toBeGreaterThan(0);
+
+  await page.goto("/files");
+  await expect(page.getByRole("heading", { name: "My files", exact: true })).toBeVisible();
+  page.on("dialog", (dialog) => dialog.accept());
+  const row = page.locator("li").filter({ has: page.locator(`a[href="/api/files/${fileId}/download"]`) });
+  await expect(row).toHaveCount(1);
+  // Same stranding as the first case: the browser sees the failure contract and
+  // the database holds a started deletion whose Storage removal never happened.
+  await page.route(`**/api/files/${fileId}`, (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "file_delete_failed" }) }), { times: 1 });
+  await row.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(row.getByRole("alert")).toContainText("Deletion did not finish. Please try Delete again.");
+  const owner = anonClient();
+  expect((await owner.auth.signInWithPassword({ email, password })).error).toBeNull();
+  const sessionId = (await owner.auth.getClaims()).data!.claims.session_id as string;
+  expect((await admin.rpc("prepare_genome_file_deletion_v1", { p_account_id: userId, p_session_id: sessionId, p_file_id: fileId })).error).toBeNull();
+  await owner.auth.signOut({ scope: "local" });
+  expect((await admin.storage.from("genomes").download(file!.bucket_path)).error).toBeNull();
+  expect((await admin.from("genome_files").select("status").eq("id", fileId).single()).data?.status).toBe("failed");
+
+  // The owner never comes back. Age the record past the retry delay through
+  // the database alone; the job's own selection and claim do everything else.
+  const psql = (command: string) => promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer,
+    "psql", "-U", "postgres", "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", command],
+    { timeout: 10_000, maxBuffer: 8192 });
+  const aged = await psql(`update private.genome_file_deletions set started_at = started_at - interval '1 day' where file_id = '${fileId}'::uuid returning file_id;`);
+  expect(aged.stdout.trim()).toBe(fileId);
+  const sweep = await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
+  expect(await jobRanCleanly(sweep, "the stranded file deletion backstop")).toBe("completed");
+
+  expect(await storageResidue(file!.bucket_path, userId)).toEqual([]);
+  expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toEqual([]);
+  for (const table of ["user_variants", "user_prs", "ancestry_results", "worker_jobs"] as const) {
+    const result = await admin.from(table).select("id", { count: "exact", head: true }).eq("file_id", fileId);
+    expect(result.error).toBeNull();
+    expect(result.count, table).toBe(0);
+  }
+  expect((await admin.from("genome_storage_objects").select("object_id").eq("genome_file_id", fileId)).data).toEqual([]);
+  expect((await psql(`select count(*) from private.genome_file_deletions where file_id = '${fileId}'::uuid;`)).stdout.trim()).toBe("0");
+  expect((await admin.from("subjects").select("id").eq("owner_account_id", userId).eq("subject_class", "self")).data).toHaveLength(1);
+  // The list reflects it without a retry click.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "My files", exact: true })).toBeVisible();
+  await expect(page.locator("li").filter({ has: page.locator(`a[href="/api/files/${fileId}/download"]`) })).toHaveCount(0);
 });

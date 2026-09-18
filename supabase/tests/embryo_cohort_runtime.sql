@@ -1,5 +1,5 @@
 begin;
-select plan(141);
+select plan(151);
 \ir fixtures/embryo_cohort_pre_finalize.inc
 
 create temporary table fin as
@@ -340,8 +340,38 @@ select throws_ok(
   'a stranger cannot grant analysis over someone else''s cohort');
 
 -- ---------------------------------------------------------------------------
--- Restriction
+-- Restriction. Embryo ingest is not shipped, so one derived row per table is
+-- seeded directly (the smallest rows the schema allows; no source file is
+-- fabricated, source_file_id stays null). The zero-after assertions are the
+-- gate that source.revocation-7d (D-126) keeps when ingest lands.
 -- ---------------------------------------------------------------------------
+insert into public.embryo_variants(embryo_id, chromosome, position, genotype, source_binding_fingerprint)
+select id, 1, 100, 'AA', repeat('a', 64) from emb where sample_ordinal = 0;
+insert into public.embryo_qc(embryo_id, sites_expected, sites_called, call_rate, qc_verdict)
+select id, 10, 10, 1, 'pass' from emb where sample_ordinal = 0;
+insert into public.embryo_scores(id, embryo_id, condition_id, condition_name, finding,
+  evidence_label, coverage_state, source_binding_fingerprint, computation_revision)
+select '7a000000-0000-4000-8000-0000000000e1', id, 'fixture-condition', 'Fixture condition',
+  '{"kind": "fixture"}', 'clinical', 'covered', repeat('a', 64), 1
+from emb where sample_ordinal = 0;
+insert into public.embryo_figures(finding_id, figure_kind, payload, figure_revision)
+values ('7a000000-0000-4000-8000-0000000000e1', 'absolute_risk', '{}', 1);
+select is(
+  (select count(*) from public.embryo_variants v join public.embryos e on e.id = v.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  1::bigint, 'a derived variant row exists before restriction');
+select is(
+  (select count(*) from public.embryo_qc q join public.embryos e on e.id = q.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  1::bigint, 'a derived QC row exists before restriction');
+select is(
+  (select count(*) from public.embryo_scores sc join public.embryos e on e.id = sc.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  1::bigint, 'a derived score row exists before restriction');
+select is(
+  (select count(*) from public.embryo_figures f join public.embryo_scores sc on sc.id = f.finding_id
+   join public.embryos e on e.id = sc.embryo_id where e.cohort_id = (select cohort_id from fin)),
+  1::bigint, 'a derived figure row exists before restriction');
 select throws_ok(
   $$select public.restrict_embryo_cohort_v1(
       '7a000000-0000-0000-0000-000000000003',
@@ -375,6 +405,30 @@ select is(
    join public.embryos e on e.id = h.embryo_id
    where e.cohort_id = (select cohort_id from fin) and h.status = 'current'),
   0::bigint, 'restriction revokes every Record Key');
+select is(
+  (select count(*) from public.embryo_variants v join public.embryos e on e.id = v.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  0::bigint, 'restriction deletes every embryo variant row of the cohort');
+select is(
+  (select count(*) from public.embryo_qc q join public.embryos e on e.id = q.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  0::bigint, 'restriction deletes every embryo QC row of the cohort');
+select is(
+  (select count(*) from public.embryo_scores sc join public.embryos e on e.id = sc.embryo_id
+   where e.cohort_id = (select cohort_id from fin)),
+  0::bigint, 'restriction deletes every embryo score row of the cohort');
+select is(
+  (select count(*) from public.embryo_figures f join public.embryo_scores sc on sc.id = f.finding_id
+   join public.embryos e on e.id = sc.embryo_id where e.cohort_id = (select cohort_id from fin)),
+  0::bigint, 'restriction deletes every embryo figure row of the cohort');
+-- Vacuous until ingest lands (no route creates a cohort object today); the
+-- day one exists, restriction must leave none behind under source.revocation-7d.
+select is(
+  (select count(*) from public.genome_storage_objects where cohort_id = (select cohort_id from fin)),
+  0::bigint, 'no cohort source object remains after restriction');
+select is(
+  (select count(*) from public.upload_sessions where cohort_id = (select cohort_id from fin)),
+  0::bigint, 'no cohort upload session remains after restriction');
 select throws_ok(
   $$select public.restrict_embryo_cohort_v1(
       '7a000000-0000-0000-0000-000000000001',

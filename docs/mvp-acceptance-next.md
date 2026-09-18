@@ -39,12 +39,13 @@ Released:
 
 Open, by what it waits on:
 
-- Owner decisions: a class or source consent revocation action (D-126:
-  `source.revocation-7d` is registered with no executor and no reachable
-  trigger with stored data; G5.3a); the glossary citation policy (G1.11);
+- Owner decisions: the glossary citation policy (G1.11);
   acceptance of ADR-0028 and ADR-0029 (G7.1); an embryo grant seed path that
   is not a demo path (G4.5, G8.2); the jurisdiction declaration contract
   (G5.1a: `profiles.jurisdiction_code` has no writer).
+  D-126 (`source.revocation-7d`) was decided on 18 September: folded into
+  immediate deletion with a retention-job backstop; see the decisions section
+  above and the D-126 row.
 - Human work: real jurisdiction review (G5.5); dated source reads for the 189
   undated citations (G4.7).
 - Infrastructure: no Inherit R2 bucket or worker exists in Cloudflare, so

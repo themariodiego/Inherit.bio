@@ -6,6 +6,7 @@ import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
+import { drainStrandedFileDeletions } from "@/lib/uploads/file-deletion-backstop";
 import { drainOwnReportRevocations } from "@/lib/uploads/report-revocation-cleanup";
 import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanup";
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
@@ -103,6 +104,15 @@ export async function POST(request: Request) {
   try {
     const uploads = await drainOwnUploadCleanup(admin);
     processed += uploads.processed; failed += uploads.failed;
+  } catch { failed++; }
+
+  // source.revocation-7d (D-126): a self file deletion the owner started but
+  // whose Storage removal or finish failed is redone here after its retry
+  // delay, so the seven-day outer bound has an executor. Bounded page; the
+  // database selects the record and the route redoes the same deletion.
+  try {
+    const stranded = await drainStrandedFileDeletions(admin, preparedCleanupSignal);
+    processed += stranded.processed; failed += stranded.failed;
   } catch { failed++; }
 
   const { error: refusalReceiptExpiryError } = await admin.rpc("expire_invitation_refusal_receipts_v1");

@@ -6031,6 +6031,8 @@
           "manifestClass": {
             "const": "source-only"
           },
+          "executionClass": "inlineEventDriven",
+          "decided": "2026-09-18-D-126: no-worker-phase-claims-this-row; its-targets-are-deleted-inline-by-the-existing-paths-(self-file-deletion-cohort-restriction-account-deletion)-and-a-stranded-self-file-deletion-is-redone-by-jobs.retention-under-claim_due_genome_file_deletion_v1-and-finish_genome_file_deletion_claimed_v1-within-the-seven-day-bound; wording-immediately-and-within-7-days-at-the-latest",
           "targets": "only-exact-target-canonical-source-rows-random-object-handles-and-dependent-raw-autosomal-rows",
           "holdRule": "a-current-valid-contradiction.freeze-or-embryo.single-parent-review-30d-row-may-defer-only-the-explicit-minimum-disputed-source-members-recorded-on-that-hold; every-other-source-member-remains-due"
         },
@@ -6609,10 +6611,10 @@
         ],
         "revocationDispositionWorker": [
           "derived.revocation-60s",
-          "source.revocation-7d",
           "purpose.derived-60s"
         ],
         "inlineEventDriven": [
+          "source.revocation-7d",
           "access.revocation-immediate",
           "purpose.access-immediate",
           "raw-export.access-immediate",

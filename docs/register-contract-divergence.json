@@ -117,6 +117,10 @@
     {
       "site": "(database-selected) src/app/api/jobs/retention/route.ts",
       "why": "The account-deletion purge groups a database manifest by bucketId and removes each group. Same limitation, same database allowlist."
+    },
+    {
+      "site": "(database-selected) src/lib/uploads/file-deletion-backstop.ts",
+      "why": "The source.revocation-7d backstop (D-126) redoes a stranded self file deletion: it removes admin.storage.from(target.bucket) where the bucket and name come from the claimed private.genome_file_deletions record, whose check constraint pins the bucket to genomes. Same limitation as DELETE /api/files/[id], same database allowlist."
     }
   ],
   "declaredPrefixBucketNotAddressed": [

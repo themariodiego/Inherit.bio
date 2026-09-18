@@ -79,6 +79,11 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     .eq("object_id", file!.storage_object_id!)
     .single();
   expect(storageObject?.object_name).toMatch(/^[0-9a-f-]{36}$/);
+  // The service-role listing sees the planted object before it may report
+  // absence below, so the three-bucket residue check is never vacuous.
+  const planted = await admin.storage.from(storageObject!.bucket_id).list("", { search: storageObject!.object_name });
+  expect(planted.error).toBeNull();
+  expect((planted.data ?? []).map((entry) => entry.name)).toContain(storageObject!.object_name);
 
   await page.goto("/settings/data");
   await page.getByLabel(/Type/).fill("delete my genome");
@@ -204,6 +209,17 @@ test("due account deletion reaches a zero-residual terminal state", async ({
     .download(storageObject!.object_name);
   expect(missingObject.data).toBeNull();
   expect(missingObject.error).toBeTruthy();
+  // source.revocation-7d: zero residue in every private bucket the migrations
+  // create, for the exact object name and for the account's own prefix, as the
+  // service role sees them.
+  for (const bucket of ["genomes", "genomes-staging", "generated-artifacts"] as const) {
+    const exact = await admin.storage.from(bucket).list("", { search: storageObject!.object_name });
+    expect(exact.error).toBeNull();
+    expect((exact.data ?? []).filter((entry) => entry.name === storageObject!.object_name), bucket).toEqual([]);
+    const prefix = await admin.storage.from(bucket).list(userId);
+    expect(prefix.error).toBeNull();
+    expect(prefix.data, `${bucket}/${userId}`).toEqual([]);
+  }
 
   const { data: completedRetention } = await admin
     .from("retention_rows")

@@ -21,6 +21,13 @@ describe("prepared cleanup integration", () => {
     const f = fixture(complete); expect(await prepareFileCleanup(f.admin, {})).toEqual({ error: null, original, complete: true });
     expect(f.rpc).toHaveBeenCalledWith("prepare_own_prepared_file_cleanup_v1", {}); expect(drainOwnPreparedCleanup).not.toHaveBeenCalled();
   });
+  it("prepares a claimed stranded record through the claimed SQL twin and reconfirms through the same one", async () => {
+    const args = { p_file_id: id, p_claim_token_hash: "c".repeat(64) };
+    const f = fixture(pending, complete);
+    expect(await prepareFileCleanup(f.admin, args, undefined, "prepare_own_prepared_file_cleanup_claimed_v1")).toEqual({ error: null, original, complete: true });
+    expect(f.rpc.mock.calls).toEqual([["prepare_own_prepared_file_cleanup_claimed_v1", args], ["prepare_own_prepared_file_cleanup_claimed_v1", args]]);
+    expect(drainOwnPreparedCleanup).toHaveBeenCalledTimes(1);
+  });
   it("only current SQL confirmation lets a drained file advance to original deletion", async () => {
     const f = fixture(pending, complete); expect(await prepareFileCleanup(f.admin, {})).toMatchObject({ complete: true }); expect(f.rpc).toHaveBeenCalledTimes(2);
   });

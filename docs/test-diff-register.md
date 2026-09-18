@@ -1,5 +1,56 @@
 # Test diff register
 
+## Source revocation folded into immediate deletion · 18 September 2026
+
+D-126 decided: `source.revocation-7d` moves from the never-built
+`revocationDispositionWorker` class to `inlineEventDriven`
+(`20260918113000_source_revocation_inline.sql`), and the seven-day bound gains
+the one executor it lacked, a retention-job retry of a self file deletion the
+owner started but never finished. `supabase/tests/genome_file_deletion.sql`
+grows by 34 assertions on a second stranded file: the registry row reads
+`inlineEventDriven`; `authenticated` and `anon` cannot claim, prepare or finish
+under a claim while `service_role` can; a malformed token and a retry delay
+over seven days are refused; nothing is claimed while nothing is stranded; a
+record younger than the retry delay is not claimed under the default or a
+shorter delay; a backdated record is claimed with a versioned shape carrying
+its own bucket and name and counts an attempt; a second worker gets nothing
+while the claim lives; only the holder can release, and a released record
+waits the delay from its last attempt before it is claimed again; a released
+token can no longer finish; with every `auth.sessions` row deleted the owner
+path is closed while the claimed finish refuses with `storage.objects` still
+listing the name and retains the file and its variants; the claimed prepare
+returns the exact immutable manifest with `preparedComplete` true and refuses a
+stale token; once the Storage row is gone the claimed finish succeeds, the
+file, its variants and the record are gone and the subject remains. It proves
+the SQL contract against synthetic `storage.objects` rows, not provider bytes.
+`supabase/tests/embryo_cohort_runtime.sql` (plan 141 → 151) seeds one row each
+of `embryo_variants` (with `source_file_id` null, since no source file can be
+seeded truthfully), `embryo_qc`, `embryo_scores` and `embryo_figures` for the
+cohort, asserts each exists before restriction and is gone after, and asserts
+zero `genome_storage_objects` and zero `upload_sessions` for the cohort after
+restriction; the two object assertions are vacuous until ingest lands and are
+the gate that stays. `src/app/api/jobs/retention/route.test.ts` adds three
+cases for the drain step: an empty claim page touches neither Storage nor a
+finish and reports `no_work`; one claimed record is prepared, removed from the
+record's own bucket and name, finished under the same claim token and reported
+`completed`; a refused Storage removal releases the claim, calls no finish,
+claims nothing more in that run and reports `completed_with_failures`. The
+existing three cases gain the new claim in their idle mock maps and assert
+nothing less. `cleanup-integration.test.ts` adds one case: the claimed SQL twin
+is used for both the prepare and the reconfirmation read. `e2e/file-deletion.spec.ts`
+now checks residue in `genomes`, `genomes-staging` and `generated-artifacts`
+for the exact object name and the account prefix, after first seeing the
+object through the same helper, and adds a browser case under the same
+disposable-stack precondition as the account-deletion purge: it strands a real
+deletion through the 503 contract and the direct prepare, ages the record
+through `psql`, posts `/api/jobs/retention` and asserts zero residue in all
+three buckets, no file row, no derived rows, no record, the subject kept, and
+the list without the file on reload. `e2e/account-deletion-purge.spec.ts` sees
+the planted object through the service-role listing before the purge and reads
+all three buckets after it. Not proven: physical erasure at the provider, a
+real R2 tombstone (no bucket exists), a cohort source object (none can exist),
+and the Supabase-provider guard, which is not in this change.
+
 ## Portrait fixture waits for its own acknowledgement (D-127) · 18 September 2026
 
 `e2e/portrait-no-file.spec.ts` builds the one state its file exists for: a
