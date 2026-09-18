@@ -67,6 +67,7 @@ let selfSubjectA = "";
 let selfSubjectB = "";
 let invitedSubjectB = "";
 let pairId = "";
+let pairSubjectIds: string[] = [];
 
 test.use({ trace: "off" }); // Signed grant bearers stay out of traces.
 test.describe.configure({ mode: "serial" });
@@ -118,7 +119,15 @@ async function acknowledge(page: Page) {
   const form = page.locator('[data-slot="portrait-acknowledge"]');
   await expect(form.getByRole("checkbox")).not.toBeChecked();
   await form.getByRole("checkbox").check();
+  // The form posts and then refreshes the page. Wait for the server's answer
+  // and for the refreshed page to drop the form: a sign-out issued straight
+  // after this call can otherwise overtake the request, and the step is never
+  // stamped (D-127, main run 35319131306).
+  const response = page.waitForResponse((reply) =>
+    reply.url().endsWith("/api/family/acknowledge") && reply.request().method() === "POST");
   await form.getByRole("button", { name: ACKNOWLEDGE_BUTTON }).click();
+  expect((await response).status()).toBe(200);
+  await expect(form).toHaveCount(0);
 }
 
 test("two adults agree to compare before either has added a file", async ({ page, request }) => {
@@ -223,11 +232,13 @@ test("two adults agree to compare before either has added a file", async ({ page
   // Both permissions, each from its own account, and both acknowledgements.
   await signIn(page, A.email, A.password);
   await grantPortrait(page, invitedSubjectB);
-  const pairs = await admin.from("family_pairs").select("id,status")
+  const pairs = await admin.from("family_pairs").select("id,status,subject_a_id,subject_b_id")
     .or(`subject_a_id.eq.${selfSubjectA},subject_b_id.eq.${selfSubjectA}`);
   expect(pairs.error).toBeNull();
   expect(pairs.data).toHaveLength(1);
-  pairId = (pairs.data as { id: string }[])[0].id;
+  const pair = (pairs.data as { id: string; subject_a_id: string; subject_b_id: string }[])[0];
+  pairId = pair.id;
+  pairSubjectIds = [pair.subject_a_id, pair.subject_b_id];
   await page.goto(`/family/portrait/${pairId}`);
   await acknowledge(page);
   await page.request.post("/auth/sign-out");
@@ -249,6 +260,17 @@ test("two adults agree to compare before either has added a file", async ({ page
     .eq("purpose", "family.portrait").is("revoked_at", null);
   expect(live.error).toBeNull();
   expect(live.data).toHaveLength(2);
+  // Every step the page checks, stamped for both people, read back from the
+  // database: the acknowledgement each adult gave and the sign-in each made
+  // on their own. A fixture that only clicked could leave either unstamped.
+  const stamped = await admin.from("subjects").select("id,portrait_acknowledged_at,independent_login_at")
+    .in("id", pairSubjectIds);
+  expect(stamped.error).toBeNull();
+  expect(stamped.data).toHaveLength(2);
+  for (const row of stamped.data as { id: string; portrait_acknowledged_at: string | null; independent_login_at: string | null }[]) {
+    expect(row.portrait_acknowledged_at, `${row.id} acknowledged before any test runs`).not.toBeNull();
+    expect(row.independent_login_at, `${row.id} signed in on their own before any test runs`).not.toBeNull();
+  }
 });
 
 test("/family/portrait/[pairId] empty: with no file on either side the page names who has nothing, in the right person, and derives nothing", async ({

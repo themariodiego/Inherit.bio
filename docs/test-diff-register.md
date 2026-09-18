@@ -1,5 +1,22 @@
 # Test diff register
 
+## Portrait fixture waits for its own acknowledgement (D-127) · 18 September 2026
+
+`e2e/portrait-no-file.spec.ts` builds the one state its file exists for: a
+pair with every step done and no file on either side. Its `acknowledge`
+helper clicked the form's button and returned, and the fixture signed out on
+the next line; on main run 35319131306 that sign-out overtook the
+acknowledgement request and the page, correctly, showed the blocking screen
+to the test. The helper now waits for `POST /api/family/acknowledge` to answer
+200 and for the refreshed page to drop the form, and the fixture's final
+database claim reads both pair subjects and requires `portrait_acknowledged_at`
+and `independent_login_at` to be set for each, beside the existing no-file
+and two-live-grants checks. Nothing about the page or the assertions the test
+makes afterwards changed; the fixture's claim got stronger, not weaker. The
+two acknowledgement clicks in `e2e/portrait.spec.ts` already waited on the
+refreshed page and are untouched. Fresh CI is the proof; a single run cannot
+show the race is gone, only that the fixture no longer depends on timing.
+
 ## Hosted preparation on Cloudflare Containers (configuration only) · 18 September 2026
 
 `scripts/cloudflare-hosting-config.test.ts` (16 cases) holds the two wrangler
