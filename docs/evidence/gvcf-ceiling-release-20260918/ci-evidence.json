@@ -1,0 +1,54 @@
+{
+ "kind": "gvcf-ceiling release CI evidence",
+ "pullRequest": 139,
+ "mergeCommit": "1d4f2cd5925ff7d4d1bc811993789d9f3e9fd072",
+ "headTested": "e02c13eded6b1cda70285976b947e8018198ce70",
+ "pullRequestRun": {
+  "id": 35346819710,
+  "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35346819710",
+  "head": "e02c13e",
+  "conclusion": "success",
+  "attempt": 1,
+  "completedAt": "2026-09-18T13:42:24Z",
+  "firstExecutionOf": [
+   "supabase/migrations/20260918150000_own_upload_gvcf_ceiling.sql",
+   "supabase/tests/own_upload_gvcf_ceiling.sql",
+   "supabase/tests/own_upload_limit_disclosure.sql (extended)",
+   "scripts/synthetic-wgs-fixture.test.ts (14 cases)"
+  ]
+ },
+ "postMergeRun": {
+  "id": 35351892873,
+  "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35351892873",
+  "head": "1d4f2cd",
+  "status": "in progress at the time of this record"
+ },
+ "deployCloudflareWorkflowRun": {
+  "id": 35351892930,
+  "conclusion": "skipped",
+  "reason": "CLOUDFLARE_DEPLOY_ENABLED is unset, as designed"
+ },
+ "vercelProductionDeployment": {
+  "id": "dpl_BuQEhLVYf3Nq5kvre2N5RfygQLX4",
+  "commit": "1d4f2cd",
+  "readyAt": "2026-09-18T13:44:31Z",
+  "aliases": [
+   "www.inherit.bio",
+   "inherit.bio"
+  ]
+ },
+ "earlierMerges": [
+  {
+   "pullRequest": 138,
+   "mergeCommit": "a155bea306f1331e879772302be80f4a60fa3097",
+   "run": 35346706164,
+   "conclusion": "success"
+  },
+  {
+   "pullRequest": 137,
+   "mergeCommit": "77a5afd1835f0071be230784d38a4f5e68b4c68f",
+   "run": 35341518205,
+   "conclusion": "success"
+  }
+ ]
+}

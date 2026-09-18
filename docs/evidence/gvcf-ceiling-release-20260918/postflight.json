@@ -1,0 +1,117 @@
+{
+ "kind": "gvcf-ceiling production postflight (read-only)",
+ "observedAt": "2026-09-18T13:47:18.903247+00:00",
+ "project": "zuvloczwgrayonqabnss",
+ "executedAs": "postgres through the Supabase management SQL API",
+ "ledger": {
+  "count": 116,
+  "latest": "own_upload_gvcf_ceiling",
+  "applied": [
+   {
+    "name": "own_upload_gvcf_ceiling",
+    "version": "20260918134705",
+    "file": "supabase/migrations/20260918150000_own_upload_gvcf_ceiling.sql",
+    "fileSha256": "2a3c4e1b7684f6ae8cf9da816177f37a4b91b0a1c48235d0257ea7e99349aa61",
+    "bytes": 24679
+   }
+  ]
+ },
+ "ddlGuard": {
+  "file": "ddl-guard.sql",
+  "passedAt": "2026-09-18T13:45:26.395593+00:00",
+  "note": "Applied after the Vercel production deployment dpl_BuQEhLVYf3Nq5kvre2N5RfygQLX4 of the merge commit 1d4f2cd (the app that accepts the new disclosure key) was READY at 13:44:31 UTC, the reverse of the usual order, as the migration header and the runbook require."
+ },
+ "column": {
+  "name": "maximum_gvcf_bytes",
+  "data_type": "bigint",
+  "is_nullable": "YES",
+  "column_default": null,
+  "checkConstraint": "CHECK (((maximum_gvcf_bytes > 0) AND (maximum_gvcf_bytes <= '9007199254740991'::bigint)))"
+ },
+ "uploadAuthorizationConfig": {
+  "maximum_array_bytes": 25165824,
+  "maximum_vcf_bytes": 25165824,
+  "maximum_gvcf_bytes": null,
+  "maximum_account_bytes": 134217728,
+  "maximum_active_uploads": 2,
+  "note": "unchanged by the apply; the gVCF ceiling reads as the VCF ceiling while null"
+ },
+ "functions": {
+  "private.issue_own_storage_upload_v1": {
+   "md5": "5d55aac633eb06a0b382658db96565e3",
+   "len": 3720,
+   "expectedMd5": "5d55aac633eb06a0b382658db96565e3",
+   "secdef": true,
+   "config": [
+    "search_path=pg_catalog, private"
+   ],
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "owner": "postgres"
+  },
+  "private.own_upload_normalization_v1": {
+   "md5": "ca3988cca1fa34e9714768044f38f2bf",
+   "len": 13956,
+   "expectedMd5": "ca3988cca1fa34e9714768044f38f2bf",
+   "secdef": true,
+   "config": [
+    "search_path=pg_catalog, private"
+   ],
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "owner": "postgres"
+  },
+  "private.own_preparation_source_v1": {
+   "md5": "790b2fc9b965f0d0e3386346b0138769",
+   "len": 3139,
+   "expectedMd5": "790b2fc9b965f0d0e3386346b0138769",
+   "secdef": true,
+   "config": [
+    "search_path=pg_catalog, private"
+   ],
+   "acl": "{postgres=X/postgres}",
+   "owner": "postgres"
+  },
+  "private.own_upload_limits_v1": {
+   "md5": "26eec6c424035f16f7302ec7f2739449",
+   "len": 1648,
+   "expectedMd5": "26eec6c424035f16f7302ec7f2739449",
+   "secdef": true,
+   "config": [
+    "search_path=pg_catalog, private"
+   ],
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "owner": "postgres"
+  },
+  "public.issue_own_storage_upload_v1": {
+   "md5": "e391a30f3c215eb5eb8b7240b5afb8ed",
+   "len": 125,
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "unchanged": true
+  },
+  "public.own_upload_normalization_v1": {
+   "md5": "4a4899d2595bfe20736a7b849edae9a1",
+   "len": 113,
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "unchanged": true
+  },
+  "public.own_upload_limits_v1": {
+   "md5": "a4bd406df14e65cbd9a89a26a79ae04d",
+   "len": 66,
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "unchanged": true
+  },
+  "public.enqueue_own_preparation_v1": {
+   "md5": "f4528318709715df28f5ebd54dfcfb36",
+   "len": 82,
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "unchanged": true
+  }
+ },
+ "ownPreparationConfig": {
+  "enabled": false,
+  "artifact_provider": "supabase",
+  "monthly_admission_limit": 100
+ },
+ "activeUploadSessions": 0,
+ "gvcfFilesInProduction": 0,
+ "finding": "every replaced body's md5 and length equal expected-prosrc.json; every ACL, owner, definer flag and search_path equals the preflight; the public wrappers are untouched; no limit moved"
+}

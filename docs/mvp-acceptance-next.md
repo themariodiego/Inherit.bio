@@ -48,6 +48,16 @@ Released:
   `20260918100756` after a DDL guard, with a byte-equal postflight and a 14/14
   rollback-only probe (`docs/evidence/priority1-foundations-release-20260918/`).
   G5.3a closed. Nothing is activated: preparation stays disabled.
+- PR #137 (`77a5afd`): the record of that release. PR #138 (`a155bea`): the
+  production gateway's signing key committed and guard-checked against the
+  live endpoint, the activation runbook
+  (`docs/hosted-preparation-activation.md`), and the two private R2 buckets.
+- PR #139 (`1d4f2cd`): the synthetic fixture sized by decoded bytes with a
+  gVCF shape; the gVCF admission ceiling (`maximum_gvcf_bytes`, applied to the
+  Inherit project as hosted version `20260918134705` after the deployment that
+  carries it, with a byte-equal postflight and a 13/13 rollback-only probe,
+  `docs/evidence/gvcf-ceiling-release-20260918/`; the column stays null so no
+  limit moved); D-128 recorded.
 
 Open, by what it waits on:
 
@@ -74,8 +84,10 @@ Open, by what it waits on:
   generator can now size a VCF, VCF.gz or gVCF to the decoded byte ceilings
   the proof measures. Two things found on the way: the schema had one
   `maximum_vcf_bytes` for VCF, VCF.gz and gVCF, so the owner's 2 GiB / 8 GiB
-  pair needed a `maximum_gvcf_bytes` migration before step 9 (written, with
-  its pgTAP proof; applied after the deployment that carries it); and the
+  pair needed a `maximum_gvcf_bytes` migration before step 9 (applied to the
+  Inherit project on 18 September after the deployment that carries it,
+  `docs/evidence/gvcf-ceiling-release-20260918/`; the column stays null until
+  the proof, so no limit moved); and the
   provenance counter files a gVCF's called sites under blocks (D-128). So
   prepared-source Family ancestry, background dispatch, throughput and 100
   genomes a month stay unproved (D-124).
