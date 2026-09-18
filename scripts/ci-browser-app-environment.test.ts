@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appServerEnvironment } from "./ci-browser-app-environment";
-import { APP_ENV_NAMES, checkedAppEnvironment } from "./ci-browser-config";
+import { APP_ENV_NAMES, checkedAppEnvironment, LOCAL_MODEL_ENV, LOCAL_MODEL_ENV_NAMES } from "./ci-browser-config";
 
 describe("app server configuration for the fixed local variants", () => {
   // A synthetic job environment: every shared name carries a placeholder
@@ -14,7 +14,7 @@ describe("app server configuration for the fixed local variants", () => {
   job.INHERIT_TEST_JURISDICTION = "1";
   job.INHERIT_CANONICAL_UPLOADS_PAUSED = "true";
   it("is admitted by the container's validator for every fixed variant, with the variant fields fixed here", () => {
-    for (const port of [3100, 3101, 3102] as const) {
+    for (const port of [3100, 3101, 3102, 3103] as const) {
       const env = appServerEnvironment(job, port);
       expect(checkedAppEnvironment(env, port)).toEqual(env);
       expect(env.NEXT_PUBLIC_APP_URL).toBe(`http://localhost:${port}`);
@@ -22,6 +22,11 @@ describe("app server configuration for the fixed local variants", () => {
       expect(env.INHERIT_CANONICAL_UPLOADS_PAUSED).toBe(port === 3102 ? "true" : "false");
       // Shared values pass through untouched from the job environment.
       expect(env.INHERIT_UPLOAD_SIGNING_JWK).toBe(job.INHERIT_UPLOAD_SIGNING_JWK);
+      // The local-model attestation reaches the fourth variant alone, and a job
+      // environment that happens to carry it does not leak it into the others.
+      for (const name of LOCAL_MODEL_ENV_NAMES) expect(env[name]).toBe(port === 3103 ? LOCAL_MODEL_ENV[name] : undefined);
+      const leaking = appServerEnvironment({ ...job, ...LOCAL_MODEL_ENV }, port);
+      for (const name of LOCAL_MODEL_ENV_NAMES) expect(leaking[name]).toBe(port === 3103 ? LOCAL_MODEL_ENV[name] : undefined);
     }
   });
   it("refuses to describe an app without its ephemeral signer or keys rather than inventing them", () => {

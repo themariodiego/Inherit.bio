@@ -3,11 +3,17 @@
 The standard `pnpm e2e` gate runs every existing project and case. On the fresh
 GitHub-hosted Ubuntu job, its actual Storage bootstrap also owns one isolated
 Next/Copilot container. Local execution continues using its existing servers.
-This does not enable local-model permission or exempt any model endpoint policy.
+The main, jurisdiction-off and paused variants do not enable local-model
+permission or exempt any model endpoint policy. The fourth variant, on port
+3103, attests the local-model path for exactly one origin, the synthetic
+provider on the container's own loopback (`127.0.0.1:8127`), and only
+`e2e/copilot-redteam.spec.ts` (G4.8) runs against it; `probe.mts` proves that
+attestation admits that origin and no other, and the container's own
+environment still reads local mode as off.
 
 The production build runs after the workflow exports the actual local public
 Supabase configuration. `record-build` binds that build to the unchanged source
-revision, public configuration hash, and Node major version. All three Next
+revision, public configuration hash, and Node major version. All four Next
 variants use the same build. The image is constructed without app credentials;
 the runtime uses its resolved image ID and the Linux dependencies already
 installed in this job. It does not copy Mac dependencies or download a browser

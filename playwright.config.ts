@@ -1,6 +1,7 @@
 import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
+import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT } from "./scripts/ci-browser-config";
 
 // E2E runs against a production build served locally, backed by the local
 // Supabase stack (pnpm supabase start) — real PostgREST, real storage, real
@@ -11,8 +12,11 @@ import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config
 // runs the `*.nojurisdiction.spec.ts` specs against a second `next start`
 // of the same build on OFF_PORT with the flag unset, so the refused branch
 // of every jurisdiction guard is proven in a browser rather than claimed.
-// The independent pause server uses TEST-LOCAL with issuance paused.
-// Playwright starts the servers in order, so the latter two reuse the build.
+// The independent pause server uses TEST-LOCAL with issuance paused. The
+// fourth server, on LOCAL_MODEL_PORT, is the one app that attests the
+// local-model path (G4.8): the `copilot-local` project runs the red-team suite
+// against it, and nothing else runs there.
+// Playwright starts the servers in order, so the latter three reuse the build.
 const PORT = 3100;
 const OFF_PORT = 3101;
 const PAUSE_PORT = 3102;
@@ -28,6 +32,8 @@ if (!process.argv.includes("--list") && (!providerProxy || !signer)) {
   throw new Error("Run pnpm e2e through the real local Storage provider bootstrap");
 }
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
+/** The G4.8 red-team suite, which runs only against the local-model variant. */
+const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
  * looks like — so it is excluded from every default project and runs only when
@@ -74,11 +80,16 @@ export default defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL] },
     {
       name: "jurisdiction-off",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${OFF_PORT}` },
       testMatch: NO_JURISDICTION,
+    },
+    {
+      name: "copilot-local",
+      use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${LOCAL_MODEL_PORT}` },
+      testMatch: COPILOT_LOCAL,
     },
     // Every setting the baseline capture fixed, fixed the same way. Ink
     // coverage is a pixel measurement: a different scale factor, colour scheme
@@ -144,6 +155,22 @@ export default defineConfig({
         NEXT_PUBLIC_APP_URL: `http://localhost:${PAUSE_PORT}`,
         INHERIT_TEST_JURISDICTION: "1",
         INHERIT_CANONICAL_UPLOADS_PAUSED: "true",
+      },
+    },
+    {
+      // The local-model variant: the same build under the fixed attestation
+      // `scripts/ci-browser-config.ts` pins, admitting the synthetic provider
+      // on the app's own loopback and no other origin.
+      command: isolatedCi ? ciServer(LOCAL_MODEL_PORT) : `corepack pnpm start --port ${LOCAL_MODEL_PORT} --keepAliveTimeout 65000`,
+      ...(isolatedCi ? { url: `http://localhost:${LOCAL_MODEL_PORT}/auth/sign-in` } : { port: LOCAL_MODEL_PORT }),
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        ...SERVER_ENV,
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${LOCAL_MODEL_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${LOCAL_MODEL_PORT}`,
+        INHERIT_TEST_JURISDICTION: "1",
+        ...LOCAL_MODEL_ENV,
       },
     },
   ],
