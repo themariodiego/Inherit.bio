@@ -1,17 +1,17 @@
 # MVP-first acceptance sequence
 
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-18.
-Full-plan acceptance is **28/65**, after G1.16 closed on integration run 35291865797.
+Full-plan acceptance is **29/65**, after G5.1 closed on CI run 35307876658.
 The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;
 the integration evidence is in the G1.16 row of `docs/acceptance-matrix.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **28/65**, counted from the YES/NO column. G1.6 closed on CI run
-35270711326 and G1.16 on integration run 35291865797 (its second attempt) with
-pull request run 35288013760. Everything below merged with the exact tree CI
-tested and was verified on the deployed project.
+Acceptance is **29/65**, counted from the YES/NO column. G1.6 closed on CI run
+35270711326, G1.16 on integration run 35291865797 (its second attempt) with
+pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
+merged with the exact tree CI tested and was verified on the deployed project.
 
 Released:
 
@@ -32,6 +32,10 @@ Released:
   after three integration transport deaths were root-caused to the keep-alive
   race in Playwright's request client; G1.16 closed; main's post-merge run
   35301817868 green with the step.
+- PR #134 (`3988c5f`): the G5.1 chokepoint gate read at call level across every
+  API route, page, layout and server action in the restricted areas and the
+  counterpart subject pages, correcting three routes the old gate had counted
+  as guarded by an import; G5.1 closed with its limits stated.
 
 Open, by what it waits on:
 
