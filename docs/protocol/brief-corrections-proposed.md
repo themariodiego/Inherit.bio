@@ -1208,7 +1208,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 25 unproven pairs stand
+## Where the 19 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1233,8 +1233,9 @@ a new state and proved it in the same change.
 | **Retired from the register** | **58** | |
 | Closed by a proof | 5 | `/family/[person]`, `/family/health-picture`, `/overview awaiting-choice` (a ninth state id, declared and proven together), `/settings/copilot complete`, `/genome/[subject]/reports complete` |
 | Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
-| **Genuinely open** | **25** | test work |
-| **Total unproven** | **25** | |
+| Closed by a proof, 2026-09-18 | 6 | `/overview complete`, `/overview not-covered`, `/genome/[subject]/reports not-covered`, `/genome/[subject]/data/browser not-covered`, `/genome/[subject]/data partial-coverage`, `/genome/[subject]/reports/[slug] partial-coverage` — `e2e/genome-coverage-states.spec.ts` and one case added to `e2e/report-skeleton.spec.ts`, each through the real upload and generation on a synthetic file chosen for what it covers |
+| **Genuinely open** | **19** | test work, and two findings put to the owner below |
+| **Total unproven** | **19** | |
 
 **Nothing in this number is a register correction any more.** The open count
 and the total are now the same figure, which is the point: every remaining
@@ -1255,7 +1256,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 25 that are open, none waits on item 11 any more
+### And of the 19 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1267,12 +1268,68 @@ actually waits on.
 
 | state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 9 | test work; on three routes it still renders identically to `empty`, so the cause has to be established from the database as `/overview` already does |
-| `partial-coverage` | 8 | test work; the reading each route uses is now recorded, so a title can say which |
-| `complete` | 6 | test work; `/settings/copilot` and `/genome/[subject]/reports` came off this row on 2026-09-14, the second of them implemented and untitled |
+| `not-covered` | 6 | three embryo pairs wait on ingest; `/family` and `/family/[person]` are test work through the two-account journey with a file that covers nothing; `/genome/[subject]/data` is the finding below |
+| `partial-coverage` | 6 | three embryo pairs wait on ingest; `/family` is test work; `/family/portrait/[pairId]` waits on a classified position (D-034); `/genome/[subject]/ancestry` is the finding below |
+| `complete` | 5 | three embryo pairs wait on ingest; `/family/[person]` is test work with every purpose granted; `/family/portrait/[pairId]` waits on a classified position (D-034) |
 | `processing` | 2 | a product branch that does not exist, and the sentence that would create it is a disclosure decision (below) — not a ruling on the id |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
+
+### Measured 2026-09-18: six proven, and two of the nineteen are findings rather than test work
+
+Six My Genome pairs were proven in a browser on 18 September, 25 → 19, all
+through the real upload, preparation and explicit report choice on three
+synthetic accounts that differ only in what their file covers: nothing the
+product reads (`synthetic-browser-grch38.vcf.gz`: no rsID, no ancestry marker,
+no report or score-panel locus), part of every score panel
+(`tiny-b-grch38.vcf`), and the whole ancestry panel with every catalogue locus
+(`density-source-grch38.vcf`). Every `not-covered` proof establishes its cause
+from the database before it reads the page, as `/overview empty` does: the
+file is prepared, the polygenic layer read zero positions, and the ancestry
+page reads zero usable markers with the stored empty note and no raw numbers.
+
+Two pairs that looked like test work are not, and both are put here rather
+than proven on a render that already carries another state's title:
+
+- **`/genome/[subject]/ancestry partial-coverage` is not a state the page can
+  render.** The seven-region panel's minimum is its whole panel
+  (`SEVEN_ANCESTRY_PANEL.minimumMarkers` = 168, "the initial release shows only
+  the complete panel used in its evaluation"), so any shortfall — one marker or
+  147 — is the grey state, which is the render already proven as
+  `/genome/[subject]/ancestry not-covered`, and whose proof argues the choice of
+  id in its own header. The product's own capture does distinguish
+  `result_state: partial` (1–167 usable markers, raw numbers disclosed) from
+  `not_covered` (0 markers, the empty note, nothing to disclose), but the page
+  says the same sentence for both and draws no map for either. Two honest ways
+  to close it, and the choice is the owner's: waive the state for this route
+  with this reason (`notApplicableStates`, a register change that needs a
+  signature), or decide that the page should say, in words, that shares were
+  computed from a partial panel and withheld — a product sentence, not a test.
+  Not done here: proving it on the 147-marker fixture, which would put one
+  render under two headings.
+- **`/genome/[subject]/data not-covered` would be the render the route's
+  `complete` proof was taken on.** That proof (`e2e/genome-data.spec.ts`)
+  uploads `tiny-grch38.vcf`, which reads zero of every panel's positions, and
+  claims `complete` under the reading its header gives: this page's product is
+  the account of methods and coverage, and it renders all of it. A
+  `not-covered` proof on the NOTHING account would assert the same three
+  zero-of-N figures with a second title. Re-anchoring `complete` on a file that
+  reads every position is not available either: the scorer refuses every
+  palindromic pair (A/T, C/G) by design, so the most any file can read is 44 of
+  50, 208 of 223 and 369 of 424, which a reader would call partial. The
+  honest options are the same two shapes as above — waive `not-covered` here
+  because the page's one statement of coverage is the figure itself, or have
+  the page say in words that the file supplied none of the positions the panels
+  need — and the owner chooses. `/genome/[subject]/data partial-coverage` is
+  proven regardless, because a read count strictly between zero and the panel
+  size is a render neither of the other two titles ever had.
+
+The rest is as the table says: nine embryo pairs wait on ingest, the two
+`processing` pairs on the disclosure ruling above, the two Portrait pairs on a
+classified position, and four Family pairs (`/family not-covered` and
+`partial-coverage`, `/family/[person] complete` and `not-covered`) are test
+work through the two-account journey — `complete` with every purpose granted,
+`not-covered` with a file that covers nothing.
 
 **The two `processing` pairs cannot be attempted today, and the reason is a
 branch rather than a definition.** This line said two could
