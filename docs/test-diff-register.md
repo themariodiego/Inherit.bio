@@ -38,10 +38,17 @@ changed; the gate's 13 unit checks are untouched.
 permitted locally and on the disposable CI job, and refused with selectors,
 combined with the suite, or under a non-disposable CI. A new CI step,
 "Lighthouse gate on the isolated runtime", follows the full browser suite.
-No local runtime was available in this session, so its first execution is
-the CI run of the pull request that carries it; the G1.16 row of
-`docs/acceptance-matrix.md` records that run and its scores when it closes,
-and a score below the contract on the runner is recorded, never lowered.
+No local runtime was available in this session. Its first execution failed
+twice before it ran: the run had a runtime, a proxy and a database but no
+app, because in CI the main app variant is started by the suite's Playwright
+web server, not by the runtime container. The run now starts that same
+launcher with the same configuration (`scripts/ci-browser-app-environment.ts`,
+unit-tested against the container's own validator) and waits for the same
+document. On pull request run `35288013760` at `8c73072` the step then passed
+on the hosted runner: landing 95, 95, 96; signed-in overview 93, 96, 96;
+exact-source report 92, 92, 92; accessibility 100 on all nine navigations;
+one fixture upload through the real local provider. The G1.16 row records
+the integration run. A score below the contract is recorded, never lowered.
 
 ## Storage-prefix attacks in every bucket · 17 September 2026
 
