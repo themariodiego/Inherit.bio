@@ -7,6 +7,7 @@ import receipt from "./fixtures/synthetic-browser-grch38.receipt.json";
 import regionalManifest from "../data/ref/aims-seven-region-manifest.json";
 import { PREPARED_REPORTS, PRIMARY, STARTER, STATE_A_LEDE, STATE_C } from "../src/copy/overview";
 import {
+  BROWSER_EMPTY_REGION,
   BROWSER_NO_FILE,
   BROWSER_PREPARING,
   SCORE_COVERAGE_NO_FILE,
@@ -16,6 +17,7 @@ import {
   rsidNotCovered,
 } from "../src/copy/genome/data";
 import { REPORTS_PREPARING } from "../src/copy/genome/preparation";
+import { INPUT_PROVENANCE_COPY } from "../src/copy/reports/input-provenance";
 import { regionalBelowMinimum } from "../src/copy/regional-ancestry";
 import { COUNT_NOUNS, LIST_NO_FILE, NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
 import { REGIONAL_EMPTY_NOTE } from "../src/lib/genome/regional-admixture";
@@ -248,8 +250,17 @@ test("/genome/[subject]/reports not-covered: both layers generated on a file wit
 /**
  * `/genome/[subject]/data/browser not-covered`. One rsID the reference knows
  * and the file does not carry: the answer is the not-covered sentence with the
- * gene, no results table and no figure, while the search box stays — the file
- * is prepared and searchable; this one position is simply not in it.
+ * gene, no results table and no result figure, while the search box stays —
+ * the file is prepared and searchable; this one position is simply not in it.
+ * The page still renders the region around the position, with the track's own
+ * sentence that its emptiness is coverage, and the provenance panel, which on
+ * every render with a checked file carries that file's read-rate figures (the
+ * same figures the route's `complete` proof reads there) and here says in
+ * words that the file supplied no record at this position. Those figures are
+ * about the file, not the search: the proof holds every figure on the page to
+ * that panel and refuses a genotype or a result-coverage figure anywhere. The
+ * first CI run of this file measured exactly that — two read-rate figures
+ * where a bare "no figure" had been asserted.
  *
  * The expected sentence is built from the reference row the page itself reads,
  * so the gene in it comes from the database rather than from this test. Not
@@ -258,7 +269,7 @@ test("/genome/[subject]/reports not-covered: both layers generated on a file wit
  * at all. Not `empty` and not `processing`: neither of the two no-search
  * sentences is on the page, and the search box is.
  */
-test("/genome/[subject]/data/browser not-covered: an rsID the reference knows and the file lacks answers with the not-covered sentence, no table and no figure", async ({
+test("/genome/[subject]/data/browser not-covered: an rsID the reference knows and the file lacks answers with the not-covered sentence, no table and no result figure", async ({
   page,
 }) => {
   await signIn(page, NOTHING.email, NOTHING.password);
@@ -276,7 +287,20 @@ test("/genome/[subject]/data/browser not-covered: an rsID the reference knows an
   await expect(page.getByText(rsidNotCovered(CAFFEINE_RSID, reference.data!.gene_symbol), { exact: true })).toBeVisible();
   await expect(page.locator("#results")).toHaveCount(0);
   await expect(page.locator("[data-claim-block] table")).toHaveCount(0);
-  await expect(page.locator("[data-figure-kind]")).toHaveCount(0);
+
+  // No result figure: no genotype and no result-coverage figure anywhere, and
+  // nothing outside the provenance panel carries a figure at all. The panel's
+  // figures are the file's read-rates, and its sentence for this file is the
+  // absent one; the region's track says its emptiness is coverage.
+  await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(0);
+  await expect(page.locator('[data-provenance="computed:genome/browser"]')).toHaveCount(0);
+  await expect(page.locator('main [data-figure-kind]:not([data-provenance="computed:genome/input-provenance"])')).toHaveCount(0);
+  const provenance = page.locator('[data-slot="browser-input-provenance"]');
+  await expect(page.locator("[data-figure-kind]")).toHaveCount(await provenance.locator("[data-figure-kind]").count());
+  await expect(provenance.locator('[data-slot="table-input-provenance"]').getByText(INPUT_PROVENANCE_COPY.checkedAbsent, { exact: true })).toBeVisible();
+  // The track reads its region after the page loads, as the `complete` proof
+  // waits for its canvas: the same allowance here.
+  await expect(page.getByText(BROWSER_EMPTY_REGION, { exact: true })).toBeVisible({ timeout: 60_000 });
 });
 
 /**

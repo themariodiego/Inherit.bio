@@ -28,6 +28,15 @@ falls from 25 to 19. Not proven, and recorded as findings instead
 partial-coverage`, which the page cannot render under the seven-region panel's
 168-marker minimum, and `/genome/[subject]/data not-covered`, whose render is
 the one the route's `complete` proof was taken on. No existing assertion moved.
+The file's first CI run (35393616324) failed the browser proof on a bare
+"no `[data-figure-kind]`" count: the page's provenance panel carries the
+checked file's two read-rate figures on every render, as the route's
+`complete` proof already reads them there. The proof now refuses a genotype
+figure, a result-coverage figure and any figure outside that panel, and reads
+the panel's own "supplied no record" sentence and the empty-track sentence;
+the other two proofs in the file's serial order (`/genome/[subject]/data
+partial-coverage`, `/overview complete`) were skipped by that failure and run
+for the first time on the re-run.
 
 ## D-128: a gVCF's called sites are calls, its reference records are blocks · 18 September 2026
 
