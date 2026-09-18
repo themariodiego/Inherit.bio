@@ -238,10 +238,14 @@ test("a deletion the owner never retried is finished by the retention job from e
   // The owner never comes back. Age the record past the retry delay through
   // the database alone; the job's own selection and claim do everything else.
   const psql = (command: string) => promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer,
-    "psql", "-U", "postgres", "-d", "postgres", "-XAt", "--set=ON_ERROR_STOP=1", "--command", command],
+    "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1", "--command", command],
     { timeout: 10_000, maxBuffer: 8192 });
-  const aged = await psql(`update private.genome_file_deletions set started_at = started_at - interval '1 day' where file_id = '${fileId}'::uuid returning file_id;`);
-  expect(aged.stdout.trim()).toBe(fileId);
+  const aged = (await psql(`update private.genome_file_deletions set started_at = started_at - interval '1 day' where file_id = '${fileId}'::uuid returning file_id;`))
+    .stdout.trim().split(/\r?\n/);
+  // psql prints the returned row and, unless quiet, the command tag on its own
+  // line; either shape proves exactly one record was aged and nothing else.
+  expect(aged[0]).toBe(fileId);
+  expect(aged.slice(1)).toEqual(aged.length > 1 ? ["UPDATE 1"] : []);
   const sweep = await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } });
   expect(await jobRanCleanly(sweep, "the stranded file deletion backstop")).toBe("completed");
 
