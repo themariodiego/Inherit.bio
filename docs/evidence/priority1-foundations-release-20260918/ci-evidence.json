@@ -1,0 +1,45 @@
+{
+  "kind": "priority1-foundations release CI evidence",
+  "pullRequest": 136,
+  "mergeCommit": "adfd0a796b55870840bbb9075298ab3923d90864",
+  "headTested": "9a2491c37bf28935a27ab2b2fc371c0ada0b13f8",
+  "pullRequestRun": {
+    "id": 35327691091,
+    "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35327691091",
+    "head": "9a2491c",
+    "conclusion": "success",
+    "firstExecutionOf": [
+      "supabase/migrations/20260918080000_own_preparation_monthly_cap.sql",
+      "supabase/migrations/20260918113000_source_revocation_inline.sql",
+      "supabase/tests/own_preparation_monthly_cap.sql",
+      "supabase/tests/genome_file_deletion.sql (extended)",
+      "supabase/tests/embryo_cohort_runtime.sql (extended)",
+      "e2e/file-deletion.spec.ts stranded-deletion backstop case and three-bucket residue reads",
+      "e2e/account-deletion-purge.spec.ts three-bucket residue read"
+    ]
+  },
+  "earlierHeads": [
+    { "head": "7b699a2", "run": 35321937537, "conclusion": "success", "contents": "signer public key, monthly cap, Cloudflare hosting configuration" },
+    { "head": "f7e7a2d", "run": 35322437702, "conclusion": "success", "contents": "plus the D-127 portrait fixture fix" },
+    { "head": "67effb1", "run": 35323262621, "conclusion": "failure", "contents": "plus the D-126 fold; the only failure was the new browser case's psql assertion expecting the aged id without the UPDATE 1 command tag; every migration and pgTAP file passed", "fixedIn": "9a2491c" },
+    { "head": "4b51f01", "run": 35321447277, "conclusion": "failure", "contents": "name gate: two workers.dev hostnames before Cloudflare was an allowed external name", "fixedIn": "7b699a2" }
+  ],
+  "postMergeRun": {
+    "id": 35332554044,
+    "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35332554044",
+    "head": "adfd0a7",
+    "startedAt": "2026-09-18T10:01:23Z",
+    "conclusion": "in_progress at the time of this record; the follow-up commit records the conclusion"
+  },
+  "deployCloudflareWorkflowRun": {
+    "id": 35332554047,
+    "conclusion": "skipped",
+    "reason": "CLOUDFLARE_DEPLOY_ENABLED is unset, as designed"
+  },
+  "mainReRun": {
+    "id": 35319131306,
+    "head": "ca88d9d",
+    "attempt1": "failure (D-127, e2e/portrait-no-file.spec.ts:254)",
+    "attempt2": "success at 2026-09-18T08:51:45Z on the unchanged tree"
+  }
+}

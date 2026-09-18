@@ -1,0 +1,80 @@
+{
+  "kind": "priority1-foundations production preflight (read-only)",
+  "observedAt": "2026-09-18T10:02:00Z",
+  "project": "zuvloczwgrayonqabnss",
+  "executedAs": "postgres through the Supabase management SQL API",
+  "ledger": {
+    "count": 113,
+    "latest": {
+      "name": "family_ancestry_shared_authority",
+      "version": "20260917180516"
+    },
+    "carriesOwnPreparationMonthlyCap": false,
+    "carriesSourceRevocationInline": false
+  },
+  "retentionRegistry": {
+    "source.revocation-7d": "revocationDispositionWorker"
+  },
+  "genomeFileDeletions": {
+    "rows": 0,
+    "columns": [
+      "file_id",
+      "account_id",
+      "token",
+      "bucket_id",
+      "object_name",
+      "started_at",
+      "canonical_chat_manifest"
+    ]
+  },
+  "ownPreparationConfig": {
+    "columns": [
+      "singleton",
+      "enabled",
+      "artifact_provider",
+      "r2_bucket",
+      "max_artifact_bytes",
+      "max_job_seconds"
+    ],
+    "enabled": false,
+    "artifactProvider": "supabase"
+  },
+  "monthlyAdmissionsTableExists": false,
+  "functionsPresent": [
+    "public.enqueue_own_preparation_v1",
+    "private.enqueue_own_preparation_v1",
+    "public.finish_genome_file_deletion_v1",
+    "public.prepare_genome_file_deletion_v1"
+  ],
+  "functionBodies": {
+    "public.prepare_genome_file_deletion_v1": {
+      "prosrcMd5": "d27d8c27a9a61de3b46e681848aa34f3",
+      "prosrcLength": 4518,
+      "equalsRepository": "supabase/migrations/20260907081759_own_copilot_chat_content.sql"
+    },
+    "public.finish_genome_file_deletion_v1": {
+      "prosrcMd5": "1f085ef0a4ac0bb24b673859f5fc0f1c",
+      "prosrcLength": 2208,
+      "equalsRepository": "supabase/migrations/20260907081759_own_copilot_chat_content.sql"
+    },
+    "private.enqueue_own_preparation_v1": {
+      "prosrcMd5": "2668282374e1eedd8fc5afea6db4c7f5",
+      "prosrcLength": 1583,
+      "equalsRepository": "supabase/migrations/20260908233418_own_preparation_checkpoints.sql"
+    }
+  },
+  "acls": {
+    "public.prepare_genome_file_deletion_v1": "{postgres=X/postgres,service_role=X/postgres}",
+    "public.finish_genome_file_deletion_v1": "{postgres=X/postgres,service_role=X/postgres}",
+    "private.enqueue_own_preparation_v1": "{postgres=X/postgres,service_role=X/postgres}"
+  },
+  "productionApp": {
+    "jwksEndpoint": "https://www.inherit.bio/.well-known/inherit-upload-jwks.json",
+    "status": 200,
+    "keys": 1,
+    "publicFieldsOnly": true,
+    "cacheControl": "public, max-age=300",
+    "observedAt": "2026-09-18T10:02:40Z",
+    "mergeCommit": "adfd0a796b55870840bbb9075298ab3923d90864"
+  }
+}
