@@ -28,23 +28,29 @@ export function observedVcfCall(f: string[], chrom: number, pos: number, line: n
 
 /** File read quality does not require an rsID; report matching still does. */
 export function observedVcfPointCall(f: string[], chrom: number, pos: number, line: number): ObservedCall | null {
+  // A gVCF lists <NON_REF> after the alternate it observed (D-128). The
+  // trailing symbolic allele is dropped for a called site; a row that calls
+  // nothing but the reference there is a block-like record the parser skips,
+  // never a reference finding.
+  const alt = f[4]?.endsWith(",<NON_REF>") ? f[4].slice(0, -",<NON_REF>".length) : f[4];
   if (f.length !== 10 ||
-      !/^[ACGT]$/.test(f[3]) || !/^[ACGT]$/.test(f[4]) || f[3] === f[4] ||
+      !/^[ACGT]$/.test(f[3]) || !/^[ACGT]$/.test(alt) || f[3] === alt ||
       /(?:^|;)(?:END|SVLEN)=/.test(f[7])) return null;
   const keys = f[8].split(":");
   if (new Set(keys).size !== keys.length || keys.includes("LEN")) return null;
   const values = f[9].split(":");
   const value = (key: string) => values[keys.indexOf(key)];
   const sourceGt = value("GT") ?? null;
+  if (alt !== f[4] && !(sourceGt !== null && /(?:^|[/|])1(?:$|[/|])/.test(sourceGt))) return null;
   const filter = f[6] === "." ? null : f[6];
   const sampleFilter = value("FT") && value("FT") !== "." ? value("FT")! : null;
   const quality = (filter !== null && filter !== "PASS") || (sampleFilter !== null && sampleFilter !== "PASS")
     ? "failed" : filter === "PASS" && (sampleFilter === null || sampleFilter === "PASS") ? "pass" : "unknown";
   const validGt = sourceGt !== null && /^[01][/|][01]$/.test(sourceGt);
-  const alleles = [f[3], f[4]];
+  const alleles = [f[3], alt];
   const genotype = validGt ? sourceGt.split(/[/|]/).map((index) => alleles[Number(index)]).sort().join("/") : "--";
   return {
-    line, rsid: /^rs[1-9]\d*$/i.test(f[2]) ? Number(f[2].slice(2)) : null, chrom, pos, ref: f[3], alt: f[4], genotype,
+    line, rsid: /^rs[1-9]\d*$/i.test(f[2]) ? Number(f[2].slice(2)) : null, chrom, pos, ref: f[3], alt, genotype,
     sourceGt, filter, sampleFilter, genotypeQuality: numeric(value("GQ")), depth: numeric(value("DP")),
     quality, usable: validGt && quality !== "failed",
   };

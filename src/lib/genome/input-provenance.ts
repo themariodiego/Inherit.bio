@@ -34,6 +34,18 @@ export function emptyReadCounts(): InputReadCounts {
   return { called: 0, noCall: 0, unsupported: 0, failedFilter: 0, blocks: 0, singleSample: false, buildClaim: false };
 }
 
+/** A gVCF row whose ALT carries `<NON_REF>` describes a reference block, or a
+ * site where nothing but the reference (or the symbolic allele) was called,
+ * unless one copy carries a concrete alternate: then it is a called site, as
+ * the parser reads it (D-128). Alternates are numbered before `<NON_REF>`. */
+export function isReferenceBlockRow(columns: readonly string[]): boolean {
+  if (!columns[4]?.includes("<NON_REF>")) return false;
+  const concrete = columns[4].split(",").filter((allele) => allele !== "<NON_REF>").length;
+  const keys = columns[8]?.split(":") ?? [];
+  const gt = columns[9]?.split(":")[keys.indexOf("GT")] ?? "";
+  return !gt.split(/[/|]/).some((allele) => /^\d+$/.test(allele) && Number(allele) >= 1 && Number(allele) <= concrete);
+}
+
 /** Observe the same decoded stream the parser consumes, without altering it. */
 export async function* countInputLines(lines: AsyncIterable<string>, kind: FileKind, counts: InputReadCounts) {
   let headers = 0;
@@ -56,7 +68,7 @@ export async function* countInputLines(lines: AsyncIterable<string>, kind: FileK
         const chrom = chromToNumber(columns[0]);
         const pos = Number(columns[1]);
         if (columns.length !== 10 || chrom === null || !Number.isInteger(pos) || pos <= 0) counts.unsupported++;
-        else if (/(?:^|;)END=|(?:^|;)SVLEN=/.test(columns[7]) || columns[8].split(":").includes("LEN") || columns[4].includes("<NON_REF>")) counts.blocks++;
+        else if (/(?:^|;)END=|(?:^|;)SVLEN=/.test(columns[7]) || columns[8].split(":").includes("LEN") || isReferenceBlockRow(columns)) counts.blocks++;
         else {
           const observed = observedVcfPointCall(columns, chrom, pos, 0);
           const gt = observed?.sourceGt;

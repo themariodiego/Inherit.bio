@@ -28,6 +28,14 @@ describe("literal observed calls", () => {
     const f = [...fields]; f[4] = alt;
     expect(observedVcfCall(f, 12, 1, 1)).toBeNull();
   });
+  it.each([["0/1", "A/G"], ["1/1", "A/A"], ["0|1", "A/G"]])("reads a gVCF called site whose ALT lists <NON_REF> after the alternate (%s)", (gt, genotype) => {
+    const f = [...fields]; f[4] = "A,<NON_REF>"; f[9] = `${gt}:42:18`;
+    expect(observedVcfCall(f, 12, 1, 1)).toMatchObject({ alt: "A", genotype, sourceGt: gt, usable: true });
+  });
+  it.each(["0/0", "./.", "0/2", "2/2", "0|0"])("never turns a gVCF row that calls no concrete alternate into a finding (%s)", (gt) => {
+    const f = [...fields]; f[4] = "A,<NON_REF>"; f[9] = `${gt}:42:18`;
+    expect(observedVcfCall(f, 12, 1, 1)).toBeNull();
+  });
   it.each(["END=111803963", "SVLEN=2"])("does not infer a result from interval %s", (info) => {
     const f = [...fields]; f[7] = info;
     expect(observedVcfCall(f, 12, 1, 1)).toBeNull();

@@ -1,5 +1,25 @@
 # Test diff register
 
+## D-128: a gVCF's called sites are calls, its reference records are blocks · 18 September 2026
+
+`src/lib/genome/input-provenance.ts` gains `isReferenceBlockRow`: a row is a
+block when INFO carries `END=` or `SVLEN=`, FORMAT carries `LEN`, or ALT
+carries `<NON_REF>` with no concrete alternate called in its genotype.
+`observedVcfPointCall` drops a trailing `<NON_REF>` allele before its
+single-base check and reads the site only when one copy carries that
+alternate. Same version strings (`listed-calls-v1`,
+`vcf-literal-diploid-snp-v1`) by the owner's decision; only gVCF rows change,
+and none had ever counted as a call. `input-provenance.test.ts` +1 case (a
+gVCF of nine rows: two called sites read as `A/G` and `A/A` with the parser's
+output unchanged; the `END=` block, the bare `<NON_REF>` site, the
+homozygous-reference `A,<NON_REF>` site, the symbolic-allele call and the
+no-call counted as five blocks; the `1/2` row unsupported).
+`observed-calls.test.ts` +8 cases (three called-site genotypes read with the
+stripped alternate; `0/0`, `./.`, `0/2`, `2/2`, `0|0` never a finding; the
+existing refusal of `A,<NON_REF>` with `0/0` kept).
+`scripts/synthetic-wgs-fixture.test.ts` tightens the provenance case to
+exactly 400 blocks, 100 called sites, no no-calls and none unsupported.
+
 ## A gVCF admission ceiling of its own · 18 September 2026
 
 `20260918150000_own_upload_gvcf_ceiling.sql` adds nullable
