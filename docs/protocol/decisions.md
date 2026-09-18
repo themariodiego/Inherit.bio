@@ -3764,3 +3764,44 @@ lineage consistency. Exports retain the captured data after current-authority
 rechecks. This implementation entry does not assert browser, release or hosted
 verification; those receipts belong in the release evidence. D-122's underlying
 scientific ambiguity and G5.5's required human reviews remain open.
+
+## 2026-09-18 (evening) — Twelve owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first; every choice below was the
+recommended one unless said otherwise.
+
+- Preview branch for the hosted proof: created by engineering with the
+  connected Supabase tool as `hosted-proof`, billed by the hour and deleted at
+  the end of the proof. (Two tool attempts timed out that evening and the
+  owner was asked to create it in the dashboard instead; either way the branch
+  is the owner's authorization, not a cost taken on engineering's own.)
+- Timing: the container secrets, the Vercel preview variables and the six
+  session variables land the same day; the proof stays first.
+- Privacy notice: the Cloudflare sentence approved as drafted on 18 September
+  (decision 9) stands; it ships with production activation.
+- Route-state matrix: four pairs the product cannot render as distinct pages
+  are waived in the register with their measured reasons
+  (`/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data
+  not-covered`, `/family not-covered`, `/family partial-coverage`);
+  `UNPROVEN_ROUTE_STATE_PAIRS` 17 → 13.
+- Family `processing` disclosure: one adult may be told that the other's file
+  is being prepared, one sentence on `/family/health-picture` and
+  `/family/portrait/[pairId]`; product work with its proofs, ratchet 13 → 11
+  when proven.
+- ADR-0028 (jurisdiction gating) and ADR-0029 (density contract): accepted as
+  written; G7.1 re-measured against them.
+- Glossary definitions (G1.11): a definition is not a claim; it renders from
+  `data/jargon.json` without a citation (corrections item 15).
+- G1.13b: the in-page table beneath the ancestry map is the equivalent
+  list-and-text surface (corrections item 16).
+- Embryo grant seed path (G4.5, G8.2): wait for the real embryo upload
+  journey; no fixture-only seed path is added to the product.
+- G4.1: Inherit renders no relative-risk figure by design; the row is met by
+  the component contract test and the naked-relative gate and reopens the day
+  a template carries one (corrections item 17).
+- G5.7: "a marketing claim" reads as the four pattern classes the gate carries
+  (corrections item 18); the row flips on the every-page assertion's first
+  green run.
+- G2.5: declined for this release; no redesign is commissioned, the 60% rule
+  stands and the measurements are the row's reason (corrections item 14,
+  re-asked).

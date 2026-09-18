@@ -100,17 +100,21 @@ Released:
 - G5.7, 18 September (evening): no payment-processor origin in any response
   is asserted on every kept page through the audited sweeps
   (`scripts/payment-origins.ts` shared by the gate and `assertNoThirdParty`);
-  the row waits on the owner's reading of "a marketing claim" as the four
-  pattern classes the gate carries.
+  the owner read "a marketing claim" as the four pattern classes on 18
+  September (evening, corrections item 18); the row flips on the assertion's
+  first green run.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
 Open, by what it waits on:
 
-- Owner decisions: the glossary citation policy (G1.11);
-  acceptance of ADR-0028 and ADR-0029 (G7.1); an embryo grant seed path that
-  is not a demo path (G4.5, G8.2); the jurisdiction declaration contract
-  (G5.1a: `profiles.jurisdiction_code` has no writer).
+- Owner decisions: taken on 18 September (evening), twelve of them, in the
+  decisions section below and `docs/protocol/decisions.md`: the glossary
+  citation policy (G1.11, no citation), ADR-0028 and ADR-0029 accepted (G7.1),
+  the embryo grant seed path (G4.5, G8.2: wait for the real journey), four
+  route-state waivers, the Family `processing` sentence, G4.1 by design, G5.7's
+  reading, G2.5 declined for this release. Still open: the jurisdiction
+  declaration contract (G5.1a: `profiles.jurisdiction_code` has no writer).
   D-126 (`source.revocation-7d`) was decided on 18 September: folded into
   immediate deletion with a retention-job backstop; see the decisions section
   above and the D-126 row.
@@ -126,10 +130,13 @@ Open, by what it waits on:
   origins as production run 35385517381 and preview run 35385527542): four
   Workers and two container applications exist, the gateways answer at
   `inherit-prepared-artifacts[-preview].mariodiego-dev.workers.dev` and
-  refuse unauthenticated requests; still owed by the owner are the Supabase
-  Storage upload limit and the container secrets; Vercel preview deployments also have no Supabase
-  variables today (every dynamic route answers 500 through the middleware),
-  which the preview proof needs fixed first. The order is written down in
+  refuse unauthenticated requests; the Supabase Storage upload limit was set to 9 GB
+  and the two production container secrets were being set on the evening of
+  18 September, from the step-by-step runbook given in chat (clone, `npx
+  wrangler login`, two `secret put` commands, `secret list`); the preview
+  branch, the preview signer, the Vercel preview variables (previews have no
+  Supabase variables today, so every dynamic route answers 500 through the
+  middleware) and the six session variables follow the same evening. The order is written down in
   `docs/hosted-preparation-activation.md`, and the synthetic fixture
   generator can now size a VCF, VCF.gz or gVCF to the decoded byte ceilings
   the proof measures. Two things found on the way: the schema had one
@@ -143,11 +150,10 @@ Open, by what it waits on:
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
   embryo ingest (G2.6, G4.2, G4.5, G8.3, G8.6, G5.9); the route-state matrix
-  (G1.7, G1.12, G2.2: 17 pairs open after 18 September — nine wait on embryo
-  ingest, two on the Family disclosure ruling, two Portrait pairs on a
-  classified position, and four are owner decisions recorded in the
-  corrections document: the hub's two, the ancestry page's partial state and
-  the data page's not-covered state); task-depth instrumentation and the four Overview boxes
+  (G1.7, G1.12, G2.2: 13 pairs open after the owner's four waivers of 18
+  September (evening) — nine wait on embryo ingest, two Portrait pairs on a
+  classified position, and the two Family `processing` pairs on the sentence
+  the owner chose the same evening, which is product work next); task-depth instrumentation and the four Overview boxes
   that land on a domain index (G2.4); density enforcement where the product
   misses the rule (G2.5); rights routes (G5.4).
 
@@ -246,6 +252,61 @@ its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable; raise the Supabase
 Storage upload limit to at least 8 GiB; later, set the two container secrets and,
 at activation, the three Vercel variables, and approve the privacy sentence that
 names Cloudflare.
+
+## Owner decisions · 18 September 2026, evening (twelve, asked as selectable choices)
+
+Asked and answered in chat late on 18 September 2026 as selectable decisions
+with the recommended option first; the owner chose the recommended option in
+every case. Applied in the same change unless it says product work.
+
+13. **Preview branch:** engineering creates the Supabase preview branch
+    `hosted-proof` with the connected tool (the owner's authorization for the
+    hourly charge; deleted at the end of the proof). Two tool calls timed out
+    that evening with no branch created, so the owner was asked to create it
+    in the dashboard; the authorization stands either way.
+14. **Timing:** the container secrets, the Vercel preview variables and the
+    six session variables (`INHERIT_PREVIEW_BRANCH`,
+    `INHERIT_PREVIEW_SUPABASE_URL`, `INHERIT_PREVIEW_SUPABASE_ANON_KEY`,
+    `INHERIT_PREVIEW_SUPABASE_SERVICE_ROLE_KEY`,
+    `INHERIT_PREVIEW_UPLOAD_SIGNING_JWK`, `INHERIT_PREVIEW_VERCEL_BYPASS_TOKEN`)
+    land the same day. The Storage upload limit was set to 9 GB (the
+    dashboard's GB unit may be decimal, and 8 decimal GB is under the 8 GiB
+    gVCF ceiling; the spend cap stays on). A running session never sees new
+    environment variables, so the proof runs from a fresh session in the same
+    environment once they are saved.
+15. **Privacy notice:** decision 9's sentence approved again as drafted; it
+    ships with production activation, and the owner accepts Cloudflare's data
+    processing agreement in the Cloudflare dashboard before then.
+16. **Four route-state pairs the product cannot render distinctly:** waived
+    in the register with their measured reasons (`/genome/[subject]/ancestry
+    partial-coverage`, `/genome/[subject]/data not-covered`, `/family
+    not-covered`, `/family partial-coverage`); `UNPROVEN_ROUTE_STATE_PAIRS`
+    17 → 13 (`scripts/route-gate.ts` ledger, corrections document).
+17. **Family `processing` disclosure:** one adult may be told that the other
+    adult's file is still being prepared, one sentence on
+    `/family/health-picture` and `/family/portrait/[pairId]`; product work
+    with a `processing` proof on each page, ratchet 13 → 11 when proven.
+18. **ADR-0028 and ADR-0029:** accepted as written (status lines updated);
+    G7.1's minimum set of eight is now complete and accepted.
+19. **Glossary definitions (G1.11):** not claims; they render from
+    `data/jargon.json` without a citation (corrections item 15). Wiring the
+    gloss surface onto its pages is product work next.
+20. **G1.13b:** the in-page table beneath the ancestry map is the equivalent
+    list-and-text surface (corrections item 16); the igv reflow remainder and
+    the 990 undersized control pairs keep the row NO.
+21. **Embryo grant seed path (G4.5, G8.2):** wait for the real embryo upload
+    journey; no fixture-only seed path.
+22. **G4.1:** Inherit renders no relative-risk figure by design; met by the
+    component contract test and the naked-relative gate, reopening the day a
+    template carries one (corrections item 17); the row flips on the census
+    pull request's green run.
+23. **G5.7:** "a marketing claim" reads as the four pattern classes the gate
+    carries (corrections item 18); the row flips on the every-page response
+    assertion's first green run.
+24. **G2.5:** declined for this release; no redesign of the 28 pages with a
+    real predecessor is commissioned, the 60% rule stands and cannot rise, the
+    measurements are the row's reason, and it reopens if a redesign is
+    commissioned (corrections item 14, re-asked).
 
 ## Resumption handoff · 10 September 2026, night
 

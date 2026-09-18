@@ -537,6 +537,30 @@ const BROWSER_TESTS = "e2e";
  *               measurement that produced the amendment was only trustworthy
  *               because the two reachable ones had already been reached.
  *
+ *    17 -> 13   FOUR WAIVERS SIGNED BY THE OWNER on 2026-09-18, after the
+ *               entry above said a register correction had made its last
+ *               move. It had, for corrections of the register's own reading
+ *               (27 -> 17 in between were proofs, 14 to 18 September, in the
+ *               corrections document's table rather than here). These four
+ *               are pairs the PRODUCT cannot render as a distinct page,
+ *               measured on 18 September and put to the owner as a choice
+ *               between a waiver and a new sentence (corrections document,
+ *               "Measured 2026-09-18"). The owner chose the waivers:
+ *               `/genome/[subject]/ancestry partial-coverage` (the panel's
+ *               minimum is its whole panel, so any shortfall is the grey
+ *               state already proven as `not-covered`),
+ *               `/genome/[subject]/data not-covered` (the render its
+ *               `complete` proof was taken on; the page's one statement of
+ *               coverage is the figure itself), and `/family not-covered`
+ *               and `/family partial-coverage` (the hub card knows nothing
+ *               about what a shared file covers, and naming it would tell
+ *               one adult something new about another's record). Each
+ *               reason sits beside its waiver in `notApplicableStates`. The
+ *               guard is unchanged: each of the four is a state the
+ *               `product-result` profile supports, each carries its reason,
+ *               and none is `consent-required`. Measuring the hub's pair
+ *               found and fixed D-129 on the way.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -546,7 +570,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 17;
+const UNPROVEN_ROUTE_STATE_PAIRS = 13;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

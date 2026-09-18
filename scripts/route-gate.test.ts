@@ -82,10 +82,14 @@ describe("the route gate holds the register to the code", () => {
     // consent-required with nothing to require stopped declaring it. 155 -> 156
     // on 2026-09-14: the ninth state id, `awaiting-choice`, supported on
     // `product-result` and waived on the thirteen routes of that profile which
-    // are not /overview, so it adds exactly the one pair it names. Pinned
+    // are not /overview, so it adds exactly the one pair it names. 156 -> 152
+    // on 2026-09-18 (evening): four owner-signed waivers on states the product
+    // cannot render as a distinct page (the ancestry page's partial-coverage,
+    // the data page's not-covered, the Family hub's not-covered and
+    // partial-coverage), each with its reason beside it in the register. Pinned
     // exactly rather than as a floor, so
     // a profile quietly losing a state fails here instead of reading as progress.
-    expect(result.requiredStateCount).toBe(156);
+    expect(result.requiredStateCount).toBe(152);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7

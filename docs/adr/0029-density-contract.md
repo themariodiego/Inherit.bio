@@ -1,6 +1,6 @@
 # ADR-0029 — The density contract
 
-- Status: **Proposed** · 2026-09-11 · not decided here
+- Status: **Accepted** · owner decision 2026-09-18 (proposed 2026-09-11, accepted as written)
 - Deciders: Inherit engineering
 - Records: the contract as built in `docs/density-baseline.json` (schemaVersion 2)
 

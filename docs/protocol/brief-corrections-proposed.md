@@ -2,6 +2,9 @@
 
 **Status, 2026-09-13: items 4, 5, 6, 8, 10 and 12 are SIGNED AND APPLIED.**
 **Status, 2026-09-14: item 14 is DECLINED.**
+**Status, 2026-09-18 (evening): items 15 to 18 are SIGNED AND APPLIED; the four
+route-state waivers and the Family `processing` sentence under "Measured
+2026-09-18" are DECIDED; item 14's redesign is DECLINED for this release.**
 
 Each decided item carries a line at its own head saying what was decided and
 what was applied. The rest are still proposals and are still unapplied, and
@@ -1107,6 +1110,16 @@ whole rather than deleted, because the reasoning below is the record of why the
 threshold is 0.6 and of how close it came to being changed without anyone
 reading the clause.
 
+**Re-asked 2026-09-18 (evening), as a selectable decision with the measurements
+in front of the owner:** 41 of 44 captures fail the 60% rule, and the eight
+authenticated rows fail on the 44 px control size that ADR-0029 rules in favour
+of. The choice was to commission the redesign of the 28 pages with a real
+predecessor, or to record the row as declined for this release. **Declined for
+this release.** No redesign is commissioned; the 60% stands and can never rise;
+the measurements in `docs/density-baseline.json` are the row's recorded reason;
+G2.5 reopens the day a redesign is commissioned. ADR-0029 was accepted the same
+evening, so the accessibility rule keeps winning where the two conflict.
+
 **Original proposal follows, unapplied.**
 
 **This was a decision the operator had taken in conversation, filed rather than
@@ -1208,7 +1221,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 17 unproven pairs stand
+## Where the 13 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1235,10 +1248,15 @@ a new state and proved it in the same change.
 | Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
 | Closed by a proof, 2026-09-18 | 6 | `/overview complete`, `/overview not-covered`, `/genome/[subject]/reports not-covered`, `/genome/[subject]/data/browser not-covered`, `/genome/[subject]/data partial-coverage`, `/genome/[subject]/reports/[slug] partial-coverage` — `e2e/genome-coverage-states.spec.ts` and one case added to `e2e/report-skeleton.spec.ts`, each through the real upload and generation on a synthetic file chosen for what it covers |
 | Closed by a proof, 2026-09-18 (evening) | 2 | `/family/[person] complete` (`e2e/family-health-picture.spec.ts`, on the fixture its `complete` proof already built) and `/family/[person] not-covered` (`e2e/family-coverage-states.spec.ts`: the real invitation, acceptance, upload and permission journey with a file that covers nothing) |
-| **Genuinely open** | **17** | test work, and the findings put to the owner below |
-| **Total unproven** | **17** | |
+| Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
+| **Genuinely open** | **13** | test work: nine embryo pairs on ingest, two Portrait pairs on a classified position, two Family `processing` pairs on the sentence decided below |
+| **Total unproven** | **13** | |
 
-**Nothing in this number is a register correction any more.** The open count
+**Nothing in this number is a register correction any more.** (The four
+waivers of 18 September, evening, are signed decisions about states the
+product cannot render, recorded in the table above; they are not corrections
+of the register's reading, and the open count below still equals the total.)
+The open count
 and the total are now the same figure, which is the point: every remaining
 pair is a state the product has and no test names, or one that item 11 must
 first make decidable. A register correction cannot move it again.
@@ -1257,7 +1275,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 17 that are open, none waits on item 11 any more
+### And of the 13 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1269,10 +1287,10 @@ actually waits on.
 
 | state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 5 | three embryo pairs wait on ingest; `/family` is the hub finding below; `/genome/[subject]/data` is the finding below |
-| `partial-coverage` | 6 | three embryo pairs wait on ingest; `/family` is the hub finding below; `/family/portrait/[pairId]` waits on a classified position (D-034); `/genome/[subject]/ancestry` is the finding below |
+| `not-covered` | 3 | three embryo pairs wait on ingest; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
+| `partial-coverage` | 4 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` waits on a classified position (D-034); `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
 | `complete` | 4 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` waits on a classified position (D-034) |
-| `processing` | 2 | a product branch that does not exist, and the sentence that would create it is a disclosure decision (below) — not a ruling on the id |
+| `processing` | 2 | a product branch that does not exist; the owner decided on 2026-09-18 (evening) that the sentence may be built (below), so these two are product work next, not a ruling on the id |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
 
@@ -1329,6 +1347,15 @@ The rest is as the table says: nine embryo pairs wait on ingest, the two
 `processing` pairs on the disclosure ruling above, and the two Portrait pairs
 on a classified position.
 
+**Decided 2026-09-18 (evening): both waived.** Asked as a selectable decision
+(waive all four with these reasons; build the sentences; leave open), the owner
+chose the waivers. `/genome/[subject]/ancestry partial-coverage` and
+`/genome/[subject]/data not-covered` now carry these reasons in
+`notApplicableStates`, the gate's guard holds them (a supported state, a reason,
+never `consent-required`), and `UNPROVEN_ROUTE_STATE_PAIRS` moves 17 → 13 with
+the hub's two below. No product sentence is added; either page reopens its
+pair the day it renders the state differently.
+
 **Two Family pairs proven the same evening, 19 → 17, and the hub's two are a
 third finding.** `/family/[person] complete` was implemented and untitled on
 the health-picture fixture (both report layers granted, B's file reaching one
@@ -1360,6 +1387,12 @@ this reason, or decide that a card should name coverage, which is a product
 sentence about another adult's file and therefore the same disclosure
 question the two `processing` pairs wait on.
 
+**Decided 2026-09-18 (evening): waived, both.** The owner chose the waiver
+for `/family not-covered` and `/family partial-coverage` with the reasons
+above, recorded in the register beside the hub's existing `awaiting-choice`
+and `consent-required` waivers. The card keeps saying what it knows (five
+per-person states) and nothing about coverage; D-129 stays fixed regardless.
+
 **The two `processing` pairs cannot be attempted today, and the reason is a
 branch rather than a definition.** This line said two could
 — both `processing`, on `/family/health-picture` and
@@ -1383,6 +1416,16 @@ corrections item 9; what is new here is that it is equally true of the health
 picture, and that this table said otherwise. **The rest of the ratchet is test
 work**, which is what it became once item 11 landed: those two pairs are the
 only ones in it waiting on a decision rather than on a browser test.
+
+**Decided 2026-09-18 (evening): the sentence, on both pages.** Asked whether one
+adult may be told that the other adult's file is still being prepared, the
+owner chose yes: one sentence on `/family/health-picture` and on
+`/family/portrait/[pairId]`, because results sharing is already granted in
+that direction and the sentence discloses less than a result. This is product
+work with its own proof (a `processing` title on each page under the held
+preparation fixture `e2e/family.spec.ts` already uses), and it moves the
+ratchet 13 → 11 when both are proven. Not done in the change that records the
+decision.
 
 The third of the three, `/family/portrait/[pairId] empty`, was proven on
 2026-09-13 — and it was attemptable, but not by the route anyone would try
@@ -1417,6 +1460,123 @@ fixture and confirmed item 9's reading that both distinguish "no file" from
 in the open column is a judgement call
 the operator should make once rather than one the next reader makes twenty
 times.
+
+## 15. Glossary definitions are not claims (G1.11)
+
+**SIGNED 2026-09-18 (evening), APPLIED to the register's reading; the gloss surface ships on it.**
+
+### What the brief says
+
+Line 2570: "every string block on a designated surface (report bodies,
+consent summaries, glossary definitions, Copilot system prompts, legal pages,
+the future-child preview, the embryo comparison) must be emitted through the
+shared claim component with a mandatory `citationId` prop".
+
+### The correction
+
+A plain-language definition of a term ("a variant is one place where your
+file differs from the reference") is a definition, not a claim about a
+person, a result or a study. Glossary definitions render from
+`data/jargon.json` through `GlossaryTerm` without a `citationId`. A sentence
+inside a definition that states a finding, a number or a study is still a
+claim and still cites. Line 2570's list loses "glossary definitions"; the
+other six surfaces are unchanged.
+
+### Why
+
+`pnpm gate:claims` has held the glossary corpus as `unbound` since it
+appeared, because no claim in `data/claims.json` is bound to a definition,
+and none can be without inventing a citation for the meaning of a word. The
+G1.11 row recorded this as an owner's question on 2026-09-11. Asked as a
+selectable decision (no citation needed; a citation per definition; leave
+open), the owner chose no citation. The gloss surface (`glossed-text.tsx`,
+first occurrence, keyboard-focusable, never hover-only) can now be wired onto
+its pages; that is product work recorded in the handoff.
+
+## 16. The ancestry map's list-and-text equivalent is the table beneath it (G1.13b)
+
+**SIGNED 2026-09-18 (evening), APPLIED to the register's reading.**
+
+### What the brief says
+
+Line 2575: "a text alternative for the interactive ancestry map and for every
+chart, each reachable as an equivalent list-and-text route." Line 2702 (the
+regression list) repeats "an interactive map without an equivalent
+list-and-text route".
+
+### The correction
+
+"Route" reads as "surface". A.8 already specifies the equivalent: "A text
+table beneath the map carries identical content, is never hidden from
+assistive technology, and is readable with hover unavailable." That table is
+on the page at zero activations and `e2e/a11y.spec.ts` asserts it. No
+separate list-and-text route is registered or built.
+
+### Why
+
+A second route carrying the same table would be a page nobody asked for,
+which G2.2 would then oblige to declare and test `empty` and `error` states,
+the exact reasoning the brief itself applies to a consent diff viewer under
+G5.2. Asked as a selectable decision, the owner accepted the in-page table.
+The igv reflow remainder (446 px at a 320 px viewport) and the 990 undersized
+control pairs are unaffected and keep the row NO.
+
+## 17. Inherit renders no relative-risk figure, by design (G4.1)
+
+**SIGNED 2026-09-18 (evening), APPLIED to the register's reading; the row flips on the census pull request's green run.**
+
+### What the brief says
+
+Line 2628 (G4.1): every `data-figure-kind="relative"` element must sit
+beside two absolutes, a difference in points and a natural frequency, with
+prominence read numerically from computed style, and "the test fails if any
+of the four is absent." X4.3 (line 2430) states the same contract.
+
+### The correction
+
+No seeded template carries a relative figure (0 of 151, measured
+2026-09-18), `<RelativeFigure>` is the only path by which one could reach a
+page, and no surface uses it. G4.1 is satisfied by the component contract
+(`src/components/figures/figures.test.ts` pins the order absolute-before,
+absolute-after, difference, natural frequency, relative-last, and
+`src/lib/figures/natural-frequency.ts` the ladder) plus the naked-relative
+gate in `src/lib/genome/template-prose.ts`, which refuses a template carrying
+relative wording without the component. The browser assertion on computed
+style applies from the first template that carries a relative figure, and
+the row reopens that day.
+
+### Why
+
+The alternative was a test-only template with a relative figure through a
+new template field, product work for a figure nothing ships. Asked as a
+selectable decision, the owner chose the by-design record.
+
+## 18. "A marketing claim" is the classes listed beside it (G5.7)
+
+**SIGNED 2026-09-18 (evening), APPLIED; the row flips on the first green run of the every-page response assertion.**
+
+### What the brief says
+
+G5.7: "no legal or disclosure page contains a marketing claim, a call to
+action, a price, or a superlative; `pnpm gate:legal` is extended with these
+patterns."
+
+### The correction
+
+"A marketing claim" has no general detector and cannot have one without a
+model reading prose. It reads as the pattern classes the gate carries: a
+price, a recurring charge, a call to action and a superlative, each a written
+pattern in `scripts/legal-placeholder-gate.ts` and each proven by a plant.
+The fee-path half (no payment-processor package, no payment-processor origin
+in any response, `scripts/payment-origins.ts`) is unchanged.
+
+### Why
+
+Asked as a selectable decision (read as the listed classes; add a fifth
+word-list class accepted by the owner; leave NO), the owner chose the listed
+classes. The one recorded exception (`US$100` in the liability clause) stays
+in `scripts/legal-fee-exceptions.json` with its counsel-owned rewording in
+`docs/protocol/legal-copy-proposed.md`.
 
 ## What happens after signature
 
