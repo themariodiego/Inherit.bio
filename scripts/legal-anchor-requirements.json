@@ -1,6 +1,6 @@
 {
   "purpose": "G5.8's eight protective statements, each keyed by the stable anchor id the brief requires. scripts/legal-placeholder-gate.ts checks by id, not by prose, exactly as the brief specifies: a statement recorded as present must still carry its anchor, and one recorded as absent must still be absent. Adding a missing clause therefore fails this gate until the record is updated, which is the point.",
-  "scope": "The terms page only. The brief also requires these statements on each consent document shown at the activation point; that surface is not measured yet and no claim is made about it here.",
+  "scope": "The terms page, by anchor id. The brief also requires these statements on each consent document shown at the activation point; that surface is measured, not asserted by id, in `consentDocuments` below: a signed body carries no anchor.",
   "browserAssertion": "e2e/legal.spec.ts reads this record in a browser: every statement recorded present renders under its anchor id with a heading and a body on /terms, and every statement recorded absent renders no such anchor. Both directions, as the gate holds the source.",
   "notDrafted": "The absent clauses are not written by this repository's tooling. Drafting an indemnity, a reproductive no-reliance statement or a governing-law forum is legal work, not engineering work.",
   "surface": "src/app/(marketing)/terms/page.tsx",
@@ -50,5 +50,240 @@
       "status": "absent",
       "note": "The page says Inherit will not sell the user's data, which is a different promise. Nothing states that Inherit sells nothing and takes no payment for sequencing. G5.7 proves no fee path exists in code; this is the statement of it that the terms owe the reader."
     }
-  ]
+  ],
+  "consentDocuments": {
+    "measuredOn": "2026-09-18",
+    "method": "A keyword screen (scripts/consent-statement-screen.ts) over the body_markdown of every consent artifact the migrations seed, at the latest version of each key. A body with no keyword for a class cannot carry that statement; a body with a keyword is a candidate, and `reading` says what a person found the words to be about — present, present-incomplete or not the statement. scripts/consent-statement-screen.test.ts holds this record to the migrations in both directions: every seeded document at its current version, every candidate read, every quoted `words` still in the body. No consent document carries an anchor id, so nothing here is asserted by id; a signed body is immutable and closing the gap is a new version of each document, written by counsel.",
+    "classes": {
+      "eligibility": "\\b18\\b|eighteen|of age|documented permission",
+      "indemnity": "indemnif|hold (?:us|inherit) harmless",
+      "not-medical": "medical advice|not a diagnosis|diagnos",
+      "no-reproductive-reliance": "reproductiv|\\bIVF\\b|conception|family[- ]planning|embryo transfer|which embryo|implant",
+      "liability": "liabilit|liable",
+      "no-warranty": "warrant|\\bas is\\b|no guarantee|accuracy|complete|uncertain|wrong",
+      "governing-law": "governing law|laws of|court|venue|forum",
+      "no-payment": "\\bfree\\b|no fee|no charge|payment|sell|sold|charge"
+    },
+    "artifacts": [
+      {
+        "artifactKey": "attestation.embryo-disposition-rights",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "not-the-statement",
+            "words": "The record is kept until 18 years and 9 months after the transfer, plus 24 months.",
+            "reading": "a retention period measured from the transfer, not an uploader's warranty of age"
+          },
+          {
+            "class": "governing-law",
+            "finding": "not-the-statement",
+            "words": "There is no dispute about these embryos, and no court case or other legal proceeding about them that I know of.",
+            "reading": "an attestation that no dispute or court case exists, not a governing-law or forum clause"
+          }
+        ]
+      },
+      {
+        "artifactKey": "attestation.embryo-parentage",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "attestation.embryo-single-parent-basis",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": [
+          {
+            "class": "no-warranty",
+            "finding": "not-the-statement",
+            "words": "Every document I provide to show this is genuine and complete, and I have not altered it.",
+            "reading": "the uploader's own warranty that a document is genuine and complete, not Inherit's accuracy disclaimer"
+          },
+          {
+            "class": "governing-law",
+            "finding": "not-the-statement",
+            "words": "Inherit asks for the clinic's or the court's document that gives you that right.",
+            "reading": "a clinic's or court's document as the basis of a right, not a forum clause"
+          }
+        ]
+      },
+      {
+        "artifactKey": "charter.future-person",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "not-the-statement",
+            "words": "When you turn 18, you can ask us for everything we hold about the embryo you came from.",
+            "reading": "the future person's right at 18, not an uploader's warranty"
+          },
+          {
+            "class": "no-warranty",
+            "finding": "not-the-statement",
+            "words": "You can have it deleted completely, and we will do it within 30 days.",
+            "reading": "a deletion promise ('completely'), not an accuracy disclaimer"
+          },
+          {
+            "class": "governing-law",
+            "finding": "not-the-statement",
+            "words": "We will never hand it to anyone without a court order that we first tried to resist.",
+            "reading": "a promise to resist court orders, not a governing-law or forum clause"
+          },
+          {
+            "class": "no-payment",
+            "finding": "not-the-statement",
+            "words": "It is free.",
+            "reading": "the record copy is free; not a statement that Inherit sells nothing and takes no payment for sequencing"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.cloud-model-migrated",
+        "version": 1,
+        "migration": "20260831222249_v2_backfill.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.copilot-cloud-model",
+        "version": 1,
+        "migration": "20260901032000_copilot_consent_runtime.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.own-ancestry",
+        "version": 1,
+        "migration": "20260906134652_own_report_purposes.sql",
+        "readings": [
+          {
+            "class": "not-medical",
+            "finding": "present",
+            "words": "They are for learning, not a diagnosis or a substitute for clinical testing and professional advice.",
+            "reading": "not a diagnosis or a substitute for clinical testing and professional advice"
+          },
+          {
+            "class": "no-warranty",
+            "finding": "present-incomplete",
+            "words": "Results can be uncertain, incomplete or wrong.",
+            "reading": "results can be uncertain, incomplete or wrong; nothing says this covers data Inherit did not generate"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.own-copilot-cloud",
+        "version": 1,
+        "migration": "20260907081757_canonical_own_copilot_authority.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.own-copilot-local",
+        "version": 1,
+        "migration": "20260907081757_canonical_own_copilot_authority.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.own-monogenic",
+        "version": 2,
+        "migration": "20260906135854_own_report_layer_language.sql",
+        "readings": [
+          {
+            "class": "not-medical",
+            "finding": "present",
+            "words": "They are for learning, not a diagnosis or a substitute for clinical testing and professional advice.",
+            "reading": "not a diagnosis or a substitute for clinical testing and professional advice"
+          },
+          {
+            "class": "no-warranty",
+            "finding": "present-incomplete",
+            "words": "Results can be uncertain, incomplete or wrong.",
+            "reading": "results can be uncertain, incomplete or wrong; nothing says this covers data Inherit did not generate"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.own-polygenic",
+        "version": 2,
+        "migration": "20260906135854_own_report_layer_language.sql",
+        "readings": [
+          {
+            "class": "not-medical",
+            "finding": "present",
+            "words": "They are for learning, not a diagnosis or a substitute for clinical testing and professional advice.",
+            "reading": "not a diagnosis or a substitute for clinical testing and professional advice"
+          },
+          {
+            "class": "no-warranty",
+            "finding": "present-incomplete",
+            "words": "These may use individual variants or many variants, with the evidence, coverage and uncertainty shown.",
+            "reading": "results can be uncertain, incomplete or wrong; nothing says this covers data Inherit did not generate"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.self-source-migrated",
+        "version": 1,
+        "migration": "20260831222249_v2_backfill.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.share-with-adult",
+        "version": 1,
+        "migration": "20260903120000_family_sharing_runtime.sql",
+        "readings": []
+      },
+      {
+        "artifactKey": "consent.subject-adult",
+        "version": 1,
+        "migration": "20260901040000_adult_subject_invitation_runtime.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "present",
+            "words": "I am 18 or over.",
+            "reading": "the adult subject's own warranty of being 18 or over"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.upload-embryo",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": [
+          {
+            "class": "no-payment",
+            "finding": "not-the-statement",
+            "words": "It will not sell it, share it with an insurer, an employer or a school, or send it to an outside AI compan",
+            "reading": "a refusal to sell the data, not a statement that Inherit sells nothing and takes no payment for sequencing"
+          }
+        ]
+      },
+      {
+        "artifactKey": "consent.upload-self",
+        "version": 1,
+        "migration": "20260906102710_own_upload_consent.sql",
+        "readings": [
+          {
+            "class": "eligibility",
+            "finding": "present",
+            "words": "I am 18 or older and this is my own DNA.",
+            "reading": "the uploader's warranty of being 18 or older and uploading their own DNA"
+          },
+          {
+            "class": "no-payment",
+            "finding": "not-the-statement",
+            "words": "You can still ask for a free copy of your data.",
+            "reading": "a free copy of the data as a right, not a statement about payment for sequencing"
+          }
+        ]
+      },
+      {
+        "artifactKey": "disclosure.insurance-and-discrimination",
+        "version": 1,
+        "migration": "20260905103317_embryo_cohort_runtime.sql",
+        "readings": []
+      }
+    ]
+  }
 }

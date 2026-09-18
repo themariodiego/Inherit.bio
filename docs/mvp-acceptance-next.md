@@ -90,9 +90,13 @@ Released:
   spec's first green CI run.
 - G5.8, 18 September (evening): the eight protective statements are asserted
   by anchor id in a browser (`e2e/legal.spec.ts` over
-  `scripts/legal-anchor-requirements.json`, both directions); the three absent
-  clauses stay counsel's and the activation-point consent documents stay
-  unmeasured, so the row stays NO.
+  `scripts/legal-anchor-requirements.json`, both directions), and the 17
+  seeded consent documents are measured for the same statements
+  (`scripts/consent-statement-screen.ts`, `consentDocuments` in the record):
+  five statements present across them, none carrying an indemnity, a
+  reproductive no-reliance statement, a liability limit, a forum clause or the
+  sells-nothing statement, and none carrying an anchor id. The absent clauses
+  are counsel's, so the row stays NO.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 

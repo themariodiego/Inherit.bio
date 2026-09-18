@@ -7,8 +7,17 @@
 id, with a heading and a body of substance, and none of the statements it
 records as absent — the record `pnpm gate:legal` holds the page source to,
 read in a browser in both directions (G5.8). The record names the assertion
-(`browserAssertion`). No existing assertion moved; the three absent clauses
-stay recorded as absent.
+(`browserAssertion`). `scripts/consent-statement-screen.ts` and its test are
+new: every consent artifact body the migrations seed (17 documents at their
+current versions, through the three insert shapes the migrations use) is
+screened for the eight statement classes by keyword, and the record's
+`consentDocuments` section holds a reading for each of the 18 candidates —
+five are the statement, three the accuracy disclaimer without its qualifier,
+ten about something else — in both directions, with the quoted words checked
+against the body and a planted migration set proving the parser. No existing
+assertion moved; the three absent clauses stay recorded as absent, and no
+consent document carries any of the five statements the terms page also lacks
+or is incomplete on.
 
 ## The figure census: every figure-capable route is differenced or recorded · 18 September 2026
 
