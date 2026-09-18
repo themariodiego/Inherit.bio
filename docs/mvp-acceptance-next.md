@@ -8,7 +8,7 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **30/65**, counted from the YES/NO column. G5.3a closed on CI run
+Acceptance is **32/65**, counted from the YES/NO column (G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
 35327691091 after PR #136 (below). G1.6 closed on CI run
 35270711326, G1.16 on integration run 35291865797 (its second attempt) with
 pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
@@ -79,7 +79,8 @@ Released:
 - G2.3, 18 September (evening): the pre-existing routes' dispositions are a
   committed ledger held by the route gate and asserted over HTTP
   (`docs/route-dispositions.json`, gate check 6, `e2e/route-dispositions.spec.ts`);
-  the row flips on the spec's first green CI run.
+  the spec passed on PR #145's run 35401497676, merged as c78d287 (production
+  READY), so the row is YES: 32/65 with G7.1.
 - G8.3 and G8.2, 18 September (evening): the figure census
   (`scripts/figures-census.ts`, the `census` section of
   `docs/figures-register.json`) measures every figure-capable route from the
