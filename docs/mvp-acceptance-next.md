@@ -97,6 +97,11 @@ Released:
   reproductive no-reliance statement, a liability limit, a forum clause or the
   sells-nothing statement, and none carrying an anchor id. The absent clauses
   are counsel's, so the row stays NO.
+- G5.7, 18 September (evening): no payment-processor origin in any response
+  is asserted on every kept page through the audited sweeps
+  (`scripts/payment-origins.ts` shared by the gate and `assertNoThirdParty`);
+  the row waits on the owner's reading of "a marketing claim" as the four
+  pattern classes the gate carries.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 

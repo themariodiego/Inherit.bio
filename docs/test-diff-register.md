@@ -1,5 +1,17 @@
 # Test diff register
 
+## No payment-processor origin in any response · 18 September 2026
+
+`scripts/payment-origins.ts` is new and holds G5.7's processor-origin list for
+both readers: `scripts/legal-placeholder-gate.ts` scans the tree with it, and
+`assertNoThirdParty` (`e2e/helpers.ts`) now reads the rendered document of
+every page it audits and fails on a processor origin in it, so the
+register-derived sweeps in `e2e/a11y.spec.ts` hold the claim on every kept page
+in both themes and both auth modes, and `e2e/network-audit.spec.ts` on its deep
+cases. `scripts/payment-origins.test.ts` plants the list both ways and checks
+it carries no state between calls. No existing assertion moved; every call
+site of `assertNoThirdParty` gained the check.
+
 ## The eight protective statements, asserted by anchor id in a browser · 18 September 2026
 
 `e2e/legal.spec.ts` +1 named test: `/terms` renders each statement

@@ -7,6 +7,7 @@
 // payment processor anywhere in the application, and no price, call to action
 // or marketing superlative on a legal or disclosure surface.
 import fs from "node:fs";
+import { paymentOrigin } from "./payment-origins";
 import path from "node:path";
 
 const PATTERNS: [RegExp, string][] = [
@@ -52,7 +53,8 @@ const FEE_PATTERNS: [RegExp, string][] = [
  * Matching those would make the gate noise. Provider names are word-bounded
  * because an unbounded "adyen" matches "ReadyEnvelope".
  */
-const PAYMENT_ORIGINS = /\b(?:js|api|checkout|connect)?\.?(?:stripe|paypal|paddle|lemonsqueezy|braintreegateway|adyen|razorpay|klarna|squareup|mollie|worldpay)\.com\b/i;
+// The origin pattern lives in scripts/payment-origins.ts, shared with the
+// browser suite so every rendered page is held to the same list.
 const PAYMENT_PACKAGES = /^(?:@?(?:stripe|paddle|lemonsqueezy|braintree|adyen|razorpay|klarna|square|mollie)\b|paypal-|react-stripe)/i;
 
 /**
@@ -93,8 +95,8 @@ function paymentProcessorFailures(): string[] {
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) { walk(full); continue; }
       if (!/\.(tsx?|jsx?)$/.test(entry.name) || /\.(test|spec)\./.test(entry.name)) continue;
-      const match = PAYMENT_ORIGINS.exec(fs.readFileSync(full, "utf8"));
-      if (match) found.push(`${full}: payment-processor origin "${match[0]}"`);
+      const match = paymentOrigin(fs.readFileSync(full, "utf8"));
+      if (match) found.push(`${full}: payment-processor origin "${match}"`);
     }
   };
   walk("src");
