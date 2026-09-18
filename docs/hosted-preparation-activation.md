@@ -17,8 +17,20 @@ The owner's decisions behind this order are recorded in
   (`docs/evidence/priority1-foundations-release-20260918/`).
 - `workers/prepared-artifacts/` (the private R2 gateway) and
   `workers/prepared-worker/` (the cron-woken container) have their wrangler
-  configuration, tests and deploy workflow. The workflow is skipped until
-  step 1 is done.
+  configuration, tests and deploy workflow.
+- Step 1 items 1 to 3 (18 September 2026): the Workers Paid plan is active on
+  the account, the scoped token lives in the GitHub environment `cloudflare`
+  with the account id, and `CLOUDFLARE_DEPLOY_ENABLED` is `true`.
+- Step 2 (18 September 2026): the first deploys ran through the workflow,
+  preview (run 35379336714) then production (run 35379664900): the guard
+  passed, the gateways and the container Workers exist, the image built from
+  `Dockerfile` and the container applications were created on `standard-1`.
+  The gateways answer at
+  `https://inherit-prepared-artifacts.mariodiego-dev.workers.dev` and
+  `https://inherit-prepared-artifacts-preview.mariodiego-dev.workers.dev` and
+  refuse a request without a capability with an empty 404. Both origins are
+  committed as `INHERIT_PREPARED_R2_ORIGIN`; the push carrying them redeploys
+  production, and preview is redeployed by hand.
 - The two private R2 buckets `inherit-prepared-preview` and
   `inherit-prepared-production` exist in the account since 18 September 2026
   (location ENAM, default jurisdiction, standard storage class, public access
@@ -39,7 +51,7 @@ The owner's decisions behind this order are recorded in
    ceilings stay at 24 MiB until step 9; this only removes the provider cap
    the proof files would otherwise hit.
 
-## 2. Engineering: the first deploy
+## 2. Engineering: the first deploy (done 18 September 2026)
 
 1. Confirm the two buckets above are still private and empty.
 2. Run the `Deploy Cloudflare` workflow for `preview`, then `production`.
@@ -47,6 +59,8 @@ The owner's decisions behind this order are recorded in
 3. Commit that origin as `INHERIT_PREPARED_R2_ORIGIN` in
    `workers/prepared-worker/wrangler.json` (production block and, with the
    preview gateway's origin, `env.preview`) and deploy again.
+
+Still open from step 1: item 4, the Supabase Storage upload limit.
 
 ## 3. Owner: container secrets
 
