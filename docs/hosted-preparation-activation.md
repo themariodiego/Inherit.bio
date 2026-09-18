@@ -1,0 +1,123 @@
+# Hosted preparation: activation runbook
+
+The order in which the prepared-genome path (single-sample VCF, VCF.gz and
+gVCF on Cloudflare, ADR-0030) goes from the inert configuration in this
+repository to a proven, enabled production path. Each step names who does
+it. Nothing before step 8 changes what a person can do on `www.inherit.bio`.
+The owner's decisions behind this order are recorded in
+`docs/mvp-acceptance-next.md` (18 September 2026).
+
+## Already done
+
+- The app serves its upload signer's public key at
+  `/.well-known/inherit-upload-jwks.json` (PR #136), and the production
+  gateway configuration carries that key.
+- The database-enforced monthly cap (default 100 admissions per UTC calendar
+  month) and the source-revocation fold are applied to the Inherit project
+  (`docs/evidence/priority1-foundations-release-20260918/`).
+- `workers/prepared-artifacts/` (the private R2 gateway) and
+  `workers/prepared-worker/` (the cron-woken container) have their wrangler
+  configuration, tests and deploy workflow. The workflow is skipped until
+  step 1 is done.
+- The two private R2 buckets `inherit-prepared-preview` and
+  `inherit-prepared-production` exist in the account since 18 September 2026
+  (location ENAM, default jurisdiction, standard storage class, public access
+  off, no lifecycle rule, empty). They cost nothing while empty.
+
+## 1. Owner: Cloudflare plan and token
+
+1. Enable the Workers Paid plan on the Cloudflare account that already holds
+   R2. Containers are not available on the free plan.
+2. Create an API token limited to Workers Scripts (edit), Containers (edit)
+   and R2 Storage (edit) on that account.
+3. In the GitHub repository, create an environment named `cloudflare` with
+   the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and a
+   repository variable `CLOUDFLARE_DEPLOY_ENABLED` set to `true` when ready
+   for deploys to run. The token is never pasted into chat or a session.
+4. In the Supabase dashboard for the Inherit project, Storage → Settings,
+   raise the global upload file size limit to at least 8 GiB. The database
+   ceilings stay at 24 MiB until step 9; this only removes the provider cap
+   the proof files would otherwise hit.
+
+## 2. Engineering: the first deploy
+
+1. Confirm the two buckets above are still private and empty.
+2. Run the `Deploy Cloudflare` workflow for `preview`, then `production`.
+   The gateway's first deploy prints its `workers.dev` origin.
+3. Commit that origin as `INHERIT_PREPARED_R2_ORIGIN` in
+   `workers/prepared-worker/wrangler.json` (production block and, with the
+   preview gateway's origin, `env.preview`) and deploy again.
+
+## 3. Owner: container secrets
+
+Set the two Worker secrets on the container Worker once, with
+`wrangler secret put` from the worker README, for production and with
+`--env preview` for preview: `SUPABASE_SERVICE_ROLE_KEY` and
+`INHERIT_UPLOAD_SIGNING_JWK` (the same private signer value Vercel holds;
+the preview Worker needs the preview project's values once step 4 exists).
+
+## 4. Engineering with owner: the preview stack
+
+1. Create a Supabase preview branch of the Inherit project (billed per hour;
+   deleted at the end of step 6).
+2. Vercel preview deployments currently have no Supabase variables (every
+   dynamic route answers 500 through the middleware). The owner sets the
+   preview-target variables to the branch's URL, anon key, service-role key
+   and a signer, or installs the Supabase and Vercel integration that syncs
+   them. Deployment protection stays on; the proof uses a bypass link.
+3. Point the preview gateway's `TOKEN_ISSUER` and the preview container's
+   `NEXT_PUBLIC_SUPABASE_URL` at the branch, commit, deploy `preview`.
+4. Enable preparation on the branch only: `own_preparation_config` with
+   `enabled = true`, `artifact_provider = 'r2'`,
+   `r2_bucket = 'inherit-prepared-preview'`, and set
+   `INHERIT_PREPARED_WGS_ENABLED=true` on the Vercel preview target.
+
+## 5. Engineering: the hosted proof
+
+Synthetic files only. Run the whole journey against the preview stack:
+browser upload → authorization → Storage → preparation in the container →
+result → withdrawal, for VCF, VCF.gz and gVCF, including one file at each
+ceiling the owner chose (2 GiB VCF, 8 GiB gVCF). Record job durations, peak
+memory, artifact bytes and the number of container wakes; set
+`max_job_seconds` and the instance type from the measurements; prove the
+monthly cap refuses the admission past a limit set to a small number; prove
+withdrawal deletes the original and the prepared artifacts (payload
+tombstones) and leaves zero residue in every bucket. Evidence goes under
+`docs/evidence/`.
+
+## 6. Engineering: tear the preview down
+
+Delete the Supabase preview branch, empty and delete
+`inherit-prepared-preview` only if nothing else references it, and record
+the bill for the proof.
+
+## 7. Owner: the privacy notice
+
+Approve the sentence naming Cloudflare as a processor (a draft is prepared
+for the activation pull request) and confirm Cloudflare's data processing
+agreement is in place. The notice must be live before step 8.
+
+## 8. Engineering: production activation
+
+1. Set `own_preparation_config` on the Inherit project: `enabled = true`,
+   `artifact_provider = 'r2'`, `r2_bucket = 'inherit-prepared-production'`,
+   `max_job_seconds` from step 5. The monthly cap stays at 100.
+2. Hand the owner the three Vercel variables: `INHERIT_PREPARED_WGS_ENABLED`,
+   `INHERIT_PREPARED_R2_ORIGIN`, `INHERIT_PREPARED_R2_BUCKET`. Activation
+   completes when the owner sets them and the deployment is READY.
+3. Run one synthetic production journey with zero residue, then record the
+   release the way the earlier releases are recorded.
+
+## 9. Engineering: ceilings
+
+Only after step 8: raise `private.upload_authorization_config` to the
+owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active
+uploads as decided) with a read-only preflight and a receipt. Original
+retention (`own_original_retention_config`) is already enabled and applies
+to every prepared-source original from its creation.
+
+## What stays out of scope here
+
+FASTQ, BAM and CRAM; the cohort source executor (no embryo source can exist
+before ingest); the Supabase-provider guard on `own_preparation_config`
+(D-126); and any limit change before its proof.

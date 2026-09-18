@@ -60,14 +60,17 @@ Open, by what it waits on:
   above and the D-126 row.
 - Human work: real jurisdiction review (G5.5); dated source reads for the 189
   undated citations (G4.7).
-- Infrastructure: the repository now carries the Cloudflare configuration
-  (PR #136), but no Inherit R2 bucket, Worker or container exists in
-  Cloudflare and the deploy workflow is skipped until the owner's four actions
+- Infrastructure: the repository carries the Cloudflare configuration
+  (PR #136) and the production gateway's signing key, and the two private R2
+  buckets (`inherit-prepared-preview`, `inherit-prepared-production`) exist
+  and are empty since 18 September; no Worker or container exists and the
+  deploy workflow is skipped until the owner's four actions
   (Workers Paid plan, scoped token in the `cloudflare` GitHub environment with
   `CLOUDFLARE_DEPLOY_ENABLED`, Supabase Storage upload limit, container
   secrets) are done; Vercel preview deployments also have no Supabase
   variables today (every dynamic route answers 500 through the middleware),
-  which the preview proof needs fixed first. So
+  which the preview proof needs fixed first. The order is written down in
+  `docs/hosted-preparation-activation.md`. So
   prepared-source Family ancestry, background dispatch, throughput and 100
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);

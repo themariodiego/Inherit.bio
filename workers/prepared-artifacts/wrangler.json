@@ -10,7 +10,7 @@
   "vars": {
     "BUCKET_NAME": "inherit-prepared-production",
     "TOKEN_ISSUER": "https://zuvloczwgrayonqabnss.supabase.co/auth/v1",
-    "SIGNING_PUBLIC_KEYS": "[]"
+    "SIGNING_PUBLIC_KEYS": "[{\"kty\":\"EC\",\"crv\":\"P-256\",\"kid\":\"d5e4e50d-7017-4c8f-9435-22c07b5234a9\",\"x\":\"oRjc0m74brtGwljNiDDFUT5YcyJry1fQ8gTGe-b8huo\",\"y\":\"H5tRlgDYiQS3c49iDKRleA47YviwiflNxVoT5qcnLas\"}]"
   },
   "r2_buckets": [
     {

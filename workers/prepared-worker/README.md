@@ -58,6 +58,18 @@ Secrets and variables reach the container only through the start options in
 `src/index.mjs` (`container.start({ env })`). Nothing is baked into the image,
 nothing is logged, and the Worker forwards no other binding.
 
+## The gateway's signing key
+
+The production gateway's `SIGNING_PUBLIC_KEYS` in `../prepared-artifacts/wrangler.json`
+carries the public half of the app's upload signer as served by
+`https://www.inherit.bio/.well-known/inherit-upload-jwks.json` (kid
+`d5e4e50d-7017-4c8f-9435-22c07b5234a9`, committed 18 September 2026). A public
+key is not a secret. `scripts/cloudflare-deploy-guard.ts` refuses a production
+deploy whose committed keys differ from the served ones, so a rotated signer
+means: update the app's `INHERIT_UPLOAD_SIGNING_JWK`, wait for the endpoint to
+serve the new key, commit the new public half here, deploy. The preview
+gateway's list stays empty until a preview signer exists.
+
 ## Two-step origin bootstrap
 
 The app's DNS is not on Cloudflare, so the gateway is served at its
@@ -94,9 +106,11 @@ the gateway's key list is empty or differs from the keys the app serves.
 
 The image is built on the runner by wrangler from `Dockerfile`, with the
 repository root as context, and pushed to the account's registry. Wrangler
-does not create R2 buckets or secrets; create the two buckets first, with
-public access off and no lifecycle rules (`../prepared-artifacts/README.md`
-says why the tombstone markers must never expire).
+does not create R2 buckets or secrets. The two buckets
+(`inherit-prepared-preview`, `inherit-prepared-production`) exist since
+18 September 2026, private, with no lifecycle rule
+(`../prepared-artifacts/README.md` says why the tombstone markers must never
+expire); the secrets are set as above.
 
 ## Instance and cost notes
 
@@ -123,7 +137,8 @@ says why the tombstone markers must never expire).
 ## What this does not prove
 
 - No deployment has been made from this repository. The workflow is disabled,
-  the account subdomain is unknown, and no gateway key has been committed.
+  the account subdomain is unknown, and the preview gateway has no key yet
+  (the production key is committed and guard-checked, see above).
 - The instance size rests on one trial run, not on a full-size whole-genome
   file; capacity, throughput and 100 genomes a month remain unproved (D-124).
 - A container that never exits keeps `running` true and blocks every later
