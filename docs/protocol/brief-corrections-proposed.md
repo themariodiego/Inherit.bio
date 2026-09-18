@@ -1341,21 +1341,24 @@ partial-coverage` are not states the hub renders, and measuring the first
 found a defect.** Its card knows five things about a person — paused,
 waiting for a grant, ready, results awaited, no file — and nothing about what
 the shared file covers. Worse than indistinguishable: on the not-covered
-journey's record the card reads "No shared results yet", the line that means
-a result is still to come, because the card's readiness asks whether any
-COVERED report exists (`hasReports` in the shared-report capture is
+journey's record the card read "No shared results yet", the line that means
+a result is still to come, because the card's readiness asked whether any
+COVERED report existed (`hasReports` in the shared-report capture was
 `exists(... item->'covered' = true)`), so a completed run that reaches no
-report is reported to the other adult as not having happened. The new spec
-pins that misreading rather than endorsing it, and it is filed as **D-129**:
-the honest card for a completed run is "Reports ready" whatever it covers,
-with the person page saying past the gate that the file covers none of the
-reports, as it already does. The permission reading of `partial-coverage` is
-a per-person fact the card already carries as its own state, and the coverage
-reading has nothing on the hub to attach to. Two honest ways to close the
-pairs, the owner's choice as above: waive both for this route with this
-reason once D-129 is fixed, or decide that a card should name coverage,
-which is a product sentence about another adult's file and therefore the
-same disclosure question the two `processing` pairs wait on.
+report was reported to the other adult as not having happened. That is filed
+as **D-129** and fixed on the same branch: readiness now announces a
+completed run whatever it covers
+(`20260918213000_shared_report_readiness_completed_runs.sql`, with one pgTAP
+case that completes the fixture run again with its report not covered), the
+person page keeps saying past the gate that the file covers none of the
+reports, and the new spec asserts the card reads "Reports ready" on the
+record that found the defect. The permission reading of `partial-coverage`
+is a per-person fact the card already carries as its own state, and the
+coverage reading has nothing on the hub to attach to. Two honest ways to
+close the pairs, the owner's choice as above: waive both for this route with
+this reason, or decide that a card should name coverage, which is a product
+sentence about another adult's file and therefore the same disclosure
+question the two `processing` pairs wait on.
 
 **The two `processing` pairs cannot be attempted today, and the reason is a
 branch rather than a definition.** This line said two could

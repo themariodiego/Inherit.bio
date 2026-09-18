@@ -36,10 +36,16 @@ file that covers nothing the product reads with both report layers chosen,
 both layers turned on for A from B's own session), the cause established from
 B's prepared file and `user_prs.matched` zero on every panel before A reads
 the page; both granted layers carry the none-covered sentence and list
-nothing. The same spec pins the hub's card on that record reading "No
-shared results yet" — the awaiting line, for results that exist and cover
-nothing — which is filed as D-129 and is why `/family not-covered` is a
-finding rather than a proof. `docs/route-divergence.json` records the two pairs;
+nothing. The same spec asserts the hub's card on that record reads "Reports
+ready": measuring it first found the card reading "No shared results yet" —
+the awaiting line, for results that exist and cover nothing — filed as D-129
+and fixed on the same branch by
+`supabase/migrations/20260918213000_shared_report_readiness_completed_runs.sql`
+(readiness announces a completed run whatever it covers), with one pgTAP case
+in `supabase/tests/family_shared_report_results.sql` completing the fixture
+run again through the real wrapper with its report captured as not covered
+and reading readiness true. `/family not-covered` stays a finding for its own
+reason: the card has nothing to say about coverage. `docs/route-divergence.json` records the two pairs;
 `UNPROVEN_ROUTE_STATE_PAIRS` falls from 19 to 17. No existing assertion moved.
 
 ## Six My Genome route-state pairs proven, ratchet 25 → 19 · 18 September 2026

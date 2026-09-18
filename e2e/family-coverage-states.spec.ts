@@ -249,18 +249,19 @@ test("/family/[person] not-covered: with both report layers shared and a prepare
   await expect(page.getByText(BASELINE_ABSENT, { exact: true })).toHaveCount(1);
   await expect(page.locator("[data-figure-kind], [data-claim-block]")).toHaveCount(0);
 
-  // Measured, not endorsed: the hub's card for B reads "No shared results
-  // yet" on this same record — the line that means a result is still to
-  // come. B's results exist and cover nothing; the card cannot tell the two
-  // apart because its readiness asks whether any COVERED report exists
-  // (`hasReports` in the shared-report capture), so a completed run that
-  // reaches no report is reported to A as not having happened. Recorded as
-  // D-129 and as the reason `/family not-covered` is a finding rather than a
-  // proof (docs/protocol/brief-corrections-proposed.md, 2026-09-18). This
-  // assertion pins the misreading so the fix has to come through here.
+  // The hub's card for B on this same record reads "Reports ready": B's
+  // results exist and cover nothing, and the card announces the completed
+  // run rather than what it reached. Measuring this pair first found the
+  // card reading "No shared results yet" — the line that means a result is
+  // still to come — because its readiness asked whether any COVERED report
+  // existed (`hasReports` in the shared-report capture), so a completed run
+  // that reaches no report was reported to A as not having happened. Filed
+  // as D-129 and fixed by 20260918213000_shared_report_readiness_completed_runs.sql;
+  // the fix is read here, on the record that found it, and the awaiting
+  // line is refused on it.
   await page.goto("/family");
   const card = page.locator('[data-slot="person-card"]');
   await expect(card).toHaveCount(1);
-  await expect(card.locator('[data-slot="person-state"]')).toHaveText(CARD_AWAITING_RESULTS_STATUS);
-  await expect(card.locator('[data-slot="person-state"]')).not.toHaveText(CARD_READY_STATUS);
+  await expect(card.locator('[data-slot="person-state"]')).toHaveText(CARD_READY_STATUS);
+  await expect(card.locator('[data-slot="person-state"]')).not.toHaveText(CARD_AWAITING_RESULTS_STATUS);
 });

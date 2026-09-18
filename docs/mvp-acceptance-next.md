@@ -73,8 +73,9 @@ Released:
   `/family/[person] not-covered` in `e2e/family-coverage-states.spec.ts`);
   three findings recorded for the owner rather than proven on a shared render
   (`docs/protocol/brief-corrections-proposed.md`, "Measured 2026-09-18"), one of
-  them a defect: the Family hub card reads "No shared results yet" for a shared,
-  completed file that covers nothing (D-129, open; a readiness function change).
+  them a defect: the Family hub card read "No shared results yet" for a shared,
+  completed file that covers nothing (D-129, fixed on the branch by a readiness
+  migration that reaches production after the merge, with its evidence folder).
 - G2.3, 18 September (evening): the pre-existing routes' dispositions are a
   committed ledger held by the route gate and asserted over HTTP
   (`docs/route-dispositions.json`, gate check 6, `e2e/route-dispositions.spec.ts`);
