@@ -33,7 +33,7 @@ caught up. The app that accepts the optional key deployed first (READY
 ## Continuous integration
 
 - Pull request run [35346819710](https://github.com/themariodiego/Inherit.bio/actions/runs/35346819710) on `e02c13e`, the tree that merged: green on its first attempt at 13:42 UTC; the first execution of the migration, of `own_upload_gvcf_ceiling.sql` (26 assertions through the real issuance, finalization, normalization and enqueue RPCs) and of the extended disclosure test on a fresh database, and of the 14 fixture cases.
-- Main's post-merge run for `1d4f2cd`, [35351892873](https://github.com/themariodiego/Inherit.bio/actions/runs/35351892873), was in progress when this record was written; its conclusion is appended in a follow-up commit. The `Deploy Cloudflare` workflow ran as [35351892930](https://github.com/themariodiego/Inherit.bio/actions/runs/35351892930) and was skipped, as designed.
+- Main's post-merge run for `1d4f2cd`, [35351892873](https://github.com/themariodiego/Inherit.bio/actions/runs/35351892873), passed on its first attempt at 14:36 UTC. The `Deploy Cloudflare` workflow ran as [35351892930](https://github.com/themariodiego/Inherit.bio/actions/runs/35351892930) and was skipped, as designed.
 - The two merges before it on the same day passed their post-merge runs: PR #138 (`a155bea`, run 35346706164) and PR #137 (`77a5afd`, run 35341518205).
 
 ## Production database

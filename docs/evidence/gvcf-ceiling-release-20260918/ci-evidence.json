@@ -21,7 +21,10 @@
   "id": 35351892873,
   "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35351892873",
   "head": "1d4f2cd",
-  "status": "in progress at the time of this record"
+  "startedAt": "2026-09-18T13:43:28Z",
+  "completedAt": "2026-09-18T14:36:18Z",
+  "conclusion": "success",
+  "attempt": 1
  },
  "deployCloudflareWorkflowRun": {
   "id": 35351892930,
