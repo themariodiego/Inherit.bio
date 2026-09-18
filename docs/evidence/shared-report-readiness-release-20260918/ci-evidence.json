@@ -1,0 +1,56 @@
+{
+ "kind": "shared-report readiness release CI evidence",
+ "pullRequest": 145,
+ "mergeCommit": "c78d28743d61486aadc45714d2f9683cd27dee8f",
+ "headTested": "c5b318177ff7b9308b363fda9504a5212f99210d",
+ "tree": "3d16373147af5bfab46421212bd0dad99aa330a6",
+ "pullRequestRun": {
+  "id": 35401497676,
+  "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35401497676",
+  "head": "c5b3181",
+  "conclusion": "success",
+  "attempt": 1,
+  "startedAt": "2026-09-18T22:25:44Z",
+  "completedAt": "2026-09-18T23:12:23Z",
+  "firstExecutionOf": [
+   "supabase/migrations/20260918213000_shared_report_readiness_completed_runs.sql",
+   "supabase/tests/family_shared_report_results.sql (the re-completed uncovered run case)",
+   "e2e/family-coverage-states.spec.ts",
+   "e2e/route-dispositions.spec.ts",
+   "e2e/family-health-picture.spec.ts (the /family/[person] complete case)"
+  ]
+ },
+ "postMergeRun": {
+  "id": 35404976294,
+  "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35404976294",
+  "head": "c78d287",
+  "startedAt": "2026-09-18T23:15:26Z",
+  "conclusion": "in progress when this record was written; its conclusion is appended by the record commit that follows"
+ },
+ "deployCloudflareWorkflowRun": {
+  "ran": false,
+  "reason": "the merge changed nothing the workflow's trigger watches; the last runs remain PR #143's (35385517381 and 35385527542)"
+ },
+ "vercelProductionDeployment": {
+  "id": "dpl_9FSB4LTvt4Fn6ECbt5PKitNtGBHh",
+  "commit": "c78d287",
+  "createdAt": "2026-09-18T23:15:27Z",
+  "readyAt": "2026-09-18T23:16:01Z",
+  "aliases": ["www.inherit.bio", "inherit.bio"]
+ },
+ "productionDatabase": {
+  "preflightAt": "2026-09-18T21:32:43Z",
+  "guardPassedAt": "2026-09-18T23:16:51Z",
+  "appliedHostedVersion": "20260918231857",
+  "postflightAt": "2026-09-18T23:20:35Z",
+  "probeAt": "2026-09-18T23:21:21Z",
+  "probe": "13/13"
+ },
+ "productionApplication": {
+  "checkedAt": "2026-09-18T23:22:09Z",
+  "/": 200,
+  "/overview": "307 to /auth/sign-in?next=%2Foverview",
+  "/family": 200,
+  "runtimeErrors": "none in the three hours to 23:22 UTC (Vercel runtime error clusters)"
+ }
+}

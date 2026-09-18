@@ -1,0 +1,15 @@
+{
+ "note": "md5 and length of the text between the dollar delimiters of the two functions 20260918213000_shared_report_readiness_completed_runs.sql replaces, computed from the repository file; the postflight compares the deployed prosrc against these.",
+ "public.family_shared_report_results_v1": {
+  "md5": "f760ed0078c2f66208e81c27f7f5aff9",
+  "len": 4171
+ },
+ "private.health_picture_own_page_v1": {
+  "md5": "62c04f1a13844e4ff826c8197892da1b",
+  "len": 4565
+ },
+ "replaced": {
+  "public.family_shared_report_results_v1": { "md5": "7c9f5c3ff3ee1c7a458f1852d48a1630", "len": 4205 },
+  "private.health_picture_own_page_v1": { "md5": "437aa615409b0506ecb4cd5ff2fcf2fa", "len": 4599 }
+ }
+}
