@@ -7596,6 +7596,22 @@ export type Database = {
         Args: { p_account_id: string; p_session_id: string; p_file_id: string }
         Returns: Json
       }
+      claim_due_genome_file_deletion_v1: {
+        Args: { p_claim_token_hash: string; p_retry_after?: string }
+        Returns: Json
+      }
+      prepare_own_prepared_file_cleanup_claimed_v1: {
+        Args: { p_file_id: string; p_claim_token_hash: string }
+        Returns: Json
+      }
+      finish_genome_file_deletion_claimed_v1: {
+        Args: { p_file_id: string; p_claim_token_hash: string }
+        Returns: undefined
+      }
+      fail_genome_file_deletion_claim_v1: {
+        Args: { p_file_id: string; p_claim_token_hash: string }
+        Returns: undefined
+      }
       accept_embryo_co_parent_invitation_v1: {
         Args: {
           p_account_email_hmac: string

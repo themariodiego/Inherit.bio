@@ -19,6 +19,15 @@ describe("truthful preparation recovery", () => {
     expect(html).toContain("Retry preparation");
     expect(html).not.toMatch(/file was prepared|Retry selected reports|reports are ready/);
   });
+  it("names a full month plainly, keeps the file, states no number and offers no retry now", () => {
+    const html = renderToStaticMarkup(createElement(PreparationRecovery, { ...props, code: "preparation_capacity_reached" }));
+    expect(html).toMatch(/Inherit has reached this month(&#x27;|')s limit for full-genome files\. Your file is kept; try again from the first of next month\./);
+    expect(html).toContain('href="/files"'); expect(html).toContain("View your file");
+    expect(html).not.toContain("<button");
+    // The visible words carry no number: the cap is a private database value.
+    expect(html.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'")).not.toMatch(/\d/);
+    expect(html).not.toMatch(/could not confirm|Retry preparation|Retry selected reports|reports are ready|Review your reports/);
+  });
   it("retains the build refusal without suggesting retrying an unsupported reference", () => {
     const html = renderToStaticMarkup(createElement(PreparationRecovery, { ...props, code: "build_unknown" }));
     expect(html).toContain("GRCh37 or GRCh38"); expect(html).not.toContain("<button");

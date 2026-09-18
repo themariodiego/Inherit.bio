@@ -26,10 +26,16 @@ const accountPlan = z.object({ version: z.literal("own-prepared-account-cleanup-
   cleanupIds: z.array(z.uuid()).max(16), preparedComplete: z.boolean() }).strict().refine(p => new Set(p.cleanupIds).size === p.cleanupIds.length
   && p.preparedComplete === (p.cleanupIds.length === 0));
 
+/** The owner path prepares under the owner's Auth session; the retention
+ * backstop prepares the same stranded record under a claim token. Both SQL
+ * procedures return the same plan and select the same prepared cleanup. */
+export type FileCleanupProcedure = "prepare_own_prepared_file_cleanup_v1" | "prepare_own_prepared_file_cleanup_claimed_v1";
+
 /** Cleanup remains enabled even when new prepared ingestion is disabled. */
-export async function prepareFileCleanup(admin: Admin, args: Record<string, string>, signal?: AbortSignal) {
+export async function prepareFileCleanup(admin: Admin, args: Record<string, string>, signal?: AbortSignal,
+  procedure: FileCleanupProcedure = "prepare_own_prepared_file_cleanup_v1") {
   const rpc = boundedRpc(admin, signal);
-  const result = await rpc("prepare_own_prepared_file_cleanup_v1", args);
+  const result = await rpc(procedure, args);
   if (result.error) return { error: result.error, original: null, complete: false };
   let plan = filePlan.parse(result.data);
   if (!plan.preparedComplete) {
@@ -38,7 +44,7 @@ export async function prepareFileCleanup(admin: Admin, args: Record<string, stri
     if (!cleanup.completed) return { error: null, original: plan.original, complete: false };
     // A previous immutable scratch selection may have completed first. The
     // database must confirm that the full file graph is now retired.
-    const current = await rpc("prepare_own_prepared_file_cleanup_v1", args);
+    const current = await rpc(procedure, args);
     if (current.error) return { error: current.error, original: null, complete: false };
     const confirmed = filePlan.parse(current.data);
     if (!isDeepStrictEqual(confirmed.original, plan.original)) throw new Error("file_delete_failed");

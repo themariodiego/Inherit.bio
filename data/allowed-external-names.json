@@ -966,6 +966,21 @@
         "data/samples/PROVENANCE.md",
         "e2e/fixtures/PROVENANCE.md"
       ]
+    },
+    {
+      "name": "Cloudflare",
+      "category": "dependency-platform",
+      "aliases": [
+        "cloudflare",
+        "cloudflare.com",
+        "developers.cloudflare.com",
+        "workers.dev"
+      ],
+      "reason": "Hosting platform for the private prepared-artifact gateway (R2) and the cron-woken preparation container, chosen by the owner on 2026-09-18 (ADR-0030). Worker hostnames end in workers.dev.",
+      "evidence": [
+        "docs/adr/0030-hosted-preparation-on-cloudflare-containers.md",
+        "workers/prepared-worker/README.md"
+      ]
     }
   ]
 }

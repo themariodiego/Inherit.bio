@@ -28,7 +28,8 @@
         "private.own_preparation_checkpoints",
         "private.own_prepared_cleanups",
         "private.own_prepared_cleanup_entries",
-        "private.own_original_retirements"
+        "private.own_original_retirements",
+        "private.own_preparation_monthly_admissions"
       ],
       "queueCompatibility": "this narrowly registered private preparation protocol does not enqueue or claim generic worker_jobs; all other queued operations retain worker-job-enqueue-v1 and worker-job-dispatch-v1",
       "limits": {
@@ -39,8 +40,11 @@
         "maximumArtifactsPerJob": 4096,
         "maximumReservedArtifactBytesPerJob": 1073741824,
         "jobDefaultSeconds": 900,
-        "defaultReservedArtifactBytesPerJob": 104857600
+        "defaultReservedArtifactBytesPerJob": 104857600,
+        "monthlyAdmissionLimitDefault": 100,
+        "monthlyAdmissionLimitMaximum": 100000
       },
+      "monthlyAdmission": "private.own_preparation_config.monthly_admission_limit is a private database value the owner raises by hand; enqueue counts NEW jobs per UTC calendar month in private.own_preparation_monthly_admissions (month and count only, no person) under a row lock, refuses the admission past the limit with SQLSTATE 53400 preparation_capacity_reached before any job row exists, and never counts a replay of an already queued file; the route answers preparation-capacity-v1 and no response carries the number",
       "retention": "docs/retention.md id preparation.scratch-2h",
       "authority": "enqueue captures the actual originating Supabase session and exact account/principal/binding/store artifact revisions; claim, every preparation source or artifact read, reservation, acknowledgement, checkpoint and initial publication re-resolve that same live authority. Published reads use the actual current authenticated session and current store/source/lifecycle authority. Full membership and its digest are checked at both page boundaries; selected objects use indexed exact-member checks plus the caller's distinct current operation/purpose check. Publication creates no analytical purpose grant. Logout, expiry, rotation, store withdrawal, source change or deletion freeze cannot be bypassed by a service key or prior job receipt. Reauthorization requires a real authenticated operation, never a mail-only authority helper",
       "source": "exact file and subject IDs, immutable original object ID/key, source revision, complete verified raw and decoded hashes, structural single-sample evidence and pinned parser/build/liftover identities; no source key, weaker operation or backend choice supplied by the browser",
@@ -6027,6 +6031,8 @@
           "manifestClass": {
             "const": "source-only"
           },
+          "executionClass": "inlineEventDriven",
+          "decided": "2026-09-18-D-126: no-worker-phase-claims-this-row; its-targets-are-deleted-inline-by-the-existing-paths-(self-file-deletion-cohort-restriction-account-deletion)-and-a-stranded-self-file-deletion-is-redone-by-jobs.retention-under-claim_due_genome_file_deletion_v1-and-finish_genome_file_deletion_claimed_v1-within-the-seven-day-bound; wording-immediately-and-within-7-days-at-the-latest",
           "targets": "only-exact-target-canonical-source-rows-random-object-handles-and-dependent-raw-autosomal-rows",
           "holdRule": "a-current-valid-contradiction.freeze-or-embryo.single-parent-review-30d-row-may-defer-only-the-explicit-minimum-disputed-source-members-recorded-on-that-hold; every-other-source-member-remains-due"
         },
@@ -6605,10 +6611,10 @@
         ],
         "revocationDispositionWorker": [
           "derived.revocation-60s",
-          "source.revocation-7d",
           "purpose.derived-60s"
         ],
         "inlineEventDriven": [
+          "source.revocation-7d",
           "access.revocation-immediate",
           "purpose.access-immediate",
           "raw-export.access-immediate",
@@ -9575,6 +9581,32 @@
       },
       "userAccountRequestCookieOrPrivateData": "forbidden"
     },
+    "upload-jwks-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "keys": "exactly-the-current-upload-signer-public-P-256-JWK-with-kty-crv-kid-x-y-alg-ES256-and-use-sig-and-no-private-member"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "source": "src/lib/uploads/storage-upload-token.ts#uploadSignerPublicJwk",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "public, max-age=300"
+      },
+      "unavailable": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "unavailable"
+          }
+        },
+        "headers": {
+          "Cache-Control": "no-store"
+        }
+      },
+      "userAccountRequestCookieOrPrivateData": "forbidden"
+    },
     "machine-job-result-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -9882,6 +9914,21 @@
       "unknownFieldsRecursively": "forbidden",
       "headers": "private-no-store-no-referrer",
       "effects": "after-same-origin-declaration-and-verified-account-session-checks-refuse-new-canonical-ordinary-subject-leases-before-signer-RPC-token-or-Storage; existing-uploads-and-file-controls-are-not-revoked"
+    },
+    "preparation-capacity-v1": {
+      "status": 429,
+      "when": "the-database-refuses-a-NEW-prepared-genome-admission-because-this-UTC-calendar-month-already-holds-own_preparation_config.monthly_admission_limit-admissions",
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "preparation_capacity_reached"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "limitDisclosure": "policyContracts.own-prepared-object-v1.monthlyAdmission-is-the-one-authority; no-limit-count-or-reset-time-crosses-this-response-body",
+      "effects": "refuse-inside-the-enqueue-transaction-before-any-job-row-and-leave-the-finalized-source-its-storage-object-and-the-month-count-unchanged; a-replay-for-an-already-queued-file-is-never-refused-this-way",
+      "copy": "src/components/uploads/preparation-recovery.tsx names the month's limit plainly without the number and offers no retry until the first of next month"
     },
     "file-too-large-v1": {
       "status": 413,
@@ -12197,6 +12244,9 @@
       "public.security": [
         "security-text-v1"
       ],
+      "public.upload-jwks": [
+        "upload-jwks-v1"
+      ],
       "auth.callback": [
         "auth-callback-v1"
       ],
@@ -12256,6 +12306,7 @@
       ],
       "api.file-process": [
         "file-processing-v1",
+        "preparation-capacity-v1",
         "upload-refusal-v1",
         "living-minor-refusal-v1",
         "resource-not-found-v1"
@@ -14598,6 +14649,24 @@
       "cachePolicy": "public-versioned-contact-only-no-user-data",
       "disposition": "kept",
       "successResponseContract": "security-text-v1"
+    },
+    {
+      "id": "public.upload-jwks",
+      "path": "/.well-known/inherit-upload-jwks.json",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "public",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden"
+      },
+      "stateProfile": "endpoint",
+      "cachePolicy": "public-signer-public-key-only-no-user-data",
+      "disposition": "kept",
+      "successResponseContract": "upload-jwks-v1"
     },
     {
       "id": "auth.callback",

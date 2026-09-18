@@ -1,5 +1,150 @@
 # Test diff register
 
+## Source revocation folded into immediate deletion · 18 September 2026
+
+D-126 decided: `source.revocation-7d` moves from the never-built
+`revocationDispositionWorker` class to `inlineEventDriven`
+(`20260918113000_source_revocation_inline.sql`), and the seven-day bound gains
+the one executor it lacked, a retention-job retry of a self file deletion the
+owner started but never finished. `supabase/tests/genome_file_deletion.sql`
+grows by 34 assertions on a second stranded file: the registry row reads
+`inlineEventDriven`; `authenticated` and `anon` cannot claim, prepare or finish
+under a claim while `service_role` can; a malformed token and a retry delay
+over seven days are refused; nothing is claimed while nothing is stranded; a
+record younger than the retry delay is not claimed under the default or a
+shorter delay; a backdated record is claimed with a versioned shape carrying
+its own bucket and name and counts an attempt; a second worker gets nothing
+while the claim lives; only the holder can release, and a released record
+waits the delay from its last attempt before it is claimed again; a released
+token can no longer finish; with every `auth.sessions` row deleted the owner
+path is closed while the claimed finish refuses with `storage.objects` still
+listing the name and retains the file and its variants; the claimed prepare
+returns the exact immutable manifest with `preparedComplete` true and refuses a
+stale token; once the Storage row is gone the claimed finish succeeds, the
+file, its variants and the record are gone and the subject remains. It proves
+the SQL contract against synthetic `storage.objects` rows, not provider bytes.
+`supabase/tests/embryo_cohort_runtime.sql` (plan 141 → 151) seeds one row each
+of `embryo_variants` (with `source_file_id` null, since no source file can be
+seeded truthfully), `embryo_qc`, `embryo_scores` and `embryo_figures` for the
+cohort, asserts each exists before restriction and is gone after, and asserts
+zero `genome_storage_objects` and zero `upload_sessions` for the cohort after
+restriction; the two object assertions are vacuous until ingest lands and are
+the gate that stays. `src/app/api/jobs/retention/route.test.ts` adds three
+cases for the drain step: an empty claim page touches neither Storage nor a
+finish and reports `no_work`; one claimed record is prepared, removed from the
+record's own bucket and name, finished under the same claim token and reported
+`completed`; a refused Storage removal releases the claim, calls no finish,
+claims nothing more in that run and reports `completed_with_failures`. The
+existing three cases gain the new claim in their idle mock maps and assert
+nothing less. `cleanup-integration.test.ts` adds one case: the claimed SQL twin
+is used for both the prepare and the reconfirmation read. `e2e/file-deletion.spec.ts`
+now checks residue in `genomes`, `genomes-staging` and `generated-artifacts`
+for the exact object name and the account prefix, after first seeing the
+object through the same helper, and adds a browser case under the same
+disposable-stack precondition as the account-deletion purge: it strands a real
+deletion through the 503 contract and the direct prepare, ages the record
+through `psql`, posts `/api/jobs/retention` and asserts zero residue in all
+three buckets, no file row, no derived rows, no record, the subject kept, and
+the list without the file on reload. `e2e/account-deletion-purge.spec.ts` sees
+the planted object through the service-role listing before the purge and reads
+all three buckets after it. Not proven: physical erasure at the provider, a
+real R2 tombstone (no bucket exists), a cohort source object (none can exist),
+and the Supabase-provider guard, which is not in this change.
+
+## Portrait fixture waits for its own acknowledgement (D-127) · 18 September 2026
+
+`e2e/portrait-no-file.spec.ts` builds the one state its file exists for: a
+pair with every step done and no file on either side. Its `acknowledge`
+helper clicked the form's button and returned, and the fixture signed out on
+the next line; on main run 35319131306 that sign-out overtook the
+acknowledgement request and the page, correctly, showed the blocking screen
+to the test. The helper now waits for `POST /api/family/acknowledge` to answer
+200 and for the refreshed page to drop the form, and the fixture's final
+database claim reads both pair subjects and requires `portrait_acknowledged_at`
+and `independent_login_at` to be set for each, beside the existing no-file
+and two-live-grants checks. Nothing about the page or the assertions the test
+makes afterwards changed; the fixture's claim got stronger, not weaker. The
+two acknowledgement clicks in `e2e/portrait.spec.ts` already waited on the
+refreshed page and are untouched. Fresh CI is the proof; a single run cannot
+show the race is gone, only that the fixture no longer depends on timing.
+
+## Hosted preparation on Cloudflare Containers (configuration only) · 18 September 2026
+
+`scripts/cloudflare-hosting-config.test.ts` (16 cases) holds the two wrangler
+files, the container Dockerfile and the deploy workflow to ADR-0030: strict
+JSON, names and compatibility dates, observability off on both Workers, the
+gateway's `ARTIFACTS` binding naming the same `inherit-prepared-…` bucket as
+`BUCKET_NAME`, `TOKEN_ISSUER` derived from the same Supabase project as the
+container's `NEXT_PUBLIC_SUPABASE_URL`, `SIGNING_PUBLIC_KEYS` parsing to
+public-only P-256 keys (no `d`, version-4 uuid `kid`; committed empty, so the
+gateway accepts nothing), the cron, one `standard-1` instance, consistent
+class, binding and migration, no credential-shaped value in any var, a
+non-root `USER`, a `CMD` ending in `--once`, and a workflow that runs only from
+main under the `cloudflare` environment behind `CLOUDFLARE_DEPLOY_ENABLED`,
+with pinned wrangler 4.134.0, `persist-credentials: false`, read-only
+permissions and secrets scoped to the two wrangler steps.
+`scripts/cloudflare-deploy-guard.test.ts` (10 cases) proves the production
+refusals: an empty key list, a 404 or unreachable JWKS, a served key that
+differs on `kid`, `x` or `y`, and a served private component.
+`workers/prepared-worker/src/index.test.ts` (6 cases, `cloudflare:workers`
+stubbed) proves the object starts only a stopped container, forwards exactly
+the six named variables, and that the cron wakes the one named object. Not
+proved here: the image build, a real deploy, the account's `workers.dev`
+subdomain, container behaviour under a real job, and any capacity figure.
+`wrangler deploy --dry-run` validated both configurations without an account.
+
+## Monthly admission cap on prepared-genome preparations · 18 September 2026
+
+- `own_preparation_monthly_cap.sql` (pgTAP, 31 assertions) is written to prove
+  the owner's hard cap at the database: `monthly_admission_limit` defaults to
+  100 and is bounded 1 to 100000; with the limit set to 2 and three actually
+  issued and finalized synthetic sources, the first two admissions succeed,
+  the third raises SQLSTATE 53400 `preparation_capacity_reached`, the count
+  stays at 2, the refused file has no job and its row is byte-identical; a
+  replay of an already queued file and a source refused by authority consume
+  no admission; raising the limit admits the next file; a new month row
+  starts at zero; the disabled gate still answers first; the ledger has
+  row-level security, no policy, no direct privilege for any role and no
+  column about a person. One rolled-back transaction on a fresh database.
+  It does not prove concurrent admissions (one session cannot race itself;
+  the row lock is read in the function, not measured), a month rollover on a
+  live clock, or anything on a hosted database. There is no hosted proof.
+- `own-preparation.test.ts` adds four cases: the enqueue error whose message
+  is `preparation_capacity_reached` answers 429
+  `{ error: "preparation_capacity_reached" }` after the status call and the
+  enqueue call only; any other 53400 stays an opaque 503; the same message on
+  the status call is never read as a refusal; and the registered
+  `preparation-capacity-v1` shape and its binding to `api.file-process` are
+  pinned from `docs/route-register.json`.
+- `subject-upload-browser.test.ts` adds the browser mapping: a 429 with the
+  exact closed body becomes `preparation_capacity_reached` after one request
+  and no upload; an open, numbered or other-status body stays `unavailable`.
+- `preparation-recovery.test.ts` pins the wording "Inherit has reached this
+  month's limit for full-genome files. Your file is kept; try again from the
+  first of next month.", no number, no retry control and the file link.
+- The pgTAP file was not run before commit: this change was written without
+  a local database. CI's `supabase test db` on a fresh database is its first
+  run, and the unit tests above are the only checks that ran here.
+
+## Upload signer public key endpoint · 18 September 2026
+
+`GET /.well-known/inherit-upload-jwks.json` serves the upload signer's public
+P-256 key (`kid`, `x`, `y`, `alg` ES256, `use` sig) so the prepared-artifact
+gateway's `SIGNING_PUBLIC_KEYS` binding can be filled and cross-checked at
+deploy time without any private material leaving Vercel.
+`storage-upload-token.ts#uploadSignerPublicJwk` returns the public half only
+after the same private-scalar pair check that minting performs.
+`storage-upload-token.test.ts` adds two cases: the export carries no `d`
+member and its point verifies a token the signer just minted; a missing signer
+or a mismatched pair is unavailable. `route.test.ts` beside the handler adds
+five cases: a cacheable 200 with `nosniff` and exactly one key, and a 503 with
+`no-store` for no signer, malformed JSON, a public-only key and a mismatched
+pair. The register gains `public.upload-jwks` with contract `upload-jwks-v1`,
+its binding, and the public-mode ledger row (`register-contract-divergence`),
+so `gate:routes` and the correspondence suite pass with the new endpoint
+counted. A public key is not a secret; the secret gate passes with the change
+staged. Nothing here enables or deploys the gateway.
+
 ## Jurisdiction chokepoint gate at call level · 18 September 2026
 
 `scripts/jurisdiction-enforcement.test.ts` accepted an import of

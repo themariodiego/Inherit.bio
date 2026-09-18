@@ -1,0 +1,25 @@
+# Build context for workers/prepared-worker/Dockerfile is the repository root
+# (its wrangler.json sets image_build_context to ../..). The image copies only
+# the package manifests, tsconfig.json, src/, data/ and two scripts, so
+# everything else stays out of the context sent to the Docker daemon.
+.git
+.claude
+node_modules
+.next
+.vercel
+coverage
+e2e
+test-results
+playwright-report
+supabase
+docs
+content
+public
+worker
+.github
+*.md
+*.tsbuildinfo
+.env*
+scripts/**
+!scripts/prepared-worker.run.mts
+!scripts/server-only-shim.mjs

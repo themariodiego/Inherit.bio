@@ -182,6 +182,17 @@ as root.
 - **Vercel**: Hobby caps functions at 300 s (fine for the demo caps); Pro
   allows 800 s and per-minute cron. Processing a 200 MB VCF fits in 300 s;
   raise caps only with Pro + tested headroom.
+- **Prepared-genome admissions**: the database caps how many new full-genome
+  preparations it admits per UTC calendar month. The cap is
+  `monthly_admission_limit` on the private singleton row
+  `private.own_preparation_config` (default 100, allowed 1 to 100000), read
+  by `enqueue_own_preparation_v1` at admission. The admission past it is
+  refused with `preparation_capacity_reached`; the file stays stored and no
+  job is written. The count lives in
+  `private.own_preparation_monthly_admissions`, one row per month and no
+  personal data. It is not an environment variable and no response discloses
+  it. Raise it with a single `update` on that row once you have measured a
+  month's worker and storage spend at the current cap.
 
 ## 4. The Tier-3 worker (FASTQ/BAM analysis)
 
@@ -244,6 +255,21 @@ does not declare. Copy the template, then work through these.
 | `INHERIT_PREPARED_WGS_ENABLED` | `false` for an ordinary self-host. The prepared-object path needs this flag *and* the database's own `own_preparation_config.enabled` gate; the operator-started preparation worker (`pnpm worker:prepared`, see `worker/README.md`) refuses to run without the flag. Setting it alone enables nothing. |
 | `INHERIT_PREPARED_R2_ORIGIN` | Empty unless the flag above is on. Then: the HTTPS origin of the signed artifact gateway — scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes the transport unavailable. |
 | `INHERIT_PREPARED_R2_BUCKET` | Empty unless the flag above is on. Then: the exact private bucket bound to that gateway and selected in the database configuration. A bucket that does not match this value is refused. |
+
+#### Hosted preparation on Cloudflare
+
+The public deployment does not run `pnpm worker:prepared` by hand. It is set
+up to run it inside a Cloudflare Container that a five-minute cron wakes
+(`workers/prepared-worker/`, ADR-0030), behind the private prepared-artifact
+gateway in `workers/prepared-artifacts/`. Both are deployed by
+`.github/workflows/deploy-cloudflare.yml`, which stays disabled until the owner
+turns it on. The container receives the three switches above plus
+`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and
+`INHERIT_UPLOAD_SIGNING_JWK`, and nothing else; the two secrets are set with
+`wrangler secret put`, never committed. A self-host needs none of this: the
+operator-started command is the same process, and the hosted path changes only
+who starts it. Nothing in those directories activates preparation; the
+database gate and the privacy notice both remain to be changed first.
 
 ### Upload size caps
 

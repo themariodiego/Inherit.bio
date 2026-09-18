@@ -126,3 +126,26 @@ describe("dedicated Storage upload JWT signing", () => {
     }
   });
 });
+
+describe("the signer's public half", () => {
+  it("exports kid and the public coordinates with ES256/sig markers and nothing private", async () => {
+    const { uploadSignerPublicJwk } = await import("./storage-upload-token");
+    const exported = uploadSignerPublicJwk();
+    expect(exported).toEqual({ kty: "EC", crv: "P-256", kid: pair.jwk.kid, x: pair.jwk.x, y: pair.jwk.y, alg: "ES256", use: "sig" });
+    expect(Object.keys(exported)).not.toContain("d");
+    // The exported point verifies a signature the signer makes.
+    const token = mintStorageUploadToken(authorization, now);
+    const { input, signature } = decode(token);
+    const key = crypto.createPublicKey({ key: { kty: "EC", crv: "P-256", x: exported.x, y: exported.y }, format: "jwk" });
+    expect(crypto.verify("sha256", Buffer.from(input), { key, dsaEncoding: "ieee-p1363" }, signature)).toBe(true);
+  });
+
+  it("is unavailable when the signer is missing or its pair does not match", async () => {
+    const { uploadSignerPublicJwk } = await import("./storage-upload-token");
+    vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", "");
+    expect(() => uploadSignerPublicJwk()).toThrow(UploadTokenUnavailable);
+    const other = keyPair();
+    vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", JSON.stringify({ ...pair.jwk, x: other.jwk.x, y: other.jwk.y }));
+    expect(() => uploadSignerPublicJwk()).toThrow(UploadTokenUnavailable);
+  });
+});

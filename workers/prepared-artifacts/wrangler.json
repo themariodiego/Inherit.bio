@@ -1,0 +1,37 @@
+{
+  "name": "inherit-prepared-artifacts",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-08",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "BUCKET_NAME": "inherit-prepared-production",
+    "TOKEN_ISSUER": "https://zuvloczwgrayonqabnss.supabase.co/auth/v1",
+    "SIGNING_PUBLIC_KEYS": "[]"
+  },
+  "r2_buckets": [
+    {
+      "binding": "ARTIFACTS",
+      "bucket_name": "inherit-prepared-production"
+    }
+  ],
+  "env": {
+    "preview": {
+      "name": "inherit-prepared-artifacts-preview",
+      "vars": {
+        "BUCKET_NAME": "inherit-prepared-preview",
+        "TOKEN_ISSUER": "https://zuvloczwgrayonqabnss.supabase.co/auth/v1",
+        "SIGNING_PUBLIC_KEYS": "[]"
+      },
+      "r2_buckets": [
+        {
+          "binding": "ARTIFACTS",
+          "bucket_name": "inherit-prepared-preview"
+        }
+      ]
+    }
+  }
+}
