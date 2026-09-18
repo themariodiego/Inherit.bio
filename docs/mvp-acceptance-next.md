@@ -1,9 +1,62 @@
 # MVP-first acceptance sequence
 
-Original plan audit: 2026-09-06; current checkpoint: 2026-09-10.
-Full-plan acceptance is **23/65**, after G2.7 closed on CI run 334.
-The Lighthouse evidence is in `docs/local-upload-browser-verification.md`.
+Original plan audit: 2026-09-06; current checkpoint: 2026-09-18.
+Full-plan acceptance is **28/65**, after G1.16 closed on integration run 35291865797.
+The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;
+the integration evidence is in the G1.16 row of `docs/acceptance-matrix.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
+
+## Resumption handoff · 18 September 2026
+
+Acceptance is **28/65**, counted from the YES/NO column. G1.6 closed on CI run
+35270711326 and G1.16 on integration run 35291865797 (its second attempt) with
+pull request run 35288013760. Everything below merged with the exact tree CI
+tested and was verified on the deployed project.
+
+Released:
+
+- PR #128 (`6588ca2`): Family ancestry shared authority. The migration was
+  applied to the Inherit project as hosted version `20260917180516` after a
+  read-only catalog preflight and a DDL guard; postflight byte-exact; a
+  rollback-only synthetic probe passed 93/93 with zero residue; production
+  READY; eight public routes checked anonymously. D-123 fixed. Evidence in
+  `docs/evidence/family-ancestry-release-20260917/`.
+- PR #129 (`abdfafe`): that release record.
+- PR #130 (`97e1eb2`): `e2e/rls.spec.ts` attacks every private bucket prefix as
+  a signed-in stranger and anonymously with service-role controls (G1.6); the
+  Family shared reader retries a contested locked confirmation once (D-125,
+  hardened, cause not isolated).
+- PR #131 (`c7cba09`): the G1.14 Lighthouse contract runs on integration CI
+  after the browser suite (`pnpm e2e:lighthouse`); D-126 recorded.
+- PR #132 (`b6e6af6`): every local app server keeps idle connections for 65 s,
+  after three integration transport deaths were root-caused to the keep-alive
+  race in Playwright's request client; G1.16 closed; main's post-merge run
+  35301817868 green with the step.
+
+Open, by what it waits on:
+
+- Owner decisions: a class or source consent revocation action (D-126:
+  `source.revocation-7d` is registered with no executor and no reachable
+  trigger with stored data; G5.3a); the glossary citation policy (G1.11);
+  acceptance of ADR-0028 and ADR-0029 (G7.1); an embryo grant seed path that
+  is not a demo path (G4.5, G8.2); the jurisdiction declaration contract
+  (G5.1a: `profiles.jurisdiction_code` has no writer).
+- Human work: real jurisdiction review (G5.5); dated source reads for the 189
+  undated citations (G4.7).
+- Infrastructure: no Inherit R2 bucket or worker exists in Cloudflare, so
+  prepared-source Family ancestry, background dispatch, throughput and 100
+  genomes a month stay unproved (D-124).
+- Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
+  embryo ingest (G2.6, G4.2, G4.5, G8.3, G8.6, G5.9); the route-state matrix
+  (G1.7, G1.12, G2.2); task-depth instrumentation and the four Overview boxes
+  that land on a domain index (G2.4); density enforcement where the product
+  misses the rule (G2.5); rights routes (G5.4).
+
+Watch: a fourth transport death is recorded in the G1.5 row, because the
+keep-alive change moved the closing boundary from six seconds to sixty-six
+rather than removing it. The Lighthouse report page scored exactly the
+threshold on one integration navigation (median 91). `sequence.plus.bio`
+still aliases the Inherit production deployment.
 
 ## Resumption handoff · 10 September 2026, night
 
