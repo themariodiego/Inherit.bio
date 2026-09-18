@@ -453,6 +453,15 @@ describe("checkCitations", () => {
     expect(checkCitations("Khera et al. (2018), PMID 30104762, doi 10.1038/s41588-018-0183-z.", fromScore).ok).toBe(true);
   });
 
+  it("refuses content attributed to a report when the tools returned none this turn", () => {
+    const none = permittedCitationsFromToolJson({ slug: "caffeine-metabolism-cyp1a2-rs762551", error: "report_not_generated" });
+    expect(checkCitations("Your Caffeine metabolism report says your genotype is A/C.", none).ok).toBe(false);
+    expect(checkCitations("Your report found the fast-metabolizer variant.", none).ok).toBe(false);
+    expect(checkCitations("No completed report for this topic is currently available.", none).ok).toBe(true);
+    expect(checkCitations("Your report does not diagnose anything.", none).ok).toBe(true);
+    const held = permittedCitationsFromToolJson({ sources: [{ title: "Caffeine metabolism · CYP1A2", citations: [{ pmid: "10233211", label: "Sachse et al., Br J Clin Pharmacol 1999" }] }] });
+    expect(checkCitations("Your Caffeine metabolism report says your genotype is A/C.", held).ok).toBe(true);
+  });
   it("passes prose with no citation at all", () => {
     expect(checkCitations("Your genotype is A/C.", permitted)).toEqual({ ok: true, unsupported: [] });
   });

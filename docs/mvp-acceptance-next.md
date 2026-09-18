@@ -105,6 +105,15 @@ Released:
   the owner read "a marketing claim" as the four pattern classes on 18
   September (evening, corrections item 18); the row flips on the assertion's
   first green run.
+- G4.8, 18 September (late evening): the brief's red-team set is built on the
+  local-model path (`e2e/fixtures/copilot-redteam.json`, 44 prompts;
+  `e2e/copilot-redteam.spec.ts`, 48 tests under the `copilot-local` project
+  against the fourth CI app variant that attests the synthetic loopback
+  provider as local); two guard rules added (a relative risk without an
+  absolute figure, content attributed to a report the tools did not return)
+  and the surfaces' non-diagnostic line under every answer; the row flips on
+  the spec's first green run (branch `work/copilot-redteam`, stacked on the
+  census pull request).
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
@@ -318,6 +327,15 @@ every case. Applied in the same change unless it says product work.
     real predecessor is commissioned, the 60% rule stands and cannot rise, the
     measurements are the row's reason, and it reopens if a redesign is
     commissioned (corrections item 14, re-asked).
+25. **G4.8's local-model path (asked later the same evening):** a fourth CI
+    app variant (port 3103) carries the local-model attestation for exactly
+    one loopback origin, the synthetic provider on `127.0.0.1:8127`, and only
+    the red-team suite runs against it; the three existing variants and the
+    runtime probe keep refusing local endpoints. The alternatives (the cloud
+    path recorded as a correction; leave G4.8 NO) were set aside.
+26. **The non-diagnostic line every Copilot answer carries:** the surfaces'
+    `NOT_DIAGNOSTIC`, as X14.1 says; G4.8's quoted sentence is recorded as
+    corrections item 19. Not the quoted sentence, not both lines.
 
 ## Resumption handoff · 10 September 2026, night
 

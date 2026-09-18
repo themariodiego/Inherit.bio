@@ -736,6 +736,15 @@ const STUDY_BY_IN_TEXT =
 /** "According to Nature Genetics", "published in The Lancet". The capitalised run is the name; "your report" starts none. */
 const NAMED_SOURCE_IN_TEXT =
   /\b(?:[Aa]ccording to|[Pp]ublished in|[Rr]eported in|[Aa]s reported by|[Aa]s shown in|[Aa]s found by|[Aa]s described in) ((?:\p{Lu}[\p{L}'’-]*(?: |$)){1,6})/gu;
+/**
+ * Content attributed to a report, score or estimate: "your report says",
+ * "the caffeine report shows". Permitted only when the tools returned a report
+ * or score this turn (their names are the permitted labels); after a grant is
+ * turned off the report tool returns no report, and an answer that still
+ * speaks for one cites a source Inherit did not hold that turn (G4.8).
+ */
+const REPORT_ASSERTION_IN_TEXT =
+  /\b(?:your|the|this|my) (?:[\p{L}\p{N}-]+ ){0,4}(?:report|reports|score|scores|panel|estimate) (?:says?|said|shows?|showed|found|finds|indicates?|states?|confirms?|reports?|gives?|puts?|lists?|calls?)\b/giu;
 /** Product names that follow "according to" without citing anything. */
 const PRODUCT_NAMES = new Set(["inherit", "portrait", "copilot", "overview", "family", "embryos", "medicines", "ancestry"]);
 
@@ -836,6 +845,9 @@ export function checkCitations(text: string, permitted: PermittedCitations): Cit
       if (words.length === 0) continue;
       if (!labelsCarry(permitted.labels, words)) unsupported.push(match[0].trim());
     }
+  }
+  if (permitted.labels.length === 0) {
+    for (const match of text.matchAll(REPORT_ASSERTION_IN_TEXT)) unsupported.push(match[0].trim());
   }
   return { ok: unsupported.length === 0, unsupported };
 }
