@@ -34,7 +34,7 @@ variables in `wrangler.json`:
 | --- | --- | --- |
 | `INHERIT_PREPARED_WGS_ENABLED` | `true` | `true` |
 | `NEXT_PUBLIC_SUPABASE_URL` | the production project URL | empty until the preview branch exists |
-| `INHERIT_PREPARED_R2_ORIGIN` | empty until the bootstrap below | empty |
+| `INHERIT_PREPARED_R2_ORIGIN` | `https://inherit-prepared-artifacts.mariodiego-dev.workers.dev` | `https://inherit-prepared-artifacts-preview.mariodiego-dev.workers.dev` |
 | `INHERIT_PREPARED_R2_BUCKET` | `inherit-prepared-production` | `inherit-prepared-preview` |
 
 Two are Worker secrets, never in any file. Set each after the first deploy;
@@ -74,19 +74,21 @@ gateway's list stays empty until a preview signer exists.
 
 The app's DNS is not on Cloudflare, so the gateway is served at its
 `workers.dev` URL, and that URL is only known after the gateway has been
-deployed once.
+deployed once. Both steps are done for this account (18 September 2026):
 
-1. Deploy both Workers with `INHERIT_PREPARED_R2_ORIGIN` empty, as committed.
-   The gateway's first deploy prints its URL,
-   `https://inherit-prepared-artifacts.YOUR-ACCOUNT.workers.dev`, where
-   `YOUR-ACCOUNT` is the account's `workers.dev` subdomain. The
-   container Worker deploys too and its cron starts the container every five
-   minutes; with the origin empty, the app's R2 transport is unavailable by
-   its own fail-closed check, and with the database gate still off there is
-   no job to claim, so each run reports idle and exits.
-2. Put that origin, scheme and host only, no path and no trailing slash, into
-   `INHERIT_PREPARED_R2_ORIGIN` in `wrangler.json` (both the production block
-   and, with the preview gateway's URL, `env.preview`), and deploy again.
+1. Both Workers were first deployed with `INHERIT_PREPARED_R2_ORIGIN` empty
+   (preview run 35379336714, production run 35379664900 of the deploy
+   workflow). The gateways answer at
+   `https://inherit-prepared-artifacts.mariodiego-dev.workers.dev` and
+   `https://inherit-prepared-artifacts-preview.mariodiego-dev.workers.dev`,
+   and refuse a request without a capability with an empty 404. The container
+   Workers' crons start the container every five minutes; with the origin
+   empty, the app's R2 transport is unavailable by its own fail-closed check,
+   and with the database gate still off there is no job to claim, so each run
+   reports idle and exits.
+2. Those origins, scheme and host only, are the committed values above; the
+   push that carries them redeploys production, and preview is redeployed by
+   hand from the workflow.
 
 The preview project URL is bootstrapped the same way once a Supabase preview
 branch exists: set `NEXT_PUBLIC_SUPABASE_URL` under `env.preview` and the
@@ -136,9 +138,11 @@ expire); the secrets are set as above.
 
 ## What this does not prove
 
-- No deployment has been made from this repository. The workflow is disabled,
-  the account subdomain is unknown, and the preview gateway has no key yet
-  (the production key is committed and guard-checked, see above).
+- The deploys of 18 September 2026 prove that the image builds, the Workers
+  and the container application exist and the gateways refuse unauthenticated
+  requests; no job has run in a container yet, and the preview gateway has no
+  key until a preview signer exists (the production key is committed and
+  guard-checked, see above).
 - The instance size rests on one trial run, not on a full-size whole-genome
   file; capacity, throughput and 100 genomes a month remain unproved (D-124).
 - A container that never exits keeps `running` true and blocks every later

@@ -78,11 +78,14 @@ Open, by what it waits on:
 - Infrastructure: the repository carries the Cloudflare configuration
   (PR #136) and the production gateway's signing key, and the two private R2
   buckets (`inherit-prepared-preview`, `inherit-prepared-production`) exist
-  and are empty since 18 September; no Worker or container exists and the
-  deploy workflow is skipped until the owner's four actions
-  (Workers Paid plan, scoped token in the `cloudflare` GitHub environment with
-  `CLOUDFLARE_DEPLOY_ENABLED`, Supabase Storage upload limit, container
-  secrets) are done; Vercel preview deployments also have no Supabase
+  and are empty since 18 September; the Workers Paid plan, the scoped token
+  in the `cloudflare` GitHub environment and `CLOUDFLARE_DEPLOY_ENABLED` are
+  in place, and the first deploys ran the same evening (preview run
+  35379336714, production run 35379664900): four Workers and two container
+  applications exist, the gateways answer at
+  `inherit-prepared-artifacts[-preview].mariodiego-dev.workers.dev` and
+  refuse unauthenticated requests; still owed by the owner are the Supabase
+  Storage upload limit and the container secrets; Vercel preview deployments also have no Supabase
   variables today (every dynamic route answers 500 through the middleware),
   which the preview proof needs fixed first. The order is written down in
   `docs/hosted-preparation-activation.md`, and the synthetic fixture
