@@ -145,15 +145,13 @@ describe("the synthetic gVCF shape", () => {
     expect(unpacked.decodedBytes).toBe(plain.length);
   });
 
-  it("is read by the provenance counter as a single sample with every row accounted for and none unsupported", async () => {
+  it("is read by the provenance counter as a single sample: 400 blocks, 100 called sites, none unsupported", async () => {
     const counts = emptyReadCounts();
     await drain(countInputLines(lines(text(500, 1, { gvcf: true })), "gvcf", counts));
     expect(counts.singleSample).toBe(true);
-    // The counter today files every row whose ALT carries <NON_REF> under
-    // blocks, the 100 called sites included (D-128); this asserts the total,
-    // not that split, so the fixture stays valid when the counter is corrected.
-    expect(counts.blocks + counts.called + counts.noCall).toBe(500);
-    expect(counts.blocks).toBeGreaterThanOrEqual(400);
+    expect(counts.blocks).toBe(400);
+    expect(counts.called).toBe(100);
+    expect(counts.noCall).toBe(0);
     expect(counts.unsupported).toBe(0);
 
     const plainCounts = emptyReadCounts();

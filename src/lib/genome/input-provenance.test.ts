@@ -40,6 +40,20 @@ describe("input record counts use the parser's own row rules", () => {
     expect(parsed.observedCalls).toEqual([]);
     expect(counts).toEqual({ called: 3, noCall: 1, failedFilter: 1, blocks: 1, unsupported: 0, singleSample: true, buildClaim: true });
   });
+  it("counts a gVCF's called sites as calls and its reference records as blocks, as the parser reads them (D-128)", async () => {
+    const block = "12\t111803900\t.\tG\t<NON_REF>\t.\t.\tEND=111803960\tGT:DP:GQ:MIN_DP:PL\t0/0:30:99:28:0,90,1350";
+    const site = (alt: string, gt: string) => `12\t111803962\trs671\tG\t${alt}\t50\tPASS\tDP=30\tGT:AD:DP:GQ:PL\t${gt}:14,16,0:30:99:400,0,380,440,430,870`;
+    const text = [header, block, site("<NON_REF>", "0/0"), site("A,<NON_REF>", "0/0"), site("A,<NON_REF>", "0/2"),
+      site("A,<NON_REF>", "0/1"), site("A,<NON_REF>", "1/1"), site("A,<NON_REF>", "./."), site("A,<NON_REF>", "1/2")].join("\n");
+    const counts = emptyReadCounts();
+    const parsed = await parseVcf(countInputLines(lines(text), "gvcf", counts));
+    expect(parsed).toEqual(await parseVcf(lines(text)));
+    expect(parsed.records.map((record) => record.genotype)).toEqual(["A/G", "A/A"]);
+    // Two called sites; the block, the bare <NON_REF> site, the homozygous-reference
+    // site, the symbolic-allele call and the no-call are reference records; the
+    // 1/2 row carries a concrete alternate but no usable diploid genotype.
+    expect(counts).toEqual({ called: 2, noCall: 0, failedFilter: 0, blocks: 5, unsupported: 1, singleSample: true, buildClaim: true });
+  });
   it.each(["##contig=<ID=chr2,length=242193529>", "##reference=unrecognised"])("does not certify an unrecognised build header: %s", async (claim) => {
     const counts = emptyReadCounts();
     await parseVcf(countInputLines(lines(`${claim}\n${row}`), "vcf", counts));
