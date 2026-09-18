@@ -1,0 +1,27 @@
+{
+  "kind": "priority1-foundations production rollback-only probe",
+  "observedAt": "2026-09-18T10:09:16.600209+00:00",
+  "project": "zuvloczwgrayonqabnss",
+  "executedAs": "postgres through the Supabase management SQL API",
+  "probe": "probe.sql",
+  "checks": 14,
+  "passed": 14,
+  "failed": [],
+  "rows": [
+    { "check": "claim on empty table answers null", "outcome": "null", "passed": true },
+    { "check": "claim on empty table wrote no record", "outcome": "0", "passed": true },
+    { "check": "malformed token refused", "outcome": "22023 invalid_retention_claim", "passed": true },
+    { "check": "retry delay bound refused", "outcome": "22023 invalid_retention_claim", "passed": true },
+    { "check": "release of unknown record refused", "outcome": "42501 file_delete_unauthorized", "passed": true },
+    { "check": "claimed finish of unknown record refused", "outcome": "42501 file_delete_unauthorized", "passed": true },
+    { "check": "owner prepare without session refused", "outcome": "42501 file_delete_unauthorized", "passed": true },
+    { "check": "enqueue while disabled refused", "outcome": "55000 preparation_disabled", "passed": true },
+    { "check": "no month row written by the refused enqueue", "outcome": "0", "passed": true },
+    { "check": "mid-month key refused", "outcome": "23514", "passed": true },
+    { "check": "valid month row accepted then rolled back", "outcome": "probe_rollback", "passed": true },
+    { "check": "month ledger empty after the probe", "outcome": "0", "passed": true },
+    { "check": "registry class is inlineEventDriven", "outcome": "inlineEventDriven", "passed": true },
+    { "check": "monthly limit is 100 with preparation disabled", "outcome": "100 enabled=false", "passed": true }
+  ],
+  "limits": "The probe exercises refusals and the empty-table claim with random identities; it does not create a synthetic stranded deletion on production (that journey is proven by e2e/file-deletion.spec.ts on CI run 35327691091 against a fresh database). Nothing was enabled: preparation stays disabled and the month ledger holds no row."
+}

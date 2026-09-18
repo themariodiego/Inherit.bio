@@ -1,0 +1,54 @@
+{
+  "kind": "priority1-foundations production postflight (read-only)",
+  "observedAt": "2026-09-18T10:08:29.888001+00:00",
+  "project": "zuvloczwgrayonqabnss",
+  "executedAs": "postgres through the Supabase management SQL API",
+  "ledger": {
+    "count": 115,
+    "latest": "source_revocation_inline",
+    "applied": [
+      {
+        "name": "own_preparation_monthly_cap",
+        "version": "20260918100630",
+        "file": "supabase/migrations/20260918080000_own_preparation_monthly_cap.sql",
+        "fileSha256": "143e9c0ac62f9ad0a48f5635a5001de15858eadd4598e11ec51f173f06b54950",
+        "bytes": 4748
+      },
+      {
+        "name": "source_revocation_inline",
+        "version": "20260918100756",
+        "file": "supabase/migrations/20260918113000_source_revocation_inline.sql",
+        "fileSha256": "ba92245e2a511280d2e2c54c79cb63dc454cf05056f75e572b19ae30231f186f",
+        "bytes": 18915
+      }
+    ]
+  },
+  "ddlGuard": {
+    "file": "ddl-guard.sql",
+    "passedAt": "2026-09-18T10:04:33.839698+00:00",
+    "note": "The first apply call of the cap migration failed with a gateway 502 before execution. A read-only recheck at 10:05:55Z showed the database unchanged (ledger 113, no cap column, no monthly table, enqueue body unchanged), and the apply was repeated with the same text."
+  },
+  "retentionRegistry": { "source.revocation-7d": "inlineEventDriven" },
+  "genomeFileDeletions": {
+    "rows": 0,
+    "columns": ["file_id", "account_id", "token", "bucket_id", "object_name", "started_at", "canonical_chat_manifest", "claim_token_hash", "claim_expires_at", "attempts", "last_attempt_at"]
+  },
+  "ownPreparationConfig": { "monthlyAdmissionLimit": 100, "columnDefault": "100", "nullable": false, "enabled": false },
+  "monthlyAdmissions": { "rls": true, "policies": 0, "acl": "{postgres=arwdDxtm/postgres}", "rows": 0 },
+  "functions": {
+    "note": "Every function the two migrations define has a prosrc md5 equal to the repository text; expected-prosrc.json carries the repository digests and these are the deployed ones.",
+    "deployed": {
+      "private.authorize_genome_file_deletion_claim_v1": { "md5": "7ae4e38d151037a2b6809a77d538bacf", "len": 1079, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres}" },
+      "private.enqueue_own_preparation_v1": { "md5": "d5e940ab08d881459f1def8dd4295afb", "len": 2536, "secdef": true, "searchPath": "pg_catalog, private", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "private.finish_genome_file_deletion_body_v1": { "md5": "aec09382484cafa8602701379bccfbbd", "len": 2051, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres}" },
+      "private.prepare_genome_file_deletion_body_v1": { "md5": "687df80d56b38d2aabeacd4bc1350154", "len": 4272, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres}" },
+      "public.claim_due_genome_file_deletion_v1": { "md5": "e8cfe8161e9b1f4be137879fd84772f1", "len": 2021, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.fail_genome_file_deletion_claim_v1": { "md5": "aafb051c91959e5e5d7ce44dde906dd0", "len": 262, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.finish_genome_file_deletion_claimed_v1": { "md5": "9ba0f3fdd53eae01303767e40b3b89d9", "len": 388, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.finish_genome_file_deletion_v1": { "md5": "4d18dc35b28c34d7485ccb783f2a4d06", "len": 258, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.prepare_genome_file_deletion_v1": { "md5": "9daffe329b79e2ce664d438c4f70976f", "len": 337, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.prepare_own_prepared_file_cleanup_claimed_v1": { "md5": "c60db6110e62e7b5e11c44a22510dce7", "len": 992, "secdef": true, "searchPath": "\"\"", "acl": "{postgres=X/postgres,service_role=X/postgres}" },
+      "public.enqueue_own_preparation_v1": { "md5": "f4528318709715df28f5ebd54dfcfb36", "len": 82, "secdef": false, "searchPath": "pg_catalog, private", "acl": "{postgres=X/postgres,service_role=X/postgres}", "note": "the invoker wrapper, unchanged" }
+    }
+  }
+}

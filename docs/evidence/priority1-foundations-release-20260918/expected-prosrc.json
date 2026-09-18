@@ -1,0 +1,18 @@
+{
+  "note": "md5 and length of the text between the $$ delimiters of every function the two migrations define, computed from the repository files; the postflight compares the deployed prosrc against these.",
+  "private.authorize_genome_file_deletion_claim_v1": { "md5": "7ae4e38d151037a2b6809a77d538bacf", "len": 1079 },
+  "private.enqueue_own_preparation_v1": { "md5": "d5e940ab08d881459f1def8dd4295afb", "len": 2536 },
+  "private.finish_genome_file_deletion_body_v1": { "md5": "aec09382484cafa8602701379bccfbbd", "len": 2051 },
+  "private.prepare_genome_file_deletion_body_v1": { "md5": "687df80d56b38d2aabeacd4bc1350154", "len": 4272 },
+  "public.claim_due_genome_file_deletion_v1": { "md5": "e8cfe8161e9b1f4be137879fd84772f1", "len": 2021 },
+  "public.fail_genome_file_deletion_claim_v1": { "md5": "aafb051c91959e5e5d7ce44dde906dd0", "len": 262 },
+  "public.finish_genome_file_deletion_claimed_v1": { "md5": "9ba0f3fdd53eae01303767e40b3b89d9", "len": 388 },
+  "public.finish_genome_file_deletion_v1": { "md5": "4d18dc35b28c34d7485ccb783f2a4d06", "len": 258 },
+  "public.prepare_genome_file_deletion_v1": { "md5": "9daffe329b79e2ce664d438c4f70976f", "len": 337 },
+  "public.prepare_own_prepared_file_cleanup_claimed_v1": { "md5": "c60db6110e62e7b5e11c44a22510dce7", "len": 992 },
+  "preflightBodiesTheFoldMovesVerbatim": {
+    "public.prepare_genome_file_deletion_v1 (20260907081759)": { "md5": "d27d8c27a9a61de3b46e681848aa34f3", "len": 4518 },
+    "public.finish_genome_file_deletion_v1 (20260907081759)": { "md5": "1f085ef0a4ac0bb24b673859f5fc0f1c", "len": 2208 },
+    "private.enqueue_own_preparation_v1 (20260908233418)": { "md5": "2668282374e1eedd8fc5afea6db4c7f5", "len": 1583 }
+  }
+}

@@ -1,14 +1,15 @@
 # MVP-first acceptance sequence
 
 Original plan audit: 2026-09-06; current checkpoint: 2026-09-18.
-Full-plan acceptance is **29/65**, after G5.1 closed on CI run 35307876658.
+Full-plan acceptance is **30/65**, after G5.3a closed on CI run 35327691091.
 The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;
 the integration evidence is in the G1.16 row of `docs/acceptance-matrix.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **29/65**, counted from the YES/NO column. G1.6 closed on CI run
+Acceptance is **30/65**, counted from the YES/NO column. G5.3a closed on CI run
+35327691091 after PR #136 (below). G1.6 closed on CI run
 35270711326, G1.16 on integration run 35291865797 (its second attempt) with
 pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
 merged with the exact tree CI tested and was verified on the deployed project.
@@ -36,6 +37,17 @@ Released:
   API route, page, layout and server action in the restricted areas and the
   counterpart subject pages, correcting three routes the old gate had counted
   as guarded by an import; G5.1 closed with its limits stated.
+- PR #136 (`adfd0a7`): the priority-1 foundations. The upload signer's public
+  key is served at `/.well-known/inherit-upload-jwks.json` (live on
+  `www.inherit.bio`); the database-enforced monthly cap of 100 preparations;
+  the Cloudflare hosting configuration (gateway, cron-woken container Worker,
+  guarded deploy workflow, ADR-0030), inert until the owner enables deploys;
+  the D-127 portrait fixture fix; and the D-126 fold of `source.revocation-7d`
+  into immediate deletion with a retention-job backstop. Both migrations were
+  applied to the Inherit project as hosted versions `20260918100630` and
+  `20260918100756` after a DDL guard, with a byte-equal postflight and a 14/14
+  rollback-only probe (`docs/evidence/priority1-foundations-release-20260918/`).
+  G5.3a closed. Nothing is activated: preparation stays disabled.
 
 Open, by what it waits on:
 
@@ -48,7 +60,14 @@ Open, by what it waits on:
   above and the D-126 row.
 - Human work: real jurisdiction review (G5.5); dated source reads for the 189
   undated citations (G4.7).
-- Infrastructure: no Inherit R2 bucket or worker exists in Cloudflare, so
+- Infrastructure: the repository now carries the Cloudflare configuration
+  (PR #136), but no Inherit R2 bucket, Worker or container exists in
+  Cloudflare and the deploy workflow is skipped until the owner's four actions
+  (Workers Paid plan, scoped token in the `cloudflare` GitHub environment with
+  `CLOUDFLARE_DEPLOY_ENABLED`, Supabase Storage upload limit, container
+  secrets) are done; Vercel preview deployments also have no Supabase
+  variables today (every dynamic route answers 500 through the middleware),
+  which the preview proof needs fixed first. So
   prepared-source Family ancestry, background dispatch, throughput and 100
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
