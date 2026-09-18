@@ -1,5 +1,29 @@
 # Test diff register
 
+## Jurisdiction chokepoint gate at call level · 18 September 2026
+
+`scripts/jurisdiction-enforcement.test.ts` accepted an import of
+`@/lib/embryos/guards` as jurisdiction enforcement and scanned only the API
+routes under five path words. Read at call level, three of the routes it
+counted as guarded import only that module's response helpers; their
+authority is an operation token on a cohort that the database functions
+already refused outside a checked jurisdiction. The gate now matches the
+capability resolver calls and the fail-closed refusals, follows one alias and
+one hop through a relative import, and classifies every API route, page,
+layout and server action under the family, embryo, cohort, portrait, carrier,
+invitation, rights, withdraw and subject paths plus the six counterpart pages
+under `genome/[subject]`: 36 surfaces, each reaching a mechanism or listed
+with a reviewable reason (13 listed: acknowledgement writers, the hub
+layout's chrome choice, the public Embryo explanation, six rights surfaces and
+the three cohort lifecycle routes). Seven cases replace the previous three:
+an anti-vacuity count, no unexplained surface, no stale or missing listing,
+every mechanism class reached, and three planted trees proving an unguarded
+route, a helper-only page, a second hop and a stale listing are reported
+while an alias to a guarded or listed route is not. No assertion was
+weakened; the exception list grew only with reasons that are checked to
+still hold. A data file that mentions the flag in prose is never read as a
+check. The G5.1 row records the correction and the limits.
+
 ## Keep-alive race on the local app servers · 18 September 2026
 
 Three integration runs died with `socket hang up` from Playwright's Node-side
