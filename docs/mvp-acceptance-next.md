@@ -147,6 +147,33 @@ the recommendation, that is said.
    (`INHERIT_PREPARED_WGS_ENABLED`, `INHERIT_PREPARED_R2_ORIGIN`,
    `INHERIT_PREPARED_R2_BUCKET`) when handed them.
 
+Asked and answered the same day, after the gVCF ceiling release (18 September,
+about 13:55 UTC), with the recommended option first:
+
+9. **Privacy notice:** approved as drafted. The notice will say three
+   infrastructure providers and add, after the Vercel sentence: "Cloudflare
+   runs the private worker that prepares full-genome files and stores the
+   prepared blocks it produces; it never holds your original file, and it
+   works only while that preparation runs." It goes live only with production
+   activation (runbook step 7 before 8); the owner confirms Cloudflare's
+   standard DPA in the dashboard.
+10. **Proof access:** session environment variables. The owner adds the
+    preview branch's URL, anon key and service-role key, the fresh preview
+    signer and a Vercel Protection Bypass token as environment variables of
+    the Claude Code environment (never in chat); the proof is driven from
+    there and production keys never enter the session.
+11. **Cloudflare setup, first tranche:** the owner takes the Workers Paid plan
+    now. Still theirs, not yet taken: the scoped API token with the GitHub
+    environment `cloudflare` and `CLOUDFLARE_DEPLOY_ENABLED`; the Supabase
+    Storage upload limit of at least 8 GiB; the two container secrets after
+    the first deploy.
+12. **D-128:** corrected under the same version strings, confined to gVCF rows
+    that no reader ever counted as calls: a row is a block when it carries
+    `END=`, `SVLEN=`, `LEN`, or `<NON_REF>` with no concrete alternate called;
+    a called site's trailing `<NON_REF>` allele is dropped before the
+    single-base check; a homozygous-reference row with `<NON_REF>` stays what
+    `observed-calls.test.ts` records, never a reference finding.
+
 Production facts read the same day: `private.own_preparation_config` is disabled
 with provider `supabase`, no bucket, `max_job_seconds` 900 and `max_artifact_bytes`
 100 MiB; `private.own_original_retention_config` has been enabled since
