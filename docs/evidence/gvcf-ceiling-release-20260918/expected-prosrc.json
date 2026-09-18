@@ -1,0 +1,19 @@
+{
+ "note": "md5 and length of the text between the dollar delimiters of the four functions 20260918150000_own_upload_gvcf_ceiling.sql replaces, computed from the repository file; the postflight compares the deployed prosrc against these.",
+ "private.issue_own_storage_upload_v1": {
+  "md5": "5d55aac633eb06a0b382658db96565e3",
+  "len": 3720
+ },
+ "private.own_upload_normalization_v1": {
+  "md5": "ca3988cca1fa34e9714768044f38f2bf",
+  "len": 13956
+ },
+ "private.own_preparation_source_v1": {
+  "md5": "790b2fc9b965f0d0e3386346b0138769",
+  "len": 3139
+ },
+ "private.own_upload_limits_v1": {
+  "md5": "26eec6c424035f16f7302ec7f2739449",
+  "len": 1648
+ }
+}

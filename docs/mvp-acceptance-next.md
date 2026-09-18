@@ -48,6 +48,21 @@ Released:
   `20260918100756` after a DDL guard, with a byte-equal postflight and a 14/14
   rollback-only probe (`docs/evidence/priority1-foundations-release-20260918/`).
   G5.3a closed. Nothing is activated: preparation stays disabled.
+- PR #137 (`77a5afd`): the record of that release. PR #138 (`a155bea`): the
+  production gateway's signing key committed and guard-checked against the
+  live endpoint, the activation runbook
+  (`docs/hosted-preparation-activation.md`), and the two private R2 buckets.
+- PR #139 (`1d4f2cd`): the synthetic fixture sized by decoded bytes with a
+  gVCF shape; the gVCF admission ceiling (`maximum_gvcf_bytes`, applied to the
+  Inherit project as hosted version `20260918134705` after the deployment that
+  carries it, with a byte-equal postflight and a 13/13 rollback-only probe,
+  `docs/evidence/gvcf-ceiling-release-20260918/`; the column stays null so no
+  limit moved); D-128 recorded. Main's post-merge run 35351892873 passed.
+- Parked, ready to push as their own pull requests once the record above
+  merges: the D-128 correction (`work/d128`, decision 12; 2,390 unit tests,
+  typecheck and gates green locally) and the approved privacy sentence
+  (`work/privacy-cloudflare`, decision 9), which ships only with production
+  activation.
 
 Open, by what it waits on:
 
@@ -74,8 +89,10 @@ Open, by what it waits on:
   generator can now size a VCF, VCF.gz or gVCF to the decoded byte ceilings
   the proof measures. Two things found on the way: the schema had one
   `maximum_vcf_bytes` for VCF, VCF.gz and gVCF, so the owner's 2 GiB / 8 GiB
-  pair needed a `maximum_gvcf_bytes` migration before step 9 (written, with
-  its pgTAP proof; applied after the deployment that carries it); and the
+  pair needed a `maximum_gvcf_bytes` migration before step 9 (applied to the
+  Inherit project on 18 September after the deployment that carries it,
+  `docs/evidence/gvcf-ceiling-release-20260918/`; the column stays null until
+  the proof, so no limit moved); and the
   provenance counter files a gVCF's called sites under blocks (D-128). So
   prepared-source Family ancestry, background dispatch, throughput and 100
   genomes a month stay unproved (D-124).
@@ -134,6 +151,33 @@ the recommendation, that is said.
    are green; the owner sets the three Vercel variables
    (`INHERIT_PREPARED_WGS_ENABLED`, `INHERIT_PREPARED_R2_ORIGIN`,
    `INHERIT_PREPARED_R2_BUCKET`) when handed them.
+
+Asked and answered the same day, after the gVCF ceiling release (18 September,
+about 13:55 UTC), with the recommended option first:
+
+9. **Privacy notice:** approved as drafted. The notice will say three
+   infrastructure providers and add, after the Vercel sentence: "Cloudflare
+   runs the private worker that prepares full-genome files and stores the
+   prepared blocks it produces; it never holds your original file, and it
+   works only while that preparation runs." It goes live only with production
+   activation (runbook step 7 before 8); the owner confirms Cloudflare's
+   standard DPA in the dashboard.
+10. **Proof access:** session environment variables. The owner adds the
+    preview branch's URL, anon key and service-role key, the fresh preview
+    signer and a Vercel Protection Bypass token as environment variables of
+    the Claude Code environment (never in chat); the proof is driven from
+    there and production keys never enter the session.
+11. **Cloudflare setup, first tranche:** the owner takes the Workers Paid plan
+    now. Still theirs, not yet taken: the scoped API token with the GitHub
+    environment `cloudflare` and `CLOUDFLARE_DEPLOY_ENABLED`; the Supabase
+    Storage upload limit of at least 8 GiB; the two container secrets after
+    the first deploy.
+12. **D-128:** corrected under the same version strings, confined to gVCF rows
+    that no reader ever counted as calls: a row is a block when it carries
+    `END=`, `SVLEN=`, `LEN`, or `<NON_REF>` with no concrete alternate called;
+    a called site's trailing `<NON_REF>` allele is dropped before the
+    single-base check; a homozygous-reference row with `<NON_REF>` stays what
+    `observed-calls.test.ts` records, never a reference finding.
 
 Production facts read the same day: `private.own_preparation_config` is disabled
 with provider `supabase`, no bucket, `max_job_seconds` 900 and `max_artifact_bytes`

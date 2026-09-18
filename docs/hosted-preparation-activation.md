@@ -141,11 +141,13 @@ file type with the VCF ceiling as the fallback while it is null (so applying
 it changes no limit), and discloses it as `maximumGvcfBytes`;
 `supabase/tests/own_upload_gvcf_ceiling.sql` proves each reader. The app
 accepts the extra disclosure key before the database sends it, so this
-migration is applied *after* the deployment that carries it, the reverse of
-the usual order, with the same preflight, postflight and receipt. Until it is
-applied and `maximum_gvcf_bytes` is set, a gVCF is measured against the VCF
-ceiling; the uploader's limit sentence names the array and VCF ceilings and
-gains a gVCF clause when the two values diverge.
+migration was applied *after* the deployment that carries it, the reverse of
+the usual order, with the same preflight, postflight and receipt: applied to
+the Inherit project on 18 September 2026 (hosted version `20260918134705`,
+`docs/evidence/gvcf-ceiling-release-20260918/`). Until `maximum_gvcf_bytes`
+is set, a gVCF is measured against the VCF ceiling; the uploader's limit
+sentence names the array and VCF ceilings and gains a gVCF clause when the
+two values diverge.
 
 Only after step 8 and that migration: raise `private.upload_authorization_config`
 to the owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active

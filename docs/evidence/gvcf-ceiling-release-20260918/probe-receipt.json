@@ -1,0 +1,77 @@
+{
+ "kind": "gvcf-ceiling production rollback-only probe",
+ "observedAt": "2026-09-18T13:47:39.373673+00:00",
+ "project": "zuvloczwgrayonqabnss",
+ "executedAs": "postgres through the Supabase management SQL API",
+ "probe": "probe.sql",
+ "checks": 13,
+ "passed": 13,
+ "failed": [],
+ "rows": [
+  {
+   "check": "maximum_gvcf_bytes is unset after apply",
+   "outcome": "null",
+   "passed": true
+  },
+  {
+   "check": "the applied gVCF ceiling reads as the VCF ceiling",
+   "outcome": "25165824",
+   "passed": true
+  },
+  {
+   "check": "zero gVCF ceiling refused",
+   "outcome": "23514",
+   "passed": true
+  },
+  {
+   "check": "valid gVCF ceiling accepted then rolled back",
+   "outcome": "probe_rollback",
+   "passed": true
+  },
+  {
+   "check": "maximum_gvcf_bytes still unset after the probe",
+   "outcome": "null",
+   "passed": true
+  },
+  {
+   "check": "disclosure for unknown account refused",
+   "outcome": "42501 not_found",
+   "passed": true
+  },
+  {
+   "check": "gVCF issuance for unknown account refused",
+   "outcome": "42501 not_found",
+   "passed": true
+  },
+  {
+   "check": "unknown declaration refused before authority",
+   "outcome": "22023 invalid_request",
+   "passed": true
+  },
+  {
+   "check": "normalization for unknown file refused",
+   "outcome": "42501 not_found",
+   "passed": true
+  },
+  {
+   "check": "preparation source for unknown file refused",
+   "outcome": "42501 not_found",
+   "passed": true
+  },
+  {
+   "check": "no active upload session created by the probe",
+   "outcome": "0",
+   "passed": true
+  },
+  {
+   "check": "no preparation job created by the probe",
+   "outcome": "0",
+   "passed": true
+  },
+  {
+   "check": "four replaced bodies equal the repository text with definer status and pinned search_path",
+   "outcome": "4",
+   "passed": true
+  }
+ ]
+}
