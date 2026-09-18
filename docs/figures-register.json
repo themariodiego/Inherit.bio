@@ -135,6 +135,104 @@
         "sourceOfTruth": "src/lib/genome/report-evidence.ts",
         "note": "The report list and the report page both show `read N of the M positions this needs` for the same report and both declare `computed:genome/reports`. They computed it separately until this gate was written, and not by the same rule: the page counted `summarizeReportCalls(...).interpreted`, which gives a position whose files disagree the state `conflicting`, while the list counted every outcome whose status is `genotyped` and so counted that position as read. An account whose two files disagree at a report position saw the list claim a position the report itself did not. Both now call `reportCoverage` in this module."
       }
+    ],
+    "family": {
+      "rule": "G8.6 for the Family domain: a figure the side-by-side cell shows for the other adult is the figure that adult's own report page shows for the same report, read in one session from every linked cell of their column and then from the page the cell links to, under both carrier pairs of e2e/figures-two-seed.spec.ts. The keys are the same on both surfaces, so a difference is two readers of one captured result disagreeing.",
+      "surfaces": [
+        "/family/health-picture",
+        "/genome/[subject]/reports/[slug] (the other adult's page, reached from the cell's own link)"
+      ],
+      "repeated": [
+        {
+          "key": "coverage|quality|observed|computed:genome/reports",
+          "name": "a report's position coverage, in the other adult's cell and on their report page",
+          "sourceOfTruth": "src/lib/genome/report-evidence.ts",
+          "note": "Both surfaces compute it with reportCoverage over the captured report. The report page renders it twice, in the per-position ledger and in the provenance panel, so the comparison is of the distinct values rather than of the count."
+        },
+        {
+          "key": "genotype|variant-call or estimate|observed|computed:genome/reports",
+          "name": "the other adult's genotype at each of a report's positions",
+          "sourceOfTruth": "supabase/migrations/20260906143041_own_analysis_generation.sql",
+          "note": "One captured result per file and purpose — private.own_analysis_runs.result, written once at generation and immutable under capture_own_report_catalog_v1 — read by two readers: the side-by-side cell through health_picture_results_v1 (src/lib/family/health-picture-results.ts) and the report page through family_shared_report_results_v1 (src/lib/family/shared-report-results.ts). The cell renders one figure per genotype and the page one per genotyped position, so the comparison is of the sorted letters."
+        }
+      ],
+      "notCollected": "Portrait renders no figure in any reachable state and the two Embryo result pages render none until ingest ships (the census section records both), so nothing of theirs can repeat. The other adult's shared ancestry viewer is a different result under a different grant, not read in this journey because its fixtures carry no ancestry marker; e2e/family-ancestry.spec.ts already holds the five shares it renders equal to the owner's own ancestry page, which is that repeat's agreement."
+    }
+  },
+  "census": {
+    "rule": "G8.3's completeness: every route whose page can put a figure on a surface — measured by scripts/figures-census.ts as an import path from the page to a figure component — is either differenced under two seeds by e2e/figures-two-seed.spec.ts, or recorded here with the reason no figure state of it can render today and the specs that assert zero figures on it. scripts/figures-census.test.ts holds this list to the built application in both directions.",
+    "figureSources": [
+      "src/components/figures/figure.tsx",
+      "src/components/figures/relative-figure.tsx"
+    ],
+    "routes": [
+      {
+        "route": "/family/health-picture",
+        "status": "differenced",
+        "surfaces": [
+          "/family/health-picture"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/ancestry",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/ancestry"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/data",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/data"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/data/browser",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/data/browser?q=rs762551"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/reports",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/reports"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/reports/[slug]",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551"
+        ]
+      },
+      {
+        "route": "/family/portrait/[pairId]",
+        "status": "no-reachable-figure-state",
+        "reason": "Every state this route renders carries no figure: the blocking screen, the paused state, the Tier-2 gate and the result state, whose refusal cards and trait allow-list emit no data-figure-kind. The one figure-bearing block the page imports, the carrier-pair card (carrier-status and natural-frequency), renders only when both adults carry a variant at a shared classified position, and no fixture reaches that state under D-034 (the position is classified work, not test work). e2e/figures-two-seed.spec.ts reads the result state past the gate under both carrier pairs and expects no figure, so the record is read in a browser under two seeds rather than asserted; e2e/portrait.spec.ts asserts the same on every state it renders. When a positive result becomes reachable, this entry must become a differenced one.",
+        "assertedBy": [
+          "e2e/figures-two-seed.spec.ts",
+          "e2e/portrait.spec.ts"
+        ]
+      },
+      {
+        "route": "/embryos/compare",
+        "status": "no-reachable-figure-state",
+        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates a cohort's quality rows or calls, so every cohort renders its blocking, unavailable or processing state and the compare table and QC table the page imports never receive a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
+        "assertedBy": [
+          "e2e/embryos.spec.ts"
+        ]
+      },
+      {
+        "route": "/embryos/[embryoId]",
+        "status": "no-reachable-figure-state",
+        "reason": "The ingest slice is not shipped (G2.6; docs/capability-register.md): no path creates an embryo's quality rows or calls, so the detail page renders its blocking, unavailable or processing state and the QC block it imports never receives a figure. e2e/embryos.spec.ts asserts no figure on each state it renders. This route becomes a differenced entry when the Embryos workstream lands, not before; the census test fails the day a figure can render here without one.",
+        "assertedBy": [
+          "e2e/embryos.spec.ts"
+        ]
+      }
     ]
   }
 }

@@ -1,5 +1,30 @@
 # Test diff register
 
+## The figure census: every figure-capable route is differenced or recorded · 18 September 2026
+
+`scripts/figures-census.ts` and `scripts/figures-census.test.ts` are new: the
+pages that can render a figure are measured from the import graph (every
+`page.tsx` under `src/app`, walked to `figure.tsx` and `relative-figure.tsx`)
+and `docs/figures-register.json` gains a `census` section the test holds to
+that set in both directions — nine routes, six differenced (their surfaces
+found by name in `e2e/figures-two-seed.spec.ts` and required to be instances
+of the route), three with no reachable figure state (a reason of substance and
+specs that carry a zero-figure assertion). Four planted trees prove the walker:
+route derivation with groups erased and slots and private folders skipped;
+alias, relative, re-exported and dynamic imports reaching a figure and a cycle
+terminating without one; the three import forms resolving only what exists on
+disk; and the surface-to-route matcher. `e2e/figures-two-seed.spec.ts`'s Family
+journey now also grants Portrait in both directions, acknowledges Portrait in
+each adult's own session, and past the one Tier-2 gate reads the pair's
+Portrait result state under both carrier pairs, expecting no figure — the
+register's record for that route read in a browser under two seeds. The same
+journey then reads G8.6's Family half: every linked cell of the other adult's
+column, then the report page it links to, comparing the
+`computed:genome/reports` figures both show (coverage as a value, genotypes as
+sorted letters) under both pairs, against the new `crossSurface.family`
+section of the register. No existing assertion moved; the health-picture
+comparison is unchanged.
+
 ## Every pre-existing route held to its disposition (G2.3) · 18 September 2026
 
 `docs/route-dispositions.json` is new: the 34 routes `src/app` served at the

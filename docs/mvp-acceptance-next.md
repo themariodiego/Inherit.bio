@@ -80,6 +80,14 @@ Released:
   committed ledger held by the route gate and asserted over HTTP
   (`docs/route-dispositions.json`, gate check 6, `e2e/route-dispositions.spec.ts`);
   the row flips on the spec's first green CI run.
+- G8.3 and G8.2, 18 September (evening): the figure census
+  (`scripts/figures-census.ts`, the `census` section of
+  `docs/figures-register.json`) measures every figure-capable route from the
+  import graph and holds each to a two-seed proof or a recorded reason; the
+  two-seed spec reads the Portrait result state under both carrier pairs, and
+  G8.6's Family half in the same journey (the other adult's cells against
+  their own report pages, `crossSurface.family`). The three rows flip on the
+  spec's first green CI run.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
