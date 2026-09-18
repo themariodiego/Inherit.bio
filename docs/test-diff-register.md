@@ -1,5 +1,26 @@
 # Test diff register
 
+## Keep-alive race on the local app servers · 18 September 2026
+
+Three integration runs died with `socket hang up` from Playwright's Node-side
+request client against the served app (portrait 2026-09-11, family health
+picture and embryos 2026-09-17/18), each on one request right after a browser
+step, each on a tree that passed elsewhere and passed again on one re-run.
+Read at source in the bundled Playwright 1.62 client: one process-wide
+keep-alive agent with no idle timeout and zero retries by default, so the
+server is always the side that closes an idle connection, and Next's `start`
+closes it at Node's 5-second default. A request dispatched in the same
+event-loop turn in which that close arrives is the failure. Every local app
+server now starts with `--keepAliveTimeout 65000`: the CI launcher
+(`scripts/ci-browser/server.mts`) and the three Playwright web servers of the
+local path, with the config test pinning the command. The Lighthouse run in
+CI asserts that the served document advertises `Keep-Alive: timeout=65`, so a
+launcher that loses the flag fails there rather than intermittently. No
+assertion, timeout or retry policy of the suite changed; `retries: 0` and the
+no-skip, no-retry gate stand. This moves the closing boundary from six
+seconds to sixty-six rather than removing it, and the G1.5 row keeps the
+record of each occurrence.
+
 ## Lighthouse gate on integration CI · 17 September 2026
 
 G1.16 stayed NO for one reason: the Lighthouse contract of G1.14 had run only
@@ -17,10 +38,17 @@ changed; the gate's 13 unit checks are untouched.
 permitted locally and on the disposable CI job, and refused with selectors,
 combined with the suite, or under a non-disposable CI. A new CI step,
 "Lighthouse gate on the isolated runtime", follows the full browser suite.
-No local runtime was available in this session, so its first execution is
-the CI run of the pull request that carries it; the G1.16 row of
-`docs/acceptance-matrix.md` records that run and its scores when it closes,
-and a score below the contract on the runner is recorded, never lowered.
+No local runtime was available in this session. Its first execution failed
+twice before it ran: the run had a runtime, a proxy and a database but no
+app, because in CI the main app variant is started by the suite's Playwright
+web server, not by the runtime container. The run now starts that same
+launcher with the same configuration (`scripts/ci-browser-app-environment.ts`,
+unit-tested against the container's own validator) and waits for the same
+document. On pull request run `35288013760` at `8c73072` the step then passed
+on the hosted runner: landing 95, 95, 96; signed-in overview 93, 96, 96;
+exact-source report 92, 92, 92; accessibility 100 on all nine navigations;
+one fixture upload through the real local provider. The G1.16 row records
+the integration run. A score below the contract is recorded, never lowered.
 
 ## Storage-prefix attacks in every bucket · 17 September 2026
 
