@@ -9575,6 +9575,32 @@
       },
       "userAccountRequestCookieOrPrivateData": "forbidden"
     },
+    "upload-jwks-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "keys": "exactly-the-current-upload-signer-public-P-256-JWK-with-kty-crv-kid-x-y-alg-ES256-and-use-sig-and-no-private-member"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "source": "src/lib/uploads/storage-upload-token.ts#uploadSignerPublicJwk",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "public, max-age=300"
+      },
+      "unavailable": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "unavailable"
+          }
+        },
+        "headers": {
+          "Cache-Control": "no-store"
+        }
+      },
+      "userAccountRequestCookieOrPrivateData": "forbidden"
+    },
     "machine-job-result-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -12197,6 +12223,9 @@
       "public.security": [
         "security-text-v1"
       ],
+      "public.upload-jwks": [
+        "upload-jwks-v1"
+      ],
       "auth.callback": [
         "auth-callback-v1"
       ],
@@ -14598,6 +14627,24 @@
       "cachePolicy": "public-versioned-contact-only-no-user-data",
       "disposition": "kept",
       "successResponseContract": "security-text-v1"
+    },
+    {
+      "id": "public.upload-jwks",
+      "path": "/.well-known/inherit-upload-jwks.json",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "public",
+      "methods": [
+        "GET"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "query": "forbidden"
+      },
+      "stateProfile": "endpoint",
+      "cachePolicy": "public-signer-public-key-only-no-user-data",
+      "disposition": "kept",
+      "successResponseContract": "upload-jwks-v1"
     },
     {
       "id": "auth.callback",

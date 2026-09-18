@@ -1,5 +1,24 @@
 # Test diff register
 
+## Upload signer public key endpoint · 18 September 2026
+
+`GET /.well-known/inherit-upload-jwks.json` serves the upload signer's public
+P-256 key (`kid`, `x`, `y`, `alg` ES256, `use` sig) so the prepared-artifact
+gateway's `SIGNING_PUBLIC_KEYS` binding can be filled and cross-checked at
+deploy time without any private material leaving Vercel.
+`storage-upload-token.ts#uploadSignerPublicJwk` returns the public half only
+after the same private-scalar pair check that minting performs.
+`storage-upload-token.test.ts` adds two cases: the export carries no `d`
+member and its point verifies a token the signer just minted; a missing signer
+or a mismatched pair is unavailable. `route.test.ts` beside the handler adds
+five cases: a cacheable 200 with `nosniff` and exactly one key, and a 503 with
+`no-store` for no signer, malformed JSON, a public-only key and a mismatched
+pair. The register gains `public.upload-jwks` with contract `upload-jwks-v1`,
+its binding, and the public-mode ledger row (`register-contract-divergence`),
+so `gate:routes` and the correspondence suite pass with the new endpoint
+counted. A public key is not a secret; the secret gate passes with the change
+staged. Nothing here enables or deploys the gateway.
+
 ## Jurisdiction chokepoint gate at call level · 18 September 2026
 
 `scripts/jurisdiction-enforcement.test.ts` accepted an import of

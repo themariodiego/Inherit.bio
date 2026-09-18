@@ -58,6 +58,20 @@ function signingKey() {
   return { kid: value.kid, key: crypto.createPrivateKey({ key: value, format: "jwk" }) };
 }
 
+/** The public half of the current signer, for the prepared-artifact gateway's
+ * `SIGNING_PUBLIC_KEYS` binding (`workers/prepared-artifacts`). No private
+ * member is returned, and it is served only after the same pair check that
+ * minting performs. */
+export function uploadSignerPublicJwk(): {
+  kty: "EC"; crv: "P-256"; kid: string; x: string; y: string; alg: "ES256"; use: "sig";
+} {
+  try {
+    const { kid } = signingKey();
+    const value = signingKeySchema.parse(JSON.parse(process.env.INHERIT_UPLOAD_SIGNING_JWK ?? ""));
+    return { kty: "EC", crv: "P-256", kid, x: value.x, y: value.y, alg: "ES256", use: "sig" };
+  } catch { throw new UploadTokenUnavailable(); }
+}
+
 /** Internal prepared-object capability. Separate audience; never an Auth token.
  * Callers must have checked the exact registered claim/member/disposition. */
 export function mintPreparedObjectCapability(claim: {

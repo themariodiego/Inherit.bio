@@ -62,6 +62,69 @@ rather than removing it. The Lighthouse report page scored exactly the
 threshold on one integration navigation (median 91). `sequence.plus.bio`
 still aliases the Inherit production deployment.
 
+## Owner decisions · 18 September 2026 (priority 1: single-sample VCF, VCF.gz and gVCF)
+
+Asked and answered in chat on 18 September 2026 as selectable decisions with the
+recommended option first. The owner's choice is recorded; where it differs from
+the recommendation, that is said.
+
+1. **Hosted execution home: Cloudflare Containers** in the existing Cloudflare
+   account (the one that already holds R2, account `165b6ad801f990d009e90b64b39f87dd`),
+   one `standard-1` instance woken by a five-minute cron and running
+   `pnpm worker:prepared --once` per wake. Cloudflare becomes a processor of
+   genotype data, so the privacy notice must name it before activation, with
+   wording the owner approves. Set aside: Vercel functions (800-second wall and a
+   redesign), an owner-run host, GitHub Actions (shared runners for genomic data).
+2. **Deployment credential:** a Cloudflare API token scoped to Workers, Containers
+   and R2 edits, held as GitHub environment secrets (`cloudflare`:
+   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`); a workflow deploys from main
+   only. The two container runtime secrets (the service-role key and
+   `INHERIT_UPLOAD_SIGNING_JWK`) are set by the owner in Cloudflare. No token
+   enters chat or a session.
+3. **Budget:** up to $30 a month beyond the existing Vercel Pro, Supabase Pro and
+   R2 free allowances (the recommendation was $15; the owner chose $30).
+4. **Admission ceilings for this release:** VCF and VCF.gz 2 GiB, gVCF 8 GiB (the
+   recommendation was 1 GiB and 4 GiB; the owner chose the larger pair). Raised
+   only after the hosted proof passes at those sizes with synthetic files, and
+   after the owner lifts the Supabase Storage upload limit in the dashboard.
+   Production today, read 2026-09-18 from `private.upload_authorization_config`:
+   24 MiB VCF, 24 MiB array, 128 MiB per account, 2 active uploads.
+5. **Monthly capacity:** a hard, database-enforced cap of 100 preparations per
+   UTC calendar month; the 101st is refused at admission with plain wording; the
+   number is a private configuration value the owner can raise.
+6. **Proof stack:** a temporary preview stack (a Supabase preview branch of the
+   Inherit project, a Vercel preview deployment, an `inherit-prepared-preview`
+   bucket, a preview gateway and container), synthetic files only, deleted
+   afterwards. No production data.
+7. **Withdrawal (D-126):** `source.revocation-7d` is folded into immediate
+   deletion through the existing paths; the register wording becomes
+   "immediately, and within 7 days at the latest"; every trigger's executor is
+   verified and missing ones added; no separate consent screen. The G5.3a
+   exception (derived ancestry rows are kept) stands.
+8. **Activation:** autonomous production activation once the hosted proof and CI
+   are green; the owner sets the three Vercel variables
+   (`INHERIT_PREPARED_WGS_ENABLED`, `INHERIT_PREPARED_R2_ORIGIN`,
+   `INHERIT_PREPARED_R2_BUCKET`) when handed them.
+
+Production facts read the same day: `private.own_preparation_config` is disabled
+with provider `supabase`, no bucket, `max_job_seconds` 900 and `max_artifact_bytes`
+100 MiB; `private.own_original_retention_config` has been enabled since
+2026-09-13 14:32 UTC (`applies_after`), so the one-calendar-month original
+retention applies to every prepared-source original once preparation is enabled;
+no Storage bucket carries a per-bucket file size limit; the Cloudflare account
+holds no Inherit bucket or Worker (only another product's, which must not be
+reused). Neither wrangler credentials nor a Cloudflare token exist in the
+session, and there is no Docker here, so image builds and pgTAP run only in CI.
+The capacity trial of 8 September took 71 seconds for a 5 MB synthetic source, so
+a full-size file needs a long-lived host rather than a function.
+
+Owner actions outstanding before the hosted proof can run: enable the Workers
+Paid plan; create the scoped token and the `cloudflare` GitHub environment with
+its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable; raise the Supabase
+Storage upload limit to at least 8 GiB; later, set the two container secrets and,
+at activation, the three Vercel variables, and approve the privacy sentence that
+names Cloudflare.
+
 ## Resumption handoff · 10 September 2026, night
 
 Acceptance is **24/65**. G1.13a moved, on CI run 353 rather than on an

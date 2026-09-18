@@ -13,7 +13,8 @@
         "auth.callback",
         "auth.forgot-password-submit",
         "auth.sign-up-submit",
-        "public.security"
+        "public.security",
+        "public.upload-jwks"
       ],
       "why": "Every other endpoint auth mode resolves through contractDefaults[\"endpoint:<mode>\"] to an authContracts entry. \"public\" deliberately has no such default: the mode means no authentication, so there is no auth contract to point at. It is listed here rather than special-cased in the test so that the day a public endpoint does acquire a contract, or the day this stops being the only unauthenticated mode, the list has to be revisited.",
       "closing": "Nothing to close. This entry exists so the exemption is written down and counted."
