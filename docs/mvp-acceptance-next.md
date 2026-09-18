@@ -68,9 +68,17 @@ Released:
   passed.
 - Route-state matrix, 18 September (evening): six My Genome pairs proven in a
   browser and the ratchet lowered 25 → 19 (`e2e/genome-coverage-states.spec.ts`
-  and one case in `e2e/report-skeleton.spec.ts`); two pairs recorded as
-  findings for the owner rather than proven on a shared render
-  (`docs/protocol/brief-corrections-proposed.md`, "Measured 2026-09-18").
+  and one case in `e2e/report-skeleton.spec.ts`); then two Family pairs,
+  19 → 17 (`/family/[person] complete` in `e2e/family-health-picture.spec.ts`,
+  `/family/[person] not-covered` in `e2e/family-coverage-states.spec.ts`);
+  three findings recorded for the owner rather than proven on a shared render
+  (`docs/protocol/brief-corrections-proposed.md`, "Measured 2026-09-18"), one of
+  them a defect: the Family hub card reads "No shared results yet" for a shared,
+  completed file that covers nothing (D-129, open; a readiness function change).
+- G2.3, 18 September (evening): the pre-existing routes' dispositions are a
+  committed ledger held by the route gate and asserted over HTTP
+  (`docs/route-dispositions.json`, gate check 6, `e2e/route-dispositions.spec.ts`);
+  the row flips on the spec's first green CI run.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
@@ -112,10 +120,11 @@ Open, by what it waits on:
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
   embryo ingest (G2.6, G4.2, G4.5, G8.3, G8.6, G5.9); the route-state matrix
-  (G1.7, G1.12, G2.2: 19 pairs open after 18 September — nine wait on embryo
+  (G1.7, G1.12, G2.2: 17 pairs open after 18 September — nine wait on embryo
   ingest, two on the Family disclosure ruling, two Portrait pairs on a
-  classified position, four Family pairs are test work, and two are owner
-  decisions recorded in the corrections document); task-depth instrumentation and the four Overview boxes
+  classified position, and four are owner decisions recorded in the
+  corrections document: the hub's two, the ancestry page's partial state and
+  the data page's not-covered state); task-depth instrumentation and the four Overview boxes
   that land on a domain index (G2.4); density enforcement where the product
   misses the rule (G2.5); rights routes (G5.4).
 

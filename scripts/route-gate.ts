@@ -27,6 +27,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *     declared prefix has no filename contract, retention id or disposition.
  *  4. Every (route, state) pair the register requires is proven by a browser
  *     test, counted as a ratchet so the unproven half can only shrink.
+ *  6. Every route the baseline commit served has the one disposition the
+ *     register records (G2.3): `docs/route-dispositions.json` lists them,
+ *     measured by git rather than typed, and this gate holds each entry to
+ *     the register — a page route can never be gone, a redirect's successor
+ *     is the one the register names, a gone endpoint carries an ADR and still
+ *     has a handler to answer 410. What a request actually gets is
+ *     `e2e/route-dispositions.spec.ts`.
  *
  * Checks 1 to 3 compare against `docs/route-divergence.json` in both
  * directions: an unlisted divergence fails, and a listed one that no longer
@@ -43,6 +50,7 @@ const APP = "src/app";
 const REGISTER = "docs/route-register.json";
 const LEDGER = "docs/route-divergence.json";
 const BRIEF = "docs/inherit-v2-brief.md";
+const DISPOSITIONS = "docs/route-dispositions.json";
 const MIGRATIONS = "supabase/migrations";
 const BROWSER_TESTS = "e2e";
 
@@ -538,7 +546,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 19;
+const UNPROVEN_ROUTE_STATE_PAIRS = 17;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -549,6 +557,8 @@ interface RegisterEntry {
   kind: "page" | "endpoint" | "redirect";
   methods?: string[];
   expectedStatus?: number;
+  /** `kept`, or a redirect's `{ redirectToRoute, params }`. */
+  disposition?: unknown;
   stateProfile?: string;
   /** States this ONE route cannot reach, though its profile supports them. */
   notApplicableStates?: Record<string, string>;
@@ -563,6 +573,45 @@ interface StateProfile {
   notApplicable?: Record<string, string>;
 }
 
+/** One route the baseline commit served, as `docs/route-dispositions.json` records it. */
+interface DispositionEntry {
+  path: string;
+  registerId: string;
+  kind: string;
+  auth?: string;
+  /** Required for `gone`: the ADR that retired the handler. */
+  adr?: string;
+  disposition: "kept" | "gone" | { redirect: string; expectedStatus?: number };
+}
+
+interface DispositionLedger {
+  baselineSha?: string;
+  routes?: DispositionEntry[];
+}
+
+/**
+ * The concrete successor a registered redirect names: constant parameters
+ * substituted, a parameter carried from the source route kept as a segment,
+ * so `/reports/[slug]` resolves to `/genome/me/reports/[slug]`.
+ */
+function registeredSuccessor(
+  entry: RegisterEntry,
+  byId: Map<string, RegisterEntry>,
+): { path: string; target: RegisterEntry } | null {
+  const disposition = entry.disposition as { redirectToRoute?: string; params?: Record<string, unknown> } | undefined;
+  const target = disposition?.redirectToRoute ? byId.get(disposition.redirectToRoute) : undefined;
+  if (!target) return null;
+  let resolved = target.path;
+  for (const [name, spec] of Object.entries(disposition?.params ?? {})) {
+    if (spec && typeof spec === "object" && "const" in spec) {
+      resolved = resolved.replace(`[${name}]`, String((spec as { const: unknown }).const));
+    } else if (typeof spec === "string" && spec.startsWith("source-route-param.")) {
+      resolved = resolved.replace(`[${name}]`, `[${spec.slice("source-route-param.".length)}]`);
+    }
+  }
+  return { path: resolved, target };
+}
+
 interface BuiltRoute {
   url: string;
   kind: "page" | "endpoint";
@@ -571,6 +620,8 @@ interface BuiltRoute {
 
 export interface RouteGateResult {
   failures: string[];
+  /** Routes the baseline commit served, each held to its registered disposition. */
+  preExistingRouteCount: number;
   builtRouteCount: number;
   matchedEndpointCount: number;
   registeredRedirectCount: number;
@@ -1172,6 +1223,103 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     );
   }
 
+  // 6. Every pre-existing route (G2.3). The ledger lists what the baseline
+  // commit served, and each entry is held to the register in both directions:
+  // an entry the register does not carry, a kind or disposition that
+  // disagrees, a page route marked gone, a redirect whose successor is not the
+  // one the register names, and a gone endpoint without an ADR or without a
+  // handler left to answer 410 each fail.
+  // A missing ledger is a failure the gate can name, not a crash: an empty
+  // repository must read as failing rather than as having nothing to check.
+  let dispositions: DispositionLedger = {};
+  try {
+    dispositions = JSON.parse(read(DISPOSITIONS)) as DispositionLedger;
+  } catch {
+    failures.push(`${DISPOSITIONS} is missing or unreadable; G2.3 needs the ledger of pre-existing routes`);
+  }
+  const routesById = new Map(register.routes.map((entry) => [entry.id, entry]));
+  const routesByPath = new Map(register.routes.map((entry) => [entry.path, entry]));
+  const listedDispositionPaths = new Set<string>();
+  let preExistingRouteCount = 0;
+  for (const entry of dispositions.routes ?? []) {
+    preExistingRouteCount += 1;
+    if (listedDispositionPaths.has(entry.path)) {
+      failures.push(`pre-existing route: ${entry.path} is listed twice in ${DISPOSITIONS}`);
+    }
+    listedDispositionPaths.add(entry.path);
+    const registered = routesByPath.get(entry.path);
+    if (!registered) {
+      failures.push(
+        `pre-existing route: ${entry.path} is not in the register. G2.3 requires every route ` +
+          `the baseline served to be registered with exactly one disposition.`,
+      );
+      continue;
+    }
+    if (registered.id !== entry.registerId) {
+      failures.push(`pre-existing route: ${entry.path} is registered as ${registered.id}; the ledger says ${entry.registerId}`);
+    }
+    if (registered.kind !== entry.kind) {
+      failures.push(`pre-existing route: ${entry.path} is registered as a ${registered.kind}; the ledger says ${entry.kind}`);
+    }
+    const disposition = entry.disposition;
+    if (disposition === "kept") {
+      if (registered.disposition !== "kept") {
+        failures.push(
+          `pre-existing route: ${entry.path} is kept in the ledger; the register says ` +
+            `${JSON.stringify(registered.disposition)}`,
+        );
+      }
+    } else if (disposition === "gone") {
+      if (registered.kind !== "endpoint") {
+        failures.push(
+          `pre-existing route: ${entry.path} is a ${registered.kind} route marked gone; G2.3 allows gone ` +
+            `only for API handlers, form endpoints and storage prefixes with no successor, and a ` +
+            `pre-existing page route is kept or redirected`,
+        );
+      }
+      if (registered.disposition !== "gone") {
+        failures.push(
+          `pre-existing route: ${entry.path} is gone in the ledger; the register says ` +
+            `${JSON.stringify(registered.disposition)}`,
+        );
+      }
+      if (!entry.adr) failures.push(`pre-existing route: ${entry.path} is gone without an ADR; G2.3 requires one`);
+      if (!built.some((route) => route.url === entry.path)) {
+        failures.push(`pre-existing route: ${entry.path} is gone but has no handler left to answer 410 with an explanatory body`);
+      }
+    } else if (disposition && typeof disposition === "object" && typeof disposition.redirect === "string") {
+      if (registered.kind !== "redirect") {
+        failures.push(`pre-existing route: ${entry.path} redirects in the ledger; the register kind is ${registered.kind}`);
+      } else {
+        const successor = registeredSuccessor(registered, routesById);
+        if (successor === null) {
+          failures.push(`pre-existing route: ${entry.path} redirects to a route the register does not name`);
+        } else {
+          if (successor.path !== disposition.redirect) {
+            failures.push(
+              `pre-existing route: ${entry.path} redirects to ${disposition.redirect} in the ledger; ` +
+                `the register names ${successor.path}`,
+            );
+          }
+          if (successor.target.disposition !== "kept") {
+            failures.push(`pre-existing route: ${entry.path} redirects to ${successor.path}, which is not a kept route`);
+          }
+        }
+        if ((disposition.expectedStatus ?? 308) !== (registered.expectedStatus ?? 308)) {
+          failures.push(
+            `pre-existing route: ${entry.path} expects ${disposition.expectedStatus ?? 308} in the ledger; ` +
+              `the register expects ${registered.expectedStatus ?? 308}`,
+          );
+        }
+      }
+    } else {
+      failures.push(`pre-existing route: ${entry.path} has no recognised disposition (kept, gone, or { redirect })`);
+    }
+  }
+  if (preExistingRouteCount < 30) {
+    failures.push(`${DISPOSITIONS} lists ${preExistingRouteCount} pre-existing routes, expected at least 30`);
+  }
+
   // Floor guards. A walker that silently found nothing must not read as a
   // clean product, so each input is required to be roughly the size it is.
   if (built.length < 100) failures.push(`route walker found ${built.length} built routes, expected over 100`);
@@ -1184,6 +1332,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
 
   return {
     failures,
+    preExistingRouteCount,
     builtRouteCount: built.length,
     matchedEndpointCount,
     registeredRedirectCount: registeredRedirects.length,
@@ -1209,6 +1358,7 @@ async function main() {
   console.log(
     `route gate passed: ${result.matchedEndpointCount} endpoint method contracts, ` +
       `${result.registeredRedirectCount} registered redirects, ${result.checkedKindCount} route kinds, ` +
+      `${result.preExistingRouteCount} pre-existing routes with a verified disposition, ` +
       `${result.declaredBucketCount} declared ` +
       `storage buckets, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
       `by ${result.browserTestTitleCount} browser tests ` +

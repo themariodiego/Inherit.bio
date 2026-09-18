@@ -1,0 +1,303 @@
+{
+  "purpose": "Every route the application served at the register's baseline commit, with the one disposition the register records for it — kept, or a redirect to a named successor — so that G2.3's \"every pre-existing route has a verified kept/redirect/gone disposition\" is a list a gate compares rather than a sentence. The list was measured from the baseline commit itself (git ls-tree of src/app at baselineSha), never typed from memory, and scripts/route-gate.ts holds every entry against docs/route-register.json in both directions: an entry the register does not carry, a register disposition that disagrees, a page route marked gone, or a redirect whose successor is not a registered kept route fails the gate. e2e/route-dispositions.spec.ts asserts each disposition over HTTP.",
+  "rule": "Brief G2.3: pre-existing user-facing page routes must be kept or redirect with a 308 to a named successor and may never 404 or be gone; gone is available only to API handlers, form endpoints and storage prefixes with no successor, which must return 410 with an explanatory body and carry an ADR. No pre-existing route is gone today, so the gone branch of the gate is enforced and exercised only by its planted test.",
+  "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
+  "measuredOn": "2026-09-18",
+  "listingSha256": "4f5e2523e5593f8d58ea96c0ffb790e736b1233ad9294165355e2883dc6e4482",
+  "listingNote": "sha256 of the exact output of `git ls-tree -r --name-only <baselineSha> src/app`, so the measurement can be repeated on any checkout that carries the commit; CI checks out at depth 1 and cannot, which is why the list is committed rather than recomputed.",
+  "routes": [
+    {
+      "path": "/",
+      "sourceFile": "src/app/(marketing)/page.tsx",
+      "registerId": "marketing.home",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/about",
+      "sourceFile": "src/app/(marketing)/about/page.tsx",
+      "registerId": "marketing.about",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/ancestry",
+      "sourceFile": "src/app/(app)/ancestry/page.tsx",
+      "registerId": "legacy.ancestry",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/genome/me/ancestry",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/api/account/delete",
+      "sourceFile": "src/app/api/account/delete/route.ts",
+      "registerId": "api.account-delete",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/browse/region",
+      "sourceFile": "src/app/api/browse/region/route.ts",
+      "registerId": "api.browse-region",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/chat",
+      "sourceFile": "src/app/api/chat/route.ts",
+      "registerId": "api.chat",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/export",
+      "sourceFile": "src/app/api/export/route.ts",
+      "registerId": "api.export",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/files/[id]/download",
+      "sourceFile": "src/app/api/files/[id]/download/route.ts",
+      "registerId": "api.file-download",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/files/[id]/process",
+      "sourceFile": "src/app/api/files/[id]/process/route.ts",
+      "registerId": "api.file-process",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/jobs/annotation-refresh",
+      "sourceFile": "src/app/api/jobs/annotation-refresh/route.ts",
+      "registerId": "jobs.annotation-refresh",
+      "kind": "endpoint",
+      "auth": "method-specific",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/jobs/research-publish",
+      "sourceFile": "src/app/api/jobs/research-publish/route.ts",
+      "registerId": "jobs.research-publish",
+      "kind": "endpoint",
+      "auth": "jobs-secret",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/jobs/research-refresh",
+      "sourceFile": "src/app/api/jobs/research-refresh/route.ts",
+      "registerId": "jobs.research-refresh",
+      "kind": "endpoint",
+      "auth": "method-specific",
+      "disposition": "kept"
+    },
+    {
+      "path": "/api/llm/settings",
+      "sourceFile": "src/app/api/llm/settings/route.ts",
+      "registerId": "api.llm-settings",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/callback",
+      "sourceFile": "src/app/auth/callback/route.ts",
+      "registerId": "auth.callback",
+      "kind": "endpoint",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/forgot-password",
+      "sourceFile": "src/app/auth/forgot-password/page.tsx",
+      "registerId": "auth.forgot-password",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/reset-password",
+      "sourceFile": "src/app/auth/reset-password/page.tsx",
+      "registerId": "auth.reset-password",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/sign-in",
+      "sourceFile": "src/app/auth/sign-in/page.tsx",
+      "registerId": "auth.sign-in",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/sign-out",
+      "sourceFile": "src/app/auth/sign-out/route.ts",
+      "registerId": "auth.sign-out",
+      "kind": "endpoint",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/auth/sign-up",
+      "sourceFile": "src/app/auth/sign-up/page.tsx",
+      "registerId": "auth.sign-up",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/browse",
+      "sourceFile": "src/app/(app)/browse/page.tsx",
+      "registerId": "legacy.browse",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/genome/me/data/browser",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/changelog",
+      "sourceFile": "src/app/(marketing)/changelog/page.tsx",
+      "registerId": "marketing.changelog",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/chat",
+      "sourceFile": "src/app/(app)/chat/page.tsx",
+      "registerId": "legacy.chat",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/copilot/me",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/dashboard",
+      "sourceFile": "src/app/(app)/dashboard/page.tsx",
+      "registerId": "legacy.dashboard",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/overview",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/legal/deceased",
+      "sourceFile": "src/app/(marketing)/legal/deceased/page.tsx",
+      "registerId": "legal.deceased",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/legal/gina",
+      "sourceFile": "src/app/(marketing)/legal/gina/page.tsx",
+      "registerId": "legal.gina",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/legal/law-enforcement",
+      "sourceFile": "src/app/(marketing)/legal/law-enforcement/page.tsx",
+      "registerId": "legal.law-enforcement",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/legal/research-consent",
+      "sourceFile": "src/app/(marketing)/legal/research-consent/page.tsx",
+      "registerId": "legal.research-consent",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/privacy",
+      "sourceFile": "src/app/(marketing)/privacy/page.tsx",
+      "registerId": "legal.privacy",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/providers",
+      "sourceFile": "src/app/(marketing)/providers/page.tsx",
+      "registerId": "marketing.providers",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/reports",
+      "sourceFile": "src/app/(app)/reports/page.tsx",
+      "registerId": "legacy.reports",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/genome/me/reports",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/reports/[slug]",
+      "sourceFile": "src/app/(app)/reports/[slug]/page.tsx",
+      "registerId": "legacy.report",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/genome/me/reports/[slug]",
+        "expectedStatus": 308
+      }
+    },
+    {
+      "path": "/settings",
+      "sourceFile": "src/app/(app)/settings/page.tsx",
+      "registerId": "settings.index",
+      "kind": "page",
+      "auth": "authenticated",
+      "disposition": "kept"
+    },
+    {
+      "path": "/terms",
+      "sourceFile": "src/app/(marketing)/terms/page.tsx",
+      "registerId": "legal.terms",
+      "kind": "page",
+      "auth": "public",
+      "disposition": "kept"
+    },
+    {
+      "path": "/uploads",
+      "sourceFile": "src/app/(app)/uploads/page.tsx",
+      "registerId": "legacy.uploads",
+      "kind": "redirect",
+      "auth": "authenticated",
+      "disposition": {
+        "redirect": "/files",
+        "expectedStatus": 308
+      }
+    }
+  ]
+}

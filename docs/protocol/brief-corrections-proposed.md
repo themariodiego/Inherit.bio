@@ -1208,7 +1208,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 19 unproven pairs stand
+## Where the 17 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1234,8 +1234,9 @@ a new state and proved it in the same change.
 | Closed by a proof | 5 | `/family/[person]`, `/family/health-picture`, `/overview awaiting-choice` (a ninth state id, declared and proven together), `/settings/copilot complete`, `/genome/[subject]/reports complete` |
 | Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
 | Closed by a proof, 2026-09-18 | 6 | `/overview complete`, `/overview not-covered`, `/genome/[subject]/reports not-covered`, `/genome/[subject]/data/browser not-covered`, `/genome/[subject]/data partial-coverage`, `/genome/[subject]/reports/[slug] partial-coverage` — `e2e/genome-coverage-states.spec.ts` and one case added to `e2e/report-skeleton.spec.ts`, each through the real upload and generation on a synthetic file chosen for what it covers |
-| **Genuinely open** | **19** | test work, and two findings put to the owner below |
-| **Total unproven** | **19** | |
+| Closed by a proof, 2026-09-18 (evening) | 2 | `/family/[person] complete` (`e2e/family-health-picture.spec.ts`, on the fixture its `complete` proof already built) and `/family/[person] not-covered` (`e2e/family-coverage-states.spec.ts`: the real invitation, acceptance, upload and permission journey with a file that covers nothing) |
+| **Genuinely open** | **17** | test work, and the findings put to the owner below |
+| **Total unproven** | **17** | |
 
 **Nothing in this number is a register correction any more.** The open count
 and the total are now the same figure, which is the point: every remaining
@@ -1256,7 +1257,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 19 that are open, none waits on item 11 any more
+### And of the 17 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1268,9 +1269,9 @@ actually waits on.
 
 | state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 6 | three embryo pairs wait on ingest; `/family` and `/family/[person]` are test work through the two-account journey with a file that covers nothing; `/genome/[subject]/data` is the finding below |
-| `partial-coverage` | 6 | three embryo pairs wait on ingest; `/family` is test work; `/family/portrait/[pairId]` waits on a classified position (D-034); `/genome/[subject]/ancestry` is the finding below |
-| `complete` | 5 | three embryo pairs wait on ingest; `/family/[person]` is test work with every purpose granted; `/family/portrait/[pairId]` waits on a classified position (D-034) |
+| `not-covered` | 5 | three embryo pairs wait on ingest; `/family` is the hub finding below; `/genome/[subject]/data` is the finding below |
+| `partial-coverage` | 6 | three embryo pairs wait on ingest; `/family` is the hub finding below; `/family/portrait/[pairId]` waits on a classified position (D-034); `/genome/[subject]/ancestry` is the finding below |
+| `complete` | 4 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` waits on a classified position (D-034) |
 | `processing` | 2 | a product branch that does not exist, and the sentence that would create it is a disclosure decision (below) — not a ruling on the id |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
@@ -1325,11 +1326,36 @@ than proven on a render that already carries another state's title:
   size is a render neither of the other two titles ever had.
 
 The rest is as the table says: nine embryo pairs wait on ingest, the two
-`processing` pairs on the disclosure ruling above, the two Portrait pairs on a
-classified position, and four Family pairs (`/family not-covered` and
-`partial-coverage`, `/family/[person] complete` and `not-covered`) are test
-work through the two-account journey — `complete` with every purpose granted,
-`not-covered` with a file that covers nothing.
+`processing` pairs on the disclosure ruling above, and the two Portrait pairs
+on a classified position.
+
+**Two Family pairs proven the same evening, 19 → 17, and the hub's two are a
+third finding.** `/family/[person] complete` was implemented and untitled on
+the health-picture fixture (both report layers granted, B's file reaching one
+layer and saying in words that it covers none of the other), and
+`/family/[person] not-covered` is proven through the whole two-account journey
+with a file that covers nothing: both granted layers carry the none-covered
+sentence and list nothing, with the cause established from B's prepared file
+and zero positions read. **`/family not-covered` and `/family
+partial-coverage` are not states the hub renders, and measuring the first
+found a defect.** Its card knows five things about a person — paused,
+waiting for a grant, ready, results awaited, no file — and nothing about what
+the shared file covers. Worse than indistinguishable: on the not-covered
+journey's record the card reads "No shared results yet", the line that means
+a result is still to come, because the card's readiness asks whether any
+COVERED report exists (`hasReports` in the shared-report capture is
+`exists(... item->'covered' = true)`), so a completed run that reaches no
+report is reported to the other adult as not having happened. The new spec
+pins that misreading rather than endorsing it, and it is filed as **D-129**:
+the honest card for a completed run is "Reports ready" whatever it covers,
+with the person page saying past the gate that the file covers none of the
+reports, as it already does. The permission reading of `partial-coverage` is
+a per-person fact the card already carries as its own state, and the coverage
+reading has nothing on the hub to attach to. Two honest ways to close the
+pairs, the owner's choice as above: waive both for this route with this
+reason once D-129 is fixed, or decide that a card should name coverage,
+which is a product sentence about another adult's file and therefore the
+same disclosure question the two `processing` pairs wait on.
 
 **The two `processing` pairs cannot be attempted today, and the reason is a
 branch rather than a definition.** This line said two could
