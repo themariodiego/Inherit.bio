@@ -88,6 +88,11 @@ Released:
   G8.6's Family half in the same journey (the other adult's cells against
   their own report pages, `crossSurface.family`). The three rows flip on the
   spec's first green CI run.
+- G5.8, 18 September (evening): the eight protective statements are asserted
+  by anchor id in a browser (`e2e/legal.spec.ts` over
+  `scripts/legal-anchor-requirements.json`, both directions); the three absent
+  clauses stay counsel's and the activation-point consent documents stay
+  unmeasured, so the row stays NO.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 

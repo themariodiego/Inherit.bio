@@ -1,6 +1,7 @@
 {
   "purpose": "G5.8's eight protective statements, each keyed by the stable anchor id the brief requires. scripts/legal-placeholder-gate.ts checks by id, not by prose, exactly as the brief specifies: a statement recorded as present must still carry its anchor, and one recorded as absent must still be absent. Adding a missing clause therefore fails this gate until the record is updated, which is the point.",
   "scope": "The terms page only. The brief also requires these statements on each consent document shown at the activation point; that surface is not measured yet and no claim is made about it here.",
+  "browserAssertion": "e2e/legal.spec.ts reads this record in a browser: every statement recorded present renders under its anchor id with a heading and a body on /terms, and every statement recorded absent renders no such anchor. Both directions, as the gate holds the source.",
   "notDrafted": "The absent clauses are not written by this repository's tooling. Drafting an indemnity, a reproductive no-reliance statement or a governing-law forum is legal work, not engineering work.",
   "surface": "src/app/(marketing)/terms/page.tsx",
   "statements": [

@@ -1,5 +1,15 @@
 # Test diff register
 
+## The eight protective statements, asserted by anchor id in a browser · 18 September 2026
+
+`e2e/legal.spec.ts` +1 named test: `/terms` renders each statement
+`scripts/legal-anchor-requirements.json` records as present under its anchor
+id, with a heading and a body of substance, and none of the statements it
+records as absent — the record `pnpm gate:legal` holds the page source to,
+read in a browser in both directions (G5.8). The record names the assertion
+(`browserAssertion`). No existing assertion moved; the three absent clauses
+stay recorded as absent.
+
 ## The figure census: every figure-capable route is differenced or recorded · 18 September 2026
 
 `scripts/figures-census.ts` and `scripts/figures-census.test.ts` are new: the
