@@ -142,6 +142,20 @@ select is((select receipt#>>'{sources,0,reports,0,catalogSnapshot,template,title
 select ok((select receipt#>>'{sources,0,reports,0,catalogSnapshot,templateSha256}' from captured_share)~'^[0-9a-f]{64}$','captured template has DB digest');
 select is(pg_temp.shared('readiness')#>>'{sources,0,hasReports}','true','metadata-only readiness can announce existing reports');
 select ok(pg_temp.shared('readiness')::text !~ 'genotype|interpretation|catalogSnapshot|sourceSha256|bucket_path','pre-gate response contains no genetic or source payload');
+-- D-129: a completed run whose file reaches no report is a result to
+-- announce, not a result still to come. A completed result is immutable
+-- (capture_own_report_catalog_v1), so the fixture run is put back to running
+-- as a fresh `begin` would leave it and completed again through the real
+-- wrapper, with the same catalogued report captured as not covered.
+savepoint uncovered_completion;
+update private.own_analysis_runs set state='running',completed_at=null,result=null
+ where file_id='79010000-0000-4000-8000-000000000040' and purpose='reports.polygenic';
+select is(pg_temp.generate('complete','reports.polygenic',jsonb_set(pg_temp.captured_output(),'{reports,0,covered}','false'::jsonb))->>'status',
+ 'complete','a run completes with its one catalogued report not covered');
+select is(pg_temp.shared('readiness')#>>'{sources,0,hasReports}','true','readiness announces a completed run whose file covers no report');
+select is(pg_temp.shared()#>>'{sources,0,reports,0,covered}','false','content carries the uncovered report exactly as captured');
+select ok(pg_temp.shared('readiness')::text !~ 'covered|genotype|interpretation|catalogSnapshot|sourceSha256|bucket_path','readiness for an uncovered run still carries no report or source payload');
+rollback to uncovered_completion;
 select ok(pg_temp.shared()::text !~ 'raw_score|percentile|zscore|bucket_path|source_sha256','content projection excludes raw PRS values and storage identifiers');
 select throws_ok($$select public.family_shared_report_results_v1('79010000-0000-4000-8000-000000000003',
  '79010000-0000-4000-8000-000000000013',(select id from generation_subject),'reports.polygenic')$$,

@@ -1,5 +1,53 @@
 # Test diff register
 
+## Every pre-existing route held to its disposition (G2.3) · 18 September 2026
+
+`docs/route-dispositions.json` is new: the 34 routes `src/app` served at the
+register's baseline commit, measured by `git ls-tree` at `baselineSha` (the
+listing's sha256 pinned), each with the one disposition the register records
+— 27 kept, 7 redirects to a named successor, none gone. `scripts/route-gate.ts`
+gains check 6: every entry is held to the register in both directions (an
+unregistered path, a disagreeing kind, id or disposition, a page route marked
+gone, a redirect whose successor is not the register's or whose status differs,
+a gone endpoint without an ADR or without a handler to answer 410, a duplicate,
+and a ledger that lost most of its routes each fail), and the pass line counts
+them. `scripts/route-gate.test.ts` plants the ledger beside the register and
+adds six cases, one per way the ledger could go stale or lie. The pinned count
+34 joins the passing-repository case. `e2e/route-dispositions.spec.ts` is new:
+three cases over every entry of its kind, soft so one run names every failing
+route — redirects answer 308 to the named successor signed in; signed out, every
+redirect and kept page is alive and never 404 (an authenticated alias may send
+the reader to sign in, a kept authenticated page must, a public page answers
+200); every kept endpoint is served under each declared method, refusing as a
+handler and never as the HTML not-found page. No existing assertion moved.
+## Two Family route-state pairs proven, ratchet 19 → 17 · 18 September 2026
+
+`e2e/family-health-picture.spec.ts` +1 case: `/family/[person] complete`,
+placed right after the health-picture `complete` proof on the fixture it
+already built (both report layers granted by B through the real permission
+route, B's file prepared and both layers generated): past the Tier-2 gate,
+every granted layer is on the page, the estimate layer lists B's covered
+reports as links to B's own record, the other layer lists reports or says in
+words that the file covers none of them, and no sentence reads as a withheld
+permission, a missing source or a result still to come. `e2e/family-coverage-states.spec.ts`
+is new: `/family/[person] not-covered` through the whole two-account journey
+(invite screen, mail worker, acceptance in B's own account, B's upload of the
+file that covers nothing the product reads with both report layers chosen,
+both layers turned on for A from B's own session), the cause established from
+B's prepared file and `user_prs.matched` zero on every panel before A reads
+the page; both granted layers carry the none-covered sentence and list
+nothing. The same spec asserts the hub's card on that record reads "Reports
+ready": measuring it first found the card reading "No shared results yet" —
+the awaiting line, for results that exist and cover nothing — filed as D-129
+and fixed on the same branch by
+`supabase/migrations/20260918213000_shared_report_readiness_completed_runs.sql`
+(readiness announces a completed run whatever it covers), with one pgTAP case
+in `supabase/tests/family_shared_report_results.sql` completing the fixture
+run again through the real wrapper with its report captured as not covered
+and reading readiness true. `/family not-covered` stays a finding for its own
+reason: the card has nothing to say about coverage. `docs/route-divergence.json` records the two pairs;
+`UNPROVEN_ROUTE_STATE_PAIRS` falls from 19 to 17. No existing assertion moved.
+
 ## Six My Genome route-state pairs proven, ratchet 25 → 19 · 18 September 2026
 
 `e2e/genome-coverage-states.spec.ts` is new: five titled proofs on three

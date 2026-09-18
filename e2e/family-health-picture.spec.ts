@@ -5,6 +5,8 @@ import http from "node:http";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { CELL_NO_FILE, CELL_NO_PREPARED_FILE, EACH_TURNS_IT_ON } from "../src/copy/family/health-picture";
+import { COPILOT_LOCAL_ONLY, PERSON_H1, noFileYet, noneCovered, notShared, reportsLede } from "../src/copy/family/person";
+import { NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
 import path from "node:path";
 import {
   acceptAdultInvitation,
@@ -579,6 +581,71 @@ test("/family/health-picture complete: both columns, both layers, every permitte
     await page.goto("/family/health-picture");
     await expect(page.locator('[data-compare-surface][data-layer="estimate"]')).toBeVisible();
   }
+});
+
+/**
+ * `/family/[person] complete`, the permitted-and-able reading (register
+ * `stateDefinitions.complete`, the reading `/family/health-picture complete`
+ * above already claims on this same fixture): everything the page is
+ * permitted AND able to show, with nothing absent for want of a permission
+ * or a source. B has granted A both report layers, B's file is prepared and
+ * both layers were generated, so the page lists every granted layer — each
+ * either naming the reports B's file covers or saying in words that it
+ * covers none of that layer's reports, which is a coverage fact and not an
+ * absence of permission or of a file.
+ *
+ * What separates it from `/family/[person] partial-coverage`
+ * (`e2e/family.spec.ts`, the permission reading): no layer reads "has not
+ * shared … with you", because none is withheld. And from `not-covered`: at
+ * least one granted layer lists a covered report. The ancestry section is
+ * absent because B never granted it, and nothing absent for want of a
+ * permission the page was never given is a gap in what it can show; the
+ * assertion is that no GRANTED layer is missing.
+ */
+test("/family/[person] complete: past the Tier-2 gate with both report layers granted, every granted layer is listed and none is absent for want of a permission or a source", async ({ page }) => {
+  expect(grantsFromB.has("reports.monogenic") && grantsFromB.has("reports.polygenic"),
+    "both report layers were granted by B through the real permission route").toBe(true);
+  await signIn(page, A.email, A.password);
+  await passGate(page);
+  await page.goto(`/family/s-${invitedSubjectB}`);
+
+  await expect(page.getByRole("heading", { level: 1, name: PERSON_H1 })).toBeVisible();
+  const name = (await page.locator('[data-subject-bar] [data-slot="subject-name"]').textContent())?.trim();
+  expect(name).toBeTruthy();
+  // Past the gate, and none of the page's blocking renders.
+  await expect(page.locator('[data-slot="result-gate"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="person-blocking"]')).toHaveCount(0);
+  await expect(page.getByText(reportsLede(name!), { exact: true })).toBeVisible();
+
+  // Every granted layer is on the page, by its own heading line.
+  const estimate = page.locator('[data-layer="estimate"]');
+  const variantCall = page.locator('[data-layer="variant_call"]');
+  await expect(estimate).toHaveCount(1);
+  await expect(variantCall).toHaveCount(1);
+  // The layer B's file reaches lists its covered reports as links to B's own record.
+  const covered = estimate.locator(`a[href^="/genome/s-${invitedSubjectB}/reports/"]`);
+  expect(await covered.count()).toBeGreaterThan(0);
+  await expect(estimate.getByText(noneCovered(name!, "estimate"), { exact: true })).toHaveCount(0);
+  // The other granted layer either lists reports or says in words that the
+  // file covers none of them — a coverage fact, never a withheld permission.
+  const variantLinks = variantCall.locator(`a[href^="/genome/s-${invitedSubjectB}/reports/"]`);
+  const variantAbsence = variantCall.getByText(noneCovered(name!, "variant_call"), { exact: true });
+  expect((await variantLinks.count()) + (await variantAbsence.count())).toBeGreaterThan(0);
+
+  // Nothing is absent for want of a permission or a source.
+  for (const layer of ["estimate", "variant_call"] as const) {
+    await expect(page.getByText(notShared(name!, layer), { exact: true })).toHaveCount(0);
+  }
+  await expect(page.getByText(noFileYet(name!), { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No completed result is shared yet.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No completed result is shared for this result type yet.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("A saved result is missing the source details needed to show it.", { exact: true })).toHaveCount(0);
+
+  await expect(page.getByText(BASELINE_ABSENT, { exact: true })).toHaveCount(1);
+  await expect(page.locator("#family-ancestry-heading"), "ancestry was never granted, so no section claims it").toHaveCount(0);
+  await expect(page.locator("#family-permissions-heading a")).toHaveAttribute("href", `/family/s-${invitedSubjectB}/permissions`);
+  await expect(page.getByText(NOT_DIAGNOSTIC, { exact: true })).toBeAttached();
+  await expect(page.getByText(COPILOT_LOCAL_ONLY, { exact: true })).toBeAttached();
 });
 
 test("the carrier panel withholds unbound clinical labels and explicitly states unavailable", async ({

@@ -24,6 +24,7 @@ interface Overrides {
   brief?: (source: string) => string;
   register?: (register: Record<string, unknown>) => void;
   ledger?: (ledger: Record<string, unknown>) => void;
+  dispositions?: (ledger: Record<string, unknown>) => void;
   nextConfig?: string;
 }
 
@@ -45,6 +46,10 @@ function plant(overrides: Overrides): string {
   const ledger = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-divergence.json"), "utf8"));
   overrides.ledger?.(ledger);
   writeFileSync(path.join(root, "docs/route-divergence.json"), JSON.stringify(ledger));
+
+  const dispositions = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-dispositions.json"), "utf8"));
+  overrides.dispositions?.(dispositions);
+  writeFileSync(path.join(root, "docs/route-dispositions.json"), JSON.stringify(dispositions));
 
   const brief = readFileSync(path.join(REPOSITORY_ROOT, "docs/inherit-v2-brief.md"), "utf8");
   writeFileSync(path.join(root, "docs/inherit-v2-brief.md"), overrides.brief?.(brief) ?? brief);
@@ -82,6 +87,11 @@ describe("the route gate holds the register to the code", () => {
     // a profile quietly losing a state fails here instead of reading as progress.
     expect(result.requiredStateCount).toBe(156);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
+    // The 34 routes src/app served at the baseline commit, measured by git
+    // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
+    // redirects, none gone. Pinned exactly, so a route quietly leaving the
+    // ledger fails here rather than reading as a cleaner product.
+    expect(result.preExistingRouteCount).toBe(34);
   });
 
   /**
@@ -487,6 +497,84 @@ describe("the detectors the gate is built from", () => {
     });
     const failures = (await runRouteGate(root)).failures;
     expect(failures.some((failure) => failure.includes("2914f42bba3ccdb34816f07c23b4cffdee14f3328b4fa5f2a0f231133be9abbe"))).toBe(true);
+  });
+});
+
+type Disposition = { path: string; registerId: string; kind: string; adr?: string;
+  disposition: "kept" | "gone" | { redirect: string; expectedStatus?: number } };
+
+/**
+ * Check 6 (G2.3). The ledger of pre-existing routes is an exemption-shaped
+ * thing — a list that says "these old URLs are accounted for" — so each way
+ * it could go stale or lie is planted here: a route the register lost, a
+ * page route retired outright, a redirect pointed somewhere the register does
+ * not name, a kept entry the register has turned into a redirect, and a gone
+ * endpoint with no ADR and no handler left to answer 410.
+ */
+describe("the route gate holds every pre-existing route to its registered disposition", () => {
+  const dispositionsOf = (ledger: Record<string, unknown>) => ledger.routes as Disposition[];
+
+  it("fails when the ledger names a route the register does not carry", async () => {
+    const root = plant({
+      dispositions: (ledger) => dispositionsOf(ledger).push({ path: "/nowhere", registerId: "legacy.nowhere", kind: "page", disposition: "kept" }),
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "pre-existing route: /nowhere is not in the register. G2.3 requires every route " +
+        "the baseline served to be registered with exactly one disposition.",
+    );
+  });
+
+  it("fails when a pre-existing page route is marked gone", async () => {
+    const root = plant({
+      dispositions: (ledger) => { dispositionsOf(ledger).find((entry) => entry.path === "/about")!.disposition = "gone"; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "pre-existing route: /about is a page route marked gone; G2.3 allows gone only for API handlers, " +
+        "form endpoints and storage prefixes with no successor, and a pre-existing page route is kept or redirected",
+    );
+  });
+
+  it("fails when a redirect's successor is not the one the register names", async () => {
+    const root = plant({
+      dispositions: (ledger) => { dispositionsOf(ledger).find((entry) => entry.path === "/dashboard")!.disposition = { redirect: "/files", expectedStatus: 308 }; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "pre-existing route: /dashboard redirects to /files in the ledger; the register names /overview",
+    );
+  });
+
+  it("fails when the ledger keeps a route the register redirects, and the reverse", async () => {
+    const root = plant({
+      dispositions: (ledger) => {
+        dispositionsOf(ledger).find((entry) => entry.path === "/dashboard")!.disposition = "kept";
+        dispositionsOf(ledger).find((entry) => entry.path === "/about")!.disposition = { redirect: "/overview" };
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      'pre-existing route: /dashboard is kept in the ledger; the register says {"redirectToRoute":"app.overview"}',
+    );
+    expect(failures).toContain("pre-existing route: /about redirects in the ledger; the register kind is page");
+  });
+
+  it("fails when a gone endpoint carries no ADR, and when the register still keeps it", async () => {
+    const root = plant({
+      dispositions: (ledger) => { dispositionsOf(ledger).find((entry) => entry.path === "/api/jobs/annotation-refresh")!.disposition = "gone"; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain("pre-existing route: /api/jobs/annotation-refresh is gone without an ADR; G2.3 requires one");
+    expect(failures).toContain('pre-existing route: /api/jobs/annotation-refresh is gone in the ledger; the register says "kept"');
+  });
+
+  it("fails when the ledger has lost most of its routes", async () => {
+    const root = plant({
+      dispositions: (ledger) => { ledger.routes = dispositionsOf(ledger).slice(0, 3); },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain("docs/route-dispositions.json lists 3 pre-existing routes, expected at least 30");
   });
 });
 
