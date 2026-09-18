@@ -1,5 +1,27 @@
 # Test diff register
 
+## Lighthouse gate on integration CI · 17 September 2026
+
+G1.16 stayed NO for one reason: the Lighthouse contract of G1.14 had run only
+locally. `scripts/run-upload-browser.mts` gains a `--lighthouse` run
+(`pnpm e2e:lighthouse`) that bootstraps the same loopback Storage proxy and,
+in CI, the same isolated production runtime the browser suite uses, then
+executes the unchanged `scripts/lighthouse-check.ts`: the three exact routes,
+three cold navigations each, median performance at or above 90, accessibility
+100 on every navigation, exact requested and final URLs, a status-200
+document and signed-in content, with the one fixture upload crossing the real
+local provider. The Chrome is the suite's own Playwright Chromium unless
+`SEQ_LH_CHROME` names another. No threshold, route, run count or check
+changed; the gate's 13 unit checks are untouched.
+`scripts/local-storage-browser-config.test.ts` gains one case: the run is
+permitted locally and on the disposable CI job, and refused with selectors,
+combined with the suite, or under a non-disposable CI. A new CI step,
+"Lighthouse gate on the isolated runtime", follows the full browser suite.
+No local runtime was available in this session, so its first execution is
+the CI run of the pull request that carries it; the G1.16 row of
+`docs/acceptance-matrix.md` records that run and its scores when it closes,
+and a score below the contract on the runner is recorded, never lowered.
+
 ## Storage-prefix attacks in every bucket · 17 September 2026
 
 `e2e/rls.spec.ts` previously planted one victim object in `genomes` and

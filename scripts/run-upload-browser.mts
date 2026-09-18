@@ -1,6 +1,11 @@
 /** Local or disposable-CI production-browser proof with the installed Storage provider.
  * Full standard gate: pnpm e2e; focused local proof: node --import tsx scripts/run-upload-browser.mts
  * Append local-only Playwright selectors after --; CI never permits narrowing.
+ * Lighthouse gate (G1.14 contract on the same served build, database and
+ * Storage proxy, G1.16 when it runs on integration CI): pnpm e2e:lighthouse.
+ * In CI it starts the main app variant through the same launcher the suite's
+ * Playwright web server uses; locally the production build must already be
+ * serving on http://localhost:3100.
  * No key files, Auth rotation, database resets or application test switches.
  * The browser's HTTP proxy routes Storage to an isolated provider process;
  * the app continues using the normal local stack and its identical DB/backend.
@@ -15,16 +20,19 @@ import { fileURLToPath } from "node:url";
 import { localE2eProject, disposableProjectWorkdir, validateDisposableProjectConfig, disposableBootstrapKeys } from "./local-e2e-project";
 import http, { type IncomingMessage } from "node:http";
 import { createInterface } from "node:readline";
+import { chromium } from "@playwright/test";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
 import { assertLocalProviderEnvironment, localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
+import { appServerEnvironment } from "./ci-browser-app-environment";
 
 const arguments_ = process.argv.slice(2);
 const fullSuite = arguments_[0] === "--full";
 const bootstrapOnly = arguments_[0] === "--bootstrap-only";
-if (fullSuite || bootstrapOnly) arguments_.shift();
+const lighthouseGate = arguments_[0] === "--lighthouse";
+if (fullSuite || bootstrapOnly || lighthouseGate) arguments_.shift();
 assert(arguments_.length === 0 || arguments_[0] === "--", "Pass local Playwright selectors after --");
 const selectors = arguments_.slice(1);
-assertLocalProviderEnvironment(process.env, fullSuite, selectors);
+assertLocalProviderEnvironment(process.env, fullSuite, selectors, lighthouseGate);
 const configuredProject = readFileSync(new URL("../supabase/config.toml", import.meta.url), "utf8")
   .match(/^project_id = "([A-Za-z0-9_-]+)"$/m)?.[1];
 assert(configuredProject === "sequence", "Expected the unchanged canonical repository project");
@@ -237,8 +245,23 @@ const proxy = http.createServer(async (request, response) => {
 });
 proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, including external TLS. APIRequest stays direct.
 let tests: ChildProcess | undefined;
+let appServer: ChildProcess | undefined;
 let ciRuntime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
 let stopping = false;
+/** The served document the suite's web server also waits for before any test runs. */
+async function waitForDocument(url: string, timeoutMs: number, exited: () => boolean) {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    assert(!exited(), "The app server exited before it served its first document");
+    const status = await new Promise<number>(resolve => {
+      const request = http.get(url, response => { response.resume(); resolve(response.statusCode ?? 0); });
+      request.on("error", () => resolve(0)); request.setTimeout(5000, () => request.destroy(new Error("Document timeout")));
+    });
+    if (status >= 200 && status < 400) return;
+    assert(Date.now() < deadline, `No document at ${url} within ${timeoutMs} ms`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+}
 async function stop() {
   if (stopping) return;
   stopping = true;
@@ -246,6 +269,7 @@ async function stop() {
     // Kill the dedicated test process group, including its Next child servers.
     try { if (process.platform !== "win32") process.kill(-tests.pid, "SIGTERM"); else tests.kill("SIGTERM"); } catch {}
   }
+  if (appServer && appServer.exitCode === null) appServer.kill("SIGTERM");
   proxy.closeAllConnections();
   await new Promise<void>(resolve => proxy.close(() => resolve()));
   if (provider.exitCode === null) {
@@ -296,16 +320,37 @@ try {
   console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
   if (!bootstrapOnly) {
     if (process.env.CI) ciRuntime = await startCiBrowserRuntime();
-    tests = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
-      `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
-      detached: process.platform !== "win32",
-      stdio: "inherit", env: { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
-        INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` },
-    });
+    const runtimeEnvironment = { ...process.env, ...bootstrapEnvironment, ...ciRuntime?.env, INHERIT_UPLOAD_SIGNING_JWK: signer,
+      INHERIT_LOCAL_BROWSER_STORAGE_PROXY: `http://127.0.0.1:${address.port}` };
+    if (lighthouseGate) {
+      // The suite's Playwright configuration starts the main app variant as its
+      // first web server; there is no Playwright here, so the same launcher is
+      // started with the same configuration and the same document is awaited.
+      // Locally the production build is expected to be serving already.
+      const document = "http://localhost:3100/auth/sign-in";
+      if (process.env.CI) {
+        appServer = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/ci-browser/server.mts", "host", "3100"], {
+          stdio: ["ignore", "inherit", "inherit"], env: { ...runtimeEnvironment, ...appServerEnvironment(runtimeEnvironment, 3100) } });
+        const server = appServer;
+        await waitForDocument(document, 300_000, () => server.exitCode !== null);
+      } else {
+        await waitForDocument(document, 5_000, () => false);
+      }
+    }
+    // The Lighthouse gate audits the same served build, seeded database and
+    // Storage proxy the suite uses, in the suite's own Chromium unless
+    // SEQ_LH_CHROME names another. Its fixture upload must cross the proxy too.
+    tests = lighthouseGate
+      ? spawn(process.execPath, ["--experimental-strip-types", "scripts/lighthouse-check.ts"], {
+        detached: process.platform !== "win32", stdio: "inherit",
+        env: { ...runtimeEnvironment, SEQ_LH_CHROME: process.env.SEQ_LH_CHROME ?? chromium.executablePath() } })
+      : spawn("corepack", ["pnpm", "exec", "tsx", "scripts/run-e2e.ts",
+        `--config=${fullSuite ? "playwright.config.ts" : "playwright.upload.config.ts"}`, ...selectors], {
+        detached: process.platform !== "win32", stdio: "inherit", env: runtimeEnvironment });
     const code = await new Promise<number>(resolve => {
       tests!.once("error", () => resolve(1)); tests!.once("exit", code => resolve(code ?? 1));
     });
-    assert.equal(code, 0, "Browser suite or no-skip/no-retry gate failed");
+    assert.equal(code, 0, lighthouseGate ? "Lighthouse gate failed" : "Browser suite or no-skip/no-retry gate failed");
     assert(forwardedUploads > 0, "No browser upload crossed the actual provider proxy");
     console.log(`PASS ${forwardedUploads} browser upload(s) reached the installed provider through the loopback proxy.`);
   }

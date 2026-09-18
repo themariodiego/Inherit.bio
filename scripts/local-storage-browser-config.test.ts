@@ -17,6 +17,16 @@ describe("local provider runner safety boundaries", () => {
     expect(() => assertLocalProviderEnvironment(disposable, false, [])).toThrow();
     expect(() => assertLocalProviderEnvironment(disposable, true, ["--grep=upload"])).toThrow();
   });
+  it("permits the Lighthouse gate as its own local or disposable CI run, never narrowed or merged with the suite", () => {
+    expect(() => assertLocalProviderEnvironment({}, false, [], true)).not.toThrow();
+    expect(() => assertLocalProviderEnvironment(disposable, false, [], true)).not.toThrow();
+    expect(() => assertLocalProviderEnvironment(disposable, false, ["--grep=landing"], true)).toThrow();
+    expect(() => assertLocalProviderEnvironment({}, false, ["--grep=landing"], true)).toThrow();
+    expect(() => assertLocalProviderEnvironment({}, true, [], true)).toThrow();
+    for (const env of [{ CI: "true" }, { ...disposable, INHERIT_DISPOSABLE_LOCAL_E2E: "" }, { DEBUG: "pw:api" }]) {
+      expect(() => assertLocalProviderEnvironment(env, false, [], true)).toThrow();
+    }
+  });
   it("refuses arbitrary proxy destinations, credentials and alternate gateway hosts", () => {
     for (const target of ["http://127.0.0.1:54321/auth/v1/token", "http://localhost:3100/api/files",
       "http://localhost:3101/api/export", "http://localhost:3102/files/upload"]) expect(localBrowserTarget(target).href).toBe(target);

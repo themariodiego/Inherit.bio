@@ -6,8 +6,11 @@ export const LOCAL_BROWSER_ORIGINS = [LOCAL_STORAGE_ORIGIN,
   "http://localhost:3100", "http://localhost:3101", "http://localhost:3102"] as const;
 
 /** These are test-runner boundaries, never application authorization switches. */
-export function assertLocalProviderEnvironment(env: Readonly<Record<string, string | undefined>>, fullSuite: boolean, selectors: string[]) {
+export function assertLocalProviderEnvironment(env: Readonly<Record<string, string | undefined>>, fullSuite: boolean, selectors: string[],
+  lighthouseGate = false) {
   const project = localE2eProject(env);
+  assert(!(fullSuite && lighthouseGate), "The Lighthouse gate is its own run, never a suite variant");
+  assert(!lighthouseGate || selectors.length === 0, "The Lighthouse gate audits its fixed routes; selectors do not apply");
   assert(!env.PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK,
     "Loopback proxying must remain enabled");
   assert(!env.DEBUG && !env.PWDEBUG, "Credential-bearing browser/provider debug output must remain disabled");
@@ -19,7 +22,8 @@ export function assertLocalProviderEnvironment(env: Readonly<Record<string, stri
   if (env.CI) {
     assert(env.GITHUB_ACTIONS === "true" && env.RUNNER_ENVIRONMENT === "github-hosted"
       && env.INHERIT_DISPOSABLE_LOCAL_E2E === "true", "CI bootstrap requires the explicitly disposable GitHub-hosted job");
-    assert(fullSuite && selectors.length === 0, "CI must run the full standard browser suite without selectors");
+    assert((fullSuite || lighthouseGate) && selectors.length === 0,
+      "CI must run the full standard browser suite or the Lighthouse gate, without selectors");
   }
 }
 
