@@ -158,5 +158,5 @@ to every prepared-source original from its creation.
 FASTQ, BAM and CRAM; the cohort source executor (no embryo source can exist
 before ingest); the Supabase-provider guard on `own_preparation_config`
 (D-126); the provenance counter's reading of a gVCF's called sites as blocks
-(D-128, fixed on its own with a counter version bump); and any limit change
+(D-128, its own change; the row says what it needs); and any limit change
 before its proof.
