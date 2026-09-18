@@ -248,16 +248,21 @@ let tests: ChildProcess | undefined;
 let appServer: ChildProcess | undefined;
 let ciRuntime: Awaited<ReturnType<typeof startCiBrowserRuntime>> | undefined;
 let stopping = false;
-/** The served document the suite's web server also waits for before any test runs. */
-async function waitForDocument(url: string, timeoutMs: number, exited: () => boolean) {
+/** The served document the suite's web server also waits for before any test
+ * runs; returns the Keep-Alive header the server advertised with it. */
+async function waitForDocument(url: string, timeoutMs: number, exited: () => boolean): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (true) {
     assert(!exited(), "The app server exited before it served its first document");
-    const status = await new Promise<number>(resolve => {
-      const request = http.get(url, response => { response.resume(); resolve(response.statusCode ?? 0); });
-      request.on("error", () => resolve(0)); request.setTimeout(5000, () => request.destroy(new Error("Document timeout")));
+    const answer = await new Promise<{ status: number; keepAlive: string }>(resolve => {
+      const request = http.get(url, response => {
+        response.resume();
+        resolve({ status: response.statusCode ?? 0, keepAlive: String(response.headers["keep-alive"] ?? "") });
+      });
+      request.on("error", () => resolve({ status: 0, keepAlive: "" }));
+      request.setTimeout(5000, () => request.destroy(new Error("Document timeout")));
     });
-    if (status >= 200 && status < 400) return;
+    if (answer.status >= 200 && answer.status < 400) return answer.keepAlive;
     assert(Date.now() < deadline, `No document at ${url} within ${timeoutMs} ms`);
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -332,7 +337,9 @@ try {
         appServer = spawn("corepack", ["pnpm", "exec", "tsx", "scripts/ci-browser/server.mts", "host", "3100"], {
           stdio: ["ignore", "inherit", "inherit"], env: { ...runtimeEnvironment, ...appServerEnvironment(runtimeEnvironment, 3100) } });
         const server = appServer;
-        await waitForDocument(document, 300_000, () => server.exitCode !== null);
+        const keepAlive = await waitForDocument(document, 300_000, () => server.exitCode !== null);
+        // The flag the launcher passes must reach the server inside the container.
+        assert(/\btimeout=65\b/.test(keepAlive), "The CI app server must keep idle connections for 65 s");
       } else {
         await waitForDocument(document, 5_000, () => false);
       }

@@ -102,9 +102,13 @@ export default defineConfig({
         }]
       : []),
   ],
+  // Every local server keeps idle connections for 65 s: the CI launcher passes
+  // the same flag (scripts/ci-browser/server.mts) because Playwright's request
+  // client never closes an idle socket itself and a server-side close racing a
+  // dispatch is the "socket hang up" recorded three times in G1.5.
   webServer: [
     {
-      command: isolatedCi ? ciServer(PORT) : `corepack pnpm build && corepack pnpm start --port ${PORT}`,
+      command: isolatedCi ? ciServer(PORT) : `corepack pnpm build && corepack pnpm start --port ${PORT} --keepAliveTimeout 65000`,
       ...(isolatedCi ? { url: `http://localhost:${PORT}/auth/sign-in` } : { port: PORT }),
       reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 300_000,
@@ -118,7 +122,7 @@ export default defineConfig({
     {
       // The same build, the flag unset: an empty value is not "1", so the
       // resolver reads every account's real (unset) jurisdiction.
-      command: isolatedCi ? ciServer(OFF_PORT) : `corepack pnpm start --port ${OFF_PORT}`,
+      command: isolatedCi ? ciServer(OFF_PORT) : `corepack pnpm start --port ${OFF_PORT} --keepAliveTimeout 65000`,
       ...(isolatedCi ? { url: `http://localhost:${OFF_PORT}/auth/sign-in` } : { port: OFF_PORT }),
       reuseExistingServer: false, // Exact build and ephemeral signer; never reuse an unrelated local server.
       timeout: 120_000,
@@ -130,7 +134,7 @@ export default defineConfig({
       },
     },
     {
-      command: isolatedCi ? ciServer(PAUSE_PORT) : `corepack pnpm start --port ${PAUSE_PORT}`,
+      command: isolatedCi ? ciServer(PAUSE_PORT) : `corepack pnpm start --port ${PAUSE_PORT} --keepAliveTimeout 65000`,
       ...(isolatedCi ? { url: `http://localhost:${PAUSE_PORT}/auth/sign-in` } : { port: PAUSE_PORT }),
       reuseExistingServer: false,
       timeout: 120_000,

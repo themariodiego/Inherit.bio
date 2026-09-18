@@ -1,5 +1,26 @@
 # Test diff register
 
+## Keep-alive race on the local app servers · 18 September 2026
+
+Three integration runs died with `socket hang up` from Playwright's Node-side
+request client against the served app (portrait 2026-09-11, family health
+picture and embryos 2026-09-17/18), each on one request right after a browser
+step, each on a tree that passed elsewhere and passed again on one re-run.
+Read at source in the bundled Playwright 1.62 client: one process-wide
+keep-alive agent with no idle timeout and zero retries by default, so the
+server is always the side that closes an idle connection, and Next's `start`
+closes it at Node's 5-second default. A request dispatched in the same
+event-loop turn in which that close arrives is the failure. Every local app
+server now starts with `--keepAliveTimeout 65000`: the CI launcher
+(`scripts/ci-browser/server.mts`) and the three Playwright web servers of the
+local path, with the config test pinning the command. The Lighthouse run in
+CI asserts that the served document advertises `Keep-Alive: timeout=65`, so a
+launcher that loses the flag fails there rather than intermittently. No
+assertion, timeout or retry policy of the suite changed; `retries: 0` and the
+no-skip, no-retry gate stand. This moves the closing boundary from six
+seconds to sixty-six rather than removing it, and the G1.5 row keeps the
+record of each occurrence.
+
 ## Lighthouse gate on integration CI · 17 September 2026
 
 G1.16 stayed NO for one reason: the Lighthouse contract of G1.14 had run only

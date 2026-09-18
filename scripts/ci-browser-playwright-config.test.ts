@@ -32,6 +32,6 @@ describe("standard Playwright server readiness", () => {
       expect(server?.port).toBe(3100 + index); expect(server?.url).toBeUndefined();
       expect(server?.reuseExistingServer).toBe(false);
     }
-    expect(servers[0]?.command).toBe("corepack pnpm build && corepack pnpm start --port 3100");
+    expect(servers[0]?.command).toBe("corepack pnpm build && corepack pnpm start --port 3100 --keepAliveTimeout 65000");
   });
 });

@@ -143,7 +143,13 @@ try {
           });
         }
         if (stopping) return;
-        const app = own(spawn("node", ["/app/node_modules/next/dist/bin/next", "start", "--port", String(port)], {
+        // Playwright's request client pools keep-alive sockets with no idle
+        // timeout of its own and retries nothing, so the server is always the
+        // side that closes an idle connection; at Node's 5-second default a
+        // request dispatched as that close arrives dies as "socket hang up"
+        // (three integration runs, G1.5). 65 s keeps the same server above
+        // every gap this suite leaves between two requests.
+        const app = own(spawn("node", ["/app/node_modules/next/dist/bin/next", "start", "--port", String(port), "--keepAliveTimeout", "65000"], {
           cwd: "/app", env: { ...cleanEnv, ...env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
           detached: true, stdio: ["ignore", "pipe", "pipe"],
         }));
