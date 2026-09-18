@@ -1,5 +1,35 @@
 # Test diff register
 
+## A gVCF admission ceiling of its own · 18 September 2026
+
+`20260918150000_own_upload_gvcf_ceiling.sql` adds nullable
+`private.upload_authorization_config.maximum_gvcf_bytes` and replaces four
+functions with their current bodies plus one case each: issuance measures a
+`gVCF` declaration against it (and stores it as the session's decoded
+ceiling), normalization and preparation admission measure a stored `gvcf`
+source against it, and the disclosure returns it as `maximumGvcfBytes`; every
+reader falls back to `maximum_vcf_bytes` while the column is null. New
+`supabase/tests/own_upload_gvcf_ceiling.sql` (no_plan, 26 assertions) proves,
+through the real issuance, finalization, normalization and enqueue RPCs on
+synthetic identities: the column's type and check; unset, the disclosure and
+issuance fall back to the VCF ceiling and a refusal leaves no session; set,
+the disclosure names both ceilings, a VCF and a VCF.GZ above the VCF ceiling
+are refused whatever the gVCF ceiling says, a gVCF above the VCF ceiling is
+issued with the gVCF ceiling as its decoded ceiling and finalizes as a `gvcf`
+of that size; normalization authorizes it with that ceiling in its manifest
+and refuses a second source once the ceiling is lowered; preparation admits
+it with that ceiling in the job and refuses a third source once lowered,
+leaving no job; with the ceilings reversed a VCF is admitted against the VCF
+ceiling while a gVCF of the same size is refused; and the four replaced
+functions keep their grants, definer status and pinned `search_path`.
+`own_upload_limit_disclosure.sql`'s exact disclosure now includes the
+fallback `maximumGvcfBytes`. In the app, `ownUploadLimitsSchema` accepts an
+optional `maximumGvcfBytes` and `uploadCeilingBytes` uses it for `gVCF`
+(`own-upload-limits.test.ts` +1 case, +2 refusals;
+`subject-upload-issuance.test.ts` +1 case: too large against the gVCF
+ceiling, account full when the file fits it, VCF fallback when none is
+disclosed).
+
 ## Synthetic fixture: gVCF shape and decoded-byte sizing · 18 September 2026
 
 `scripts/synthetic-wgs-fixture.mts` gains a `--gvcf` shape (reference blocks

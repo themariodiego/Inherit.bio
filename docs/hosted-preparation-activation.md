@@ -132,14 +132,20 @@ agreement is in place. The notice must be live before step 8.
 
 ## 9. Engineering: ceilings
 
-Before this step the schema needs a ceiling of its own for gVCF: today one
-`maximum_vcf_bytes` governs VCF, VCF.gz and gVCF alike in issuance,
-normalization, the capacity budget, preparation authority and the limit
-disclosure, and the app's upload contract mirrors that. An additive migration
-adds `maximum_gvcf_bytes` (defaulting to the VCF ceiling, so applying it
-changes no limit), selects it for the `gVCF` declaration and the `gvcf` file
-type, discloses it, and is covered by pgTAP; it can ship at any time before
-the ceilings move.
+Before this step the schema needs a ceiling of its own for gVCF: until the
+migration below is applied, one `maximum_vcf_bytes` governs VCF, VCF.gz and
+gVCF alike in issuance, normalization, preparation admission and the limit
+disclosure. `20260918150000_own_upload_gvcf_ceiling.sql` adds a nullable
+`maximum_gvcf_bytes`, selects it for the `gVCF` declaration and the `gvcf`
+file type with the VCF ceiling as the fallback while it is null (so applying
+it changes no limit), and discloses it as `maximumGvcfBytes`;
+`supabase/tests/own_upload_gvcf_ceiling.sql` proves each reader. The app
+accepts the extra disclosure key before the database sends it, so this
+migration is applied *after* the deployment that carries it, the reverse of
+the usual order, with the same preflight, postflight and receipt. Until it is
+applied and `maximum_gvcf_bytes` is set, a gVCF is measured against the VCF
+ceiling; the uploader's limit sentence names the array and VCF ceilings and
+gains a gVCF clause when the two values diverge.
 
 Only after step 8 and that migration: raise `private.upload_authorization_config`
 to the owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active

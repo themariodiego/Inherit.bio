@@ -9,7 +9,7 @@ re-queried for this note. Nothing here changes a limit.
 
 | Boundary | Enforced at | Value |
 |---|---|---|
-| Stored size, per file | `20260906123327_subject_upload_finalization.sql` (`issue_own_storage_upload_v1`) | `maximum_vcf_bytes` / `maximum_array_bytes`; hosted `maximum_vcf_bytes` observed 25,165,824 B (24 MiB) |
+| Stored size, per file | `20260906123327_subject_upload_finalization.sql` (`issue_own_storage_upload_v1`), gVCF split out by `20260918150000_own_upload_gvcf_ceiling.sql` | `maximum_vcf_bytes` / `maximum_array_bytes` / `maximum_gvcf_bytes` (null reads as the VCF ceiling); hosted `maximum_vcf_bytes` observed 25,165,824 B (24 MiB) |
 | Unpacked size, per file | same issuer stores that number as `upload_sessions.maximum_decoded_bytes`; enforced in `src/lib/uploads/subject-structure.ts:98` | the same number again |
 | Account allowance | same issuer, counting stored files plus every unexpired `issued`/`uploaded`/`validating` session | `maximum_account_bytes`; hosted observed 134,217,728 B (128 MiB) |
 | Concurrent uploads | same issuer | `maximum_active_uploads`; hosted observed 2 |

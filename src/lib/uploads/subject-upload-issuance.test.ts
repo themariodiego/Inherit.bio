@@ -217,6 +217,18 @@ describe("naming the limit that actually refused an upload", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("own_upload_limits_v1",
       { p_account_id: accountId, p_session_id: sessionId });
   });
+  it("measures a gVCF declaration against the gVCF ceiling when one is disclosed, as the issuer does", async () => {
+    refuse("file_too_large", { ...limits, maximumGvcfBytes: 100 });
+    const tooLarge = await issueSubjectUpload(request({ ...body, declaredFormat: "gVCF" }));
+    expect(await tooLarge.json()).toEqual({ error: "too_large" });
+    refuse("file_too_large", { ...limits, maximumVcfBytes: 100, maximumGvcfBytes: 52_428_800 });
+    const accountFull = await issueSubjectUpload(request({ ...body, declaredFormat: "gVCF" }));
+    expect(await accountFull.json()).toEqual({ error: "account_full" });
+    // Without a disclosed gVCF ceiling the VCF ceiling decides, as it does in the database.
+    refuse("file_too_large", { ...limits, maximumVcfBytes: 100 });
+    const fallback = await issueSubjectUpload(request({ ...body, declaredFormat: "gVCF" }));
+    expect(await fallback.json()).toEqual({ error: "too_large" });
+  });
   it("measures an array declaration against the array ceiling, as the issuer does", async () => {
     refuse("file_too_large", { ...limits, maximumArrayBytes: 100, maximumVcfBytes: 52_428_800 });
     const response = await issueSubjectUpload(request({ ...body, declaredFormat: "consumer-array-text-v1" }));

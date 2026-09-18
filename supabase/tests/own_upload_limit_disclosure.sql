@@ -27,9 +27,9 @@ create function pg_temp.limits() returns jsonb language sql as $$
   '76400000-0000-4000-8000-000000000010');
 $$;
 
-select is(pg_temp.limits(),jsonb_build_object('maximumArrayBytes',52428800,'maximumVcfBytes',25165824,
+select is(pg_temp.limits(),jsonb_build_object('maximumArrayBytes',52428800,'maximumVcfBytes',25165824,'maximumGvcfBytes',25165824,
  'maximumAccountBytes',134217728,'maximumActiveUploads',2,'reservedBytes',0,'activeUploads',0),
- 'an empty account is disclosed the exact deployment ceilings and no reservation');
+ 'an empty account is disclosed the exact deployment ceilings and no reservation (the unset gVCF ceiling reads as the VCF one)');
 
 select throws_ok($$select public.own_upload_limits_v1(null,'76400000-0000-4000-8000-000000000010')$$,
  '42501','not_found','a missing account is refused');
