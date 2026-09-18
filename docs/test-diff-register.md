@@ -1,5 +1,25 @@
 # Test diff register
 
+## Synthetic fixture: gVCF shape and decoded-byte sizing · 18 September 2026
+
+`scripts/synthetic-wgs-fixture.mts` gains a `--gvcf` shape (reference blocks
+carrying `<NON_REF>`, `END=` and `MIN_DP`, tiled base to base, with one called
+site after every fourth block) and a `--bytes` target that stops at the first
+row reaching a decoded size, so the hosted proof can produce files at exactly
+the owner's ceilings. `scripts/synthetic-wgs-fixture.test.ts` grows from 6 to
+14 cases: determinism now covers the gVCF shape; the header, ten-column and
+ascending-position checks run over both shapes; a pinned SHA-256 of the
+1,000-record VCF output proves the default shape is byte-identical to the
+generator every recorded capacity table was measured on; the sniffer
+classifies the gVCF `gvcf` from its first data rows and the default `vcf`;
+the gVCF's 400 blocks and 100 calls have the shapes stated above; the
+finalizer's validator accepts the gVCF under the `gVCF` declaration plain and
+gzip; the provenance counter reads it as one sample with every row accounted
+for and none unsupported (the block/called split is left open on D-128);
+byte-sized output lands within one row of the target, reports its exact size
+and row count, spreads over more than one contig, is deterministic, and
+yields to a smaller record count. Nothing here touches the product.
+
 ## Source revocation folded into immediate deletion · 18 September 2026
 
 D-126 decided: `source.revocation-7d` moves from the never-built

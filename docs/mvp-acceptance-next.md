@@ -70,7 +70,12 @@ Open, by what it waits on:
   secrets) are done; Vercel preview deployments also have no Supabase
   variables today (every dynamic route answers 500 through the middleware),
   which the preview proof needs fixed first. The order is written down in
-  `docs/hosted-preparation-activation.md`. So
+  `docs/hosted-preparation-activation.md`, and the synthetic fixture
+  generator can now size a VCF, VCF.gz or gVCF to the decoded byte ceilings
+  the proof measures. Two things found on the way: the schema has one
+  `maximum_vcf_bytes` for VCF, VCF.gz and gVCF, so the owner's 2 GiB / 8 GiB
+  pair needs a `maximum_gvcf_bytes` migration before step 9; and the
+  provenance counter files a gVCF's called sites under blocks (D-128). So
   prepared-source Family ancestry, background dispatch, throughput and 100
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
