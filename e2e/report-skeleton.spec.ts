@@ -7,6 +7,7 @@ import { createConfirmedUser, seededTemplateCount, signIn } from "./helpers";
 import { FIXTURE_NAME, buildMedicinesVcf, verify } from "./fixtures/medicines-fixture";
 import type { ReportTemplate } from "../src/lib/genome/reports";
 import { readStudyContext } from "../src/lib/genome/study-context";
+import { coverageSentence } from "../src/copy/reports/strings";
 
 // Report skeleton and figure contract (brief X4, X5, X13) on the My Genome
 // surfaces, against the tiny GRCh38 VCF fixture (rs762551 het → A/C; APOE
@@ -37,6 +38,8 @@ const MEDICINES_USER = {
 
 const CAFFEINE = "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551";
 const APOE_REVEALED = "/genome/me/reports/apoe-e4-alzheimers-risk?reveal=1";
+/** Two MCM6 positions; the tiny fixture carries the first and not the second. */
+const LACTOSE = "/genome/me/reports/lactase-persistence-lct-rs4988235";
 const VKORC1_SLUG = "vkorc1-rs9923231-one-position";
 const DPYD_SLUG = "dpyd-rs3918290-one-position";
 const MEDICINES_FIXTURE = path.join(process.cwd(), "e2e/fixtures", FIXTURE_NAME);
@@ -321,6 +324,87 @@ test("/genome/[subject]/reports/[slug] complete: a covered estimate report rende
     "href",
     "/copilot/me?report=caffeine-metabolism-cyp1a2-rs762551",
   );
+});
+
+/**
+ * `/genome/[subject]/reports/[slug] partial-coverage`, the coverage reading
+ * (register `stateDefinitions.partial-coverage`): the file does not carry
+ * positions the page would otherwise report, and the page names which part
+ * and why. The lactose report reads two MCM6 positions; the tiny fixture
+ * carries rs4988235 (1/1, so A/A) and not rs182549, so one block renders an
+ * attributed genotype figure and the other the not-covered sentences at full
+ * ink, each labelled by its locus so a reader can tell which is which.
+ *
+ * The page names the part that is missing in three more places, all asserted:
+ * the second "What this doesn’t mean" bullet appears only when a shown result
+ * has an uncovered position; "How sure we are" carries the mandated coverage
+ * sentence with the exact counts and the per-position ledger, one used and
+ * one with no reading; and the input provenance carries the same coverage
+ * figure the report list renders, read 1 of the 2 positions this needs.
+ *
+ * It sits between the two proofs beside it on purpose: `complete` is the
+ * caffeine report, one position, read; `not-covered` is APOE, two positions,
+ * neither read. This is the state in the middle, and the one a VCF from a
+ * targeted test produces most often.
+ */
+test("/genome/[subject]/reports/[slug] partial-coverage: a two-position report with one position read renders one genotype figure, one not-covered block, the second bullet and the 1-of-2 coverage sentence", async ({
+  page,
+}) => {
+  await signIn(page, USER.email, USER.password);
+  await page.goto(LACTOSE);
+
+  await expect(page.locator(HEADING_SELECTOR)).toHaveText(HEADINGS);
+  await expect(page.locator(SKELETON_H2)).toHaveCount(6);
+  await expect(page.locator("main h1")).toHaveText("Lactose tolerance");
+
+  // Two variants, each block labelled by its locus, in template order.
+  const yourResult = page.locator('section[aria-labelledby="your-result"]');
+  await expect(yourResult.locator('[data-slot="variant-locus"]')).toHaveText(["MCM6 · rs4988235", "MCM6 · rs182549"]);
+
+  // The read position: one attributed genotype figure reading the fixture's
+  // two changed copies, and the partial-state sentence beside it.
+  const read = yourResult.locator('[data-variant-result="4988235"]');
+  await expect(read.locator("[data-claim-block][data-subject-id]")).toHaveCount(1);
+  const genotype = read.locator('[data-figure-kind="genotype"][data-figure-class="estimate"][data-figure-basis="observed"]');
+  await expect(genotype).toHaveCount(1);
+  await expect(genotype.locator('[data-slot="figure-value"]')).toHaveText("A/A");
+  await expect(read.locator('[data-outcome="not-covered"]')).toHaveCount(0);
+
+  // The missing position: the not-covered sentences at full ink, no figure.
+  const missing = yourResult.locator('[data-variant-result="182549"]');
+  await expect(missing.locator('[data-outcome="not-covered"]')).toHaveCount(1);
+  await expect(missing.locator("[data-figure-kind]")).toHaveCount(0);
+  const notCovered = missing.getByText(NOT_COVERED_VCF_FIRST_SENTENCE).first();
+  const limit = missing.getByText(LIMIT_OF_FILE).first();
+  await expect(notCovered).toBeVisible();
+  await expect(limit).toBeVisible();
+  for (const locator of [notCovered, limit]) {
+    const [colour, bodyColour] = await locator.evaluate((element) => [
+      getComputedStyle(element).color,
+      getComputedStyle(document.body).color,
+    ]);
+    expect(colour).toBe(bodyColour);
+  }
+  await expect(page.locator('[data-figure-kind="genotype"]')).toHaveCount(1);
+  await expect(page.locator('[data-figure-kind="percentile"]')).toHaveCount(0);
+
+  // The page names what is missing: the second bullet, the coverage sentence
+  // with its exact counts, and the per-position ledger.
+  await expect(
+    page.locator('section[aria-labelledby="what-this-doesnt-mean"] li'),
+  ).toHaveText([DOESNT_MEAN_GENERIC, DOESNT_MEAN_NOT_COVERED]);
+  const howSure = page.locator('section[aria-labelledby="how-sure-we-are"]');
+  await expect(howSure).toContainText(coverageSentence(1, 2));
+  const ledger = howSure.locator('[data-slot="report-call-coverage"]');
+  await expect(ledger.locator('[data-call-state="interpreted"] dd')).toHaveText("1");
+  await expect(ledger.locator('[data-call-state="unavailable"] dd')).toHaveText("1");
+  await expect(ledger.locator("[data-call-state]")).toHaveCount(2);
+
+  // The same coverage figure the report list renders for this report (G8.6).
+  const inputs = page.locator('section[aria-labelledby="where-this-comes-from"] [data-slot="input-provenance"]');
+  await expect(inputs.locator('[data-provenance="computed:genome/reports"] [data-slot="figure-value"]'))
+    .toHaveText("read 1 of the 2 positions this needs");
+  await expect(page.getByTestId("report-disclaimer")).toHaveText(NOT_DIAGNOSTIC);
 });
 
 test("/genome/[subject]/reports/[slug] not-covered: a report keeps the not-covered strings at full ink and every section populated", async ({

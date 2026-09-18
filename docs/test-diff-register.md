@@ -1,5 +1,34 @@
 # Test diff register
 
+## Six My Genome route-state pairs proven, ratchet 25 → 19 · 18 September 2026
+
+`e2e/genome-coverage-states.spec.ts` is new: five titled proofs on three
+synthetic accounts, each through the real upload, preparation and explicit
+report choice, with no seeded row and no fabricated completion. `/overview
+not-covered`, `/genome/[subject]/reports not-covered` and
+`/genome/[subject]/data/browser not-covered` on a file that covers nothing the
+product reads (`synthetic-browser-grch38.vcf.gz`, generated for every purpose),
+each establishing the cause from the database before the page is read: one
+prepared file, `user_prs.matched` zero on every panel, and the ancestry page's
+zero-of-168 sentence with the stored empty note and no raw-numbers disclosure.
+`/genome/[subject]/data partial-coverage` on `tiny-b-grch38.vcf`, every coverage
+figure compared with the `user_prs` row and `prs_scores.n_variants` the page
+reads and required to sit strictly between zero and the panel size. `/overview
+complete` on `density-source-grch38.vcf`, after the ancestry page reads 168 of
+168: both counts, five linked starter reports, no shortfall sentence.
+`e2e/report-skeleton.spec.ts` +1 case: `/genome/[subject]/reports/[slug]
+partial-coverage` on the lactose report under `tiny-grch38.vcf` (rs4988235
+read as A/A, rs182549 absent) — one attributed genotype figure, one not-covered
+block at full ink, the second "What this doesn’t mean" bullet, the exact
+`coverageSentence(1, 2)`, the per-position ledger (one used, one with no
+reading) and the same 1-of-2 coverage figure the list renders.
+`docs/route-divergence.json` records the six pairs; `UNPROVEN_ROUTE_STATE_PAIRS`
+falls from 25 to 19. Not proven, and recorded as findings instead
+(`docs/protocol/brief-corrections-proposed.md`): `/genome/[subject]/ancestry
+partial-coverage`, which the page cannot render under the seven-region panel's
+168-marker minimum, and `/genome/[subject]/data not-covered`, whose render is
+the one the route's `complete` proof was taken on. No existing assertion moved.
+
 ## D-128: a gVCF's called sites are calls, its reference records are blocks · 18 September 2026
 
 `src/lib/genome/input-provenance.ts` gains `isReferenceBlockRow`: a row is a
