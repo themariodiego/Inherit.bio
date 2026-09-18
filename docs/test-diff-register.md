@@ -1,5 +1,30 @@
 # Test diff register
 
+## Hosted preparation on Cloudflare Containers (configuration only) · 18 September 2026
+
+`scripts/cloudflare-hosting-config.test.ts` (16 cases) holds the two wrangler
+files, the container Dockerfile and the deploy workflow to ADR-0030: strict
+JSON, names and compatibility dates, observability off on both Workers, the
+gateway's `ARTIFACTS` binding naming the same `inherit-prepared-…` bucket as
+`BUCKET_NAME`, `TOKEN_ISSUER` derived from the same Supabase project as the
+container's `NEXT_PUBLIC_SUPABASE_URL`, `SIGNING_PUBLIC_KEYS` parsing to
+public-only P-256 keys (no `d`, version-4 uuid `kid`; committed empty, so the
+gateway accepts nothing), the cron, one `standard-1` instance, consistent
+class, binding and migration, no credential-shaped value in any var, a
+non-root `USER`, a `CMD` ending in `--once`, and a workflow that runs only from
+main under the `cloudflare` environment behind `CLOUDFLARE_DEPLOY_ENABLED`,
+with pinned wrangler 4.134.0, `persist-credentials: false`, read-only
+permissions and secrets scoped to the two wrangler steps.
+`scripts/cloudflare-deploy-guard.test.ts` (10 cases) proves the production
+refusals: an empty key list, a 404 or unreachable JWKS, a served key that
+differs on `kid`, `x` or `y`, and a served private component.
+`workers/prepared-worker/src/index.test.ts` (6 cases, `cloudflare:workers`
+stubbed) proves the object starts only a stopped container, forwards exactly
+the six named variables, and that the cron wakes the one named object. Not
+proved here: the image build, a real deploy, the account's `workers.dev`
+subdomain, container behaviour under a real job, and any capacity figure.
+`wrangler deploy --dry-run` validated both configurations without an account.
+
 ## Monthly admission cap on prepared-genome preparations · 18 September 2026
 
 - `own_preparation_monthly_cap.sql` (pgTAP, 31 assertions) is written to prove

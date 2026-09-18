@@ -35,3 +35,4 @@ writing a superseding ADR, not silently drifting.
 | [0027](./0027-cross-attempt-preparation-recovery.md) | Cross-attempt recovery for preparation: for a large file, resumption is the only recovery that fits its deadline | Proposed |
 | [0028](./0028-jurisdiction-gating-mechanism.md) | The jurisdiction gating mechanism: default deny across all 249 codes, and no determination authored by the system that enforces it | Proposed |
 | [0029](./0029-density-contract.md) | The density contract: measured budgets rather than review judgement, and the accessibility rule wins where they conflict | Proposed |
+| [0030](./0030-hosted-preparation-on-cloudflare-containers.md) | Hosted preparation on Cloudflare Containers: a five-minute cron wakes one standard-1 container that runs one pass and exits | Accepted by owner decision |

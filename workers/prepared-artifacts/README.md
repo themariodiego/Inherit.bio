@@ -42,3 +42,25 @@ race consumed half an upload before writing the marker; after the upload
 settled, the same empty marker remained. Neither test establishes full-genome
 application capacity. The production worker host, allowance, complete journey,
 original retention and measured file limits remain deployment requirements.
+
+## Deployment
+
+`wrangler.json` beside this file is the Worker's configuration: name
+`inherit-prepared-artifacts`, compatibility date `2026-09-08`, `workers_dev`
+on (the app's DNS is not on Cloudflare, so the gateway is served at its
+`workers.dev` URL), preview URLs off, observability off, the `ARTIFACTS`
+binding to `inherit-prepared-production`, and an `env.preview` block for
+`inherit-prepared-artifacts-preview` on `inherit-prepared-preview`. The vars
+carry only the bucket name, the issuer and the public key list;
+`SIGNING_PUBLIC_KEYS` is committed as `"[]"`, and a gateway with no keys
+accepts nothing.
+
+`.github/workflows/deploy-cloudflare.yml` deploys it, followed by the
+container Worker in `../prepared-worker` (ADR-0030), on pushes to `main` that
+touch either Worker, once the owner enables the workflow. Its guard,
+`scripts/cloudflare-deploy-guard.ts`, refuses a production deploy while that
+list is empty or while any committed key differs from what the app serves at
+`/.well-known/inherit-upload-jwks.json`. `scripts/cloudflare-hosting-config.test.ts`
+holds the configuration to the requirements above. Create the two buckets
+before the first deploy, with public access off and no lifecycle rules; the
+workflow does not create them.

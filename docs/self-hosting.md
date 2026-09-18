@@ -256,6 +256,21 @@ does not declare. Copy the template, then work through these.
 | `INHERIT_PREPARED_R2_ORIGIN` | Empty unless the flag above is on. Then: the HTTPS origin of the signed artifact gateway — scheme and host only, no path, no trailing slash, no query, no credentials. Anything else makes the transport unavailable. |
 | `INHERIT_PREPARED_R2_BUCKET` | Empty unless the flag above is on. Then: the exact private bucket bound to that gateway and selected in the database configuration. A bucket that does not match this value is refused. |
 
+#### Hosted preparation on Cloudflare
+
+The public deployment does not run `pnpm worker:prepared` by hand. It is set
+up to run it inside a Cloudflare Container that a five-minute cron wakes
+(`workers/prepared-worker/`, ADR-0030), behind the private prepared-artifact
+gateway in `workers/prepared-artifacts/`. Both are deployed by
+`.github/workflows/deploy-cloudflare.yml`, which stays disabled until the owner
+turns it on. The container receives the three switches above plus
+`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and
+`INHERIT_UPLOAD_SIGNING_JWK`, and nothing else; the two secrets are set with
+`wrangler secret put`, never committed. A self-host needs none of this: the
+operator-started command is the same process, and the hosted path changes only
+who starts it. Nothing in those directories activates preparation; the
+database gate and the privacy notice both remain to be changed first.
+
 ### Upload size caps
 
 Ceilings in bytes for the self-host upload surfaces (`src/lib/limits.ts`).
