@@ -58,11 +58,11 @@ Released:
   carries it, with a byte-equal postflight and a 13/13 rollback-only probe,
   `docs/evidence/gvcf-ceiling-release-20260918/`; the column stays null so no
   limit moved); D-128 recorded. Main's post-merge run 35351892873 passed.
-- Parked, ready to push as their own pull requests once the record above
-  merges: the D-128 correction (`work/d128`, decision 12; 2,390 unit tests,
-  typecheck and gates green locally) and the approved privacy sentence
-  (`work/privacy-cloudflare`, decision 9), which ships only with production
-  activation.
+- PR #140 (`a95c3cf`): that release's record and decisions 9 to 12; post-merge
+  run 35362723463 passed. PR #141 (`73b298b`): the D-128 correction under the
+  same version strings (decision 12), green on run 35362848403; D-128 closed.
+- Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
+  decision 9), which ships only with production activation.
 
 Open, by what it waits on:
 
