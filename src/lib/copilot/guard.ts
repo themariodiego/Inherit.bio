@@ -2,7 +2,7 @@
  * The Copilot guard (brief line 2262; §5.7 line 366, §6.4 line 402; register
  * `copilot-intent-gate-v1` and `copilot-output-guard-v1`).
  *
- * Four deterministic checks and no model call anywhere:
+ * Five deterministic checks and no model call anywhere:
  *
  * 1. `classifyIntent` reads the user's latest message against the fixed rule
  *    table `INTENT_RULES` (word lists and patterns, nothing learned) and
@@ -21,6 +21,12 @@
  *    matching whole tokens only.
  * 4. `checkResponsePolicy` checks model-authored assertions and directives,
  *    separately from the user's intent, while retaining file explanations.
+ * 5. `checkRelativeRisk` is G4.8's second sentence (brief line 2635) and
+ *    anti-pattern 4 (line 2695): a response that states a risk relative to
+ *    someone else's ("1.6 times higher", "40% lower", "higher than average")
+ *    must carry an absolute figure beside it, and Inherit holds no absolute
+ *    risk figure for any person, so such a response is replaced with the
+ *    unsupported-number refusal whether or not its numbers came from a tool.
  *
  * Two helpers keep the route honest about what it checks: `foldStreamChunks`
  * turns the buffered model stream into the one string the checks read (text,
@@ -835,6 +841,71 @@ export function checkCitations(text: string, permitted: PermittedCitations): Cit
 }
 
 // ---------------------------------------------------------------------------
+// The relative-risk check (G4.8, brief line 2635; anti-pattern 4, line 2695).
+// ---------------------------------------------------------------------------
+
+export interface RelativeRiskVerdict {
+  ok: boolean;
+  /** Every relative-risk claim found with no absolute figure beside it. */
+  unsupported: string[];
+}
+
+/**
+ * A risk stated relative to someone else's, with a number on it: a multiple
+ * ("1.6 times higher", "3-fold", "2x the risk", "twice as likely"), a
+ * percentage change ("40% higher", "reduces your risk by 20%"), or a named
+ * ratio ("odds ratio 1.4"). These apply whatever frames them: the brief's rule
+ * is mechanical, so "this does not mean your risk is 40% higher" still needs
+ * the absolute figure it withholds.
+ */
+const NUMERIC_RELATIVE_RISK_PATTERNS: readonly RegExp[] = [
+  /\b\d+(?:\.\d+)?\s*(?:x|×|-?fold|times)\s+(?:higher|lower|more|less|greater|smaller|the|as)\b/giu,
+  /\b(?:twice|half|double|triple|three times|four times|ten times)\s+(?:as\s+likely|the\s+(?:risk|chance|odds|likelihood)|more\s+likely|less\s+likely)\b/giu,
+  /\b\d+(?:\.\d+)?\s*%\s+(?:higher|lower|more|less|greater|smaller|increased|decreased|reduced|raised|elevated)\b/giu,
+  /\b(?:increases?|increasing|decreases?|decreasing|raises?|raising|lowers?|lowering|reduces?|reducing|cuts?|doubles?|halves?|triples?)\s+(?:your|the|a person's|their)\s+(?:risk|chance|chances|odds|likelihood)\b[^.]{0,60}?\bby\s+\d+(?:\.\d+)?\s*(?:%|percent|times|fold)?/giu,
+  /\b(?:relative\s+risk|risk\s+ratio|odds\s+ratio|hazard\s+ratio)\b\s*(?:of|is|was|=|:)?\s*\d+(?:\.\d+)?/giu,
+];
+
+/**
+ * The same claim without a number ("your risk is higher than average"). A
+ * sentence that denies or questions the comparison ("cannot tell you whether
+ * your risk is higher than average") is an honest explanation and stays.
+ */
+const BARE_RELATIVE_RISK_PATTERNS: readonly RegExp[] = [
+  /\b(?:your|the|a|an|their)\s+(?:\w+\s+){0,3}(?:risk|chance|chances|odds|likelihood)\b[^.]{0,60}?\b(?:higher|lower|greater|smaller|more|less)\s+than\s+(?:average|the\s+average|most\s+people|other\s+people|others|the\s+general\s+population|people\s+without|someone\s+without)\b/giu,
+  /\b(?:higher|lower|greater|smaller|increased|decreased|elevated|reduced)\s+(?:risk|chance|odds|likelihood)\s+(?:of\s+\w+(?:\s+\w+)?\s+)?(?:than|compared\s+(?:with|to))\s+(?:average|the\s+average|most\s+people|other\s+people|others|the\s+general\s+population)\b/giu,
+];
+
+const BARE_RELATIVE_SAFE_FRAME = /\b(?:cannot|can't|can not|does not|doesn't|do not|don't|will not|won't|never|not|no|whether)\b[^.]*$/iu;
+
+/** An absolute figure anti-pattern 4 requires beside any relative one. */
+const ABSOLUTE_FIGURE_PATTERNS: readonly RegExp[] = [
+  /\b\d+(?:\.\d+)?\s*%\s+(?:of\s+(?:people|women|men|adults|carriers|the\s+population)|lifetime|absolute|chance|risk)\b/iu,
+  /\b\d+(?:,\d{3})*\s+(?:in|out\s+of)\s+\d+(?:,\d{3})*\b/iu,
+  /\bpercentage\s+points?\b/iu,
+  /\babsolute\s+(?:risk|chance)\b/iu,
+  /\bfrom\s+\d+(?:\.\d+)?\s*%\s+to\s+\d+(?:\.\d+)?\s*%/iu,
+];
+
+export function checkRelativeRisk(text: string): RelativeRiskVerdict {
+  const normalized = text.normalize("NFKC").replace(/\p{Cf}/gu, "");
+  const unsupported: string[] = [];
+  for (const sentence of normalized.split(/(?:[.!?;]\s+|\n+)/u)) {
+    for (const pattern of NUMERIC_RELATIVE_RISK_PATTERNS) {
+      for (const match of sentence.matchAll(pattern)) unsupported.push(match[0].trim());
+    }
+    for (const pattern of BARE_RELATIVE_RISK_PATTERNS) {
+      for (const match of sentence.matchAll(pattern)) {
+        if (BARE_RELATIVE_SAFE_FRAME.test(sentence.slice(0, match.index))) continue;
+        unsupported.push(match[0].trim());
+      }
+    }
+  }
+  if (unsupported.length === 0) return { ok: true, unsupported };
+  return ABSOLUTE_FIGURE_PATTERNS.some((pattern) => pattern.test(normalized)) ? { ok: true, unsupported: [] } : { ok: false, unsupported };
+}
+
+// ---------------------------------------------------------------------------
 // The output check the route runs on a finished model answer.
 // ---------------------------------------------------------------------------
 
@@ -911,6 +982,8 @@ export function checkResponse(
   if (policy.intent !== "allowed") return { ok: false, violation: policy.intent, unsupported: [policy.rule!] };
   const numerals = checkResponseNumerals(text, toolJson, allowed, context);
   if (!numerals.ok) return { ok: false, violation: "unsupported-number", unsupported: numerals.unsupported };
+  const relative = checkRelativeRisk(text);
+  if (!relative.ok) return { ok: false, violation: "unsupported-number", unsupported: relative.unsupported };
   const citations = checkCitations(text, permittedCitationsFromToolJson(toolJson));
   if (!citations.ok) return { ok: false, violation: "unsupported-citation", unsupported: citations.unsupported };
   return { ok: true };

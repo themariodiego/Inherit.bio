@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
+import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
@@ -155,6 +156,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel }: {
           <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
           {message.citations.length > 0 ? <ul aria-label="Sources" className="mt-3 space-y-2">{message.citations.map(source =>
             <li key={source.id}><a href={source.href} rel="noreferrer" className="break-words underline underline-offset-2">{source.label}</a></li>)}</ul> : null}
+          {message.role === "assistant" ? <p data-slot="chat-not-diagnostic" className="mt-3 text-xs text-ink-muted">{NOT_DIAGNOSTIC}</p> : null}
         </div>)}
         {busy ? <p className="text-sm text-ink-muted">Checking your question…</p> : null}
       </div>
