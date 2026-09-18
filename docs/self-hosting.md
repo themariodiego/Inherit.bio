@@ -182,6 +182,17 @@ as root.
 - **Vercel**: Hobby caps functions at 300 s (fine for the demo caps); Pro
   allows 800 s and per-minute cron. Processing a 200 MB VCF fits in 300 s;
   raise caps only with Pro + tested headroom.
+- **Prepared-genome admissions**: the database caps how many new full-genome
+  preparations it admits per UTC calendar month. The cap is
+  `monthly_admission_limit` on the private singleton row
+  `private.own_preparation_config` (default 100, allowed 1 to 100000), read
+  by `enqueue_own_preparation_v1` at admission. The admission past it is
+  refused with `preparation_capacity_reached`; the file stays stored and no
+  job is written. The count lives in
+  `private.own_preparation_monthly_admissions`, one row per month and no
+  personal data. It is not an environment variable and no response discloses
+  it. Raise it with a single `update` on that row once you have measured a
+  month's worker and storage spend at the current cap.
 
 ## 4. The Tier-3 worker (FASTQ/BAM analysis)
 

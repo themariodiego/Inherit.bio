@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ rpc: vi.fn(), actor: vi.fn() }));
 vi.mock("../supabase/admin", () => ({ createAdminClient: () => ({ rpc: state.rpc }) }));
@@ -41,6 +42,23 @@ describe("own WGS quick process dispatch", () => {
     state.rpc.mockResolvedValueOnce({ data: null, error: { code, message: "private diagnostic" } }); const response = await prepareOwnWgsFile(request(), file);
     expect(response?.status).toBe(code === "42501" ? 404 : 503); expect(JSON.stringify(await response?.json())).not.toContain("private");
   });
+  it("answers a full month with the registered capacity refusal and claims no job", async () => {
+    state.rpc.mockResolvedValueOnce(status("not_requested", null))
+      .mockResolvedValueOnce({ data: null, error: { code: "53400", message: "preparation_capacity_reached" } });
+    const response = await prepareOwnWgsFile(request(), file);
+    expect(response?.status).toBe(429); expect(await response?.json()).toEqual({ error: "preparation_capacity_reached" });
+    expect(state.rpc.mock.calls.map(([name]) => name)).toEqual(["own_preparation_status_v1", "enqueue_own_preparation_v1"]);
+  });
+  it("maps only the exact capacity message; any other 53400 stays an opaque 503", async () => {
+    state.rpc.mockResolvedValueOnce(status("not_requested", null))
+      .mockResolvedValueOnce({ data: null, error: { code: "53400", message: "private diagnostic" } });
+    const response = await prepareOwnWgsFile(request(), file);
+    expect(response?.status).toBe(503); expect(JSON.stringify(await response?.json())).not.toContain("private");
+  });
+  it("never reads the capacity refusal off the status call, which cannot admit anything", async () => {
+    state.rpc.mockResolvedValueOnce({ data: null, error: { code: "53400", message: "preparation_capacity_reached" } });
+    expect((await prepareOwnWgsFile(request(), file))?.status).toBe(503); expect(state.rpc).toHaveBeenCalledTimes(1);
+  });
   it("refuses cross-source receipts", async () => {
     const result = status("prepared"); result.data.fileId = jobId; state.rpc.mockResolvedValueOnce(result);
     expect((await prepareOwnWgsFile(request(), file))?.status).toBe(503);
@@ -50,5 +68,12 @@ describe("own WGS quick process dispatch", () => {
   });
   it("withholds frozen preparation and does not claim success", async () => {
     state.rpc.mockResolvedValueOnce(status("failed")); expect((await prepareOwnWgsFile(request(), file))?.status).toBe(503);
+  });
+  it("registers the capacity refusal on the process route with the exact shape it answers", () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8"));
+    expect(register.responseContractBindings.routes["api.file-process"]).toContain("preparation-capacity-v1");
+    expect(register.responseContracts["preparation-capacity-v1"]).toMatchObject({
+      status: 429, body: { error: { const: "preparation_capacity_reached" } }, unknownFieldsRecursively: "forbidden",
+    });
   });
 });

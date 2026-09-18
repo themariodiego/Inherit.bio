@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { hasEmptyRequestBody } from "../empty-request-body";
-import { subjectNormalizationReceipt, subjectQueuedPreparationReceipt } from "./subject-upload-contract";
+import { subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectQueuedPreparationReceipt } from "./subject-upload-contract";
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const statusSchema = z.object({ version: z.literal("own-preparation-status-v1"), fileId: uuid, jobId: uuid.nullable(),
   status: z.enum(["not_applicable", "not_requested", "preparing", "prepared", "failed"]) }).strict().refine(value =>
@@ -23,7 +23,7 @@ export async function prepareOwnWgsFile(request: Request, file: { id: string; fi
     const actor = await currentOwnUploadAccount(); if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
     const admin = createAdminClient();
     // Kept local until generated database typings include these additive RPCs.
-    const rpc = admin.rpc.bind(admin) as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string } | null }>;
+    const rpc = admin.rpc.bind(admin) as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { code?: string; message?: string } | null }>;
     const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_file_id: file.id };
     const current = await rpc("own_preparation_status_v1", args);
     if (current.error) return ownUploadJson({ error: current.error.code === "42501" ? "not_found" : "preparation_unavailable" }, current.error.code === "42501" ? 404 : 503);
@@ -38,6 +38,12 @@ export async function prepareOwnWgsFile(request: Request, file: { id: string; fi
     if (status.status === "not_requested") {
       if (jobId !== null) return ownUploadJson({ error: "preparation_unavailable" }, 503);
       const result = await rpc("enqueue_own_preparation_v1", args);
+      // The database refuses the admission past this month's cap with this
+      // exact message (SQLSTATE 53400) before any job row exists. It is the
+      // one refusal a person can act on, so it keeps its own code and status.
+      if (result.error?.message === "preparation_capacity_reached") {
+        return ownUploadJson(subjectPreparationCapacityRefusal.parse({ error: "preparation_capacity_reached" }), 429);
+      }
       if (result.error) return ownUploadJson({ error: result.error.code === "42501" ? "not_found" : "preparation_unavailable" }, result.error.code === "42501" ? 404 : 503);
       const queued = enqueueSchema.safeParse(result.data);
       if (!queued.success || queued.data.fileId !== file.id || Date.parse(queued.data.jobDeadline) <= Date.now()) {

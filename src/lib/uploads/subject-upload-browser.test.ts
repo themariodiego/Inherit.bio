@@ -60,6 +60,20 @@ describe("preparing an already finalized file", () => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "report_generation_unavailable", fileId }, { status }));
     await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable" });
   });
+  it("reports a full month as its own refusal: the file is kept and nothing is uploaded or retried", async () => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "preparation_capacity_reached" }, { status: 429 }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "preparation_capacity_reached", message: "preparation_capacity_reached" });
+    expect(fetchMock).toHaveBeenCalledTimes(1); expect(requests).toHaveLength(0);
+  });
+  it.each([
+    { status: 429, body: { error: "preparation_capacity_reached", fileId } },
+    { status: 429, body: { error: "preparation_capacity_reached", limit: 100 } },
+    { status: 503, body: { error: "preparation_capacity_reached" } },
+    { status: 429, body: { error: "try_again_later" } },
+  ])("does not read a capacity refusal from an open, numbered or other-status body (%j)", async ({ status, body }) => {
+    fetchMock.mockReset().mockResolvedValueOnce(Response.json(body, { status }));
+    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "unavailable" });
+  });
   it("keeps lost and unreadable responses uncertain without exposing network details", async () => {
     fetchMock.mockReset().mockRejectedValueOnce(new Error("private network detail"))
       .mockResolvedValueOnce(new Response("not JSON", { status: 503 }));

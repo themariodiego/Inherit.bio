@@ -59,6 +59,10 @@ export const subjectProcessingReceipt = z.union([subjectNormalizationReceipt, su
 export const subjectReportGenerationFailure = z.object({
   error: z.literal("report_generation_unavailable"), fileId: uuid,
 }).strict();
+/** The month's admission cap is full: the file is kept exactly as finalized and
+ * no job exists for it. Answered with HTTP 429 only. The cap itself is a
+ * private database value; no number ever crosses this body. */
+export const subjectPreparationCapacityRefusal = z.object({ error: z.literal("preparation_capacity_reached") }).strict();
 
 /** Parser identities stay internal; neither filenames nor vendor labels select authority. */
 export function declaredSubjectFormat(kind: FileKind, compressed: boolean): SubjectUploadFormat | null {

@@ -1,5 +1,38 @@
 # Test diff register
 
+## Monthly admission cap on prepared-genome preparations · 18 September 2026
+
+- `own_preparation_monthly_cap.sql` (pgTAP, 31 assertions) is written to prove
+  the owner's hard cap at the database: `monthly_admission_limit` defaults to
+  100 and is bounded 1 to 100000; with the limit set to 2 and three actually
+  issued and finalized synthetic sources, the first two admissions succeed,
+  the third raises SQLSTATE 53400 `preparation_capacity_reached`, the count
+  stays at 2, the refused file has no job and its row is byte-identical; a
+  replay of an already queued file and a source refused by authority consume
+  no admission; raising the limit admits the next file; a new month row
+  starts at zero; the disabled gate still answers first; the ledger has
+  row-level security, no policy, no direct privilege for any role and no
+  column about a person. One rolled-back transaction on a fresh database.
+  It does not prove concurrent admissions (one session cannot race itself;
+  the row lock is read in the function, not measured), a month rollover on a
+  live clock, or anything on a hosted database. There is no hosted proof.
+- `own-preparation.test.ts` adds four cases: the enqueue error whose message
+  is `preparation_capacity_reached` answers 429
+  `{ error: "preparation_capacity_reached" }` after the status call and the
+  enqueue call only; any other 53400 stays an opaque 503; the same message on
+  the status call is never read as a refusal; and the registered
+  `preparation-capacity-v1` shape and its binding to `api.file-process` are
+  pinned from `docs/route-register.json`.
+- `subject-upload-browser.test.ts` adds the browser mapping: a 429 with the
+  exact closed body becomes `preparation_capacity_reached` after one request
+  and no upload; an open, numbered or other-status body stays `unavailable`.
+- `preparation-recovery.test.ts` pins the wording "Inherit has reached this
+  month's limit for full-genome files. Your file is kept; try again from the
+  first of next month.", no number, no retry control and the file link.
+- The pgTAP file was not run before commit: this change was written without
+  a local database. CI's `supabase test db` on a fresh database is its first
+  run, and the unit tests above are the only checks that ran here.
+
 ## Upload signer public key endpoint · 18 September 2026
 
 `GET /.well-known/inherit-upload-jwks.json` serves the upload signer's public
