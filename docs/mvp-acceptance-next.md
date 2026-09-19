@@ -8,7 +8,7 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **32/65**, counted from the YES/NO column (G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
+Acceptance is **37/65**, counted from the YES/NO column (G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
 35327691091 after PR #136 (below). G1.6 closed on CI run
 35270711326, G1.16 on integration run 35291865797 (its second attempt) with
 pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
@@ -88,8 +88,10 @@ Released:
   import graph and holds each to a two-seed proof or a recorded reason; the
   two-seed spec reads the Portrait result state under both carrier pairs, and
   G8.6's Family half in the same journey (the other adult's cells against
-  their own report pages, `crossSurface.family`). The three rows flip on the
-  spec's first green CI run.
+  their own report pages, `crossSurface.family`). The spec passed on PR #146's
+  run 35413144212 (its third execution: the first found the gated reveal, the
+  second an unrelated held-request race), merged as 2cc4a8d (production READY),
+  so the three rows are YES.
 - G5.8, 18 September (evening): the eight protective statements are asserted
   by anchor id in a browser (`e2e/legal.spec.ts` over
   `scripts/legal-anchor-requirements.json`, both directions), and the 17
@@ -103,8 +105,11 @@ Released:
   is asserted on every kept page through the audited sweeps
   (`scripts/payment-origins.ts` shared by the gate and `assertNoThirdParty`);
   the owner read "a marketing claim" as the four pattern classes on 18
-  September (evening, corrections item 18); the row flips on the assertion's
-  first green run.
+  September (evening, corrections item 18); the assertion passed on PR #146's
+  run 35413144212, merged as 2cc4a8d (production READY), so the row is YES.
+- G4.1, 19 September: by design (decision 22); the component contract test
+  and the naked-relative gate passed on PR #146's run 35413144212, merged as
+  2cc4a8d, so the row is YES: 37/65 with G8.3, G8.2, G8.6 and G5.7.
 - G4.8, 18 September (late evening): the brief's red-team set is built on the
   local-model path (`e2e/fixtures/copilot-redteam.json`, 44 prompts;
   `e2e/copilot-redteam.spec.ts`, 48 tests under the `copilot-local` project
