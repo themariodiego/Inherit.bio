@@ -70,7 +70,7 @@
       ],
       "vars": {
         "INHERIT_PREPARED_WGS_ENABLED": "true",
-        "NEXT_PUBLIC_SUPABASE_URL": "",
+        "NEXT_PUBLIC_SUPABASE_URL": "https://iofjhrtcyawjjhuxbgfd.supabase.co",
         "INHERIT_PREPARED_R2_ORIGIN": "https://inherit-prepared-artifacts-preview.mariodiego-dev.workers.dev",
         "INHERIT_PREPARED_R2_BUCKET": "inherit-prepared-preview"
       }
