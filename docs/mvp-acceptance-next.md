@@ -171,10 +171,9 @@ Open, by what it waits on:
   genomes a month stay unproved (D-124).
 - Product workstreams: third-party adult uploads and quarantine (G2.6, G5.3);
   embryo ingest (G2.6, G4.2, G4.5, G8.3, G8.6, G5.9); the route-state matrix
-  (G1.7, G1.12, G2.2: 13 pairs open after the owner's four waivers of 18
-  September (evening) — nine wait on embryo ingest, two Portrait pairs on a
-  classified position, and the two Family `processing` pairs on the sentence
-  the owner chose the same evening, which is product work next); task-depth instrumentation and the four Overview boxes
+  (G1.7, G1.12, G2.2: 11 pairs open after the owner's four waivers of 18
+  September (evening) and the two Family `processing` proofs of 19 September —
+  nine wait on embryo ingest and two Portrait pairs on a classified position); task-depth instrumentation and the four Overview boxes
   that land on a domain index (G2.4); density enforcement where the product
   misses the rule (G2.5); rights routes (G5.4).
 
@@ -314,8 +313,10 @@ every case. Applied in the same change unless it says product work.
     17 → 13 (`scripts/route-gate.ts` ledger, corrections document).
 17. **Family `processing` disclosure:** one adult may be told that the other
     adult's file is still being prepared, one sentence on
-    `/family/health-picture` and `/family/portrait/[pairId]`; product work
-    with a `processing` proof on each page, ratchet 13 → 11 when proven.
+    `/family/health-picture` and `/family/portrait/[pairId]`. Built on 19
+    September (`CELL_FILE_PREPARING`, `filePreparing`, `VIEWER_FILE_PREPARING`;
+    both pages ask `hasFileInPreparation` of a person without a source) and
+    proven by `e2e/family-processing-states.spec.ts`; ratchet 13 → 11.
 18. **ADR-0028 and ADR-0029:** accepted as written (status lines updated);
     G7.1's minimum set of eight is now complete and accepted.
 19. **Glossary definitions (G1.11):** not claims; they render from

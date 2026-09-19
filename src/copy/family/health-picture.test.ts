@@ -129,6 +129,10 @@ describe("health-picture copy", () => {
     expect(fleschKincaidGrade(copy.RUNS_PROVENANCE)).toBeLessThanOrEqual(9);
   });
 
+  it("names the cell of a person whose file is still being prepared, apart from the absent-file cell", () => {
+    expect(copy.CELL_FILE_PREPARING).toBe("File still being prepared");
+    expect(copy.CELL_FILE_PREPARING).not.toBe(copy.CELL_NO_PREPARED_FILE);
+  });
   it("names the cell of a layer another adult has not shared, in words and without a figure (D-038)", () => {
     expect(copy.CELL_NOT_SHARED).toBe("Not shared with you");
     expect(copy.CELL_NOT_SHARED).not.toMatch(/\d/);
