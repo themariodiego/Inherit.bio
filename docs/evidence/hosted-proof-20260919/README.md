@@ -41,8 +41,11 @@ the ordered account. Times are UTC.
    file set: the worker module imports `docs/route-register.json`, which the
    image did not copy. Fixed in `87ab3fa` (Dockerfile, `.dockerignore`,
    README, hosting test). `Deploy Cloudflare` for `preview` dispatched
-   again: run 35414765750.
+   again: run 35414765750, success at 02:10:49.
 9. 02:05 · `pnpm seed` against the branch (reference data only).
+10. 02:15 and 02:20 · First container wakes that reach the branch: the
+    idle run's three calls from Cloudflare's network, about 7 seconds
+    after each cron tick (`STATUS.md`).
 
 ## Measurements
 

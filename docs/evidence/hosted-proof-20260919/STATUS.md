@@ -94,7 +94,21 @@ as binding as the "Done" list.
   `scripts/cloudflare-hosting-config.test.ts` now follows the worker entry's
   import graph and requires every file it reaches outside `src/` to be
   copied (the test fails on the old Dockerfile). Redeploy of `preview`
-  dispatched after the push; the fix reaches production with the merge.
+  dispatched after the push: run 35414765750, success at 02:10:49. The fix
+  reaches production with the merge.
+- 02:23 · The preview container is alive. The branch's API logs show, from
+  Cloudflare's network (colo CMH), the three calls one `--once` run makes
+  (`claim_next_own_preparation_work_v1`, `prepare_due_prepared_scratch_v1`,
+  `claim_own_prepared_cleanup_v1`, all 200) at 02:15:07 and 02:20:07: one
+  wake per cron tick, first request about 7 seconds after the tick. With no
+  job queued that is the idle path; the first job still waits on the owner
+  action below.
+- 02:12 · Full unit suite on this branch: 5134 passed, 48 skipped, 6 failed
+  in 4 files, all environmental and untouched by this branch (six in
+  `scripts/ci-browser-runtime.test.ts` because this session runs as root,
+  two claims files because the pinned Playwright cannot find its Chromium
+  build here, one because the tree was dirty while the suite ran); the new
+  hosting test passes.
 
 ## In progress
 
