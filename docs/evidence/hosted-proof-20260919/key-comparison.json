@@ -13,7 +13,26 @@
       "y": "ZrqrCUSRdTdxyhUQ-1JC_-SgQ98glUpgGDYavehN0yk"
     }
   },
-  "served": null,
-  "equal": null,
-  "note": "served and equal are filled in once this branch's Vercel Preview deployment is READY and the endpoint has been fetched with the protection-bypass header."
+  "served": {
+    "deployment": "dpl_GN9c7UQD98Jp6mnDT5R9KPb4pV7V (Vercel Preview of b38cc54, READY 01:46:20Z)",
+    "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/.well-known/inherit-upload-jwks.json",
+    "fetchedAt": "2026-09-19T01:48:21Z",
+    "how": "curl with x-vercel-protection-bypass and x-vercel-set-bypass-cookie, following the 307 that sets the cookie",
+    "status": 200,
+    "document": {
+      "keys": [
+        {
+          "kty": "EC",
+          "crv": "P-256",
+          "kid": "4d1d178c-3f0c-41d0-902f-788c83fdef3d",
+          "x": "TCdjutYMAEAsTQR86kJU78Wp4Zdd4A8RAL-EgtkdUJc",
+          "y": "ZrqrCUSRdTdxyhUQ-1JC_-SgQ98glUpgGDYavehN0yk",
+          "alg": "ES256",
+          "use": "sig"
+        }
+      ]
+    }
+  },
+  "equal": true,
+  "note": "kid, x, y, kty and crv are equal; the served document adds alg ES256 and use sig, which the committed shape omits on purpose (the gateway reads kid, x and y)."
 }
