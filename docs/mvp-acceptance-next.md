@@ -248,12 +248,21 @@ session, and there is no Docker here, so image builds and pgTAP run only in CI.
 The capacity trial of 8 September took 71 seconds for a 5 MB synthetic source, so
 a full-size file needs a long-lived host rather than a function.
 
-Owner actions outstanding before the hosted proof can run: enable the Workers
-Paid plan; create the scoped token and the `cloudflare` GitHub environment with
-its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable; raise the Supabase
-Storage upload limit to at least 8 GiB; later, set the two container secrets and,
-at activation, the three Vercel variables, and approve the privacy sentence that
-names Cloudflare.
+Owner actions before the hosted proof, all done as of 19 September 01:35 UTC:
+the Workers Paid plan, the scoped token, the `cloudflare` GitHub environment
+with its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable, the Storage
+upload limit (9 GB, spend cap kept), the `hosted-proof` Supabase branch (which
+carries production's schema, `docs/evidence/hosted-proof-branch-20260919/`),
+the preview signer imported as a standby JWT key on the branch, the preview
+container's two secrets, the seven Vercel Preview variables, the bypass token
+and the three proof-session variables. The proof runs from a session of its
+own on the branch `claude/hosted-proof-20260919`, which also commits the
+preview Workers' configuration (the branch URL as the container's
+`NEXT_PUBLIC_SUPABASE_URL` and the gateway's `TOKEN_ISSUER`, and the signer's
+public half as the gateway's `SIGNING_PUBLIC_KEYS`) and dispatches the preview
+deploy. At activation: the production container's two secrets (deferred by
+decision 27; the container has run without them since 18 September, idle by
+design) and the privacy sentence that names Cloudflare.
 
 ## Owner decisions · 18 September 2026, evening (twelve, asked as selectable choices)
 
