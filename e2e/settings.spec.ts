@@ -138,7 +138,11 @@ test("/settings processing: the digest switch is held while its write is in flig
     await expect(digest).toBeEnabled();
     await digest.click();
     await expect(digest).toBeDisabled();
-    expect(intercepted, "the state is held by a real in-flight write").toBeGreaterThan(0);
+    // Polled, not read once: React disables the switch before the browser's
+    // request reaches this test's handler, so one read of the count raced it
+    // (run 35409475065 saw the switch disabled with the count still 0). The
+    // write stays held until `release()`, so what is proved is unchanged.
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight write" }).toBeGreaterThan(0);
   } finally {
     release();
   }
@@ -176,7 +180,7 @@ test("/settings/copilot processing: the save control is held while the provider 
     await expect(save).toBeEnabled();
     await save.click();
     await expect(save).toBeDisabled();
-    expect(intercepted, "the state is held by a real in-flight write").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight write" }).toBeGreaterThan(0);
   } finally {
     release();
   }
@@ -224,7 +228,7 @@ test("/settings/data processing: the deletion control says Scheduling while its 
 
     await expect(schedule).toBeDisabled();
     await expect(schedule).toHaveText("Scheduling…");
-    expect(intercepted, "the state is held by a real in-flight request").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight request" }).toBeGreaterThan(0);
   } finally {
     release();
   }
@@ -382,7 +386,7 @@ test("/settings/consents processing: the revoke control says Working while its r
     // Withdrawal is the one action on this page. Nothing may claim it is done
     // while the request that would do it is still in flight.
     await expect(page.getByRole("button", { name: "Revoke", exact: true })).toHaveCount(0);
-    expect(intercepted, "the state is held by a real in-flight revocation").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight revocation" }).toBeGreaterThan(0);
   } finally {
     release();
   }

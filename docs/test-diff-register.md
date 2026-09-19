@@ -1,5 +1,79 @@
 # Test diff register
 
+## No payment-processor origin in any response · 18 September 2026
+
+`scripts/payment-origins.ts` is new and holds G5.7's processor-origin list for
+both readers: `scripts/legal-placeholder-gate.ts` scans the tree with it, and
+`assertNoThirdParty` (`e2e/helpers.ts`) now reads the rendered document of
+every page it audits and fails on a processor origin in it, so the
+register-derived sweeps in `e2e/a11y.spec.ts` hold the claim on every kept page
+in both themes and both auth modes, and `e2e/network-audit.spec.ts` on its deep
+cases. `scripts/payment-origins.test.ts` plants the list both ways and checks
+it carries no state between calls. No existing assertion moved; every call
+site of `assertNoThirdParty` gained the check.
+
+## The eight protective statements, asserted by anchor id in a browser · 18 September 2026
+
+`e2e/legal.spec.ts` +1 named test: `/terms` renders each statement
+`scripts/legal-anchor-requirements.json` records as present under its anchor
+id, with a heading and a body of substance, and none of the statements it
+records as absent — the record `pnpm gate:legal` holds the page source to,
+read in a browser in both directions (G5.8). The record names the assertion
+(`browserAssertion`). `scripts/consent-statement-screen.ts` and its test are
+new: every consent artifact body the migrations seed (17 documents at their
+current versions, through the three insert shapes the migrations use) is
+screened for the eight statement classes by keyword, and the record's
+`consentDocuments` section holds a reading for each of the 18 candidates —
+five are the statement, three the accuracy disclaimer without its qualifier,
+ten about something else — in both directions, with the quoted words checked
+against the body and a planted migration set proving the parser. No existing
+assertion moved; the three absent clauses stay recorded as absent, and no
+consent document carries any of the five statements the terms page also lacks
+or is incomplete on.
+
+## The figure census: every figure-capable route is differenced or recorded · 18 September 2026
+
+`scripts/figures-census.ts` and `scripts/figures-census.test.ts` are new: the
+pages that can render a figure are measured from the import graph (every
+`page.tsx` under `src/app`, walked to `figure.tsx` and `relative-figure.tsx`)
+and `docs/figures-register.json` gains a `census` section the test holds to
+that set in both directions — nine routes, six differenced (their surfaces
+found by name in `e2e/figures-two-seed.spec.ts` and required to be instances
+of the route), three with no reachable figure state (a reason of substance and
+specs that carry a zero-figure assertion). Four planted trees prove the walker:
+route derivation with groups erased and slots and private folders skipped;
+alias, relative, re-exported and dynamic imports reaching a figure and a cycle
+terminating without one; the three import forms resolving only what exists on
+disk; and the surface-to-route matcher. `e2e/figures-two-seed.spec.ts`'s Family
+journey now also grants Portrait in both directions, acknowledges Portrait in
+each adult's own session, and past the one Tier-2 gate reads the pair's
+Portrait result state under both carrier pairs, expecting no figure — the
+register's record for that route read in a browser under two seeds. The same
+journey then reads G8.6's Family half: every linked cell of the other adult's
+column, then the report page it links to, comparing the
+`computed:genome/reports` figures both show (coverage as a value, genotypes as
+sorted letters) under both pairs, against the new `crossSurface.family`
+section of the register. A linked page in a gated category is read after the
+reader's own reveal: the page withholds its result server-side until the
+gate's control is followed (`?reveal=1`, the mechanism
+`e2e/report-gate.spec.ts` proves), and the first execution of the journey
+(run 35405267090) read 60 such pages gated and found every one empty, so the
+journey now follows the control's target before reading. The same run showed
+no other divergence; the cell's coverage pair is now counted by
+`reportCoverage`, the report's own rule, instead of a rule of its own that
+counted an unrecognized call as read (`health-picture-projection.ts`), so the
+one figure both surfaces repeat has one definition. No existing assertion
+moved; the health-picture comparison is unchanged.
+
+The eight held-request proofs (`e2e/settings.spec.ts` ×4,
+`e2e/auth-processing.spec.ts`, `e2e/copilot-scope-states.spec.ts`,
+`e2e/family.spec.ts` ×2) now poll their interception count instead of reading
+it once: the control renders its pending state before the held request reaches
+the test's route handler, and run 35409475065 read the digest switch as
+disabled with the count still 0. Each request stays held until the test
+releases it, so what is proved — the pending state coincides with a real
+in-flight request — is unchanged; only the read waits for it.
+
 ## Every pre-existing route held to its disposition (G2.3) · 18 September 2026
 
 `docs/route-dispositions.json` is new: the 34 routes `src/app` served at the

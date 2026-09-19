@@ -13,6 +13,7 @@ import { collectFigures, keyed, type CollectedFigure } from "./figure-collector"
 import { assertEveryFigureMoved } from "./figure-differencing";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { GATE_BUTTON } from "../src/copy/family/person";
+import { ACKNOWLEDGE_BUTTON } from "../src/copy/family/portrait";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { REGIONAL_FIGURE_PAIRS } from "./fixtures/regional-figure-fixtures";
 import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
@@ -176,9 +177,11 @@ test("every figure on the My Genome surfaces moves between two seeds", async ({ 
  * ──────────────────────────────────────────────────────────────────────── */
 
 const HEALTH_PICTURE = "/family/health-picture";
+/** The pair's Portrait: the route `docs/figures-register.json` records as having no reachable figure state. */
+const PORTRAIT_ROUTE = "/family/portrait/[pairId]";
 const FAMILY_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
-/** The joint grant that opens a column, plus the two layer grants that open its cells. */
-const GRANTED_PURPOSES = ["family.heritability", "reports.monogenic", "reports.polygenic"] as const;
+/** The joint grant that opens a column, the two layer grants that open its cells, and the Portrait grant. */
+const GRANTED_PURPOSES = ["family.heritability", "reports.monogenic", "reports.polygenic", "family.portrait"] as const;
 type GrantedPurpose = (typeof GRANTED_PURPOSES)[number];
 
 /**
@@ -253,12 +256,90 @@ function without(map: Map<string, CollectedFigure>, keys: ReadonlySet<string>) {
 }
 
 interface MailMessage { to: string[] | string; html?: string }
+/** One figure as a surface shows it: what it is and what it says. */
+interface ShownFigure { kind: string; value: string }
+/** One linked cell of the other adult's column, and the page it links to. */
+interface FamilyCrossSurface { cell: string; href: string; revealed: boolean; inCell: ShownFigure[]; onPage: ShownFigure[] }
+/**
+ * The `computed:genome/reports` figures of a surface, in document order: from
+ * every linked cell of the other adult's column on the side-by-side page, or
+ * from the main region of a report page. Passed to `page.evaluate`, so it is
+ * self-contained: no imports, no closure over the test realm.
+ */
+function reportFiguresShown(where: "linked-cells" | "main"): { cell: string; href: string; figures: ShownFigure[] }[] {
+  const figuresIn = (scope: ParentNode): ShownFigure[] =>
+    [...scope.querySelectorAll<HTMLElement>("[data-figure-kind]")]
+      .filter(node => node.getAttribute("data-provenance") === "computed:genome/reports")
+      .map(node => ({ kind: node.getAttribute("data-figure-kind") ?? "",
+        value: (node.querySelector<HTMLElement>('[data-slot="figure-value"]') ?? node).innerText.replace(/\s+/g, " ").trim() }));
+  if (where === "main") return [{ cell: "", href: location.pathname, figures: figuresIn(document.querySelector("main") ?? document) }];
+  return [...document.querySelectorAll<HTMLElement>('[data-slot="health-picture-cell"]')].flatMap(cell => {
+    const link = cell.querySelector<HTMLAnchorElement>('a[href^="/genome/s-"]');
+    return link ? [{ cell: cell.getAttribute("data-cell") ?? "", href: link.getAttribute("href") ?? "", figures: figuresIn(cell) }] : [];
+  });
+}
+
+/**
+ * The report page a cell links to, read the way its reader reads it. A report
+ * in a gated category withholds its result server-side until the reader
+ * follows "Show my result", and until then the page carries no figure at all
+ * (the first execution of this journey read 60 gated pages that way and found
+ * every one empty), so the comparison is made against the revealed page. The
+ * gate's own control names the target (`?reveal=1`, the mechanism
+ * e2e/report-gate.spec.ts proves) and this follows it rather than clicking
+ * it: the click handler also remembers the choice per category, after which
+ * the page sends every later gated visit of that category to the revealed
+ * URL by itself, and a loop that reads many reports of one category would
+ * race that redirect. Following the target opens exactly what the click
+ * would. Returns whether a reveal was needed.
+ */
+async function openLinkedReport(page: Page, href: string): Promise<boolean> {
+  await page.goto(href);
+  await expect(page.locator("main h1")).toBeVisible();
+  const gate = page.getByTestId("sensitive-gate");
+  if (await gate.count() === 0) return false;
+  const target = await page.getByTestId("sensitive-gate-reveal").getAttribute("href");
+  expect(target, `${href}: a gated report must offer its reveal control`).toMatch(/[?&]reveal=1(?:&|$)/);
+  await page.goto(target!);
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(gate).toHaveCount(0);
+  return true;
+}
 
 async function selfSubjectOf(accountId: string): Promise<string> {
   const { data, error } = await adminClient().from("subjects").select("id")
     .eq("subject_account_id", accountId).eq("subject_class", "self").eq("lifecycle", "active").single();
   expect(error).toBeNull();
   return (data as { id: string }).id;
+}
+
+/** The open pair between two self records, created by the accepted invitation; the Portrait route is keyed on it. */
+async function pairBetween(selfA: string, selfB: string): Promise<string> {
+  const { data, error } = await adminClient().from("family_pairs").select("id, subject_a_id, subject_b_id, status")
+    .in("status", ["pending", "current"])
+    .or(`subject_a_id.eq.${selfA},subject_b_id.eq.${selfA}`);
+  expect(error).toBeNull();
+  const pair = (data as { id: string; subject_a_id: string; subject_b_id: string }[])
+    .find(row => row.subject_a_id === selfB || row.subject_b_id === selfB);
+  expect(pair, "the accepted invitation created the pair the Portrait route is keyed on").toBeTruthy();
+  return pair!.id;
+}
+
+/**
+ * One person's own Portrait acknowledgement, through the real checkbox in
+ * their own session: the third of the three steps the page names for each
+ * adult (independent login, the Portrait grant, this acknowledgement).
+ */
+async function acknowledgePortrait(page: Page, pairId: string) {
+  await page.goto(`/family/portrait/${pairId}`);
+  const form = page.locator('[data-slot="portrait-acknowledge"]');
+  await expect(form.getByRole("checkbox")).not.toBeChecked();
+  await form.getByRole("checkbox").check();
+  const stamped = page.waitForResponse(response => response.request().method() === "POST"
+    && response.url().endsWith("/api/family/acknowledge"));
+  await form.getByRole("button", { name: ACKNOWLEDGE_BUTTON }).click();
+  expect((await stamped).ok()).toBe(true);
+  await expect(form).toHaveCount(0);
 }
 
 /** One signed purpose grant toward one person, through the real permission UI. */
@@ -366,8 +447,12 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   await page.request.post("/auth/sign-out");
   await signIn(page, two.email, two.password);
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, selfOne, purpose);
+  const selfTwo = await selfSubjectOf(accountTwo);
+  const pairId = await pairBetween(selfOne, selfTwo);
+  await acknowledgePortrait(page, pairId);
   await page.request.post("/auth/sign-out");
   await signIn(page, one.email, one.password);
+  await acknowledgePortrait(page, pairId);
 
   await page.goto(HEALTH_PICTURE);
   await page.getByRole("checkbox").check();
@@ -388,8 +473,44 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   expect.soft(figures.filter(figure => figure.context === null).map(figure => `${figure.kind}:${figure.value}`),
     `${HEALTH_PICTURE}: every figure must name what it is a claim about before it is paired across two seeds`)
     .toEqual([]);
+
+  // G8.6, the Family half: what the side-by-side cell shows for the other
+  // adult is what that adult's own report page shows for the same report.
+  // Every linked cell of their column is read, then the page it links to,
+  // in this same session. The keys are the same on both surfaces — one
+  // genotype per report position and the report's position coverage, all
+  // `computed:genome/reports` — so a difference would be two readers of one
+  // captured result disagreeing, which is what the gate exists to catch.
+  const linkedCells = await page.evaluate(reportFiguresShown, "linked-cells" as const);
+  const crossSurface: FamilyCrossSurface[] = [];
+  for (const linked of linkedCells) {
+    if (linked.figures.length === 0) continue;
+    const revealed = await openLinkedReport(page, linked.href);
+    const [shown] = await page.evaluate(reportFiguresShown, "main" as const);
+    crossSurface.push({ cell: linked.cell, href: linked.href, revealed, inCell: linked.figures, onPage: shown?.figures ?? [] });
+  }
+
+  // The pair's Portrait, past the same Tier-2 gate, with every step of both
+  // adults done: its result state. `docs/figures-register.json` records this
+  // route as having no reachable figure state — the carrier-pair card that
+  // could carry one renders only for a shared classified position (D-034) —
+  // and this reads that record in a browser under each pair rather than
+  // taking it on trust.
+  await page.goto(`/family/portrait/${pairId}`);
+  await expect(page.locator('[data-slot="portrait-header-sentence"]')).toBeVisible();
+  await expect(page.locator('[data-slot="portrait-blocking"], [data-slot="portrait-acknowledge"]')).toHaveCount(0);
+  await expect(page.locator("[data-figure-kind]")).toHaveCount(0);
+  const portraitFigures = await page.evaluate(collectFigures);
   await page.request.post("/auth/sign-out");
-  return { figures, keyed: keyed(figures) };
+  return { figures, keyed: keyed(figures), portraitFigures, crossSurface };
+}
+
+/** Values by kind: sorted letters for genotypes, which repeat legitimately; the distinct values for everything else. */
+function valuesByKind(figures: readonly ShownFigure[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const figure of figures) out.set(figure.kind, [...(out.get(figure.kind) ?? []), figure.value]);
+  for (const [kind, values] of out) out.set(kind, kind === "genotype" ? [...values].sort() : [...new Set(values)].sort());
+  return out;
 }
 
 test.describe("the Family side-by-side surface, under two carrier pairs", () => {
@@ -451,5 +572,34 @@ test.describe("the Family side-by-side surface, under two carrier pairs", () => 
       .toEqual([...a.keys()].sort());
     const registered = registeredShapeKeys(HEALTH_PICTURE, a, b);
     assertEveryFigureMoved(HEALTH_PICTURE, without(a, registered), without(b, registered));
+
+    // G8.6 for the Family domain (`crossSurface.family` in the register): the
+    // other adult's cell and their own report page show one value for each
+    // repeated figure, under both pairs. Coverage renders twice on the page
+    // (the ledger and the provenance panel) and is compared as a value; the
+    // genotypes are compared as sorted letters, one per position.
+    for (const [label, pair] of [["pair A", pairA!], ["pair B", pairB!]] as const) {
+      expect.soft(pair.crossSurface.length,
+        `${label}: the other adult's column must carry at least one linked cell showing a figure, or nothing was compared`)
+        .toBeGreaterThan(0);
+      for (const row of pair.crossSurface) {
+        const inCell = valuesByKind(row.inCell);
+        const onPage = valuesByKind(row.onPage);
+        for (const [kind, values] of inCell) {
+          expect.soft(onPage.get(kind) ?? [],
+            `${label} · ${row.cell} → ${row.href}${row.revealed ? " (revealed)" : ""}: the ${kind} figures the cell shows must be the ones the page shows`)
+            .toEqual(values);
+        }
+      }
+    }
+
+    // The Portrait has nothing to difference, and that is the record: no
+    // figure under either pair, so the register's no-reachable-figure-state
+    // entry for the route is what two seeds actually rendered.
+    for (const [label, pair] of [["pair A", pairA!], ["pair B", pairB!]] as const) {
+      expect.soft(pair.portraitFigures.map(figure => `${figure.kind}:${figure.value}`),
+        `${PORTRAIT_ROUTE}: ${label} rendered a figure on a route docs/figures-register.json records as having no reachable figure state`)
+        .toEqual([]);
+    }
   });
 });

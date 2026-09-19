@@ -61,9 +61,12 @@ describe('Health Picture captured projection', () => {
     const report = stored('A', 'file-A'); report.report.variants[0].outcome = { status }; report.report.covered = false;
     expect(rows([column('A', [report]), column('B')]).rows[0].cells[0]).toMatchObject({ entries: [{ state: { kind: status }, coverage: { read: 0, needed: 1 } }] });
   });
-  it('counts a stored uninterpretable call as observed without displaying its letters', () => {
+  it('names a stored uninterpretable call without displaying its letters, and does not count it as read', () => {
+    // The report page counts only interpreted positions in its coverage pair
+    // (reportCoverage, G8.6); an unrecognized call is named in the cell's
+    // state and in the page's ledger, and neither surface counts it as read.
     const report = stored('A', 'file-A'); report.report.variants[0].outcome = { status: 'unrecognized', genotype: 'XY' };
-    expect(rows([column('A', [report]), column('B')]).rows[0].cells[0]).toMatchObject({ entries: [{ state: { kind: 'unrecognized' }, coverage: { read: 1, needed: 1 } }] });
+    expect(rows([column('A', [report]), column('B')]).rows[0].cells[0]).toMatchObject({ entries: [{ state: { kind: 'unrecognized' }, coverage: { read: 0, needed: 1 } }] });
   });
   it('renders distinct stable authorized-source labels and link names for two stored files', () => {
     const a = column('A', [stored('A', 'two'), stored('A', 'one')]);

@@ -314,7 +314,7 @@ test("/family/invite processing: the send control says Requesting while the invi
     // Nothing is decided while the request is open. A confirmation beside a
     // pending control would be about an invitation that has not been sent.
     await expect(form.getByRole("alert")).toHaveCount(0);
-    expect(intercepted, "the state is held by a real in-flight request").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight request" }).toBeGreaterThan(0);
   } finally {
     release();
   }
@@ -736,7 +736,7 @@ test("/family/[person]/permissions processing: the row control is held while its
     // be reporting a failure either.
     await expect(ancestry.locator('[data-slot="permission-state"]')).toHaveText("Off");
     await expect(ancestry.getByRole("alert")).toHaveCount(0);
-    expect(intercepted, "the state is held by a real in-flight grant").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight grant" }).toBeGreaterThan(0);
   } finally {
     release();
   }

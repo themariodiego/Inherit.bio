@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import assert from "node:assert/strict";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { paymentOrigin } from "../scripts/payment-origins";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
 import fs from "node:fs";
@@ -511,6 +512,13 @@ export async function assertNoThirdParty(
       name => typeof (window as never as Record<string, unknown>)[name], global);
     expect(seen, `${label}: window.${global} must be undefined`).toBe("undefined");
   }
+
+  // G5.7: no payment-processor origin appears in any response. The origin
+  // audit above already refuses a request to one; this reads the rendered
+  // document itself, so a link or a form action naming a processor fails on
+  // every page this assertion visits — which, through the register-derived
+  // sweeps, is every kept page in both themes and both auth modes.
+  expect(paymentOrigin(await page.content()), `${label}: payment-processor origin in the rendered response`).toBeNull();
 }
 
 /**

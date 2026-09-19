@@ -3,6 +3,7 @@ import type { HealthPictureRow } from '../../components/family/health-picture-ta
 import type { HealthPictureCellState, HealthPictureSimpleState } from '../../components/family/health-picture-cell';
 import type { SharedReportPurpose } from './shared-report-results';
 import { resolveStoredSharedReport } from './shared-report-display';
+import { reportCoverage } from '../genome/report-evidence';
 import { categoryFor, CATEGORY_TAXONOMY, type FindingLayer, type CategoryId } from '../genome/taxonomy';
 import { route } from '../primary-routes';
 export const HEALTH_PICTURE_LAYERS = [
@@ -56,7 +57,10 @@ export function projectHealthPicture(state: HealthPictureState, routes: readonly
         entries.push({ fileId: stored.fileId, state: resultState, source, conflictingCalls: conflicts.size > 0,
           href: route('genome.report', { subject: routes[index].segment, slug: stored.report.slug }, { query: { source: stored.fileId } }),
           sourceLabel: `Saved source ${[...new Set(column.sources.map(item => item.fileId))].sort().indexOf(stored.fileId) + 1}`,
-          coverage: { read: resolved.variants.filter(({ variant, outcome }) => !conflicts.has(variant.rsid) && (outcome.status === 'genotyped' || outcome.status === 'unrecognized')).length, needed: resolved.variants.length } });
+          // The report's own coverage rule (G8.6): the page this cell links to
+          // counts a read position as one the report interpreted, so the cell
+          // counts the same way rather than keeping a rule of its own.
+          coverage: reportCoverage(resolved.template, resolved, conflicts) });
         row.cells = row.cells.map((value, at) => at === index ? { kind: 'sources', entries } : value);
       }
     }

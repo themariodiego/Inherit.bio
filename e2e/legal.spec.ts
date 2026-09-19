@@ -2,6 +2,7 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { NOT_FOUND_HEADING } from "../src/copy/not-found";
+import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -337,6 +338,42 @@ test("/legal/where-inherit-works complete: the committed document renders on-top
  * owner's to settle. Claiming the pair here would be exactly the kind of proof
  * this repository refuses to manufacture.
  */
+/**
+ * G5.8, the by-id half. The eight protective statements are recorded in
+ * `scripts/legal-anchor-requirements.json` by anchor id, and `pnpm gate:legal`
+ * holds the page SOURCE to that record. This is the same record read in a
+ * browser, which is what the brief asks for — a named assertion by id, not by
+ * prose: each statement the record calls present renders under its anchor
+ * with a heading and a body, and each it calls absent renders no such anchor.
+ * So the record cannot claim a clause the rendered page does not carry, and a
+ * clause added without updating the record fails here as it fails the gate.
+ * The three absent clauses stay absent until counsel writes them; this test
+ * records that rather than smoothing it.
+ */
+const PROTECTIVE_STATEMENTS = (JSON.parse(fs.readFileSync("scripts/legal-anchor-requirements.json", "utf8")) as {
+  surface: string;
+  statements: { requirement: string; anchorId: string; status: string }[];
+}).statements;
+
+test("/terms renders each protective statement the record calls present under its anchor id, and none it calls absent", async ({ page }) => {
+  expect(PROTECTIVE_STATEMENTS).toHaveLength(8);
+  expect(new Set(PROTECTIVE_STATEMENTS.map(statement => statement.anchorId)).size).toBe(8);
+  await page.goto("/terms");
+  await expect(page.locator("main h1")).toHaveCount(1);
+  for (const statement of PROTECTIVE_STATEMENTS) {
+    const section = page.locator(`#${statement.anchorId}`);
+    if (statement.status === "absent") {
+      await expect(section, `${statement.requirement}: recorded absent, so no anchor may carry it`).toHaveCount(0);
+      continue;
+    }
+    expect(["present", "present-incomplete"], `${statement.anchorId}: an unknown status`).toContain(statement.status);
+    await expect(section, `${statement.requirement} (#${statement.anchorId})`).toHaveCount(1);
+    await expect(section.locator(`#${statement.anchorId}-heading`), `${statement.anchorId}: its heading`).toHaveText(/\S/);
+    const body = (await section.innerText()).replace(/\s+/g, " ").trim();
+    expect(body.length, `${statement.requirement}: the section under #${statement.anchorId} carries a statement`).toBeGreaterThan(80);
+  }
+});
+
 test("an unknown legal artifact reaches Inherit's own not-found page, not the framework's", async ({
   page,
 }) => {

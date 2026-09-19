@@ -1,6 +1,6 @@
 # ADR-0028 — The jurisdiction gating mechanism
 
-- Status: **Proposed** · 2026-09-11 · not decided here
+- Status: **Accepted** · owner decision 2026-09-18 (proposed 2026-09-11, accepted as written)
 - Deciders: Inherit engineering, plus the operator for anything a reviewer must sign
 - Records: the mechanism as built. It proposes no legal determination and contains none.
 
