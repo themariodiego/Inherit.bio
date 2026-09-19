@@ -85,7 +85,9 @@ async function assertPendingControl(
     // failed on all four routes for that reason before it was scoped.
     await expect(form.getByRole("alert")).toHaveCount(0);
 
-    expect(intercepted, "the pending state is held by a real in-flight request").toBeGreaterThan(0);
+    // Polled rather than read once: the pending control renders before the
+    // held request reaches this handler, so a single read of the count raced it.
+    await expect.poll(() => intercepted, { message: "the pending state is held by a real in-flight request" }).toBeGreaterThan(0);
   } finally {
     // Release only. `page.unroute` here raced the held handler and made its
     // `continue` throw "Route is already handled"; the context closes with the

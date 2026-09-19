@@ -102,7 +102,7 @@ test("/copilot/[scope] processing: the panel says Thinking while the question is
     await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Review what would be shared", exact: true }))
       .toHaveCount(0);
-    expect(intercepted, "the state is held by a real in-flight question").toBeGreaterThan(0);
+    await expect.poll(() => intercepted, { message: "the state is held by a real in-flight question" }).toBeGreaterThan(0);
   } finally {
     release();
   }

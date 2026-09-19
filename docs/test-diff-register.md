@@ -65,6 +65,15 @@ counted an unrecognized call as read (`health-picture-projection.ts`), so the
 one figure both surfaces repeat has one definition. No existing assertion
 moved; the health-picture comparison is unchanged.
 
+The eight held-request proofs (`e2e/settings.spec.ts` ×4,
+`e2e/auth-processing.spec.ts`, `e2e/copilot-scope-states.spec.ts`,
+`e2e/family.spec.ts` ×2) now poll their interception count instead of reading
+it once: the control renders its pending state before the held request reaches
+the test's route handler, and run 35409475065 read the digest switch as
+disabled with the count still 0. Each request stays held until the test
+releases it, so what is proved — the pending state coincides with a real
+in-flight request — is unchanged; only the read waits for it.
+
 ## Every pre-existing route held to its disposition (G2.3) · 18 September 2026
 
 `docs/route-dispositions.json` is new: the 34 routes `src/app` served at the
