@@ -73,8 +73,28 @@ as binding as the "Done" list.
 
 - `public.report_templates` is empty on the branch (seeded by `pnpm seed`,
   not migrated; production holds 162 rows). The "result rendered" step needs
-  them; this session seeds the branch with the repository's own data (reference
-  rows only, no personal data) before the next journey.
+  them; seeded at 02:05 with `pnpm seed` against the branch (16 providers,
+  162 templates, 146 reference variants, 3 polygenic scores; reference rows
+  only, no personal data).
+
+- 02:03 · The preview container never reached the branch. The branch's API
+  logs since 00:00 UTC hold no `claim_next_own_preparation_work_v1` call at
+  all (the app's own calls are there), across every five-minute tick after
+  the 01:47 deploy. Reproduced without Docker by assembling exactly the file
+  set the image copies and running `pnpm worker:prepared --once` against the
+  branch: `prepared_worker_unavailable`, exit 1, before any request. Cause:
+  `src/lib/uploads/own-preparation-worker.ts` imports
+  `docs/route-register.json`, and the image copies `src/` alone while
+  `.dockerignore` drops `docs/`. With that one file added the same run
+  reports `preparation_idle` and `cleanup_idle` (02:05:30, one claim call on
+  the branch). So every container start since 18 September exited the same
+  way, and "each run reports idle" in the README was never observed. Fixed
+  on this branch: the Dockerfile copies `docs/route-register.json`,
+  `.dockerignore` lets it through, the README says so, and
+  `scripts/cloudflare-hosting-config.test.ts` now follows the worker entry's
+  import graph and requires every file it reaches outside `src/` to be
+  copied (the test fails on the old Dockerfile). Redeploy of `preview`
+  dispatched after the push; the fix reaches production with the merge.
 
 ## In progress
 

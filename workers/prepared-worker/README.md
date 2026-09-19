@@ -21,7 +21,7 @@ activates nothing.
 | --- | --- |
 | `wrangler.json` | The Worker: cron, container (`standard-1`, one instance), Durable Object binding and migration, four plain variables, observability off, no `workers.dev` URL. `env.preview` is the preview variant. |
 | `src/index.mjs` | The Durable Object and the `scheduled` and `fetch` handlers, on the runtime's own container API (no `@cloudflare/containers` dependency). `fetch` answers 404 with no body to everything. |
-| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
+| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `docs/route-register.json` (imported by the worker module), `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
 | `src/index.test.ts` | Proves the object starts only a stopped container, forwards exactly the six variables below, and that the cron wakes the one named object. `scripts/cloudflare-hosting-config.test.ts` holds the configuration, the Dockerfile and the workflow to this README. |
 
 ## Bindings, variables and secrets
@@ -141,9 +141,12 @@ expire); the secrets are set as above.
 
 ## What this does not prove
 
-- The deploys of 18 September 2026 prove that the image builds, the Workers
+- The deploys of 18 September 2026 proved that the image builds, the Workers
   and the container application exist and the gateways refuse unauthenticated
-  requests; no job has run in a container yet. Both gateways now carry a
+  requests. Every container start until 19 September exited before its first
+  request: the worker module imports `docs/route-register.json`, which the
+  image did not copy (found by the hosted proof, when the preview branch's
+  API logs showed no claim call across several cron ticks; fixed above). Both gateways now carry a
   committed key (the production one is guard-checked, see above; the preview
   one is compared by hand against the preview deployment's endpoint in
   `docs/evidence/hosted-proof-20260919/`).

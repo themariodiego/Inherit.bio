@@ -32,6 +32,9 @@ COPY --chown=node:node tsconfig.json ./
 COPY --chown=node:node scripts/prepared-worker.run.mts scripts/server-only-shim.mjs ./scripts/
 # data/ref/chain is read from the working directory at run time.
 COPY --chown=node:node data ./data
+# The route register is imported by the worker module (src/lib/uploads/
+# own-preparation-worker.ts); the rest of docs/ stays out of the image.
+COPY --chown=node:node docs/route-register.json ./docs/route-register.json
 COPY --chown=node:node src ./src
 
 # Secrets and configuration arrive only through the container start options
