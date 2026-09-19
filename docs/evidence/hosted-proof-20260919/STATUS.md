@@ -69,6 +69,25 @@ as binding as the "Done" list.
   environment's policy refused both the Vercel variable and the local key
   generation), so it is an owner action below.
 
+- 03:07 · Preview rebuilt with the owner's variable
+  (`dpl_ETP5JCWoEzj8bmnS3tKoiq3LKDXd`, READY 03:07:35). The upload page
+  renders and discloses the branch ceilings ("VCF or gVCF files up to 2147
+  MB"). Three driver problems cost the next hour, none of them the product's:
+  the session's egress proxy re-terminates TLS and Chromium's TLS 1.3
+  handshake with it fails intermittently (`ERR_TOO_MANY_RETRIES`; fixed by
+  capping the browser at TLS 1.2), the proxy port changed once, and the
+  driver selected the file before React had hydrated the uploader, so the
+  change event was lost (fixed by re-selecting until the input turns busy).
+- 04:19 · FIRST FULL JOURNEY on the preview stack (`e2e/fixtures/tiny-grch38.vcf`,
+  547 bytes): upload-session 201, Storage POST 200, finalize 200 in 2.5 s,
+  `/process` 202 (queued, job `9a86edb7…`, admission 1 of 100), the container
+  claimed it at the 04:20 cron tick (about 17 s after enqueue), published it
+  at 04:20:21 (14 artifacts, 26,160 bytes, provider `r2` /
+  `inherit-prepared-preview`), and the page showed "Your file is stored and
+  prepared" 35 s after finalization. Receipt: `journeys/vcf-tiny.json`.
+- 08:04 · The session was idle from about 04:20 to 07:59 (no wake arrived);
+  the 64 MiB VCF journey with chosen reports started at 08:04.
+
 ## Found on the way (continued)
 
 - `public.report_templates` is empty on the branch (seeded by `pnpm seed`,

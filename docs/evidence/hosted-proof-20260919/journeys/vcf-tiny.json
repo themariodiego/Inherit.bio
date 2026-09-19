@@ -1,0 +1,312 @@
+{
+  "label": "vcf-tiny",
+  "fixture": "tiny-grch38.vcf",
+  "sizeBytes": 547,
+  "startedAt": "2026-09-19T04:18:36.870Z",
+  "events": [
+    {
+      "at": "2026-09-19T04:18:37.409Z",
+      "what": "user_created",
+      "detail": {
+        "accountId": "36b3e5c3-a215-431f-8d81-6a9f3d6722ea"
+      }
+    },
+    {
+      "at": "2026-09-19T04:18:41.445Z",
+      "what": "signed_in",
+      "detail": {
+        "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"
+      }
+    },
+    {
+      "at": "2026-09-19T04:18:43.570Z",
+      "what": "account_completed",
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "at": "2026-09-19T04:18:44.734Z",
+      "what": "insurance_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-19T04:18:45.781Z",
+      "what": "own_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-19T04:18:45.787Z",
+      "what": "consent_complete"
+    },
+    {
+      "at": "2026-09-19T04:19:46.322Z",
+      "what": "file_selected",
+      "detail": {
+        "reacted": true
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:47.090Z",
+      "what": "upload_session",
+      "detail": {
+        "status": 201,
+        "declaredFormat": "VCF",
+        "sizeBytes": 547,
+        "sha256Matches": true,
+        "hashSeconds": 61.302
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:47.311Z",
+      "what": "storage_post",
+      "detail": {
+        "status": 200,
+        "seconds": 0.221,
+        "mbps": 0.0023604518148154694,
+        "contentType": "application/octet-stream"
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:49.794Z",
+      "what": "finalized",
+      "detail": {
+        "status": 200,
+        "seconds": 2.483,
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:24.857Z",
+      "what": "prepared_in_browser",
+      "detail": {
+        "seconds": 35.06,
+        "text": "Your file is stored and prepared. Reports have not been generated yet. Choose your reports · View your file"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:25.210Z",
+      "what": "genome_file",
+      "detail": {
+        "file_type": "vcf",
+        "status": "stored",
+        "sha256Matches": true,
+        "expectedFormat": "vcf",
+        "formatMatches": true
+      }
+    }
+  ],
+  "accountId": "36b3e5c3-a215-431f-8d81-6a9f3d6722ea",
+  "fixtureSha256": "6f661a97271720aada0b5caf2a9193986d9c9d9c4449c85cb6244ed0c024d423",
+  "consoleLines": [
+    "2026-09-19T04:18:40.386Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/?_rsc=Eb1IB9OaIZL7J0Wa net::ERR_ABORTED",
+    "2026-09-19T04:18:41.163Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview?_rsc=9-3bZs-t33rvpNp4 net::ERR_ABORTED",
+    "2026-09-19T04:18:41.438Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview?_rsc=QR58QDn2n8hzs8vh net::ERR_ABORTED",
+    "2026-09-19T04:18:41.941Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/family?_rsc=_VWJ-N7ngsYSuaU3 net::ERR_ABORTED",
+    "2026-09-19T04:18:41.941Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/embryos?_rsc=_VWJ-N7ngsYSuaU3 net::ERR_ABORTED",
+    "2026-09-19T04:18:41.941Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview?_rsc=_VWJ-N7ngsYSuaU3 net::ERR_ABORTED",
+    "2026-09-19T04:18:41.941Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=_VWJ-N7ngsYSuaU3 net::ERR_ABORTED",
+    "2026-09-19T04:18:42.862Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:18:43.866Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/files/upload?_rsc=9_D38FCBw1i2WQ4v net::ERR_ABORTED",
+    "2026-09-19T04:18:43.887Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:18:44.882Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/settings?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:18:45.035Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/files/upload?_rsc=9_D38FCBw1i2WQ4v net::ERR_ABORTED",
+    "2026-09-19T04:18:45.246Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:18:45.981Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:18:46.149Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/files/upload?_rsc=9_D38FCBw1i2WQ4v net::ERR_ABORTED",
+    "2026-09-19T04:18:46.159Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/family?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:20:22.665Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/me?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED",
+    "2026-09-19T04:20:22.727Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/files/upload?_rsc=9_D38FCBw1i2WQ4v net::ERR_ABORTED",
+    "2026-09-19T04:20:22.876Z GET https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/genome/s-4485ae8a-e2cb-4c8f-929f-45bdf4d0e220/reports?_rsc=D5VFHgKONIPHsPgU net::ERR_ABORTED"
+  ],
+  "processResponses": [
+    {
+      "at": "2026-09-19T04:19:50.350Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:52.623Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:54.869Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:57.128Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:19:59.414Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:01.844Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:04.111Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:06.397Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:08.652Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:10.896Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:13.155Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:15.462Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:17.698Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:19.939Z",
+      "status": 202,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "jobId": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-19T04:20:22.321Z",
+      "status": 200,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "status": "normalization_complete",
+        "analysisState": "not_generated"
+      }
+    }
+  ],
+  "stagingKey": "e6a31c2d-657e-4618-b05e-3c8da228a881",
+  "uploadId": "11a58575-025d-45be-b8af-0c92ad186056",
+  "finalizeAttempts": [
+    {
+      "at": "2026-09-19T04:19:49.794Z",
+      "status": 200,
+      "body": {
+        "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+        "status": "finalized_ready_for_processing",
+        "analysisState": "ready_for_processing",
+        "next": {
+          "routeId": "api.file-process",
+          "operation": "process"
+        }
+      }
+    }
+  ],
+  "fileId": "2ab05420-167c-4481-b335-83aeba8eb559",
+  "genomeFile": {
+    "id": "2ab05420-167c-4481-b335-83aeba8eb559",
+    "user_id": "36b3e5c3-a215-431f-8d81-6a9f3d6722ea",
+    "subject_id": "4485ae8a-e2cb-4c8f-929f-45bdf4d0e220",
+    "bucket_path": "e6664436-9b02-4350-9f32-7613a538e971",
+    "sha256": "6f661a97271720aada0b5caf2a9193986d9c9d9c4449c85cb6244ed0c024d423",
+    "status": "stored",
+    "file_type": "vcf",
+    "size_bytes": 547,
+    "normalization_completed_at": "2026-09-19T04:20:21.682743+00:00",
+    "single_logical_sample_verified_at": "2026-09-19T04:19:49.788972+00:00"
+  },
+  "genomeFileError": null,
+  "pageErrors": [],
+  "finishedAt": "2026-09-19T04:20:25.210Z",
+  "outcome": "ok",
+  "savedAt": "2026-09-19T04:20:25.210Z"
+}
