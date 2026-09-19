@@ -56,7 +56,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *    string block goes through the shared claim component" is decidable
  *    without a browser: the block is registered in `data/claims.json` under
  *    the key that presentation.ts looks up, or it renders as bare prose.
- *    For the six designated surfaces that are not report bodies, the same
+ *    For the five designated surfaces that are not report bodies, the same
  *    question is decided at the module graph: a page whose imports never
  *    reach `src/components/claims/claim.tsx` cannot be emitting anything
  *    through the shared claim component.
@@ -137,10 +137,13 @@ interface DesignatedSurface {
 }
 
 /**
- * G1.11's seven designated surfaces, each bound to the routes and modules
- * that are it in this repository. Nothing is added to the brief's list and
- * nothing is dropped from it: a surface this gate cannot locate fails as
- * unlocatable rather than passing as clean.
+ * G1.11's designated surfaces, each bound to the routes and modules that are
+ * it in this repository. Nothing is added to the brief's list, and one thing
+ * is dropped from it by a signed correction: glossary definitions left the
+ * list on 2026-09-18 (evening), when the owner decided that a definition is
+ * not a claim (`docs/protocol/brief-corrections-proposed.md` item 15), so
+ * the six that remain are the list. A surface this gate cannot locate fails
+ * as unlocatable rather than passing as clean.
  */
 const DESIGNATED_SURFACES: DesignatedSurface[] = [
   {
@@ -155,14 +158,6 @@ const DESIGNATED_SURFACES: DesignatedSurface[] = [
     name: "consent summaries",
     routes: [/^\/legal\/consents?(\/|$)/, /^\/settings\/consents$/],
     modules: ["src/copy/upload/consent.ts"],
-    rendersMarkup: true,
-  },
-  {
-    id: "glossary-definitions",
-    name: "glossary definitions",
-    routes: [/^\/glossary(\/|$)/],
-    // The brief's own path for the glossary corpus (§X7.1).
-    modules: ["src/copy/glossary"],
     rendersMarkup: true,
   },
   {
@@ -1119,7 +1114,7 @@ export function runClaimsGate(
   compare("report body registration", registrationFindings);
   compare("template citation registration", templateCitationFindings);
 
-  // 9. The seven designated surfaces (G1.11's second bullet).
+  // 9. The six designated surfaces (G1.11's second bullet, less glossary definitions since item 15).
   const pageFiles = pageFilesByUrl(repositoryRoot);
   const claimComponent = path.join(repositoryRoot, CLAIM_COMPONENT);
   const surfaceStatus: string[] = [];

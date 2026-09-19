@@ -4,6 +4,7 @@ import type { UIMessage, UIMessageChunk } from "ai";
 import { capturedReportResult } from "./own-chat-content";
 import {
   checkCitations,
+  checkRelativeRisk,
   checkResponse,
   checkResponseNumerals,
   classifyIntent,
@@ -452,6 +453,15 @@ describe("checkCitations", () => {
     expect(checkCitations("Khera et al. (2018), PMID 30104762, doi 10.1038/s41588-018-0183-z.", fromScore).ok).toBe(true);
   });
 
+  it("refuses content attributed to a report when the tools returned none this turn", () => {
+    const none = permittedCitationsFromToolJson({ slug: "caffeine-metabolism-cyp1a2-rs762551", error: "report_not_generated" });
+    expect(checkCitations("Your Caffeine metabolism report says your genotype is A/C.", none).ok).toBe(false);
+    expect(checkCitations("Your report found the fast-metabolizer variant.", none).ok).toBe(false);
+    expect(checkCitations("No completed report for this topic is currently available.", none).ok).toBe(true);
+    expect(checkCitations("Your report does not diagnose anything.", none).ok).toBe(true);
+    const held = permittedCitationsFromToolJson({ sources: [{ title: "Caffeine metabolism · CYP1A2", citations: [{ pmid: "10233211", label: "Sachse et al., Br J Clin Pharmacol 1999" }] }] });
+    expect(checkCitations("Your Caffeine metabolism report says your genotype is A/C.", held).ok).toBe(true);
+  });
   it("passes prose with no citation at all", () => {
     expect(checkCitations("Your genotype is A/C.", permitted)).toEqual({ ok: true, unsupported: [] });
   });
@@ -510,5 +520,46 @@ describe("checkResponse", () => {
       violation: "unsupported-citation",
       unsupported: ["Smith et al. 2011"],
     });
+  });
+});
+
+describe("checkRelativeRisk", () => {
+  const relative = [
+    "People with your genotype have a 1.6 times higher risk of heart disease.",
+    "Your risk is 40% higher than average.",
+    "This variant raises your risk of type 2 diabetes by 20%.",
+    "Carriers are twice as likely to develop the condition.",
+    "The odds ratio is 1.4 for this allele.",
+    "Your risk of Alzheimer’s is higher than average.",
+    "You have a lower chance than most people of caffeine sensitivity.",
+    "You are 3-fold more likely to be a fast metabolizer.",
+    "Fast metabolizers have a lower risk than others.",
+    "It doubles your risk by 2 times.",
+  ];
+  it("refuses every risk stated relative to other people with no absolute figure beside it", () => {
+    for (const text of relative) expect(checkRelativeRisk(text).ok, text).toBe(false);
+  });
+  it("accepts the same claim once an absolute figure sits beside it", () => {
+    expect(checkRelativeRisk("Your risk is 40% higher than average: about 7 in 100 people with your genotype, against 5 in 100 without it.").ok).toBe(true);
+    expect(checkRelativeRisk("Carriers are twice as likely: from 2% to 4% lifetime risk, a difference of 2 percentage points.").ok).toBe(true);
+    expect(checkRelativeRisk("The absolute risk is 3% of people; the relative figure of 1.5 times adds nothing to that.").ok).toBe(true);
+  });
+  it("keeps honest explanations that deny or question a comparison", () => {
+    expect(checkRelativeRisk("Your file cannot tell you whether your risk is higher or lower than average.").ok).toBe(true);
+    expect(checkRelativeRisk("This report does not say your chance is higher than most people’s.").ok).toBe(true);
+    expect(checkRelativeRisk("A higher score than most people in the reference group is not a risk figure.").ok).toBe(true);
+    expect(checkRelativeRisk("Your genotype is A/C. This is informational, not medical advice.").ok).toBe(true);
+  });
+  it("applies to a numeric comparison whatever frames it, because the brief's rule is mechanical", () => {
+    expect(checkRelativeRisk("This does not mean your risk is 40% higher.").ok).toBe(false);
+  });
+  it("names the claim it refused", () => {
+    expect(checkRelativeRisk("Your risk is 40% higher than average.").unsupported).toContain("40% higher");
+  });
+  it("refuses a relative risk whose numbers the tools returned, as the unsupported-number violation", () => {
+    const verdict = checkResponse("At rs762551 on chromosome 15 your risk is 15% higher than average.", { rsid: "rs762551", chrom: "15" }, ALLOWED);
+    expect(verdict).toMatchObject({ ok: false, violation: "unsupported-number" });
+    expect((verdict as { unsupported: string[] }).unsupported).toContain("15% higher");
+    expect(checkResponse("At rs762551 on chromosome 15 your genotype is A/C.", { rsid: "rs762551", chrom: "15" }, ALLOWED)).toEqual({ ok: true });
   });
 });

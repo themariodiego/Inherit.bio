@@ -2,7 +2,7 @@
 
 **Status, 2026-09-13: items 4, 5, 6, 8, 10 and 12 are SIGNED AND APPLIED.**
 **Status, 2026-09-14: item 14 is DECLINED.**
-**Status, 2026-09-18 (evening): items 15 to 18 are SIGNED AND APPLIED; the four
+**Status, 2026-09-18 (evening): items 15 to 19 are SIGNED AND APPLIED; the four
 route-state waivers and the Family `processing` sentence under "Measured
 2026-09-18" are DECIDED; item 14's redesign is DECLINED for this release.**
 
@@ -1463,7 +1463,7 @@ times.
 
 ## 15. Glossary definitions are not claims (G1.11)
 
-**SIGNED 2026-09-18 (evening), APPLIED to the register's reading; the gloss surface ships on it.**
+**SIGNED 2026-09-18 (evening), APPLIED 2026-09-19: the gloss surface ships on it, the claims gate no longer designates the surface, and every definition renders (decision 28).**
 
 ### What the brief says
 
@@ -1492,6 +1492,19 @@ selectable decision (no citation needed; a citation per definition; leave
 open), the owner chose no citation. The gloss surface (`glossed-text.tsx`,
 first occurrence, keyboard-focusable, never hover-only) can now be wired onto
 its pages; that is product work recorded in the handoff.
+
+### Applied
+
+19 September 2026: `scripts/claims-gate.ts` lists six designated surfaces and
+`docs/claims-divergence.json` records why the seventh left; the report page
+glosses its plain-language bullets as well as the not-covered sentences (the
+methods-section coverage line stays plain: the G1.13b target-size sweep's SC
+2.5.8 Inline exception did not clear its inline gloss control in the shown
+state); and `renderableGlossaryEntries` is the whole register,
+on the owner's confirmation the same day (decision 28). The two unit cases
+that pinned the 68/42 split are replaced by cases that hold this rule, and
+`data/glossary-citation-classes.json` keeps its reading under a `supersededBy`
+note.
 
 ## 16. The ancestry map's list-and-text equivalent is the table beneath it (G1.13b)
 
@@ -1577,6 +1590,33 @@ word-list class accepted by the owner; leave NO), the owner chose the listed
 classes. The one recorded exception (`US$100` in the liability clause) stays
 in `scripts/legal-fee-exceptions.json` with its counsel-owned rewording in
 `docs/protocol/legal-copy-proposed.md`.
+
+## 19. The non-diagnostic line every Copilot answer carries (G4.8, X14.1)
+
+**SIGNED 2026-09-18 (evening), APPLIED: every answer carries the surfaces' line.**
+
+### What the brief says
+
+G4.8 (line 2635): "every response carries the same non-diagnostic string the
+surfaces carry: \"Inherit is not a medical test and cannot tell you what will
+happen.\"" X14.1 (line 2518): "Every answer carries the same non-diagnostic
+line the surfaces carry."
+
+### The correction
+
+The surfaces carry `NOT_DIAGNOSTIC` ("This is not a diagnosis. Inherit is not
+a doctor and no clinician has reviewed this. Talk to a qualified professional
+before acting on anything here."); the sentence G4.8 quotes appears only in
+the intro of `/science/limits`. "The same string the surfaces carry" is the
+operative phrase in both lines, so every Copilot answer carries
+`NOT_DIAGNOSTIC`, and G4.8's quotation is read as an example that missed. The
+brief's quoted sentence is not added as a second line.
+
+### Why
+
+Asked as a selectable decision (the surfaces' line; the quoted sentence; both),
+the owner chose the surfaces' line. Both chat panels render it under every
+assistant turn, and `e2e/copilot-redteam.spec.ts` counts it on every response.
 
 ## What happens after signature
 

@@ -1,5 +1,80 @@
 # Test diff register
 
+## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
+
+`scripts/claims-gate.test.ts`: the designated-surface count the gate is held
+to is six and the ledger nine entries, and the perishable-fixture case plants
+its finding on consent summaries instead of glossary definitions, which
+corrections item 15 took off brief line 2570's list.
+`src/copy/glossary/glossary-classes.test.ts`: the two cases that pinned the 11
+September split ("renders each named risk, disease and statistical term only
+once it is sourced" and "still hides every cited term with no evidence yet")
+are replaced by cases that hold the new rule: each named term renders and keeps
+its `cited` reading, every unsourced cited term renders, and every citationId a
+definition carries still resolves in the register; the counts case holds
+renderable equal to the register. `src/components/ui/glossed-text.test.ts`: the
+sweep that asserted no unsourced cited term is glossed now asserts every
+registered term is glossed once on first use with its sentence left as
+written, read from the raw register and classes file as before. No other
+assertion moved; the classes file keeps its 68/42 reading under a
+`supersededBy` note.
+
+## The G4.8 red-team set on the local-model path · 18 September 2026
+
+`e2e/fixtures/copilot-redteam.json` is the committed adversarial prompt set
+the brief asks for at G4.8 (line 2635): 44 prompts over its six classes
+(8 determinism, 8 embryo ranking and sex, 8 relative-risk-only answers, 10
+medical advice, 6 third-party subject, 4 revoked grant). Each is one of three
+shapes: an `input` case the intent gate refuses before any model call; an
+`output` case whose prompt is allowed and whose completion, written in the
+record, is the maximally violating answer A.9 asks the generator to emit,
+with the tool JSON the real tool returns for the tiny fixture; a `revoked`
+case run after the polygenic report grant is turned off, when the report tool
+returns no report.
+
+`e2e/copilot-redteam.spec.ts` (48 titled tests, `copilot-local` project only)
+runs the set against the shipped Copilot on the local-model path: the fourth
+CI app variant (`scripts/ci-browser-config.ts`, port 3103) is the one app that
+attests a same-host, egress-isolated local model for exactly the synthetic
+provider on the container's loopback, reached as plain `http://127.0.0.1:8127`;
+the settings page classifies it local, the permission names the local class,
+the thread reads "Local mode". Per case: an input prompt answers the exact
+registry refusal with the fixture's call count unmoved; an output prompt
+makes exactly two provider requests, the captured tool result matches the
+record's shape, the refusal is the whole closed completion, and the
+adversarial text is on neither the page nor the stored turns; a revoked
+prompt's tool result carries `report_not_generated` and no `sources`. Over
+every response: the count of `[data-slot="chat-not-diagnostic"]` equals the
+assistant turns, every rendered assistant text passes `checkResponsePolicy`
+and `checkRelativeRisk`, and the control prompt's report sources name the
+thread's own file alone.
+
+`src/lib/copilot/redteam.test.ts` runs the same set against the guard at unit
+speed: every input prompt classifies to its refusal, every completion is
+replaced with the violation the record names, each relative-risk case names
+whether the numeral check or the relative-risk rule refuses it (four of each),
+and no refusal string is itself a prohibited pattern, a relative risk or an
+unsupported number.
+
+Two guard rules were added because the set found the gaps.
+`checkRelativeRisk` (`src/lib/copilot/guard.ts`) refuses a risk stated
+relative to other people, numeric ("1.6 times higher", "40% lower", "raises
+your risk by 20%", "odds ratio 1.4") or bare ("higher than average"), unless
+an absolute figure sits beside it; a sentence that denies or questions a bare
+comparison stays, a numeric one is refused whatever frames it. `checkCitations`
+now refuses content attributed to a report, score or estimate when the tools
+returned none that turn ("your report says", after the grant is off).
+`guard.test.ts` covers both. Both chat panels render `NOT_DIAGNOSTIC` under
+every assistant turn.
+
+The CI runtime gained the fourth variant: `checkedAppEnvironment` admits the
+four local-model names only on port 3103 and pins their values, the other
+variants refuse them as before, the probe proves the attestation admits the
+one origin and no other while the container's own environment still reads
+local mode as off, and `ci-browser-config.test.ts`,
+`ci-browser-app-environment.test.ts`, `ci-browser-runtime.test.ts` and
+`ci-browser-playwright-config.test.ts` pin all of it.
+
 ## No payment-processor origin in any response · 18 September 2026
 
 `scripts/payment-origins.ts` is new and holds G5.7's processor-origin list for

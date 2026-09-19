@@ -7,7 +7,7 @@ import { glossaryEntry } from "@/copy/glossary";
 import jargon from "../../../data/jargon.json";
 import classes from "../../../data/glossary-citation-classes.json";
 
-/** The `cited` half of the split, straight from the classes file. */
+/** The `cited` half of the 2026-09-11 reading, straight from the classes file. */
 const CITED = new Set(
   (classes as { terms: { term: string; class: string }[] }).terms
     .filter((entry) => entry.class === "cited")
@@ -63,55 +63,36 @@ describe("glossing a copy string on first use", () => {
   });
 
   /**
-   * There WAS a hand-picked list here: three sentences of cited vocabulary
-   * asserted to come back untouched. It rotted three times in two days, always
-   * for the same reason and always the intended one — "absolute risk" on
-   * 2026-09-11 when the split was introduced, then again with "absolute risk"
-   * and finally "diagnosis" on 2026-09-12 as each was sourced and began to
-   * render.
+   * This sweep asserted, from 2026-09-11 to 2026-09-19, that no `cited` term
+   * without a source was glossed; before that a hand-picked list of three
+   * sentences did, and rotted three times in two days as terms were sourced
+   * and began to render. Owner decision 19 (a definition is not a claim,
+   * corrections item 15) turned the property around: every registered term
+   * is glossed on first use, and the eleven cited terms still unsourced on
+   * 2026-09-19 are the ones the decision bites on.
    *
-   * Three breakages from one mechanism is the signal to stop hand-picking, so
-   * the property is derived below instead. The old comment warned that a
-   * derived rule "would agree with itself and prove nothing", and that warning
-   * is answered rather than ignored: the sweep reads `data/jargon.json` and
-   * `data/glossary-citation-classes.json`, which are the INPUTS to the module
-   * under test, not its output. Breaking `renderableGlossaryEntries()` to
-   * return every entry makes it fail on `association`, which was checked
-   * before it was trusted.
+   * Still derived from the INPUTS to the module under test, `data/jargon.json`
+   * and `data/glossary-citation-classes.json`, not from its output: asking
+   * the module which terms it renders and then checking it renders those
+   * would agree with itself.
    */
-  it("glosses no cited term that has no source, for every term in the register", () => {
-    // Read from the RAW data files rather than from `@/copy/glossary`, whose
-    // filter is the thing under test: asking the module which terms it thinks
-    // are renderable and then checking it renders those would agree with
-    // itself. `data/jargon.json` and the classes file are the inputs.
-    //
-    // Asserted as "no gloss carries this term", not "the sentence is
-    // unchanged", because an uncited phrase can contain a plain word that
-    // SHOULD be glossed - "risk allele" contains "allele", "reference panel"
-    // contains "reference". Glossing those is correct; glossing the phrase is
-    // not.
-    //
-    // What this does NOT cover, so it is not mistaken for cover: reclassifying
-    // a term from `cited` to `plain` removes it from CITED and so from this
-    // sweep. That route is closed in `src/copy/glossary/glossary-classes.test.ts`,
-    // which pins the plain count against the classes file.
-    const uncited = (jargon as { terms: { term: string; citationId?: string }[] }).terms
-      .filter((entry) => CITED.has(entry.term) && !entry.citationId)
-      .map((entry) => entry.term);
-    expect(uncited.length).toBeGreaterThan(0);
+  it("glosses every registered term on first use, cited or not, sourced or not", () => {
+    const terms = (jargon as { terms: { term: string; citationId?: string }[] }).terms;
+    const unsourcedCited = terms.filter((entry) => CITED.has(entry.term) && !entry.citationId);
+    // Non-vacuity: the decision changes something only while an unsourced
+    // cited term exists. Delete this line when the last one is sourced.
+    expect(unsourcedCited.length).toBeGreaterThan(0);
     // The carrier has to be inert itself, or a gloss on one of ITS words would
-    // make the stronger assertion below fail for the wrong reason.
+    // satisfy the assertion below for the wrong reason.
     const carrier = (term: string) => `This sentence mentions ${term} once.`;
     expect(glossed(carrier("nothing"))).toBe(carrier("nothing"));
-    for (const term of uncited) {
-      const html = glossed(carrier(term));
-      expect(html, `${term} must not be glossed uncited`).not.toContain(`data-term="${term}"`);
-      // A single-word term cannot contain a plain word to be glossed instead,
-      // so for those the whole sentence must come back byte-identical - the
-      // property the hand-picked sentences used to carry.
-      if (!term.includes(" ") && !term.includes("-")) {
-        expect(html, `${term} must leave its sentence alone`).toBe(carrier(term));
-      }
+    for (const entry of terms) {
+      const html = glossed(carrier(entry.term));
+      expect(html, `${entry.term} must be glossed: a definition is not a claim`)
+        .toContain(`data-term="${entry.term}"`);
+      // Glossed once, as a control, with the sentence's text left as written.
+      expect(html.split('data-slot="glossary-term"').length - 1, entry.term).toBe(1);
+      expect(html.replace(/<[^>]+>/g, ""), entry.term).toBe(carrier(entry.term));
     }
   });
 

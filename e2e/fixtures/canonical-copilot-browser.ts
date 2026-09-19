@@ -8,7 +8,12 @@ export const CAFFEINE_ANSWER = "According to your Caffeine metabolism report (CY
 export type FixtureSnapshot = { calls: number; denied: number; requests: Array<{ prompt: string; stage: "tool" | "answer";
   messages: Array<{ role: string; content?: unknown; tool_call_id?: string }> }> };
 
-export async function startCopilotFixture(port: 8123 | 8125 | 8126) {
+/**
+ * 8123, 8125 and 8126 are reached over HTTPS as `model.copilot.test` (the cloud
+ * path); 8127 is reached as plain `http://127.0.0.1:8127` by the local-model app
+ * variant alone (G4.8), the same synthetic provider under the local attestation.
+ */
+export async function startCopilotFixture(port: 8123 | 8125 | 8126 | 8127) {
   const address = process.env.CANONICAL_COPILOT_CONTROL_URL;
   if (!address) throw new Error("Canonical Copilot requires the isolated HTTPS fixture daemon; set CANONICAL_COPILOT_CONTROL_URL. No loopback-as-cloud fallback exists.");
   const url = new URL(address);

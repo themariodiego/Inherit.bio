@@ -151,7 +151,9 @@ describe("the claims gate holds the registers to the product", () => {
     expect(result.markedElementCount).toBe(3);
     expect(result.chromeElementCount).toBeGreaterThan(3);
     expect(result.scannedMarkupFileCount).toBeGreaterThan(200);
-    expect(result.designatedSurfaceCount).toBe(7);
+    // Six since 2026-09-18: glossary definitions left the brief's list of seven by
+    // corrections item 15 (a definition is not a claim).
+    expect(result.designatedSurfaceCount).toBe(6);
     // Every failure is a finding about the product, never a floor guard
     // reporting that the gate read nothing.
     expect(result.failures.filter((line) => /expected over/.test(line))).toEqual([]);
@@ -197,7 +199,7 @@ describe("the claims gate holds the registers to the product", () => {
     // carrying its counts; 201 unregistered template citations are 16 more.
     expect(ledger["report body registration"]).toHaveLength(16);
     expect(ledger["template citation registration"]).toHaveLength(16);
-    expect(ledger["designated surface"]).toHaveLength(10);
+    expect(ledger["designated surface"]).toHaveLength(9);
     // The seven checks with nothing to record are recorded as having nothing,
     // which is what makes a regression in them fail.
     for (const label of ["citation schema", "source snapshot", "claim evidence", "claim surface", "claim attribute", "exempt numeral"]) {
@@ -555,19 +557,20 @@ describe("the claims gate holds the registers to the product", () => {
 
   it("fails when a divergence the checks report is missing from the ledger", () => {
     const finding =
-      "glossary definitions: no claim in data/claims.json is bound to it";
+      "consent summaries: no claim in data/claims.json is bound to it";
     // A REAL recorded divergence is the example, which makes this fixture
     // perishable: it was the glossary's `unlocatable` finding until 2026-09-11,
-    // when the corpus and its components were built and the surface moved to
-    // `unbound`. Whoever binds those definitions as claims closes this
-    // divergence too and will have to move this test to another one - the same
-    // hazard `scripts/route-gate.test.ts` hit when a pair it used as an example
-    // was proven.
+    // then the glossary's `unbound` finding until 2026-09-18, when corrections
+    // item 15 took glossary definitions off the designated list altogether and
+    // this moved to the consent summaries. Whoever binds those summaries as
+    // claims closes this divergence too and will have to move this test to
+    // another one - the same hazard `scripts/route-gate.test.ts` hit when a
+    // pair it used as an example was proven.
     expect(readClaimsLedger(REPOSITORY_ROOT)["designated surface"]).toContain(finding);
     const root = plant({
       ledger: (ledger) => {
         ledger.designatedSurface = ledger.designatedSurface.filter(
-          (entry) => !(entry.surface === "glossary definitions" && entry.kind === "unbound"),
+          (entry) => !(entry.surface === "consent summaries" && entry.kind === "unbound"),
         );
       },
     });
