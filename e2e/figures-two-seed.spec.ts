@@ -259,7 +259,7 @@ interface MailMessage { to: string[] | string; html?: string }
 /** One figure as a surface shows it: what it is and what it says. */
 interface ShownFigure { kind: string; value: string }
 /** One linked cell of the other adult's column, and the page it links to. */
-interface FamilyCrossSurface { cell: string; href: string; inCell: ShownFigure[]; onPage: ShownFigure[] }
+interface FamilyCrossSurface { cell: string; href: string; revealed: boolean; inCell: ShownFigure[]; onPage: ShownFigure[] }
 /**
  * The `computed:genome/reports` figures of a surface, in document order: from
  * every linked cell of the other adult's column on the side-by-side page, or
@@ -277,6 +277,33 @@ function reportFiguresShown(where: "linked-cells" | "main"): { cell: string; hre
     const link = cell.querySelector<HTMLAnchorElement>('a[href^="/genome/s-"]');
     return link ? [{ cell: cell.getAttribute("data-cell") ?? "", href: link.getAttribute("href") ?? "", figures: figuresIn(cell) }] : [];
   });
+}
+
+/**
+ * The report page a cell links to, read the way its reader reads it. A report
+ * in a gated category withholds its result server-side until the reader
+ * follows "Show my result", and until then the page carries no figure at all
+ * (the first execution of this journey read 60 gated pages that way and found
+ * every one empty), so the comparison is made against the revealed page. The
+ * gate's own control names the target (`?reveal=1`, the mechanism
+ * e2e/report-gate.spec.ts proves) and this follows it rather than clicking
+ * it: the click handler also remembers the choice per category, after which
+ * the page sends every later gated visit of that category to the revealed
+ * URL by itself, and a loop that reads many reports of one category would
+ * race that redirect. Following the target opens exactly what the click
+ * would. Returns whether a reveal was needed.
+ */
+async function openLinkedReport(page: Page, href: string): Promise<boolean> {
+  await page.goto(href);
+  await expect(page.locator("main h1")).toBeVisible();
+  const gate = page.getByTestId("sensitive-gate");
+  if (await gate.count() === 0) return false;
+  const target = await page.getByTestId("sensitive-gate-reveal").getAttribute("href");
+  expect(target, `${href}: a gated report must offer its reveal control`).toMatch(/[?&]reveal=1(?:&|$)/);
+  await page.goto(target!);
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(gate).toHaveCount(0);
+  return true;
 }
 
 async function selfSubjectOf(accountId: string): Promise<string> {
@@ -458,10 +485,9 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   const crossSurface: FamilyCrossSurface[] = [];
   for (const linked of linkedCells) {
     if (linked.figures.length === 0) continue;
-    await page.goto(linked.href);
-    await expect(page.locator("main h1")).toBeVisible();
+    const revealed = await openLinkedReport(page, linked.href);
     const [shown] = await page.evaluate(reportFiguresShown, "main" as const);
-    crossSurface.push({ cell: linked.cell, href: linked.href, inCell: linked.figures, onPage: shown?.figures ?? [] });
+    crossSurface.push({ cell: linked.cell, href: linked.href, revealed, inCell: linked.figures, onPage: shown?.figures ?? [] });
   }
 
   // The pair's Portrait, past the same Tier-2 gate, with every step of both
@@ -561,7 +587,7 @@ test.describe("the Family side-by-side surface, under two carrier pairs", () => 
         const onPage = valuesByKind(row.onPage);
         for (const [kind, values] of inCell) {
           expect.soft(onPage.get(kind) ?? [],
-            `${label} · ${row.cell} → ${row.href}: the ${kind} figures the cell shows must be the ones the page shows`)
+            `${label} · ${row.cell} → ${row.href}${row.revealed ? " (revealed)" : ""}: the ${kind} figures the cell shows must be the ones the page shows`)
             .toEqual(values);
         }
       }

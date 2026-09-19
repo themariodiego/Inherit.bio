@@ -53,8 +53,17 @@ journey then reads G8.6's Family half: every linked cell of the other adult's
 column, then the report page it links to, comparing the
 `computed:genome/reports` figures both show (coverage as a value, genotypes as
 sorted letters) under both pairs, against the new `crossSurface.family`
-section of the register. No existing assertion moved; the health-picture
-comparison is unchanged.
+section of the register. A linked page in a gated category is read after the
+reader's own reveal: the page withholds its result server-side until the
+gate's control is followed (`?reveal=1`, the mechanism
+`e2e/report-gate.spec.ts` proves), and the first execution of the journey
+(run 35405267090) read 60 such pages gated and found every one empty, so the
+journey now follows the control's target before reading. The same run showed
+no other divergence; the cell's coverage pair is now counted by
+`reportCoverage`, the report's own rule, instead of a rule of its own that
+counted an unrecognized call as read (`health-picture-projection.ts`), so the
+one figure both surfaces repeat has one definition. No existing assertion
+moved; the health-picture comparison is unchanged.
 
 ## Every pre-existing route held to its disposition (G2.3) · 18 September 2026
 
