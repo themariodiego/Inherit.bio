@@ -587,8 +587,12 @@ export default async function ReportDetailPage(
         yourResult={yourResult}
         whatThisDoesntMean={
           <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
+            {/* Glossed on first use (brief line 829): a technical term that has
+                to survive here gets its definition in place, never hover-only.
+                Below the first viewport, so no gloss counts against the page's
+                first-viewport interactive budget (docs/density-baseline.json). */}
             {doesntMeanBullets.map((bullet) => (
-              <li key={bullet}>{bullet}</li>
+              <li key={bullet}><GlossedText>{bullet}</GlossedText></li>
             ))}
           </ul>
         }
@@ -602,7 +606,7 @@ export default async function ReportDetailPage(
             <p>{citedSources(template.citations.length)}</p>
             <p className="text-ink-muted">{REPORT_SOURCES_SCOPE}</p>
             {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure */}
-            {coverageLine ? <p>{coverageLine}</p> : null}
+            {coverageLine ? <p><GlossedText>{coverageLine}</GlossedText></p> : null}
             {callSummary ? <ReportCallCoverage summary={callSummary} /> : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
               <div data-confirmation-block="true" className="space-y-1">
