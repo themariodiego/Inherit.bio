@@ -124,7 +124,15 @@ as binding as the "Done" list.
 - That the preview container runs a job: the deploy succeeded, but no job
   has been claimed yet.
 
-## OWNER ACTION NEEDED
+## Owner action needed
+
+None open. The one below was done by the owner at 03:03:01 UTC (a
+`BYOK_ENCRYPTION_KEY` of type sensitive, Preview target only, is listed on
+the project; its value is never read here). The push carrying this note
+rebuilds the Preview so the value applies; the journey then verifies the
+upload page.
+
+### Done: OWNER ACTION (kept for the record)
 
 The Vercel Preview target needs one more variable, or no upload page can
 render on any Preview deployment.
