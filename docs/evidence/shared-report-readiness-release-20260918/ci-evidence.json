@@ -25,7 +25,9 @@
   "url": "https://github.com/themariodiego/Inherit.bio/actions/runs/35404976294",
   "head": "c78d287",
   "startedAt": "2026-09-18T23:15:26Z",
-  "conclusion": "in progress when this record was written; its conclusion is appended by the record commit that follows"
+  "completedAt": "2026-09-19T00:08:31Z",
+  "conclusion": "success",
+  "attempt": 1
  },
  "deployCloudflareWorkflowRun": {
   "ran": false,

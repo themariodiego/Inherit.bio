@@ -72,6 +72,12 @@ at 23:21:21.
    existing codes in both modes; stored results untouched and every completed
    report run announced under both predicates; nothing written.
 
+## Post-merge run
+
+Main's run 35404976294 on the merge commit `c78d287` completed with success
+at 00:08:31 UTC on 19 September (attempt 1, started 23:15:26 UTC): the full
+browser suite, pgTAP and every gate on the tree this release deployed.
+
 ## Production application
 
 `www.inherit.bio` answered 200 on `/` and on `/family`, and 307 to sign-in on
