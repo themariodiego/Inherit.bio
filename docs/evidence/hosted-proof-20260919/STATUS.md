@@ -56,11 +56,32 @@ as binding as the "Done" list.
   deployment serves one key, kid `4d1d178c-3f0c-41d0-902f-788c83fdef3d`,
   same `x` and `y` as the committed entry.
 
+- 01:55 · First browser journey (64 MiB synthetic VCF, Chromium through the
+  session's egress proxy with the bypass header on the deployment origin
+  only): sign-in worked; `/files/upload` then rendered "We cannot prepare
+  this upload right now". Root cause, traced on the branch: the upload page
+  mints its account-completion and consent tokens with an HMAC key derived
+  from `BYOK_ENCRYPTION_KEY` (`src/lib/crypto.ts`, `dataKey()`), and that
+  variable exists on the Vercel production target only. The branch's own
+  side is fine: `own_upload_context_v1` answers (birth date missing → account
+  completion), the two upload consent artifacts are current, the nonce
+  function accepts a call. This session may not write to a secret store (the
+  environment's policy refused both the Vercel variable and the local key
+  generation), so it is an owner action below.
+
+## Found on the way (continued)
+
+- `public.report_templates` is empty on the branch (seeded by `pnpm seed`,
+  not migrated; production holds 162 rows). The "result rendered" step needs
+  them; this session seeds the branch with the repository's own data (reference
+  rows only, no personal data) before the next journey.
+
 ## In progress
 
-- Step 5, first journey: 64 MiB synthetic VCF through the browser against the
-  Preview deployment, with chosen reports, to prove the path end to end
-  before the ceiling-size files.
+- Blocked on the owner action below. Once the variable exists and the Preview
+  redeploys (any push to this branch, or a redeploy from the Vercel
+  dashboard), the 64 MiB VCF journey runs again, then VCF.gz, gVCF, the
+  ceiling files, the cap refusal and the withdrawal residue check.
 
 ## Not yet proved
 
@@ -69,6 +90,26 @@ as binding as the "Done" list.
 - That the preview container runs a job: the deploy succeeded, but no job
   has been claimed yet.
 
-## Owner action needed
+## OWNER ACTION NEEDED
 
-None at this time.
+The Vercel Preview target needs one more variable, or no upload page can
+render on any Preview deployment.
+
+1. Open https://vercel.com/mariodiego/inherit/settings/environment-variables
+2. Add a variable:
+   - Key: `BYOK_ENCRYPTION_KEY`
+   - Value: a FRESH key, never production's, from `openssl rand -base64 32`
+     (44 characters ending in `=`); anything that is not 32 bytes of base64
+     is refused by the app
+   - Environments: **Preview only** (leave Production and Development unticked)
+   - Sensitive: on
+3. Save, then either push anything to `claude/hosted-proof-20260919` or use
+   "Redeploy" on deployment `dpl_GN9c7UQD98Jp6mnDT5R9KPb4pV7V` in
+   https://vercel.com/mariodiego/inherit/deployments so the value applies.
+4. Start a fresh session in the same Claude Code environment with the same
+   brief; this session's variables are unchanged. Remove the variable at
+   teardown (runbook step 6).
+
+Why this key: it encrypts users' own model keys at rest and derives the keyed
+digests behind consent tokens; production's value must not be copied to a
+preview deployment that talks to a branch database.
