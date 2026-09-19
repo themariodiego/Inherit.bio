@@ -316,7 +316,8 @@ every case. Applied in the same change unless it says product work.
 19. **Glossary definitions (G1.11):** not claims; they render from
     `data/jargon.json` without a citation (corrections item 15). Wiring the
     gloss surface onto its pages is product work next. **Done, 19 September:**
-    the report page's bullets and coverage line are glossed, glossary
+    the report page's bullets are glossed (the methods-section coverage line
+    stays plain for the G1.13b target-size sweep), glossary
     definitions left the claims gate's designated list, and on the owner's
     confirmation (decision 28) every one of the 110 definitions renders.
 20. **G1.13b:** the in-page table beneath the ancestry map is the equivalent

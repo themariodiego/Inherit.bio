@@ -1497,8 +1497,10 @@ its pages; that is product work recorded in the handoff.
 
 19 September 2026: `scripts/claims-gate.ts` lists six designated surfaces and
 `docs/claims-divergence.json` records why the seventh left; the report page
-glosses its plain-language bullets and its coverage line as well as the
-not-covered sentences; and `renderableGlossaryEntries` is the whole register,
+glosses its plain-language bullets as well as the not-covered sentences (the
+methods-section coverage line stays plain: the G1.13b target-size sweep's SC
+2.5.8 Inline exception did not clear its inline gloss control in the shown
+state); and `renderableGlossaryEntries` is the whole register,
 on the owner's confirmation the same day (decision 28). The two unit cases
 that pinned the 68/42 split are replaced by cases that hold this rule, and
 `data/glossary-citation-classes.json` keeps its reading under a `supersededBy`

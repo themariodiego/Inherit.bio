@@ -113,6 +113,13 @@ async function expectEveryResponseHeld() {
 }
 
 test.beforeAll(async ({ browser }, info) => {
+  // This one hook stands up the whole serial suite: a real file upload through
+  // the local Storage provider, the provider save, the consent grant and four
+  // navigations. The default 120 s is the tightest budget for that on a loaded
+  // runner (this project runs last), where run 35416394061 timed it out during
+  // sign-in. The a11y hooks take the same allowance for the same reason; it
+  // extends the setup only and weakens no assertion.
+  test.setTimeout(300_000);
   fixture = await startCopilotFixture(MOCK_PORT);
   userId = await createConfirmedUser(USER.email, USER.password);
   context = await browser.newContext({ baseURL: info.project.use.baseURL });

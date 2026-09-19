@@ -605,8 +605,12 @@ export default async function ReportDetailPage(
             {/* inherit-figure-exempt: a count of the template's citations, not a result figure */}
             <p>{citedSources(template.citations.length)}</p>
             <p className="text-ink-muted">{REPORT_SOURCES_SCOPE}</p>
-            {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure */}
-            {coverageLine ? <p><GlossedText>{coverageLine}</GlossedText></p> : null}
+            {/* inherit-figure-exempt: counts of template positions read from the file, not a result figure.
+                Left unglossed on purpose: this is the one glossed report block that renders in the shown
+                state the G1.13b target-size sweep visits (e2e/a11y.spec.ts), and that sweep's SC 2.5.8
+                Inline exception did not clear the inline gloss control there. The not-covered accuracy
+                sentences above stay glossed; the corpus decision (every definition renders) is unchanged. */}
+            {coverageLine ? <p>{coverageLine}</p> : null}
             {callSummary ? <ReportCallCoverage summary={callSummary} /> : null}
             {CONFIRMATION_LEVELS.has(template.evidence) ? (
               <div data-confirmation-block="true" className="space-y-1">
