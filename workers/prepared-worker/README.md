@@ -21,7 +21,7 @@ activates nothing.
 | --- | --- |
 | `wrangler.json` | The Worker: cron, container (`standard-1`, one instance), Durable Object binding and migration, four plain variables, observability off, no `workers.dev` URL. `env.preview` is the preview variant. |
 | `src/index.mjs` | The Durable Object and the `scheduled` and `fetch` handlers, on the runtime's own container API (no `@cloudflare/containers` dependency). `fetch` answers 404 with no body to everything. |
-| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
+| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `docs/route-register.json` (imported by the worker module), `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
 | `src/index.test.ts` | Proves the object starts only a stopped container, forwards exactly the six variables below, and that the cron wakes the one named object. `scripts/cloudflare-hosting-config.test.ts` holds the configuration, the Dockerfile and the workflow to this README. |
 
 ## Bindings, variables and secrets
@@ -33,7 +33,7 @@ variables in `wrangler.json`:
 | Name | Production | Preview |
 | --- | --- | --- |
 | `INHERIT_PREPARED_WGS_ENABLED` | `true` | `true` |
-| `NEXT_PUBLIC_SUPABASE_URL` | the production project URL | empty until the preview branch exists |
+| `NEXT_PUBLIC_SUPABASE_URL` | the production project URL | `https://iofjhrtcyawjjhuxbgfd.supabase.co`, the `hosted-proof` preview branch (19 September 2026) |
 | `INHERIT_PREPARED_R2_ORIGIN` | `https://inherit-prepared-artifacts.mariodiego-dev.workers.dev` | `https://inherit-prepared-artifacts-preview.mariodiego-dev.workers.dev` |
 | `INHERIT_PREPARED_R2_BUCKET` | `inherit-prepared-production` | `inherit-prepared-preview` |
 
@@ -68,7 +68,10 @@ key is not a secret. `scripts/cloudflare-deploy-guard.ts` refuses a production
 deploy whose committed keys differ from the served ones, so a rotated signer
 means: update the app's `INHERIT_UPLOAD_SIGNING_JWK`, wait for the endpoint to
 serve the new key, commit the new public half here, deploy. The preview
-gateway's list stays empty until a preview signer exists.
+gateway carries the public half of the preview signer (kid
+`4d1d178c-3f0c-41d0-902f-788c83fdef3d`, committed 19 September 2026): the key
+the `hosted-proof` branch project trusts and the preview deployment serves,
+never the production signer.
 
 ## Two-step origin bootstrap
 
@@ -138,11 +141,15 @@ expire); the secrets are set as above.
 
 ## What this does not prove
 
-- The deploys of 18 September 2026 prove that the image builds, the Workers
+- The deploys of 18 September 2026 proved that the image builds, the Workers
   and the container application exist and the gateways refuse unauthenticated
-  requests; no job has run in a container yet, and the preview gateway has no
-  key until a preview signer exists (the production key is committed and
-  guard-checked, see above).
+  requests. Every container start until 19 September exited before its first
+  request: the worker module imports `docs/route-register.json`, which the
+  image did not copy (found by the hosted proof, when the preview branch's
+  API logs showed no claim call across several cron ticks; fixed above). Both gateways now carry a
+  committed key (the production one is guard-checked, see above; the preview
+  one is compared by hand against the preview deployment's endpoint in
+  `docs/evidence/hosted-proof-20260919/`).
 - The instance size rests on one trial run, not on a full-size whole-genome
   file; capacity, throughput and 100 genomes a month remain unproved (D-124).
 - A container that never exits keeps `running` true and blocks every later

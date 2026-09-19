@@ -1,0 +1,36 @@
+{
+  "project": "iofjhrtcyawjjhuxbgfd (Supabase preview branch hosted-proof); production zuvloczwgrayonqabnss untouched",
+  "appliedAt": "2026-09-19T01:47:40Z",
+  "executedAs": "postgres through the connected Supabase tool, one transaction",
+  "guard": "do-block: raises unless own_preparation_config.enabled is false, upload_authorization_config has no row and own_preparation_jobs is empty (the preflight facts of 01:41:03Z)",
+  "statements": [
+    "update private.own_preparation_config set enabled = true, artifact_provider = 'r2', r2_bucket = 'inherit-prepared-preview', max_job_seconds = 3600 where singleton;",
+    "insert into private.upload_authorization_config (singleton, auth_issuer, maximum_array_bytes, maximum_vcf_bytes, maximum_gvcf_bytes, maximum_account_bytes, maximum_active_uploads) values (true, 'https://iofjhrtcyawjjhuxbgfd.supabase.co/auth/v1', 25165824, 2147483648, 8589934592, 12884901888, 2);"
+  ],
+  "why": {
+    "max_job_seconds": "3600 is the column's upper bound (check 900..3600; a job deadline is also bounded to created_at + 1 hour). It is set to the ceiling so the proof measures real durations instead of freezing a slow job; the recommended production value comes from the measurements.",
+    "max_artifact_bytes": "left at 104857600 (100 MiB); the column allows up to 1 GiB and the proof records whether a ceiling-size file's artifacts fit.",
+    "upload_authorization_config": "no row existed on the branch (operator-seeded, not migrated). The issuer is the branch's auth issuer; array 24 MiB as in production; VCF and VCF.gz 2 GiB and gVCF 8 GiB are the owner's targets (decision 4); the account ceiling 12 GiB admits one file at each ceiling at once; two active uploads as in production.",
+    "monthly_admission_limit": "unchanged at 100 here; the cap proof lowers it to a small number and restores it, with its own receipt."
+  },
+  "postflight": {
+    "own_preparation_config": {
+      "singleton": true,
+      "enabled": true,
+      "artifact_provider": "r2",
+      "r2_bucket": "inherit-prepared-preview",
+      "max_artifact_bytes": 104857600,
+      "max_job_seconds": 3600,
+      "monthly_admission_limit": 100
+    },
+    "upload_authorization_config": {
+      "singleton": true,
+      "auth_issuer": "https://iofjhrtcyawjjhuxbgfd.supabase.co/auth/v1",
+      "maximum_array_bytes": 25165824,
+      "maximum_vcf_bytes": 2147483648,
+      "maximum_gvcf_bytes": 8589934592,
+      "maximum_account_bytes": 12884901888,
+      "maximum_active_uploads": 2
+    }
+  }
+}

@@ -23,8 +23,8 @@
       "name": "inherit-prepared-artifacts-preview",
       "vars": {
         "BUCKET_NAME": "inherit-prepared-preview",
-        "TOKEN_ISSUER": "https://zuvloczwgrayonqabnss.supabase.co/auth/v1",
-        "SIGNING_PUBLIC_KEYS": "[]"
+        "TOKEN_ISSUER": "https://iofjhrtcyawjjhuxbgfd.supabase.co/auth/v1",
+        "SIGNING_PUBLIC_KEYS": "[{\"kty\":\"EC\",\"crv\":\"P-256\",\"kid\":\"4d1d178c-3f0c-41d0-902f-788c83fdef3d\",\"x\":\"TCdjutYMAEAsTQR86kJU78Wp4Zdd4A8RAL-EgtkdUJc\",\"y\":\"ZrqrCUSRdTdxyhUQ-1JC_-SgQ98glUpgGDYavehN0yk\"}]"
       },
       "r2_buckets": [
         {

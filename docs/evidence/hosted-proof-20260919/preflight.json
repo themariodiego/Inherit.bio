@@ -1,0 +1,54 @@
+{
+  "readAt": "2026-09-19T01:41:03Z",
+  "project": "iofjhrtcyawjjhuxbgfd (Supabase preview branch hosted-proof of zuvloczwgrayonqabnss)",
+  "readOnly": true,
+  "own_preparation_config": {
+    "singleton": true,
+    "enabled": false,
+    "artifact_provider": "supabase",
+    "r2_bucket": null,
+    "max_artifact_bytes": 104857600,
+    "max_job_seconds": 900,
+    "monthly_admission_limit": 100
+  },
+  "upload_authorization_config": null,
+  "own_original_retention_config": {
+    "singleton": true,
+    "enabled": true,
+    "applies_after": "2026-09-19T00:43:24.074881+00:00"
+  },
+  "counts": {
+    "monthly_admissions_rows": 0,
+    "preparation_jobs": 0,
+    "preparation_artifacts": 0,
+    "genome_files": 0,
+    "auth_users": 0,
+    "storage_objects": 0
+  },
+  "storage_buckets": [
+    { "name": "generated-artifacts", "public": false, "file_size_limit": null },
+    { "name": "genomes", "public": false, "file_size_limit": null },
+    { "name": "genomes-staging", "public": false, "file_size_limit": null }
+  ],
+  "productionComparison": {
+    "readAt": "2026-09-19T01:41:19Z",
+    "project": "zuvloczwgrayonqabnss",
+    "readOnly": true,
+    "upload_authorization_config": {
+      "auth_issuer": "https://zuvloczwgrayonqabnss.supabase.co/auth/v1",
+      "maximum_array_bytes": 25165824,
+      "maximum_vcf_bytes": 25165824,
+      "maximum_account_bytes": 134217728,
+      "maximum_active_uploads": 2,
+      "maximum_gvcf_bytes": null
+    },
+    "own_preparation_config": {
+      "enabled": false,
+      "artifact_provider": "supabase",
+      "r2_bucket": null,
+      "max_artifact_bytes": 104857600,
+      "max_job_seconds": 900,
+      "monthly_admission_limit": 100
+    }
+  }
+}
