@@ -26,24 +26,30 @@ export interface GlossaryEntry {
   definition: string;
   aliases: readonly string[];
   /**
-   * `plain` renders to a reader now. `cited` does not, and will not until its
-   * definition carries a resolvable citationId: brief line 2570 designates a
-   * glossary definition as a surface that needs one, and a definition that
-   * names a disease, describes clinical practice, or defines a quantity drawn
-   * from data is exactly the kind that must not appear uncited.
+   * The 2026-09-11 reading of the definition: `cited` when it names a disease
+   * or a disease process, describes clinical practice, or defines a quantity
+   * drawn from data; `plain` otherwise. The line is drawn per term in
+   * `data/glossary-citation-classes.json`, with the reason beside every cited
+   * one.
    *
-   * The split is the operator's decision of 2026-09-11 and the line is drawn
-   * per term in `data/glossary-citation-classes.json`, with the reason
-   * recorded beside every cited one.
+   * Until 2026-09-19 a `cited` term rendered only once its definition carried
+   * a resolvable citationId, because brief line 2570 listed glossary
+   * definitions among the surfaces that need one. Owner decision 19
+   * (2026-09-18, evening; confirmed 2026-09-19) took them off that list: a
+   * definition is not a claim (corrections item 15), so the class no longer
+   * decides what renders. It stays as the record of which definitions touch
+   * disease, clinical practice or a quantity, the ones whose sources a
+   * reviewer attached first.
    */
   citationClass: "plain" | "cited";
   /**
    * The register entry carrying this definition's evidence, or null.
    *
-   * Only a `cited` term needs one, and until 2026-09-12 one could not matter:
-   * `renderableGlossaryEntries` filtered on `plain` alone, so the only route
-   * to showing a cited term was reclassifying it — false about the term, and
-   * it would have made sourcing 42 definitions change nothing on screen.
+   * From 2026-09-12 to 2026-09-19 this is what let a `cited` term render at
+   * all, so sourcing a definition changed what a reader saw. Since decision 19
+   * every definition renders and the id is provenance: the evidence a
+   * reviewer attached to a definition that touches disease, clinical practice
+   * or a quantity, kept checkable by `glossary-classes.test.ts`.
    *
    * Resolved against `data/glossary-citations.json`, which is deliberately not
    * the corpus register: that file is the reviewed report seed, pinned at
@@ -73,10 +79,10 @@ const ENTRIES: readonly GlossaryEntry[] = (jargon as {
   // must return a clinical definition to invisible, never promote one behind a
   // reference that leads nowhere.
   citationId: entry.citationId && GLOSSARY_CITATION_IDS.has(entry.citationId) ? entry.citationId : null,
-  // An unclassified term reads as `cited`, so a term added to the register
-  // without a decision stays invisible rather than shipping uncited by
-  // omission. `glossary-classes.test.ts` fails on that case rather than
-  // relying on this, but the default has to be the safe one either way.
+  // An unclassified term reads as `cited`, so the record never claims a
+  // reading nobody made. `glossary-classes.test.ts` fails on an unclassified
+  // term rather than relying on this; since decision 19 the class does not
+  // decide whether the term renders.
   citationClass: CLASS_OF.get(entry.term) ?? "cited",
 }));
 
@@ -90,16 +96,17 @@ const BY_LOOKUP: ReadonlyMap<string, GlossaryEntry> = new Map(
 export const glossaryEntries = (): readonly GlossaryEntry[] => ENTRIES;
 
 /**
- * The entries a reader may actually be shown: `plain` vocabulary, plus any
- * `cited` term whose definition now resolves to a real register entry.
+ * The entries a reader may be shown: every one of them.
  *
- * Both halves of the operator's condition live here — source all 42 for real,
- * and anything unreachable stays invisible. A cited term with evidence
- * renders; one without it does not; and the id is checked against the register
- * rather than trusted, so the difference cannot be faked.
+ * Owner decision 19 (2026-09-18, evening; confirmed as a selectable decision
+ * on 2026-09-19): a definition is not a claim, so glossary definitions render
+ * from `data/jargon.json` without a citation (corrections item 15). From
+ * 2026-09-11 to 2026-09-19 this was the `plain` vocabulary plus any `cited`
+ * term with a resolving citationId. The function stays as the one place the
+ * gloss surface reads, so a rule that withholds a definition again would have
+ * one line to change and one test to pass.
  */
-export const renderableGlossaryEntries = (): readonly GlossaryEntry[] =>
-  ENTRIES.filter((entry) => entry.citationClass === "plain" || entry.citationId !== null);
+export const renderableGlossaryEntries = (): readonly GlossaryEntry[] => ENTRIES;
 
 /**
  * The entry for a term or any of its aliases, or null. Case-insensitive,

@@ -310,7 +310,10 @@ every case. Applied in the same change unless it says product work.
     G7.1's minimum set of eight is now complete and accepted.
 19. **Glossary definitions (G1.11):** not claims; they render from
     `data/jargon.json` without a citation (corrections item 15). Wiring the
-    gloss surface onto its pages is product work next.
+    gloss surface onto its pages is product work next. **Done, 19 September:**
+    the report page's bullets and coverage line are glossed, glossary
+    definitions left the claims gate's designated list, and on the owner's
+    confirmation (decision 28) every one of the 110 definitions renders.
 20. **G1.13b:** the in-page table beneath the ancestry map is the equivalent
     list-and-text surface (corrections item 16); the igv reflow remainder and
     the 990 undersized control pairs keep the row NO.
@@ -336,6 +339,26 @@ every case. Applied in the same change unless it says product work.
 26. **The non-diagnostic line every Copilot answer carries:** the surfaces'
     `NOT_DIAGNOSTIC`, as X14.1 says; G4.8's quoted sentence is recorded as
     corrections item 19. Not the quoted sentence, not both lines.
+
+## Owner decisions · 19 September 2026 (three, asked as selectable choices)
+
+Asked and answered in chat early on 19 September 2026 (UTC) as selectable
+decisions with the recommended option first; the owner chose the recommended
+option in every case.
+
+27. **Production container secrets:** `SUPABASE_SERVICE_ROLE_KEY` and
+    `INHERIT_UPLOAD_SIGNING_JWK` on `inherit-prepared-worker` (`--env=""`)
+    stay unset until production activation (runbook step 8). The preview
+    Worker's two secrets were set on 19 September.
+28. **Glossary corpus (G1.11, corrections item 15):** every one of the 110
+    definitions renders, the 42 the 11 September reading classed `cited`
+    included; the two unit cases that pinned the 68/42 split hold the new rule
+    instead. Applied in the same change.
+29. **Preview stack teardown:** the Supabase branch `hosted-proof` and the
+    preview bucket are torn down right after the proof's evidence is committed
+    and reviewed, not kept for the activation rehearsal. The owner deletes the
+    branch in the dashboard when asked; the bucket is emptied first.
+
 
 ## Resumption handoff · 10 September 2026, night
 

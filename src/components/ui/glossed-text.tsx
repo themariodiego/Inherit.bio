@@ -33,18 +33,16 @@ import { GlossaryTerm } from "@/components/ui/glossary-term";
  */
 
 /**
- * Only the terms a reader may be SHOWN: the ones classified `plain` (operator
- * decision, 2026-09-11), plus any `cited` term whose definition now carries a
- * citation that resolves in `data/glossary-citations.json` (2026-09-12). A
- * term whose definition names a disease, describes clinical practice, or
- * defines a quantity drawn from data, and that has no source yet, stays out of
- * this pattern entirely - not merely unstyled, but never matched, so no reader
- * can open it.
+ * Every registered term and alias. From 2026-09-11 to 2026-09-19 this was the
+ * `plain` vocabulary plus any `cited` term whose definition carried a citation
+ * that resolved in `data/glossary-citations.json`; owner decision 19 (a
+ * definition is not a claim, corrections item 15) made the whole register
+ * renderable, and `renderableGlossaryEntries` is still the one place that
+ * says so.
  *
- * The set therefore GROWS as definitions are sourced, which is what the
- * register is for. Sourcing a term adds a `<button>` to every sentence that
- * uses it, and the first-viewport interactive budgets above count buttons, so
- * a term entering this list is a rendering change and gets checked as one.
+ * A term entering the register adds a `<button>` to every sentence that uses
+ * it, and the first-viewport interactive budgets above count buttons, so a
+ * new term is a rendering change and gets checked as one.
  */
 const TERMS: readonly string[] = renderableGlossaryEntries()
   .flatMap((entry) => [entry.term, ...entry.aliases])

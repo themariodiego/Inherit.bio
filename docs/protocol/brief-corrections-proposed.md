@@ -1463,7 +1463,7 @@ times.
 
 ## 15. Glossary definitions are not claims (G1.11)
 
-**SIGNED 2026-09-18 (evening), APPLIED to the register's reading; the gloss surface ships on it.**
+**SIGNED 2026-09-18 (evening), APPLIED 2026-09-19: the gloss surface ships on it, the claims gate no longer designates the surface, and every definition renders (decision 28).**
 
 ### What the brief says
 
@@ -1492,6 +1492,17 @@ selectable decision (no citation needed; a citation per definition; leave
 open), the owner chose no citation. The gloss surface (`glossed-text.tsx`,
 first occurrence, keyboard-focusable, never hover-only) can now be wired onto
 its pages; that is product work recorded in the handoff.
+
+### Applied
+
+19 September 2026: `scripts/claims-gate.ts` lists six designated surfaces and
+`docs/claims-divergence.json` records why the seventh left; the report page
+glosses its plain-language bullets and its coverage line as well as the
+not-covered sentences; and `renderableGlossaryEntries` is the whole register,
+on the owner's confirmation the same day (decision 28). The two unit cases
+that pinned the 68/42 split are replaced by cases that hold this rule, and
+`data/glossary-citation-classes.json` keeps its reading under a `supersededBy`
+note.
 
 ## 16. The ancestry map's list-and-text equivalent is the table beneath it (G1.13b)
 

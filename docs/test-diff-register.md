@@ -1,5 +1,24 @@
 # Test diff register
 
+## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
+
+`scripts/claims-gate.test.ts`: the designated-surface count the gate is held
+to is six and the ledger nine entries, and the perishable-fixture case plants
+its finding on consent summaries instead of glossary definitions, which
+corrections item 15 took off brief line 2570's list.
+`src/copy/glossary/glossary-classes.test.ts`: the two cases that pinned the 11
+September split ("renders each named risk, disease and statistical term only
+once it is sourced" and "still hides every cited term with no evidence yet")
+are replaced by cases that hold the new rule: each named term renders and keeps
+its `cited` reading, every unsourced cited term renders, and every citationId a
+definition carries still resolves in the register; the counts case holds
+renderable equal to the register. `src/components/ui/glossed-text.test.ts`: the
+sweep that asserted no unsourced cited term is glossed now asserts every
+registered term is glossed once on first use with its sentence left as
+written, read from the raw register and classes file as before. No other
+assertion moved; the classes file keeps its 68/42 reading under a
+`supersededBy` note.
+
 ## The G4.8 red-team set on the local-model path · 18 September 2026
 
 `e2e/fixtures/copilot-redteam.json` is the committed adversarial prompt set
