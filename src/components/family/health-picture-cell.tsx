@@ -19,7 +19,7 @@ import type { InputSourceView } from "@/lib/genome/input-sources";
 import { ClaimBlock } from "@/components/figures/claim-block";
 import {
   CELL_FILES_DISAGREE,
-  CELL_NO_PREPARED_FILE, CELL_NOT_GENERATED, CELL_CATALOG_UNAVAILABLE, CELL_VERSION_UNAVAILABLE,
+  CELL_NO_PREPARED_FILE, CELL_FILE_PREPARING, CELL_NOT_GENERATED, CELL_CATALOG_UNAVAILABLE, CELL_VERSION_UNAVAILABLE,
   CELL_NO_CALL, CELL_UNRECOGNIZED, CELL_SAVED, CELL_LEGACY, SAVED_SOURCE_LINK, CELL_NO_REPORT, CELL_CONFLICTING_CALLS,
   CELL_NOT_SHARED,
   CELL_NO_FILE,
@@ -44,7 +44,7 @@ export type HealthPictureSimpleState =
   | { kind: "no-file" }
   | { kind: "disagree" }
   | { kind: "not-shared" }
-  | { kind: "no-prepared-file" | "not-generated" | "catalog-unavailable" | "version-unavailable" | "no-call" | "unrecognized" | "saved" | "legacy" | "no-report" | "conflicting-calls" };
+  | { kind: "no-prepared-file" | "file-preparing" | "not-generated" | "catalog-unavailable" | "version-unavailable" | "no-call" | "unrecognized" | "saved" | "legacy" | "no-report" | "conflicting-calls" };
 export type HealthPictureCellState = HealthPictureSimpleState | { kind: "sources"; entries: readonly {
   fileId: string; sourceLabel: string; conflictingCalls?: boolean; state: HealthPictureSimpleState; href: string; source: InputSourceView;
   coverage: { read: number; needed: number };
@@ -112,6 +112,7 @@ function absenceWord(state: HealthPictureSimpleState, personName: string): strin
     case "no-report": return CELL_NO_REPORT;
     case "conflicting-calls": return CELL_CONFLICTING_CALLS;
     case "no-prepared-file": return CELL_NO_PREPARED_FILE;
+    case "file-preparing": return CELL_FILE_PREPARING;
     case "not-generated": return CELL_NOT_GENERATED;
     case "catalog-unavailable": return CELL_CATALOG_UNAVAILABLE;
     case "version-unavailable": return CELL_VERSION_UNAVAILABLE;
