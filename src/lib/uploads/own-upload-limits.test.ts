@@ -3,7 +3,8 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 import { readOwnUploadLimits } from "./own-upload-limits";
-import { ownUploadLimitsSchema, remainingAccountBytes, uploadCeilingBytes,
+import { configuredCeilingBytes, ownUploadLimitsSchema, remainingAccountBytes,
+  SINGLE_REQUEST_MAXIMUM_BYTES, uploadCeilingBytes,
   SUBJECT_UPLOAD_FORMATS, type OwnUploadLimits } from "./subject-upload-contract";
 
 const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -23,14 +24,39 @@ describe("the applicable own-upload ceiling", () => {
     expect(uploadCeilingBytes(format, limits)).toBe(expected);
   });
   it("measures a gVCF against its own ceiling once the deployment discloses one, and nothing else against it", () => {
-    const split: OwnUploadLimits = { ...limits, maximumGvcfBytes: 8_589_934_592 };
-    expect(uploadCeilingBytes("gVCF", split)).toBe(8_589_934_592);
+    const split: OwnUploadLimits = { ...limits, maximumGvcfBytes: 1_073_741_824 };
+    expect(configuredCeilingBytes("gVCF", split)).toBe(1_073_741_824);
+    expect(uploadCeilingBytes("gVCF", split)).toBe(1_073_741_824);
     expect(uploadCeilingBytes("VCF", split)).toBe(limits.maximumVcfBytes);
     expect(uploadCeilingBytes("VCF.GZ", split)).toBe(limits.maximumVcfBytes);
     expect(uploadCeilingBytes("consumer-array-text-v1", split)).toBe(limits.maximumArrayBytes);
     // A database without the column discloses no gVCF ceiling; the VCF one applies, as it does there.
     expect(uploadCeilingBytes("gVCF", limits)).toBe(limits.maximumVcfBytes);
     expect(ownUploadLimitsSchema.safeParse(split).success).toBe(true);
+  });
+  /**
+   * Measured on the hosted preview stack on 20 September 2026: a gVCF ceiling
+   * of 8 GiB was configured, issuance granted the lease for 8,589,933,057
+   * bytes, and the single POST the uploader makes was then refused by the edge
+   * with 413 after about a megabyte. The person saw a frozen percentage for
+   * five and a half minutes and a failure that named no size. A ceiling above
+   * what one request can carry is a promise the uploader cannot keep, so the
+   * applicable ceiling is the smaller of the two and the disclosure says so.
+   */
+  it("never offers more than one request can carry, whatever the deployment configures", () => {
+    const beyond: OwnUploadLimits = { ...limits, maximumGvcfBytes: 8_589_934_592,
+      maximumVcfBytes: 8_589_934_592, maximumArrayBytes: 8_589_934_592 };
+    for (const format of SUBJECT_UPLOAD_FORMATS) {
+      expect(configuredCeilingBytes(format, beyond)).toBe(8_589_934_592);
+      expect(uploadCeilingBytes(format, beyond)).toBe(SINGLE_REQUEST_MAXIMUM_BYTES);
+    }
+    // At the boundary the configured ceiling still wins while it is the smaller.
+    const exact: OwnUploadLimits = { ...limits, maximumVcfBytes: SINGLE_REQUEST_MAXIMUM_BYTES };
+    expect(uploadCeilingBytes("VCF", exact)).toBe(SINGLE_REQUEST_MAXIMUM_BYTES);
+    const under: OwnUploadLimits = { ...limits, maximumVcfBytes: SINGLE_REQUEST_MAXIMUM_BYTES - 1 };
+    expect(uploadCeilingBytes("VCF", under)).toBe(SINGLE_REQUEST_MAXIMUM_BYTES - 1);
+    // The bound is the largest size observed to be accepted, below the 413 boundary.
+    expect(SINGLE_REQUEST_MAXIMUM_BYTES).toBeLessThan(5_368_708_096);
   });
   it("reports what an account can still hold and never a negative remainder", () => {
     expect(remainingAccountBytes(limits)).toBe(134_217_728);
