@@ -1,5 +1,38 @@
 # Test diff register
 
+## The image copies what the worker imports, and a wake outlives its container · 20 September 2026
+
+Two container faults the hosted proof measured on the preview stack, both of
+them in code that reaches production.
+
+`scripts/cloudflare-hosting-config.test.ts` gains a case that walks the worker
+entry's import graph the way tsx resolves it (relative and `@/` specifiers,
+packages skipped) and requires every file it reaches outside `src/` to be
+copied into the image and let through `.dockerignore`. The worker module
+imports `docs/route-register.json`; the image copied `src/` alone and
+`.dockerignore` dropped `docs/`, so every container start from 18 September
+exited before its first request and the branch's API logs held no claim call
+across several cron ticks. Run against the Dockerfile and `.dockerignore` this
+change replaces, the case fails with `docs/route-register.json must be copied
+into the image`, and two existing cases in the same file fail with it.
+
+`workers/prepared-worker/src/index.test.ts` gains a case holding that the wake
+does not resolve while the container is still running, that an alarm re-arms
+the next one while it runs, and that a stopped container stops the re-arming.
+The object used to return as soon as the container had started; with no pending
+work it was evicted and took the container with it about ninety seconds in, on
+`standard-1` and `standard-2` alike, so a 547-byte and two 4 MiB files finished
+while a 64 MiB file died mid-run twice and its job sat `claimed` until its
+deadline an hour later. The existing cases (a running container is left alone,
+exactly six variables are forwarded, a failed run neither rejects the wake nor
+escapes as an unhandled rejection) are unchanged and still pass.
+
+No browser assertion, retry rule, consent check or ceiling changes, and no
+matrix row moves. The preview configuration those faults were measured
+through — the branch project URL, the preview signer's public half and the
+preview container's instance size — stays on the hosted-proof branch, because
+the branch project is deleted at teardown.
+
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 
 PR #148's run 35420001967 reached `/auth/sign-in` through Chromium's forced
