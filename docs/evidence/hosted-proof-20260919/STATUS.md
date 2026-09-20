@@ -232,6 +232,28 @@ as binding as the "Done" list.
   to run the journey driver, which writes to the live preview stack, and
   refuses to run the fixture generator. The raise above is applied and
   recorded; the measurement it was made for is not done. Nothing is torn down.
+- 14:25 · **How the 2 GiB job ended.** Nothing happened at the deadline
+  itself (14:23:38); the next five-minute tick did the work, 105 seconds
+  later. At 14:25:23.264632 the job went `claimed` to `frozen` with
+  `write_fence_at` set, and 9 ms later one `own_prepared_cleanups` row
+  appeared: mode `unpublished-scratch`, 540 entries, its own cleanup deadline
+  an hour out at 15:23:38. **The file is kept**: `genome_files.status` stays
+  `uploaded`, `normalization_completed_at` null, no manifest ever published.
+  The person is left holding a 2 GiB original that was never prepared.
+- 14:35 · **The cleanup is slower than its own deadline, on this stack.** 32
+  of 540 entries acknowledged across exactly two ticks (14:25:23.9 and
+  14:30:30.1): sixteen per tick, which is the schema's page cap
+  (`cleanupIds: z.array(z.uuid()).max(16)`), deliberate and documented as
+  "one page per invocation … subsequent scheduled runs resume exact durable
+  progress". Here the only scheduled runner is the container's five-minute
+  cron, so 540 entries needs about 34 ticks — roughly 2 h 49 m — against a
+  deadline 49 minutes away. **This is not a production claim**: `vercel.json`
+  runs `/api/cron/retention` every minute and the same drain runs there, which
+  would clear 540 in about 34 minutes; Vercel crons do not run against a
+  Preview deployment, so that rate was not measured here. What does carry over
+  is the shape: the page size is a constant while scratch scales with file
+  size. The 64 MiB job left 13 entries and cleared them in one tick; this one
+  left 540.
 
 ## Found on the way (continued)
 

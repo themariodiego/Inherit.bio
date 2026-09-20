@@ -256,6 +256,22 @@
           "atTheDefault100MiB": "about 120 MB of source",
           "atTheColumnMaximum1GiB": "about 1.23 GB of source, and the separate 4096-artifact cap may bind first: the 64 MiB run averaged 317 KB per artifact, this one 193 KB, so 4096 artifacts is somewhere between 790 MB and 1.3 GB of artifacts",
           "productionToday": "production's VCF ceiling is 24 MiB, comfortably inside the default, so nothing here says production is broken. It says the raise to 2 GiB cannot work."
+        },
+        "howItEnded": {
+          "deadline": "2026-09-20T14:23:38.7Z, one hour after admission.",
+          "nothingHappenedAtTheDeadline": "At 14:24:43 the row was still claimed, frozen_at null, all 540 artifacts present, no cleanup row. The transition is done by the cron tick, not by the deadline.",
+          "frozenAt": "14:25:23.264632, the next five-minute tick, 105 seconds after the deadline. state claimed -> frozen, with write_fence_at set to the same instant.",
+          "cleanupQueued": "14:25:23.273711, 9 ms later: one own_prepared_cleanups row, mode unpublished-scratch, entry_count 540, its own cleanup_deadline 15:23:38.7 (an hour after the job's).",
+          "whatHappensToTheFile": "genome_files.status stays uploaded and normalization_completed_at stays null. The person's 2 GiB original is kept, not deleted, and no manifest was ever published.",
+          "attemptsAtTheJob": 1
+        },
+        "theCleanupIsSlowerThanItsOwnDeadline": {
+          "measured": "32 of 540 entries acknowledged across exactly two ticks: 14:25:23.9 and 14:30:30.1. Sixteen per tick.",
+          "whySixteen": "The cleanup page is capped at 16 by schema (cleanupIds: z.array(z.uuid()).max(16) in src/lib/genome/prepared-source/cleanup-integration.ts). That is deliberate and documented there: one page per invocation keeps the retention call bounded and 'subsequent scheduled runs resume exact durable progress'.",
+          "theRateOnThisStack": "The only scheduled runner reaching this branch is the container's five-minute cron, so 16 entries per five minutes. 540 entries needs about 34 ticks, roughly 2 hours 49 minutes, against a cleanup deadline of 15:23:38, which is 49 minutes away. About 176 of the 540 will be done by then.",
+          "whatThisDoesNotSay": "It does not say production would be this slow. vercel.json schedules /api/cron/retention every minute, and the same drain runs there, which would be 16 per minute and would clear 540 in about 34 minutes, inside the hour. Vercel crons do not run against a Preview deployment, so on this stack only the container tick drains it. The production rate was not measured here.",
+          "whyItMattersAnyway": "The page size is a constant while the number of scratch artifacts scales with file size. The 64 MiB job left 13 entries and they cleared in one tick. This job left 540. Whatever the tick rate, the ratio of scratch to cleanup capacity gets worse as files get larger, and the residue is R2 objects belonging to a file the person still holds.",
+          "stillOpen": "What the product does when a cleanup passes its own deadline with entries outstanding was not observed; at the time of writing 15:23:38 had not arrived."
         }
       },
       "oversizeFixtureRefusedInTheBrowser": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.'",
