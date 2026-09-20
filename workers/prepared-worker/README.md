@@ -20,8 +20,8 @@ activates nothing.
 | File | Role |
 | --- | --- |
 | `wrangler.json` | The Worker: cron, container (`standard-1`, one instance), Durable Object binding and migration, four plain variables, observability off, no `workers.dev` URL. `env.preview` is the preview variant. |
-| `src/index.mjs` | The Durable Object and the `scheduled` and `fetch` handlers, on the runtime's own container API (no `@cloudflare/containers` dependency). `fetch` answers 404 with no body to everything. |
-| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
+| `src/index.mjs` | The Durable Object and the `scheduled` and `fetch` handlers, on the runtime's own container API (no `@cloudflare/containers` dependency). The wake stays open until the container exits and re-arms a twenty-second alarm while it runs, because an idle object is evicted and takes its container with it. `fetch` answers 404 with no body to everything. |
+| `Dockerfile` | The image: Node 24, the repository's dependencies from the frozen lockfile, `src/`, `data/`, `docs/route-register.json` (imported by the worker module), `tsconfig.json` and the two scripts the entry needs, run as the unprivileged `node` user. The build context is the repository root, filtered by the root `.dockerignore`. |
 | `src/index.test.ts` | Proves the object starts only a stopped container, forwards exactly the six variables below, and that the cron wakes the one named object. `scripts/cloudflare-hosting-config.test.ts` holds the configuration, the Dockerfile and the workflow to this README. |
 
 ## Bindings, variables and secrets
@@ -124,6 +124,13 @@ expire); the secrets are set as above.
 - `max_instances` is 1 and the object is a named singleton, so at most one
   preparation runs at a time; a wake that finds the container running returns
   without starting another.
+- Until 20 September 2026 the wake returned as soon as the container had
+  started. The object then had no pending work, was evicted, and took the
+  container with it about ninety seconds in: on the preview stack a 547-byte
+  and two 4 MiB files finished, while a 64 MiB file died mid-run twice, on
+  `standard-1` and on `standard-2` alike, and its job sat claimed until its
+  deadline an hour later. The wake now awaits the container's exit and keeps
+  an alarm armed while it runs.
 - Containers bill per second of memory, vCPU and disk while running, plus the
   Workers Paid plan they require. A five-minute cron means up to 288 idle
   starts a day when there is nothing to prepare; each is a few seconds of
@@ -138,16 +145,23 @@ expire); the secrets are set as above.
 
 ## What this does not prove
 
-- The deploys of 18 September 2026 prove that the image builds, the Workers
+- The deploys of 18 September 2026 proved that the image builds, the Workers
   and the container application exist and the gateways refuse unauthenticated
-  requests; no job has run in a container yet, and the preview gateway has no
-  key until a preview signer exists (the production key is committed and
-  guard-checked, see above).
+  requests. Every container start until 19 September exited before its first
+  request: the worker module imports `docs/route-register.json`, which the
+  image did not copy (found by the hosted proof, when the preview branch's
+  API logs showed no claim call across several cron ticks; fixed above). The
+  production gateway's committed key is guard-checked, see above; the preview
+  gateway has no key until a preview signer exists.
 - The instance size rests on one trial run, not on a full-size whole-genome
   file; capacity, throughput and 100 genomes a month remain unproved (D-124).
 - A container that never exits keeps `running` true and blocks every later
   wake; there is no watchdog here. The operator stops it from the dashboard or
   with wrangler.
+- A job whose container dies mid-run is not retried: its claim expires but the
+  job stays `claimed`, and six five-minute ticks passed it over on the preview
+  stack before its deadline. The person waits the full `max_job_seconds` and
+  is then told the preparation could not be confirmed.
 - A queued job waits for the next cron tick plus the container start; nothing
   here shortens that.
 - Cloudflare becomes a processor of genotype data the moment a real job runs
