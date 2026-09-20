@@ -1,12 +1,11 @@
 # Artifact-budget failure release verification — 20 September 2026 (decision 31a)
 
-**Status: prepared, not applied.** The preflight below was read against the
-Inherit project and is clean; the DDL guard, the postflight expectation and the
-rollback-only probe are written and reviewable. Nothing has been applied to
-production and nothing here claims otherwise. The apply waits on PR #153
-merging and on the deployment that carries the code reaching READY, because the
-status response's schema is strict and the app must accept the new `reason` key
-before the database can send it — the order the gVCF ceiling release set out.
+**Status: released, 20 September 2026.** PR #153 merged as `75d71f7`, the
+production deployment carrying it reached READY and took `www.inherit.bio`, the
+DDL guard passed at 18:28:56 UTC, the migration applied as hosted version
+`20260920182946`, and a rollback-only production probe passed **17/17** at
+18:32:24 UTC. No limit moved, preparation is still disabled, and production held
+zero preparation jobs and zero artifacts throughout.
 
 ## What the migration does
 
@@ -69,18 +68,46 @@ not_found`, because `check_own_preparation_claim_v1` tests the enabled flag
 first and production is still disabled. The two argument refusals are checked
 before authority and read the same either way.
 
-## What remains
+## What was done, in order
 
-1. PR #153 merges on green CI, with an exact-head guard.
-2. The production deployment of that commit reaches READY on `www.inherit.bio`.
-3. `ddl-guard.sql` passes against the Inherit project.
-4. The migration is applied; the postflight is read and compared to
-   `expected-prosrc.json` byte for byte; the probe runs and its receipt is
-   recorded here as `postflight.json` and `probe-receipt.json`.
-5. This README's status line changes from *prepared* to *released*, with the
-   merge commit, tree, deployment and hosted ledger version filled in.
+| Step | Evidence |
+| --- | --- |
+| PR #153 merged | `75d71f7083448ba2e5acd83172160b8d60e04bab`, tree `1484d3e23d780c84e8b67261243652b639332968`, equal to the tested head `84691b6` |
+| CI on that head | run 35524128507, green, including the pgTAP case for the guard rule nothing else covered |
+| App deployed first | `dpl_8H7jmEUCuLfFoc22GQx2WBH8qJAC` (`75d71f7`) READY 18:11:40 UTC; then `dpl_Gw9U8hB6Axwse2HeezbeY6bXDMx4` (`a7a5003`, PR #156 on top) READY **18:13:30 UTC**, aliased to `inherit.bio` and `www.inherit.bio`, `aliasError: null`. The status schema in `src/lib/uploads/own-preparation.ts` is `.strict()` and carries `reason: z.literal("artifact_budget_exhausted").optional()`, so the app accepts the key before the database can send it |
+| DDL guard | passed **18:28:56.617 UTC** — ledger 117 rows ending `shared_report_readiness_completed_runs`, both replaced bodies at their reviewed md5, the new function and column absent, four dependency functions and four grant roles present, `private` owned by `postgres`, **zero** jobs |
+| Migration applied | hosted version **`20260920182946`**, name `own_preparation_budget_failure`, ledger 117 → 118. Source file SHA256 `fc4cccca25faf0a43b50bc134d0927c7bb3a337426f52b521008aad529749401`, 13,407 bytes |
+| Postflight | read 18:30:04.727 UTC — **three of four byte-equal, one not**; corrected, then all four equal (below) |
+| Probe | **17/17** at 18:32:24.333 UTC, `probe-receipt.json` |
+
+## The postflight caught something, which is what it is for
+
+On the first read, `private.fail_own_preparation_claim_v1` was **1,099 bytes at
+md5 `2e6f412e740bbc715303ead0fcc699b5`** against the expected **1,754 at
+`972630d8bcd79fd5c78933c7385df94e`**. The other three were byte-equal.
+
+The cause was in the apply, not the migration: the statement sent to the
+management API had the three explanatory comments dropped from inside that
+function's body while the call was being composed. Comments inside a function
+body are part of `prosrc`, so the deployed source differed from the repository
+by 655 bytes **with identical behaviour** — no clause, no condition and no
+refusal differed. `gate:schema-drift` compares exactly that text, so it would
+have flagged the project as drifted on its next run.
+
+Corrected with a `create or replace` carrying the repository body verbatim,
+rather than a second migration: the migration was already in the ledger under
+its own name, and a new ledger row with no file behind it is worse drift than
+the one being fixed. `create or replace` preserves a function's privileges, so
+`service_role` survived on both new functions, which the final read confirms.
+All four bodies then matched `expected-prosrc.json` exactly.
+
+It is recorded here rather than quietly fixed because a byte-equal postflight
+that is only run when it is expected to pass is not a check.
+
+## What this release did not do
 
 Activation of the prepared path and the ceiling raise are a **separate**
-release (`docs/hosted-preparation-activation.md` steps 8 and 9) and are not
-part of this one. Applying this migration changes no limit, enables nothing and
-moves no acceptance-matrix row.
+release, `docs/hosted-preparation-activation.md` steps 8 and 9. This migration
+changed no limit, enabled nothing and moved no acceptance-matrix row:
+`own_preparation_config` is still `enabled=false` at `max_artifact_bytes`
+104,857,600, and the matrix stands at 38 YES / 27 NO before and after.
