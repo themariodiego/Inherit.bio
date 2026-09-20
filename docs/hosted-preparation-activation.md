@@ -164,10 +164,59 @@ sentence names the array and VCF ceilings and gains a gVCF clause when the
 two values diverge.
 
 Only after step 8 and that migration: raise `private.upload_authorization_config`
-to the owner's ceilings (2 GiB VCF, 8 GiB gVCF, the account ceiling and active
-uploads as decided) with a read-only preflight and a receipt. Original
+to the owner's ceilings with a read-only preflight and a receipt. Original
 retention (`own_original_retention_config`) is already enabled and applies
 to every prepared-source original from its creation.
+
+**Two ceilings move together, and the earlier pair of numbers is superseded.**
+Owner decision 30, 20 September 2026: `max_artifact_bytes` goes to the schema
+maximum and both file ceilings to the largest honestly-supportable size, in
+place of the 2 GiB VCF and 8 GiB gVCF this runbook named before. The file
+ceiling governs what is *admitted*; `private.own_preparation_config.max_artifact_bytes`
+governs what preparation may *write*, and a file admitted under a ceiling the
+artifact budget cannot finish is refused part-way through with the terminal
+`preparation_file_too_large` that decision 31(a) added. That refusal is honest,
+but it is still a person's file failing after an upload, so the two must be set
+as a pair.
+
+The bounds, read from the Inherit project's CHECK constraints on 20 September
+2026: `max_artifact_bytes` between 1 and **1,073,741,824** (1 GiB), and
+`max_job_seconds` between 900 and **3,600**. Production sits at
+`max_artifact_bytes = 104,857,600` (100 MiB) today, with preparation disabled
+and no jobs. The preview measurement that prompted 31(a) spent 104,485,654
+bytes on 540 artifacts in 483 seconds and had not finished a 2 GiB VCF, so the
+total that file needs is above 100 MiB and **is not yet measured**. If the
+step 5 measurement shows a candidate file needing more prepared bytes than the
+1 GiB the schema allows, then the artifact budget — not the clock and not the
+upload ceiling — is what binds, and the file ceiling comes down to fit it. Do
+not assume the schema maximum is enough for any particular file size; measure
+it.
+
+## Applying a migration that replaces a function
+
+`create or replace function` takes whatever body it is given and asks nothing
+about what is deployed. A body copied from the wrong migration therefore reverts
+every change made after it, silently and with no diff in the migration to show
+it. So before applying any migration containing `create or replace`:
+
+1. Read the deployed body: `select pg_get_functiondef(p.oid) from pg_proc p join
+   pg_namespace n on n.oid=p.pronamespace where n.nspname=... and p.proname=...`.
+2. `diff` it against the migration's new body. Everything that differs must be a
+   change the migration's own comment names. Anything else is a revert you did
+   not intend.
+3. Check which migration the new body was copied from. `grep -l` the function's
+   name across `supabase/migrations/` and take the *latest* one, not the one the
+   function is most associated with.
+
+This is a rule because it already failed once. The 31(a) migration's guard
+replacement was built from `20260908185537_own_prepared_publication.sql` while
+`20260908233337_own_prepared_r2_provider.sql` was deployed, which would have
+reverted three protections. The preflight above caught it; CI then caught two of
+the three independently on run 35519879598 once the PR became mergeable enough
+to run at all. A conflicted pull request receives no workflow run, so a draft
+can sit untested across several pushes — check `mergeable_state`, and query runs
+by branch, because a query by commit returns nothing for both "never ran" and
+"queued".
 
 ## What stays out of scope here
 
