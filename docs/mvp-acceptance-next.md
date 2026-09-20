@@ -6,6 +6,148 @@ The local Lighthouse evidence is in `docs/local-upload-browser-verification.md`;
 the integration evidence is in the G1.16 row of `docs/acceptance-matrix.md`.
 This is a delivery order, not a replacement specification or a whole-project pass.
 
+## What blocks each of the 27 remaining rows · 20 September 2026
+
+Main is **38 YES / 27 NO** of 65. Every row below was classified by reading its
+own evidence text in `docs/acceptance-matrix.md` at `main`, not from memory.
+
+**Not one of the day's seven pull requests flips a row.** #149, #150, #151 and
+#154 are merged; #152, #153, #155 and #156 are open. All of them are
+correctness, honesty or infrastructure work — three caught faults that would
+otherwise have reached production, and #149 lowered the route ratchet 13 → 11 —
+but the matrix count is 38 before and 38 after. That is worth stating plainly
+rather than letting a day of merges read as progress against the measure.
+
+## A. Only a human can close these (6)
+
+| Row | What it waits on |
+| --- | --- |
+| G5.5 | A signed review by a qualified person for at least one real jurisdiction. `realJurisdictions` holds zero entries against 249 selectable codes. The repository must not simulate this. |
+| G5.1a | The same signed review, **first**. Shipping the declaration path alone would add a control that changes no outcome for any country, because every declaration would resolve to `unreviewed`. |
+| G5.8 | New versions of each legal document, written by counsel. No current document carries a limitation of liability, a governing-law or forum clause, or the sells-nothing statement, and none carries an anchor id. |
+| G4.7 | Dated claim-level citation coverage for the remaining catalog, all genotype interpretations, other pages, emails and exports. The row already records this as human work, not engineering. |
+| G3.4 | The human comprehension round: 12 participants, recruited, run unmoderated, recorded. Launch-blocking. Nothing in the repository may generate the results file. |
+| G2.5 | Closed by owner decision, not by work: the 60% rule stands, the redesign of 28 pages was declined, and the row reopens only if one is commissioned. |
+
+## B. Blocked on the embryo ingest slice (6)
+
+G2.1, G2.6, G4.2, G4.5, G5.9, G7.4.
+
+The embryo file path does not exist: no E0 routes, no sanitiser, no ingest
+worker (ADR 0020). The cohort runtime exists *behind* the flow and is proven in
+pgTAP, but nothing can upload. This blocks more rows than any other single
+thing, and the blockage is not partial:
+
+- **G4.2** is NO for two reasons, and the embryo one is fatal on its own — the
+  embryo compare cell is the other modelled surface, and with no cohort there is
+  no `absolute_risk` cell for the assertion to read. (Its other reason, no
+  persisted basis in the data layer, *is* engineering-reachable; closing it alone
+  would not flip the row.)
+- **G4.5** waits on the real embryo upload journey by owner decision of
+  18 September — no fixture-only seed path.
+- **G7.4** flips when those capabilities ship, degrade honestly, or are shown
+  impossible. None of them may honestly take `withheld` today.
+
+## C. Blocked on unbuilt rights and withdrawal slices (2)
+
+**G5.3** — source-object purge belongs to the withdrawal slice.
+**G5.4** — active-key rotation, quotas, the adult URL-token migration (D-081),
+future-person routes and the broader rights-purpose matrix are unfinished.
+
+## D. Blocked on an environment this work does not have (4)
+
+**G3.1 and G3.3** need the 30-persona harness to *run*, and the brief is
+explicit about what a run is (§G3.1): 30 independent naive-participant
+simulations per task, driving the production build under `TEST-LOCAL`, each
+seeded from a persona in `scripts/comprehension/personas.json`, with the run
+artifact recording the pinned model identifier and temperature. G8.4 excludes
+the harness from the twice-consecutive rule because it is "stochastic by
+construction". So the simulations are model calls, and a run needs three things
+at once:
+
+1. a machine that can run the production build — this one cannot, by the
+   standing constraint that forbids a full local build or runtime restart;
+2. a model endpoint and credentials;
+3. budget for roughly 300 calls per run, and G3.3 requires **two** clean runs.
+
+Writing `personas.json` and the harness would not flip either row: G3.1's own
+evidence says "the directory existing is not the gate; the run is." The two
+grading instruments are already built and tested.
+
+**G3.2** is closer — the bindings are machine-resolved and all ten tasks are
+bound. What is missing is that nothing *creates* `participant-a`, `participant-b`
+and `participant-c`; `scripts/seed.ts` seeds reference data only. A seed path is
+ordinary engineering, but it needs a database to seed into and a build to prove
+against.
+
+**G7.2** needs a recorded clean-clone run, which is the same constraint.
+
+## E. Large registration backlogs (2)
+
+**G1.11** — 675 of 746 report-body prose blocks are unregistered claims, and 177
+distinct template-cited sources are absent from the register. Mechanical, but
+large, and each entry needs a real dated source.
+**G1.13b** — the igv reflow remainder. The 990 undersized control pairs are
+**not** a blocker and have not been since 11 September; that row's closing
+sentence contradicts its own later entry and is queued for correction.
+
+## F. Reachable by engineering, in CI (1, and it is half a row)
+
+**G2.4** is the only row where engineering can move the needle here, and it has
+two halves:
+
+- **Task depth is genuinely absent** and is buildable: nothing instruments
+  `click` and `submit` counts, nothing enumerates T1–T9 against their ceilings
+  (≤3 for T1/T2/T3/T6/T7, ≤6 for T4/T9), the T8 floor of three actions including
+  one typed confirmation is unverified, and so is the register's enumeration of
+  `confirmation` steps excluded from ceilings. A browser suite would prove all of
+  it in CI, the way every other route-state proof this month was proven.
+
+  **Two of the nine tasks need checking before that suite is scoped, and the
+  bindings do not settle one of them.** T6 and T7 both carry
+  `requiresCapability: "embryo_analysis"` in `scripts/comprehension/bindings.json`.
+  **T7 is blocked**: its success condition is an absolute figure with its
+  denominator on `/embryos/compare`, and with no embryo ingest path no cohort can
+  render one. **T6 is not simply blocked**: it carries a `withheldVariant` whose
+  `when` scopes it to "any environment where `embryo_analysis` is not permitted,
+  which today is every real jurisdiction", asking instead what Inherit will and
+  will not do with an embryo file, with success being that the participant says
+  Inherit does not recommend, rank or pick one. But a task-depth run happens
+  under `TEST-LOCAL`, where the brief's review-deadlock resolution makes **every**
+  capability permitted — so the main variant applies by that clause while the
+  embryo file path still does not exist, a combination the variant's `when` does
+  not describe. Whoever scopes the suite should settle that first rather than
+  assume either reading; it decides whether the suite covers eight of nine tasks
+  or seven.
+- **Reachability needs a decision, not code.** Four of the nine Overview boxes do
+  not arrive where the box says: `family.portrait` goes to the Family landing
+  because no eligible-pair resolution exists, `family.copilot` and
+  `embryos.copilot` because `COPILOT_GROUP_SCOPES_AVAILABLE` is false, and
+  `family.individual-risks` falls back for an account with no adult. The row
+  itself calls this "deliberate and defensible" — a blocking state beats a dead
+  route — but G2.4 asks for one-navigation reachability. This is the same shape
+  as the four route-state waivers of 18 September and wants the same kind of
+  answer.
+
+There is also **one latent hazard the row names and nothing enforces**:
+`resolveBoxHref`'s `default` returns the Overview route itself, a self-link. It
+is unreachable today only because every box has a static `href` or a `switch`
+case. A tenth box added without a case would link Overview to itself and no test
+would notice. That guard is worth adding whatever is decided about the four.
+
+## What this means
+
+The measure has stopped being engineering-limited. Of 27 open rows, **6 need a
+human act, 8 need product slices nobody has started, 4 need an environment or a
+budget this work does not have, and 2 are backlogs**. One row — G2.4 — has an
+engineering half that can be built and proven in CI now.
+
+The fastest way to move the count is therefore not more engineering. It is:
+obtain one signed jurisdiction review (unblocks G5.5, then G5.1a), commission the
+counsel revisions (G5.8), fund and host one comprehension run (G3.1, G3.3, and
+G3.2 alongside it), and decide whether the embryo ingest slice is in scope for
+this release (six rows move from blocked to buildable).
+
 ## Resumption handoff · 18 September 2026
 
 Acceptance is **38/65**, counted from the YES/NO column (G4.8 on 20 September; G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
