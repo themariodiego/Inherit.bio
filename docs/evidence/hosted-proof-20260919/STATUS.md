@@ -195,6 +195,27 @@ as binding as the "Done" list.
   5 GB needs a resumable or multipart upload path first, and until then the
   person waits five and a half minutes on a stalled percentage for a message
   that never mentions size.
+- 13:45 · **THE 2 GiB JOB CANNOT BE PREPARED, AND THE HOUR WAS NEVER THE
+  CONSTRAINT.** Job `d3431bef…` was claimed at 13:26:50, wrote 540 artifacts
+  and 104,485,654 bytes in 483 seconds, and stopped with fifty minutes of its
+  hour unused. It was not killed: the same `--once` run went on to its cleanup
+  phase at 13:34:54 and exited normally. It hit
+  `own_preparation_config.max_artifact_bytes`, 104,857,600 on this branch (the
+  column's default) — `reserve_own_preparation_artifact` refuses with
+  `artifact_limit_or_sequence` once `reserved_bytes + byteCount` passes it, or
+  once `artifact_count` reaches 4096. It stopped 371,946 bytes short, less than
+  one artifact of its own average size.
+  Nothing retries it: a new claim must start at checkpoint revision 0, so the
+  work cannot be adopted; the claim lapsed at 13:38:22 and the ticks at 13:35
+  and 13:40 were both given no work. The job sits `claimed` until 14:23:38, the
+  same shape as the 64 MiB death before the container fix.
+  **Consequence for the owner's question.** At the measured 0.87 artifact bytes
+  per source byte, a 2 GiB VCF needs about 1.87 GB of artifacts, and the
+  column's own check allows at most 1,073,741,824. A 2 GiB VCF cannot be
+  prepared even with `max_artifact_bytes` at its schema maximum. At the default,
+  the largest source that fits is roughly 120 MB, and the 64 MiB file already
+  used 55% of it. Production's 24 MiB ceiling is well inside that: this says
+  the raise cannot work, not that production is broken.
 
 ## Found on the way (continued)
 
@@ -239,20 +260,23 @@ as binding as the "Done" list.
 
 ## In progress
 
-- **Preparing the 2 GiB VCF.** Job `d3431bef…` was claimed at 13:26:50 and is
-  writing artifacts; its deadline is 14:23:38, one hour after admission. At
-  13:32 it had written 346 artifacts and 66,957,828 bytes in 310 seconds,
-  which is 216 KB of artifact per second — the same rate the 64 MiB file ran
-  at. Whether it finishes inside the bound is the thing being measured; the
-  answer will be recorded here either way.
+- **Watching job `d3431bef…` to its deadline at 14:23:38.** Its work ended at
+  13:34:53 (above) and nothing will re-claim it, so what remains to record is
+  what the product does with a job that expires unfinished, and what the
+  person is shown. A check-in is scheduled for 14:26.
 
 ## Not yet proved
 
-- **Preparation at 2 GiB.** Running (above). Until that job ends, "about two
-  and a half hours against a one-hour bound" is still the 64 MiB rate
-  multiplied out, not an observed refusal.
+- **Where between 64 MiB and 2 GiB preparation actually stops.** Two sizes
+  were measured, not a boundary: 64 MiB prepared, 2 GiB was refused by the
+  artifact ceiling after 104,485,654 bytes. "About 120 MB of source" is the
+  measured ratio multiplied out, from one VCF; a gVCF may not produce
+  artifacts at the same rate.
 - **Preparation at 8 GiB**, which cannot be reached on this stack at all: the
   file is refused by the transport long before any container sees it.
+- **Whether raising `max_artifact_bytes` would let a large file through.** Not
+  tried here. The arithmetic says a 2 GiB VCF cannot fit even at the column's
+  maximum, but nothing was raised and nothing was run to confirm it.
 - **How container memory grows with source size.** One run, one size: 617.4
   MiB of maximum sampled memory at 64 MiB of source cannot be split into
   fixed overhead and growth per byte, so it must not be scaled to the

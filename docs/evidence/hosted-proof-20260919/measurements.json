@@ -151,11 +151,21 @@
   },
   "recommendation": {
     "max_job_seconds": 3600,
-    "why": "The column's ceiling, and the only value that lets a file of a few hundred MiB finish. It buys nothing beyond that because the job deadline itself is capped at one hour.",
+    "why": "The column's ceiling, and it costs nothing: the job deadline is capped at one hour anyway. But it is NOT the constraint that matters. Both files measured here stopped for other reasons: the 64 MiB one finished in 279 s of container work, and the 2 GiB one was refused by the artifact ceiling with fifty minutes of its hour unused.",
     "instance_type": "standard-2",
-    "whyInstance": "The only instance on which a 64 MiB file has been prepared end to end. standard-1 has never completed one; its 1/2 vCPU would roughly halve the measured rate on a single-threaded pipeline. This is not a claim that standard-2 is sufficient for whole genomes.",
-    "admissionCeilings": "The owner's 2 GiB VCF and 8 GiB gVCF are predicted, from the 64 MiB rate, to need hours against a schema that caps a job at one hour. That prediction is not a measurement: neither size has been prepared here, and the rate rests on one file. Treat it as the reason to measure before raising production's ceilings, not as a measured refusal.",
-    "notProved": "No file above 64 MiB has been prepared. One measurement per size, on one branch, one fixture generator. The 2 GiB and 8 GiB trials are unproved: at the time of writing their upload, finalization and admission were being attempted, and their preparation was deliberately not waited out."
+    "whyInstance": "The only instance on which a 64 MiB file has been prepared end to end; standard-1 has never completed one, and its 1/2 vCPU would roughly halve the measured rate on a single-threaded pipeline. Memory is not the reason: the 64 MiB run peaked at 617.4 MiB, inside standard-1's 4 GiB. Nothing measured here says standard-2 is sufficient for whole genomes.",
+    "theCeilingsTheOwnerAskedAbout": {
+      "vcf2GiB": "Uploads, finalizes and is admitted, then cannot be prepared: max_artifact_bytes. At 0.87 artifact bytes per source byte a 2 GiB VCF needs about 1.87 GB of artifacts, and the column allows at most 1,073,741,824. Raising the ceiling to 2 GiB puts a file in front of a person that the pipeline can never finish.",
+      "gvcf8GiB": "Cannot even reach storage: one POST is all the uploader makes, and Supabase refuses a standard upload above about 5 GB (413 at the edge). See upload-transport-limit.json.",
+      "whatWouldHaveToChangeFirst": [
+        "A resumable or multipart upload path, for anything above 5 GB.",
+        "max_artifact_bytes above its current 1 GiB column check, and the hard 4096-artifact cap in reserve_own_preparation_artifact, for anything whose artifacts exceed those.",
+        "Resumption across attempts: today a failed attempt's work is unusable (a new claim must start at checkpoint revision 0) and the job is never re-claimed, so it sits claimed until its deadline and the person waits the full hour for 'we could not confirm whether file preparation finished'.",
+        "A ceiling that cannot be set above what the rest of the system can carry, or a warning when it is."
+      ]
+    },
+    "whatIsSafeToday": "Sources up to roughly 120 MB at the default 100 MiB artifact ceiling, on standard-2, with max_job_seconds 3600. Production's current 24 MiB VCF ceiling is well inside that, and nothing measured here says production is broken.",
+    "notProved": "Two sizes measured on one branch with one fixture generator: 64 MiB prepared, 2 GiB refused. Nothing between them was tried, so the 120 MB figure is the ratio multiplied out, not an observed boundary. No gVCF above 4 MiB has been prepared, and gVCF artifact ratios may differ from VCF."
   },
   "peakMemory": {
     "measured": true,
@@ -227,11 +237,30 @@
         "whatAPersonSees": "The refusal wording, then 'Your file already reached private storage. Finishing it does not send the file again.', then the file is stored. The bytes are sent once."
       },
       "preparation": {
-        "admitted": "202 preparing, job d3431bef-96fd-4dbe-9b21-b0d23630aade, created 13:23:38.7, job_deadline 14:23:38.7 (the schema's one-hour bound).",
-        "status": "running as this file is written; the measurement below is the one that settles whether a 2 GiB file can be prepared inside that bound."
+        "settled": "IT CANNOT BE PREPARED, AND NOT FOR THE REASON EVERY EARLIER NOTE GAVE. The job stops at a per-job artifact ceiling, 5.6% of the way through, eight minutes in, with fifty minutes of its hour left.",
+        "job": "d3431bef-96fd-4dbe-9b21-b0d23630aade, admitted 13:23:38.7, deadline 14:23:38.7, claimed 13:26:50.8.",
+        "whatItManaged": {
+          "artifacts": 540,
+          "reservedBytes": 104485654,
+          "firstArtifactAt": "13:26:50.8",
+          "lastArtifactAt": "13:34:53.6",
+          "secondsOfWork": 483
+        },
+        "theCeilingItHit": "private.own_preparation_config.max_artifact_bytes, 104,857,600 (the column's default) on this branch. reserve_own_preparation_artifact refuses with artifact_limit_or_sequence when reserved_bytes + byteCount exceeds it, or when artifact_count reaches 4096. The job stopped 371,946 bytes short of the byte ceiling, which is less than one artifact of its own average size.",
+        "whatTheWorkerDoesWithThat": "The refusal reaches the worker as an RPC error, which fails the attempt (fail(\"unavailable\")). The container was not killed: the same --once run went on to its cleanup phase at 13:34:54 and exited normally.",
+        "andNothingRetriesIt": "The attempt's checkpoint is durable only for that live attempt: own-preparation-worker.ts refuses to adopt a non-empty checkpoint on a new claim (revision must be 0). The claim was never renewed again, lapsed at 13:38:22, and the ticks at 13:35:22 and 13:40:23 both called claim_next_own_preparation_work_v1 and got nothing back. The job sits claimed until its deadline, which is the same shape as the 64 MiB death before the container fix: the person waits the full hour.",
+        "soTheHourWasNeverTheConstraint": "The throughput projection in this file ('about two and a half hours against a one-hour bound') was arithmetic about the wrong wall. At 0.87 artifact bytes per source byte, a 2 GiB source needs about 1.87 GB of artifacts. The default ceiling is 100 MiB and the column's own check allows at most 1,073,741,824, so a 2 GiB VCF cannot be prepared even with max_artifact_bytes raised to its schema maximum.",
+        "whatTheCapsAllowToday": {
+          "artifactBytesPerSourceByte": 0.87,
+          "measuredOn": "the 64 MiB run: 58,148,752 artifact bytes from 67,108,990 source bytes",
+          "atTheDefault100MiB": "about 120 MB of source",
+          "atTheColumnMaximum1GiB": "about 1.23 GB of source, and the separate 4096-artifact cap may bind first: the 64 MiB run averaged 317 KB per artifact, this one 193 KB, so 4096 artifacts is somewhere between 790 MB and 1.3 GB of artifacts",
+          "productionToday": "production's VCF ceiling is 24 MiB, comfortably inside the default, so nothing here says production is broken. It says the raise to 2 GiB cannot work."
+        }
       },
       "oversizeFixtureRefusedInTheBrowser": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.'",
-      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both are wrong and are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract, the page's own words, and this run."
+      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both are wrong and are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract, the page's own words, and this run.",
+      "outcome": "The 2 GiB file uploads, finalizes and is admitted. It cannot be prepared: the job hits max_artifact_bytes after 540 artifacts and is never retried."
     },
     "gvcf8GiB": {
       "fixtureBytes": 8589933057,

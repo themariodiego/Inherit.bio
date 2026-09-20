@@ -163,6 +163,32 @@ An earlier fixture that overshot the ceiling by 140 bytes was refused in the
 browser before issuance, naming the limit, so the ceiling is enforced against
 the disclosed number.
 
+### And then it cannot be prepared, for a reason nothing here predicted
+
+The admitted job ran for 483 seconds, wrote 540 artifacts and 104,485,654
+bytes, and stopped — with fifty minutes of its hour unused. It did not run
+out of time, and it was not killed: the same `--once` run went on to its
+cleanup phase a second later and exited normally. It hit
+`own_preparation_config.max_artifact_bytes`, which is **104,857,600** on this
+branch, the column's default. `reserve_own_preparation_artifact` refuses with
+`artifact_limit_or_sequence` once `reserved_bytes + byteCount` passes it, or
+once `artifact_count` reaches 4096. The job stopped 371,946 bytes short, which
+is less than one artifact of its own average size.
+
+Nothing retries it. A new claim must start at checkpoint revision 0, so the
+483 seconds of work cannot be adopted; the claim lapsed at 13:38:22 and the
+ticks at 13:35 and 13:40 both asked for work and were given none. The job sits
+`claimed` until its deadline — the same shape as the 64 MiB death before the
+container fix, and the same hour of waiting for the person.
+
+**So the hour was never the constraint.** At the measured 0.87 artifact bytes
+per source byte, a 2 GiB VCF needs about 1.87 GB of artifacts, and the
+column's own check allows at most 1,073,741,824. A 2 GiB VCF cannot be
+prepared even with `max_artifact_bytes` raised to its schema maximum. At the
+default, the largest source that fits is roughly 120 MB — the 64 MiB file
+already used 55% of the budget. Production's 24 MiB ceiling is well inside
+that; it is the raise to 2 GiB that cannot work.
+
 ## The 8 GiB gVCF ceiling cannot be met by this product
 
 Issuance admits it: the lease came back 201 for 8,589,933,057 bytes declared
@@ -192,15 +218,16 @@ mention of a size.
 
 ## What is not proved
 
-- **Preparation at 2 GiB.** The file is stored and its job is admitted and
-  running as this line is written (`d3431bef…`, deadline one hour after
-  admission). Until that job ends, "a 2 GiB file needs about two and a half
-  hours against a one-hour bound" stays what it has been all along: the 64 MiB
-  rate multiplied out, not an observed refusal. The job itself is the
-  measurement, and `measurements.json` will carry what it did.
 - **Preparation at 8 GiB, which cannot be reached at all.** The file never
   gets past the upload (above), so nothing about the container at that size
   can be measured here.
+- **Where between 64 MiB and 2 GiB preparation actually stops.** Two sizes
+  were measured, not a boundary: 64 MiB prepared, 2 GiB was refused by the
+  artifact ceiling. The "about 120 MB" figure is the measured ratio multiplied
+  out, and it rests on one VCF; a gVCF may not produce artifacts at the same
+  rate.
+- **What the person is shown when a job expires unfinished at this size.**
+  The job's deadline had not passed when this was written.
 - How container memory grows with source size. The 64 MiB run's 617.4 MiB is
   one point: it cannot be split into fixed overhead and growth per byte
   without a second measurement, so it must not be scaled up to the ceilings.
