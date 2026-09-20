@@ -38,8 +38,9 @@ the ordered account. Times are UTC.
   non-empty one matching an artifact row for a file still retained, none
   unaccounted for. That rules out an orphaned payload by exclusion rather than
   by naming the withdrawn file's former keys, which the database no longer
-  holds. `withdrawal-residue.json` carries both the reconciliation and what it
-  does not establish.
+  holds, and being a later snapshot it times nothing: deletion latency is
+  unmeasured. `withdrawal-residue.json` carries both the reconciliation and
+  what it does not establish.
 - **The monthly cap refuses the admission past its limit**: `/process`
   answered 429 with `preparation_capacity_reached`, the page showed the
   refusal wording, the file was kept and no job row was created. The limit
@@ -102,6 +103,22 @@ the ordered account. Times are UTC.
     58,148,752 bytes in R2, 279 seconds of container work.
 14. 12:11 · The monthly cap refusal, with the limit restored afterwards.
 
+## The 2 GiB ceiling: finalization is the wall
+
+Twice, with a fixture 527 bytes under the ceiling: the lease was issued
+(201), the browser hashed 2 GiB in 12 seconds, and Supabase Storage accepted
+a single 2 GiB POST in 59 and 63 seconds (about 33 MB/s), which also shows
+the owner's 9 GB global limit is in force. Finalization then answered 503
+`unavailable` after 31 and 78 seconds, both inside the route's own
+300-second limit, with no `Retry-After`, so the browser treats it as
+terminal: the person is told to try again, meaning another 2 GiB upload. No
+file row is created and preparation is never reached. The cause is not
+isolated: the route emits no diagnostics by design.
+
+An earlier fixture that overshot the ceiling by 140 bytes was refused in the
+browser before issuance, naming the limit, so the ceiling is enforced
+against the disclosed number.
+
 ## What is not proved
 
 - **The ceilings are unproved, and the doubt about them is a projection.**
@@ -113,9 +130,8 @@ the ordered account. Times are UTC.
   observed refusal: it is the reason to measure at those sizes, not a
   substitute for doing so. `measurements.json` carries the numbers and says
   the same.
-- **The 2 GiB and 8 GiB trials themselves.** Their upload, finalization and
-  admission were being attempted when this was written; their preparation was
-  deliberately not waited out.
+- **Preparation at either ceiling.** The 2 GiB file never reaches it
+  (finalization fails, above) and the 8 GiB gVCF has not been attempted yet.
 - How container memory grows with source size. The 64 MiB run's 617.4 MiB is
   one point: it cannot be split into fixed overhead and growth per byte
   without a second measurement, so it must not be scaled up to the ceilings.

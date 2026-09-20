@@ -41,7 +41,12 @@
     "objectsWithPayloadBytes": 238,
     "finding": "Every object carrying payload bytes matched an artifact row for a file still retained on the branch; none was unaccounted for.",
     "whatThisEstablishes": "By exclusion, no payload bytes in the bucket belong to the withdrawn file: every non-empty object is accounted for by a retained file's artifact row. Together with the 105 empty objects, that is consistent with retired payloads having been replaced by tombstones.",
-    "whatItDoesNotEstablish": "It is a bucket-wide reconciliation at one moment, not a lookup of the withdrawn file's former keys: those keys are unknowable from the database now, because a completed withdrawal removes the cleanup and its entries along with the file. So the check proves no orphaned payload exists, not that a named key of that file reads zero bytes.",
-    "receipt": "Saved by the owner alongside this file."
+    "whatItDoesNotEstablish": "It is a bucket-wide reconciliation at one moment, not a lookup of the withdrawn file's former keys: those keys are unknowable from the database now, because a completed withdrawal removes the cleanup and its entries along with the file. So the check proves no orphaned payload exists, not that a named key of that file reads zero bytes. It also says nothing about deletion latency: it is a single later snapshot, so it cannot show how long any payload survived the withdrawal, which is what the 60-second derived-deletion rule turns on.",
+    "receipt": "The owner saved withdrawal-residue-20260920.json (the full listing) outside this repository."
+  },
+  "deletionLatency": {
+    "measured": false,
+    "why": "The delete route answered 204 in 3.1 seconds having reported the prepared graph retired, and the bucket reconciled later with nothing unaccounted for. Neither observation times the removal of a named object, so the interval between withdrawal and a payload becoming empty is unmeasured here.",
+    "howItCouldBeMeasured": "Withdraw a prepared file whose artifact keys have been read first, then poll those keys in the bucket until each reads zero bytes."
   }
 }

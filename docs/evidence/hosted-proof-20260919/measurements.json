@@ -165,6 +165,47 @@
     "readBy": "the owner, through the Cloudflare connection's container metrics; the Workers' own observability setting does not disable that metric",
     "headroom": "standard-2 offers 6 GiB, so this run used about a tenth of it; standard-1's 4 GiB would also have held it.",
     "caveat": "A maximum of sampled values for one run at one size. It cannot be split into fixed overhead and growth per source byte without a second measurement at another size, so it must not be scaled to 2 GiB or 8 GiB as if it were linear.",
-    "note": "The same query can measure the ceiling trials."
+    "note": "The same query can measure the ceiling trials.",
+    "samples": 45,
+    "receipt": "The owner saved container-memory-64mib-20260920.json, with the reusable query, outside this repository."
+  },
+  "ceilingTrials": {
+    "vcf2GiB": {
+      "fixtureBytes": 2147483121,
+      "underTheCeilingBy": 527,
+      "attempts": 2,
+      "leaseIssued": "201 both times: the 2 GiB ceiling admits the file and the disclosed limit matches it",
+      "browserHashSeconds": 12.0,
+      "storagePost": {
+        "status": 200,
+        "seconds": [
+          59.2,
+          62.8
+        ],
+        "megabytesPerSecond": [
+          34.6,
+          32.6
+        ],
+        "note": "Supabase Storage accepted a single 2 GiB POST twice, so the owner's 9 GB global limit is in force on the branch and the standard upload path carries 2 GiB."
+      },
+      "finalization": {
+        "status": 503,
+        "body": {
+          "error": "unavailable"
+        },
+        "secondsToFailure": [
+          31.4,
+          78.1
+        ],
+        "retryAfterHeader": null,
+        "routeMaxDurationSeconds": 300,
+        "reading": "Reproduced on two attempts, both well inside the route's own 300-second limit, so this is not the platform's wall-clock cutting the invocation off. The response carried no Retry-After, so the browser treats it as terminal rather than resumable: the person is told the upload could not finish and to try again, which means sending 2 GiB again. The cause is not isolated here, because the route emits no diagnostics by design and the platform log carries only the status."
+      },
+      "outcome": "No file row is created and preparation is never reached. At 2 GiB the wall is finalization, not the container.",
+      "firstAttemptRefusedOversizeFixture": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.' The ceiling is enforced in the browser against the disclosed number."
+    },
+    "gvcf8GiB": {
+      "status": "not attempted yet at the time of writing"
+    }
   }
 }
