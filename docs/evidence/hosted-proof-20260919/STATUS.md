@@ -102,6 +102,26 @@ as binding as the "Done" list.
   (about 24 hours 40 minutes, no wake arrived). Work resumed on 20 September;
   every timestamp below is 20 September.
 
+- 11:31 (20 September) · **gVCF journey passed end to end**, 4 MiB decoded
+  (815 KB gzip): sniffed and stored as `gvcf`, prepared by the container,
+  reports generated in 15 s, then withdrawn from the browser: DELETE 204 in
+  3.1 s, the Storage listing for the original empty, its download "Object not
+  found", the `genome_files` row gone and the file gone from the list.
+- 11:25 to 11:31 · **VCF.gz journey passed** too (4 MiB decoded, 856 KB gzip):
+  prepared 78 s after enqueue (40 s of that waiting for the five-minute tick,
+  38 s of container work), 18 artifacts reserved, 8 final artifacts of 907,471
+  bytes in R2, reports generated in 25 s.
+- 11:53 · **The 64 MiB failure is a container death, not slowness.** The retry
+  job was claimed one second after enqueue, wrote 46 artifacts and 11,138,849
+  bytes of prepared blocks in 92 seconds, saved checkpoint revision 3, and then
+  stopped: no artifact, no checkpoint and no claim renewal after 11:26:37, with
+  the claim expiring at 11:30:06 and the job left `claimed`. The next tick
+  picked up the queued gVCF instead and published it normally, so the Worker,
+  the cron and the gateway are all healthy. Extrapolating the healthy rate
+  (11.1 MB of artifacts in 92 s) a 64 MiB source should finish in a few
+  minutes, so the hour it waits out is the job deadline expiring over a dead
+  container, not work in progress.
+
 ## Found on the way (continued)
 
 - `public.report_templates` is empty on the branch (seeded by `pnpm seed`,
