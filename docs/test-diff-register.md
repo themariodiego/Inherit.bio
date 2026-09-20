@@ -34,9 +34,16 @@ synthetic and rollback-only, as every pgTAP file here is.
 Nothing existing changes: the migration is additive, no other pgTAP file is
 touched, no ceiling moves and no matrix row moves.
 
-**This is not yet verified.** pgTAP runs only in CI here — there is no local
-Supabase — so this file's first execution is the run on PR #153, and the
-migration it proves is why that PR is marked do-not-merge until it goes green.
+**First execution, and what it found.** pgTAP runs only in CI here — there is
+no local Supabase — so run 35517110688 was this file's first execution. The
+migration applied cleanly; the test did not. It failed at its first assertion
+with `permission denied for table own_preparation_jobs`, because `private.*`
+is not granted to `service_role` — that role reaches the schema only through
+the security-definer functions — and the assertions ran under the role the
+calls need. The role is now switched around each group, the way
+`own_preparation_jobs.sql` does before its own private reads. Nothing about
+the migration or the product changed; this was the harness reading a table it
+had no grant for.
 
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 

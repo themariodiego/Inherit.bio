@@ -72,7 +72,13 @@ insert into pub_receipts values('job',public.enqueue_own_preparation_v1('8921000
  '89210000-0000-4000-8000-000000000010',pg_temp.file_id()));
 insert into pub_receipts values('claim',public.claim_next_own_preparation_v1(repeat('e',64)));
 
--- The column starts null, and stays null for a job nothing has failed.
+-- Direct reads of private.* need the privileged role: the schema is not granted
+-- to service_role, which reaches it only through the security-definer
+-- functions. Run 35517110688 failed here with "permission denied for table
+-- own_preparation_jobs" because the assertions ran under the role the calls
+-- need. The role is switched around each group below, the way
+-- own_preparation_jobs.sql does before its own private reads.
+reset role;
 select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),null::text,
  'a live claim carries no frozen reason');
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
@@ -80,40 +86,48 @@ select is((select state from private.own_preparation_jobs where id=pg_temp.job_i
 
 -- A reason outside the closed set is refused, and nothing moves. The set is
 -- closed because a surface chooses its wording from it.
+set local role service_role;
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'too_big',2000)$$,
  '22023','invalid_request','an unlisted reason is refused rather than stored');
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),null,2000)$$,
  '22023','invalid_request','a null reason is refused');
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',0)$$,
+ '22023','invalid_request','a byte count of zero is refused before anything is read');
+reset role;
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
  'a refused reason leaves the claim untouched');
 
 -- Authority: the caller must hold this exact claim. It never names a job.
+set local role service_role;
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),gen_random_uuid(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','another attempt cannot end this one');
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('0',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','wrong token cannot end the attempt');
 select throws_ok($$select public.fail_own_preparation_claim_v1(gen_random_uuid(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','a job this claim does not name cannot be reached');
+reset role;
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
  'three refused attempts leave the claim live');
 
--- The reason is verified, not taken on the caller's word. 0 reserved bytes
--- plus 1 does not pass a 1000-byte budget, so the claim is false and refused;
--- a reason nothing corroborates would be an invented claim, and a surface
--- reads its wording from this column.
+-- The reason is verified, not taken on the caller's word. 0 reserved bytes plus
+-- 1 does not pass a 1000-byte budget, so the claim is false and refused; a
+-- reason nothing corroborates would be an invented claim, and a surface reads
+-- its wording from this column.
+set local role service_role;
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',1)$$,
  '22023','reason_not_established','a budget that is not spent cannot be recorded as spent');
+reset role;
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
  'an unestablished reason leaves the claim live');
 select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),null::text,
  'an unestablished reason is not written');
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',0)$$,
- '22023','invalid_request','a byte count of zero is refused before anything is read');
 
 -- The happy path: the claim holder ends its own attempt, at once. 2000 bytes
 -- against a 1000-byte budget is the same comparison the reserve makes.
+set local role service_role;
 insert into pub_receipts values('failed',
  public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000));
+reset role;
 select is((select value->>'state' from pub_receipts where label='failed'),'frozen',
  'the receipt is the freeze receipt, so the transition stays in one place');
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'frozen',
@@ -125,19 +139,19 @@ select isnt((select frozen_at from private.own_preparation_jobs where id=pg_temp
 
 -- Replay is refused: the claim is no longer live, so the second call cannot
 -- re-freeze or overwrite the reason.
+set local role service_role;
 select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','the ended attempt cannot be ended twice');
-select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),'artifact_budget_exhausted',
- 'a refused replay does not disturb the recorded reason');
-
--- The scan has nothing left to do, and the original file is untouched.
+-- The scan has nothing left to do.
 select is(public.freeze_due_own_preparations_v1(),
  '{"version":"own-preparation-freeze-scan-v1","frozen":0,"cleanupComplete":false}'::jsonb,
  'a job already ended by its claim holder is not frozen again by the scan');
+reset role;
+select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),'artifact_budget_exhausted',
+ 'a refused replay does not disturb the recorded reason');
 select is((select count(*)::integer from public.genome_files where id=pg_temp.file_id()),1,
  'ending a preparation preserves the original source row');
 select is((select count(*)::integer from private.own_analysis_runs where file_id=pg_temp.file_id()),0,
  'a failed preparation grants no report readiness');
-reset role;
 select * from finish();
 rollback;
