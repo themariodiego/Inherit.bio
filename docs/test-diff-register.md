@@ -4,15 +4,25 @@
 
 `supabase/tests/own_preparation_budget_failure.sql` is new and plants a defect
 per branch of `private.fail_own_preparation_claim_v1`: a reason outside the
-closed set and a null reason are refused `22023 invalid_request` with the claim
-left live; another attempt, a wrong token and a job the claim does not name are
-each refused `42501 not_found`, with the claim still live after all three; the
+closed set, a null reason and a byte count of zero are refused `22023
+invalid_request` with the claim left live; another attempt, a wrong token and a
+job the claim does not name are each refused `42501 not_found`, with the claim
+still live after all three; **a reason the state does not corroborate is
+refused `22023 reason_not_established`** and neither freezes the job nor writes
+the column, because the function re-runs the same comparison
+`reserve_own_preparation_artifact_v1` makes rather than taking the caller's
+word; the
 happy path returns the freeze receipt, leaves the job `frozen` with
 `frozen_reason` recorded and `frozen_at` stamped; a replay is refused and does
 not disturb the recorded reason; and `freeze_due_own_preparations_v1` then
 reports `frozen: 0`, because a job its claim holder already ended is not in the
 `queued`/`claimed` set the scan walks. The original source row survives and no
 report readiness is granted.
+
+The fixture lowers `max_artifact_bytes` to 1000 so a modest byte count exhausts
+it the way a real source exhausts the deployed one, which is what lets the same
+file hold both the refused claim (1 byte, not established) and the accepted one
+(2000 bytes, established) against the same job.
 
 The fixture mirrors `own_preparation_checkpoints.sql`, which is the nearest
 existing one that reaches a live claim; `own_preparation_jobs.sql` could not be

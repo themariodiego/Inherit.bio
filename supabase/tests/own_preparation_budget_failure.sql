@@ -57,7 +57,9 @@ reset role;
 create temporary table pub_receipts(label text primary key,value jsonb);
 grant select,insert,update on pub_receipts to service_role;
 grant select on finalized_upload to service_role;
-update private.own_preparation_config set enabled=true where singleton;
+-- A small artifact budget so a modest byte count exhausts it, the way a real
+-- source does against the deployed one. The CHECK allows 1 to 1073741824.
+update private.own_preparation_config set enabled=true,max_artifact_bytes=1000 where singleton;
 create function pg_temp.file_id() returns uuid language sql as $$
  select (receipt->>'fileId')::uuid from finalized_upload; $$;
 create function pg_temp.job_id() returns uuid language sql as $$
@@ -78,26 +80,40 @@ select is((select state from private.own_preparation_jobs where id=pg_temp.job_i
 
 -- A reason outside the closed set is refused, and nothing moves. The set is
 -- closed because a surface chooses its wording from it.
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'too_big')$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'too_big',2000)$$,
  '22023','invalid_request','an unlisted reason is refused rather than stored');
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),null)$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),null,2000)$$,
  '22023','invalid_request','a null reason is refused');
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
  'a refused reason leaves the claim untouched');
 
 -- Authority: the caller must hold this exact claim. It never names a job.
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),gen_random_uuid(),repeat('e',64),'artifact_budget_exhausted')$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),gen_random_uuid(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','another attempt cannot end this one');
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('0',64),'artifact_budget_exhausted')$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('0',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','wrong token cannot end the attempt');
-select throws_ok($$select public.fail_own_preparation_claim_v1(gen_random_uuid(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted')$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(gen_random_uuid(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','a job this claim does not name cannot be reached');
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
  'three refused attempts leave the claim live');
 
--- The happy path: the claim holder ends its own attempt, at once.
+-- The reason is verified, not taken on the caller's word. 0 reserved bytes
+-- plus 1 does not pass a 1000-byte budget, so the claim is false and refused;
+-- a reason nothing corroborates would be an invented claim, and a surface
+-- reads its wording from this column.
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',1)$$,
+ '22023','reason_not_established','a budget that is not spent cannot be recorded as spent');
+select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'claimed',
+ 'an unestablished reason leaves the claim live');
+select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),null::text,
+ 'an unestablished reason is not written');
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',0)$$,
+ '22023','invalid_request','a byte count of zero is refused before anything is read');
+
+-- The happy path: the claim holder ends its own attempt, at once. 2000 bytes
+-- against a 1000-byte budget is the same comparison the reserve makes.
 insert into pub_receipts values('failed',
- public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted'));
+ public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000));
 select is((select value->>'state' from pub_receipts where label='failed'),'frozen',
  'the receipt is the freeze receipt, so the transition stays in one place');
 select is((select state from private.own_preparation_jobs where id=pg_temp.job_id()),'frozen',
@@ -109,7 +125,7 @@ select isnt((select frozen_at from private.own_preparation_jobs where id=pg_temp
 
 -- Replay is refused: the claim is no longer live, so the second call cannot
 -- re-freeze or overwrite the reason.
-select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted')$$,
+select throws_ok($$select public.fail_own_preparation_claim_v1(pg_temp.job_id(),pg_temp.attempt_id(),repeat('e',64),'artifact_budget_exhausted',2000)$$,
  '42501','not_found','the ended attempt cannot be ended twice');
 select is((select frozen_reason from private.own_preparation_jobs where id=pg_temp.job_id()),'artifact_budget_exhausted',
  'a refused replay does not disturb the recorded reason');

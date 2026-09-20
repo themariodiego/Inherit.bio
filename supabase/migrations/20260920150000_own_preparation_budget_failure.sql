@@ -42,15 +42,27 @@ comment on column private.own_preparation_jobs.frozen_reason is
 -- `for update skip locked` and moves on rather than waiting, so only one side
 -- ever blocks.
 create function private.fail_own_preparation_claim_v1(p_job_id uuid,p_attempt_id uuid,
- p_claim_token_hash text,p_reason text)
+ p_claim_token_hash text,p_reason text,p_byte_count bigint)
 returns jsonb language plpgsql security definer set search_path=pg_catalog,private as $$
-declare j private.own_preparation_jobs%rowtype;
+declare j private.own_preparation_jobs%rowtype; cfg private.own_preparation_config%rowtype;
 begin
- if p_reason is null or p_reason not in ('artifact_budget_exhausted') then
+ if p_reason is null or p_reason not in ('artifact_budget_exhausted')
+  or p_byte_count is null or p_byte_count<=0 then
   raise exception using errcode='22023',message='invalid_request'; end if;
  -- Authority first and always: a live claim for this exact attempt and token,
  -- inside its lease, with the source and authority still matching.
  perform private.check_own_preparation_claim_v1(p_job_id,p_attempt_id,p_claim_token_hash);
+ select * into j from private.own_preparation_jobs where id=p_job_id;
+ select * into cfg from private.own_preparation_config where singleton for share;
+ -- The reason is VERIFIED, not taken on the caller's word. A worker says the
+ -- budget is spent; this re-runs the same comparison
+ -- reserve_own_preparation_artifact_v1 makes, against the same rows, and
+ -- refuses to record a reason that is not true. A reason nothing corroborates
+ -- would be an invented claim, and a surface reads its wording from this
+ -- column.
+ if p_reason='artifact_budget_exhausted'
+  and not (j.artifact_count>=4096 or j.reserved_bytes+p_byte_count>cfg.max_artifact_bytes) then
+  raise exception using errcode='22023',message='reason_not_established'; end if;
  update private.own_preparation_jobs set frozen_reason=p_reason
   where id=p_job_id and state='claimed' and attempt_id=p_attempt_id
    and claim_token_hash=p_claim_token_hash returning * into j;
@@ -61,12 +73,12 @@ begin
 end; $$;
 
 create function public.fail_own_preparation_claim_v1(p_job_id uuid,p_attempt_id uuid,
- p_claim_token_hash text,p_reason text)
+ p_claim_token_hash text,p_reason text,p_byte_count bigint)
 returns jsonb language sql security invoker set search_path=pg_catalog,public as $$
- select private.fail_own_preparation_claim_v1(p_job_id,p_attempt_id,p_claim_token_hash,p_reason); $$;
+ select private.fail_own_preparation_claim_v1(p_job_id,p_attempt_id,p_claim_token_hash,p_reason,p_byte_count); $$;
 
-revoke all on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text),
- public.fail_own_preparation_claim_v1(uuid,uuid,text,text)
+revoke all on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint),
+ public.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint)
  from public,anon,authenticated,inherit_upload_only,service_role;
-grant execute on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text),
- public.fail_own_preparation_claim_v1(uuid,uuid,text,text) to service_role;
+grant execute on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint),
+ public.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint) to service_role;
