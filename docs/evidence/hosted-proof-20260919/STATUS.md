@@ -268,7 +268,16 @@ as binding as the "Done" list.
 
 ## Owner action needed
 
-One, for the teardown (runbook step 6), and one closed.
+Two open, one closed.
+
+### Open: read the container's memory for the 2 GiB preparation
+
+The same Cloudflare container-memory query that gave 617.4 MiB for the 64 MiB
+run (saved as `container-memory-64mib-20260920.json` outside this repository)
+covers the 2 GiB job too. Its window is 13:26:50 to its end, no later than its
+deadline at 14:23:38 on 20 September. That reading is the second point the
+memory record needs: with one size measured, fixed overhead and growth per
+byte cannot be told apart, and this session cannot read the metric itself.
 
 ### Open: repeat the bucket reconciliation immediately before teardown
 
