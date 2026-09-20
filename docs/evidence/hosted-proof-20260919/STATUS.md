@@ -254,6 +254,20 @@ as binding as the "Done" list.
   is the shape: the page size is a constant while scratch scales with file
   size. The 64 MiB job left 13 entries and cleared them in one tick; this one
   left 540.
+- 17:10 · **The cleanup finished anyway, 1 h 47 m past its own deadline.** It
+  is not a stop condition: the drain ran straight through `cleanup_deadline`
+  (15:23:38) at sixteen entries per tick and completed at 17:10:27.722247
+  after 34 attempts, 2 h 45 m after being queued. Nothing re-queued it and
+  nothing abandoned it. **In the database it leaves nothing**: all 540
+  cleanup entries gone, all 540 artifact rows gone, and the
+  `own_preparation_jobs` row itself gone; the `own_prepared_cleanups` row
+  survives as `complete`. The file is still `uploaded` — the person keeps a
+  2 GiB original that was never prepared. Whole lifecycle: admitted 13:23:38,
+  claimed 13:26:50, stopped 13:34:53, claim lapsed 13:38:22, deadline passed
+  at 14:23:38 with nothing happening, frozen 14:25:23, clean 17:10:27 — three
+  hours 47 minutes. The R2 side is not checked here: the database says the
+  artifact rows are gone, but whether the objects left the bucket needs the
+  owner's reconciliation, already listed as an open action.
 
 ## Found on the way (continued)
 

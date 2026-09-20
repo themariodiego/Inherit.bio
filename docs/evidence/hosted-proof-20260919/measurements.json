@@ -271,7 +271,15 @@
           "theRateOnThisStack": "The only scheduled runner reaching this branch is the container's five-minute cron, so 16 entries per five minutes. 540 entries needs about 34 ticks, roughly 2 hours 49 minutes, against a cleanup deadline of 15:23:38, which is 49 minutes away. About 176 of the 540 will be done by then.",
           "whatThisDoesNotSay": "It does not say production would be this slow. vercel.json schedules /api/cron/retention every minute, and the same drain runs there, which would be 16 per minute and would clear 540 in about 34 minutes, inside the hour. Vercel crons do not run against a Preview deployment, so on this stack only the container tick drains it. The production rate was not measured here.",
           "whyItMattersAnyway": "The page size is a constant while the number of scratch artifacts scales with file size. The 64 MiB job left 13 entries and they cleared in one tick. This job left 540. Whatever the tick rate, the ratio of scratch to cleanup capacity gets worse as files get larger, and the residue is R2 objects belonging to a file the person still holds.",
-          "stillOpen": "What the product does when a cleanup passes its own deadline with entries outstanding was not observed; at the time of writing 15:23:38 had not arrived."
+          "stillOpen": "SETTLED, below.",
+          "howItEnded": {
+            "theDeadlineIsNotAStopCondition": "The cleanup ran straight past its own cleanup_deadline of 15:23:38 and was neither abandoned nor re-queued. It kept draining sixteen entries per tick.",
+            "completedAt": "2026-09-20T17:10:27.722247Z, after 34 attempts (one per five-minute tick), 2 hours 45 minutes after it was queued and 1 hour 47 minutes after its own deadline.",
+            "whatIsLeftBehind": "Nothing, in the database. All 540 cleanup entries are gone, all 540 own_preparation_artifacts rows are gone, and the own_preparation_jobs row itself is gone. The cleanup row survives with state complete.",
+            "whatIsKept": "genome_files.status stays uploaded. The person's 2 GiB original is still there, never prepared, and nothing was published.",
+            "theWholeLifecycle": "13:23:38 admitted, 13:26:50 claimed, 13:34:53 stopped at the artifact ceiling, 13:38:22 claim lapsed, 14:23:38 deadline passed with nothing happening, 14:25:23 frozen and cleanup queued, 17:10:27 cleanup complete. Three hours 47 minutes from admission to a clean database.",
+            "whatWasNotChecked": "The R2 side. The database says every artifact row is gone; whether the 540 objects left the bucket needs a bucket read, which this session cannot do. The owner's reconciliation before teardown covers it and is already listed as an open action."
+          }
         }
       },
       "oversizeFixtureRefusedInTheBrowser": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.'",
