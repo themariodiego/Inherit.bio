@@ -14,6 +14,8 @@ const CONTAINER_ENV = [
   "INHERIT_UPLOAD_SIGNING_JWK",
 ];
 const SINGLETON = "preparation-worker";
+/** How often the object re-arms itself while its container runs. */
+const KEEPALIVE_MS = 20_000;
 
 export class PreparationWorker extends DurableObject {
   /** Idempotent per wake: a running container is left alone. */
@@ -22,10 +24,26 @@ export class PreparationWorker extends DurableObject {
     if (container.running) return "running";
     const env = Object.fromEntries(CONTAINER_ENV.map(name => [name, String(this.env[name] ?? "")]));
     container.start({ env, enableInternet: true });
+    // Hold this object open until the container exits. An object with no
+    // pending work is evicted, and an evicted object takes its container with
+    // it: measured on the preview stack on 20 September 2026, every
+    // preparation was killed about ninety seconds in, whatever the instance
+    // size, so small files finished and a 64 MiB file never could. The alarm
+    // below is the backstop for the wake's own wall-clock limit.
+    await this.#keepAlive();
     // Exit and failure are both terminal for this run; the next cron starts a
     // fresh one. Nothing is logged, so no exit detail can carry configuration.
-    container.monitor().then(() => {}).catch(() => {});
+    await container.monitor().catch(() => {});
     return "started";
+  }
+
+  /** Re-arms while the container runs, so the object stays resident. */
+  async alarm() {
+    if (this.ctx.container?.running) await this.#keepAlive();
+  }
+
+  async #keepAlive() {
+    await this.ctx.storage?.setAlarm?.(Date.now() + KEEPALIVE_MS);
   }
 }
 

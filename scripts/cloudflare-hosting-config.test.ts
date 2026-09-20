@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -197,7 +197,7 @@ describe("the image", () => {
       expect(copy).not.toMatch(/\.env/);
       expect(copy).not.toMatch(/node_modules/);
     }
-    for (const required of ["tsconfig.json", "scripts/prepared-worker.run.mts", "scripts/server-only-shim.mjs", "data ", "src "]) {
+    for (const required of ["tsconfig.json", "scripts/prepared-worker.run.mts", "scripts/server-only-shim.mjs", "data ", "docs/route-register.json", "src "]) {
       expect(copies.some((copy) => copy.includes(required))).toBe(true);
     }
     const install = lines.find((line) => line.includes("pnpm install"));
@@ -223,6 +223,47 @@ describe("the image", () => {
     }
     expect(ignored).toContain("!scripts/prepared-worker.run.mts");
     expect(ignored).toContain("!scripts/server-only-shim.mjs");
+    expect(ignored).toContain("!docs/route-register.json");
+  });
+
+  it("copies every file the worker entry imports, transitively, from outside src/", () => {
+    // The first container runs (19 September 2026) exited before their first
+    // request because the worker module imports docs/route-register.json and
+    // the image copied src/ alone. This follows the entry's import graph the
+    // way tsx resolves it (relative and @/ specifiers; packages are skipped)
+    // and requires every file it reaches outside src/ to be copied, either
+    // by name or through a copied directory, and let through .dockerignore.
+    const copies = lines.filter((line) => line.startsWith("COPY ")).flatMap((line) => line.split(/\s+/).slice(1, -1)).filter((part) => !part.startsWith("--"));
+    const ignored = read(DOCKERIGNORE).split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"));
+    const resolveImport = (from: string, specifier: string): string | null => {
+      const base = specifier.startsWith("@/") ? path.join(ROOT, "src", specifier.slice(2))
+        : specifier.startsWith(".") ? path.resolve(path.dirname(from), specifier) : null;
+      if (!base) return null;
+      for (const candidate of [base, `${base}.ts`, `${base}.tsx`, `${base}.mts`, `${base}.mjs`, path.join(base, "index.ts")]) {
+        if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+      }
+      throw new Error(`${path.relative(ROOT, from)} imports ${specifier}, which does not resolve`);
+    };
+    const seen = new Set<string>();
+    const queue = [path.join(ROOT, "scripts/prepared-worker.run.mts")];
+    while (queue.length) {
+      const file = queue.pop()!;
+      if (seen.has(file)) continue;
+      seen.add(file);
+      if (!/\.(?:ts|tsx|mts|mjs)$/.test(file)) continue;
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/(?:from\s+|import\()\s*"([^"]+)"/g)) {
+        const target = resolveImport(file, match[1]);
+        if (target) queue.push(target);
+      }
+    }
+    const outside = [...seen].map((file) => path.relative(ROOT, file)).filter((file) => !file.startsWith("src/") && file !== "scripts/prepared-worker.run.mts").sort();
+    expect(outside).toEqual(["docs/route-register.json"]);
+    for (const target of outside) {
+      expect(copies.some((copy) => copy === target || target.startsWith(`${copy.replace(/\/$/, "")}/`)), `${target} must be copied into the image`).toBe(true);
+      const directory = target.split("/")[0];
+      if (ignored.includes(directory)) expect(ignored, `${target} must be let through the build context`).toContain(`!${target}`);
+    }
   });
 });
 
