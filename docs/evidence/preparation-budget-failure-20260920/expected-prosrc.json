@@ -1,0 +1,8 @@
+{"kind":"postflight expectation for 20260920150000_own_preparation_budget_failure.sql",
+"note":"md5 and length of each function body as this migration installs it, taken from the repository text between its dollar quotes. After the apply, md5(prosrc) and length(prosrc) read from pg_proc on the Inherit project must equal these exactly. The two replaced functions must also keep the ACL, owner, definer flag and search_path the preflight recorded; the two new ones must carry execute for service_role alone.",
+"functions":{
+"private.guard_own_preparation_identity_v1":{"md5":"d6c8b0991bce13efdcabeafac56f851c","len":1365,"replaces":"2293d0d5d954294d83100417f6fa8d47","acl":"{postgres=X/postgres}"},
+"private.own_preparation_status_v1":{"md5":"dc17bd5dd763072a1492d393394a12ef","len":2871,"replaces":"2321841e0495d426ffa1d47fcb15ad1e","acl":"{postgres=X/postgres,service_role=X/postgres}"},
+"private.fail_own_preparation_claim_v1":{"md5":"972630d8bcd79fd5c78933c7385df94e","len":1754,"replaces":null,"acl":"{postgres=X/postgres,service_role=X/postgres}"},
+"public.fail_own_preparation_claim_v1":{"md5":"e21f3da3f6c35e3ac3b16e0954fbd977","len":112,"replaces":null,"acl":"{postgres=X/postgres,service_role=X/postgres}"}},
+"column":{"private.own_preparation_jobs.frozen_reason":{"type":"text","nullable":true,"check":"frozen_reason is null or frozen_reason in ('artifact_budget_exhausted')"}}}

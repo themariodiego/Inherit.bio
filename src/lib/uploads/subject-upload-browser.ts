@@ -3,7 +3,7 @@
 import { createSHA256 } from "hash-wasm";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
-import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" |
@@ -24,7 +24,8 @@ export class BrowserPreparationError extends Error {
   /** `preparation_capacity_reached` is the month's admission cap, read only
    * from a 429 with the exact closed body: the file is kept and nothing was
    * started, so it is told apart from an uncertain outcome. */
-  constructor(readonly code: "build_unknown" | "unavailable" | "report_generation_unavailable" | "preparation_capacity_reached") { super(code); }
+  constructor(readonly code: "build_unknown" | "unavailable" | "report_generation_unavailable"
+    | "preparation_capacity_reached" | "preparation_file_too_large") { super(code); }
 }
 
 /** Preparation is covered by storage consent, not an extra analysis choice.
@@ -46,6 +47,12 @@ export async function prepareSubjectFile(fileId: string, options: { signal?: Abo
       }
       if (response.status === 429 && subjectPreparationCapacityRefusal.safeParse(value).success) {
         throw new BrowserPreparationError("preparation_capacity_reached");
+      }
+      // Read only from a 413 with the exact closed body, for the same reason
+      // the cap is read only from its own: a terminal outcome must not be
+      // mistaken for one nobody could confirm.
+      if (response.status === 413 && subjectPreparationTooLargeRefusal.safeParse(value).success) {
+        throw new BrowserPreparationError("preparation_file_too_large");
       }
       const code = value && typeof value === "object" && "error" in value ? value.error : null;
       throw new BrowserPreparationError(code === "build_unknown" ? "build_unknown" : "unavailable");

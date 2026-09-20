@@ -1,0 +1,12 @@
+{"kind":"read-only preflight for 20260920150000_own_preparation_budget_failure.sql","readAt":"2026-09-20T15:57:02.926335+00:00","project":"zuvloczwgrayonqabnss","ledgerRows":117,"ledgerLast":{"name":"shared_report_readiness_completed_runs","version":"20260918231857"},"migrationPresent":false,"privateSchemaOwner":"postgres","roles":["anon","authenticated","inherit_upload_only","service_role"],
+"functions":{
+"private.guard_own_preparation_identity_v1":{"md5":"2293d0d5d954294d83100417f6fa8d47","len":1238,"secdef":true,"config":["search_path=pg_catalog, private"],"acl":"{postgres=X/postgres}","owner":"postgres","language":"plpgsql","args":"","repositoryMd5":"2293d0d5d954294d83100417f6fa8d47","repositoryLen":1238,"repositorySource":"supabase/migrations/20260908233337_own_prepared_r2_provider.sql"},
+"private.own_preparation_status_v1":{"md5":"2321841e0495d426ffa1d47fcb15ad1e","len":2756,"secdef":true,"config":["search_path=pg_catalog, private"],"acl":"{postgres=X/postgres,service_role=X/postgres}","owner":"postgres","language":"plpgsql","args":"p_account_id uuid, p_session_id uuid, p_file_id uuid","repositoryMd5":"2321841e0495d426ffa1d47fcb15ad1e","repositoryLen":2756,"repositorySource":"supabase/migrations/20260908233418_own_preparation_checkpoints.sql"}},
+"newFunctionAbsent":true,
+"frozenReasonColumnAbsent":true,
+"identityGuardTriggers":2,
+"jobRows":0,
+"artifactRows":0,
+"config":{"enabled":false,"maxArtifactBytes":104857600,"maxJobSeconds":900,"artifactProvider":"supabase"},
+"checkBounds":{"max_artifact_bytes":[1,1073741824],"max_job_seconds":[900,3600],"monthly_admission_limit":[1,100000]},
+"note":"Both deployed bodies equal their repository source byte for byte, so the two create-or-replace statements change only what this migration intends. That equality is the check that matters here: the first draft of the guard was copied from 20260908185537_own_prepared_publication.sql instead of 20260908233337_own_prepared_r2_provider.sql, and its repositoryMd5 would not have matched the deployed md5. Preparation is disabled in production with zero jobs and zero artifacts, so the new CHECK validates against an empty table, no row can carry a reason at apply time, and no person's journey is in flight."}

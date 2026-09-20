@@ -29,6 +29,145 @@ The bound is the largest size observed to be accepted (5,242,880,000), not the
 boundary itself: 5,368,708,096 and above were refused at once with 413 by
 Cloudflare on the declared Content-Length. No consent check, retry rule,
 browser assertion or matrix row changes, and no configured ceiling moves.
+## A file too large to prepare says so, and offers no retry (31a) · 20 September 2026
+
+The surface half. `src/components/uploads/preparation-recovery.test.ts` gains a
+case holding that the new code states the file is larger than Inherit can
+prepare, keeps it listed with its link, renders **no button at all**, and shows
+no digit anywhere in its visible words. The no-number assertion is the same one
+the month's cap carries, for a different reason: the limit that bit is a budget
+on prepared bytes rather than a ceiling on the file, and the file passed every
+ceiling it was measured against, so quoting a size would send someone to shrink
+against a number that was never the problem.
+
+`src/lib/uploads/own-preparation.test.ts` gains two: a `failed` status carrying
+`reason: "artifact_budget_exhausted"` answers **413** with its own closed body,
+and a `failed` status without a reason stays an opaque **503** whose body never
+mentions size. That pair is the point — 503 invites a retry that would stop at
+the same place, and a frozen job the database cannot explain must not be
+blamed on the file.
+
+`docs/route-register.json` gains `preparation-too-large-v1` bound to
+`api.file-process`, because the route gate requires every answer shape to be
+registered; its `limitDisclosure` records that no budget, ceiling or byte count
+crosses the body, and its `effects` that the response reports a job the
+database already ended and changes nothing.
+
+The reason reaches the browser through `own_preparation_status_v1`, which
+emits the key **only when a reason exists**, so the answer is byte-identical to
+today's for every job without one. Release order is the one the gVCF ceiling
+migration set out: the app accepts the extra key before the migration is
+applied.
+
+## The worker ends a claim whose reservation was refused (31a) · 20 September 2026
+
+`src/lib/uploads/own-preparation-worker.test.ts` gains three cases: a pipeline
+that rejects with a `PreparedStorageWriteError` carrying a byte count makes the
+worker call `fail_own_preparation_claim_v1` once with
+`artifact_budget_exhausted` and that count; one carrying no byte count proposes
+nothing; and a database that refuses the proposed reason leaves the ordinary
+path exactly as it was. Run against the worker this replaces, the first and
+third fail — the second asserts an absence and passes either way, which is why
+it is not the proof.
+
+**A partial mock was hiding a real hazard, and fixing it is the larger half of
+this change.** The file mocked `../genome/prepared-source/storage-writer` with
+a factory returning only `createPreparedArtifactWriter`, so every other export
+was `undefined` in the module under test. The worker now also imports
+`PreparedStorageWriteError`, and `error instanceof undefined` throws a
+TypeError — which the worker's outer catch turned into `unavailable`. Two
+existing cases, "refuses an exact-artifact authority mismatch" and "refuses a
+stale or altered checkpoint acknowledgment", went red with
+`expected unavailable to match { code: "integrity_mismatch" }`, and neither had
+anything to do with the change. The mock now spreads the real module the way
+the `storage-common` mock beside it already did, so only the factory is
+replaced. Nothing is weakened: the two cases assert exactly what they did
+before, against a module that is no longer partly missing.
+
+The fixture also learns `fail_own_preparation_claim_v1`, because its `default`
+branch throws on an unknown RPC and would otherwise have swallowed the call
+into the worker's own catch, leaving the new cases passing for the wrong
+reason.
+
+`src/lib/genome/prepared-source/storage-writer.ts` is unchanged in its
+protocol: `PreparedStorageWriteError` gains an optional `byteCount`, set only
+where a reservation was refused. Nothing reads the response body, so the five
+cancel-don't-drain cases still hold, and all 914 prepared-source tests pass.
+
+## A claim holder can end its own attempt, and say why (31a) · 20 September 2026
+
+`supabase/tests/own_preparation_budget_failure.sql` is new and plants a defect
+per branch of `private.fail_own_preparation_claim_v1`: a reason outside the
+closed set, a null reason and a byte count of zero are refused `22023
+invalid_request` with the claim left live; another attempt, a wrong token and a
+job the claim does not name are each refused `42501 not_found`, with the claim
+still live after all three; **a reason the state does not corroborate is
+refused `22023 reason_not_established`** and neither freezes the job nor writes
+the column, because the function re-runs the same comparison
+`reserve_own_preparation_artifact_v1` makes rather than taking the caller's
+word; the
+happy path returns the freeze receipt, leaves the job `frozen` with
+`frozen_reason` recorded and `frozen_at` stamped; a replay is refused and does
+not disturb the recorded reason; and `freeze_due_own_preparations_v1` then
+reports `frozen: 0`, because a job its claim holder already ended is not in the
+`queued`/`claimed` set the scan walks. The original source row survives and no
+report readiness is granted.
+
+The fixture lowers `max_artifact_bytes` to 1000 so a modest byte count exhausts
+it the way a real source exhausts the deployed one, which is what lets the same
+file hold both the refused claim (1 byte, not established) and the accepted one
+(2000 bytes, established) against the same job.
+
+The fixture mirrors `own_preparation_checkpoints.sql`, which is the nearest
+existing one that reaches a live claim; `own_preparation_jobs.sql` could not be
+extended because it ends with the job already frozen. Identities use a distinct
+UUID prefix and email so both can run in the same suite, and the whole file is
+synthetic and rollback-only, as every pgTAP file here is.
+
+`supabase test db` discovers the directory, so nothing registers the file.
+Nothing existing changes: the migration is additive, no other pgTAP file is
+touched, no ceiling moves and no matrix row moves.
+
+**First execution, and what it found.** pgTAP runs only in CI here — there is
+no local Supabase — so run 35517110688 was this file's first execution. The
+migration applied cleanly; the test did not. It failed at its first assertion
+with `permission denied for table own_preparation_jobs`, because `private.*`
+is not granted to `service_role` — that role reaches the schema only through
+the security-definer functions — and the assertions ran under the role the
+calls need. The role is now switched around each group, the way
+`own_preparation_jobs.sql` does before its own private reads. Nothing about
+the migration or the product changed; this was the harness reading a table it
+had no grant for.
+
+**What the second execution found, and the case that came out of it.** This
+migration replaces `guard_own_preparation_identity_v1` to teach it the new
+column, and the replacement was written from
+`20260908185537_own_prepared_publication.sql`'s body rather than the deployed
+one in `20260908233337_own_prepared_r2_provider.sql`. `create or replace` takes
+whatever body it is given, so that draft would have reverted three protections
+the later migration added: published rows mutable again, a job publishable from
+a state other than `claimed`, and `provider_version` and `provider_etag` out of
+the artifacts row's mutable set.
+
+A read-only production preflight found it first, by diffing
+`pg_get_functiondef` on the Inherit project against this file; run 35519879598
+then confirmed two of the three independently, being the first run to see that
+draft after three pushes produced no run at all on an unmergeable PR.
+`own_prepared_publication.sql`'s test 41, "published job cannot be reopened",
+caught no exception where it wanted `22023`, and the R2 ACK's own UPDATE began
+raising the guard, aborting `own_prepared_r2_provider.sql`,
+`own_prepared_cleanup.sql` and `own_prepared_original_retirement.sql`. The
+migration now carries the deployed body character for character apart from the
+two intended changes, which `diff` shows and the file's comment says to check.
+
+Nothing failed for the third rule. `(new.state='published' and
+old.state<>'claimed')` is written only by `publish_own_prepared_manifest_v1`,
+which publishes a job it has claimed, so the refusal the clause exists for was
+never reached by any test. `own_preparation_budget_failure.sql` gains the case
+that reaches it, between the enqueue and the claim, where the job is `queued`:
+a frozen or published row would trip the immutable-row rule first and pass with
+the clause deleted. `throws_ok` rolls its subtransaction back, so the claim
+below is unaffected, and no existing assertion changes.
 ## An Overview box can no longer link Overview to itself · 20 September 2026
 
 `docs/acceptance-matrix.md` records one latent hazard against G2.4 that nothing
