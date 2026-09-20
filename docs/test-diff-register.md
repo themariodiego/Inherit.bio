@@ -1,5 +1,35 @@
 # Test diff register
 
+## A ceiling above what one request can carry (decision 31b) · 20 September 2026
+
+`src/lib/uploads/own-upload-limits.test.ts` gains a case holding that the
+applicable ceiling is never larger than one request can carry, whatever the
+deployment configures: with all three configured ceilings at 8 GiB, every
+format's `configuredCeilingBytes` still reads 8 GiB while `uploadCeilingBytes`
+reads `SINGLE_REQUEST_MAXIMUM_BYTES`, the configured ceiling still wins while
+it is the smaller of the two, and the bound sits below the measured 413
+boundary. The existing gVCF case keeps its shape and its fallback assertion;
+its 8 GiB figure becomes 1 GiB, because 8 GiB was the promise the measurement
+disproved and pinning it asserted a ceiling the uploader cannot meet.
+
+`src/lib/uploads/subject-upload-issuance.test.ts` gains two cases: a
+declaration one byte over that bound is refused 413 `too_large` with **no RPC
+called at all**, so no durable row and no limit read exist for a file that
+cannot arrive; and a declaration exactly at the bound still reaches
+`issue_own_storage_upload_v1` and is issued 201, so the guard refuses only what
+was measured to fail.
+
+Run against the code these replace, the three cases fail: the ceiling reads
+8,589,934,592 instead of 5,242,880,000, and the oversized declaration answers
+**503**, not a size refusal at all — which is what the preview stack showed a
+person as a frozen percentage for five and a half minutes followed by a
+message that never mentioned size.
+
+The bound is the largest size observed to be accepted (5,242,880,000), not the
+boundary itself: 5,368,708,096 and above were refused at once with 413 by
+Cloudflare on the declared Content-Length. No consent check, retry rule,
+browser assertion or matrix row changes, and no configured ceiling moves.
+
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 
 PR #148's run 35420001967 reached `/auth/sign-in` through Chromium's forced
