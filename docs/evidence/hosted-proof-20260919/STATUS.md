@@ -87,6 +87,20 @@ as binding as the "Done" list.
   prepared" 35 s after finalization. Receipt: `journeys/vcf-tiny.json`.
 - 08:04 · The session was idle from about 04:20 to 07:59 (no wake arrived);
   the 64 MiB VCF journey with chosen reports started at 08:04.
+- 09:06 (19 September) · **The 64 MiB VCF did not finish preparation.** Upload
+  and finalization were fine (Storage POST 2.6 s at about 25 MB/s, finalize
+  8.8 s), the admission was granted (the month's count went 1 to 2) and the
+  job was enqueued at 08:06:03 with a deadline of 09:06:03 (`max_job_seconds`
+  3600, the column's ceiling). At 09:06:09 the page said "We could not confirm
+  whether file preparation finished"; a cleanup of mode `unpublished-scratch`
+  removed 13 scratch artifacts at 09:10:07 to 09:10:10, the job row is gone
+  and the file stays `uploaded` with its original in Storage. So one hour on
+  `standard-1` (1/2 vCPU, 4 GiB) was not enough for 64 MiB, against 14 seconds
+  of container work for 547 bytes. The container itself is healthy: it has
+  woken on every five-minute tick since, idle.
+- The session was then idle from 19 September 09:06 to 20 September 09:46
+  (about 24 hours 40 minutes, no wake arrived). Work resumed on 20 September;
+  every timestamp below is 20 September.
 
 ## Found on the way (continued)
 
