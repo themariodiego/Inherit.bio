@@ -1,0 +1,18 @@
+{"observedAt":"2026-09-20T18:32:24.333903+00:00","checks":17,"passed":17,"failed":null,"rows":[
+{"check":"three private bodies equal the repository text with definer status, pinned search_path and the expected ACLs","outcome":"3","passed":true},
+{"check":"the public wrapper is security invoker with the expected body and ACL","outcome":"1","passed":true},
+{"check":"guard still forbids changing a published row","outcome":"true","passed":true},
+{"check":"guard still forbids publishing from a state other than claimed","outcome":"true","passed":true},
+{"check":"guard still lets an artifact row change provider_version and provider_etag","outcome":"true","passed":true},
+{"check":"guard knows the new column and makes it write-once","outcome":"true","passed":true},
+{"check":"status emits the reason key only when a reason is recorded","outcome":"true","passed":true},
+{"check":"frozen_reason is a nullable text column","outcome":"1","passed":true},
+{"check":"the closed set is enforced by a check constraint","outcome":"1","passed":true},
+{"check":"no browser role can execute the new function","outcome":"0","passed":true},
+{"check":"service role keeps the public wrapper","outcome":"true","passed":true},
+{"check":"a reason outside the closed set is refused","outcome":"22023 invalid_request","passed":true},
+{"check":"a byte count of zero is refused","outcome":"22023 invalid_request","passed":true},
+{"check":"a well-formed call still refuses while preparation is disabled","outcome":"55000 preparation_disabled","passed":true},
+{"check":"no preparation job exists","outcome":"0","passed":true},
+{"check":"no preparation artifact exists","outcome":"0","passed":true},
+{"check":"the configuration is untouched: still disabled at the preflight budget","outcome":"1","passed":true}]}

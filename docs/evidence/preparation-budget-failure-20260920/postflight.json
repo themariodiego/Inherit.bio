@@ -1,0 +1,18 @@
+{"kind":"postflight for 20260920150000_own_preparation_budget_failure.sql","readAt":"2026-09-20T18:30:04.727625+00:00","project":"zuvloczwgrayonqabnss","ledgerRows":118,"ledgerLast":{"name":"own_preparation_budget_failure","version":"20260920182946"},
+"firstRead":{"outcome":"three of four matched; one did not","functions":{
+ "private.guard_own_preparation_identity_v1":{"md5":"d6c8b0991bce13efdcabeafac56f851c","len":1365,"matchesExpected":true},
+ "private.own_preparation_status_v1":{"md5":"dc17bd5dd763072a1492d393394a12ef","len":2871,"matchesExpected":true},
+ "public.fail_own_preparation_claim_v1":{"md5":"e21f3da3f6c35e3ac3b16e0954fbd977","len":112,"matchesExpected":true},
+ "private.fail_own_preparation_claim_v1":{"md5":"2e6f412e740bbc715303ead0fcc699b5","len":1099,"expectedMd5":"972630d8bcd79fd5c78933c7385df94e","expectedLen":1754,"matchesExpected":false}},
+ "cause":"The statement sent to the management API dropped the three explanatory comments from inside private.fail_own_preparation_claim_v1's body while the call was being composed. Comments inside a function body are part of prosrc, so the deployed source differed from the repository by 655 bytes with identical behaviour. Nothing else differed; the other three bodies were byte-equal on the first read."},
+"correction":{"statement":"create or replace function private.fail_own_preparation_claim_v1(...) with the repository body verbatim","why":"create or replace preserves the ACL, and the migration was already in the ledger under its own name, so a corrective statement makes the deployed body match the recorded migration rather than adding a ledger row with no file behind it.","appliedBefore":"2026-09-20T18:32:24Z"},
+"finalRead":{"allFourMatchExpected":true,"functions":{
+ "private.guard_own_preparation_identity_v1":{"md5":"d6c8b0991bce13efdcabeafac56f851c","len":1365,"acl":"{postgres=X/postgres}","secdef":true,"config":"search_path=pg_catalog, private"},
+ "private.own_preparation_status_v1":{"md5":"dc17bd5dd763072a1492d393394a12ef","len":2871,"acl":"{postgres=X/postgres,service_role=X/postgres}","secdef":true,"config":"search_path=pg_catalog, private"},
+ "private.fail_own_preparation_claim_v1":{"md5":"972630d8bcd79fd5c78933c7385df94e","len":1754,"acl":"{postgres=X/postgres,service_role=X/postgres}","secdef":true,"config":"search_path=pg_catalog, private"},
+ "public.fail_own_preparation_claim_v1":{"md5":"e21f3da3f6c35e3ac3b16e0954fbd977","len":112,"acl":"{postgres=X/postgres,service_role=X/postgres}","secdef":false,"config":"search_path=pg_catalog, public"}}},
+"column":{"private.own_preparation_jobs.frozen_reason":{"data_type":"text","is_nullable":"YES","check":"CHECK (((frozen_reason IS NULL) OR (frozen_reason = 'artifact_budget_exhausted'::text)))"}},
+"identityGuardTriggers":2,
+"jobRows":0,"artifactRows":0,
+"config":{"enabled":false,"maxArtifactBytes":104857600},
+"note":"The ACL survived the corrective create or replace, which is why the final read still shows service_role on both new functions: create or replace preserves a function's privileges and only a fresh create takes defaults."}
