@@ -2,7 +2,10 @@
   "what": "What the withdrawal of the gVCF journey's file (1679524c-e270-4f37-9acb-0782b39a4281) actually establishes, and what it does not.",
   "withdrawnAt": "2026-09-20T11:30:59Z",
   "checked": {
-    "deleteResponse": { "status": 204, "seconds": 3.08 },
+    "deleteResponse": {
+      "status": 204,
+      "seconds": 3.08
+    },
     "fileRowInList": "gone from /files",
     "storageListingForTheOriginal": [],
     "storageDownloadOfTheOriginal": "Object not found",
@@ -10,7 +13,6 @@
   },
   "whatTheStatusCodeCarries": "The delete route answers 204 only after prepare_own_prepared_file_cleanup_v1 reports the prepared graph retired; a cleanup still running answers 202 and the file stays listed. So the 204 is the application's own assertion that the prepared artifacts were retired before the original was removed.",
   "notChecked": {
-    "r2ObjectListing": "No connected tool lists the objects in an R2 bucket (the Cloudflare tool exposes bucket metadata only), so the bucket's own object count after this withdrawal was not read.",
     "tombstoneRowsForThisFile": "The cleanup and its entries are removed with the file row, so after a completed withdrawal the database keeps no per-artifact tombstone record for that file to read back."
   },
   "whatATombstoneLooksLike": {
@@ -27,7 +29,19 @@
   "cleanupIsPaced": "That same cleanup had 162 entries and 16 acknowledged four minutes in: scratch retirement is drained by the five-minute cron like any other container work, so a large job's scratch outlives its publication by several wakes.",
   "ownerCheck": {
     "why": "Only the bucket itself can answer whether any payload survives.",
-    "steps": "https://dash.cloudflare.com → R2 → inherit-prepared-preview → the object count and, for any object listed, its size. Every prepared payload that has been retired must read 0 bytes; no object may carry payload bytes for a withdrawn file.",
-    "when": "Before the preview stack is torn down (runbook step 6)."
+    "steps": "https://dash.cloudflare.com \u2192 R2 \u2192 inherit-prepared-preview \u2192 the object count and, for any object listed, its size. Every prepared payload that has been retired must read 0 bytes; no object may carry payload bytes for a withdrawn file.",
+    "when": "Before the preview stack is torn down (runbook step 6).",
+    "status": "Done at 12:53 UTC on 20 September, see bucketReconciliation above. Worth repeating immediately before teardown, since more journeys have run since."
+  },
+  "bucketReconciliation": {
+    "readBy": "the owner, in the Cloudflare dashboard (no connected tool lists R2 objects)",
+    "at": "2026-09-20T12:53:00Z",
+    "bucket": "inherit-prepared-preview",
+    "zeroByteObjects": 105,
+    "objectsWithPayloadBytes": 238,
+    "finding": "Every object carrying payload bytes matched an artifact row for a file still retained on the branch; none was unaccounted for.",
+    "whatThisEstablishes": "By exclusion, no payload bytes in the bucket belong to the withdrawn file: every non-empty object is accounted for by a retained file's artifact row. Together with the 105 empty objects, that is consistent with retired payloads having been replaced by tombstones.",
+    "whatItDoesNotEstablish": "It is a bucket-wide reconciliation at one moment, not a lookup of the withdrawn file's former keys: those keys are unknowable from the database now, because a completed withdrawal removes the cleanup and its entries along with the file. So the check proves no orphaned payload exists, not that a named key of that file reads zero bytes.",
+    "receipt": "Saved by the owner alongside this file."
   }
 }

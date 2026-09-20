@@ -203,17 +203,15 @@ as binding as the "Done" list.
 
 One, for the teardown (runbook step 6), and one closed.
 
-### Open: read the bucket before tearing the preview down
+### Open: repeat the bucket reconciliation immediately before teardown
 
-Only the bucket can answer whether any prepared payload survived a
-withdrawal: no connected tool lists R2 objects, and a completed withdrawal
-removes the cleanup rows along with the file.
-
-1. Open https://dash.cloudflare.com → R2 → `inherit-prepared-preview`.
-2. Read the object count, and the size of any object listed.
-3. Every retired payload must read 0 bytes. An object carrying payload bytes
-   for a withdrawn file is the finding; record either way in
-   `withdrawal-residue.json` before the bucket is emptied.
+The owner read the bucket at 12:53 on 20 September and it reconciled (105
+zero-byte objects, 238 with payload bytes, all accounted for). Journeys have
+run since, so repeat it at teardown (runbook step 6), the same way: open
+https://dash.cloudflare.com → R2 → `inherit-prepared-preview`, read the
+object count and each object's size, and check every non-empty object
+against an artifact row for a file still retained. An object carrying
+payload bytes that matches no retained file is the finding.
 
 ### Closed The one below was done by the owner at 03:03:01 UTC (a
 `BYOK_ENCRYPTION_KEY` of type sensitive, Preview target only, is listed on

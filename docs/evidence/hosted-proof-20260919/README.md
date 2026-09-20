@@ -33,10 +33,13 @@ the ordered account. Times are UTC.
 - **Withdrawal removes the original and its records**: delete answered 204,
   the Storage listing for the original is empty, its download answers "Object
   not found", and the `genome_files` row is gone (`journeys/gvcf-4mib.json`).
-  The prepared artifacts in R2 are covered by the route's own contract, not by
-  a reading of the bucket: see `withdrawal-residue.json` for exactly what that
-  204 carries, what a payload tombstone looks like, and the owner check that
-  the bucket itself still needs.
+  For the prepared artifacts in R2 the owner reconciled the bucket at 12:53
+  on 20 September: 105 zero-byte objects and 238 carrying payload bytes, every
+  non-empty one matching an artifact row for a file still retained, none
+  unaccounted for. That rules out an orphaned payload by exclusion rather than
+  by naming the withdrawn file's former keys, which the database no longer
+  holds. `withdrawal-residue.json` carries both the reconciliation and what it
+  does not establish.
 - **The monthly cap refuses the admission past its limit**: `/process`
   answered 429 with `preparation_capacity_reached`, the page showed the
   refusal wording, the file was kept and no job row was created. The limit
@@ -113,9 +116,8 @@ the ordered account. Times are UTC.
   deliberately not waited out.
 - Peak memory: not available. Observability is off on the container Workers
   by configuration and no connected tool reports a container's memory.
-- The R2 bucket's own object count after withdrawal: no connected tool lists
-  objects in a bucket, and a completed withdrawal removes the cleanup rows
-  along with the file, so there is nothing left to read back for that file
-  either. `withdrawal-residue.json` records a live tombstone from another
-  file's cleanup and the exact owner check the bucket still needs.
+- Which R2 objects were the withdrawn file's. The bucket reconciles with no
+  unaccounted payload (above), but a completed withdrawal removes the cleanup
+  rows with the file, so its former keys cannot be named and checked one by
+  one. The reconciliation should be repeated immediately before teardown.
 - One measurement per size, on one branch, with one fixture generator.
