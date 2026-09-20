@@ -102,6 +102,23 @@ two halves:
   one typed confirmation is unverified, and so is the register's enumeration of
   `confirmation` steps excluded from ceilings. A browser suite would prove all of
   it in CI, the way every other route-state proof this month was proven.
+
+  **Two of the nine tasks need checking before that suite is scoped, and the
+  bindings do not settle one of them.** T6 and T7 both carry
+  `requiresCapability: "embryo_analysis"` in `scripts/comprehension/bindings.json`.
+  **T7 is blocked**: its success condition is an absolute figure with its
+  denominator on `/embryos/compare`, and with no embryo ingest path no cohort can
+  render one. **T6 is not simply blocked**: it carries a `withheldVariant` whose
+  `when` scopes it to "any environment where `embryo_analysis` is not permitted,
+  which today is every real jurisdiction", asking instead what Inherit will and
+  will not do with an embryo file, with success being that the participant says
+  Inherit does not recommend, rank or pick one. But a task-depth run happens
+  under `TEST-LOCAL`, where the brief's review-deadlock resolution makes **every**
+  capability permitted — so the main variant applies by that clause while the
+  embryo file path still does not exist, a combination the variant's `when` does
+  not describe. Whoever scopes the suite should settle that first rather than
+  assume either reading; it decides whether the suite covers eight of nine tasks
+  or seven.
 - **Reachability needs a decision, not code.** Four of the nine Overview boxes do
   not arrive where the box says: `family.portrait` goes to the Family landing
   because no eligible-pair resolution exists, `family.copilot` and
