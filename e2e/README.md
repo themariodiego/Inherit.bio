@@ -44,7 +44,7 @@ unlisted ports, alternate hosts, HTTPS and credential-bearing URLs.
 | `deletion-export.spec.ts` | A13 | export ZIP contents; deletion removes rows + storage (privileged re-query) |
 | `network-audit.spec.ts` | A14 | first-party-only request origins on landing/dashboard/report/legal; no fbq/gtag |
 | `legal.spec.ts` | A15 | legal pages complete + placeholder-free; disclaimers on report surface; Plus Bio disclosure |
-| `a11y.spec.ts` | A16 | axe WCAG 2 AA on key pages, both themes; design tokens present |
+| `a11y.spec.ts` | A16 | axe WCAG 2 AA on key pages, both themes; design tokens present. Also the four measurements axe cannot make (reflow at 320 CSS px, target size, keyboard traversal, text alternatives); the reflow probe attaches its diagnosis as JSON for a route recorded in `docs/accessibility-divergence.json`, since a passing assertion prints nothing |
 | `research.spec.ts` | A7 | fixtured release → review-queue draft → publish → changelog + digest |
 | `report-gate.spec.ts` | — | sensitive reports withhold the result server-side until `?reveal=1`; the choice is remembered per user and category |
 | `report-skeleton.spec.ts` | — | six fixed report headings; one attributed genotype figure per covered variant; exact not-covered, partial-state and not-diagnostic strings; layer-labelled counts and nine-category order |

@@ -1,5 +1,72 @@
 # Test diff register
 
+## The reflow sweep can name an out-of-flow cause, and keeps what it finds · 20 September 2026
+
+`e2e/a11y.spec.ts`'s 320 CSS px reflow probe measures
+`/genome/[subject]/data/browser` at 446px on every run and the ledger still
+records its cause as unidentified. Two defects in the measurement, not in the
+page, explain that. Both are fixed here; no verdict changes and no route's
+recorded width moves.
+
+**It misfiled out-of-flow boxes.** The walk that decided whether an element
+was clipped treated any ancestor with a computed `overflow-x` other than
+`visible` as clipping. That is true of an in-flow child and false of an
+out-of-flow one: a `position: fixed` box is laid out against the viewport, so
+such an ancestor does not clip it unless the ancestor establishes a containing
+block for fixed descendants (a transform, perspective, filter, backdrop-filter,
+a `will-change` naming one of those, or a `contain` of paint, layout, strict or
+content), and an `absolute` box skips every `static` ancestor the same way. A
+node that really was escaping therefore landed in `caught`, `widest` came back
+empty, and the report had nothing to name — exactly the symptom recorded
+against this route.
+
+**It threw the diagnosis away.** For a route in the ledger the assertion
+compares two numbers and returns, and an assertion that passes never prints its
+message, so the probe's whole result was discarded on every green run. It is
+now attached to the test as JSON, so each run carries what it found.
+
+The probe also reports what has no element to name: the computed `min-width`
+and `width` of the root and the body, and any `::before` or `::after` on the
+nodes already in hand that carries a width, an out-of-flow position or a right
+margin. Both are bounded to nodes the sweep already walked, so neither costs a
+second pass of the document.
+
+Nothing here can make the sweep pass something it should fail: the added fields
+are diagnostic, the pass or fail is still `scrollWidth` against the ledger's
+exact recorded width, and the ledger is unchanged. The two `min-width:220px`
+rules in igv 3.8.5's injected styles remain candidates, not a diagnosis; this
+change exists so the next run names the element instead of guessing at it.
+
+## A ceiling above what one request can carry (decision 31b) · 20 September 2026
+
+`src/lib/uploads/own-upload-limits.test.ts` gains a case holding that the
+applicable ceiling is never larger than one request can carry, whatever the
+deployment configures: with all three configured ceilings at 8 GiB, every
+format's `configuredCeilingBytes` still reads 8 GiB while `uploadCeilingBytes`
+reads `SINGLE_REQUEST_MAXIMUM_BYTES`, the configured ceiling still wins while
+it is the smaller of the two, and the bound sits below the measured 413
+boundary. The existing gVCF case keeps its shape and its fallback assertion;
+its 8 GiB figure becomes 1 GiB, because 8 GiB was the promise the measurement
+disproved and pinning it asserted a ceiling the uploader cannot meet.
+
+`src/lib/uploads/subject-upload-issuance.test.ts` gains two cases: a
+declaration one byte over that bound is refused 413 `too_large` with **no RPC
+called at all**, so no durable row and no limit read exist for a file that
+cannot arrive; and a declaration exactly at the bound still reaches
+`issue_own_storage_upload_v1` and is issued 201, so the guard refuses only what
+was measured to fail.
+
+Run against the code these replace, the three cases fail: the ceiling reads
+8,589,934,592 instead of 5,242,880,000, and the oversized declaration answers
+**503**, not a size refusal at all — which is what the preview stack showed a
+person as a frozen percentage for five and a half minutes followed by a
+message that never mentioned size.
+
+The bound is the largest size observed to be accepted (5,242,880,000), not the
+boundary itself: 5,368,708,096 and above were refused at once with 413 by
+Cloudflare on the declared Content-Length. No consent check, retry rule,
+browser assertion or matrix row changes, and no configured ceiling moves.
+
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 
 PR #148's run 35420001967 reached `/auth/sign-in` through Chromium's forced
