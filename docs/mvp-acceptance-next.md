@@ -8,7 +8,7 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **37/65**, counted from the YES/NO column (G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
+Acceptance is **38/65**, counted from the YES/NO column (G4.8 on 20 September; G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
 35327691091 after PR #136 (below). G1.6 closed on CI run
 35270711326, G1.16 on integration run 35291865797 (its second attempt) with
 pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
@@ -116,9 +116,14 @@ Released:
   against the fourth CI app variant that attests the synthetic loopback
   provider as local); two guard rules added (a relative risk without an
   absolute figure, content attributed to a report the tools did not return)
-  and the surfaces' non-diagnostic line under every answer; the row flips on
-  the spec's first green run (branch `work/copilot-redteam`, stacked on the
-  census pull request).
+  and the surfaces' non-diagnostic line under every answer. **The spec passed
+  on its first green execution, run 35510866137 (head 9939fc5), all 48 tests
+  with no failure in a 488-test suite, so the row is YES: 38/65.** Reaching
+  that run took a harness fix: Chromium's forced local proxy admitted only
+  ports 3100 to 3102, so the fourth app's sign-in served the proxy's refusal
+  page and the `beforeAll` hung twice. The origin list now carries 3103 and
+  the configuration test walks every server and project through the real
+  destination guard.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
