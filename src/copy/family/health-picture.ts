@@ -286,6 +286,8 @@ export { NOT_DIAGNOSTIC, NO_RANGE_YET, PROVENANCE_LINE };
 
 /** Source and captured-result states; absence never implies a negative result. */
 export const CELL_NO_PREPARED_FILE = "No prepared file yet";
+/** A file is in flight for this column: not absent, and no result yet (owner decision, 18 September 2026). */
+export const CELL_FILE_PREPARING = "File still being prepared";
 export const CELL_NOT_GENERATED = "No saved reports for the prepared files yet";
 export const CELL_CATALOG_UNAVAILABLE = "Some saved reports lack the information needed to show them here";
 export const CELL_VERSION_UNAVAILABLE = "No saved result for this version of the report";

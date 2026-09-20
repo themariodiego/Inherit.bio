@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement as h, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 const mocks = vi.hoisted(() => ({ client: vi.fn(), admin: vi.fn(), people: vi.fn(), self: vi.fn(), capability: vi.fn(), acknowledged: vi.fn(),
-  snapshot: vi.fn(), templates: vi.fn(), genotypes: vi.fn(), provenance: vi.fn(), classified: vi.fn(), conditions: vi.fn(), pair: vi.fn() }));
+  snapshot: vi.fn(), templates: vi.fn(), genotypes: vi.fn(), provenance: vi.fn(), classified: vi.fn(), conditions: vi.fn(), pair: vi.fn(), preparing: vi.fn() }));
 vi.mock('../supabase/server', () => ({ createClient: mocks.client }));
 vi.mock('../supabase/admin', () => ({ createAdminClient: mocks.admin }));
 vi.mock('../subjects', () => ({ resolveSubjectForAccount: mocks.self }));
@@ -12,7 +12,7 @@ vi.mock('./access', () => ({ familyCapability: mocks.capability, permits: (decis
   LAYER_PURPOSES: { variant_call: 'reports.monogenic', estimate: 'reports.polygenic' } }));
 vi.mock('./tier2', () => ({ acknowledged: mocks.acknowledged }));
 vi.mock('./health-picture-results', () => ({ loadHealthPictureSnapshot: mocks.snapshot }));
-vi.mock('../genome/load', () => ({ getPublishedTemplates: mocks.templates, getSubjectGenotypesByRsid: mocks.genotypes,
+vi.mock('../genome/load', () => ({ getPublishedTemplates: mocks.templates, getSubjectGenotypesByRsid: mocks.genotypes, hasFileInPreparation: mocks.preparing,
   templateRsids: (templates: { variants: { rsid: number }[] }[]) => templates.flatMap(template => template.variants.map(variant => variant.rsid)) }));
 vi.mock('../genome/input-sources', () => ({ loadInputSources: mocks.provenance }));
 vi.mock('./carrier-pair', () => ({ readClassifiedVariants: mocks.classified, readCarrierConditions: mocks.conditions, resolveCarrierPair: mocks.pair }));
@@ -46,7 +46,7 @@ beforeEach(() => {
   mocks.genotypes.mockImplementation(async()=>{calls.push('genotypes');return {genotypes:new Map([[762551,'AC']]),conflicts:new Set(),fileCount:1,
     inputFileIds:[legacyFile],checkedFileIds:[legacyFile],inputFilesByRsid:new Map([[762551,new Set([legacyFile])]])};});
   mocks.provenance.mockImplementation(async()=>{calls.push('provenance');return [{fileId:legacyFile,fileType:'vcf',processedAt:null,snapshot:null}];});
-  mocks.classified.mockResolvedValue([]); mocks.conditions.mockResolvedValue([]);
+  mocks.classified.mockResolvedValue([]); mocks.conditions.mockResolvedValue([]); mocks.preparing.mockResolvedValue(false);
   mocks.pair.mockImplementation(async()=>{calls.push('pair');return {matches:[],classifiedPositions:0,positionsBothCover:0,genotypes:{a:new Map(),b:new Map()}};});
 });
 
@@ -62,6 +62,21 @@ describe('Health Picture final rendering boundary',()=>{
     expect(html).not.toContain('File 0'); expect(html).not.toContain('data-slot="subject-files"');
     expect(mocks.templates).not.toHaveBeenCalled(); expect(mocks.genotypes).not.toHaveBeenCalled();
     expect(calls.at(-1)).toBe('confirm'); expect(confirm).toHaveBeenCalledTimes(1);
+  });
+  it('says a file is still being prepared, never that it is absent, for a column whose person has one in flight',async()=>{
+    capture.columns[1].access[1].hasPreparedSource=false;
+    mocks.preparing.mockImplementation(async(_db,subjectId)=>subjectId===subjectB);
+    const html=renderToStaticMarkup(await Page());
+    expect(html).toContain('File still being prepared'); expect(html).not.toContain('No prepared file yet');
+    expect(mocks.preparing).toHaveBeenCalledTimes(2); expect(calls.at(-1)).toBe('confirm');
+  });
+  it('keeps the absent-file state for a column with nothing in flight, and never reads for a withheld layer',async()=>{
+    capture.columns[1].access[1].hasPreparedSource=false;
+    const html=renderToStaticMarkup(await Page());
+    expect(html).toContain('No prepared file yet'); expect(html).not.toContain('File still being prepared');
+    mocks.preparing.mockResolvedValue(true); capture.columns[1].access[1].kind='not-shared';
+    const withheld=renderToStaticMarkup(await Page());
+    expect(withheld).not.toContain('File still being prepared'); expect(withheld).toContain('Not shared with you');
   });
   it('reads only captured legacy IDs for the permitted purpose, then confirms after provenance',async()=>{
     capture.columns[1].legacyFileIds=[legacyFile]; capture.columns[1].access[1].kind='legacy-only';

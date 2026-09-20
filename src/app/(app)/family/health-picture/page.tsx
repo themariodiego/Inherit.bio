@@ -52,6 +52,7 @@ import { acknowledged } from "@/lib/family/tier2";
 import {
   getPublishedTemplates,
   getSubjectGenotypesByRsid,
+  hasFileInPreparation,
   templateRsids,
 } from "@/lib/genome/load";
 import { loadHealthPictureSnapshot } from "@/lib/family/health-picture-results";
@@ -98,6 +99,8 @@ interface ColumnSource {
   routeSegment: string;
   legacy: Map<SharedReportPurpose, Awaited<ReturnType<typeof getSubjectGenotypesByRsid>>>;
   allowedPurposes: Set<SharedReportPurpose>;
+  /** This person has a file in preparation right now, so an absent source is not an absent file. */
+  preparing: boolean;
 }
 
 function cellFor(
@@ -109,7 +112,7 @@ function cellFor(
   if (!source.allowedPurposes.has(purpose)) return { state: { kind: "not-shared" }, covered: false };
   const read = source.legacy.get(purpose);
   if (!read) return { state: { kind: "version-unavailable" }, covered: false };
-  if (!read.fileCount) return { state: { kind: "no-prepared-file" }, covered: false };
+  if (!read.fileCount) return { state: { kind: source.preparing ? "file-preparing" : "no-prepared-file" }, covered: false };
   const resolved = resolveTemplate(template, (rsid) => read.genotypes.get(rsid));
   const letters = resolved.variants
     .map((entry) => (entry.outcome.status === "genotyped" ? entry.outcome.genotype : null))
@@ -186,6 +189,12 @@ export default async function FamilyHealthPicturePage() {
       counterparts: shared.map(person => ({ subjectId: person.dataSubjectId, accountId: person.counterpartAccountId })),
       purposes: ["reports.monogenic", "reports.polygenic"],
     });
+    // A column whose person has a file in flight says so, never that the file
+    // is absent (owner decision, 18 September 2026): a file in preparation
+    // discloses less than the result it will produce, under the same grant.
+    // Read here, before the confirmation that must stay the page's last await.
+    const preparingIds = new Set((await Promise.all(entries.map(async (entry) =>
+      (await hasFileInPreparation(admin, entry.subjectId)) ? entry.subjectId : null))).filter((value): value is string => value !== null));
     // Only exact captured legacy IDs can dispatch the old resolver, and only
     // for an individually authorized layer. Empty selections perform no reads.
     const needsLegacy = snapshot.state.authorized && snapshot.state.columns.some(column =>
@@ -200,6 +209,7 @@ export default async function FamilyHealthPicturePage() {
         column: { subject: entry.subject, dataSubjectId: entry.subjectId, displayLabel: entry.label, files: null },
         routeSegment: entry.segment, legacy: new Map(),
         allowedPurposes: new Set(captured.access.filter(access => access.kind !== "not-shared").map(access => access.purpose)),
+        preparing: preparingIds.has(entry.subjectId),
       };
       for (const { purpose, layer } of HEALTH_PICTURE_LAYERS) {
         if (!source.allowedPurposes.has(purpose) || captured.legacyFileIds.length === 0) continue;
@@ -306,8 +316,14 @@ export default async function FamilyHealthPicturePage() {
     snapshotAvailable = confirmed === snapshot.state && confirmed.authorized && projection.rows.length === HEALTH_PICTURE_LAYERS.length;
     if (!snapshotAvailable) { sources.length = 0; pairs.length = 0; rowsByLayer.clear(); }
     else {
-      columnStates = new Map(projection.rows.map(group => [group.layer, group.states]));
-      for (const group of projection.rows) rowsByLayer.set(group.layer, [...(rowsByLayer.get(group.layer) ?? []), ...group.rows]);
+      // The captured projection knows sources, not files in flight: a
+      // no-prepared-file cell of a person with a file in preparation reads as
+      // such. Access still precedes source state; a withheld layer stays withheld.
+      const inFlight = (state: HealthPictureCellState, index: number): HealthPictureCellState =>
+        state.kind === "no-prepared-file" && preparingIds.has(entries[index].subjectId) ? { kind: "file-preparing" } : state;
+      columnStates = new Map(projection.rows.map(group => [group.layer, group.states.map(inFlight)]));
+      for (const group of projection.rows) rowsByLayer.set(group.layer, [...(rowsByLayer.get(group.layer) ?? []),
+        ...group.rows.map(row => ({ ...row, cells: row.cells.map(inFlight) }))]);
     }
   }
 
