@@ -109,6 +109,37 @@ calls need. The role is now switched around each group, the way
 `own_preparation_jobs.sql` does before its own private reads. Nothing about
 the migration or the product changed; this was the harness reading a table it
 had no grant for.
+
+**What the second execution found, and the case that came out of it.** This
+migration replaces `guard_own_preparation_identity_v1` to teach it the new
+column, and the replacement was written from
+`20260908185537_own_prepared_publication.sql`'s body rather than the deployed
+one in `20260908233337_own_prepared_r2_provider.sql`. `create or replace` takes
+whatever body it is given, so that draft would have reverted three protections
+the later migration added: published rows mutable again, a job publishable from
+a state other than `claimed`, and `provider_version` and `provider_etag` out of
+the artifacts row's mutable set.
+
+A read-only production preflight found it first, by diffing
+`pg_get_functiondef` on the Inherit project against this file; run 35519879598
+then confirmed two of the three independently, being the first run to see that
+draft after three pushes produced no run at all on an unmergeable PR.
+`own_prepared_publication.sql`'s test 41, "published job cannot be reopened",
+caught no exception where it wanted `22023`, and the R2 ACK's own UPDATE began
+raising the guard, aborting `own_prepared_r2_provider.sql`,
+`own_prepared_cleanup.sql` and `own_prepared_original_retirement.sql`. The
+migration now carries the deployed body character for character apart from the
+two intended changes, which `diff` shows and the file's comment says to check.
+
+Nothing failed for the third rule. `(new.state='published' and
+old.state<>'claimed')` is written only by `publish_own_prepared_manifest_v1`,
+which publishes a job it has claimed, so the refusal the clause exists for was
+never reached by any test. `own_preparation_budget_failure.sql` gains the case
+that reaches it, between the enqueue and the claim, where the job is `queued`:
+a frozen or published row would trip the immutable-row rule first and pass with
+the clause deleted. `throws_ok` rolls its subtransaction back, so the claim
+below is unaffected, and no existing assertion changes.
+
 ## The image copies what the worker imports, and a wake outlives its container · 20 September 2026
 
 Two container faults the hosted proof measured on the preview stack, both of

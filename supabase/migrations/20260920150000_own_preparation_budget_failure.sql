@@ -15,8 +15,15 @@
 -- budget is a property of the file's size against the configuration, so a
 -- second attempt spends another claim to reach the same refusal.
 --
--- Additive only. No existing function changes behaviour, no ceiling moves, and
--- a deployment that never calls the new function behaves exactly as before.
+-- Additive in effect, though not in text: two existing functions are replaced,
+-- and each gains exactly one rule that no path can reach until the new function
+-- is called. The identity guard learns the new column and makes it write-once,
+-- which can only fire on a row that already carries a reason; the status
+-- function emits a `reason` key only when one is recorded, so its answer stays
+-- byte-identical for every job without one. Nothing else in either body moves,
+-- no ceiling moves, and a deployment that never calls the new function behaves
+-- exactly as before. Release order is the one the gVCF ceiling migration set
+-- out: the app must accept the extra key before this is applied.
 alter table private.own_preparation_jobs
  add column frozen_reason text
  check(frozen_reason is null or frozen_reason in ('artifact_budget_exhausted'));
@@ -34,9 +41,28 @@ comment on column private.own_preparation_jobs.frozen_reason is
 -- after the fact is not a record of anything. That clause is a second lock on a
 -- door the frozen-row rule already holds, since this API sets the reason and
 -- freezes in one call; it matters only if some later path records a reason
--- without freezing. Everything else about the guard,
--- including the frozen-row immutability and the monotonic counters, is the
--- current body unchanged.
+-- without freezing.
+--
+-- Everything else here is the deployed body character for character. That is a
+-- claim you can check rather than trust: this body is
+-- `20260908233337_own_prepared_r2_provider.sql`'s, and
+-- `diff`ing the two functions must show only the two changes named above. The
+-- first draft of this migration was built from the older
+-- `20260908185537_own_prepared_publication.sql` body instead, and `create or
+-- replace` would have reverted three protections that migration added later:
+-- published rows would have become mutable again, a job could have been
+-- published from a state other than `claimed`, and `provider_version` and
+-- `provider_etag` would have left the artifacts row's mutable set.
+--
+-- Two of the three were already defended, and run 35519879598 proved it — the
+-- first run to see that draft, three pushes having produced no run at all while
+-- the PR was unmergeable. `own_prepared_publication.sql`'s "published job
+-- cannot be reopened" went red, and the R2 ACK's own UPDATE began raising this
+-- guard, taking `own_prepared_r2_provider.sql`, `own_prepared_cleanup.sql` and
+-- `own_prepared_original_retirement.sql` down with it. A read-only production
+-- preflight found it first and named all three, by diffing `pg_get_functiondef`
+-- against this file. The third — publishing from a state other than `claimed` —
+-- nothing covered, and the case below is what now covers it.
 create or replace function private.guard_own_preparation_identity_v1() returns trigger
 language plpgsql security definer set search_path=pg_catalog,private as $$
 begin
@@ -45,13 +71,14 @@ begin
     'reserved_bytes','artifact_count','frozen_at','write_fence_at','frozen_reason']) is distinct from
    (to_jsonb(old)-array['state','attempt_id','claim_token_hash','claim_expires_at','attempts',
     'reserved_bytes','artifact_count','frozen_at','write_fence_at','frozen_reason'])
-   or (old.state='frozen' and to_jsonb(new) is distinct from to_jsonb(old))
+   or (old.state in('frozen','published') and to_jsonb(new) is distinct from to_jsonb(old))
+   or (new.state='published' and old.state<>'claimed')
    or new.attempts<old.attempts or new.reserved_bytes<old.reserved_bytes or new.artifact_count<old.artifact_count
    or (old.frozen_reason is not null and new.frozen_reason is distinct from old.frozen_reason) then
    raise exception using errcode='22023',message='preparation_identity_immutable'; end if;
  else
-  if (to_jsonb(new)-array['state','storage_object_id','observed_sha256','acknowledged_at']) is distinct from
-    (to_jsonb(old)-array['state','storage_object_id','observed_sha256','acknowledged_at'])
+  if (to_jsonb(new)-array['state','storage_object_id','observed_sha256','acknowledged_at','provider_version','provider_etag']) is distinct from
+    (to_jsonb(old)-array['state','storage_object_id','observed_sha256','acknowledged_at','provider_version','provider_etag'])
    or (old.state='acknowledged' and to_jsonb(new) is distinct from to_jsonb(old)) then
    raise exception using errcode='22023',message='preparation_identity_immutable'; end if;
  end if;
@@ -139,6 +166,7 @@ begin
   or f.single_logical_sample_verified_at is null or not exists(select 1 from public.subjects where id=f.subject_id
    and subject_class='self' and owner_account_id=p_account_id and subject_account_id=p_account_id and lifecycle='active') then
   raise exception using errcode='42501',message='not_found'; end if;
+ -- Preliminary lookup only chooses the appropriate current authority resolver.
  select * into j from private.own_preparation_jobs where file_id=f.id;
  if j.state='published' then
   perform private.read_own_prepared_manifest_v1(p_account_id,p_session_id,p_file_id,null);
@@ -155,6 +183,9 @@ begin
   if j.account_id is distinct from p_account_id or j.subject_id is distinct from f.subject_id or j.source is distinct from c->'source' then
    raise exception using errcode='42501',message='not_found'; end if;
   state:=case when j.state='frozen' or j.job_deadline<=clock_timestamp() then 'failed' else 'preparing' end;
+  -- Status is metadata, not a second worker claim. Do not acquire an old
+  -- session lock after current source locks; the worker independently rechecks
+  -- all originating authority before any bytes or renewal.
   if state='preparing' and not exists(select 1 from auth.sessions where id=j.session_id and user_id=j.account_id
    and (not_after is null or not_after>clock_timestamp())) then state:='failed'; end if;
  end if;

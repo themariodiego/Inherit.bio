@@ -70,6 +70,29 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 set local role service_role;
 insert into pub_receipts values('job',public.enqueue_own_preparation_v1('89210000-0000-4000-8000-000000000001',
  '89210000-0000-4000-8000-000000000010',pg_temp.file_id()));
+
+-- The guard's publish-from-claimed rule, defended here because nothing else
+-- defends it. This migration replaces the identity guard, so every rule in that
+-- body is this file's to keep standing. Two of them already have cases: run
+-- 35519879598 put a draft built from an older body through CI and
+-- `own_prepared_publication.sql`'s "published job cannot be reopened" went red,
+-- while the R2 ACK's own UPDATE started raising the guard across three more
+-- files. Nothing failed for the third rule,
+-- `(new.state='published' and old.state<>'claimed')`, which that draft deleted
+-- outright: the one red assertion and the three aborted files are all accounted
+-- for by the other two changes. Its only writers are inside
+-- `publish_own_prepared_manifest_v1`, which publishes a job it has claimed, so
+-- the refusal the clause exists for was never reached. A queued job is the only
+-- fixture that isolates it: on a frozen or published row the immutable-row rule
+-- raises the same error first, so such a case would pass with this clause gone
+-- and prove nothing. throws_ok rolls its subtransaction back, so the job is
+-- still queued for the claim below.
+reset role;
+select throws_ok($$update private.own_preparation_jobs set state='published'
+ where id=(select (value->>'jobId')::uuid from pub_receipts where label='job')$$,
+ '22023','preparation_identity_immutable','a queued job cannot be published without first being claimed');
+set local role service_role;
+
 insert into pub_receipts values('claim',public.claim_next_own_preparation_v1(repeat('e',64)));
 
 -- Direct reads of private.* need the privileged role: the schema is not granted
