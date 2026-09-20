@@ -114,3 +114,53 @@ revoke all on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text
  from public,anon,authenticated,inherit_upload_only,service_role;
 grant execute on function private.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint),
  public.fail_own_preparation_claim_v1(uuid,uuid,text,text,bigint) to service_role;
+
+-- The surface learns this asynchronously, so the reason has to travel with the
+-- status. Unlike the month's admission cap, which the database raises at
+-- admission and the route answers 429 in the same request, a spent budget
+-- happens later inside the container: /process already succeeded and the
+-- browser finds out by polling. The status reports `failed` for a frozen job
+-- already; this adds why, when there is a why.
+--
+-- The key is emitted ONLY when a reason exists, so the answer is byte-identical
+-- to today's for every job that has none. Release order is still the one the
+-- gVCF ceiling migration set out: the app must accept the extra key before this
+-- is applied, because its schema is strict. Everything else in the body is the
+-- current one unchanged.
+create or replace function private.own_preparation_status_v1(p_account_id uuid,p_session_id uuid,p_file_id uuid)
+returns jsonb language plpgsql security definer set search_path=pg_catalog,private as $$
+declare f public.genome_files%rowtype; j private.own_preparation_jobs%rowtype; c jsonb;
+ state text; deadline timestamptz;
+begin
+ if not exists(select 1 from private.own_preparation_config where singleton and enabled for share) then
+  raise exception using errcode='55000',message='preparation_disabled'; end if;
+ select * into f from public.genome_files where id=p_file_id and user_id=p_account_id;
+ if f.id is null or f.subject_id is null or f.tier<>1 or f.file_type::text not in('vcf','gvcf')
+  or f.single_logical_sample_verified_at is null or not exists(select 1 from public.subjects where id=f.subject_id
+   and subject_class='self' and owner_account_id=p_account_id and subject_account_id=p_account_id and lifecycle='active') then
+  raise exception using errcode='42501',message='not_found'; end if;
+ select * into j from private.own_preparation_jobs where file_id=f.id;
+ if j.state='published' then
+  perform private.read_own_prepared_manifest_v1(p_account_id,p_session_id,p_file_id,null);
+  return jsonb_build_object('version','own-preparation-status-v1','fileId',p_file_id,'jobId',j.id,'status','prepared');
+ end if;
+ if j.id is null and f.normalization_completed_at is not null then
+  perform private.own_upload_store_authority_v1(p_account_id,p_session_id,f.subject_id);
+  return jsonb_build_object('version','own-preparation-status-v1','fileId',p_file_id,'jobId',null,'status','not_applicable');
+ end if;
+ c:=private.own_preparation_source_v1(p_account_id,p_session_id,p_file_id);
+ select * into j from private.own_preparation_jobs where file_id=p_file_id for share;
+ if j.id is null then state:='not_requested';
+ else
+  if j.account_id is distinct from p_account_id or j.subject_id is distinct from f.subject_id or j.source is distinct from c->'source' then
+   raise exception using errcode='42501',message='not_found'; end if;
+  state:=case when j.state='frozen' or j.job_deadline<=clock_timestamp() then 'failed' else 'preparing' end;
+  if state='preparing' and not exists(select 1 from auth.sessions where id=j.session_id and user_id=j.account_id
+   and (not_after is null or not_after>clock_timestamp())) then state:='failed'; end if;
+ end if;
+ deadline:=(c->>'authorityDeadline')::timestamptz;
+ if deadline is not null and deadline<=clock_timestamp() then raise exception using errcode='42501',message='not_found'; end if;
+ return jsonb_build_object('version','own-preparation-status-v1','fileId',p_file_id,'jobId',j.id,'status',state)
+  || case when j.frozen_reason is null then '{}'::jsonb
+     else jsonb_build_object('reason',j.frozen_reason) end;
+end; $$;

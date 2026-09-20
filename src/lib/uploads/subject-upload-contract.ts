@@ -69,6 +69,11 @@ export const subjectReportGenerationFailure = z.object({
  * no job exists for it. Answered with HTTP 429 only. The cap itself is a
  * private database value; no number ever crosses this body. */
 export const subjectPreparationCapacityRefusal = z.object({ error: z.literal("preparation_capacity_reached") }).strict();
+/** A preparation that stopped because the file needs more prepared bytes than
+ * a job may hold. Terminal, like the cap and unlike an uncertain outcome:
+ * the budget is a property of the file's size against the configuration, so
+ * the same file would stop at the same point. */
+export const subjectPreparationTooLargeRefusal = z.object({ error: z.literal("preparation_file_too_large") }).strict();
 
 /** Parser identities stay internal; neither filenames nor vendor labels select authority. */
 export function declaredSubjectFormat(kind: FileKind, compressed: boolean): SubjectUploadFormat | null {

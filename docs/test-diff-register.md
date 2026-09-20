@@ -1,5 +1,35 @@
 # Test diff register
 
+## A file too large to prepare says so, and offers no retry (31a) · 20 September 2026
+
+The surface half. `src/components/uploads/preparation-recovery.test.ts` gains a
+case holding that the new code states the file is larger than Inherit can
+prepare, keeps it listed with its link, renders **no button at all**, and shows
+no digit anywhere in its visible words. The no-number assertion is the same one
+the month's cap carries, for a different reason: the limit that bit is a budget
+on prepared bytes rather than a ceiling on the file, and the file passed every
+ceiling it was measured against, so quoting a size would send someone to shrink
+against a number that was never the problem.
+
+`src/lib/uploads/own-preparation.test.ts` gains two: a `failed` status carrying
+`reason: "artifact_budget_exhausted"` answers **413** with its own closed body,
+and a `failed` status without a reason stays an opaque **503** whose body never
+mentions size. That pair is the point — 503 invites a retry that would stop at
+the same place, and a frozen job the database cannot explain must not be
+blamed on the file.
+
+`docs/route-register.json` gains `preparation-too-large-v1` bound to
+`api.file-process`, because the route gate requires every answer shape to be
+registered; its `limitDisclosure` records that no budget, ceiling or byte count
+crosses the body, and its `effects` that the response reports a job the
+database already ended and changes nothing.
+
+The reason reaches the browser through `own_preparation_status_v1`, which
+emits the key **only when a reason exists**, so the answer is byte-identical to
+today's for every job without one. Release order is the one the gVCF ceiling
+migration set out: the app accepts the extra key before the migration is
+applied.
+
 ## The worker ends a claim whose reservation was refused (31a) · 20 September 2026
 
 `src/lib/uploads/own-preparation-worker.test.ts` gains three cases: a pipeline
