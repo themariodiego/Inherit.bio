@@ -7,7 +7,7 @@ import { z } from "zod";
 import register from "../../../docs/route-register.json";
 import { createAdminClient } from "../supabase/admin";
 import { preparedStorageConfig } from "../genome/prepared-source/storage-common";
-import { createPreparedArtifactWriter } from "../genome/prepared-source/storage-writer";
+import { createPreparedArtifactWriter, PreparedStorageWriteError } from "../genome/prepared-source/storage-writer";
 import { createPreparedArtifactFetch } from "../genome/prepared-source/storage-artifact-fetch";
 import { preparedStoredArtifactSchema } from "../genome/prepared-source/artifact-identity";
 import { runOwnPreparationPipeline, type OwnPreparationCheckpoint } from "./own-preparation-pipeline";
@@ -132,6 +132,16 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
       fail("integrity_mismatch");
     const chain = await wait(readFile(path.join(process.cwd(), "data/ref/chain/GRCh37_to_GRCh38.chain.gz")));
     const writeArtifact = createPreparedArtifactWriter({ jobId: claim.jobId, attemptId: claim.attemptId, claimTokenHash });
+    // A refused reservation that names its byte count is the one failure this
+    // worker can end deliberately. Measured on 20 September 2026: a job that
+    // spends its artifact budget is never retried, because a fresh claim must
+    // start at checkpoint revision 0 and cannot adopt the written work, and the
+    // freeze scan waits for the deadline or a third attempt — so the row sat
+    // `claimed` for the rest of its hour. The reason is PROPOSED, never
+    // asserted: fail_own_preparation_claim_v1 re-runs the job's own budget
+    // comparison and refuses one its rows do not establish, so a wrong guess
+    // here cannot reach the person as a sentence about their file. A refusal
+    // leaves the ordinary path exactly as it was.
     const result = await runOwnPreparationPipeline({ jobId: claim.jobId, attemptId: claim.attemptId,
       firstArtifactSequence: 0, signal, liftover: { chainBytes: chain, sha256: createHash("sha256").update(chain).digest("hex") },
       maximumUnmappedFraction: register.policyContracts["genome-liftover-v1"].maximumUnmappedFraction,
@@ -155,6 +165,14 @@ export async function runNextOwnPreparation(options: { signal?: AbortSignal; exp
           || !equal(saved.checkpoint, next)) fail("integrity_mismatch");
         checkpoint = saved; return next;
       },
+    }).catch(async (error: unknown) => {
+      if (error instanceof PreparedStorageWriteError && error.byteCount !== undefined) {
+        try {
+          await rpc("fail_own_preparation_claim_v1", { ...args, p_reason: "artifact_budget_exhausted",
+            p_byte_count: error.byteCount });
+        } catch { /* Not established, or the claim has lapsed. Either way the ordinary path stands. */ }
+      }
+      throw error;
     });
     // Settle renewal before terminal publication; no background renewal may
     // interpret the legitimate published transition as a failed live claim.
