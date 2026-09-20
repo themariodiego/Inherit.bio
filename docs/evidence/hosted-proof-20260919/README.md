@@ -31,6 +31,9 @@ the ordered account. Times are UTC.
   the prepared result on the page, chosen reports, and withdrawal.
 - **All three formats**: a 547-byte VCF, a 4 MiB VCF.gz, a 4 MiB gVCF (stored
   as `file_type` `gvcf`), and a 64 MiB VCF.
+- **A 2 GiB VCF is stored and admitted**: uploaded in one POST, finalized
+  through the product's own retries, and accepted for preparation. Its
+  preparation is the open measurement (below).
 - **Withdrawal removes the original and its records**: delete answered 204,
   the Storage listing for the original is empty, its download answers "Object
   not found", and the `genome_files` row is gone (`journeys/gvcf-4mib.json`).
@@ -71,6 +74,27 @@ the ordered account. Times are UTC.
    whether file preparation finished". Fixed in `a2624b1`: the wake awaits
    the container's exit and re-arms a twenty-second alarm while it runs.
 
+## Three more things the ceilings turned up, none of them fixed here
+
+These are reported rather than changed: each one is a decision about what the
+product should promise, not a bug with an obvious patch.
+
+1. **The gVCF ceiling is never disclosed.** `uploadCeilingBytes` reads
+   `maximumGvcfBytes` for a gVCF, but the sentence on the upload page is built
+   from the array and VCF numbers alone, so with the owner's ceilings set the
+   page says "VCF or gVCF files up to 2147 MB" while the product would accept
+   a gVCF four times that. The copy and the enforcement disagree from the
+   moment the two ceilings differ.
+2. **A ceiling can be set above what the upload path can carry, silently.**
+   Issuance granted a lease for 8.59 GB; the transport refuses anything past
+   about 5 GB. Nothing in the app compares the two.
+3. **A 2 GiB finalization always fails first and recovers second.** The
+   30-second cap on each storage operation is shorter than one 2 GiB copy
+   (37.985 s measured), so the first attempt cannot finish and the person
+   meets a failure message before the automatic retries get there. The file
+   does arrive, but the first thing a person is told about a large upload is
+   that it did not work.
+
 ## What ran, in order
 
 1. 19 September 01:38 · Session start; the three owner-set variables present.
@@ -104,53 +128,78 @@ the ordered account. Times are UTC.
     58,148,752 bytes in R2, 279 seconds of container work.
 14. 12:11 · The monthly cap refusal, with the limit restored afterwards.
 
-## The 2 GiB ceiling: what the first attempt shows, and what it does not
+## The 2 GiB VCF ceiling: it finalizes, and it takes patience
 
-Twice, with a fixture 527 bytes under the ceiling: the lease was issued
-(201), the browser hashed 2 GiB in 12 seconds, and Supabase Storage accepted
-a single 2 GiB POST in 59 and 63 seconds (about 33 MB/s), which also shows
-the owner's 9 GB global limit is in force. The first finalization attempt
-then answered 503 `unavailable`, after 31 and 78 seconds.
+Three runs, with a fixture 527 bytes under the ceiling. Every one of them:
+the lease was issued (201), and Supabase Storage accepted a single 2 GiB POST
+in 59, 63 and 65 seconds (about 33 MB/s).
 
-The branch's own edge log names what ran out of time, and it is not the
-route's 300-second limit. Each storage operation in the finalization path
-carries a fresh 30-second signal. On the second attempt the route read all
-537 ranges of the object and validated it in 47 seconds, wrote its
-checkpoint, and issued the server-side copy: Supabase finished that copy in
-37.985 seconds with a 200, but the route had already abandoned it at 30
-seconds. `ceiling-finalization-logs.json` carries both attempts line by line.
+The first finalization attempt is refused, every time, with 503
+`unavailable` and `Retry-After: 60`. The branch's edge log names what ran out
+of time and it is not the route's 300-second limit: each storage operation in
+that path carries a fresh 30-second signal, and one uncached 2 GiB
+server-side copy takes 37.985 seconds. No single attempt can both validate
+and copy 2 GiB, so the design carries the work across attempts instead — the
+validated checkpoint is kept, the staged bytes are kept, and a copy that a
+killed attempt left finished is picked up by `storage.info` on the next one.
 
-**An earlier version of this file called that the wall, and it was wrong on
-two counts.** The driver stopped at the first refusal; the product does not.
-An interrupted finalization keeps the staged bytes and the validated
-checkpoint on purpose, answers with a marked, resumable 503, and the page
-retries it by itself after 2, 20 and 70 seconds before offering a button
-whose own words are "Your file already reached private storage. Finishing it
-does not send the file again." So the person is not asked to send 2 GiB
-again, and whether the attempts that follow carry the file through is a
-measurement that had not been made. It is being made now, with the driver
-following the retries.
+**Followed through, it works.** The third run let the product do what it
+does: three automatic attempts (2, 20 and 70 seconds), then the button. The
+file finalized with a 200 at 340.6 seconds, 2,147,483,121 bytes stored as
+`vcf`, and `/process` admitted it (202, job `d3431bef…`). The bytes were sent
+once. Attempts made while the previous one still held its 60-second lease
+answer 404 by design, which is what stops two requests driving one
+finalization.
+
+**An earlier version of this file called that first refusal the wall, and
+said the person would have to send 2 GiB again. Both were wrong**, and both
+are withdrawn: the first was measured only as far as the driver looked, and
+the second is contradicted by the page's own words — "Your file already
+reached private storage. Finishing it does not send the file again."
+`ceiling-finalization-logs.json` carries the attempts line by line.
 
 An earlier fixture that overshot the ceiling by 140 bytes was refused in the
-browser before issuance, naming the limit, so the ceiling is enforced
-against the disclosed number.
+browser before issuance, naming the limit, so the ceiling is enforced against
+the disclosed number.
+
+## The 8 GiB gVCF ceiling cannot be met by this product
+
+Issuance admits it: the lease came back 201 for 8,589,933,057 bytes declared
+gVCF. The bytes then never arrive. Twice, the single POST was cut with
+`ERR_CONNECTION_CLOSED` after 328 and 320 seconds, with no HTTP response in
+the browser and no entry at all in the branch's edge log.
+
+The reason is the transport. The uploader sends a file as ONE
+`XMLHttpRequest` POST — Supabase's standard upload, which Supabase documents
+as carrying at most 5 GB; resumable (TUS) and S3 multipart carry up to 50 GB
+and the product implements neither. Sending the same file directly, with no
+browser, is answered **413 Payload Too Large after about a megabyte**, and
+the body is Cloudflare's: the refusal is made at the edge, on the declared
+length. Probing the boundary: 5,242,880,000 bytes is accepted and begins
+transferring; 5,368,708,096 and above are refused at once. That is the
+documented 5 GB limit.
+
+The owner's 9 GB global file size limit does not change this — it governs
+what Storage will keep, not what one request may carry.
+
+Two things follow. A gVCF ceiling above about 5 GB needs a resumable or
+multipart upload path before it means anything. And until then, nothing tells
+the person why: the browser never surfaces the 413, so a person who picks an
+8 GiB file watches "Uploading to private storage… 25%" for five and a half
+minutes and is then given the generic "could not finish" wording, with no
+mention of a size.
 
 ## What is not proved
 
-- **The ceilings are unproved, and the doubt about them is a projection.**
-  Nothing above 64 MiB has been prepared on this stack. Multiplying the one
-  measured rate out, a 2 GiB VCF would need about two and a half hours and an
-  8 GiB gVCF about ten, against a schema that caps any job at one hour
-  (`own_preparation_jobs_worker_deadline_bound`, with `max_job_seconds`
-  checked at most 3600). That is arithmetic from a single file, not an
-  observed refusal: it is the reason to measure at those sizes, not a
-  substitute for doing so. `measurements.json` carries the numbers and says
-  the same.
-- **Preparation at either ceiling.** The 2 GiB file has not reached
-  preparation yet: its first finalization attempt is refused and the retries
-  that the product makes on its own had not been followed (above). The 8 GiB
-  gVCF trial is running as this line is written; its lease was issued (201 for
-  8,589,933,057 bytes declared gVCF), which is the first thing it settles.
+- **Preparation at 2 GiB.** The file is stored and its job is admitted and
+  running as this line is written (`d3431bef…`, deadline one hour after
+  admission). Until that job ends, "a 2 GiB file needs about two and a half
+  hours against a one-hour bound" stays what it has been all along: the 64 MiB
+  rate multiplied out, not an observed refusal. The job itself is the
+  measurement, and `measurements.json` will carry what it did.
+- **Preparation at 8 GiB, which cannot be reached at all.** The file never
+  gets past the upload (above), so nothing about the container at that size
+  can be measured here.
 - How container memory grows with source size. The 64 MiB run's 617.4 MiB is
   one point: it cannot be split into fixed overhead and growth per byte
   without a second measurement, so it must not be scaled up to the ceilings.

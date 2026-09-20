@@ -173,41 +173,97 @@
     "vcf2GiB": {
       "fixtureBytes": 2147483121,
       "underTheCeilingBy": 527,
-      "attempts": 2,
-      "leaseIssued": "201 both times: the 2 GiB ceiling admits the file and the disclosed limit matches it",
-      "browserHashSeconds": 12.0,
+      "runs": "Three. The first two were stopped by the driver at the first finalization refusal, which is not where the product stops; the third followed the product's own retries through.",
+      "leaseIssued": "201 all three times: the 2 GiB ceiling admits the file and the disclosed limit matches it.",
+      "browserHashSeconds": [
+        12.0,
+        0.2,
+        7.8
+      ],
       "storagePost": {
         "status": 200,
         "seconds": [
           59.2,
-          62.8
+          62.8,
+          65.1
         ],
         "megabytesPerSecond": [
           34.6,
-          32.6
+          32.6,
+          31.5
         ],
-        "note": "Supabase Storage accepted a single 2 GiB POST twice, so the owner's 9 GB global limit is in force on the branch and the standard upload path carries 2 GiB."
+        "note": "Supabase Storage accepted a single 2 GiB POST three times, so the product's standard-upload transport carries 2 GiB comfortably."
       },
       "finalization": {
-        "firstAttemptStatus": 503,
-        "firstAttemptBody": {
-          "error": "unavailable"
-        },
-        "secondsToFirstRefusal": [
-          31.4,
-          78.1
+        "settled": "IT FINALIZES. 200 at 340.6 seconds after the first attempt began, fileId cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7, 2,147,483,121 bytes, file_type vcf.",
+        "attempts": [
+          {
+            "seconds": 33.1,
+            "status": 503,
+            "retryAfter": "60",
+            "body": {
+              "error": "unavailable"
+            }
+          },
+          {
+            "seconds": 206.3,
+            "status": 503,
+            "retryAfter": "60",
+            "body": {
+              "error": "unavailable"
+            }
+          },
+          {
+            "seconds": 340.6,
+            "status": 200,
+            "retryAfter": null,
+            "body": "finalized_ready_for_processing"
+          }
         ],
-        "routeMaxDurationSeconds": 300,
-        "whatActuallyRanOutOfTime": "Not the route's 300-second limit. Every storage operation in the fenced finalization path carries a fresh 30-second signal (AbortSignal.timeout(30_000) in subject-finalization.ts). The branch's edge log shows the second attempt validated all 537 ranges of the 2 GiB object in 47.1 s, wrote its checkpoint, and then issued the server-side copy: Supabase completed that copy in 37,985 ms with a 200, but the route had abandoned it at 30 s and answered 503. See ceiling-finalization-logs.json.",
-        "retryAfterHeader": "NOT MEASURED. The journey receipts captured status and body only. The route's fenced path sets Retry-After: 60 on this failure, and the uploader treats that pair as resumable.",
-        "whatTheProductDoesNext": "Keeps the staged bytes and the validated checkpoint (no cleanup runs on an interrupted fenced attempt), then retries by itself 2 s, 20 s and 70 s later, then offers a button that says the file already reached private storage and finishing it does not send it again."
+        "attemptsRefusedInsideTheLease": "Seven more attempts answered 404 while the previous attempt still held its 60-second finalization lease. That is the deliberate refusal that stops two requests driving one finalization; the uploader keeps the handle and tries again.",
+        "retryAfterHeader": "60, observed on both 503s. The earlier claim that the response carried no Retry-After was never measured and is withdrawn.",
+        "whatRanOutOfTime": "Every storage operation in the fenced path carries a fresh 30-second signal (AbortSignal.timeout(30_000) in subject-finalization.ts), and the branch's edge log shows one uncached 2 GiB server-side copy taking 37,985 ms. So no single attempt can both validate and copy 2 GiB; the design's checkpoint carries the work across attempts instead, and the copy that a killed attempt left finished is picked up by storage.info on the next one.",
+        "howManyAttemptsItTook": "Three that reached the route, over 5 minutes 41 seconds, with the page's three automatic attempts (2 s, 20 s, 70 s) and then the button. The driver pressed the button six times at 12-second intervals; most of those were the in-lease 404s above, so the attempt count is what the product would have done on its own plus impatience, not a requirement.",
+        "whatAPersonSees": "The refusal wording, then 'Your file already reached private storage. Finishing it does not send the file again.', then the file is stored. The bytes are sent once."
       },
-      "outcome": "UNSETTLED, AND THE EARLIER READING WAS WRONG. Both runs were stopped by the driver at the FIRST refusal, which is not where the product stops: it retries an interrupted finalization three times on its own and resumes from the checkpoint rather than re-uploading. So these two attempts establish that one uncached 2 GiB copy cannot fit the route's 30-second per-operation cap; they do not establish that a 2 GiB file cannot be finalized. A re-run that follows the retries is the measurement that would settle it.",
-      "firstAttemptRefusedOversizeFixture": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.' The ceiling is enforced in the browser against the disclosed number.",
-      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both claims are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract and the page's own words."
+      "preparation": {
+        "admitted": "202 preparing, job d3431bef-96fd-4dbe-9b21-b0d23630aade, created 13:23:38.7, job_deadline 14:23:38.7 (the schema's one-hour bound).",
+        "status": "running as this file is written; the measurement below is the one that settles whether a 2 GiB file can be prepared inside that bound."
+      },
+      "oversizeFixtureRefusedInTheBrowser": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.'",
+      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both are wrong and are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract, the page's own words, and this run."
     },
     "gvcf8GiB": {
-      "status": "not attempted yet at the time of writing"
+      "fixtureBytes": 8589933057,
+      "underTheCeilingBy": 1535,
+      "leaseIssued": "201, twice: issuance admits 8,589,933,057 bytes declared gVCF, so the branch's 8 GiB gVCF ceiling is real and nothing in the app warns that the transport cannot carry it.",
+      "browserHashSeconds": 45.9,
+      "storagePost": {
+        "outcome": "NEVER COMPLETED. Twice: net::ERR_CONNECTION_CLOSED after 328.2 s and 320.1 s, with no HTTP response reaching the browser and no entry at all in the branch's edge log.",
+        "whatThePageShowed": "'Uploading to private storage\u2026 25%' from 20 seconds in, unchanged until the failure: the browser's own progress events stop, so the person watches a stalled percentage for five and a half minutes and is then told the upload could not finish."
+      },
+      "whyItCannotWork": {
+        "theTransport": "src/lib/uploads/subject-upload-browser.ts sends the file as ONE XMLHttpRequest POST to /storage/v1/object/genomes/<key>. That is Supabase's standard upload, which Supabase documents as carrying at most 5 GB; resumable (TUS) and S3 multipart carry up to 50 GB. The product implements neither.",
+        "measuredDirectly": "A single streamed POST of the same 8,589,933,057-byte file, with the service-role key and no browser, is answered 413 Payload Too Large after about 1 MB. The body is Cloudflare's, so the refusal is made at the edge in front of Storage, on the declared Content-Length.",
+        "whereTheRefusalStarts": {
+          "accepted": [
+            5000000000,
+            5000000001,
+            5242880000
+          ],
+          "refused413": [
+            5368708096,
+            5368709119,
+            5368709120,
+            5368709121,
+            6000000000
+          ],
+          "reading": "The boundary lies between 5,242,880,000 bytes (accepted, transfer began) and 5,368,708,096 bytes (refused immediately), which is Supabase's documented 5 GB standard-upload limit. The accepted probes were aborted on purpose after a few seconds and left no object."
+        },
+        "theGlobalLimitIsNotTheCeiling": "The owner's 9 GB global file size limit governs what Storage will keep, not what one POST may carry. Raising it does not raise the standard upload's 5 GB."
+      },
+      "outcome": "THE 8 GiB gVCF CEILING CANNOT BE MET BY THE PRODUCT AS BUILT. Not a throughput projection and not a container limit: the file cannot reach Storage at all through the one transport the uploader has. A gVCF ceiling above about 5 GB needs resumable or S3 multipart uploads first.",
+      "alsoWorthFixing": "Nothing tells the person why. The browser never surfaces the 413 (it keeps sending until the connection is reset), so a person who picks an 8 GiB file waits five and a half minutes and is then given the generic 'could not finish' wording, with no mention of a size."
     }
   }
 }

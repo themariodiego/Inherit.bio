@@ -174,6 +174,27 @@ as binding as the "Done" list.
   was issued 201 for 8,589,933,057 bytes declared gVCF (1,535 bytes under the
   ceiling), after the browser hashed it in 45.9 s. Its single Storage POST is
   in flight as this line is written.
+- 13:23 · **THE 2 GiB VCF IS STORED.** Followed through instead of stopped at
+  the first refusal, the product does what it was designed to do: the first
+  finalization attempt answers 503 `unavailable` with `Retry-After: 60` after
+  33 s, attempts made inside its 60-second lease answer 404 by design, and the
+  attempt at 340.6 s answers 200. `genome_files` holds 2,147,483,121 bytes as
+  `vcf` (`cb8274dd…`), the bytes were sent once, and `/process` admitted it
+  (202, job `d3431bef…`, deadline 14:23:38). The wall named at 12:59 was the
+  driver's, not the product's. Numbers in `measurements.json`.
+- 13:26 · **The 8 GiB gVCF cannot reach Storage at all.** Issuance admits it
+  (201 for 8,589,933,057 bytes), but the single POST the uploader makes was
+  cut twice with `ERR_CONNECTION_CLOSED` after 328 s and 320 s, with no HTTP
+  response and nothing in the branch's edge log. Sent directly, with no
+  browser, the same file is answered **413 Payload Too Large after about a
+  megabyte, by Cloudflare**, on the declared length. Probing the boundary:
+  5,242,880,000 bytes is accepted and begins transferring; 5,368,708,096 and
+  above are refused at once, which is Supabase's documented 5 GB limit for the
+  standard upload the product uses. The owner's 9 GB global limit governs what
+  Storage keeps, not what one request may carry. A gVCF ceiling above about
+  5 GB needs a resumable or multipart upload path first, and until then the
+  person waits five and a half minutes on a stalled percentage for a message
+  that never mentions size.
 
 ## Found on the way (continued)
 
@@ -218,18 +239,20 @@ as binding as the "Done" list.
 
 ## In progress
 
-- The 8 GiB gVCF ceiling trial, the last part of step 5 that has not been
-  attempted: the same driver, stopping as soon as the job is admitted, to
-  see whether issuance admits 8 GiB, whether Storage takes a single 8 GiB
-  POST under the 9 GB global limit, and how finalization answers.
+- **Preparing the 2 GiB VCF.** Job `d3431bef…` was claimed at 13:26:50 and is
+  writing artifacts; its deadline is 14:23:38, one hour after admission. At
+  13:32 it had written 346 artifacts and 66,957,828 bytes in 310 seconds,
+  which is 216 KB of artifact per second — the same rate the 64 MiB file ran
+  at. Whether it finishes inside the bound is the thing being measured; the
+  answer will be recorded here either way.
 
 ## Not yet proved
 
-- **Preparation at either ceiling.** The 2 GiB VCF never reaches preparation
-  (finalization answers 503, above) and the 8 GiB gVCF trial is running as
-  this line is written. Nothing above 64 MiB has been prepared on this stack,
-  so the "two and a half hours / ten hours" figures above stay a projection
-  from one file.
+- **Preparation at 2 GiB.** Running (above). Until that job ends, "about two
+  and a half hours against a one-hour bound" is still the 64 MiB rate
+  multiplied out, not an observed refusal.
+- **Preparation at 8 GiB**, which cannot be reached on this stack at all: the
+  file is refused by the transport long before any container sees it.
 - **How container memory grows with source size.** One run, one size: 617.4
   MiB of maximum sampled memory at 64 MiB of source cannot be split into
   fixed overhead and growth per byte, so it must not be scaled to the
