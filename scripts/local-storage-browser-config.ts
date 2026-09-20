@@ -3,7 +3,7 @@ import { localE2eProject } from "./local-e2e-project";
 
 export const LOCAL_STORAGE_ORIGIN = localE2eProject(process.env).apiOrigin;
 export const LOCAL_BROWSER_ORIGINS = [LOCAL_STORAGE_ORIGIN,
-  "http://localhost:3100", "http://localhost:3101", "http://localhost:3102"] as const;
+  "http://localhost:3100", "http://localhost:3101", "http://localhost:3102", "http://localhost:3103"] as const;
 
 /** These are test-runner boundaries, never application authorization switches. */
 export function assertLocalProviderEnvironment(env: Readonly<Record<string, string | undefined>>, fullSuite: boolean, selectors: string[],

@@ -1,5 +1,27 @@
 # Test diff register
 
+## Fourth app origin reaches the browser proxy · 20 September 2026
+
+PR #148's run 35420001967 reached `/auth/sign-in` through Chromium's forced
+proxy but rendered `Local test proxy destination refused`, as recorded in
+the `copilot-redteam` error context in its `browser-failure-evidence`
+artifact. The proxy's fixed origin list still stopped at port 3102. Direct
+server readiness did not pass through that list.
+
+`scripts/ci-browser-playwright-config.test.ts` now passes every configured
+server's sign-in URL and every project's effective origin through the real
+`localBrowserTarget` guard. This regression failed with the same refusal
+before adding the fourth app origin. `local-storage-browser-config.test.ts`
+now accepts the configured 3103 origin, refuses the unconfigured 3104 port,
+and adds alternate-host, HTTPS and credential refusals for 3103. The prior
+credential fixture and its source-line binding stay intact. The timeout
+test also covers 3103's same-origin normalization POST and the ordinary
+sign-in GET budget for all four apps.
+
+All 48 browser red-team tests and all 44 adversarial prompts remain. G4.8
+stays NO pending green browser evidence. No browser assertion, retry rule,
+consent check or production configuration changes.
+
 ## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
 
 `scripts/claims-gate.test.ts`: the designated-surface count the gate is held

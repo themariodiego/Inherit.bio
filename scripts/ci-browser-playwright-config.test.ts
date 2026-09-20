@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { localBrowserTarget } from "./local-storage-browser-config";
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 describe("standard Playwright server readiness", () => {
   async function config(ci: boolean) {
@@ -21,6 +22,9 @@ describe("standard Playwright server readiness", () => {
       expect(server?.port).toBeUndefined();
       expect(server?.reuseExistingServer).toBe(false);
       expect(server?.command).toContain(`server.mts host ${3100 + index}`);
+      // Readiness probes bypass Chromium's proxy; the browser must also be
+      // allowed to reach every app that the launcher reports ready.
+      expect(localBrowserTarget(server!.url!).href).toBe(server?.url);
     }
     expect(value.workers).toBe(1); expect(value.retries).toBe(0);
     expect(value.projects).toHaveLength(3); expect(value.use?.trace).toBe("off");
@@ -33,6 +37,11 @@ describe("standard Playwright server readiness", () => {
     expect(local?.use?.baseURL).toBe("http://localhost:3103");
     expect(String(local?.testMatch)).toContain("copilot-redteam");
     expect(String(value.projects?.[0]?.testIgnore)).toContain("copilot-redteam");
+    for (const project of value.projects ?? []) {
+      const origin = project.use?.baseURL ?? value.use?.baseURL;
+      const signIn = new URL("/auth/sign-in", origin).href;
+      expect(localBrowserTarget(signIn).href).toBe(signIn);
+    }
   });
   it("preserves local production-build and port readiness behavior", async () => {
     const value = await config(false);

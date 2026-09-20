@@ -21,6 +21,14 @@ pnpm e2e
 stack's credentials, a test `BYOK_ENCRYPTION_KEY`, and `RESEND_BASE_URL`
 pointed at the in-test mock Resend API.
 
+The browser's forced local proxy admits the four app origins on
+`http://localhost:3100` through `http://localhost:3103`, plus the selected
+local Supabase API. `scripts/ci-browser-playwright-config.test.ts` checks
+every server's sign-in URL and every project's origin through that same
+destination guard: Playwright's direct readiness probe alone cannot prove
+that Chromium can reach an app through the proxy. The guard still refuses
+unlisted ports, alternate hosts, HTTPS and credential-bearing URLs.
+
 ## What each spec proves (acceptance matrix)
 
 | Spec | Item | Proves |
