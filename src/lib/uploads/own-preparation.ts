@@ -3,10 +3,14 @@ import { z } from "zod";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { hasEmptyRequestBody } from "../empty-request-body";
-import { subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectQueuedPreparationReceipt } from "./subject-upload-contract";
+import { subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectQueuedPreparationReceipt } from "./subject-upload-contract";
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const statusSchema = z.object({ version: z.literal("own-preparation-status-v1"), fileId: uuid, jobId: uuid.nullable(),
-  status: z.enum(["not_applicable", "not_requested", "preparing", "prepared", "failed"]) }).strict().refine(value =>
+  status: z.enum(["not_applicable", "not_requested", "preparing", "prepared", "failed"]),
+  /** Present only when the database recorded why a job ended, which it does
+   * only for a reason its own rows establish. Optional so a deployment whose
+   * migration has not been applied still parses. */
+  reason: z.literal("artifact_budget_exhausted").optional() }).strict().refine(value =>
   ["not_applicable", "not_requested"].includes(value.status) ? value.jobId === null : value.jobId !== null);
 const enqueueSchema = z.object({ version: z.literal("own-preparation-job-v1"), jobId: uuid, fileId: uuid,
   state: z.enum(["queued", "claimed"]), jobDeadline: z.iso.datetime({ offset: true }) }).strict();
@@ -31,7 +35,14 @@ export async function prepareOwnWgsFile(request: Request, file: { id: string; fi
     if (!parsed.success || parsed.data.fileId !== file.id) return ownUploadJson({ error: "preparation_unavailable" }, 503);
     const status = parsed.data;
     if (status.status === "not_applicable") return null;
-    if (status.status === "failed") return ownUploadJson({ error: "preparation_unavailable" }, 503);
+    // A spent artifact budget is terminal and says so: 503 invites a retry that
+    // would stop at the same point, so it is answered apart from an outcome
+    // nobody could confirm.
+    if (status.status === "failed") {
+      return status.reason === "artifact_budget_exhausted"
+        ? ownUploadJson(subjectPreparationTooLargeRefusal.parse({ error: "preparation_file_too_large" }), 413)
+        : ownUploadJson({ error: "preparation_unavailable" }, 503);
+    }
     if (status.status === "prepared") return ownUploadJson(subjectNormalizationReceipt.parse({ fileId: file.id,
       status: "normalization_complete", analysisState: "not_generated" }));
     let jobId = status.jobId;

@@ -18,7 +18,16 @@ export { preparedArtifactReceiptSchema } from "./artifact-identity";
 export type { PreparedArtifactReceipt, PreparedStoredArtifact } from "./artifact-identity";
 export type PreparedArtifactDescriptor = z.infer<typeof descriptorSchema>;
 export class PreparedStorageWriteError extends Error {
-  constructor(readonly code: "invalid_request" | "invalid_state" | "integrity_mismatch" | "unavailable" | "aborted") {
+  /**
+   * `byteCount` is set only when the reservation for an artifact of that size
+   * was refused. It is context, never a diagnosis: this layer cannot read why
+   * the refusal happened, because a failed response has its body cancelled
+   * rather than drained, on purpose. The worker passes the number to
+   * `fail_own_preparation_claim_v1`, which re-runs the job's own budget
+   * comparison and refuses a reason its rows do not establish.
+   */
+  constructor(readonly code: "invalid_request" | "invalid_state" | "integrity_mismatch" | "unavailable" | "aborted",
+    readonly byteCount?: number) {
     super(code); this.name = "PreparedStorageWriteError";
   }
 }
@@ -121,9 +130,22 @@ export function createPreparedArtifactWriter(rawClaim: z.infer<typeof claimSchem
     }
     try {
       active(signal);
-      const receipt = receiptSchema.parse(await rpc("reserve_own_preparation_artifact_v1", {
-        ...claimArgs, p_descriptor: descriptor,
-      }));
+      // The reserve is the one call whose refusal the job's own counters can
+      // explain, so carry the bytes it asked for. Nothing here reads the
+      // response body: `request` cancels it, so a stalled error body cannot
+      // hold the write open, and that invariant is what five cases in
+      // storage-writer.test.ts exist to hold.
+      let receipt;
+      try {
+        receipt = receiptSchema.parse(await rpc("reserve_own_preparation_artifact_v1", {
+          ...claimArgs, p_descriptor: descriptor,
+        }));
+      } catch (error) {
+        if (error instanceof PreparedStorageWriteError && error.byteCount === undefined) {
+          throw new PreparedStorageWriteError(error.code, descriptor.byteCount);
+        }
+        throw error;
+      }
       if (receipt.jobId !== claim.jobId || receipt.attemptId !== claim.attemptId
         || receipt.sequence !== descriptor.sequence || receipt.byteCount !== descriptor.byteCount
         || receipt.sha256 !== descriptor.sha256) throw new PreparedStorageWriteError("integrity_mismatch");

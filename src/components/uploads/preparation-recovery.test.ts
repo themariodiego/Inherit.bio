@@ -28,6 +28,20 @@ describe("truthful preparation recovery", () => {
     expect(html.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'")).not.toMatch(/\d/);
     expect(html).not.toMatch(/could not confirm|Retry preparation|Retry selected reports|reports are ready|Review your reports/);
   });
+  it("states a file too large to prepare plainly, keeps it, quotes no size and offers no retry", () => {
+    const html = renderToStaticMarkup(createElement(PreparationRecovery, { ...props, code: "preparation_file_too_large" }));
+    expect(html).toContain("This file is larger than Inherit can prepare.");
+    expect(html).toContain("preparing it again would stop at the same point");
+    expect(html).toContain('href="/files"'); expect(html).toContain("View your file");
+    // Terminal, like the cap: the same file stops at the same point, so no
+    // control is offered that would repeat it.
+    expect(html).not.toContain("<button");
+    // No number is shown. The limit that bit is a budget on prepared bytes, not
+    // a ceiling on this file, and the file passed every ceiling it was measured
+    // against — a size here would send someone to shrink against the wrong one.
+    expect(html.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'")).not.toMatch(/\d/);
+    expect(html).not.toMatch(/could not confirm|Retry preparation|Retry selected reports|reports are ready|Review your reports|next month/);
+  });
   it("retains the build refusal without suggesting retrying an unsupported reference", () => {
     const html = renderToStaticMarkup(createElement(PreparationRecovery, { ...props, code: "build_unknown" }));
     expect(html).toContain("GRCh37 or GRCh38"); expect(html).not.toContain("<button");

@@ -4,11 +4,17 @@ import type { OwnPreparationPipelineOptions } from "./own-preparation-pipeline";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), pipeline: vi.fn(), write: vi.fn(), read: vi.fn(), chain: vi.fn() }));
 vi.mock("../supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("../genome/prepared-source/storage-common", async importOriginal => ({ ...await importOriginal<typeof import("../genome/prepared-source/storage-common")>(), preparedStorageConfig: () => ({ origin: "https://synthetic.example.invalid", key: "synthetic-worker-key" }) }));
-vi.mock("../genome/prepared-source/storage-writer", () => ({ createPreparedArtifactWriter: () => mocks.write }));
+// Spread the real module: the worker imports PreparedStorageWriteError as well
+// as the factory, and a partial mock left the class undefined, so an
+// `instanceof` against it threw a TypeError that surfaced as `unavailable`.
+vi.mock("../genome/prepared-source/storage-writer", async importOriginal => ({
+  ...await importOriginal<typeof import("../genome/prepared-source/storage-writer")>(),
+  createPreparedArtifactWriter: () => mocks.write }));
 vi.mock("../genome/prepared-source/storage-artifact-fetch", () => ({ createPreparedArtifactFetch: () => mocks.read }));
 vi.mock("node:fs/promises", () => ({ readFile: mocks.chain }));
 vi.mock("./own-preparation-pipeline", () => ({ runOwnPreparationPipeline: mocks.pipeline }));
 import { runNextOwnPreparation } from "./own-preparation-worker";
+import { PreparedStorageWriteError } from "../genome/prepared-source/storage-writer";
 function fixture() {
   const now = Date.now(), jobId = randomUUID(), attemptId = randomUUID();
   const source = { fileId: randomUUID(), subjectId: randomUUID(), sourceRevision: 1,
@@ -43,6 +49,8 @@ function fixture() {
       case "write_own_preparation_checkpoint_v1": data = { ...checkpoint, revision: Number(args.p_expected_revision) + 1,
         checkpoint: args.p_checkpoint, nextArtifactSequence: (args.p_checkpoint as { nextArtifactSequence: number }).nextArtifactSequence }; break;
       case "publish_own_prepared_manifest_v1": data = published; break;
+      case "fail_own_preparation_claim_v1": data = { version: "own-preparation-freeze-v1",
+        jobId: claim.jobId, state: "frozen", frozenAt: new Date(now).toISOString() }; break;
       default: throw new Error(`unexpected RPC ${name}`);
     }
     return { data: structuredClone(data), error: null };
@@ -102,6 +110,38 @@ describe("actual preparation worker protocol adapter (transport and pipeline moc
     mocks.pipeline.mockImplementation(async (o: OwnPreparationPipelineOptions) => { await o.check(f.artifact as Parameters<typeof o.check>[0], o.signal); });
     await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "integrity_mismatch" });
     expect(called("publish_own_prepared_manifest_v1")).toHaveLength(0);
+  });
+  /**
+   * Measured on the hosted preview stack on 20 September 2026: a job that spends
+   * its artifact budget is never retried, because a fresh claim must start at
+   * checkpoint revision 0 and cannot adopt the written work, and the freeze scan
+   * waits for the deadline or a third attempt. The row sat `claimed` for the rest
+   * of its hour while the person waited to be told the preparation could not be
+   * confirmed. The worker now ends the claim itself when the refusal named the
+   * bytes it asked for.
+   */
+  it("ends a claim whose reservation was refused, naming the bytes it asked for", async () => {
+    fixture();
+    mocks.pipeline.mockRejectedValue(new PreparedStorageWriteError("unavailable", 2000));
+    await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "unavailable" });
+    const ended = called("fail_own_preparation_claim_v1");
+    expect(ended).toHaveLength(1);
+    expect(ended[0][1]).toMatchObject({ p_reason: "artifact_budget_exhausted", p_byte_count: 2000 });
+  });
+  it("proposes nothing for a failure that named no byte count", async () => {
+    fixture();
+    mocks.pipeline.mockRejectedValue(new PreparedStorageWriteError("unavailable"));
+    await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "unavailable" });
+    expect(called("fail_own_preparation_claim_v1")).toHaveLength(0);
+  });
+  it("leaves the ordinary path when the database refuses the proposed reason", async () => {
+    // The reason is proposed, never asserted: the database re-runs the job's own
+    // budget comparison, so a worker that guesses wrong changes nothing.
+    const f = fixture();
+    f.overrides.set("fail_own_preparation_claim_v1", () => ({ error: { message: "reason_not_established" }, data: null }));
+    mocks.pipeline.mockRejectedValue(new PreparedStorageWriteError("unavailable", 1));
+    await expect(runNextOwnPreparation()).rejects.toMatchObject({ code: "unavailable" });
+    expect(called("fail_own_preparation_claim_v1")).toHaveLength(1);
   });
   it("refuses a stale or altered checkpoint acknowledgment", async () => {
     const f = fixture(); f.overrides.set("write_own_preparation_checkpoint_v1", () => ({ error: null, data: f.checkpoint }));

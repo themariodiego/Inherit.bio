@@ -69,6 +69,22 @@ describe("own WGS quick process dispatch", () => {
   it("withholds frozen preparation and does not claim success", async () => {
     state.rpc.mockResolvedValueOnce(status("failed")); expect((await prepareOwnWgsFile(request(), file))?.status).toBe(503);
   });
+  it("tells a spent artifact budget apart from an outcome nobody could confirm", async () => {
+    // 503 invites a retry that would stop at the same point, so the terminal
+    // case answers 413 with its own closed body. The reason is only present
+    // when the database established it, so this is not the worker's word.
+    state.rpc.mockResolvedValueOnce({ data: { version: "own-preparation-status-v1", fileId, jobId,
+      status: "failed", reason: "artifact_budget_exhausted" }, error: null });
+    const response = await prepareOwnWgsFile(request(), file);
+    expect(response?.status).toBe(413);
+    expect(await response?.json()).toEqual({ error: "preparation_file_too_large" });
+  });
+  it("keeps an unexplained frozen job an opaque 503 rather than blaming the file", async () => {
+    state.rpc.mockResolvedValueOnce(status("failed"));
+    const response = await prepareOwnWgsFile(request(), file);
+    expect(response?.status).toBe(503);
+    expect(JSON.stringify(await response?.json())).not.toContain("too_large");
+  });
   it("registers the capacity refusal on the process route with the exact shape it answers", () => {
     const register = JSON.parse(readFileSync("docs/route-register.json", "utf8"));
     expect(register.responseContractBindings.routes["api.file-process"]).toContain("preparation-capacity-v1");
