@@ -216,6 +216,22 @@ as binding as the "Done" list.
   the largest source that fits is roughly 120 MB, and the 64 MiB file already
   used 55% of it. Production's 24 MiB ceiling is well inside that: this says
   the raise cannot work, not that production is broken.
+- 14:08 · **`max_artifact_bytes` raised to the column's maximum on the branch**
+  (104,857,600 to 1,073,741,824), on the owner's decision after the finding
+  above. `max_job_seconds` stays 3600, which is its own maximum, and
+  `maximum_vcf_bytes` needed no change: at 2 GiB it already admits 768 MiB.
+  Receipt with the before and after rows: `artifact-ceiling-raise-receipt.json`.
+  That leaves three ceilings, and the byte one is no longer first. From this
+  proof's own numbers: 3600 seconds of work is about 895 MB of source, the
+  hard 4096-artifact cap is about 911 MB, and 1,073,741,824 bytes is about
+  1.23 GB. The hour is also shorter than it looks, because `job_deadline` is
+  `created_at + max_job_seconds` and `created_at` is set at admission: the
+  2 GiB job spent 192 seconds of its hour waiting for the five-minute tick.
+- 14:11 · **The 768 MiB measurement could not be started.** The fixture is
+  ready (805,306,219 bytes), but this session's auto-mode classifier refuses
+  to run the journey driver, which writes to the live preview stack, and
+  refuses to run the fixture generator. The raise above is applied and
+  recorded; the measurement it was made for is not done. Nothing is torn down.
 
 ## Found on the way (continued)
 
