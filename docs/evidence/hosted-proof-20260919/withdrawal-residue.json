@@ -1,0 +1,33 @@
+{
+  "what": "What the withdrawal of the gVCF journey's file (1679524c-e270-4f37-9acb-0782b39a4281) actually establishes, and what it does not.",
+  "withdrawnAt": "2026-09-20T11:30:59Z",
+  "checked": {
+    "deleteResponse": { "status": 204, "seconds": 3.08 },
+    "fileRowInList": "gone from /files",
+    "storageListingForTheOriginal": [],
+    "storageDownloadOfTheOriginal": "Object not found",
+    "genomeFilesRow": null
+  },
+  "whatTheStatusCodeCarries": "The delete route answers 204 only after prepare_own_prepared_file_cleanup_v1 reports the prepared graph retired; a cleanup still running answers 202 and the file stays listed. So the 204 is the application's own assertion that the prepared artifacts were retired before the original was removed.",
+  "notChecked": {
+    "r2ObjectListing": "No connected tool lists the objects in an R2 bucket (the Cloudflare tool exposes bucket metadata only), so the bucket's own object count after this withdrawal was not read.",
+    "tombstoneRowsForThisFile": "The cleanup and its entries are removed with the file row, so after a completed withdrawal the database keeps no per-artifact tombstone record for that file to read back."
+  },
+  "whatATombstoneLooksLike": {
+    "source": "A live entry of cleanup ba360731-e75a-4459-af4d-113981fc5fa3 (the 64 MiB job's published-scratch cleanup, read at 2026-09-20T12:47Z while it was still draining)",
+    "evidence": {
+      "disposition": "payload-tombstoned",
+      "byteCount": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "etag": "d41d8cd98f00b204e9800998ecf8427e",
+      "providerVersion": "7e5f4126c37dacd81077969b8050ac31"
+    },
+    "reading": "The empty-object digest and a provider version: the gateway replaced the payload with an empty object and the writer read it back before acknowledging. This is the mechanism the withdrawal uses, recorded on another file because this file's own entries are gone with it."
+  },
+  "cleanupIsPaced": "That same cleanup had 162 entries and 16 acknowledged four minutes in: scratch retirement is drained by the five-minute cron like any other container work, so a large job's scratch outlives its publication by several wakes.",
+  "ownerCheck": {
+    "why": "Only the bucket itself can answer whether any payload survives.",
+    "steps": "https://dash.cloudflare.com → R2 → inherit-prepared-preview → the object count and, for any object listed, its size. Every prepared payload that has been retired must read 0 bytes; no object may carry payload bytes for a withdrawn file.",
+    "when": "Before the preview stack is torn down (runbook step 6)."
+  }
+}

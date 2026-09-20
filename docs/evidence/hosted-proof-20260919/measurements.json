@@ -144,15 +144,16 @@
     "ownerCeilings": {
       "vcfAndVcfGz2GiB": "about 2 hours 29 minutes of work at the measured rate, so it cannot finish inside the one-hour bound",
       "gvcf8GiB": "about 9 hours 57 minutes at the same rate, far outside it"
-    }
+    },
+    "status": "PROJECTION, NOT A MEASUREMENT. Every number below is the 64 MiB rate multiplied out. No file above 64 MiB has been prepared on this stack, so the 2 GiB and 8 GiB rows are what the measured rate predicts, not what was observed."
   },
   "recommendation": {
     "max_job_seconds": 3600,
     "why": "The column's ceiling, and the only value that lets a file of a few hundred MiB finish. It buys nothing beyond that because the job deadline itself is capped at one hour.",
     "instance_type": "standard-2",
     "whyInstance": "The only instance on which a 64 MiB file has been prepared end to end. standard-1 has never completed one; its 1/2 vCPU would roughly halve the measured rate on a single-threaded pipeline. This is not a claim that standard-2 is sufficient for whole genomes.",
-    "admissionCeilings": "The owner's 2 GiB VCF and 8 GiB gVCF cannot be prepared by this design, whatever the instance: the schema caps a job at one hour and the measured rate needs hours. Either keep the admission ceilings inside the measured envelope, or change the design first (a job that resumes across container restarts, plus a migration that raises the deadline bound).",
-    "notProved": "No file above 64 MiB has been prepared. Everything above is one measurement per size on one branch."
+    "admissionCeilings": "The owner's 2 GiB VCF and 8 GiB gVCF are predicted, from the 64 MiB rate, to need hours against a schema that caps a job at one hour. That prediction is not a measurement: neither size has been prepared here, and the rate rests on one file. Treat it as the reason to measure before raising production's ceilings, not as a measured refusal.",
+    "notProved": "No file above 64 MiB has been prepared. One measurement per size, on one branch, one fixture generator. The 2 GiB and 8 GiB trials are unproved: at the time of writing their upload, finalization and admission were being attempted, and their preparation was deliberately not waited out."
   },
   "peakMemory": "Not available. The container Workers have observability off by configuration, and no connected tool reports a container's memory. The two deaths before the fix were eviction, not memory pressure: the larger instance died at the same point."
 }

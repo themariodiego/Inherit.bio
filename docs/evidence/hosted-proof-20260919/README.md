@@ -19,6 +19,8 @@ the ordered account. Times are UTC.
 | `enable-preparation-receipt.json` | The guard, the exact statements and the postflight of step 4.3. |
 | `key-comparison.json` | The preview gateway's committed key against the key the Preview deployment serves (equal). |
 | `journeys/` | One receipt per browser journey, plus the tiny file's job rows. |
+| `withdrawal-residue.json` | What the withdrawal established, what it did not, and the owner check for the bucket. |
+| `cap-refusal-receipt.json` | The monthly cap refusal, with the limit set for the test and restored. |
 
 ## What is proved
 
@@ -28,9 +30,13 @@ the ordered account. Times are UTC.
   the prepared result on the page, chosen reports, and withdrawal.
 - **All three formats**: a 547-byte VCF, a 4 MiB VCF.gz, a 4 MiB gVCF (stored
   as `file_type` `gvcf`), and a 64 MiB VCF.
-- **Withdrawal leaves no residue**: delete answered 204, the Storage listing
-  for the original is empty, its download answers "Object not found", and the
-  `genome_files` row is gone (`journeys/gvcf-4mib.json`).
+- **Withdrawal removes the original and its records**: delete answered 204,
+  the Storage listing for the original is empty, its download answers "Object
+  not found", and the `genome_files` row is gone (`journeys/gvcf-4mib.json`).
+  The prepared artifacts in R2 are covered by the route's own contract, not by
+  a reading of the bucket: see `withdrawal-residue.json` for exactly what that
+  204 carries, what a payload tombstone looks like, and the owner check that
+  the bucket itself still needs.
 - **The monthly cap refuses the admission past its limit**: `/process`
   answered 429 with `preparation_capacity_reached`, the page showed the
   refusal wording, the file was kept and no job row was created. The limit
@@ -82,7 +88,8 @@ the ordered account. Times are UTC.
 10. 04:19 · First full journey: the 547-byte VCF, prepared 31 seconds after
     enqueue.
 11. 20 September 09:49 to 11:31 · The VCF.gz and gVCF journeys, both
-    published, reported and (for the gVCF) withdrawn with zero residue.
+    published, reported and (for the gVCF) withdrawn, with the original
+    and its records gone.
 12. 11:25 to 12:06 · Two 64 MiB attempts died mid-run, which isolated the
     eviction defect; the preview container was moved to `standard-2`
     (run 35509151886) and the host fix deployed (run 35510939794).
@@ -92,16 +99,23 @@ the ordered account. Times are UTC.
 
 ## What is not proved
 
-- **The owner's ceilings cannot be met by this design.** At the measured rate
-  a 2 GiB VCF needs about two and a half hours and an 8 GiB gVCF about ten,
-  while the schema caps any job at one hour
-  (`own_preparation_jobs_worker_deadline_bound`, and `max_job_seconds` is
-  checked at most 3600). `measurements.json` carries the arithmetic. No file
-  above 64 MiB has been prepared here.
+- **The ceilings are unproved, and the doubt about them is a projection.**
+  Nothing above 64 MiB has been prepared on this stack. Multiplying the one
+  measured rate out, a 2 GiB VCF would need about two and a half hours and an
+  8 GiB gVCF about ten, against a schema that caps any job at one hour
+  (`own_preparation_jobs_worker_deadline_bound`, with `max_job_seconds`
+  checked at most 3600). That is arithmetic from a single file, not an
+  observed refusal: it is the reason to measure at those sizes, not a
+  substitute for doing so. `measurements.json` carries the numbers and says
+  the same.
+- **The 2 GiB and 8 GiB trials themselves.** Their upload, finalization and
+  admission were being attempted when this was written; their preparation was
+  deliberately not waited out.
 - Peak memory: not available. Observability is off on the container Workers
   by configuration and no connected tool reports a container's memory.
 - The R2 bucket's own object count after withdrawal: no connected tool lists
-  objects in a bucket. The database side is proved (the cleanup entries and
-  their acknowledgements); the bucket count remains the owner check recorded
-  in `STATUS.md`.
+  objects in a bucket, and a completed withdrawal removes the cleanup rows
+  along with the file, so there is nothing left to read back for that file
+  either. `withdrawal-residue.json` records a live tombstone from another
+  file's cleanup and the exact owner check the bucket still needs.
 - One measurement per size, on one branch, with one fixture generator.

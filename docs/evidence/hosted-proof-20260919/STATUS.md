@@ -138,9 +138,11 @@ as binding as the "Done" list.
   is 0.229 MiB of source per second of container work. The schema caps any
   job at one hour (`own_preparation_jobs_worker_deadline_bound`, and
   `max_job_seconds` is checked at most 3600), which at that rate is about
-  824 MiB. A 2 GiB VCF needs about 2 h 29 m and an 8 GiB gVCF about 9 h 57 m,
-  so neither can finish however long the deadline is set within its bound.
-  The recommendation and its arithmetic are in `measurements.json`.
+  824 MiB. Multiplying that rate out, a 2 GiB VCF would need about 2 h 29 m
+  and an 8 GiB gVCF about 9 h 57 m. That is a projection from one file, not a
+  measured refusal: neither size has been prepared here. It is the reason to
+  measure at those sizes before production's ceilings move, and
+  `measurements.json` labels it the same way.
 
 ## Found on the way (continued)
 
@@ -199,7 +201,21 @@ as binding as the "Done" list.
 
 ## Owner action needed
 
-None open. The one below was done by the owner at 03:03:01 UTC (a
+One, for the teardown (runbook step 6), and one closed.
+
+### Open: read the bucket before tearing the preview down
+
+Only the bucket can answer whether any prepared payload survived a
+withdrawal: no connected tool lists R2 objects, and a completed withdrawal
+removes the cleanup rows along with the file.
+
+1. Open https://dash.cloudflare.com → R2 → `inherit-prepared-preview`.
+2. Read the object count, and the size of any object listed.
+3. Every retired payload must read 0 bytes. An object carrying payload bytes
+   for a withdrawn file is the finding; record either way in
+   `withdrawal-residue.json` before the bucket is emptied.
+
+### Closed The one below was done by the owner at 03:03:01 UTC (a
 `BYOK_ENCRYPTION_KEY` of type sensitive, Preview target only, is listed on
 the project; its value is never read here). The push carrying this note
 rebuilds the Preview so the value applies; the journey then verifies the
