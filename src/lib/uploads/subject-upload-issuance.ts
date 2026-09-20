@@ -3,7 +3,7 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 import { assertStorageUploadSignerAvailable, mintStorageUploadToken, storageUploadAuthorizationSchema } from "./storage-upload-token";
-import { directUploadReceipt, uploadCeilingBytes, uploadSessionBody } from "./subject-upload-contract";
+import { directUploadReceipt, SINGLE_REQUEST_MAXIMUM_BYTES, uploadCeilingBytes, uploadSessionBody } from "./subject-upload-contract";
 import { canonicalUploadsPaused } from "./canonical-upload-pause";
 import { readOwnUploadLimits } from "./own-upload-limits";
 
@@ -41,6 +41,17 @@ export async function issueSubjectUpload(request: Request) {
     if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
     if (!("subjectId" in body.data)) return ownUploadJson({ error: "unavailable" }, 503);
     if (canonicalUploadsPaused()) return ownUploadJson({ error: "uploads_paused" }, 503);
+    // Refuse what the transport cannot carry before a durable row exists. The
+    // issuer only knows the deployment's configured ceilings, so a ceiling set
+    // above SINGLE_REQUEST_MAXIMUM_BYTES would grant a lease for a file whose
+    // single POST the edge then refuses with no HTTP response the browser can
+    // read: measured on the preview stack on 20 September 2026 as a frozen
+    // percentage for five and a half minutes, then a failure naming no size.
+    // This is a constant, so it costs no read, and it holds whatever the
+    // ceilings are configured to.
+    if (body.data.sizeBytes > SINGLE_REQUEST_MAXIMUM_BYTES) {
+      return ownUploadJson({ error: "too_large" }, 413);
+    }
     // No durable upload row when the deployment cannot mint its bearer.
     assertStorageUploadSignerAvailable();
     const { data, error } = await createAdminClient().rpc("issue_own_storage_upload_v1", {

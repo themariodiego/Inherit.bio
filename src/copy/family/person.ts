@@ -56,6 +56,16 @@ export function noFileYet(name: string): string {
   return `${name} hasn’t added a file yet. There is nothing to show.`;
 }
 
+/**
+ * The other adult has a file in preparation: not absent, and nothing to show
+ * yet. Said only where results sharing is already granted in that direction,
+ * by the owner's decision of 18 September 2026 (a file in flight discloses
+ * less than the result it will produce).
+ */
+export function filePreparing(name: string): string {
+  return `${name}’s file is still being prepared. There is nothing to show yet.`;
+}
+
 /** One line per layer the person has not shared; the layer itself is absent. */
 export function notShared(name: string, layer: FindingLayer): string {
   return `${name} has not shared ${LAYER_LABELS[layer]} with you.`;

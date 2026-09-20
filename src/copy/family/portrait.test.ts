@@ -270,6 +270,12 @@ describe("portrait copy", () => {
     expect(copy.noCarrierMatches(3)).toBe(healthPicture.noCarrierMatches(3));
   });
 
+  it("tells the other adult a file is still being prepared, and never that it is absent (owner decision, 18 September 2026)", () => {
+    expect(copy.filePreparingFor({ name: "Bo", isViewer: false })).toBe("Bo’s file is still being prepared. There is nothing to show yet.");
+    expect(copy.filePreparingFor({ name: "Bo", isViewer: true })).toBe(copy.VIEWER_FILE_PREPARING);
+    expect(copy.VIEWER_FILE_PREPARING).toBe("Your file is still being prepared. There is nothing to show yet.");
+    expect(copy.filePreparing("Bo")).not.toContain("hasn’t added");
+  });
   it("uses typographic apostrophes and no straight quote anywhere", () => {
     for (const text of corpus()) {
       expect(text, text).not.toMatch(/'/);

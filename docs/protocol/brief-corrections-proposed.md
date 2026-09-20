@@ -1221,7 +1221,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 13 unproven pairs stand
+## Where the 11 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1248,9 +1248,10 @@ a new state and proved it in the same change.
 | Added by item 11's ninth state id | 1 | `/overview awaiting-choice`, proven the same day |
 | Closed by a proof, 2026-09-18 | 6 | `/overview complete`, `/overview not-covered`, `/genome/[subject]/reports not-covered`, `/genome/[subject]/data/browser not-covered`, `/genome/[subject]/data partial-coverage`, `/genome/[subject]/reports/[slug] partial-coverage` — `e2e/genome-coverage-states.spec.ts` and one case added to `e2e/report-skeleton.spec.ts`, each through the real upload and generation on a synthetic file chosen for what it covers |
 | Closed by a proof, 2026-09-18 (evening) | 2 | `/family/[person] complete` (`e2e/family-health-picture.spec.ts`, on the fixture its `complete` proof already built) and `/family/[person] not-covered` (`e2e/family-coverage-states.spec.ts`: the real invitation, acceptance, upload and permission journey with a file that covers nothing) |
+| Closed by a proof, 2026-09-19 | 2 | `/family/health-picture processing` and `/family/portrait/[pairId] processing` (`e2e/family-processing-states.spec.ts`: the sentence decided on 2026-09-18, evening, built on both pages and read through the real journey with the other adult's preparation request held open) |
 | Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
-| **Genuinely open** | **13** | test work: nine embryo pairs on ingest, two Portrait pairs on a classified position, two Family `processing` pairs on the sentence decided below |
-| **Total unproven** | **13** | |
+| **Genuinely open** | **11** | test work: nine embryo pairs on ingest, two Portrait pairs on a classified position |
+| **Total unproven** | **11** | |
 
 **Nothing in this number is a register correction any more.** (The four
 waivers of 18 September, evening, are signed decisions about states the
@@ -1275,7 +1276,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 13 that are open, none waits on item 11 any more
+### And of the 11 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1290,7 +1291,7 @@ actually waits on.
 | `not-covered` | 3 | three embryo pairs wait on ingest; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
 | `partial-coverage` | 4 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` waits on a classified position (D-034); `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
 | `complete` | 4 | three embryo pairs wait on ingest; `/family/portrait/[pairId]` waits on a classified position (D-034) |
-| `processing` | 2 | a product branch that does not exist; the owner decided on 2026-09-18 (evening) that the sentence may be built (below), so these two are product work next, not a ruling on the id |
+| `processing` | 0 | the two Family pairs were a product branch that did not exist; the owner decided on 2026-09-18 (evening) that the sentence may be built (below), it was built, and both were proven on 2026-09-19 |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
 

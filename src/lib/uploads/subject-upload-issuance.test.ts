@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 import { issueSubjectUpload } from "./subject-upload-issuance";
-import { declaredSubjectFormat, directUploadReceipt, SUBJECT_UPLOAD_FORMATS, uploadSessionBody } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, SINGLE_REQUEST_MAXIMUM_BYTES, SUBJECT_UPLOAD_FORMATS, uploadSessionBody } from "./subject-upload-contract";
 
 const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -202,6 +202,30 @@ describe("naming the limit that actually refused an upload", () => {
     expect(response.status).toBe(422);
     expect(await response.json()).toEqual({ error: "invalid_request" });
     expect(mocks.rpc.mock.calls.some(([name]) => name === "own_upload_limits_v1")).toBe(false);
+  });
+  /**
+   * Measured on the hosted preview stack on 20 September 2026: with the gVCF
+   * ceiling at 8 GiB the issuer granted a lease for 8,589,933,057 bytes, and
+   * the single POST the uploader then makes was refused at the edge with 413
+   * after about a megabyte, with no HTTP response the browser could read. The
+   * person watched a frozen percentage for five and a half minutes and was
+   * told nothing about size. The guard is a constant, so it holds whatever the
+   * deployment configures and costs no read, and it runs before any durable
+   * row exists.
+   */
+  it("refuses what one request cannot carry before any row or limit read exists", async () => {
+    const response = await issueSubjectUpload(request({ ...body, sizeBytes: SINGLE_REQUEST_MAXIMUM_BYTES + 1 }));
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "too_large" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("still issues at the largest size one request is known to carry", async () => {
+    const at = { ...body, sizeBytes: SINGLE_REQUEST_MAXIMUM_BYTES };
+    mocks.rpc.mockResolvedValue({ data: { ...authorization, maximumBytes: at.sizeBytes }, error: null });
+    const response = await issueSubjectUpload(request(at));
+    expect(response.status).toBe(201);
+    expect(mocks.rpc).toHaveBeenCalledWith("issue_own_storage_upload_v1", expect.objectContaining({
+      p_size_bytes: SINGLE_REQUEST_MAXIMUM_BYTES }));
   });
   it("reports a file past its own format ceiling as too large", async () => {
     refuse("file_too_large", { ...limits, maximumVcfBytes: 100 });

@@ -561,6 +561,22 @@ const BROWSER_TESTS = "e2e";
  *               and none is `consent-required`. Measuring the hub's pair
  *               found and fixed D-129 on the way.
  *
+ *    13 -> 11   TWO PROOFS on 2026-09-19, of a sentence that did not exist
+ *               the day before. `/family/health-picture processing` and
+ *               `/family/portrait/[pairId] processing` were the two pairs the
+ *               product could not render: both pages reported another
+ *               adult's file in preparation as an absent one. The owner
+ *               decided on 2026-09-18 (evening, corrections item 17) that
+ *               one sentence may say the file is still being prepared on
+ *               both pages, under grants both adults have already signed.
+ *               The sentence was built and `e2e/family-processing-states.spec.ts`
+ *               proves it through the real journey (invitation, acceptance,
+ *               every permission both ways, both acknowledgements) with the
+ *               other adult's preparation request held open in their own
+ *               browser context, and asserts the absent-file sentences are
+ *               not on either page. Product work, then a proof; no register
+ *               correction and no waiver.
+ *
  * That last one is the case this comment exists for. `/settings/people
  * jurisdiction-unavailable` was counted as proven by a passing browser test.
  * The route has no jurisdiction guard; the page returned the refusal component
@@ -570,7 +586,7 @@ const BROWSER_TESTS = "e2e";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-const UNPROVEN_ROUTE_STATE_PAIRS = 13;
+const UNPROVEN_ROUTE_STATE_PAIRS = 11;
 
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;

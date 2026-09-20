@@ -29,6 +29,7 @@ import {
   TRAITS_LEDE,
   UNNAMED_PERSON_LABEL,
   noCarrierMatches,
+  filePreparingFor,
   noFileYetFor,
 } from "@/copy/family/portrait";
 import { NAV_LABELS } from "@/copy/navigation";
@@ -57,6 +58,7 @@ import {
 } from "@/lib/family/portrait";
 import { acknowledged } from "@/lib/family/tier2";
 import { listTraitEntries } from "@/lib/family/traits";
+import { hasFileInPreparation } from "@/lib/genome/load";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -174,6 +176,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
   // Every read below happens only once both people have every step done
   // and this session has passed the gate.
   let noFile: string[] = [];
+  let preparing: string[] = [];
   let output: OutputRead | null = null;
   let sourceSnapshot: Awaited<ReturnType<typeof loadPortraitSourceReadiness>> | null = null;
   let canonicalSources = false;
@@ -189,11 +192,17 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
     const legacyPair = sourceSnapshot.state.a.hasLegacySource && sourceSnapshot.state.b.hasLegacySource;
     // The viewer's own empty state is in the second person; the other
     // person's names them. No sentence takes the first-person placeholder.
-    noFile = [
-      ...(!hasSourceA ? [noFileYetFor({ name: labelOf(rows.a), isViewer: rows.a.id === mine.id })] : []),
-      ...(!hasSourceB ? [noFileYetFor({ name: labelOf(rows.b), isViewer: rows.b.id === mine.id })] : []),
-    ];
-    if (noFile.length === 0 && carrierAllowed && legacyPair) {
+    // A person without a source who has a file in preparation is told so
+    // rather than that the file is absent (owner decision, 18 September
+    // 2026): both adults have granted Portrait, and a file in flight
+    // discloses less than the result it will produce.
+    const sides = [{ row: rows.a, hasSource: hasSourceA }, { row: rows.b, hasSource: hasSourceB }];
+    const inFlight = await Promise.all(sides.map((side) => side.hasSource ? Promise.resolve(false) : hasFileInPreparation(admin, side.row.id)));
+    preparing = sides.flatMap((side, index) =>
+      inFlight[index] ? [filePreparingFor({ name: labelOf(side.row), isViewer: side.row.id === mine.id })] : []);
+    noFile = sides.flatMap((side, index) =>
+      !side.hasSource && !inFlight[index] ? [noFileYetFor({ name: labelOf(side.row), isViewer: side.row.id === mine.id })] : []);
+    if (noFile.length === 0 && preparing.length === 0 && carrierAllowed && legacyPair) {
       const refVariants = await readClassifiedVariants(admin);
       const conditions = refVariants.length > 0 ? await readCarrierConditions(admin) : [];
       // Each person's own declaration, read under the pair authority this
@@ -318,14 +327,27 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
             </h2>
             <p className="max-w-prose text-sm leading-relaxed text-ink-muted">{OUTPUTS_LEDE}</p>
 
-            {noFile.length > 0 ? (
-              <div role="status" data-state="empty" className="max-w-prose space-y-2">
-                {noFile.map((sentence) => (
-                  <p key={sentence} className="text-base leading-relaxed text-ink">
-                    {sentence}
-                  </p>
-                ))}
-              </div>
+            {noFile.length > 0 || preparing.length > 0 ? (
+              <>
+                {preparing.length > 0 ? (
+                  <div role="status" data-state="processing" data-slot="portrait-preparing" className="max-w-prose space-y-2">
+                    {preparing.map((sentence) => (
+                      <p key={sentence} className="text-base leading-relaxed text-ink">
+                        {sentence}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+                {noFile.length > 0 ? (
+                  <div role="status" data-state="empty" className="max-w-prose space-y-2">
+                    {noFile.map((sentence) => (
+                      <p key={sentence} className="text-base leading-relaxed text-ink">
+                        {sentence}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+              </>
             ) : !carrierAllowed ? (
               <p role="status" className="max-w-prose text-base leading-relaxed text-ink">
                 {carrierDecision.userFacingCopy}

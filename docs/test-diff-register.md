@@ -1,5 +1,34 @@
 # Test diff register
 
+## A ceiling above what one request can carry (decision 31b) · 20 September 2026
+
+`src/lib/uploads/own-upload-limits.test.ts` gains a case holding that the
+applicable ceiling is never larger than one request can carry, whatever the
+deployment configures: with all three configured ceilings at 8 GiB, every
+format's `configuredCeilingBytes` still reads 8 GiB while `uploadCeilingBytes`
+reads `SINGLE_REQUEST_MAXIMUM_BYTES`, the configured ceiling still wins while
+it is the smaller of the two, and the bound sits below the measured 413
+boundary. The existing gVCF case keeps its shape and its fallback assertion;
+its 8 GiB figure becomes 1 GiB, because 8 GiB was the promise the measurement
+disproved and pinning it asserted a ceiling the uploader cannot meet.
+
+`src/lib/uploads/subject-upload-issuance.test.ts` gains two cases: a
+declaration one byte over that bound is refused 413 `too_large` with **no RPC
+called at all**, so no durable row and no limit read exist for a file that
+cannot arrive; and a declaration exactly at the bound still reaches
+`issue_own_storage_upload_v1` and is issued 201, so the guard refuses only what
+was measured to fail.
+
+Run against the code these replace, the three cases fail: the ceiling reads
+8,589,934,592 instead of 5,242,880,000, and the oversized declaration answers
+**503**, not a size refusal at all — which is what the preview stack showed a
+person as a frozen percentage for five and a half minutes followed by a
+message that never mentioned size.
+
+The bound is the largest size observed to be accepted (5,242,880,000), not the
+boundary itself: 5,368,708,096 and above were refused at once with 413 by
+Cloudflare on the declared Content-Length. No consent check, retry rule,
+browser assertion or matrix row changes, and no configured ceiling moves.
 ## An Overview box can no longer link Overview to itself · 20 September 2026
 
 `docs/acceptance-matrix.md` records one latent hazard against G2.4 that nothing
@@ -83,6 +112,42 @@ All 48 browser red-team tests and all 44 adversarial prompts remain. G4.8
 stays NO pending green browser evidence. No browser assertion, retry rule,
 consent check or production configuration changes.
 
+## The Family `processing` sentence, built and proven · 19 September 2026
+
+**Corrected on 20 September**, after run 35513969436. The setup test asserted
+`single_logical_sample_verified_at: null` on the file whose preparation is
+held, and the run read a timestamp instead. The assertion was wrong about the
+product, not the other way round: finalization runs the single-logical-sample
+check, preparation does not, so a file whose `/api/files/*/process` request is
+held open has already passed it. The assertion now requires that timestamp to
+be **set** rather than dropping the field, which states the setup these three
+serial tests depend on — stored, verified, still `uploaded`, with preparation
+the only thing held — instead of assuming it. Nothing is weakened: one wrong
+expectation is replaced by a true one, and the two dependent tests that were
+skipped by the serial failure run again.
+
+`e2e/family-processing-states.spec.ts` is new, three tests in series: the real
+two-account journey (A declares adulthood and invites B through the invite
+screen and the mail worker; B accepts in their own account and prepares
+`tiny-grch38.vcf` with the estimates layer chosen; the joint, both layer and
+Portrait grants are signed in both directions from each signer's own session;
+each adult acknowledges the Portrait), then A adds the same file in A's own
+browser context with the preparation request held open, exactly as
+`e2e/genome-data-processing.spec.ts` holds it, so A's account stands in the
+server's own `uploaded` state. `/family/health-picture processing` reads A's
+column past the gate in B's session: the column status and every one of A's
+cells carry `CELL_FILE_PREPARING`, none carries a letter, a link or a figure,
+`CELL_NO_PREPARED_FILE` is nowhere on the page, and B's own letters are
+untouched. `/family/portrait/[pairId] processing` reads the page in B's
+session (one `data-state="processing"` status naming A, no `empty` status, no
+absent-file sentence, no claim, figure, marker or zero) and then A's mirror in
+the held context (`VIEWER_FILE_PREPARING`, in the second person, and nothing
+about B). Both tests re-read the held file's status after their reads. The
+product change behind them is the sentence the owner decided on 18 September
+(evening, corrections item 17): `hasFileInPreparation` asked of a person
+without a source on both pages, the `file-preparing` cell state, and the two
+copy strings, with unit cases in the copy and page tests. No existing
+assertion moved; `UNPROVEN_ROUTE_STATE_PAIRS` 13 → 11.
 ## Every glossary definition renders (G1.11, decisions 19 and 28) · 19 September 2026
 
 `scripts/claims-gate.test.ts`: the designated-surface count the gate is held

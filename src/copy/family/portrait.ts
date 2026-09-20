@@ -32,7 +32,7 @@ import {
 } from "./health-picture";
 import { SELF_PLACEHOLDER_LABEL, UNNAMED_PERSON_LABEL } from "./index";
 import { SHARING_ERROR_STATUS } from "./permissions";
-import { GATE_ERROR_STATUS, PAUSED_BODY, noFileYet } from "./person";
+import { GATE_ERROR_STATUS, PAUSED_BODY, filePreparing, noFileYet } from "./person";
 
 /** The h1 and the document title: the same word as the Overview box and the hub tile. */
 export const PORTRAIT_H1 = "Portrait";
@@ -169,7 +169,7 @@ export const NO_POSITIONS_BOTH_COVER =
   "The two files cover none of the same classified positions, so there is nothing to work out.";
 
 /** A person in the pair has no processed file: the person page's own sentence. */
-export { noFileYet };
+export { filePreparing, noFileYet };
 
 /** The same refusal sentence the side-by-side page renders for a match with no chance (D-031). */
 export { carrierNoProbabilitySentence, personVariantLine };
@@ -305,6 +305,13 @@ export const VIEWER_NO_FILE_YET = "You haven’t added a file yet. There is noth
 
 export function noFileYetFor(person: PersonRef): string {
   return person.isViewer ? VIEWER_NO_FILE_YET : noFileYet(person.name);
+}
+
+/** The viewer's own file in preparation, in the second person; the other person's is `filePreparing`. */
+export const VIEWER_FILE_PREPARING = "Your file is still being prepared. There is nothing to show yet.";
+
+export function filePreparingFor(person: PersonRef): string {
+  return person.isViewer ? VIEWER_FILE_PREPARING : filePreparing(person.name);
 }
 
 /**
