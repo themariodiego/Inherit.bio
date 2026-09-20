@@ -122,6 +122,26 @@ as binding as the "Done" list.
   minutes, so the hour it waits out is the job deadline expiring over a dead
   container, not work in progress.
 
+- 12:45 · **THE 64 MiB VCF IS PREPARED.** With the container host fixed and
+  the preview container on `standard-2`, the same file went through in one
+  wake: claimed 36 s after enqueue, first artifact 5 s later, 183 artifacts
+  and 58,148,752 bytes written to R2, published 279 seconds after the claim,
+  and the page showed it prepared 320 s after finalization. Its summary reads
+  431,548 variants and 237,111 observed calls. Receipt:
+  `journeys/vcf-64mib-held.json`, numbers in `measurements.json`.
+- 12:11 · **The monthly cap refuses the admission** past a limit set to the
+  month's count: `/process` answered 429 `preparation_capacity_reached`, the
+  page showed the refusal wording, the file was kept, no job row was created
+  and the count did not move. The limit was restored to 100 at 12:30
+  (`cap-refusal-receipt.json`).
+- 12:45 · **The owner's ceilings do not fit this design.** The measured rate
+  is 0.229 MiB of source per second of container work. The schema caps any
+  job at one hour (`own_preparation_jobs_worker_deadline_bound`, and
+  `max_job_seconds` is checked at most 3600), which at that rate is about
+  824 MiB. A 2 GiB VCF needs about 2 h 29 m and an 8 GiB gVCF about 9 h 57 m,
+  so neither can finish however long the deadline is set within its bound.
+  The recommendation and its arithmetic are in `measurements.json`.
+
 ## Found on the way (continued)
 
 - `public.report_templates` is empty on the branch (seeded by `pnpm seed`,

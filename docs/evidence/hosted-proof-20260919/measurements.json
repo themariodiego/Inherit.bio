@@ -1,0 +1,158 @@
+{
+  "what": "Every preparation measured on the hosted preview stack: Supabase branch hosted-proof (iofjhrtcyawjjhuxbgfd), the preview gateway and container Workers, bucket inherit-prepared-preview. Synthetic files only. Times are UTC.",
+  "howMeasured": "Browser durations come from the journey driver (a real Chromium against the branch's Vercel Preview deployment). Job durations come from the branch's own rows: own_preparation_jobs.created_at, the first and last own_preparation_artifacts.acknowledged_at, and own_prepared_manifests.published_at. Claim time is read from claim_expires_at minus the five-minute lease, or from the first artifact acknowledgement where the lease was renewed.",
+  "containerHostFix": {
+    "before": "The Durable Object returned as soon as it had started the container. An object with no pending work is evicted and takes its container with it, so every run was killed about ninety seconds in.",
+    "after": "The wake awaits the container's exit and re-arms a twenty-second alarm while it runs (commit a2624b1).",
+    "evidence": "Two 64 MiB attempts died mid-run before the fix, on standard-1 and standard-2 alike; the same file finished after it."
+  },
+  "runs": [
+    {
+      "label": "vcf-tiny",
+      "format": "VCF",
+      "fixture": "e2e/fixtures/tiny-grch38.vcf",
+      "sourceBytes": 547,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "uploadSeconds": null,
+      "finalizeSeconds": 2.5,
+      "enqueuedAt": "2026-09-19T04:19:50.3Z",
+      "claimedAt": "2026-09-19T04:20:07.6Z",
+      "publishedAt": "2026-09-19T04:20:21.7Z",
+      "waitForTickSeconds": 17.3,
+      "containerWorkSeconds": 14.1,
+      "browserFinalizeToPreparedSeconds": 35.1,
+      "artifactsReserved": 14,
+      "finalArtifacts": 8,
+      "finalArtifactBytes": 18712,
+      "containerWakesForThisJob": 1,
+      "outcome": "published"
+    },
+    {
+      "label": "vcfgz-4mib",
+      "format": "VCF.GZ",
+      "sourceBytes": 856536,
+      "decodedBytes": 4194412,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "uploadSeconds": 0.42,
+      "finalizeSeconds": 2.85,
+      "enqueuedAt": "2026-09-20T09:49:24.8Z",
+      "claimedAt": "2026-09-20T09:50:07.1Z",
+      "publishedAt": "2026-09-20T09:50:42.9Z",
+      "waitForTickSeconds": 42.3,
+      "containerWorkSeconds": 35.8,
+      "browserFinalizeToPreparedSeconds": 85.1,
+      "artifactsReserved": 18,
+      "finalArtifacts": 8,
+      "finalArtifactBytes": 907471,
+      "reportsSeconds": 24.6,
+      "containerWakesForThisJob": 1,
+      "outcome": "published"
+    },
+    {
+      "label": "gvcf-4mib",
+      "format": "gVCF",
+      "sourceBytes": 814581,
+      "decodedBytes": 4194365,
+      "instance": "standard-2",
+      "containerHost": "before the fix",
+      "uploadSeconds": 0.06,
+      "finalizeSeconds": 1.61,
+      "enqueuedAt": "2026-09-20T11:25:19.8Z",
+      "publishedAt": "2026-09-20T11:30:2xZ",
+      "browserFinalizeToPreparedSeconds": 310.5,
+      "note": "Queued behind the 64 MiB job that was dying at the time, so its wait is queueing, not work. Stored as file_type gvcf, prepared, reported and withdrawn in the same journey.",
+      "reportsSeconds": 15.0,
+      "outcome": "published, then withdrawn"
+    },
+    {
+      "label": "vcf-64mib-retry",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "enqueuedAt": "2026-09-20T11:25:05.3Z",
+      "claimedAt": "2026-09-20T11:25:06.8Z",
+      "lastProgressAt": "2026-09-20T11:26:37.5Z",
+      "containerAliveSeconds": 91,
+      "artifactsAtDeath": 46,
+      "bytesAtDeath": 11138849,
+      "checkpointRevisionAtDeath": 3,
+      "outcome": "container died mid-run; job left claimed with an expired lease, never re-claimed across six ticks, frozen at its deadline"
+    },
+    {
+      "label": "vcf-64mib-std2",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-2",
+      "containerHost": "before the fix",
+      "enqueuedAt": "2026-09-20T12:01:15.2Z",
+      "claimedAt": "2026-09-20T12:05:23.3Z",
+      "lastProgressAt": "2026-09-20T12:06:56.6Z",
+      "containerAliveSeconds": 93,
+      "artifactsAtDeath": 55,
+      "bytesAtDeath": 16466145,
+      "checkpointRevisionAtDeath": 6,
+      "outcome": "container died mid-run at the same point on the larger instance, which is what ruled out a resource limit"
+    },
+    {
+      "label": "vcf-64mib-held",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-2",
+      "containerHost": "after the fix",
+      "uploadSeconds": 2.33,
+      "uploadMegabytesPerSecond": 27.4,
+      "finalizeSeconds": 6.93,
+      "enqueuedAt": "2026-09-20T12:39:47.3Z",
+      "claimedAt": "2026-09-20T12:40:23.2Z",
+      "firstArtifactAt": "2026-09-20T12:40:28.3Z",
+      "lastArtifactAt": "2026-09-20T12:45:01.9Z",
+      "publishedAt": "2026-09-20T12:45:02.6Z",
+      "waitForTickSeconds": 35.9,
+      "containerWorkSeconds": 279.4,
+      "browserFinalizeToPreparedSeconds": 320.5,
+      "artifactsReserved": 183,
+      "finalArtifacts": 183,
+      "finalArtifactBytes": 58148752,
+      "containerWakesForThisJob": 1,
+      "summary": {
+        "variantCount": 431548,
+        "observedCallCount": 237111,
+        "usableObservedCount": 203803,
+        "rsidPointerCount": 474222,
+        "sourceBuild": "GRCh38"
+      },
+      "outcome": "published"
+    }
+  ],
+  "throughput": {
+    "measuredOn": "standard-2 (1 vCPU, 6 GiB), the only instance that has completed a file of this size",
+    "decodedBytesPerSecond": 240189,
+    "mebibytesPerSecond": 0.229,
+    "basis": "67,108,990 source bytes in 279.4 seconds of container work (vcf-64mib-held)",
+    "artifactBytesPerSourceByte": 0.87,
+    "caveat": "One file at one size. The 4 MiB runs are dominated by start-up, so they do not extend this line, and no gVCF of comparable size has been prepared."
+  },
+  "whatFitsInsideTheSchemaBound": {
+    "bound": "own_preparation_jobs_worker_deadline_bound: job_deadline <= created_at + 1 hour, and own_preparation_config.max_job_seconds is checked between 900 and 3600. One hour is therefore the most any job can ever have.",
+    "atMeasuredRate": {
+      "3600s": "about 824 MiB of source, less the wait for the five-minute tick",
+      "900s (production's current max_job_seconds)": "about 206 MiB of source"
+    },
+    "ownerCeilings": {
+      "vcfAndVcfGz2GiB": "about 2 hours 29 minutes of work at the measured rate, so it cannot finish inside the one-hour bound",
+      "gvcf8GiB": "about 9 hours 57 minutes at the same rate, far outside it"
+    }
+  },
+  "recommendation": {
+    "max_job_seconds": 3600,
+    "why": "The column's ceiling, and the only value that lets a file of a few hundred MiB finish. It buys nothing beyond that because the job deadline itself is capped at one hour.",
+    "instance_type": "standard-2",
+    "whyInstance": "The only instance on which a 64 MiB file has been prepared end to end. standard-1 has never completed one; its 1/2 vCPU would roughly halve the measured rate on a single-threaded pipeline. This is not a claim that standard-2 is sufficient for whole genomes.",
+    "admissionCeilings": "The owner's 2 GiB VCF and 8 GiB gVCF cannot be prepared by this design, whatever the instance: the schema caps a job at one hour and the measured rate needs hours. Either keep the admission ceilings inside the measured envelope, or change the design first (a job that resumes across container restarts, plus a migration that raises the deadline bound).",
+    "notProved": "No file above 64 MiB has been prepared. Everything above is one measurement per size on one branch."
+  },
+  "peakMemory": "Not available. The container Workers have observability off by configuration, and no connected tool reports a container's memory. The two deaths before the fix were eviction, not memory pressure: the larger instance died at the same point."
+}
