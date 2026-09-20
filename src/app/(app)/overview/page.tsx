@@ -15,7 +15,6 @@ import { Count } from "@/components/reports/count";
 import { StarterReports } from "@/components/overview/starter-reports";
 import { Button } from "@/components/ui/button";
 import {
-  COPILOT_GROUP_SCOPES_AVAILABLE,
   DOMAIN_SECTIONS,
   ENTRY_BOXES,
   ESTIMATE_DEFINITION,
@@ -31,9 +30,9 @@ import {
   STATE_D,
   STATE_E,
   type DomainId,
-  type EntryBoxCopy,
 } from "@/copy/overview";
 import { familyCapability, permits, viewerMaySee } from "@/lib/family/access";
+import { resolveBoxHref } from "@/lib/overview-entry-boxes";
 import {
   countCarrierMatches,
   readCarrierConditions,
@@ -93,33 +92,6 @@ interface StoredAdmixture {
 }
 
 type OverviewState = "A" | "B" | "C" | "D" | "E";
-
-function resolveBoxHref(
-  box: EntryBoxCopy,
-  targets: { firstAdultSegment: string | null; cohortId: string | null },
-): string {
-  if (box.href) return box.href;
-  switch (box.id) {
-    case "family.individual-risks":
-      return targets.firstAdultSegment
-        ? route("family.person", { person: targets.firstAdultSegment })
-        : route("family.index");
-    case "family.portrait":
-      // No eligible-pair resolution exists yet: the domain landing is the
-      // blocking state.
-      return route("family.index");
-    case "family.copilot":
-      return COPILOT_GROUP_SCOPES_AVAILABLE
-        ? route("copilot.scope", { scope: "family" })
-        : route("family.index");
-    case "embryos.copilot":
-      return COPILOT_GROUP_SCOPES_AVAILABLE && targets.cohortId
-        ? route("copilot.scope", { scope: targets.cohortId })
-        : route("embryos.index");
-    default:
-      return route("app.overview");
-  }
-}
 
 function boxDomId(id: string): string {
   return `box-${id.replace(/\./g, "-")}`;

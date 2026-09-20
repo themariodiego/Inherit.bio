@@ -168,6 +168,33 @@ that reaches it, between the enqueue and the claim, where the job is `queued`:
 a frozen or published row would trip the immutable-row rule first and pass with
 the clause deleted. `throws_ok` rolls its subtransaction back, so the claim
 below is unaffected, and no existing assertion changes.
+## An Overview box can no longer link Overview to itself · 20 September 2026
+
+`docs/acceptance-matrix.md` records one latent hazard against G2.4 that nothing
+enforced: `resolveBoxHref`'s `default` returns the Overview route, so a tenth
+entry box added with neither a static `href` nor a `switch` case would render a
+link from Overview to Overview, and no test would notice.
+
+The resolver moves from `src/app/(app)/overview/page.tsx` to
+`src/lib/overview-entry-boxes.ts` unchanged — same cases, same comments, same
+fallbacks — because a page file's internals cannot be reached from a unit test.
+`src/lib/overview-entry-boxes.test.ts` is new and holds five things: the box
+count is nine, so a tenth cannot be added without this file being read; no box
+resolves to the Overview route under any of four account shapes (neither an
+adult nor a cohort, an adult only, a cohort only, both); the four resolved boxes
+land on their blocking domain landing rather than a dead route; individual risks
+routes to the adult once one exists; and each of the five static boxes resolves
+to exactly the target the copy declares.
+
+**Verified by planting**: removing the `family.portrait` case fails with
+`family.portrait on an account with neither an adult nor a cohort fell through
+to the Overview self-link: expected '/overview' not to be '/overview'`, and the
+blocking-state case fails with it. Restored after; 5 passed.
+
+Behaviour is unchanged. This closes the hazard half of G2.4 only. The row stays
+**NO** on both of its own halves: task depth is still uninstrumented, and four
+of the nine boxes still do not arrive where the box says — which the row calls
+deliberate and defensible, and which is a decision rather than a defect.
 ## The reflow sweep can name an out-of-flow cause, and keeps what it finds · 20 September 2026
 
 `e2e/a11y.spec.ts`'s 320 CSS px reflow probe measures
