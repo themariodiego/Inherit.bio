@@ -28,13 +28,23 @@ describe("local provider runner safety boundaries", () => {
     }
   });
   it("refuses arbitrary proxy destinations, credentials and alternate gateway hosts", () => {
-    for (const target of ["http://127.0.0.1:54321/auth/v1/token", "http://localhost:3100/api/files",
-      "http://localhost:3101/api/export", "http://localhost:3102/files/upload"]) expect(localBrowserTarget(target).href).toBe(target);
-    for (const target of ["https://inherit.bio", "http://localhost:54321/storage/v1/", "http://127.0.0.1:3100/",
+    // ADR 0006 pins the credential fixture's complete source line.
+    const [localModelOrigin, credentialOrigin, deceptiveOrigin] = [
       "http://localhost:3103/", "http://name:password@localhost:3100/", "http://localhost.evil.test:3100/",
+    ];
+    for (const target of ["http://127.0.0.1:54321/auth/v1/token", "http://localhost:3100/api/files",
+      "http://localhost:3101/api/export", "http://localhost:3102/files/upload", localModelOrigin,
+      "http://localhost:3103/auth/sign-in"]) expect(localBrowserTarget(target).href).toBe(target);
+    for (const target of ["https://inherit.bio", "http://localhost:54321/storage/v1/", "http://127.0.0.1:3100/",
+      "http://localhost:3104/", credentialOrigin, deceptiveOrigin,
+      "http://127.0.0.1:3103/", "https://localhost:3103/", "http://localhost.evil.test:3103/",
       "http://169.254.169.254/", "http://[::1]:3100/", "https://localhost:3100/", "/api/files"]) {
       expect(() => localBrowserTarget(target)).toThrow();
     }
+    const withCredentials = new URL(localModelOrigin);
+    withCredentials.username = "synthetic-user";
+    withCredentials.password = "synthetic-password";
+    expect(() => localBrowserTarget(withCredentials.href)).toThrow();
   });
   it("routes only the selected disposable API and refuses the preserved sequence gateway", () => {
     const family = { INHERIT_LOCAL_E2E_PROJECT: "inherit-family-20260907",
@@ -55,8 +65,9 @@ describe("local provider runner safety boundaries", () => {
   });
   it("uses the route budget only for exact same-origin local normalization POSTs", () => {
     const path = "/api/files/cccccccc-cccc-4ccc-8ccc-cccccccccccc/process";
-    for (const origin of ["http://localhost:3100", "http://localhost:3101", "http://localhost:3102"]) {
+    for (const origin of ["http://localhost:3100", "http://localhost:3101", "http://localhost:3102", "http://localhost:3103"]) {
       expect(localBrowserUpstreamTimeout(origin + path, "POST", origin)).toBe(300_000);
+      expect(localBrowserUpstreamTimeout(origin + "/auth/sign-in", "GET", origin)).toBe(60_000);
     }
     const origin = "http://localhost:3100";
     for (const altered of [path + "?mode=own", path + "?", path + "#fragment", path + "/",

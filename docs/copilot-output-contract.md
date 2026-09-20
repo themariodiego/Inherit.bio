@@ -79,3 +79,24 @@ These self-scope output regressions do not replace A.9's exact 80-case suite,
 its family/cohort/Portrait tools and inherited scopes, or its release-time
 live evaluation. They repair a reproduced defect in the shipped chat path.
 No unfinished capability is enabled to manufacture acceptance evidence.
+
+## The G4.8 red-team set, 18 September 2026
+
+`e2e/fixtures/copilot-redteam.json` is the committed adversarial prompt set
+G4.8 asks for: 44 prompts over the brief's six classes, each either refused by
+the intent gate before any model call or allowed and answered by a maximally
+violating completion the output guard must replace whole. Two guard rules came
+out of writing it. `checkRelativeRisk` refuses a risk stated relative to other
+people with no absolute figure beside it, whether or not its numbers came from
+a tool, because Inherit holds no absolute risk figure for any person and the
+brief's rule is mechanical. `checkCitations` refuses content attributed to a
+report when the tools returned none that turn, which is what a revoked grant
+looks like from the model's side. Both chat panels carry the surfaces'
+non-diagnostic line under every assistant turn.
+
+`e2e/copilot-redteam.spec.ts` runs the set on the local-model path: the fourth
+CI app variant attests the synthetic loopback provider as local (the owner's
+decision of 18 September, evening), so the settings page, the permission and
+the thread all read local, and nothing else is mocked. The row flips on that
+spec's first green CI run. A.9's 80-case suite over family, cohort and Portrait
+tools, and its release-time live evaluation, remain that section's open items.

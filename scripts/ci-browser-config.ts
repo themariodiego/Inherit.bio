@@ -37,18 +37,47 @@ export function checkedGateway(value: unknown): { address: string; network: stri
 export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_UPLOADS_PAUSED", "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "BYOK_ENCRYPTION_KEY", "JOBS_SECRET", "CRON_SECRET",
   "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION"] as const;
+/** The four app variants: main, jurisdiction-off, paused issuance, and the local-model path. */
+export const APP_PORTS = [3100, 3101, 3102, 3103] as const;
+/**
+ * The fourth variant alone attests the local-model path (G4.8, brief line
+ * 2635). The attestation is truthful of this runtime and of nothing else: the
+ * container is same-host (the synthetic provider listens on its own loopback)
+ * and egress-isolated (`namespace.sh` drops every outbound packet that is not
+ * loopback, an established reply or the checked gateway). The one admitted
+ * origin is the synthetic fixture on 127.0.0.1:8127; every other variant keeps
+ * refusing local endpoints, and `probe.mts` proves the attestation admits that
+ * origin and no other.
+ */
+export const LOCAL_MODEL_PORT = 3103;
+export const LOCAL_MODEL_ORIGIN = "http://127.0.0.1:8127";
+export const LOCAL_MODEL_ENV = Object.freeze({
+  INHERIT_DEPLOYMENT_KIND: "self-hosted-development",
+  ALLOW_LOCAL_MODEL_ENDPOINTS: "1",
+  INHERIT_LOCAL_MODEL_HOST_ATTESTATION: "same-host-egress-isolated-v1",
+  INHERIT_LOCAL_MODEL_ORIGINS: JSON.stringify([LOCAL_MODEL_ORIGIN]),
+});
+export const LOCAL_MODEL_ENV_NAMES = Object.keys(LOCAL_MODEL_ENV) as ReadonlyArray<keyof typeof LOCAL_MODEL_ENV>;
+/** Every name a variant's configuration may carry: the local-model four only on the local-model port. */
+export function admittedAppEnvironmentNames(port: number): readonly string[] {
+  return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES] : APP_ENV_NAMES;
+}
 export function checkedAppEnvironment(value: unknown, port: number): Record<string, string> {
-  assert([3100, 3101, 3102].includes(port), "Unregistered app port");
+  assert((APP_PORTS as readonly number[]).includes(port), "Unregistered app port");
   assert(value && typeof value === "object" && !Array.isArray(value), "Missing app configuration");
   const env = value as Record<string, string>;
-  assert(Object.keys(env).every(key => (APP_ENV_NAMES as readonly string[]).includes(key))
+  const admitted = admittedAppEnvironmentNames(port);
+  assert(Object.keys(env).every(key => admitted.includes(key))
     && Object.values(env).every(item => typeof item === "string"), "Unregistered app configuration");
-  for (const name of APP_ENV_NAMES) assert(typeof env[name] === "string", "Incomplete app configuration");
+  for (const name of admitted) assert(typeof env[name] === "string", "Incomplete app configuration");
   assert(env.NEXT_PUBLIC_SUPABASE_URL === "http://127.0.0.1:54321"
     && env.RESEND_BASE_URL === "http://127.0.0.1:8124"
     && env.NEXT_PUBLIC_APP_URL === `http://localhost:${port}` && env.NEXT_PUBLIC_SITE_URL === `http://localhost:${port}`
     && env.INHERIT_TEST_JURISDICTION === (port === 3101 ? "" : "1")
     && env.INHERIT_CANONICAL_UPLOADS_PAUSED === (port === 3102 ? "true" : "false"), "App scope differs from its fixed CI variant");
+  if (port === LOCAL_MODEL_PORT) {
+    for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
+  }
   for (const name of ["INHERIT_UPLOAD_SIGNING_JWK", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"])
     assert(env[name].length > 0, "Required ephemeral app configuration missing");
   return { ...env };
@@ -59,7 +88,7 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
 export function checkedCiLauncherEnvironment(env: Environment, port: number, platform = process.platform) {
   assertCiJob(env, platform);
   assert(env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Runtime preflight must pass first");
-  return checkedAppEnvironment(Object.fromEntries(APP_ENV_NAMES.map(name => [name, env[name]])), port);
+  return checkedAppEnvironment(Object.fromEntries(admittedAppEnvironmentNames(port).map(name => [name, env[name]])), port);
 }
 
 /** Counter evidence distinguishes a firewall rejection from a closed port or

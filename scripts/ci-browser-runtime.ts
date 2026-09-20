@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL } from "./ci-browser-config";
+import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
 
 function ownerFile() {
   const directory = process.env.RUNNER_TEMP;
@@ -74,7 +74,7 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
       "--tmpfs", `/tls:rw,nosuid,nodev,noexec,size=4m,mode=0700,uid=${uid},gid=${gid}`,
       "--mount", `type=bind,src=${root},dst=/app,readonly`,
       "--mount", `type=bind,src=${path.join(root, ".next")},dst=/app/.next`,
-      ...[3100, 3101, 3102, 8130].flatMap(port => ["--publish", `127.0.0.1:${port}:${port}`]),
+      ...[...APP_PORTS, 8130].flatMap(port => ["--publish", `127.0.0.1:${port}:${port}`]),
       image, "sh", "/app/scripts/ci-browser/namespace.sh", gateway.address];
     docker(args); created = true;
     writeFileSync(ownerFile(), JSON.stringify({ owner }), { mode: 0o600, flag: "wx" });

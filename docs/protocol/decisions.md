@@ -3805,3 +3805,11 @@ recommended one unless said otherwise.
 - G2.5: declined for this release; no redesign is commissioned, the 60% rule
   stands and the measurements are the row's reason (corrections item 14,
   re-asked).
+- G4.8's local-model path (asked later the same evening): a fourth CI app
+  variant on port 3103 carries the local-model attestation for exactly one
+  loopback origin, the synthetic provider on `127.0.0.1:8127`; only the
+  red-team suite runs against it, and the three existing variants and the
+  runtime probe keep refusing local endpoints.
+- The non-diagnostic line every Copilot answer carries: the surfaces'
+  `NOT_DIAGNOSTIC` (X14.1); G4.8's quoted sentence is recorded as corrections
+  item 19.

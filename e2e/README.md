@@ -21,6 +21,14 @@ pnpm e2e
 stack's credentials, a test `BYOK_ENCRYPTION_KEY`, and `RESEND_BASE_URL`
 pointed at the in-test mock Resend API.
 
+The browser's forced local proxy admits the four app origins on
+`http://localhost:3100` through `http://localhost:3103`, plus the selected
+local Supabase API. `scripts/ci-browser-playwright-config.test.ts` checks
+every server's sign-in URL and every project's origin through that same
+destination guard: Playwright's direct readiness probe alone cannot prove
+that Chromium can reach an app through the proxy. The guard still refuses
+unlisted ports, alternate hosts, HTTPS and credential-bearing URLs.
+
 ## What each spec proves (acceptance matrix)
 
 | Spec | Item | Proves |
@@ -30,6 +38,7 @@ pointed at the in-test mock Resend API.
 | `upload-vcf.spec.ts` | A5, A8 | Synthetic gzip VCF upload→prepare→explicit ancestry generation; rsID/gene search; first-party genome browser; zero-marker ancestry/lineage absence |
 | `copilot.spec.ts` | A9 | local-mode instructions; consent dialog names provider+data classes; tool call + cited answer; revocation |
 | `copilot-refusal.spec.ts` | brief 2262 / 402 / 1040 | the intent gate refuses supplement, dosage, diet, embryo-selection, cross-subject, diagnosis and prognosis prompts with the exact registry string and zero provider calls; an allowed prompt still reaches the provider; a fabricated number in a completion is replaced whole |
+| `copilot-redteam.spec.ts` | G4.8 (brief 2635) | the 44-prompt adversarial set (`fixtures/copilot-redteam.json`) on the local-model path: the fourth app variant attests the synthetic loopback provider as local; input prompts refused with zero provider calls, adversarial completions replaced whole after the real tool ran, the report tool returns zero rows after the report grant is turned off; every response re-read for a prohibited pattern and for a relative risk without an absolute figure, and counted for the surfaces' non-diagnostic line; runs under the `copilot-local` project only |
 | `tier2-upload.spec.ts` | A10 | BAM resumable TUS upload interrupted+resumed, hashed, re-downloadable |
 | `rls.spec.ts` | A12 | cross-user reads/writes denied on real PostgREST + storage; anon denied; llm_keys hard-denied |
 | `deletion-export.spec.ts` | A13 | export ZIP contents; deletion removes rows + storage (privileged re-query) |

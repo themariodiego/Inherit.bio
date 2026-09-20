@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 import { glossaryEntries, glossaryEntry, renderableGlossaryEntries } from "./index";
 
 /**
- * The split is a decision about what a reader is shown, so the thing that
- * matters is that it is complete and cannot rot open. Two failure modes are
- * worth more than the rest: a term added to `data/jargon.json` with no class,
- * which would ship uncited by omission, and a class recorded for a term that
+ * The split decided what a reader was shown until 2026-09-19; since owner
+ * decision 19 (a definition is not a claim, corrections item 15) it is the
+ * record of which definitions touch disease, clinical practice or a quantity,
+ * and every definition renders. What still matters is that the record is
+ * complete and cannot rot: a term added to `data/jargon.json` with no class,
+ * which would carry no reading at all, and a class recorded for a term that
  * no longer exists, which would make the artifact read as more considered than
  * it is. Both fail here.
  */
@@ -40,57 +42,42 @@ describe("every glossary term is classified on purpose", () => {
     expect(classes.counts.total).toBe(classes.terms.length);
     expect(classes.counts.cited).toBe(cited);
     expect(classes.counts.plain).toBe(classes.terms.length - cited);
-    // Renderable is no longer the same set as `plain`. Since 2026-09-12 a
-    // `cited` term also renders once its definition resolves to a real entry
-    // in data/glossary-citations.json, which is what sourcing the 42 is for:
-    // without it, sourcing them would have changed nothing on screen.
-    //
-    // Derived from the register rather than pinned, so deleting a citation
-    // returns its term to invisible and this still holds. What it still
-    // catches is what it was written for — a term reclassified from cited to
-    // plain to make it render.
-    const withEvidence = glossaryEntries()
-      .filter((entry) => entry.citationClass === "cited" && entry.citationId !== null);
-    expect(renderableGlossaryEntries().length).toBe(classes.counts.plain + withEvidence.length);
-    const renderable = renderableGlossaryEntries().map((entry) => entry.term);
-    for (const entry of withEvidence) expect(renderable).toContain(entry.term);
+    // Renderable is the whole register since decision 19 (2026-09-19). The
+    // counts above still hold the 2026-09-11 reading; this line is what fails
+    // if anything withholds a definition again without a decision.
+    expect(renderableGlossaryEntries().length).toBe(glossaryEntries().length);
   });
 
-  it("renders each named risk, disease and statistical term only once it is sourced", () => {
+  it("renders each named risk, disease and statistical term, sourced or not, and keeps its reading", () => {
     // Named rather than derived: a rule that recomputed the classification
     // would agree with itself and prove nothing.
     //
-    // Written on 2026-09-11 as "none of these renders", which was true then
-    // because none of them was sourced. Sourcing `penetrance`, `prevalence`
-    // and the rest on 2026-09-12 is exactly the change the register was built
-    // to allow, so the assertion is now the biconditional it always meant:
-    // each of these terms renders IF AND ONLY IF a citation carries it.
-    //
-    // That is stronger than the original, not weaker. Reclassifying any of
-    // them from `cited` to `plain` to make it render still fails here, because
-    // reclassifying does not give it a `citationId`; and deleting a citation
-    // from the register now has to return its term to invisible too.
+    // Written on 2026-09-11 as "none of these renders", rewritten on
+    // 2026-09-12 as "renders if and only if a citation carries it", and
+    // replaced on 2026-09-19 by owner decision 19: a definition is not a
+    // claim (corrections item 15), so every one of these renders whether or
+    // not it is sourced. What the class still records is that the definition
+    // touches disease, clinical practice or a quantity, and that record must
+    // not rot: each of these stays `cited`.
     const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
     for (const term of ["absolute risk", "relative risk", "odds ratio", "hazard ratio", "confidence interval",
       "heritability", "penetrance", "polygenic", "risk allele", "susceptibility", "z-score", "percentile",
       "pathogenic", "diagnosis", "condition", "autoimmune", "medication", "clinical"]) {
-      const sourced = glossaryEntry(term)?.citationId != null;
-      expect(renderable.has(term), sourced
-        ? `${term} is sourced and must render`
-        : `${term} must not render uncited`).toBe(sourced);
+      expect(renderable.has(term), `${term} must render: a definition is not a claim`).toBe(true);
+      expect(glossaryEntry(term)?.citationClass, `${term} keeps its reading`).toBe("cited");
     }
   });
 
-  it("does ship the plain vocabulary, or the split bought nothing", () => {
+  it("ships the plain vocabulary, and since decision 19 everything else with it", () => {
     const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
     for (const term of ["allele", "chromosome", "gene", "genotype", "variant", "sequencing",
       "whole genome", "consent", "jurisdiction", "raw data"]) {
       expect(renderable.has(term), `${term} should be readable`).toBe(true);
     }
-    expect(renderable.size).toBeGreaterThan(glossaryEntries().length / 2);
+    expect(renderable.size).toBe(glossaryEntries().length);
   });
 
-  it("defaults an unclassified term to cited, so omission cannot ship one", () => {
+  it("defaults an unclassified term to cited, so the record never claims a reading nobody made", () => {
     // The register and the classes are compared above; this pins the fallback
     // the module applies if they ever disagree at runtime.
     for (const entry of glossaryEntries()) {
@@ -103,11 +90,12 @@ describe("every glossary term is classified on purpose", () => {
 
 
 /**
- * The half that matters more than the rendering half: a reference resolving to
- * nothing must not let a clinical definition onto a page. Built 2026-09-12
- * with the operator's condition that anything unreachable stays invisible.
+ * Built 2026-09-12, when a reference resolving to nothing must not let a
+ * clinical definition onto a page. Since decision 19 rendering does not wait
+ * on evidence, and what these hold is that the evidence a definition does
+ * carry is real: it resolves, it is used, and it is checkable.
  */
-describe("a cited definition renders only on evidence that resolves", () => {
+describe("a cited definition's evidence resolves, and rendering no longer waits on it", () => {
   const REGISTER = JSON.parse(
     readFileSync(path.join(ROOT, "data/glossary-citations.json"), "utf8"),
   ) as { citations: { id: string; quote: string; archived_path: string; access_date: string }[] };
@@ -154,19 +142,23 @@ describe("a cited definition renders only on evidence that resolves", () => {
     }
   });
 
-  it("still hides every cited term with no evidence yet", () => {
+  it("renders every cited term with no evidence yet, and keeps the evidence where it exists", () => {
+    // Until 2026-09-19 this hid every unsourced cited term. Owner decision 19
+    // turned it around: a definition is not a claim, so the term renders, and
+    // what is left to hold is that sourcing is provenance rather than a gate.
+    // The id a definition carries is one the register resolves, and a
+    // definition without one is not made to look sourced.
     const renderable = new Set(renderableGlossaryEntries().map((entry) => entry.term));
     const uncited = glossaryEntries()
       .filter((entry) => entry.citationClass === "cited" && entry.citationId === null);
-    // A non-vacuity guard, not a target. This read `toBeGreaterThan(30)` when
-    // two of the 42 were sourced, which made it fail the moment sourcing
-    // worked - a test that turns red on progress is measuring the wrong thing.
-    // What has to hold is that no uncited term renders; the count is whatever
-    // the register happens to hold. Delete this line when the last one is
-    // sourced and the loop is empty for the right reason.
-    expect(uncited.length, "there is still something to hide").toBeGreaterThan(0);
+    // A non-vacuity guard, not a target: eleven were unsourced on 2026-09-19.
+    // Delete this line when the last one is sourced.
+    expect(uncited.length, "there is still an unsourced definition to check").toBeGreaterThan(0);
     for (const entry of uncited) {
-      expect(renderable.has(entry.term), `${entry.term} must not render uncited`).toBe(false);
+      expect(renderable.has(entry.term), `${entry.term} must render: a definition is not a claim`).toBe(true);
+    }
+    for (const entry of glossaryEntries().filter((candidate) => candidate.citationId !== null)) {
+      expect(IDS.has(entry.citationId!), `${entry.term} carries an id the register resolves`).toBe(true);
     }
   });
 });

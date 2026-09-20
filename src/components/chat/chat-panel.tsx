@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
+import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { ConsentDialog } from "./consent-dialog";
 import { route } from "@/lib/primary-routes";
 
@@ -111,6 +112,7 @@ export function ChatPanel({
                 : "max-w-[85%] rounded-2xl border border-line bg-card px-4 py-2.5 text-sm"
             }
           >
+            {m.role !== "user" ? <p data-slot="chat-not-diagnostic" className="mb-2 text-xs text-ink-muted">{NOT_DIAGNOSTIC}</p> : null}
             {m.parts.map((part, i) => {
               if (part.type === "text") {
                 return (

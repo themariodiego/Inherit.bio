@@ -1,0 +1,51 @@
+{
+ "kind": "hosted-proof branch schema parity with production",
+ "comparedAt": "2026-09-19T00:54Z",
+ "branchProjectRef": "iofjhrtcyawjjhuxbgfd",
+ "parentProjectRef": "zuvloczwgrayonqabnss",
+ "digest": "one read-only query on each database: functions (prosrc, owner, prosecdef, proconfig, proacl, provolatile, result type, language, leakproof, strict), tables and sequences (owner, relrowsecurity, relforcerowsecurity, relacl, relkind, columns with type/notnull/default, constraints, indexes), policies, non-internal triggers, views, enums and composites, extensions, cron jobs, schema ACLs, storage buckets, default ACLs, the six application roles",
+ "productionObjects": 778,
+ "beforeAlignment": {
+  "different": 35,
+  "causes": {
+   "narrowerBranchDefaultPrivileges": 29,
+   "commentOnlyFunctionBodies": 9,
+   "aclOrderOnly": 2,
+   "cronJobInactive": 1,
+   "platformRoleMembership": 1
+  },
+  "note": "the 35 include the nine comment-only bodies and the two order-only ACLs; the branch's default privileges for postgres in public were tables anon/authenticated=xtm service_role=Dxtm, sequences and functions postgres only, against production's tables anon/authenticated=arwdxtm service_role=arwdDxtm, sequences rwU and functions X for all three roles"
+ },
+ "alignment": {
+  "recordedAs": "hosted_proof_align_legacy_grants_with_production",
+  "file": "align-legacy-grants.sql",
+  "objects": ["public.ancestry_results", "public.changelog_entries", "public.consent_grants", "public.embryo_variants_id_seq", "public.genome_files", "public.legal_audit_retention_checkpoints_id_seq", "public.llm_keys", "public.llm_settings", "public.profiles", "public.providers", "public.prs_scores", "public.prs_weights", "public.ref_genes", "public.ref_variants", "public.report_templates", "public.research_releases", "public.user_prs", "public.user_variants", "public.user_variants_id_seq", "public.own_subject_purpose_granted_v1(uuid,uuid,uuid,text)", "public.job_time_stats(text)"],
+  "cronJobActivated": "inherit-own-report-retention-15s-v1 (production: active)"
+ },
+ "afterAlignment": {
+  "equal": 768,
+  "productionOnly": [],
+  "branchOnly": [
+   "default-acl supabase_admin|supabase_functions|S",
+   "default-acl supabase_admin|supabase_functions|f",
+   "default-acl supabase_admin|supabase_functions|r",
+   "extension pg_net",
+   "table net._http_response",
+   "table net.http_request_queue",
+   "table net.http_request_queue_id_seq"
+  ],
+  "different": [
+   {"object": "function private.claim_next_own_preparation_v1(p_claim_token_hash text)", "cause": "comment lines in the body only; normalized bodies equal (f117e6bcd14147e6fb4d99c88ae9c743)"},
+   {"object": "function private.current_adult_subject_invitation_v1(p_token_hash_id uuid, p_session_id uuid)", "cause": "comment lines in the body only; normalized bodies equal (9628619f69f06751e28f095959d4d3fc)"},
+   {"object": "function private.own_report_generation_v1(p_operation text, p_account_id uuid, p_session_id uuid, p_file_id uuid, p_purpose text, p_claim uuid, p_payload jsonb)", "cause": "comment lines in the body only; normalized bodies equal (199bc49f97030c0fa36603b53f194cf4)"},
+   {"object": "function private.own_subject_purpose_grant_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text)", "cause": "comment lines in the body only; normalized bodies equal (d988fd5171a6bf69c1e218c4cf131541)"},
+   {"object": "function private.read_own_upload_finalization_checkpoint_v1(p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid)", "cause": "comment lines in the body only; normalized bodies equal (1e9e28b019263275f907b9a5c59da20e)"},
+   {"object": "function private.write_own_upload_finalization_checkpoint_v1(p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid, p_expected_revision bigint, p_checkpoint jsonb, p_lease_seconds integer)", "cause": "comment lines in the body only; normalized bodies equal (7964ab38a262b43f7a0ce3a08dfb1cda)"},
+   {"object": "function public.activate_rights_session_v1(p_token_hash text, p_session_hash text, p_form_nonce text)", "cause": "comment lines in the body only; normalized bodies equal (c1e3f52384e722b433e4939d41e12959)"},
+   {"object": "function public.claim_due_research_publication_v1()", "cause": "comment lines in the body only; normalized bodies equal (0a7ba6293a3a426a03c0401d0601a139)"},
+   {"object": "function public.record_blocked_embryo_response_v1(p_consumer text)", "cause": "comment lines in the body only; normalized bodies equal (2bb5d6620bbba434a34a6abb17e399a2)"},
+   {"object": "role postgres", "cause": "the branch's postgres role is also a member of supabase_functions_admin (platform image)"}
+  ]
+ },
+ "normalization": "regexp_replace(prosrc, '(?n)^[ \\t]*--[^\\n]*$', '', 'g'), then trailing spaces and blank lines removed, then md5; the nine functions hash equal on both databases"
+}

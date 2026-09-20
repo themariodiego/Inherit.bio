@@ -4,6 +4,7 @@ import https from "node:https";
 import net from "node:net";
 import { Resolver } from "node:dns/promises";
 import nodeModule from "node:module";
+import { LOCAL_MODEL_ENV, LOCAL_MODEL_ORIGIN } from "../ci-browser-config";
 // The installed Node declarations predate this Node 22 API. Require the actual
 // runtime capability instead of silently substituting a transport implementation.
 const { stripTypeScriptTypes } = nodeModule as typeof nodeModule & { stripTypeScriptTypes?: (source: string) => string };
@@ -25,6 +26,19 @@ const gateway = process.argv[2];
 const endpoint = normalizeModelEndpoint("https://model.copilot.test:8123/v1");
 assert.equal(endpoint.providerClass, "cloud");
 assert.equal(modelRuntime().localAllowed, false);
+// The fourth app variant alone attests the local-model path (G4.8). Under
+// that fixed attestation the synthetic provider on this container's loopback
+// is local, nothing else is, and the cloud path is unchanged.
+const localRuntime = modelRuntime({ ...LOCAL_MODEL_ENV });
+assert.equal(localRuntime.localAllowed, true);
+assert.deepEqual(localRuntime.origins, [LOCAL_MODEL_ORIGIN]);
+const localEndpoint = normalizeModelEndpoint(`${LOCAL_MODEL_ORIGIN}/v1`, localRuntime);
+assert.equal(localEndpoint.providerClass, "local");
+assert.equal((await resolveModelEndpoint(localEndpoint)).address, "127.0.0.1");
+for (const refused of ["http://127.0.0.1:8123/v1", "http://localhost:8127/v1", "http://10.0.0.5:11434/v1", "http://192.168.1.2:8127/v1"])
+  assert.throws(() => normalizeModelEndpoint(refused, localRuntime), /model_endpoint_unavailable/);
+assert.equal(normalizeModelEndpoint("https://model.copilot.test:8123/v1", localRuntime).providerClass, "cloud");
+assert.notEqual(localRuntime.attestation, "unavailable");
 assert.equal((await resolveModelEndpoint(endpoint)).address, "203.0.114.10");
 let count = 0;
 const server = https.createServer({ key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt") }, (request, response) => {

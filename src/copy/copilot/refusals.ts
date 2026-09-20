@@ -49,7 +49,7 @@ export function crossSubjectRefusal(subject: string): string {
   return `This thread is about ${subject}. Start a new thread to ask about a different file.`;
 }
 
-/** A model answer carrying a number absent from that turn’s tool results (brief line 2262). */
+/** A model answer carrying a number absent from that turn’s tool results (brief line 2262), or a risk stated relative to other people with no absolute figure beside it (G4.8, line 2635). */
 export const REFUSAL_UNSUPPORTED_NUMBER =
   "I can’t answer that from your data without guessing, so I won’t.";
 

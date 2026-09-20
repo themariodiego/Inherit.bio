@@ -8,7 +8,7 @@ This is a delivery order, not a replacement specification or a whole-project pas
 
 ## Resumption handoff · 18 September 2026
 
-Acceptance is **32/65**, counted from the YES/NO column (G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
+Acceptance is **38/65**, counted from the YES/NO column (G4.8 on 20 September; G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
 35327691091 after PR #136 (below). G1.6 closed on CI run
 35270711326, G1.16 on integration run 35291865797 (its second attempt) with
 pull request run 35288013760, and G5.1 on CI run 35307876658. Everything below
@@ -88,8 +88,10 @@ Released:
   import graph and holds each to a two-seed proof or a recorded reason; the
   two-seed spec reads the Portrait result state under both carrier pairs, and
   G8.6's Family half in the same journey (the other adult's cells against
-  their own report pages, `crossSurface.family`). The three rows flip on the
-  spec's first green CI run.
+  their own report pages, `crossSurface.family`). The spec passed on PR #146's
+  run 35413144212 (its third execution: the first found the gated reveal, the
+  second an unrelated held-request race), merged as 2cc4a8d (production READY),
+  so the three rows are YES.
 - G5.8, 18 September (evening): the eight protective statements are asserted
   by anchor id in a browser (`e2e/legal.spec.ts` over
   `scripts/legal-anchor-requirements.json`, both directions), and the 17
@@ -103,8 +105,25 @@ Released:
   is asserted on every kept page through the audited sweeps
   (`scripts/payment-origins.ts` shared by the gate and `assertNoThirdParty`);
   the owner read "a marketing claim" as the four pattern classes on 18
-  September (evening, corrections item 18); the row flips on the assertion's
-  first green run.
+  September (evening, corrections item 18); the assertion passed on PR #146's
+  run 35413144212, merged as 2cc4a8d (production READY), so the row is YES.
+- G4.1, 19 September: by design (decision 22); the component contract test
+  and the naked-relative gate passed on PR #146's run 35413144212, merged as
+  2cc4a8d, so the row is YES: 37/65 with G8.3, G8.2, G8.6 and G5.7.
+- G4.8, 18 September (late evening): the brief's red-team set is built on the
+  local-model path (`e2e/fixtures/copilot-redteam.json`, 44 prompts;
+  `e2e/copilot-redteam.spec.ts`, 48 tests under the `copilot-local` project
+  against the fourth CI app variant that attests the synthetic loopback
+  provider as local); two guard rules added (a relative risk without an
+  absolute figure, content attributed to a report the tools did not return)
+  and the surfaces' non-diagnostic line under every answer. **The spec passed
+  on its first green execution, run 35510866137 (head 9939fc5), all 48 tests
+  with no failure in a 488-test suite, so the row is YES: 38/65.** Reaching
+  that run took a harness fix: Chromium's forced local proxy admitted only
+  ports 3100 to 3102, so the fourth app's sign-in served the proxy's refusal
+  page and the `beforeAll` hung twice. The origin list now carries 3103 and
+  the configuration test walks every server and project through the real
+  destination guard.
 - Parked: the approved privacy sentence (`work/privacy-cloudflare`, `b7bf484`,
   decision 9), which ships only with production activation.
 
@@ -248,12 +267,21 @@ session, and there is no Docker here, so image builds and pgTAP run only in CI.
 The capacity trial of 8 September took 71 seconds for a 5 MB synthetic source, so
 a full-size file needs a long-lived host rather than a function.
 
-Owner actions outstanding before the hosted proof can run: enable the Workers
-Paid plan; create the scoped token and the `cloudflare` GitHub environment with
-its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable; raise the Supabase
-Storage upload limit to at least 8 GiB; later, set the two container secrets and,
-at activation, the three Vercel variables, and approve the privacy sentence that
-names Cloudflare.
+Owner actions before the hosted proof, all done as of 19 September 01:35 UTC:
+the Workers Paid plan, the scoped token, the `cloudflare` GitHub environment
+with its two secrets and the `CLOUDFLARE_DEPLOY_ENABLED` variable, the Storage
+upload limit (9 GB, spend cap kept), the `hosted-proof` Supabase branch (which
+carries production's schema, `docs/evidence/hosted-proof-branch-20260919/`),
+the preview signer imported as a standby JWT key on the branch, the preview
+container's two secrets, the seven Vercel Preview variables, the bypass token
+and the three proof-session variables. The proof runs from a session of its
+own on the branch `claude/hosted-proof-20260919`, which also commits the
+preview Workers' configuration (the branch URL as the container's
+`NEXT_PUBLIC_SUPABASE_URL` and the gateway's `TOKEN_ISSUER`, and the signer's
+public half as the gateway's `SIGNING_PUBLIC_KEYS`) and dispatches the preview
+deploy. At activation: the production container's two secrets (deferred by
+decision 27; the container has run without them since 18 September, idle by
+design) and the privacy sentence that names Cloudflare.
 
 ## Owner decisions · 18 September 2026, evening (twelve, asked as selectable choices)
 
@@ -292,7 +320,11 @@ every case. Applied in the same change unless it says product work.
     G7.1's minimum set of eight is now complete and accepted.
 19. **Glossary definitions (G1.11):** not claims; they render from
     `data/jargon.json` without a citation (corrections item 15). Wiring the
-    gloss surface onto its pages is product work next.
+    gloss surface onto its pages is product work next. **Done, 19 September:**
+    the report page's bullets are glossed (the methods-section coverage line
+    stays plain for the G1.13b target-size sweep), glossary
+    definitions left the claims gate's designated list, and on the owner's
+    confirmation (decision 28) every one of the 110 definitions renders.
 20. **G1.13b:** the in-page table beneath the ancestry map is the equivalent
     list-and-text surface (corrections item 16); the igv reflow remainder and
     the 990 undersized control pairs keep the row NO.
@@ -309,6 +341,35 @@ every case. Applied in the same change unless it says product work.
     real predecessor is commissioned, the 60% rule stands and cannot rise, the
     measurements are the row's reason, and it reopens if a redesign is
     commissioned (corrections item 14, re-asked).
+25. **G4.8's local-model path (asked later the same evening):** a fourth CI
+    app variant (port 3103) carries the local-model attestation for exactly
+    one loopback origin, the synthetic provider on `127.0.0.1:8127`, and only
+    the red-team suite runs against it; the three existing variants and the
+    runtime probe keep refusing local endpoints. The alternatives (the cloud
+    path recorded as a correction; leave G4.8 NO) were set aside.
+26. **The non-diagnostic line every Copilot answer carries:** the surfaces'
+    `NOT_DIAGNOSTIC`, as X14.1 says; G4.8's quoted sentence is recorded as
+    corrections item 19. Not the quoted sentence, not both lines.
+
+## Owner decisions · 19 September 2026 (three, asked as selectable choices)
+
+Asked and answered in chat early on 19 September 2026 (UTC) as selectable
+decisions with the recommended option first; the owner chose the recommended
+option in every case.
+
+27. **Production container secrets:** `SUPABASE_SERVICE_ROLE_KEY` and
+    `INHERIT_UPLOAD_SIGNING_JWK` on `inherit-prepared-worker` (`--env=""`)
+    stay unset until production activation (runbook step 8). The preview
+    Worker's two secrets were set on 19 September.
+28. **Glossary corpus (G1.11, corrections item 15):** every one of the 110
+    definitions renders, the 42 the 11 September reading classed `cited`
+    included; the two unit cases that pinned the 68/42 split hold the new rule
+    instead. Applied in the same change.
+29. **Preview stack teardown:** the Supabase branch `hosted-proof` and the
+    preview bucket are torn down right after the proof's evidence is committed
+    and reviewed, not kept for the activation rehearsal. The owner deletes the
+    branch in the dashboard when asked; the bucket is emptied first.
+
 
 ## Resumption handoff · 10 September 2026, night
 

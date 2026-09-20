@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { startCanonicalCopilotProvider } from "./canonical-copilot-provider";
 
-const portSchema = z.union([z.literal(8123), z.literal(8125), z.literal(8126)]);
+const portSchema = z.union([z.literal(8123), z.literal(8125), z.literal(8126), z.literal(8127)]);
 const plan = z.object({ prompt: z.string().min(1).max(8000),
   tool: z.object({ name: z.enum(["get_genotype", "search_variants", "list_reports", "get_report", "get_prs"]),
     arguments: z.record(z.string(), z.unknown()) }).strict(),
