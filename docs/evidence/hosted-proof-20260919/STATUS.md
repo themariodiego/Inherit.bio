@@ -145,6 +145,35 @@ as binding as the "Done" list.
   measured refusal: neither size has been prepared here. It is the reason to
   measure at those sizes before production's ceilings move, and
   `measurements.json` labels it the same way.
+- 12:59, corrected at 13:10 · **At 2 GiB the first finalization attempt is
+  refused, and that is not the same as a wall.** With a fixture 527 bytes
+  under the ceiling, twice: the lease issued (201, so the ceiling admits the
+  file), the browser hashed 2 GiB in 12 s, and Supabase Storage accepted a
+  single 2 GiB POST in 59.2 s and 62.8 s (34.6 and 32.6 MB/s), which is also
+  the first direct evidence that the branch inherited the 9 GB global upload
+  limit. The first finalization attempt then answered 503
+  `{"error":"unavailable"}` after 31.4 s and 78.1 s. The branch's edge log
+  names the operation that ran out of time and it is not the route's
+  300-second limit: every storage operation in that path carries a fresh
+  30-second signal, and on the second attempt the route validated all 537
+  ranges of the object in 47.1 s, wrote its checkpoint, and then issued the
+  server-side copy, which Supabase completed in 37,985 ms with a 200 about
+  eight seconds after the route had abandoned it.
+  **Two claims made at 12:59 are withdrawn.** "No `Retry-After`" was never
+  measured (the receipts captured status and body only, and the route's
+  fenced path sets it), and "the person is told to try again, meaning another
+  2 GiB upload" is contradicted by the product: an interrupted finalization
+  keeps the staged bytes and the validated checkpoint, the page retries by
+  itself after 2, 20 and 70 seconds, and the button it then offers says the
+  file already reached private storage and finishing it does not send it
+  again. The driver stopped at the first refusal, which is not where the
+  product stops, so whether 2 GiB finalizes is unsettled and being
+  re-measured. Detail: `ceiling-finalization-logs.json`, numbers in
+  `measurements.json`.
+- 13:04 · **8 GiB is admitted at issuance.** The gVCF ceiling trial's lease
+  was issued 201 for 8,589,933,057 bytes declared gVCF (1,535 bytes under the
+  ceiling), after the browser hashed it in 45.9 s. Its single Storage POST is
+  in flight as this line is written.
 
 ## Found on the way (continued)
 
@@ -189,17 +218,30 @@ as binding as the "Done" list.
 
 ## In progress
 
-- Blocked on the owner action below. Once the variable exists and the Preview
-  redeploys (any push to this branch, or a redeploy from the Vercel
-  dashboard), the 64 MiB VCF journey runs again, then VCF.gz, gVCF, the
-  ceiling files, the cap refusal and the withdrawal residue check.
+- The 8 GiB gVCF ceiling trial, the last part of step 5 that has not been
+  attempted: the same driver, stopping as soon as the job is admitted, to
+  see whether issuance admits 8 GiB, whether Storage takes a single 8 GiB
+  POST under the 9 GB global limit, and how finalization answers.
 
 ## Not yet proved
 
-- Everything in step 5: no upload, no job, no artifact, no withdrawal has run
-  on the preview stack yet.
-- That the preview container runs a job: the deploy succeeded, but no job
-  has been claimed yet.
+- **Preparation at either ceiling.** The 2 GiB VCF never reaches preparation
+  (finalization answers 503, above) and the 8 GiB gVCF trial is running as
+  this line is written. Nothing above 64 MiB has been prepared on this stack,
+  so the "two and a half hours / ten hours" figures above stay a projection
+  from one file.
+- **How container memory grows with source size.** One run, one size: 617.4
+  MiB of maximum sampled memory at 64 MiB of source cannot be split into
+  fixed overhead and growth per byte, so it must not be scaled to the
+  ceilings.
+- **Deletion latency, and which R2 objects were the withdrawn file's.** The
+  bucket reconciles with no unaccounted payload object, but that is a later
+  snapshot of the whole bucket: it times nothing, and a completed withdrawal
+  takes the cleanup rows with the file, so its former keys cannot be named
+  and checked one by one (`withdrawal-residue.json`).
+- One measurement per size, on one branch, with one fixture generator.
+- Nothing about production. Runbook steps 6 (teardown) and 8 (production
+  activation) are the owner's and have not been started.
 
 ## Owner action needed
 

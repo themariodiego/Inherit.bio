@@ -21,6 +21,7 @@ the ordered account. Times are UTC.
 | `journeys/` | One receipt per browser journey, plus the tiny file's job rows. |
 | `withdrawal-residue.json` | What the withdrawal established, what it did not, and the owner check for the bucket. |
 | `cap-refusal-receipt.json` | The monthly cap refusal, with the limit set for the test and restored. |
+| `ceiling-finalization-logs.json` | What the branch's edge log says happened inside finalization at 2 GiB, and the claims it corrects. |
 
 ## What is proved
 
@@ -103,17 +104,32 @@ the ordered account. Times are UTC.
     58,148,752 bytes in R2, 279 seconds of container work.
 14. 12:11 · The monthly cap refusal, with the limit restored afterwards.
 
-## The 2 GiB ceiling: finalization is the wall
+## The 2 GiB ceiling: what the first attempt shows, and what it does not
 
 Twice, with a fixture 527 bytes under the ceiling: the lease was issued
 (201), the browser hashed 2 GiB in 12 seconds, and Supabase Storage accepted
 a single 2 GiB POST in 59 and 63 seconds (about 33 MB/s), which also shows
-the owner's 9 GB global limit is in force. Finalization then answered 503
-`unavailable` after 31 and 78 seconds, both inside the route's own
-300-second limit, with no `Retry-After`, so the browser treats it as
-terminal: the person is told to try again, meaning another 2 GiB upload. No
-file row is created and preparation is never reached. The cause is not
-isolated: the route emits no diagnostics by design.
+the owner's 9 GB global limit is in force. The first finalization attempt
+then answered 503 `unavailable`, after 31 and 78 seconds.
+
+The branch's own edge log names what ran out of time, and it is not the
+route's 300-second limit. Each storage operation in the finalization path
+carries a fresh 30-second signal. On the second attempt the route read all
+537 ranges of the object and validated it in 47 seconds, wrote its
+checkpoint, and issued the server-side copy: Supabase finished that copy in
+37.985 seconds with a 200, but the route had already abandoned it at 30
+seconds. `ceiling-finalization-logs.json` carries both attempts line by line.
+
+**An earlier version of this file called that the wall, and it was wrong on
+two counts.** The driver stopped at the first refusal; the product does not.
+An interrupted finalization keeps the staged bytes and the validated
+checkpoint on purpose, answers with a marked, resumable 503, and the page
+retries it by itself after 2, 20 and 70 seconds before offering a button
+whose own words are "Your file already reached private storage. Finishing it
+does not send the file again." So the person is not asked to send 2 GiB
+again, and whether the attempts that follow carry the file through is a
+measurement that had not been made. It is being made now, with the driver
+following the retries.
 
 An earlier fixture that overshot the ceiling by 140 bytes was refused in the
 browser before issuance, naming the limit, so the ceiling is enforced
@@ -130,8 +146,11 @@ against the disclosed number.
   observed refusal: it is the reason to measure at those sizes, not a
   substitute for doing so. `measurements.json` carries the numbers and says
   the same.
-- **Preparation at either ceiling.** The 2 GiB file never reaches it
-  (finalization fails, above) and the 8 GiB gVCF has not been attempted yet.
+- **Preparation at either ceiling.** The 2 GiB file has not reached
+  preparation yet: its first finalization attempt is refused and the retries
+  that the product makes on its own had not been followed (above). The 8 GiB
+  gVCF trial is running as this line is written; its lease was issued (201 for
+  8,589,933,057 bytes declared gVCF), which is the first thing it settles.
 - How container memory grows with source size. The 64 MiB run's 617.4 MiB is
   one point: it cannot be split into fixed overhead and growth per byte
   without a second measurement, so it must not be scaled up to the ceilings.

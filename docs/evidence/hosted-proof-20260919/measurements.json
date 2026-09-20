@@ -189,20 +189,22 @@
         "note": "Supabase Storage accepted a single 2 GiB POST twice, so the owner's 9 GB global limit is in force on the branch and the standard upload path carries 2 GiB."
       },
       "finalization": {
-        "status": 503,
-        "body": {
+        "firstAttemptStatus": 503,
+        "firstAttemptBody": {
           "error": "unavailable"
         },
-        "secondsToFailure": [
+        "secondsToFirstRefusal": [
           31.4,
           78.1
         ],
-        "retryAfterHeader": null,
         "routeMaxDurationSeconds": 300,
-        "reading": "Reproduced on two attempts, both well inside the route's own 300-second limit, so this is not the platform's wall-clock cutting the invocation off. The response carried no Retry-After, so the browser treats it as terminal rather than resumable: the person is told the upload could not finish and to try again, which means sending 2 GiB again. The cause is not isolated here, because the route emits no diagnostics by design and the platform log carries only the status."
+        "whatActuallyRanOutOfTime": "Not the route's 300-second limit. Every storage operation in the fenced finalization path carries a fresh 30-second signal (AbortSignal.timeout(30_000) in subject-finalization.ts). The branch's edge log shows the second attempt validated all 537 ranges of the 2 GiB object in 47.1 s, wrote its checkpoint, and then issued the server-side copy: Supabase completed that copy in 37,985 ms with a 200, but the route had abandoned it at 30 s and answered 503. See ceiling-finalization-logs.json.",
+        "retryAfterHeader": "NOT MEASURED. The journey receipts captured status and body only. The route's fenced path sets Retry-After: 60 on this failure, and the uploader treats that pair as resumable.",
+        "whatTheProductDoesNext": "Keeps the staged bytes and the validated checkpoint (no cleanup runs on an interrupted fenced attempt), then retries by itself 2 s, 20 s and 70 s later, then offers a button that says the file already reached private storage and finishing it does not send it again."
       },
-      "outcome": "No file row is created and preparation is never reached. At 2 GiB the wall is finalization, not the container.",
-      "firstAttemptRefusedOversizeFixture": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.' The ceiling is enforced in the browser against the disclosed number."
+      "outcome": "UNSETTLED, AND THE EARLIER READING WAS WRONG. Both runs were stopped by the driver at the FIRST refusal, which is not where the product stops: it retries an interrupted finalization three times on its own and resumes from the checkpoint rather than re-uploading. So these two attempts establish that one uncached 2 GiB copy cannot fit the route's 30-second per-operation cap; they do not establish that a 2 GiB file cannot be finalized. A re-run that follows the retries is the measurement that would settle it.",
+      "firstAttemptRefusedOversizeFixture": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.' The ceiling is enforced in the browser against the disclosed number.",
+      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both claims are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract and the page's own words."
     },
     "gvcf8GiB": {
       "status": "not attempted yet at the time of writing"
