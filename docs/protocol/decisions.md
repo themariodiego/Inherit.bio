@@ -3813,3 +3813,62 @@ recommended one unless said otherwise.
 - The non-diagnostic line every Copilot answer carries: the surfaces'
   `NOT_DIAGNOSTIC` (X14.1); G4.8's quoted sentence is recorded as corrections
   item 19.
+
+## 2026-09-20 — Two owner decisions, asked as selectable choices
+
+Asked in chat with the recommended option first; both choices below were the
+recommended one. Both were put only after the preview stack had measured the
+answer, and one of them was corrected by engineering after the choice was
+taken, because the number moved.
+
+- **Admission ceilings: raise `max_artifact_bytes` to its schema maximum and
+  set both file ceilings to the largest source the design can honestly keep,
+  measured rather than projected.** Both ceilings set on 18 September turned
+  out to be unreachable, and neither for the reason the projection assumed. A
+  2 GiB VCF demands about 1.87 GB of artifacts against a CHECK of
+  1,073,741,824, so it cannot be prepared at any setting the schema allows; an
+  8 GiB gVCF cannot reach Storage at all, because the uploader's single POST is
+  Supabase's standard upload and Cloudflare refuses at or above 5,368,708,096
+  bytes. The alternatives declined were a 120 MB ceiling at today's default, a
+  redesign of the artifact budget first, and deferring activation.
+
+  **Corrected the same hour, before anything acted on it.** The recommendation
+  said 1 GB; it was wrong, because it weighed the artifact budget and not the
+  clock. Two constraints bind: 1,073,741,824 / 0.87 is about 1.23 GB of source
+  on the artifact axis, while 3,600 s at the measured 216,327 artifact bytes
+  per second is about 895 MB on the time axis. Time binds first, so a 1 GB
+  ceiling would admit files that then die on the deadline — the very failure
+  decision 31 exists to stop. The ceiling is therefore computed from a
+  measurement at 768 MiB (805,306,368 bytes) on the preview stack, not from the
+  64 MiB and 2 GiB runs multiplied out.
+
+  Two consequences. No resumable or multipart upload work is needed for any
+  ceiling this schema can hold: both bounds sit far under the 5 GB transport
+  limit, so that defect stops gating the release. And this **supersedes
+  decision 29 in one respect** — the preview stack stays up until the 768 MiB
+  measurement is accepted, then is torn down as decided.
+
+- **Both honesty faults are fixed before activation.** (a) A job that exhausts
+  its artifact budget stops silently: it is never retried, a fresh claim must
+  start at checkpoint revision 0 so the written work cannot be adopted, and the
+  row sits `claimed` for the rest of its hour while the person waits to be told
+  the preparation could not be confirmed. It must fail at once and say the file
+  was too large to prepare. (b) An upload above what the transport carries shows
+  progress frozen at 25 per cent, then five and a half minutes of nothing, then
+  a failure that never mentions size. It must be refused at issuance, naming the
+  size. The alternatives declined were fixing either one alone, and recording
+  both as defects and activating anyway.
+
+  (b) shipped the same day. (a) is one claim-scoped RPC in one migration, not
+  two steps: every RPC the worker may call acts only on the job whose claim it
+  presents, and freezing is deliberately excluded from that set — it is reached
+  only from the service-owned bounded scan, whose own comment says "no
+  caller-selected account/target". Letting the worker name a job to freeze would
+  put a caller-selected target exactly where the design keeps one out. So the
+  claim holder ends its own attempt and states the reason in the same call.
+
+  Sequencing worth recording: once the ceilings are set from the measurement, a
+  file that would exhaust the artifact budget cannot be admitted at all, since
+  issuance refuses it with the size named. That makes (a) a safety net against
+  the ceilings and `max_artifact_bytes` being configured out of step, rather
+  than the path an ordinary person walks.
