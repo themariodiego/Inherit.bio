@@ -137,6 +137,16 @@ select is((select frozen_reason from private.own_preparation_jobs where id=pg_te
 select isnt((select frozen_at from private.own_preparation_jobs where id=pg_temp.job_id()),null::timestamptz,
  'freezing stamps the row the way the scan would have');
 
+-- The recorded reason cannot be edited afterwards. Be exact about which rule
+-- bites here: the job is already frozen, so it is the guard's frozen-row
+-- immutability that refuses this, not the write-once clause. That clause exists
+-- for a row carrying a reason before it freezes, which this API never produces
+-- because the reason and the freeze happen in one call — it is a second lock on
+-- a door the first already holds, and this case does not pretend to prove it.
+reset role;
+select throws_ok($$update private.own_preparation_jobs set frozen_reason=null where id=pg_temp.job_id()$$,
+ '22023','preparation_identity_immutable','a recorded reason cannot be cleared once the job is frozen');
+
 -- Replay is refused: the claim is no longer live, so the second call cannot
 -- re-freeze or overwrite the reason.
 set local role service_role;

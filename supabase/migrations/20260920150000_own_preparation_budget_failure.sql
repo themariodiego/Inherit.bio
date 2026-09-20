@@ -26,6 +26,38 @@ comment on column private.own_preparation_jobs.frozen_reason is
  'every other ending, including a deadline that simply passed. The set is closed '
  'because a surface chooses its wording from it; a sentence never belongs here.';
 
+-- The identity guard forbids any column outside its mutable set from changing,
+-- so a new column is rejected until the guard knows about it: run 35517541568
+-- reached the happy path and raised `preparation_identity_immutable`. The guard
+-- is right to do that, and this is the whole of what it needs — plus the rule
+-- that makes the new column write-once, because a reason that could be edited
+-- after the fact is not a record of anything. That clause is a second lock on a
+-- door the frozen-row rule already holds, since this API sets the reason and
+-- freezes in one call; it matters only if some later path records a reason
+-- without freezing. Everything else about the guard,
+-- including the frozen-row immutability and the monotonic counters, is the
+-- current body unchanged.
+create or replace function private.guard_own_preparation_identity_v1() returns trigger
+language plpgsql security definer set search_path=pg_catalog,private as $$
+begin
+ if tg_table_name='own_preparation_jobs' then
+  if (to_jsonb(new)-array['state','attempt_id','claim_token_hash','claim_expires_at','attempts',
+    'reserved_bytes','artifact_count','frozen_at','write_fence_at','frozen_reason']) is distinct from
+   (to_jsonb(old)-array['state','attempt_id','claim_token_hash','claim_expires_at','attempts',
+    'reserved_bytes','artifact_count','frozen_at','write_fence_at','frozen_reason'])
+   or (old.state='frozen' and to_jsonb(new) is distinct from to_jsonb(old))
+   or new.attempts<old.attempts or new.reserved_bytes<old.reserved_bytes or new.artifact_count<old.artifact_count
+   or (old.frozen_reason is not null and new.frozen_reason is distinct from old.frozen_reason) then
+   raise exception using errcode='22023',message='preparation_identity_immutable'; end if;
+ else
+  if (to_jsonb(new)-array['state','storage_object_id','observed_sha256','acknowledged_at']) is distinct from
+    (to_jsonb(old)-array['state','storage_object_id','observed_sha256','acknowledged_at'])
+   or (old.state='acknowledged' and to_jsonb(new) is distinct from to_jsonb(old)) then
+   raise exception using errcode='22023',message='preparation_identity_immutable'; end if;
+ end if;
+ return new;
+end; $$;
+
 -- The claim holder ends its own attempt. The caller does not name a job it may
 -- freeze: it presents the claim it already holds, and that claim names the job.
 -- This is why the function is shaped like renew_own_preparation_claim_v1 and
