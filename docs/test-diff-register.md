@@ -24,6 +24,18 @@ consent check or production configuration changes.
 
 ## The Family `processing` sentence, built and proven · 19 September 2026
 
+**Corrected on 20 September**, after run 35513969436. The setup test asserted
+`single_logical_sample_verified_at: null` on the file whose preparation is
+held, and the run read a timestamp instead. The assertion was wrong about the
+product, not the other way round: finalization runs the single-logical-sample
+check, preparation does not, so a file whose `/api/files/*/process` request is
+held open has already passed it. The assertion now requires that timestamp to
+be **set** rather than dropping the field, which states the setup these three
+serial tests depend on — stored, verified, still `uploaded`, with preparation
+the only thing held — instead of assuming it. Nothing is weakened: one wrong
+expectation is replaced by a true one, and the two dependent tests that were
+skipped by the serial failure run again.
+
 `e2e/family-processing-states.spec.ts` is new, three tests in series: the real
 two-account journey (A declares adulthood and invites B through the invite
 screen and the mail worker; B accepts in their own account and prepares

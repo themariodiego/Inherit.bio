@@ -274,7 +274,16 @@ test("A invites B, B accepts and prepares a file, both sign every permission bot
   const stored = await admin.from("genome_files").select("status, subject_id, single_logical_sample_verified_at")
     .eq("id", heldFileId).single();
   expect(stored.error).toBeNull();
-  expect(stored.data).toMatchObject({ status: "uploaded", subject_id: selfSubjectA, single_logical_sample_verified_at: null });
+  // The single-logical-sample check runs at finalization, not at preparation,
+  // so a file whose preparation is held has already passed it. Asserting null
+  // here claimed the opposite and failed on run 35513969436, which read a
+  // timestamp. The state these tests need is this one and it is now asserted
+  // rather than assumed: stored, verified, and still `uploaded` because the
+  // only thing the route interception holds is preparation.
+  expect(stored.data).toMatchObject({ status: "uploaded", subject_id: selfSubjectA });
+  expect(stored.data?.single_logical_sample_verified_at,
+    "finalization verifies the sample, so a held preparation leaves the timestamp set")
+    .not.toBeNull();
 });
 
 test("/family/health-picture processing: the other adult's column says their file is still being prepared, and nothing on the page says the file is absent", async ({
