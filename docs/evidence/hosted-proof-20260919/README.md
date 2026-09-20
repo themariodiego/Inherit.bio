@@ -45,8 +45,10 @@ the ordered account. Times are UTC.
   refusal wording, the file was kept and no job row was created. The limit
   was set to the month's admitted count for the test and restored to 100
   afterwards (`cap-refusal-receipt.json`).
-- **Throughput at 64 MiB**: 279 seconds of container work, 183 artifacts and
-  58.1 MB written to R2 (`measurements.json`).
+- **Throughput and memory at 64 MiB**: 279 seconds of container work, 183
+  artifacts and 58.1 MB written to R2, and a maximum sampled container memory
+  of 647,372,800 bytes (617.4 MiB), about a tenth of `standard-2`'s 6 GiB and
+  inside `standard-1`'s 4 GiB too (`measurements.json`).
 
 ## Two defects found, both fixed on this branch
 
@@ -114,8 +116,9 @@ the ordered account. Times are UTC.
 - **The 2 GiB and 8 GiB trials themselves.** Their upload, finalization and
   admission were being attempted when this was written; their preparation was
   deliberately not waited out.
-- Peak memory: not available. Observability is off on the container Workers
-  by configuration and no connected tool reports a container's memory.
+- How container memory grows with source size. The 64 MiB run's 617.4 MiB is
+  one point: it cannot be split into fixed overhead and growth per byte
+  without a second measurement, so it must not be scaled up to the ceilings.
 - Which R2 objects were the withdrawn file's. The bucket reconciles with no
   unaccounted payload (above), but a completed withdrawal removes the cleanup
   rows with the file, so its former keys cannot be named and checked one by

@@ -127,7 +127,9 @@ as binding as the "Done" list.
   wake: claimed 36 s after enqueue, first artifact 5 s later, 183 artifacts
   and 58,148,752 bytes written to R2, published 279 seconds after the claim,
   and the page showed it prepared 320 s after finalization. Its summary reads
-  431,548 variants and 237,111 observed calls. Receipt:
+  431,548 variants and 237,111 observed calls, and Cloudflare's container
+  metric reports a maximum sampled memory of 647,372,800 bytes (617.4 MiB)
+  for the run, about a tenth of `standard-2`'s 6 GiB. Receipt:
   `journeys/vcf-64mib-held.json`, numbers in `measurements.json`.
 - 12:11 · **The monthly cap refuses the admission** past a limit set to the
   month's count: `/process` answered 429 `preparation_capacity_reached`, the

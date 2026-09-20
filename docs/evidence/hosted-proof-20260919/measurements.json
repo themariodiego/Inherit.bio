@@ -124,7 +124,9 @@
         "rsidPointerCount": 474222,
         "sourceBuild": "GRCh38"
       },
-      "outcome": "published"
+      "outcome": "published",
+      "peakContainerMemoryBytes": 647372800,
+      "peakContainerMemoryMiB": 617.4
     }
   ],
   "throughput": {
@@ -155,5 +157,14 @@
     "admissionCeilings": "The owner's 2 GiB VCF and 8 GiB gVCF are predicted, from the 64 MiB rate, to need hours against a schema that caps a job at one hour. That prediction is not a measurement: neither size has been prepared here, and the rate rests on one file. Treat it as the reason to measure before raising production's ceilings, not as a measured refusal.",
     "notProved": "No file above 64 MiB has been prepared. One measurement per size, on one branch, one fixture generator. The 2 GiB and 8 GiB trials are unproved: at the time of writing their upload, finalization and admission were being attempted, and their preparation was deliberately not waited out."
   },
-  "peakMemory": "Not available. The container Workers have observability off by configuration, and no connected tool reports a container's memory. The two deaths before the fix were eviction, not memory pressure: the larger instance died at the same point."
+  "peakMemory": {
+    "measured": true,
+    "run": "vcf-64mib-held (the 64 MiB VCF prepared end to end on standard-2)",
+    "maximumSampledBytes": 647372800,
+    "maximumSampledMiB": 617.4,
+    "readBy": "the owner, through the Cloudflare connection's container metrics; the Workers' own observability setting does not disable that metric",
+    "headroom": "standard-2 offers 6 GiB, so this run used about a tenth of it; standard-1's 4 GiB would also have held it.",
+    "caveat": "A maximum of sampled values for one run at one size. It cannot be split into fixed overhead and growth per source byte without a second measurement at another size, so it must not be scaled to 2 GiB or 8 GiB as if it were linear.",
+    "note": "The same query can measure the ceiling trials."
+  }
 }
