@@ -1,5 +1,33 @@
 # Test diff register
 
+## A claim holder can end its own attempt, and say why (31a) · 20 September 2026
+
+`supabase/tests/own_preparation_budget_failure.sql` is new and plants a defect
+per branch of `private.fail_own_preparation_claim_v1`: a reason outside the
+closed set and a null reason are refused `22023 invalid_request` with the claim
+left live; another attempt, a wrong token and a job the claim does not name are
+each refused `42501 not_found`, with the claim still live after all three; the
+happy path returns the freeze receipt, leaves the job `frozen` with
+`frozen_reason` recorded and `frozen_at` stamped; a replay is refused and does
+not disturb the recorded reason; and `freeze_due_own_preparations_v1` then
+reports `frozen: 0`, because a job its claim holder already ended is not in the
+`queued`/`claimed` set the scan walks. The original source row survives and no
+report readiness is granted.
+
+The fixture mirrors `own_preparation_checkpoints.sql`, which is the nearest
+existing one that reaches a live claim; `own_preparation_jobs.sql` could not be
+extended because it ends with the job already frozen. Identities use a distinct
+UUID prefix and email so both can run in the same suite, and the whole file is
+synthetic and rollback-only, as every pgTAP file here is.
+
+`supabase test db` discovers the directory, so nothing registers the file.
+Nothing existing changes: the migration is additive, no other pgTAP file is
+touched, no ceiling moves and no matrix row moves.
+
+**This is not yet verified.** pgTAP runs only in CI here — there is no local
+Supabase — so this file's first execution is the run on PR #153, and the
+migration it proves is why that PR is marked do-not-merge until it goes green.
+
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 
 PR #148's run 35420001967 reached `/auth/sign-in` through Chromium's forced
