@@ -23,11 +23,12 @@ interface StartOptions { env: Record<string, string>; enableInternet: boolean }
 
 // The module is plain JavaScript over a base class TypeScript cannot resolve
 // here, so the constructor is typed the way the runtime calls it.
-const Host = PreparationWorker as unknown as new (ctx: unknown, env: unknown) => { wake(): Promise<string> };
+const Host = PreparationWorker as unknown as new (ctx: unknown, env: unknown) => { wake(): Promise<string>; alarm(): Promise<void> };
 
 function host(running: boolean, monitor: () => Promise<void> = () => Promise.resolve()) {
   const start = vi.fn<(options: StartOptions) => void>();
   const container = { running, start, monitor: vi.fn(monitor) };
+  const setAlarm = vi.fn<(at: number) => Promise<void>>(() => Promise.resolve());
   // The Worker's own env carries more than the container may see: an
   // unrelated binding and a var must both stay behind.
   const env = {
@@ -40,8 +41,8 @@ function host(running: boolean, monitor: () => Promise<void> = () => Promise.res
     PREPARATION_WORKER: { idFromName: vi.fn(), get: vi.fn() },
     UNRELATED_VAR: "must-not-be-forwarded",
   };
-  const object = new Host({ container }, env);
-  return { object, start, container, env };
+  const object = new Host({ container, storage: { setAlarm } }, env) as { wake(): Promise<string>; alarm(): Promise<void> };
+  return { object, start, container, env, setAlarm };
 }
 
 describe("PreparationWorker.wake", () => {
@@ -72,6 +73,31 @@ describe("PreparationWorker.wake", () => {
     const options = start.mock.calls[0][0];
     expect(Object.keys(options.env).sort()).toEqual(CONTAINER_ENV_NAMES);
     expect(options.env.INHERIT_PREPARED_R2_ORIGIN).toBe("");
+  });
+
+  /**
+   * Measured on the preview stack on 20 September 2026: the object returned as
+   * soon as the container had started, was evicted while idle, and took the
+   * container with it about ninety seconds in, so every preparation longer
+   * than that died mid-run and its job sat claimed until its deadline. The
+   * wake now stays open for the whole run and keeps the object resident.
+   */
+  it("stays open until the container exits and keeps the object resident while it runs", async () => {
+    let finish = () => {};
+    const { object, setAlarm, container } = host(false, () => new Promise<void>(resolve => { finish = resolve; }));
+    let settled = false;
+    const wake = object.wake().then(value => { settled = true; return value; });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(settled, "the wake must not resolve while the container is still running").toBe(false);
+    expect(setAlarm).toHaveBeenCalledTimes(1);
+    container.running = true;
+    await object.alarm();
+    expect(setAlarm, "an alarm while the container runs re-arms the next one").toHaveBeenCalledTimes(2);
+    container.running = false;
+    await object.alarm();
+    expect(setAlarm, "a stopped container stops the re-arming").toHaveBeenCalledTimes(2);
+    finish();
+    await expect(wake).resolves.toBe("started");
   });
 
   it("does not let a failed run reject the wake or escape as an unhandled rejection", async () => {
