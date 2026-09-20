@@ -1,5 +1,40 @@
 # Test diff register
 
+## The worker ends a claim whose reservation was refused (31a) · 20 September 2026
+
+`src/lib/uploads/own-preparation-worker.test.ts` gains three cases: a pipeline
+that rejects with a `PreparedStorageWriteError` carrying a byte count makes the
+worker call `fail_own_preparation_claim_v1` once with
+`artifact_budget_exhausted` and that count; one carrying no byte count proposes
+nothing; and a database that refuses the proposed reason leaves the ordinary
+path exactly as it was. Run against the worker this replaces, the first and
+third fail — the second asserts an absence and passes either way, which is why
+it is not the proof.
+
+**A partial mock was hiding a real hazard, and fixing it is the larger half of
+this change.** The file mocked `../genome/prepared-source/storage-writer` with
+a factory returning only `createPreparedArtifactWriter`, so every other export
+was `undefined` in the module under test. The worker now also imports
+`PreparedStorageWriteError`, and `error instanceof undefined` throws a
+TypeError — which the worker's outer catch turned into `unavailable`. Two
+existing cases, "refuses an exact-artifact authority mismatch" and "refuses a
+stale or altered checkpoint acknowledgment", went red with
+`expected unavailable to match { code: "integrity_mismatch" }`, and neither had
+anything to do with the change. The mock now spreads the real module the way
+the `storage-common` mock beside it already did, so only the factory is
+replaced. Nothing is weakened: the two cases assert exactly what they did
+before, against a module that is no longer partly missing.
+
+The fixture also learns `fail_own_preparation_claim_v1`, because its `default`
+branch throws on an unknown RPC and would otherwise have swallowed the call
+into the worker's own catch, leaving the new cases passing for the wrong
+reason.
+
+`src/lib/genome/prepared-source/storage-writer.ts` is unchanged in its
+protocol: `PreparedStorageWriteError` gains an optional `byteCount`, set only
+where a reservation was refused. Nothing reads the response body, so the five
+cancel-don't-drain cases still hold, and all 914 prepared-source tests pass.
+
 ## A claim holder can end its own attempt, and say why (31a) · 20 September 2026
 
 `supabase/tests/own_preparation_budget_failure.sql` is new and plants a defect
