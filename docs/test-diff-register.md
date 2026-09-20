@@ -37,35 +37,38 @@ exact recorded width, and the ledger is unchanged. The two `min-width:220px`
 rules in igv 3.8.5's injected styles remain candidates, not a diagnosis; this
 change exists so the next run names the element instead of guessing at it.
 
-## A ceiling above what one request can carry (decision 31b) · 20 September 2026
+## The image copies what the worker imports, and a wake outlives its container · 20 September 2026
 
-`src/lib/uploads/own-upload-limits.test.ts` gains a case holding that the
-applicable ceiling is never larger than one request can carry, whatever the
-deployment configures: with all three configured ceilings at 8 GiB, every
-format's `configuredCeilingBytes` still reads 8 GiB while `uploadCeilingBytes`
-reads `SINGLE_REQUEST_MAXIMUM_BYTES`, the configured ceiling still wins while
-it is the smaller of the two, and the bound sits below the measured 413
-boundary. The existing gVCF case keeps its shape and its fallback assertion;
-its 8 GiB figure becomes 1 GiB, because 8 GiB was the promise the measurement
-disproved and pinning it asserted a ceiling the uploader cannot meet.
+Two container faults the hosted proof measured on the preview stack, both of
+them in code that reaches production.
 
-`src/lib/uploads/subject-upload-issuance.test.ts` gains two cases: a
-declaration one byte over that bound is refused 413 `too_large` with **no RPC
-called at all**, so no durable row and no limit read exist for a file that
-cannot arrive; and a declaration exactly at the bound still reaches
-`issue_own_storage_upload_v1` and is issued 201, so the guard refuses only what
-was measured to fail.
+`scripts/cloudflare-hosting-config.test.ts` gains a case that walks the worker
+entry's import graph the way tsx resolves it (relative and `@/` specifiers,
+packages skipped) and requires every file it reaches outside `src/` to be
+copied into the image and let through `.dockerignore`. The worker module
+imports `docs/route-register.json`; the image copied `src/` alone and
+`.dockerignore` dropped `docs/`, so every container start from 18 September
+exited before its first request and the branch's API logs held no claim call
+across several cron ticks. Run against the Dockerfile and `.dockerignore` this
+change replaces, the case fails with `docs/route-register.json must be copied
+into the image`, and two existing cases in the same file fail with it.
 
-Run against the code these replace, the three cases fail: the ceiling reads
-8,589,934,592 instead of 5,242,880,000, and the oversized declaration answers
-**503**, not a size refusal at all — which is what the preview stack showed a
-person as a frozen percentage for five and a half minutes followed by a
-message that never mentioned size.
+`workers/prepared-worker/src/index.test.ts` gains a case holding that the wake
+does not resolve while the container is still running, that an alarm re-arms
+the next one while it runs, and that a stopped container stops the re-arming.
+The object used to return as soon as the container had started; with no pending
+work it was evicted and took the container with it about ninety seconds in, on
+`standard-1` and `standard-2` alike, so a 547-byte and two 4 MiB files finished
+while a 64 MiB file died mid-run twice and its job sat `claimed` until its
+deadline an hour later. The existing cases (a running container is left alone,
+exactly six variables are forwarded, a failed run neither rejects the wake nor
+escapes as an unhandled rejection) are unchanged and still pass.
 
-The bound is the largest size observed to be accepted (5,242,880,000), not the
-boundary itself: 5,368,708,096 and above were refused at once with 413 by
-Cloudflare on the declared Content-Length. No consent check, retry rule,
-browser assertion or matrix row changes, and no configured ceiling moves.
+No browser assertion, retry rule, consent check or ceiling changes, and no
+matrix row moves. The preview configuration those faults were measured
+through — the branch project URL, the preview signer's public half and the
+preview container's instance size — stays on the hosted-proof branch, because
+the branch project is deleted at teardown.
 
 ## Fourth app origin reaches the browser proxy · 20 September 2026
 
