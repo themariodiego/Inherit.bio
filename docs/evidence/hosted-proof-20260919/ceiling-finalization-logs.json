@@ -40,8 +40,18 @@
     }
   ],
   "correctedClaims": [
-    "\"The response carried no Retry-After\" was never measured: the journey receipts captured status and body only. The route sets Retry-After: 60 on the fenced path, so the claim is withdrawn rather than reversed, and the re-run records the header.",
+    "\"The response carried no Retry-After\" was never measured: the journey receipts captured status and body only. REVERSED by the re-run, which captured the header on both 503s: Retry-After is 60.",
     "\"The browser treats it as terminal: the person is told to try again, which means another 2 GiB upload\" is wrong. The page's own copy says the file already reached private storage and finishing it does not send it again, and the page retries by itself three times before asking.",
-    "\"At 2 GiB the wall is finalization\" stands only as far as the FIRST attempt of each run. The driver stopped at the first refusal, which is not where the product stops."
-  ]
+    "\"At 2 GiB the wall is finalization\" is wrong. It held only as far as the FIRST attempt of each run, and the driver stopped there, which is not where the product stops. Followed through on 20 September at 13:23, the same file finalized with a 200 at 340.6 seconds and was admitted for preparation (journeys/vcf-2gib-retries.json)."
+  ],
+  "howItEnded": {
+    "run": "vcf-2gib-retries, 20 September 2026",
+    "attemptsThatReachedTheRoute": [
+      { "seconds": 33.1, "status": 503, "retryAfter": "60" },
+      { "seconds": 206.3, "status": 503, "retryAfter": "60" },
+      { "seconds": 340.6, "status": 200, "retryAfter": null }
+    ],
+    "refusedInsideTheLease": "Seven further attempts answered 404 while the previous one still held its 60-second lease, which is the deliberate refusal that stops two requests driving one finalization.",
+    "result": "genome_files holds 2,147,483,121 bytes as vcf, the bytes were sent once, and /process admitted the file (202) with job d3431bef-96fd-4dbe-9b21-b0d23630aade."
+  }
 }
