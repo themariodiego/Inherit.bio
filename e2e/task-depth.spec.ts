@@ -4,6 +4,7 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { NAV_LABELS, NAV_LANDMARK_LABEL } from "@/copy/navigation";
 import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family";
+import { REGIONAL_COMBINED_NAME } from "@/lib/ancestry/regional-regions";
 import {
   ATTESTATION_LABEL,
   INVITE_H1,
@@ -74,17 +75,56 @@ const READER = { email: `task-depth-t2-${randomUUID()}@e2e.local`, password: "e2
 const ESTIMATES = { email: `task-depth-t1-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 const VARIANTS = { email: `task-depth-t3-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 
-/** A synthetic consumer array covering the three bound type 2 diabetes positions. */
-const ARRAY_FIXTURE = "data/samples/synthetic_23andme.txt";
+/**
+ * Both report journeys upload a GRCh38 VCF carrying the exact bound position,
+ * and the first attempt did not.
+ *
+ * It used `data/samples/synthetic_23andme.txt`, which looks like the obvious
+ * array fixture and cannot be prepared. Measured after CI refused it: the file
+ * parses perfectly — 2135 records, 0 skipped, build read as GRCh37 from its own
+ * header — and then **850 of those 2135 positions fail to lift to GRCh38, a
+ * 39.8% loss** against the 0.05 `maximumUnmappedFraction` that
+ * `policyContracts.genome-liftover-v1` sets. So normalization refuses with
+ * `liftover_loss` and `/api/files/[id]/process` answers 422. That is the
+ * contract working, not a fault: the generator invents most of its GRCh37
+ * coordinates, and the chain has nothing to map them onto. Every array upload
+ * that does pass in this suite declares build 38 and is never lifted.
+ *
+ * Recorded here rather than silently swapped, so the next reading does not
+ * spend a session on an array fixture that the prepared path is right to
+ * reject.
+ */
+/** Covers rs7903146, the TCF7L2 position T1's report is about. */
+const ESTIMATES_FIXTURE = "e2e/fixtures/density-source-grch38.vcf";
+/** Covers rs9923231, the VKORC1 position T3's report is about. */
+const VARIANTS_FIXTURE = "e2e/fixtures/medicines-grch38.vcf";
 
 /** The 168-marker synthetic panel, describing no real person. */
 const AIMS_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
-/** The five labels this surface is allowed to print, from the release itself. */
-const REGION_LABELS: string[] = (
-  JSON.parse(fs.readFileSync("data/ref/regions/regions.json", "utf8")) as {
-    regions: { display_name: string }[];
-  }
-).regions.map((region) => region.display_name);
+/**
+ * The labels this surface is allowed to print, from the release itself.
+ *
+ * The first attempt read `data/ref/regions/regions.json` and CI named the
+ * mistake: that file is the FIVE-region panel, and the ancestry surface ships
+ * the seven-region one. The three labels it rejected — `Africa`, `East Asia`
+ * and `Europe, Middle East / North Africa, and Central–South Asia` — were all
+ * legitimate, the first two from `regions-v3.json` and the third the combined
+ * label the ancestry decision requires when the Europe, Middle East / North
+ * Africa and Central–South Asia shares are too close to separate.
+ *
+ * So the allowed set is the seven shipped `display_name`s PLUS that one
+ * combined name, read from the product's own constant rather than retyped.
+ * This is a wider set than the first attempt asserted and a strictly correct
+ * one: a label from neither source still fails.
+ */
+const REGION_LABELS: string[] = [
+  ...(
+    JSON.parse(fs.readFileSync("data/ref/regions/regions-v3.json", "utf8")) as {
+      regions: { display_name: string }[];
+    }
+  ).regions.map((region) => region.display_name),
+  REGIONAL_COMBINED_NAME,
+];
 
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
@@ -154,8 +194,8 @@ test("task depth T1 costs two counted actions, inside its registered ceiling", a
   expect(CONTRACT.floors.T1, "T1 carries no floor").toBeUndefined();
 
   await signIn(page, ESTIMATES.email, ESTIMATES.password);
-  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), ARRAY_FIXTURE), {
-    fileType: "array_23andme",
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), ESTIMATES_FIXTURE), {
+    fileType: "vcf",
   });
   await generateOwnFileWithChosenReports(page, fileId, ["reports.polygenic"]);
 
@@ -210,8 +250,8 @@ test("task depth T3 costs two counted actions, inside its registered ceiling", a
   expect(CONTRACT.floors.T3, "T3 carries no floor").toBeUndefined();
 
   await signIn(page, VARIANTS.email, VARIANTS.password);
-  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), ARRAY_FIXTURE), {
-    fileType: "array_23andme",
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), VARIANTS_FIXTURE), {
+    fileType: "vcf",
   });
   await generateOwnFileWithChosenReports(page, fileId, ["reports.monogenic"]);
 
@@ -269,7 +309,7 @@ test("task depth T2 costs two counted actions, inside its registered ceiling", a
   const ceiling = CONTRACT.ceilings.T2;
   expect(ceiling, "T2 carries a ceiling").toBeGreaterThan(0);
   expect(CONTRACT.floors.T2, "T2 carries no floor").toBeUndefined();
-  expect(REGION_LABELS, "the five regions of the shipped panel").toHaveLength(5);
+  expect(REGION_LABELS, "the seven shipped regions plus the combined label").toHaveLength(8);
 
   await signIn(page, READER.email, READER.password);
   const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), AIMS_FIXTURE), {
@@ -302,7 +342,7 @@ test("task depth T2 costs two counted actions, inside its registered ceiling", a
   expect(shown.length, "a region the participant could name").toBeGreaterThan(0);
   expect(
     shown.filter((label) => !REGION_LABELS.includes(label.trim())),
-    "every rendered region label comes from data/ref/regions/regions.json",
+    "every rendered region label comes from regions-v3.json or the combined name",
   ).toEqual([]);
 
   const spent = await countedActions(page);
