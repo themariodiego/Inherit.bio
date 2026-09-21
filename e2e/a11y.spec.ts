@@ -1118,14 +1118,32 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         // That attachment only survives a FAILING run: CI uploads
         // test-results and playwright-report under `if: failure()`. This route
         // is recorded, so the assertion below passes, the suite is green, and
-        // the attachment is discarded with it. The causal walk therefore
-        // answers only when something else is already broken, which is not a
-        // diagnostic at all - measured on run 35629058688, which was green and
-        // produced no artifact. The job log is kept either way, so the walk's
-        // findings go there too, and only they: the geometric readers are
-        // already in the attachment and say nothing on this route.
-        for (const line of overflow?.bisect ?? []) {
-          console.log(`reflow bisect ${route}: ${line}`);
+        // the attachment is discarded with it. A diagnostic that answers only
+        // when something else is already broken is not a diagnostic at all -
+        // measured on run 35629058688, which was green and produced no
+        // artifact. The job log is kept either way, so the findings go there.
+        //
+        // THE FIRST FIX SENT ONLY THE WALK'S FINDINGS, on the reasoning that
+        // the geometric readers "say nothing on this route". Run 35635733111
+        // disproved that, and in the way that mattered: it printed no walk
+        // line at all, because the walk is gated on `causes.length === 0` and
+        // `causes` was NOT empty. The readers had named a cause, the walk
+        // correctly stood down, and the answer this route has been waiting for
+        // was computed and then dropped with the attachment - the same bug one
+        // level up from the one that fix closed. So everything the probe
+        // found goes to the log now, readers included. All of it is bounded
+        // (at most 6, 6, 5, 2 and 8 entries), so this costs a handful of lines
+        // on one route and nothing anywhere else.
+        for (const line of overflow ? [
+          `${overflow.scrollWidth}px in a ${overflow.clientWidth}px viewport`,
+          ...overflow.widest.map(entry => `widest: ${entry}`),
+          ...overflow.leaks.map(entry => `leak: ${entry}`),
+          ...overflow.escaped.map(entry => `escaped: ${entry}`),
+          ...overflow.floors.map(entry => `floor: ${entry}`),
+          ...overflow.pseudo.map(entry => `pseudo: ${entry}`),
+          ...overflow.bisect.map(entry => `bisect: ${entry}`),
+        ] : []) {
+          console.log(`reflow ${route}: ${line}`);
         }
         expect.soft(overflow?.scrollWidth ?? 0,
           `${route} is recorded at ${recorded.scrollWidth} CSS px; a wider page is a regression, `
