@@ -671,14 +671,16 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
   const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
 
-  it("reads the real contract: eight ceilinged tasks, none of them measured yet", async () => {
+  it("reads the real contract: eight ceilinged tasks, two of them measured", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // T8 is measured by `e2e/task-depth.spec.ts`. Five more are test work on
-    // built surfaces; T6 and T7 are bound to embryo files that no ingest path
-    // can produce, so this number cannot reach eight here.
-    expect(result.taskDepthMeasuredCount).toBe(1);
+    // T8 and T4 are measured by `e2e/task-depth.spec.ts`. Of the six left, T1,
+    // T2 and T3 are test work on built surfaces; T7 is bound to an embryo file
+    // no ingest path can produce; T6 waits on its withheld-variant scoping; and
+    // T9 cannot be settled by measuring at all, because its register ceiling and
+    // its binding count different units (docs/route-divergence.json).
+    expect(result.taskDepthMeasuredCount).toBe(2);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -762,15 +764,22 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 6 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 5 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
+  // The deleted ceiling must be one nothing measures, and that is not a
+  // detail of this fixture. The ratchet counts what is UNMEASURED, so deleting
+  // a measured ceiling removes a ceiling and a measurement together and the
+  // count does not move — which is why this test named T4 until T4 was
+  // measured, and why it names T1 now. The blind spot is real and is left
+  // stated rather than papered over: the ratchet cannot see a measured ceiling
+  // being retired, only an unmeasured one.
   it("fails when a ceiling disappears without the ratchet coming down", async () => {
-    const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T4; } });
+    const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T1; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 6 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 5 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 
