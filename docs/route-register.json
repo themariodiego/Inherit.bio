@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "6b9f8b56ecbcf0f49cfd7d402e008dfa8cff727d1f6eb9d43f417447e3b10a6d",
+  "briefSha256": "ca81829d6de306737e5a99442b2999462d09a057b373771e0a5592e6829a61dc",
   "canonicalOrigin": "https://www.inherit.bio",
   "originAliases": [
     {
@@ -13723,6 +13723,25 @@
       ],
       "family.portrait": [
         "portrait-grant-denial-v1"
+      ],
+      "api.subject-upload-issue": [
+        "upload-session-v1",
+        "canonical-uploads-paused-v1",
+        "file-too-large-v1",
+        "upload-account-full-v1",
+        "invalid-request-v1",
+        "upload-refusal-v1",
+        "capability-denied-api-v1",
+        "resource-not-found-v1"
+      ],
+      "api.subject-upload-complete": [
+        "file-finalize-v1",
+        "resource-not-found-v1",
+        "capability-denied-api-v1"
+      ],
+      "api.file-delete": [
+        "resource-not-found-v1",
+        "capability-denied-api-v1"
       ]
     }
   },
@@ -16474,6 +16493,123 @@
         ]
       },
       "successResponseContract": "upload-session-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.subject-upload-issue",
+      "path": "/api/uploads",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "maximumRequestBodyBytes": 4096,
+        "neverCarries": [
+          "file-bytes",
+          "filename"
+        ],
+        "body": {
+          "subjectId": "required-canonical-lowercase-UUID-or-me-alias",
+          "declaredFormat": "one-of-policyContracts.genetic-file-ingest-v1.targetFormatMatrix.subject",
+          "sizeBytes": "positive-safe-integer-within-the-server-resolved-format-and-account-limit",
+          "sha256": "lowercase-hex-or-null-only-when-the-browser-cannot-precompute"
+        },
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "serverAuthoritative": [
+          "transport",
+          "staging-object-path",
+          "maximum-bytes",
+          "expiry",
+          "upload-token"
+        ]
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "resolved",
+        "resolver": "upload-class-v1",
+        "sameOriginRequired": "sec-fetch-site-must-equal-same-origin-or-the-request-is-refused-before-any-resolver-runs",
+        "scope": "ordinary-subject-only; a cohort or embryo target is refused here and uses its own registered transport",
+        "byteLevelRefusal": "unreachable-by-construction-because-the-declaration-is-capped-at-4096-bytes-and-never-carries-the-file-or-a-filename; format refusal belongs to the browser sniff before any byte reaches Storage and to api.file-process server-side",
+        "operationalPause": {
+          "serverFlag": "INHERIT_CANONICAL_UPLOADS_PAUSED",
+          "responseContract": "canonical-uploads-paused-v1"
+        },
+        "storageAccessContract": "genomes-server-mediated-v1",
+        "bearer": "one-use-short-lived-token-minted-for-the-server-named-staging-key-only-and-never-a-signed-Storage-object-URL",
+        "transportBoundary": "the browser sends the file as ONE request to the provider's standard upload endpoint, which carries about 5 GB; an admission ceiling above that boundary issues a lease for a file that can never be stored, so ceilings are bounded by it",
+        "responseSecurity": "private-no-store-and-no-upload-token-or-staging-key-in-logs-analytics-or-audit",
+        "contracts": [
+          "resource-authorization-v1",
+          "genetic-file-ingest-v1"
+        ]
+      },
+      "successResponseContract": "upload-session-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.subject-upload-complete",
+      "path": "/api/uploads/[id]/complete",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "pathParameter": {
+          "id": "the uploadId issued by api.subject-upload-issue, canonical lowercase UUID"
+        }
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "resolved",
+        "resolver": "upload-class-v1",
+        "operation": "subject-upload-finalization",
+        "functionBudgetSeconds": 300,
+        "fencedRetry": "an interrupted finalization keeps the staged bytes and its validated checkpoint; the route answers a refusal carrying Retry-After and attempts made inside that lease answer not-found by design, so finishing the upload never re-sends the file",
+        "storageAccessContract": "genomes-server-mediated-v1",
+        "contracts": [
+          "resource-authorization-v1",
+          "genetic-file-ingest-v1",
+          "canonical-source-publication-v1"
+        ]
+      },
+      "successResponseContract": "file-finalize-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.file-delete",
+      "path": "/api/files/[id]",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "DELETE"
+      ],
+      "requestContract": {
+        "body": "forbidden",
+        "pathParameter": {
+          "id": "canonical lowercase UUID of a file the caller's account owns"
+        }
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "resolved",
+        "operation": "file-deletion",
+        "functionBudgetSeconds": 60,
+        "sameOriginRequired": "sec-fetch-site-must-equal-same-origin-or-the-request-is-refused-before-the-account-context-is-read",
+        "scopeSource": "database-owned-file-row",
+        "ordering": "the database prepares and authorises the cleanup, the original object is then removed from Storage, and only then is deletion finished; a repeated attempt after a partial failure is idempotent, because the provider's empty removal list is its acknowledgement that a previous attempt already removed the object",
+        "successResponse": "no-content-with-no-body, so this route registers no successResponseContract",
+        "storageAccessContract": "genomes-server-mediated-v1",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
       "disposition": "kept"
     },
     {
