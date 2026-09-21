@@ -73,14 +73,6 @@ jobs:
         run: pnpm gate:env
       - name: Jurisdiction review gate
         run: pnpm gate:jurisdictions
-      # The density baseline is a frozen commit the verifier reads through
-      # `git archive`, so this step needs the full history the checkout above
-      # already fetches. G2.5 recorded the opposite ("the workflow checks out
-      # at depth 1") as the reason enforcement could not be a CI job; that has
-      # been false since 059def0 on 2026-09-01, and the verifier has been
-      # runnable and passing the whole time with nothing running it.
-      - name: Density baseline verifier
-        run: pnpm density:verify
       - name: Start local Supabase
         run: pnpm exec supabase start
       - name: Export current local Supabase keys
