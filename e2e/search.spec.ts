@@ -49,7 +49,19 @@ async function openWithShortcut(page: Page) {
   await expect(dialog(page)).toBeHidden();
   await expect(searchButton(page)).toBeFocused();
   await searchButton(page).evaluate((button) => button.blur());
-  await expect(page.locator("body")).toBeFocused();
+  // Read the active element directly rather than asserting toBeFocused on the
+  // body. Both say "focus sits on the body", which is the precondition this
+  // helper exists to establish, but toBeFocused also requires the page itself
+  // to hold window focus: after a blur in headless Chromium document.activeElement
+  // is the body while document.hasFocus() can be false, and the assertion then
+  // reports "inactive" until it times out. That turned main red on run
+  // 35529532955, on a commit whose diff was one documentation file. The DOM
+  // read asserts the same proposition and does not depend on window focus.
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement === document.body), {
+      message: "focus must sit on the body, so the shortcut below is tested from the body rather than from the button",
+    })
+    .toBe(true);
   await page.keyboard.press("ControlOrMeta+k");
   await expect(dialog(page)).toBeVisible();
   await expect(input(page)).toBeFocused();
