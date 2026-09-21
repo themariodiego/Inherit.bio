@@ -141,6 +141,20 @@ one, without either a nonce parameter on both chunk RPCs or a separate
 consume call that would not share their transaction. That is a smaller version
 of decision 9's problem and belongs to the same owner decision.
 
+**And what it would be defending is already held structurally.** The ingest
+session cookie is `Path=/`, `HttpOnly`, `SameSite=Strict`, `Secure` in
+production and `__Host-` prefixed there. A browser never sends a
+`SameSite=Strict` cookie on a cross-site request of any kind, and
+`authorizeIngestHttpRequest` refuses without a matching `cookie_hash`; the
+`__Host-` prefix stops a subdomain setting one. The same door also requires
+the `Origin` header to equal the request URL's origin. So a cross-site
+attacker reaches the chunk route with no cookie and no authorization, and the
+header would be defence in depth against a same-origin attacker - who, having
+script on the origin, could read or forge it too. That is not an argument for
+dropping it, which is the owner's call alongside decision 9. It is the reason
+the chunk route can be built before that decision is taken: the protection the
+register names by that header is not what is holding the route up.
+
 **And the mapping route needs more than a token, which the paragraph above
 this one also got wrong.** The Context says what remains is "three routes
 wiring a substrate that is finished and tested". That holds for the chunk and
