@@ -1,5 +1,37 @@
 # Test diff register
 
+## A focus precondition that does not depend on window focus · 21 September 2026
+
+`e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the
+body before it presses the shortcut, so the shortcut is proven **from the body**
+rather than from the button — the helper's own comment says never to substitute
+a button click for keyboard opening, and this is the line that keeps that
+honest.
+
+It asserted that precondition with `expect(page.locator("body")).toBeFocused()`.
+That is racy by construction: `toBeFocused` also requires the page itself to
+hold window focus, and after a `blur()` in headless Chromium
+`document.activeElement` is the body while `document.hasFocus()` can be false.
+The assertion then polls `inactive` until it times out. **It turned main red on
+run 35529532955** — 486 passed, 1 failed — on commit `18193dc`, whose diff was a
+single documentation file with no code in it at all. Runs on `a5ffb01` and
+`c55f5cd`, both containing that commit's content, were green, which is what
+established it as transient rather than a regression.
+
+The assertion is now a direct `document.activeElement === document.body` read
+through `expect.poll`, the idiom `own-file-controls.spec.ts` and `family.spec.ts`
+already use. **Nothing is weakened**: it asserts the same proposition, that the
+active element is the body. The obvious alternative,
+`expect(searchButton).not.toBeFocused()`, *would* have weakened it — focus could
+then sit on some third element and the shortcut would no longer be proven from
+the body.
+
+**This one cannot be verified by planting.** The failure is an intermittent
+property of headless window focus in CI, and the browser suite does not run in
+this container, so there is no way to reproduce the red and then show the same
+check green. What can be said is what the change asserts, which is unchanged,
+and that CI exercises this helper on both of its call sites.
+
 ## A ceiling above what one request can carry (decision 31b) · 20 September 2026
 
 `src/lib/uploads/own-upload-limits.test.ts` gains a case holding that the
