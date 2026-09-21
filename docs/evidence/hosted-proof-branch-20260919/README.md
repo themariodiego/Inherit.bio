@@ -99,3 +99,67 @@ application-role difference remains.
   done on 19 September, and are not recorded here.
 - The branch is billed by the hour while it exists and is deleted after the
   proof, by the owner's decision.
+
+## Throughput, measured on the branch · read 21 September 2026
+
+`throughput.json` records three VCF files prepared end to end on this branch,
+read directly from `private.own_preparation_jobs` joined to `public.genome_files`.
+All three reached `published` on **one attempt**, none froze, and the branch
+holds 3 manifests and 37 artifacts.
+
+| Source | Variants | Artifacts | Artifact bytes | Seconds | Artifact : source |
+| --- | --- | --- | --- | --- | --- |
+| 547 B | 3 | 14 | 26,160 | 31 | 47.8 |
+| 836 KiB | 27,170 | 18 | 2,291,605 | 78 | 2.68 |
+| 64 MiB | 431,548 | 183 | 58,148,752 | 315 | 0.87 |
+
+**This establishes hosted background dispatch**, which the 17 September
+checkpoint listed as unproved: three independent jobs, of increasing size,
+dispatched to the Cloudflare container and published without intervention.
+
+**The clock binds before the artifact budget.** The marginal rate between the
+two largest runs is **279,546 source bytes per second**, and both solve to the
+same **~75 s** fixed overhead. At `max_job_seconds` 3600 that is roughly
+**985 MB** of source; at the 0.87 artifact ratio measured at 64 MiB, such a file
+would write about **870 MB** of artifacts, under the 1 GiB the schema allows.
+So raising `max_artifact_bytes` alone would not buy a larger file — the hour
+runs out first.
+
+### What it does not establish, which matters more
+
+**It does not justify a ceiling.** The largest file actually prepared is
+**64 MiB**. Owner decision 30 asks for "the largest honestly-supportable size",
+and reaching ~1 GB from these three points is a **15× extrapolation**, not a
+measurement. A run near the candidate ceiling is still owed before any ceiling
+moves.
+
+**It says nothing about gVCF.** All three runs are VCF. A gVCF's block
+structure gives it a different variant-to-byte profile (D-128), so its ceiling
+does not follow from this series.
+
+**The seconds are not pure processing time.** They run from `created_at`, which
+is enqueue, to the last artifact acknowledgement, so they include waiting for
+the cron wake. Every figure above is an upper bound on processing time and a
+lower bound on throughput.
+
+**None of it is production.** Production has preparation disabled, at
+`max_artifact_bytes` 104,857,600 and `max_job_seconds` 900 — both below this
+branch's — and holds zero jobs. `frozen_reason` is absent here, because the
+31(a) migration was applied to the Inherit project only, so nothing on this
+branch exercises the artifact-budget refusal.
+
+### One question the reading raised
+
+`own_preparation_monthly_admissions` reads **8** for September 2026 while only
+**3** jobs exist. Admissions are counted when a job is admitted, so five have no
+surviving job. That is right if the cap is meant to limit *attempts*, and wrong
+if someone who deletes a file and retries should not burn quota. Which of the
+two the 100-per-month cap means has not been decided, so it is recorded as a
+question rather than a defect.
+
+### The branch is still running
+
+`hosted-proof` (`iofjhrtcyawjjhuxbgfd`) was `ACTIVE_HEALTHY` at this reading,
+created 18 September and billed by the hour since. Owner decision 29 is that it
+is torn down once the proof's evidence is in. It is still needed, because the
+ceiling measurement above is not done.
