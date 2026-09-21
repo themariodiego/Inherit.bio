@@ -2,9 +2,17 @@
 
 ## Current interpretation (2026-09-15)
 
-The full-resolution G1–G8 ledger below is the completion measure: **30/65
-verified**, with 35 still NO. This is the mechanical count of the YES/NO column
-over the 65 G-rows, checked on 2026-09-15, recounted unchanged on 2026-09-17 after the Family ancestry release (D-123 fixed; no gate closes), and raised by one on 2026-09-17 when G1.6 closed on CI run 35270711326. Raised again on 2026-09-18 when G1.16 closed on integration run 35291865797 and G5.1 closed on CI run 35307876658, and once more the same day when G5.3a closed on CI run 35327691091 after the source-revocation fold reached the Inherit project. Correcting the earlier stale headline closed
+The full-resolution G1–G8 ledger below is the completion measure: **38/65
+verified**, with 27 still NO. This is the mechanical count of the YES/NO column
+over the 65 G-rows, and from 2026-09-21 it is checked by
+`scripts/acceptance-matrix.test.ts` rather than maintained by hand, because it
+had drifted again: this sentence read **30/65, with 35 still NO** until that
+date, while the column itself held 38 and 27. Eight rows had closed and been
+written up in place without the headline following them. A count nobody
+recomputes is a sentence, not a measure, and this one had already been
+corrected once for the same reason. The test recomputes both numbers from the
+column and fails in either direction, so the headline can no longer lead or lag
+the table. Counted before that: 2026-09-15, recounted unchanged on 2026-09-17 after the Family ancestry release (D-123 fixed; no gate closes), and raised by one on 2026-09-17 when G1.6 closed on CI run 35270711326. Raised again on 2026-09-18 when G1.16 closed on integration run 35291865797 and G5.1 closed on CI run 35307876658, and once more the same day when G5.3a closed on CI run 35327691091 after the source-revocation fold reached the Inherit project. Correcting the earlier stale headline closed
 no gate. The dated release notes below preserve their historical counts and
 deployment evidence; they are not the current total. The A1–A18 table and its dated
 57-test run are historical baseline evidence, not current production claims.
