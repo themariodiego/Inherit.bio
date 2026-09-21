@@ -988,8 +988,41 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
               continue;
             }
             if (guilty.length === 0) {
-              bisect.push(`no child accounts for it, so the cause is the node itself: `
-                + describeCause(node));
+              // "No child is individually sufficient" is not yet "the node
+              // itself". Two children that each overflow alone would both
+              // fail the single-child test and blame their parent, which
+              // would be a wrong answer stated confidently. Hiding every
+              // child at once decides it: if that resolves the overflow the
+              // cause is collective and below this node, and if it does not,
+              // the width really is the node's own - which is the margin, the
+              // pseudo-element or the width floor this walk exists to find.
+              const restore = kids.map(child => {
+                const box = styled(child);
+                if (!box) return null;
+                const had = box.style.getPropertyValue("display");
+                const priority = box.style.getPropertyPriority("display");
+                box.style.setProperty("display", "none", "important");
+                return { box, had, priority };
+              });
+              probes += 1;
+              const withoutChildren = root.scrollWidth;
+              for (const saved of restore) {
+                if (!saved) continue;
+                if (saved.had) saved.box.style.setProperty("display", saved.had, saved.priority);
+                else saved.box.style.removeProperty("display");
+              }
+              if (withoutChildren <= root.clientWidth) {
+                bisect.push(`no child accounts for it alone, but hiding all `
+                  + `${kids.length} together resolves it, so the cause is several `
+                  + `children of ${probe.describe(node)} acting jointly - widest first: `
+                  + [...kids]
+                    .sort((a, b) => b.scrollWidth - a.scrollWidth)
+                    .slice(0, 4).map(child => describeCause(child)).join(" | "));
+              } else {
+                bisect.push(`no child accounts for it and hiding all `
+                  + `${kids.length} together does not either, so the cause is the `
+                  + `node's own box: ${describeCause(node)}`);
+              }
             } else if (guilty.length > 1) {
               bisect.push(`${guilty.length} independently sufficient causes under `
                 + `${probe.describe(node)}: `
