@@ -90,7 +90,7 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
   return <section aria-labelledby="own-report-choices-title" className="space-y-4 rounded-2xl border border-line bg-card p-5">
     <h2 id="own-report-choices-title" className="display text-2xl">Choose your reports</h2>
     <p className="max-w-prose text-sm text-ink-muted">Start with trait reports to explore findings from your file. Each choice is independent; you do not need to enable everything. You can turn a choice off here later.</p>
-    <div className="grid gap-4 md:grid-cols-3">{orderedChoices.map(choice => <ReportChoice
+    <div className="grid gap-4 lg:grid-cols-3">{orderedChoices.map(choice => <ReportChoice
       key={`${choice.purposeKey}:${choice.grantId}:${choice.token}`} choice={choice} subjectId={view.subjectId}
       onSaved={text => { setMessage(text); setError(""); router.refresh(); }} />)}</div>
     {files.length > 1 ? <label className="block space-y-2 text-sm"><span>File to use</span>

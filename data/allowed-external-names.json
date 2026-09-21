@@ -981,6 +981,17 @@
         "docs/adr/0030-hosted-preparation-on-cloudflare-containers.md",
         "workers/prepared-worker/README.md"
       ]
+    },
+    {
+      "name": "React Bits",
+      "category": "cited-organisation",
+      "aliases": [
+        "reactbits.dev"
+      ],
+      "reason": "User-requested visual reference for UI microinteractions; cited in the design review, with no new runtime dependency or scientific claim.",
+      "evidence": [
+        "docs/design/ui-renewal/README.md"
+      ]
     }
   ]
 }
