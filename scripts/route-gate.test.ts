@@ -36,9 +36,11 @@ function plant(overrides: Overrides): string {
   const root = mkdtempSync(path.join(tmpdir(), "route-gate-"));
   temporaryRoots.push(root);
   mkdirSync(path.join(root, "docs"));
-  mkdirSync(path.join(root, "src"));
   mkdirSync(path.join(root, "supabase"));
-  symlinkSync(path.join(REPOSITORY_ROOT, "src/app"), path.join(root, "src/app"));
+  // The whole of `src` rather than `src/app` alone: the header check reads
+  // every module, so a planted root carrying only the app tree would answer a
+  // different question from the one the gate asks of this repository.
+  symlinkSync(path.join(REPOSITORY_ROOT, "src"), path.join(root, "src"));
   // `e2e` is symlinked so the title floor guard sees its true size. A test
   // that needs one extra title copies it instead, because a spec cannot be
   // added inside a symlink to the real directory.
@@ -776,6 +778,100 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
       "navigationContract.taskDepthActions carries no ceilings",
+    );
+  });
+});
+
+describe("the route gate refuses a required header nothing reads", () => {
+  const headersOf = (register: Record<string, unknown>, routeId: string) => {
+    const route = (register.routes as { id: string; requestContract?: { requiredHeaders?: Record<string, string> } }[])
+      .find((candidate) => candidate.id === routeId)!;
+    return route.requestContract!.requiredHeaders!;
+  };
+  const rowsOf = (ledger: Record<string, unknown>) =>
+    ledger.unreadRequiredHeaders as { routeId: string; header: string }[];
+
+  it("counts the two the register declares and the one the product reads", async () => {
+    const result = await runRouteGate(REPOSITORY_ROOT);
+    expect(result.failures).toEqual([]);
+    expect(result.requiredHeaderCount).toBe(2);
+    // `X-Inherit-CSRF` is minted and verified in `operation-token.ts`;
+    // `X-Inherit-Chunk-Nonce` is named nowhere outside the register.
+    expect(result.readRequiredHeaderCount).toBe(1);
+  });
+
+  it("fails when a route declares a header nothing reads and nothing records it", async () => {
+    const root = plant({
+      register: (register) => {
+        headersOf(register, "api.embryo-ingest-chunk")["X-Inherit-Invented"] = "a-token-no-module-mints";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "unread required header: not recorded in docs/route-divergence.json: " +
+        "api.embryo-ingest-chunk X-Inherit-Invented",
+    );
+  });
+
+  it("fails when the register stops declaring a header the ledger still records", async () => {
+    const root = plant({
+      register: (register) => {
+        delete headersOf(register, "api.embryo-ingest-chunk")["X-Inherit-Chunk-Nonce"];
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "unread required header: recorded in docs/route-divergence.json but no longer present: " +
+        "api.embryo-ingest-chunk X-Inherit-Chunk-Nonce",
+    );
+  });
+
+  it("fails when a recorded row names a route that does not declare it", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        rowsOf(ledger)[0] = { ...rowsOf(ledger)[0], routeId: "api.embryo-ingest-complete" };
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    const joined = failures.join("\n");
+    expect(joined).toContain(
+      "unread required header: not recorded in docs/route-divergence.json: " +
+        "api.embryo-ingest-chunk X-Inherit-Chunk-Nonce",
+    );
+    expect(joined).toContain(
+      "unread required header: recorded in docs/route-divergence.json but no longer present: " +
+        "api.embryo-ingest-complete X-Inherit-Chunk-Nonce",
+    );
+  });
+
+  it("fails when the header a module really reads is recorded as unread", async () => {
+    const root = plant({
+      ledger: (ledger) => {
+        rowsOf(ledger).push({ routeId: "api.embryo-ingest-chunk", header: "X-Inherit-CSRF" });
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "unread required header: recorded in docs/route-divergence.json but no longer present: " +
+        "api.embryo-ingest-chunk X-Inherit-CSRF",
+    );
+  });
+
+  it("fails rather than passing when the register declares no required header at all", async () => {
+    const root = plant({
+      register: (register) => {
+        for (const id of ["api.embryo-ingest-chunk", "api.evidence-chunk"]) {
+          const route = (register.routes as { id: string; requestContract?: Record<string, unknown> }[])
+            .find((candidate) => candidate.id === id)!;
+          delete route.requestContract!.requiredHeaders;
+        }
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    // An empty population would otherwise read as a contract with nothing
+    // unserved in it, which is the same failure the other floor guards catch.
+    expect(failures.join("\n")).toContain(
+      "required header check found 0 declared header names, expected at least 2",
     );
   });
 });
