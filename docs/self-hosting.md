@@ -93,12 +93,27 @@ of which have to agree before it turns on; see section 5.
 ### Tests
 
 ```bash
-pnpm test        # unit
+pnpm exec playwright install chromium   # `pnpm test` needs this too; see below
+pnpm test        # unit, plus three suites that drive a real DOM
 pnpm e2e         # Playwright: RLS proof, network audit, flows (needs the
                  # local stack running and a production build; see
                  # playwright.config.ts)
 pnpm gate:legal  # placeholder gate over legal pages
 ```
+
+**`pnpm test` is not purely unit, and nothing said so until the guide was run
+from a clean clone on 21 September 2026.** Three suites need a real Chromium:
+`src/lib/claims/collect-dom.test.ts` and `src/components/claims/claim.test.ts`
+launch one directly, and `src/lib/claims/capture-emails.test.ts` reaches one
+through `captureEmailClaims`. They read an actual DOM rather than a simulated
+one, which is the point of them — but they need no server, no database and no
+network, and `collect-dom` aborts every request it sees.
+
+Without a browser installed, all three fail the whole file with
+`browserType.launch: Executable doesn't exist`, which reads like a broken
+checkout rather than a missing prerequisite. The line above installs it once.
+CI does the same with `pnpm exec playwright install --with-deps chromium`
+before it runs anything.
 
 One unit suite, `src/lib/claims/capture-emails.test.ts`, re-renders production
 email from the checkout and refuses to attest one that carries files git does
