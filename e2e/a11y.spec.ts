@@ -1115,6 +1115,18 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
           await test.info().attach(`reflow${route.replace(/[^a-z0-9]+/gi, "-")}`,
             { body: JSON.stringify(overflow, null, 2), contentType: "application/json" });
         }
+        // That attachment only survives a FAILING run: CI uploads
+        // test-results and playwright-report under `if: failure()`. This route
+        // is recorded, so the assertion below passes, the suite is green, and
+        // the attachment is discarded with it. The causal walk therefore
+        // answers only when something else is already broken, which is not a
+        // diagnostic at all - measured on run 35629058688, which was green and
+        // produced no artifact. The job log is kept either way, so the walk's
+        // findings go there too, and only they: the geometric readers are
+        // already in the attachment and say nothing on this route.
+        for (const line of overflow?.bisect ?? []) {
+          console.log(`reflow bisect ${route}: ${line}`);
+        }
         expect.soft(overflow?.scrollWidth ?? 0,
           `${route} is recorded at ${recorded.scrollWidth} CSS px; a wider page is a regression, `
           + `and one that reflows must leave ${ACCESSIBILITY_LEDGER}`)
