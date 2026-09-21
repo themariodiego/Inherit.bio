@@ -159,6 +159,128 @@ counsel revisions (G5.8), fund and host one comprehension run (G3.1, G3.3, and
 G3.2 alongside it), and decide whether the embryo ingest slice is in scope for
 this release (six rows move from blocked to buildable).
 
+## The path corrected · 21 September 2026
+
+Two statements above stopped being true today. Both were found by building
+toward them rather than by re-reading them, which is the only way this kind of
+staleness surfaces. A delivery order that is one day out of date **in the
+direction of optimism** is worse than none, so both are corrected here.
+
+### Group B is three owner decisions, not one
+
+"What this means" says that deciding whether the embryo ingest slice is in scope
+moves six rows "from blocked to buildable". That is no longer true. Deciding
+scope is necessary and it is not sufficient. Three decisions gate the slice, and
+two of them were not known on 20 September:
+
+1. **The build-inference reference panel — D-131, filed today.**
+   `public.embryo_ingest_sessions.source_format` and `.reference_build` are
+   declared nullable at `20260905192551_embryo_ingest_session_lifecycle.sql:12-13`,
+   read by the fragment-binding trigger
+   (`20260905203457_embryo_ingest_unwind_runtime.sql:25-28`) and by the HTTP
+   authorization payload (`20260905202656:63`) — and **nothing writes either
+   one**. `private.create_embryo_ingest_session_v1` names 24 columns in its
+   insert and neither is among them. So the trigger raises
+   `ingest object binding unavailable` and **no chunk carrying even one fragment
+   can be reserved, by any caller**. The fragment is the point of a chunk, so
+   the transport is closed at its last step.
+
+   The register says where the values come from and names two files that do not
+   exist. `policyContracts.genome-build-inference-v1` sets
+   `implementationTarget: src/lib/genome/build-inference.ts` and
+   `referenceData: data/ref/build-discriminating-sites.json`, compares the input
+   position set against both builds, and accepts one only on **at least 1000
+   discriminating positions** and at least 0.99 agreement. Anything else is
+   `decision-required`, which is the only thing that issues the mapping route's
+   build challenge; an unsolicited client build declaration is explicitly
+   `forbidden`.
+
+   **The reference data is the decision, and it is measured rather than
+   estimated.** The file has to be an rsID to (GRCh37 pos, GRCh38 pos) table,
+   because a bare position discriminates nothing — a number is consistent with
+   either coordinate system. The repository already holds 134 rows of exactly
+   that shape at `data/ref/grch38_to_37.json`, built by
+   `scripts/generate-synthetic-sample.ts:50` against Ensembl REST at build time,
+   so the *mechanism* is proven. The site list is what is missing: counted across
+   `aims.json` (168), `aims-seven-region.json` (the same 168), the PGS panels
+   (424, 223, 50) and that cache (134), the repository holds **980 distinct
+   rsIDs against a floor of 1000** — and the floor is on positions compared *in
+   the input*, so overlapping 1000 sites of an arbitrary lab-specific PGT table
+   needs a common-SNP panel of tens of thousands. Choosing that panel carries a
+   licence and a `docs/dataset-licenses.md` provenance entry, in the shape
+   `data/ref/AIMS_PROVENANCE.md` already sets. **It must not be fabricated**,
+   which is why this stops at naming it.
+
+2. **Item 20 — the chunk route's two required headers.** Recorded in
+   `docs/protocol/brief-corrections-proposed.md`, three options with the first
+   recommended. Neither `X-Inherit-CSRF` nor `X-Inherit-Chunk-Nonce` can be
+   served as the register writes them; ADR 0020 decision 9 holds the account and
+   must not be re-derived. Independent of D-131: settling the headers does not
+   make a fragment bind, and binding a fragment does not settle the headers.
+   Both are required before the chunk route is worth building.
+
+3. **Scope itself** — unchanged, still the owner's, still unanswered.
+
+**What is buildable on this path with none of the three answered: nothing past
+the first chunk.** The complete route's `chunkCount` must equal the server-owned
+fragment manifest cardinality, so it needs fragments. The mapping route has two
+independent blockers — `public.embryo_mapping_challenges` has no writer anywhere,
+and its build challenge is unreachable until the inference stage exists. The
+`split_cohort_vcf` executor can be written against `worker/src/` but not proven
+end to end. The pieces that were already ready stay ready and stay unusable:
+`authorizeIngestHttpRequest`, `ingestChunkEnvelope`, `readIngestChunk`, the
+two chunk validators, and — as of today — the public doors for the reserve and
+commit transactions.
+
+So group B's six rows are gated by **two owner decisions with a licence question
+between them**, not by one scope call. That is a materially different ask, and
+putting it to the owner as one call would have been wrong.
+
+### Group F's first clause is out of date
+
+Group F says of G2.4 that "nothing instruments `click` and `submit` counts,
+nothing enumerates T1–T9 against their ceilings". The first clause is no longer
+true. `e2e/task-depth.spec.ts` exists and measures **T8** — ceiling 6, floor 3
+including one typed confirmation — by instrumenting `click` and `submit`
+exactly as the brief defines the unit, and `UNINSTRUMENTED_TASK_DEPTH_TASKS` in
+`scripts/route-gate.ts:642` came down 8 → 7 in the same change. The route gate
+now reports "1 of 8 task-depth ceilings measured", so the instrumentation
+pattern is proven and the remaining seven are a repeat of it, not a new problem.
+
+**One of the seven cannot be settled by measuring at all.** T9's ceiling is 6 in
+the register and 8 in `scripts/comprehension/bindings.json`, and the obvious
+move — measure it and see which is right — does not work, because the two
+numbers are not in the same unit. The brief at line 2588 defines task depth as
+pointer activations plus keystroke submissions, instrumented in the E2E test,
+which is what the register carries as `countedEvents`. T9's binding, and
+`docs/comprehension-protocol.md:224` and `scripts/comprehension/rubric.md:239`,
+instead count "one click, one form submission, or **one typed URL**" — a phrase
+that appears in those three files and nowhere in the brief. A browser cannot
+count a typed URL and a human observer plainly can, so a measurement taken under
+`countedEvents` counts a strictly smaller population than the 8 is expressed in.
+T9's bound journey ends at `/withdraw/[token]`, normally reached from a mailed
+link: one action under the wider definition, zero under the instrumented one.
+The units are an owner decision, recorded in `docs/route-divergence.json` under
+`taskDepthCeilingDivergence` with a `doNotAttempt` line.
+
+Group F's other two cautions stand unchanged: T7 is blocked by the same absent
+embryo path, and T6's `withheldVariant` scoping still needs settling before the
+suite is scoped.
+
+### The corrected summary
+
+The four asks in "What this means" become five, and one of them splits:
+
+- one signed jurisdiction review (G5.5, then G5.1a);
+- the counsel revisions (G5.8);
+- funding and hosting one comprehension run (G3.1, G3.3, G3.2 alongside);
+- **the task-depth unit question** (unblocks the rest of G2.4's engineering half,
+  which is otherwise ready to repeat seven times);
+- and for the embryo slice, **scope, then item 20, then a licensed
+  discriminating-site panel** — three answers, not one.
+
+Nothing here moves a verdict. The count is 38 YES / 27 NO, unchanged.
+
 ## Resumption handoff · 18 September 2026
 
 Acceptance is **38/65**, counted from the YES/NO column (G4.8 on 20 September; G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
