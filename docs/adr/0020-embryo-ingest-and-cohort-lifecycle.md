@@ -61,6 +61,21 @@ the paragraph above implies:
    `annotation-refresh`, `mail`, `research-refresh`, `research-publish`) and
    none of them is for ingest. A registered kind with no executor is a job
    that can be enqueued and never run.
+
+   **That last sentence points at the wrong directory, corrected 21 September
+   2026.** `src/app/api/jobs/` holds maintenance endpoints, not queue
+   consumers: nothing under `src/` reads `public.worker_jobs` at all, and the
+   only mentions of it there are generated type references. The consumer that
+   exists is `worker/src/index.ts`, a Tier-3 self-host worker that polls
+   `public.worker_jobs` over a **direct Postgres connection** with
+   `for update skip locked` rather than through PostgREST - which is why the
+   private `claim_worker_job_v1` and `enqueue_worker_job_v1` need no public
+   door and the queue is not unreachable the way the cohort-finalize
+   transaction was. Its claim query filters `kind = 'annotate_vcf'` as a
+   literal (`worker/src/index.ts:36`), so it handles exactly one of the nine
+   registered kinds. `split_cohort_vcf` therefore needs either that filter
+   widened with a second handler beside it, or its own consumer in the
+   Cloudflare preparation-worker container - and in neither case a route.
 3. **The browser sanitiser**, and the `EMBRYO_INGEST_AVAILABLE` flag, which
    is `false` at `src/copy/embryos/upload.ts:33` and pinned false by
    `src/lib/embryos/upload-flow.test.ts:155` and
