@@ -841,6 +841,12 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         const root = document.documentElement;
         if (root.scrollWidth <= root.clientWidth) return null;
         const limit = root.clientWidth;
+        // Captured before any reader runs and before the causal walk below
+        // touches the page, and it is this number the verdict compares. The
+        // walk hides and restores subtrees; a diagnostic must not be able to
+        // move a verdict, even by a rounding, so the width that is asserted
+        // on is the one measured while the page was untouched.
+        const scrollWidthBefore = root.scrollWidth;
         // The properties that make an element the containing block of its
         // `fixed` descendants, and of `absolute` ones through a `static`
         // ancestor. Kept in one place so the walk below reads as the rule.
@@ -898,6 +904,156 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         }
         const escapes = leaking.filter(element =>
           !leaking.some(other => other !== element && other.contains(element)));
+        // Every reader above answers one question: what has a box past the
+        // edge. On the variant browser all of them come back empty, and the
+        // divergence entry names why - the width is coming from something
+        // with no box of its own, which leaves a margin, a pseudo-element, a
+        // fixed-width rule in igv's injected stylesheet, or a positioned node
+        // whose containing block is outside its scroll container. Reading
+        // cannot separate those four. Removing can, and that is what the
+        // entry's closing asks for: bisect it rather than read it. Hide a
+        // subtree, ask the document how wide it is, put it back. The
+        // narrowest node whose removal resolves the overflow is the cause
+        // whatever the mechanism, and a node that is the cause while none of
+        // its children is answers for the three mechanisms `querySelectorAll`
+        // can never return.
+        //
+        // Runs ONLY when `causes` is empty, so the routes that already name
+        // their cause pay nothing for it.
+        const bisect: string[] = [];
+        if (causes.length === 0) {
+          const PROBE_LIMIT = 600;
+          let probes = 0;
+          const styled = (element: Element): HTMLElement | SVGElement | null =>
+            element instanceof HTMLElement || element instanceof SVGElement ? element : null;
+          // `!important` so a stylesheet rule cannot win, and the previous
+          // inline value is put back exactly - including being absent, which
+          // `removeProperty` and not an empty string restores.
+          const resolvesWhenHidden = (element: Element) => {
+            const box = styled(element);
+            if (!box) return false;
+            probes += 1;
+            const had = box.style.getPropertyValue("display");
+            const priority = box.style.getPropertyPriority("display");
+            box.style.setProperty("display", "none", "important");
+            const width = root.scrollWidth;
+            if (had) box.style.setProperty("display", had, priority);
+            else box.style.removeProperty("display");
+            return width <= root.clientWidth;
+          };
+          // The four mechanisms, read off the node the bisection lands on, so
+          // the finding says which one it is rather than only where it is.
+          const describeCause = (element: Element) => {
+            const style = getComputedStyle(element);
+            const parts = [
+              `width ${style.width}`, `min-width ${style.minWidth}`,
+              `margin ${style.marginLeft}/${style.marginRight}`,
+              `padding ${style.paddingLeft}/${style.paddingRight}`,
+              `border ${style.borderLeftWidth}/${style.borderRightWidth}`,
+              `position ${style.position}`, `transform ${style.transform}`,
+              `overflow-x ${style.overflowX}`,
+              `holds ${element.scrollWidth}px in ${element.clientWidth}px`,
+            ];
+            for (const part of ["::before", "::after"] as const) {
+              const pseudo = getComputedStyle(element, part);
+              if (pseudo.content === "none") continue;
+              parts.push(`${part} content ${pseudo.content}, width ${pseudo.width}`
+                + `, margin ${pseudo.marginLeft}/${pseudo.marginRight}`
+                + `, position ${pseudo.position}`);
+            }
+            return `${probe.describe(element)} - ${parts.join(", ")}`;
+          };
+          const DEPTH_LIMIT = 40;
+          let node: Element = document.body;
+          const path: string[] = [probe.describe(node)];
+          let named = false;
+          for (let depth = 0; depth < DEPTH_LIMIT && probes < PROBE_LIMIT; depth += 1) {
+            // Snapshot: `children` is live, and hiding a node can make igv's
+            // own resize observers add or remove siblings while the walk is
+            // still reading them.
+            const kids = Array.from(node.children);
+            const guilty: Element[] = [];
+            for (const child of kids) {
+              if (probes >= PROBE_LIMIT) break;
+              if (resolvesWhenHidden(child)) guilty.push(child);
+            }
+            // One child accounts for the whole overflow: the cause is inside
+            // it, so go in. Nothing does: the cause is this node's own box,
+            // which is the answer for a margin, a pseudo-element or a width
+            // floor. Several do: each is independently sufficient, so name
+            // them all rather than picking one.
+            if (guilty.length === 1 && probes < PROBE_LIMIT) {
+              node = guilty[0];
+              path.push(probe.describe(node));
+              continue;
+            }
+            if (guilty.length === 0) {
+              // "No child is individually sufficient" is not yet "the node
+              // itself". Two children that each overflow alone would both
+              // fail the single-child test and blame their parent, which
+              // would be a wrong answer stated confidently. Hiding every
+              // child at once decides it: if that resolves the overflow the
+              // cause is collective and below this node, and if it does not,
+              // the width really is the node's own - which is the margin, the
+              // pseudo-element or the width floor this walk exists to find.
+              const restore = kids.map(child => {
+                const box = styled(child);
+                if (!box) return null;
+                const had = box.style.getPropertyValue("display");
+                const priority = box.style.getPropertyPriority("display");
+                box.style.setProperty("display", "none", "important");
+                return { box, had, priority };
+              });
+              probes += 1;
+              const withoutChildren = root.scrollWidth;
+              for (const saved of restore) {
+                if (!saved) continue;
+                if (saved.had) saved.box.style.setProperty("display", saved.had, saved.priority);
+                else saved.box.style.removeProperty("display");
+              }
+              if (withoutChildren <= root.clientWidth) {
+                bisect.push(`no child accounts for it alone, but hiding all `
+                  + `${kids.length} together resolves it, so the cause is several `
+                  + `children of ${probe.describe(node)} acting jointly - widest first: `
+                  + [...kids]
+                    .sort((a, b) => b.scrollWidth - a.scrollWidth)
+                    .slice(0, 4).map(child => describeCause(child)).join(" | "));
+              } else {
+                bisect.push(`no child accounts for it and hiding all `
+                  + `${kids.length} together does not either, so the cause is the `
+                  + `node's own box: ${describeCause(node)}`);
+              }
+            } else if (guilty.length > 1) {
+              bisect.push(`${guilty.length} independently sufficient causes under `
+                + `${probe.describe(node)}: `
+                + guilty.slice(0, 4).map(child => describeCause(child)).join(" | "));
+            }
+            // Reached a decision point: either branch above pushed a
+            // finding, or the probe bound stopped a single-child descent and
+            // the bound's own message below says so.
+            named = true;
+            break;
+          }
+          // Three ways to finish without an answer, each said out loud rather
+          // than left as an empty list a reader would mistake for "nothing
+          // found": the probe bound, the depth bound, and a walk that never
+          // reached either but never named a node.
+          if (probes >= PROBE_LIMIT) {
+            bisect.push(`bisection stopped at its ${PROBE_LIMIT}-probe bound at `
+              + `${probe.describe(node)} - incomplete, raise the bound to finish it`);
+          } else if (!named) {
+            bisect.push(`bisection stopped at its ${DEPTH_LIMIT}-level depth bound at `
+              + `${probe.describe(node)} - incomplete, raise the bound to finish it`);
+          }
+          bisect.push(`descent: ${path.join(" > ")}`);
+          // The walk mutates the page and restores it. Say whether that
+          // worked rather than trusting it: a botched restore would corrupt
+          // every assertion after this one on this page, and silently.
+          bisect.push(root.scrollWidth === scrollWidthBefore
+            ? `document restored to ${scrollWidthBefore}px after ${probes} probes`
+            : `RESTORE FAILED: ${scrollWidthBefore}px before, `
+              + `${root.scrollWidth}px after ${probes} probes`);
+        }
         return {
           // What has a box past the edge and what was supposed to be clipping
           // it. When `widest` is empty this is the only thing that says why.
@@ -912,7 +1068,7 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
           }),
           leaks: escapes.slice(0, 6).map(element =>
             `${probe.describe(element)} holds ${element.scrollWidth}px in a ${element.clientWidth}px box`),
-          scrollWidth: root.scrollWidth,
+          scrollWidth: scrollWidthBefore,
           clientWidth: root.clientWidth,
           // Width with no element of its own to name: a floor set on the root
           // or the body, and pseudo-elements, which `querySelectorAll` cannot
@@ -931,6 +1087,9 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
               return [`${probe.describe(element)}${part} width ${style.width}`
                 + `, position ${style.position}, right ${style.right}, margin-right ${style.marginRight}`];
             })).slice(0, 8),
+          // What the causal walk found when every reader above came back
+          // empty, and empty itself when one of them named a cause.
+          bisect,
           // Empty when nothing has a box past the edge — a margin, a
           // pseudo-element or a fixed-width table can widen the document with
           // no element of its own to name — so the two lengths are reported
@@ -955,6 +1114,36 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         if (overflow) {
           await test.info().attach(`reflow${route.replace(/[^a-z0-9]+/gi, "-")}`,
             { body: JSON.stringify(overflow, null, 2), contentType: "application/json" });
+        }
+        // That attachment only survives a FAILING run: CI uploads
+        // test-results and playwright-report under `if: failure()`. This route
+        // is recorded, so the assertion below passes, the suite is green, and
+        // the attachment is discarded with it. A diagnostic that answers only
+        // when something else is already broken is not a diagnostic at all -
+        // measured on run 35629058688, which was green and produced no
+        // artifact. The job log is kept either way, so the findings go there.
+        //
+        // THE FIRST FIX SENT ONLY THE WALK'S FINDINGS, on the reasoning that
+        // the geometric readers "say nothing on this route". Run 35635733111
+        // disproved that, and in the way that mattered: it printed no walk
+        // line at all, because the walk is gated on `causes.length === 0` and
+        // `causes` was NOT empty. The readers had named a cause, the walk
+        // correctly stood down, and the answer this route has been waiting for
+        // was computed and then dropped with the attachment - the same bug one
+        // level up from the one that fix closed. So everything the probe
+        // found goes to the log now, readers included. All of it is bounded
+        // (at most 6, 6, 5, 2 and 8 entries), so this costs a handful of lines
+        // on one route and nothing anywhere else.
+        for (const line of overflow ? [
+          `${overflow.scrollWidth}px in a ${overflow.clientWidth}px viewport`,
+          ...overflow.widest.map(entry => `widest: ${entry}`),
+          ...overflow.leaks.map(entry => `leak: ${entry}`),
+          ...overflow.escaped.map(entry => `escaped: ${entry}`),
+          ...overflow.floors.map(entry => `floor: ${entry}`),
+          ...overflow.pseudo.map(entry => `pseudo: ${entry}`),
+          ...overflow.bisect.map(entry => `bisect: ${entry}`),
+        ] : []) {
+          console.log(`reflow ${route}: ${line}`);
         }
         expect.soft(overflow?.scrollWidth ?? 0,
           `${route} is recorded at ${recorded.scrollWidth} CSS px; a wider page is a regression, `
