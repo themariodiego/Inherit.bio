@@ -20,6 +20,21 @@ Payload Too Large after about a megabyte, by Cloudflare**, on the declared
 `Content-Length`. The project's global file size limit governs what Storage
 will keep, not what one request may carry, so raising it does not move this.
 
+**Fixed on `main` before this record landed, 21 September 2026.** Both halves
+below describe the hosted-proof branch as it stood on 20 September. `main`
+already carries the fix, in commit `ff947a6` "Never offer a ceiling one
+request cannot carry": `SINGLE_REQUEST_MAXIMUM_BYTES` in
+`src/lib/uploads/subject-upload-contract.ts` is **5,242,880,000** — exactly the
+largest size the probe below proved a single request accepts —
+`uploadCeilingBytes` returns `Math.min(configuredCeilingBytes(...),
+SINGLE_REQUEST_MAXIMUM_BYTES)` so no configured ceiling can exceed it, and
+`issueSubjectUpload` refuses an oversized declaration with `413 too_large`
+**before any durable row exists**. So the 8 GiB lease of half one can no longer
+be issued, and the five-and-a-half-minute silence of half two can no longer be
+reached by an over-ceiling file. The two halves are kept as written because
+they are what was measured, and because the reasoning is what the constant
+rests on: delete the measurement and the constant looks arbitrary.
+
 **Half one: the configuration admits what cannot arrive.** With
 `maximum_gvcf_bytes` set to 8 GiB on the branch, `issue_own_storage_upload_v1`
 answered 201 for an 8,589,933,057-byte gVCF. Nothing between
