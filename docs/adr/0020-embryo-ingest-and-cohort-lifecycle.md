@@ -19,6 +19,76 @@ acknowledged, and only then a file. The register binds the ingest session
 (`canonical-source-publication-v1`). None of the routes, the migration's
 RPCs, the sanitiser or the worker exists yet (design §10, part E0).
 
+**That last sentence was true on 4 September and has been wrong since the
+5th.** Measured against the Inherit project's live catalogue on 21 September
+2026, and against `supabase/migrations/` in the same pass: the E0 **database
+layer is built and deployed**. Every ingest table exists with row-level
+security on — `embryo_ingest_sessions` (33 columns), `embryo_ingest_chunks`,
+`embryo_ingest_fragments`, `embryo_ingest_unwinds`,
+`embryo_ingest_delete_objects`, `embryo_fragment_handle_maps`,
+`embryo_mapping_challenges` and `embryo_operation_nonces` — and so do the
+RPCs that drive them: `create_embryo_ingest_session_v1`,
+`reserve_embryo_ingest_chunk_v1`, `commit_embryo_ingest_chunk_v1`,
+`freeze_embryo_ingest_session_v1`, `mark_embryo_ingest_failure_v1`,
+`finalize_embryo_cohort_ingest_v1`, `prepare_embryo_ingest_unwind_v1`,
+`bind_embryo_fragment_object_v1`, `consume_embryo_operation_nonce_v1` and the
+public `authorize_embryo_ingest_request_v1`. Two of this ADR's own
+sanitisation rules are enforced in the database as triggers:
+`reject_embryo_demographics` and `embryo_forbidden_columns_guard`. They
+arrived in `20260905191141_embryo_ingest_chunk_reservations.sql`,
+`20260905192551_embryo_ingest_session_lifecycle.sql` and
+`20260905202656_embryo_ingest_http_authorization.sql` — **one day after this
+ADR was written** — and nothing came back to amend the sentence above.
+Repository and production agree; this is a stale document, not schema drift.
+
+**What is genuinely missing, measured the same day**, and it is smaller than
+the paragraph above implies:
+
+1. **The three ingest routes.** `docs/route-register.json` registers
+   `api.embryo-ingest-mapping` (`/api/embryo-ingest/[session]/mapping`),
+   `api.embryo-ingest-chunk` (`.../chunks/[sequence]`) and
+   `api.embryo-ingest-complete` (`.../complete`). `src/app/api/` has no
+   `embryo-ingest` directory. The library layer they would consume already
+   exists and is unit-tested: `src/lib/embryos/ingest-session.ts`,
+   `ingest-http.ts`, `ingest-binding.ts`, `ingest-lines.ts`,
+   `vcf-transport.ts`, `table-transport.ts`, `source-labels.ts`,
+   `projection.ts` and `qc-policy.ts`.
+2. **The `split_cohort_vcf` executor.** The job *kind* is registered — it is
+   in the `worker_jobs` kind list at
+   `20260831224034_worker_jobs_v2.sql:124`, and
+   `supabase/tests/job_timing_privacy.sql` proves its timing disclosure — but
+   nothing executes it. `src/app/api/jobs/` ships five routes (`retention`,
+   `annotation-refresh`, `mail`, `research-refresh`, `research-publish`) and
+   none of them is for ingest. A registered kind with no executor is a job
+   that can be enqueued and never run.
+3. **The browser sanitiser**, and the `EMBRYO_INGEST_AVAILABLE` flag, which
+   is `false` at `src/copy/embryos/upload.ts:33` and pinned false by
+   `src/lib/embryos/upload-flow.test.ts:155` and
+   `src/copy/embryos/embryos.test.ts:243`. E2 steps 3–5 sit behind it.
+
+**Two primitives these routes need are also already built, and are easy to
+mistake for ones that are not.** The chunk contract requires an
+`X-Inherit-CSRF` token bound to the upload session and a one-time chunk
+nonce, and the mapping contract requires a one-time mapping-inspection nonce.
+`src/lib/embryos/operation-token.ts` mints and verifies exactly these —
+`CSRF_HEADER`, `OPERATION_HEADER`, `mintEmbryoOperation`,
+`readEmbryoOperation`, `verifyEmbryoOperation`, with the sealed envelope
+under its own digest context so a family token never reads as an embryo one —
+and four shipped routes already consume it: `record-key-cards`,
+`embryos/[id]/disposition`, `cohorts/[id]/restrict` and
+`invitations/accept`. This is **not** the unbuilt token `docs/acceptance-matrix.md`
+records against `/api/browse/region`, which has no minting presentation;
+the embryo domain has its own and it is in production use. The header rule
+the mapping route enforces is built too: `src/lib/genome/parsers/pgt-table.ts`
+already reports the header cells that name a sex, gender or karyotype column,
+which is the refusal this ADR's §10 requires before any row, audit log or
+object write.
+
+Recorded because the cost of the stale sentence is a session spent building
+eight RPCs that are already deployed, and because the corrected scope changes
+what the remaining work is: three routes wiring a substrate that is finished
+and tested, one job executor, and a flag.
+
 ## Decision
 
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
