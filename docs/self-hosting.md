@@ -69,9 +69,12 @@ pnpm dev
 
 Open http://localhost:3000, sign up (the verification email is in Mailpit
 at http://127.0.0.1:54324), and upload a sample:
-`data/samples/synthetic_23andme.txt` (synthetic person) or
-`data/samples/HG001_GRCh38_chr20-22.vcf.gz` (public GIAB reference
-material).
+`data/samples/HG001_GRCh38_chr20-22.vcf.gz` (public GIAB reference material).
+Use that one. `data/samples/synthetic_23andme.txt` is also in the repository
+and **is refused at preparation today** with a 422: 850 of its 2135 positions
+do not lift to GRCh38, which is past the 5% the liftover contract allows. That
+is defect D-133, and until it is fixed the array sample is for the unit tests
+that read it, not for a first run.
 
 ### Local LLM copilot (the privacy-preferred setup)
 
