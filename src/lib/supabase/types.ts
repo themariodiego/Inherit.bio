@@ -7905,6 +7905,19 @@ export type Database = {
         Args: { p_claim_token_hash: string; p_deletion_id: string }
         Returns: undefined
       }
+      finalize_embryo_cohort_ingest_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_charter_ack_id: string
+          p_draft_id: string
+          p_insurance_ack_id: string
+          p_origin: string
+          p_test_jurisdiction?: boolean
+          p_token_nonce: string
+        }
+        Returns: Json
+      }
       finalize_embryo_cohort_v1: {
         Args: {
           p_account_id: string
