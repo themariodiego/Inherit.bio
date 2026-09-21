@@ -629,8 +629,16 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 11;
  * fixture-only seed path, so those two cannot be measured here at all. They
  * are counted anyway rather than waived: an unmeasurable ceiling is still an
  * unmeasured one, and waiving it would hide the dependency.
+ *
+ * 8 -> 7 the same day: T8 is measured. `e2e/task-depth.spec.ts` walks the
+ * delete-everything journey from `/overview` by clicking, counting the `click`
+ * and `submit` events the browser really dispatched rather than this file's
+ * own calls, and holds the count to the register's floor of 3 and ceiling of
+ * 6. It is the first of the eight to be measured at all, and the one the
+ * brief cares most about: the floor is the only number in the register that
+ * exists to stop a journey being made too easy.
  */
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 8;
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 7;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {
