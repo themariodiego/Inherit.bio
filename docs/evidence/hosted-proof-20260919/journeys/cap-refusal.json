@@ -1,0 +1,132 @@
+{
+  "label": "cap-refusal",
+  "fixture": "tiny-grch38.vcf",
+  "sizeBytes": 547,
+  "startedAt": "2026-09-20T12:11:24.445Z",
+  "events": [
+    {
+      "at": "2026-09-20T12:11:24.864Z",
+      "what": "user_created",
+      "detail": {
+        "accountId": "cf0412ba-97bc-4eac-9f67-5251a957fdd5"
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:27.766Z",
+      "what": "signed_in",
+      "detail": {
+        "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:29.779Z",
+      "what": "account_completed",
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:31.034Z",
+      "what": "insurance_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:32.140Z",
+      "what": "own_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:32.147Z",
+      "what": "consent_complete"
+    },
+    {
+      "at": "2026-09-20T12:11:35.671Z",
+      "what": "file_selected",
+      "detail": {
+        "reacted": true
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:35.674Z",
+      "what": "upload_session",
+      "detail": {
+        "status": 201,
+        "declaredFormat": "VCF",
+        "sizeBytes": 547,
+        "sha256Matches": true,
+        "hashSeconds": 0.003
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:35.674Z",
+      "what": "storage_post",
+      "detail": {
+        "status": 200,
+        "seconds": 0,
+        "mbps": null,
+        "contentType": "application/octet-stream"
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:38.692Z",
+      "what": "finalized",
+      "detail": {
+        "status": 200,
+        "seconds": 3.018,
+        "fileId": "0bdb514b-a14f-4739-a843-3594ac1624d8"
+      }
+    },
+    {
+      "at": "2026-09-20T12:11:38.982Z",
+      "what": "capacity_refused",
+      "detail": {
+        "seconds": 0.287,
+        "text": "Inherit has reached this month's limit for full-genome files. Your file is kept; try again from the first of next month.",
+        "processResponses": [
+          {
+            "status": 429,
+            "body": {
+              "error": "preparation_capacity_reached"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "accountId": "cf0412ba-97bc-4eac-9f67-5251a957fdd5",
+  "fixtureSha256": "6f661a97271720aada0b5caf2a9193986d9c9d9c4449c85cb6244ed0c024d423",
+  "processResponses": [
+    {
+      "at": "2026-09-20T12:11:38.964Z",
+      "status": 429,
+      "body": {
+        "error": "preparation_capacity_reached"
+      }
+    }
+  ],
+  "stagingKey": "089bb956-9033-4692-aad7-a9fa3d1a330f",
+  "uploadId": "675533d3-4fa7-4d2e-bcf1-77212ea87126",
+  "finalizeAttempts": [
+    {
+      "at": "2026-09-20T12:11:38.692Z",
+      "status": 200,
+      "body": {
+        "fileId": "0bdb514b-a14f-4739-a843-3594ac1624d8",
+        "status": "finalized_ready_for_processing",
+        "analysisState": "ready_for_processing",
+        "next": {
+          "routeId": "api.file-process",
+          "operation": "process"
+        }
+      }
+    }
+  ],
+  "fileId": null,
+  "outcome": "capacity_refused",
+  "finishedAt": "2026-09-20T12:11:39.043Z",
+  "savedAt": "2026-09-20T12:11:39.114Z"
+}

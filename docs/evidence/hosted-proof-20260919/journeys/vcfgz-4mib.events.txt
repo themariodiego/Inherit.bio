@@ -1,0 +1,18 @@
+2026-09-20T09:49:06.482Z user_created {"accountId":"e0312694-3394-4461-80e0-d9bb0ae072e7"}
+2026-09-20T09:49:12.764Z signed_in {"url":"https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"}
+2026-09-20T09:49:15.151Z account_completed {"status":200}
+2026-09-20T09:49:16.395Z insurance_consent {"status":201}
+2026-09-20T09:49:17.468Z own_consent {"status":201}
+2026-09-20T09:49:17.475Z consent_complete
+2026-09-20T09:49:21.000Z file_selected {"reacted":true}
+2026-09-20T09:49:21.003Z upload_session {"status":201,"declaredFormat":"VCF.GZ","sizeBytes":856536,"sha256Matches":true,"hashSeconds":0.003}
+2026-09-20T09:49:21.418Z storage_post {"status":200,"seconds":0.415,"mbps":1.9683286368128765,"contentType":"application/octet-stream"}
+2026-09-20T09:49:24.271Z finalized {"status":200,"seconds":2.852,"fileId":"1c13b0ff-85f4-4f0f-8161-d35eabe50c23"}
+2026-09-20T09:50:24.361Z still preparing (60s)
+2026-09-20T09:50:49.406Z prepared_in_browser {"seconds":85.132,"text":"Your file is stored and prepared. Reports have not been generated yet. Choose your reports · View your file"}
+2026-09-20T09:50:49.758Z genome_file {"file_type":"vcf","status":"stored","sha256Matches":true,"expectedFormat":"vcf","formatMatches":true}
+2026-09-20T09:50:51.427Z report_purpose_granted {"status":201}
+2026-09-20T09:51:16.873Z reports_generated {"status":200,"seconds":24.62,"body":{"fileId":"1c13b0ff-85f4-4f0f-8161-d35eabe50c23","status":"processed","analysisState":"active"}}
+2026-09-20T09:51:21.959Z reports_page {"previews":0,"figures":0,"title":"You · Reports · Inherit"}
+2026-09-20T09:51:23.462Z genome_file_after_reports {"status":"stored"}
+2026-09-20T09:51:23.462Z withdraw_waiting_for_go_file "/tmp/claude-0/-home-user-Inherit-bio/f057a475-72e9-5869-a159-1d560fcbaaca/scratchpad/proof/out/vcfgz-4mib.json.withdraw-go"

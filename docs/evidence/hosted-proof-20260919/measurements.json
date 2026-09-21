@@ -1,0 +1,322 @@
+{
+  "what": "Every preparation measured on the hosted preview stack: Supabase branch hosted-proof (iofjhrtcyawjjhuxbgfd), the preview gateway and container Workers, bucket inherit-prepared-preview. Synthetic files only. Times are UTC.",
+  "howMeasured": "Browser durations come from the journey driver (a real Chromium against the branch's Vercel Preview deployment). Job durations come from the branch's own rows: own_preparation_jobs.created_at, the first and last own_preparation_artifacts.acknowledged_at, and own_prepared_manifests.published_at. Claim time is read from claim_expires_at minus the five-minute lease, or from the first artifact acknowledgement where the lease was renewed.",
+  "containerHostFix": {
+    "before": "The Durable Object returned as soon as it had started the container. An object with no pending work is evicted and takes its container with it, so every run was killed about ninety seconds in.",
+    "after": "The wake awaits the container's exit and re-arms a twenty-second alarm while it runs (commit a2624b1).",
+    "evidence": "Two 64 MiB attempts died mid-run before the fix, on standard-1 and standard-2 alike; the same file finished after it."
+  },
+  "runs": [
+    {
+      "label": "vcf-tiny",
+      "format": "VCF",
+      "fixture": "e2e/fixtures/tiny-grch38.vcf",
+      "sourceBytes": 547,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "uploadSeconds": null,
+      "finalizeSeconds": 2.5,
+      "enqueuedAt": "2026-09-19T04:19:50.3Z",
+      "claimedAt": "2026-09-19T04:20:07.6Z",
+      "publishedAt": "2026-09-19T04:20:21.7Z",
+      "waitForTickSeconds": 17.3,
+      "containerWorkSeconds": 14.1,
+      "browserFinalizeToPreparedSeconds": 35.1,
+      "artifactsReserved": 14,
+      "finalArtifacts": 8,
+      "finalArtifactBytes": 18712,
+      "containerWakesForThisJob": 1,
+      "outcome": "published"
+    },
+    {
+      "label": "vcfgz-4mib",
+      "format": "VCF.GZ",
+      "sourceBytes": 856536,
+      "decodedBytes": 4194412,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "uploadSeconds": 0.42,
+      "finalizeSeconds": 2.85,
+      "enqueuedAt": "2026-09-20T09:49:24.8Z",
+      "claimedAt": "2026-09-20T09:50:07.1Z",
+      "publishedAt": "2026-09-20T09:50:42.9Z",
+      "waitForTickSeconds": 42.3,
+      "containerWorkSeconds": 35.8,
+      "browserFinalizeToPreparedSeconds": 85.1,
+      "artifactsReserved": 18,
+      "finalArtifacts": 8,
+      "finalArtifactBytes": 907471,
+      "reportsSeconds": 24.6,
+      "containerWakesForThisJob": 1,
+      "outcome": "published"
+    },
+    {
+      "label": "gvcf-4mib",
+      "format": "gVCF",
+      "sourceBytes": 814581,
+      "decodedBytes": 4194365,
+      "instance": "standard-2",
+      "containerHost": "before the fix",
+      "uploadSeconds": 0.06,
+      "finalizeSeconds": 1.61,
+      "enqueuedAt": "2026-09-20T11:25:19.8Z",
+      "publishedAt": "2026-09-20T11:30:2xZ",
+      "browserFinalizeToPreparedSeconds": 310.5,
+      "note": "Queued behind the 64 MiB job that was dying at the time, so its wait is queueing, not work. Stored as file_type gvcf, prepared, reported and withdrawn in the same journey.",
+      "reportsSeconds": 15.0,
+      "outcome": "published, then withdrawn"
+    },
+    {
+      "label": "vcf-64mib-retry",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-1",
+      "containerHost": "before the fix",
+      "enqueuedAt": "2026-09-20T11:25:05.3Z",
+      "claimedAt": "2026-09-20T11:25:06.8Z",
+      "lastProgressAt": "2026-09-20T11:26:37.5Z",
+      "containerAliveSeconds": 91,
+      "artifactsAtDeath": 46,
+      "bytesAtDeath": 11138849,
+      "checkpointRevisionAtDeath": 3,
+      "outcome": "container died mid-run; job left claimed with an expired lease, never re-claimed across six ticks, frozen at its deadline"
+    },
+    {
+      "label": "vcf-64mib-std2",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-2",
+      "containerHost": "before the fix",
+      "enqueuedAt": "2026-09-20T12:01:15.2Z",
+      "claimedAt": "2026-09-20T12:05:23.3Z",
+      "lastProgressAt": "2026-09-20T12:06:56.6Z",
+      "containerAliveSeconds": 93,
+      "artifactsAtDeath": 55,
+      "bytesAtDeath": 16466145,
+      "checkpointRevisionAtDeath": 6,
+      "outcome": "container died mid-run at the same point on the larger instance, which is what ruled out a resource limit"
+    },
+    {
+      "label": "vcf-64mib-held",
+      "format": "VCF",
+      "sourceBytes": 67108990,
+      "instance": "standard-2",
+      "containerHost": "after the fix",
+      "uploadSeconds": 2.33,
+      "uploadMegabytesPerSecond": 27.4,
+      "finalizeSeconds": 6.93,
+      "enqueuedAt": "2026-09-20T12:39:47.3Z",
+      "claimedAt": "2026-09-20T12:40:23.2Z",
+      "firstArtifactAt": "2026-09-20T12:40:28.3Z",
+      "lastArtifactAt": "2026-09-20T12:45:01.9Z",
+      "publishedAt": "2026-09-20T12:45:02.6Z",
+      "waitForTickSeconds": 35.9,
+      "containerWorkSeconds": 279.4,
+      "browserFinalizeToPreparedSeconds": 320.5,
+      "artifactsReserved": 183,
+      "finalArtifacts": 183,
+      "finalArtifactBytes": 58148752,
+      "containerWakesForThisJob": 1,
+      "summary": {
+        "variantCount": 431548,
+        "observedCallCount": 237111,
+        "usableObservedCount": 203803,
+        "rsidPointerCount": 474222,
+        "sourceBuild": "GRCh38"
+      },
+      "outcome": "published",
+      "peakContainerMemoryBytes": 647372800,
+      "peakContainerMemoryMiB": 617.4
+    }
+  ],
+  "throughput": {
+    "measuredOn": "standard-2 (1 vCPU, 6 GiB), the only instance that has completed a file of this size",
+    "decodedBytesPerSecond": 240189,
+    "mebibytesPerSecond": 0.229,
+    "basis": "67,108,990 source bytes in 279.4 seconds of container work (vcf-64mib-held)",
+    "artifactBytesPerSourceByte": 0.87,
+    "caveat": "One file at one size. The 4 MiB runs are dominated by start-up, so they do not extend this line, and no gVCF of comparable size has been prepared."
+  },
+  "whatFitsInsideTheSchemaBound": {
+    "bound": "own_preparation_jobs_worker_deadline_bound: job_deadline <= created_at + 1 hour, and own_preparation_config.max_job_seconds is checked between 900 and 3600. One hour is therefore the most any job can ever have.",
+    "atMeasuredRate": {
+      "3600s": "about 824 MiB of source, less the wait for the five-minute tick",
+      "900s (production's current max_job_seconds)": "about 206 MiB of source"
+    },
+    "ownerCeilings": {
+      "vcfAndVcfGz2GiB": "about 2 hours 29 minutes of work at the measured rate, so it cannot finish inside the one-hour bound",
+      "gvcf8GiB": "about 9 hours 57 minutes at the same rate, far outside it"
+    },
+    "status": "PROJECTION, NOT A MEASUREMENT. Every number below is the 64 MiB rate multiplied out. No file above 64 MiB has been prepared on this stack, so the 2 GiB and 8 GiB rows are what the measured rate predicts, not what was observed."
+  },
+  "recommendation": {
+    "max_job_seconds": 3600,
+    "why": "The column's ceiling, and it costs nothing: the job deadline is capped at one hour anyway. But it is NOT the constraint that matters. Both files measured here stopped for other reasons: the 64 MiB one finished in 279 s of container work, and the 2 GiB one was refused by the artifact ceiling with fifty minutes of its hour unused.",
+    "instance_type": "standard-2",
+    "whyInstance": "The only instance on which a 64 MiB file has been prepared end to end; standard-1 has never completed one, and its 1/2 vCPU would roughly halve the measured rate on a single-threaded pipeline. Memory is not the reason: the 64 MiB run peaked at 617.4 MiB, inside standard-1's 4 GiB. Nothing measured here says standard-2 is sufficient for whole genomes.",
+    "theCeilingsTheOwnerAskedAbout": {
+      "vcf2GiB": "Uploads, finalizes and is admitted, then cannot be prepared: max_artifact_bytes. At 0.87 artifact bytes per source byte a 2 GiB VCF needs about 1.87 GB of artifacts, and the column allows at most 1,073,741,824. Raising the ceiling to 2 GiB puts a file in front of a person that the pipeline can never finish.",
+      "gvcf8GiB": "Cannot even reach storage: one POST is all the uploader makes, and Supabase refuses a standard upload above about 5 GB (413 at the edge). See upload-transport-limit.json.",
+      "whatWouldHaveToChangeFirst": [
+        "A resumable or multipart upload path, for anything above 5 GB.",
+        "max_artifact_bytes above its current 1 GiB column check, and the hard 4096-artifact cap in reserve_own_preparation_artifact, for anything whose artifacts exceed those.",
+        "Resumption across attempts: today a failed attempt's work is unusable (a new claim must start at checkpoint revision 0) and the job is never re-claimed, so it sits claimed until its deadline and the person waits the full hour for 'we could not confirm whether file preparation finished'.",
+        "A ceiling that cannot be set above what the rest of the system can carry, or a warning when it is."
+      ]
+    },
+    "whatIsSafeToday": "Sources up to roughly 120 MB at the default 100 MiB artifact ceiling, on standard-2, with max_job_seconds 3600. Production's current 24 MiB VCF ceiling is well inside that, and nothing measured here says production is broken.",
+    "notProved": "Two sizes measured on one branch with one fixture generator: 64 MiB prepared, 2 GiB refused. Nothing between them was tried, so the 120 MB figure is the ratio multiplied out, not an observed boundary. No gVCF above 4 MiB has been prepared, and gVCF artifact ratios may differ from VCF."
+  },
+  "peakMemory": {
+    "measured": true,
+    "run": "vcf-64mib-held (the 64 MiB VCF prepared end to end on standard-2)",
+    "maximumSampledBytes": 647372800,
+    "maximumSampledMiB": 617.4,
+    "readBy": "the owner, through the Cloudflare connection's container metrics; the Workers' own observability setting does not disable that metric",
+    "headroom": "standard-2 offers 6 GiB, so this run used about a tenth of it; standard-1's 4 GiB would also have held it.",
+    "caveat": "A maximum of sampled values for one run at one size. It cannot be split into fixed overhead and growth per source byte without a second measurement at another size, so it must not be scaled to 2 GiB or 8 GiB as if it were linear.",
+    "note": "The same query can measure the ceiling trials.",
+    "samples": 45,
+    "receipt": "The owner saved container-memory-64mib-20260920.json, with the reusable query, outside this repository."
+  },
+  "ceilingTrials": {
+    "vcf2GiB": {
+      "fixtureBytes": 2147483121,
+      "underTheCeilingBy": 527,
+      "runs": "Three. The first two were stopped by the driver at the first finalization refusal, which is not where the product stops; the third followed the product's own retries through.",
+      "leaseIssued": "201 all three times: the 2 GiB ceiling admits the file and the disclosed limit matches it.",
+      "browserHashSeconds": [
+        12.0,
+        0.2,
+        7.8
+      ],
+      "storagePost": {
+        "status": 200,
+        "seconds": [
+          59.2,
+          62.8,
+          65.1
+        ],
+        "megabytesPerSecond": [
+          34.6,
+          32.6,
+          31.5
+        ],
+        "note": "Supabase Storage accepted a single 2 GiB POST three times, so the product's standard-upload transport carries 2 GiB comfortably."
+      },
+      "finalization": {
+        "settled": "IT FINALIZES. 200 at 340.6 seconds after the first attempt began, fileId cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7, 2,147,483,121 bytes, file_type vcf.",
+        "attempts": [
+          {
+            "seconds": 33.1,
+            "status": 503,
+            "retryAfter": "60",
+            "body": {
+              "error": "unavailable"
+            }
+          },
+          {
+            "seconds": 206.3,
+            "status": 503,
+            "retryAfter": "60",
+            "body": {
+              "error": "unavailable"
+            }
+          },
+          {
+            "seconds": 340.6,
+            "status": 200,
+            "retryAfter": null,
+            "body": "finalized_ready_for_processing"
+          }
+        ],
+        "attemptsRefusedInsideTheLease": "Seven more attempts answered 404 while the previous attempt still held its 60-second finalization lease. That is the deliberate refusal that stops two requests driving one finalization; the uploader keeps the handle and tries again.",
+        "retryAfterHeader": "60, observed on both 503s. The earlier claim that the response carried no Retry-After was never measured and is withdrawn.",
+        "whatRanOutOfTime": "Every storage operation in the fenced path carries a fresh 30-second signal (AbortSignal.timeout(30_000) in subject-finalization.ts), and the branch's edge log shows one uncached 2 GiB server-side copy taking 37,985 ms. So no single attempt can both validate and copy 2 GiB; the design's checkpoint carries the work across attempts instead, and the copy that a killed attempt left finished is picked up by storage.info on the next one.",
+        "howManyAttemptsItTook": "Three that reached the route, over 5 minutes 41 seconds, with the page's three automatic attempts (2 s, 20 s, 70 s) and then the button. The driver pressed the button six times at 12-second intervals; most of those were the in-lease 404s above, so the attempt count is what the product would have done on its own plus impatience, not a requirement.",
+        "whatAPersonSees": "The refusal wording, then 'Your file already reached private storage. Finishing it does not send the file again.', then the file is stored. The bytes are sent once."
+      },
+      "preparation": {
+        "settled": "IT CANNOT BE PREPARED, AND NOT FOR THE REASON EVERY EARLIER NOTE GAVE. The job stops at a per-job artifact ceiling, 5.6% of the way through, eight minutes in, with fifty minutes of its hour left.",
+        "job": "d3431bef-96fd-4dbe-9b21-b0d23630aade, admitted 13:23:38.7, deadline 14:23:38.7, claimed 13:26:50.8.",
+        "whatItManaged": {
+          "artifacts": 540,
+          "reservedBytes": 104485654,
+          "firstArtifactAt": "13:26:50.8",
+          "lastArtifactAt": "13:34:53.6",
+          "secondsOfWork": 483
+        },
+        "theCeilingItHit": "private.own_preparation_config.max_artifact_bytes, 104,857,600 (the column's default) on this branch. reserve_own_preparation_artifact refuses with artifact_limit_or_sequence when reserved_bytes + byteCount exceeds it, or when artifact_count reaches 4096. The job stopped 371,946 bytes short of the byte ceiling, which is less than one artifact of its own average size.",
+        "whatTheWorkerDoesWithThat": "The refusal reaches the worker as an RPC error, which fails the attempt (fail(\"unavailable\")). The container was not killed: the same --once run went on to its cleanup phase at 13:34:54 and exited normally.",
+        "andNothingRetriesIt": "The attempt's checkpoint is durable only for that live attempt: own-preparation-worker.ts refuses to adopt a non-empty checkpoint on a new claim (revision must be 0). The claim was never renewed again, lapsed at 13:38:22, and the ticks at 13:35:22 and 13:40:23 both called claim_next_own_preparation_work_v1 and got nothing back. The job sits claimed until its deadline, which is the same shape as the 64 MiB death before the container fix: the person waits the full hour.",
+        "soTheHourWasNeverTheConstraint": "The throughput projection in this file ('about two and a half hours against a one-hour bound') was arithmetic about the wrong wall. At 0.87 artifact bytes per source byte, a 2 GiB source needs about 1.87 GB of artifacts. The default ceiling is 100 MiB and the column's own check allows at most 1,073,741,824, so a 2 GiB VCF cannot be prepared even with max_artifact_bytes raised to its schema maximum.",
+        "whatTheCapsAllowToday": {
+          "artifactBytesPerSourceByte": 0.87,
+          "measuredOn": "the 64 MiB run: 58,148,752 artifact bytes from 67,108,990 source bytes",
+          "atTheDefault100MiB": "about 120 MB of source",
+          "atTheColumnMaximum1GiB": "about 1.23 GB of source, and the separate 4096-artifact cap may bind first: the 64 MiB run averaged 317 KB per artifact, this one 193 KB, so 4096 artifacts is somewhere between 790 MB and 1.3 GB of artifacts",
+          "productionToday": "production's VCF ceiling is 24 MiB, comfortably inside the default, so nothing here says production is broken. It says the raise to 2 GiB cannot work."
+        },
+        "howItEnded": {
+          "deadline": "2026-09-20T14:23:38.7Z, one hour after admission.",
+          "nothingHappenedAtTheDeadline": "At 14:24:43 the row was still claimed, frozen_at null, all 540 artifacts present, no cleanup row. The transition is done by the cron tick, not by the deadline.",
+          "frozenAt": "14:25:23.264632, the next five-minute tick, 105 seconds after the deadline. state claimed -> frozen, with write_fence_at set to the same instant.",
+          "cleanupQueued": "14:25:23.273711, 9 ms later: one own_prepared_cleanups row, mode unpublished-scratch, entry_count 540, its own cleanup_deadline 15:23:38.7 (an hour after the job's).",
+          "whatHappensToTheFile": "genome_files.status stays uploaded and normalization_completed_at stays null. The person's 2 GiB original is kept, not deleted, and no manifest was ever published.",
+          "attemptsAtTheJob": 1
+        },
+        "theCleanupIsSlowerThanItsOwnDeadline": {
+          "measured": "32 of 540 entries acknowledged across exactly two ticks: 14:25:23.9 and 14:30:30.1. Sixteen per tick.",
+          "whySixteen": "The cleanup page is capped at 16 by schema (cleanupIds: z.array(z.uuid()).max(16) in src/lib/genome/prepared-source/cleanup-integration.ts). That is deliberate and documented there: one page per invocation keeps the retention call bounded and 'subsequent scheduled runs resume exact durable progress'.",
+          "theRateOnThisStack": "The only scheduled runner reaching this branch is the container's five-minute cron, so 16 entries per five minutes. 540 entries needs about 34 ticks, roughly 2 hours 49 minutes, against a cleanup deadline of 15:23:38, which is 49 minutes away. About 176 of the 540 will be done by then.",
+          "whatThisDoesNotSay": "It does not say production would be this slow. vercel.json schedules /api/cron/retention every minute, and the same drain runs there, which would be 16 per minute and would clear 540 in about 34 minutes, inside the hour. Vercel crons do not run against a Preview deployment, so on this stack only the container tick drains it. The production rate was not measured here.",
+          "whyItMattersAnyway": "The page size is a constant while the number of scratch artifacts scales with file size. The 64 MiB job left 13 entries and they cleared in one tick. This job left 540. Whatever the tick rate, the ratio of scratch to cleanup capacity gets worse as files get larger, and the residue is R2 objects belonging to a file the person still holds.",
+          "stillOpen": "SETTLED, below.",
+          "howItEnded": {
+            "theDeadlineIsNotAStopCondition": "The cleanup ran straight past its own cleanup_deadline of 15:23:38 and was neither abandoned nor re-queued. It kept draining sixteen entries per tick.",
+            "completedAt": "2026-09-20T17:10:27.722247Z, after 34 attempts (one per five-minute tick), 2 hours 45 minutes after it was queued and 1 hour 47 minutes after its own deadline.",
+            "whatIsLeftBehind": "Nothing, in the database. All 540 cleanup entries are gone, all 540 own_preparation_artifacts rows are gone, and the own_preparation_jobs row itself is gone. The cleanup row survives with state complete.",
+            "whatIsKept": "genome_files.status stays uploaded. The person's 2 GiB original is still there, never prepared, and nothing was published.",
+            "theWholeLifecycle": "13:23:38 admitted, 13:26:50 claimed, 13:34:53 stopped at the artifact ceiling, 13:38:22 claim lapsed, 14:23:38 deadline passed with nothing happening, 14:25:23 frozen and cleanup queued, 17:10:27 cleanup complete. Three hours 47 minutes from admission to a clean database.",
+            "whatWasNotChecked": "The R2 side. The database says every artifact row is gone; whether the 540 objects left the bucket needs a bucket read, which this session cannot do. The owner's reconciliation before teardown covers it and is already listed as an open action."
+          }
+        }
+      },
+      "oversizeFixtureRefusedInTheBrowser": "An earlier fixture overshot the ceiling by 140 bytes and the uploader refused it before issuance, naming the limit: 'This file is bigger than the 2147 MB we can take for this kind of file.'",
+      "correction": "An earlier version of this file called 2 GiB finalization the wall and said the person would have to send 2 GiB again. Both are wrong and are withdrawn: the first was measured only to the first attempt, and the second is contradicted by the route's resumable contract, the page's own words, and this run.",
+      "outcome": "The 2 GiB file uploads, finalizes and is admitted. It cannot be prepared: the job hits max_artifact_bytes after 540 artifacts and is never retried."
+    },
+    "gvcf8GiB": {
+      "fixtureBytes": 8589933057,
+      "underTheCeilingBy": 1535,
+      "leaseIssued": "201, twice: issuance admits 8,589,933,057 bytes declared gVCF, so the branch's 8 GiB gVCF ceiling is real and nothing in the app warns that the transport cannot carry it.",
+      "browserHashSeconds": 45.9,
+      "storagePost": {
+        "outcome": "NEVER COMPLETED. Twice: net::ERR_CONNECTION_CLOSED after 328.2 s and 320.1 s, with no HTTP response reaching the browser and no entry at all in the branch's edge log.",
+        "whatThePageShowed": "'Uploading to private storage\u2026 25%' from 20 seconds in, unchanged until the failure: the browser's own progress events stop, so the person watches a stalled percentage for five and a half minutes and is then told the upload could not finish."
+      },
+      "whyItCannotWork": {
+        "theTransport": "src/lib/uploads/subject-upload-browser.ts sends the file as ONE XMLHttpRequest POST to /storage/v1/object/genomes/<key>. That is Supabase's standard upload, which Supabase documents as carrying at most 5 GB; resumable (TUS) and S3 multipart carry up to 50 GB. The product implements neither.",
+        "measuredDirectly": "A single streamed POST of the same 8,589,933,057-byte file, with the service-role key and no browser, is answered 413 Payload Too Large after about 1 MB. The body is Cloudflare's, so the refusal is made at the edge in front of Storage, on the declared Content-Length.",
+        "whereTheRefusalStarts": {
+          "accepted": [
+            5000000000,
+            5000000001,
+            5242880000
+          ],
+          "refused413": [
+            5368708096,
+            5368709119,
+            5368709120,
+            5368709121,
+            6000000000
+          ],
+          "reading": "The boundary lies between 5,242,880,000 bytes (accepted, transfer began) and 5,368,708,096 bytes (refused immediately), which is Supabase's documented 5 GB standard-upload limit. The accepted probes were aborted on purpose after a few seconds and left no object."
+        },
+        "theGlobalLimitIsNotTheCeiling": "The owner's 9 GB global file size limit governs what Storage will keep, not what one POST may carry. Raising it does not raise the standard upload's 5 GB."
+      },
+      "outcome": "THE 8 GiB gVCF CEILING CANNOT BE MET BY THE PRODUCT AS BUILT. Not a throughput projection and not a container limit: the file cannot reach Storage at all through the one transport the uploader has. A gVCF ceiling above about 5 GB needs resumable or S3 multipart uploads first.",
+      "alsoWorthFixing": "Nothing tells the person why. The browser never surfaces the 413 (it keeps sending until the connection is reset), so a person who picks an 8 GiB file waits five and a half minutes and is then given the generic 'could not finish' wording, with no mention of a size."
+    }
+  }
+}

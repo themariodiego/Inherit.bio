@@ -1,0 +1,1596 @@
+{
+  "label": "vcf-64mib-held",
+  "fixture": "vcf-64mib.vcf",
+  "sizeBytes": 67108990,
+  "startedAt": "2026-09-20T12:39:25.250Z",
+  "events": [
+    {
+      "at": "2026-09-20T12:39:25.651Z",
+      "what": "user_created",
+      "detail": {
+        "accountId": "099212e1-26f6-465f-9780-d2273d75d1b8"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:29.046Z",
+      "what": "signed_in",
+      "detail": {
+        "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:31.666Z",
+      "what": "account_completed",
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:32.906Z",
+      "what": "insurance_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:33.978Z",
+      "what": "own_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:33.986Z",
+      "what": "consent_complete"
+    },
+    {
+      "at": "2026-09-20T12:39:37.512Z",
+      "what": "file_selected",
+      "detail": {
+        "reacted": true
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:37.658Z",
+      "what": "upload_session",
+      "detail": {
+        "status": 201,
+        "declaredFormat": "VCF",
+        "sizeBytes": 67108990,
+        "sha256Matches": true,
+        "hashSeconds": 0.146
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:39.992Z",
+      "what": "storage_post",
+      "detail": {
+        "status": 200,
+        "seconds": 2.333,
+        "mbps": 27.432541861536162,
+        "contentType": "application/octet-stream"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:46.923Z",
+      "what": "finalized",
+      "detail": {
+        "status": 200,
+        "seconds": 6.931,
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:07.386Z",
+      "what": "prepared_in_browser",
+      "detail": {
+        "seconds": 320.46,
+        "text": "Your file is stored and prepared. Reports have not been generated yet. Choose your reports \u00b7 View your file"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:07.731Z",
+      "what": "genome_file",
+      "detail": {
+        "file_type": "vcf",
+        "status": "stored",
+        "sha256Matches": true,
+        "expectedFormat": "vcf",
+        "formatMatches": true
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:09.451Z",
+      "what": "report_purpose_granted",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:52.269Z",
+      "what": "reports_generated",
+      "detail": {
+        "status": 200,
+        "seconds": 41.5,
+        "body": {
+          "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+          "status": "processed",
+          "analysisState": "active"
+        }
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:58.118Z",
+      "what": "reports_page",
+      "detail": {
+        "previews": 0,
+        "figures": 0,
+        "title": "You \u00b7 Reports \u00b7 Inherit"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:58.886Z",
+      "what": "genome_file_after_reports",
+      "detail": {
+        "status": "stored"
+      }
+    }
+  ],
+  "accountId": "099212e1-26f6-465f-9780-d2273d75d1b8",
+  "fixtureSha256": "27f83c1a85ac8b6008cb90d868421796234284431df9024cb0b0dca0cc4c837e",
+  "processResponses": [
+    {
+      "at": "2026-09-20T12:39:47.210Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:49.459Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:51.676Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:53.898Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:56.154Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:39:58.387Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:00.673Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:03.085Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:05.330Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:07.566Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:09.819Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:12.103Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:14.366Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:16.658Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:18.912Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:21.145Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:23.473Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:25.792Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:28.063Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:30.318Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:32.569Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:34.795Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:37.023Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:39.245Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:41.542Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:43.767Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:45.985Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:48.285Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:50.525Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:53.015Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:55.334Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:57.549Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:40:59.771Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:02.098Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:04.885Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:07.111Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:09.365Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:11.832Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:14.100Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:16.332Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:18.577Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:20.804Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:23.056Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:25.286Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:27.550Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:29.810Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:32.034Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:34.284Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:36.562Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:38.781Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:41.010Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:43.237Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:45.511Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:47.744Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:49.988Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:52.255Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:54.549Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:56.810Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:41:59.257Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:01.603Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:03.923Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:06.158Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:08.398Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:10.649Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:12.886Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:15.230Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:17.456Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:19.690Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:21.915Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:24.145Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:26.379Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:28.621Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:30.976Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:33.264Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:35.539Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:37.808Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:40.058Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:42.324Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:44.591Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:46.825Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:49.075Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:51.316Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:53.558Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:55.793Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:42:58.020Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:00.300Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:02.566Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:04.805Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:07.055Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:09.343Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:11.599Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:13.850Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:16.096Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:18.336Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:20.600Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:22.860Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:25.117Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:27.346Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:29.616Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:31.870Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:34.127Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:36.350Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:38.587Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:40.846Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:43.209Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:45.622Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:47.855Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:50.097Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:52.331Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:54.587Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:56.827Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:43:59.054Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:01.353Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:03.569Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:05.801Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:08.025Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:10.311Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:12.528Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:14.754Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:16.985Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:19.212Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:21.453Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:23.681Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:25.915Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:28.148Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:30.379Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:32.612Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:34.873Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:37.099Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:39.529Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:41.908Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:44.131Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:46.375Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:48.609Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:50.849Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:53.145Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:55.380Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:57.661Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:44:59.893Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:02.254Z",
+      "status": 202,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "jobId": "c7bae8da-fae4-4042-80d1-a9ee2788ff31",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:04.695Z",
+      "status": 200,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "status": "normalization_complete",
+        "analysisState": "not_generated"
+      }
+    },
+    {
+      "at": "2026-09-20T12:45:52.269Z",
+      "status": 200,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "status": "processed",
+        "analysisState": "active"
+      }
+    }
+  ],
+  "stagingKey": "39df07fe-2e07-4a9a-a2f0-43c07cf13b7b",
+  "uploadId": "f8ab98ab-0a89-4bdb-9d75-c649e5d4c729",
+  "finalizeAttempts": [
+    {
+      "at": "2026-09-20T12:39:46.922Z",
+      "status": 200,
+      "body": {
+        "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+        "status": "finalized_ready_for_processing",
+        "analysisState": "ready_for_processing",
+        "next": {
+          "routeId": "api.file-process",
+          "operation": "process"
+        }
+      }
+    }
+  ],
+  "fileId": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+  "genomeFile": {
+    "id": "1ba4efc8-feb9-4cc7-874e-79f8a8660d15",
+    "user_id": "099212e1-26f6-465f-9780-d2273d75d1b8",
+    "subject_id": "666daf7c-17a6-43f4-9f20-1299e3dbe3b1",
+    "bucket_path": "566c9579-a1bd-4b1c-8010-c3323b1b8f51",
+    "sha256": "27f83c1a85ac8b6008cb90d868421796234284431df9024cb0b0dca0cc4c837e",
+    "status": "stored",
+    "file_type": "vcf",
+    "size_bytes": 67108990,
+    "normalization_completed_at": "2026-09-20T12:45:02.5735+00:00",
+    "single_logical_sample_verified_at": "2026-09-20T12:39:46.971325+00:00"
+  },
+  "genomeFileError": null,
+  "pageErrors": [],
+  "finishedAt": "2026-09-20T12:45:58.886Z",
+  "outcome": "ok",
+  "savedAt": "2026-09-20T12:45:58.886Z"
+}

@@ -1,0 +1,57 @@
+{
+  "what": "What the branch's own edge log says happened inside /api/files/[id]/finalize during the two 2 GiB attempts on 20 September 2026. Read-only, from the Supabase logs of branch iofjhrtcyawjjhuxbgfd. Times are UTC. No request bodies, keys or personal data are reproduced here: the log carries paths, statuses and origin times.",
+  "whyThisExists": "The first record of these attempts called the 503 terminal and said the person would have to send 2 GiB again. Both readings were wrong, and this file is the correction: the route's own code marks the failure resumable, the page retries it automatically, and the log names the operation that ran out of time.",
+  "howTheRouteBoundsItself": {
+    "perOperationCap": "src/lib/uploads/subject-finalization.ts: signal() = AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]). Every storage call the fenced path makes through work(), every RPC it makes through call(), and every range read is bounded by a FRESH 30-second signal. This is the limit that bites at 2 GiB, not the route's maxDuration of 300 seconds.",
+    "rangeSize": "INGEST_CHUNK_MAXIMUM_BYTES = 4,000,000 bytes, so a 2,147,483,121-byte object is 537 ranges.",
+    "resumability": "A fenced attempt that is interrupted writes no cleanup: the staging bytes and the validated checkpoint are kept on purpose (ADR-0026), and the route answers 503 {\"error\":\"unavailable\"} WITH Retry-After: 60 (retryableFailure()). The uploader treats exactly that pair as resumable and makes three automatic attempts, 2 s, 20 s and 70 s later (AUTO_FINISH_DELAYS_MS), before offering the person a button whose own words are \"Your file already reached private storage. Finishing it does not send the file again.\""
+  },
+  "attempts": [
+    {
+      "label": "vcf-2gib-ceiling (first attempt)",
+      "beganAt": "2026-09-20T12:54:00.201Z",
+      "refusedAt": "2026-09-20T12:54:31.47Z",
+      "secondsToFailure": 31.4,
+      "log": [
+        "begin_own_upload_finalization_v2 200 (12 ms)",
+        "read_own_upload_finalization_checkpoint_v1 200 (11 ms)",
+        "10 range GETs of the staging object, 206, 12:54:00.278 to 12:54:01.750, slowest 356 ms at the origin",
+        "10 authorize_own_upload_finalization_v2 200, one per range consumed, the last at 12:54:20.227",
+        "nothing after that, and the 503 about 30 seconds after the last range was consumed"
+      ],
+      "reading": "Validation had read 40 MB of 2,147 MB when it stopped. The eleventh range never appears in the log at all, so it did not reach the origin: the 30-second cap aborted a read that was making no progress. That is a stall, not a size limit, and the next attempt read all 537 ranges."
+    },
+    {
+      "label": "vcf-2gib-ceiling-2 (second attempt)",
+      "beganAt": "2026-09-20T12:57:18.665Z",
+      "refusedAt": "2026-09-20T12:58:36.45Z",
+      "secondsToFailure": 78.1,
+      "log": [
+        "begin_own_upload_finalization_v2 200 (13 ms)",
+        "read_own_upload_finalization_checkpoint_v1 200 (11 ms)",
+        "537 range GETs of the staging object, all 206, 12:57:18.743 to 12:58:05.845: the whole 2 GiB validated in 47.1 seconds, slowest range 1,529 ms",
+        "541 authorize_own_upload_finalization_v2, all 200, slowest 93 ms",
+        "write_own_upload_finalization_checkpoint_v1 200 at 12:58:06.123, which is the validated checkpoint",
+        "POST /storage/v1/object/copy at 12:58:06.179, status 200, origin time 37,985 ms",
+        "no DELETE of either key afterwards, which is the resumable path: the bytes are kept for the next attempt"
+      ],
+      "reading": "THE COPY IS THE OPERATION THAT RAN OUT OF TIME. Supabase completed the server-side copy of 2 GiB successfully in 37.985 seconds, but the route had already abandoned it 30 seconds in, at 12:58:36, and answered 503. Validation, by contrast, is not capped as a whole: it ran 47 seconds over 537 individually bounded reads. The route's own 300-second maxDuration was never approached.",
+      "whatThisImpliesForARetry": "The design anticipates exactly this: on the next attempt the validated checkpoint is read back, validation is skipped, the copy is attempted again and a copy error is followed by storage.info on the final key, which now exists because the abandoned copy finished. Whether the attempts that follow do carry 2 GiB through is a measurement, not an inference, and it is being made."
+    }
+  ],
+  "correctedClaims": [
+    "\"The response carried no Retry-After\" was never measured: the journey receipts captured status and body only. REVERSED by the re-run, which captured the header on both 503s: Retry-After is 60.",
+    "\"The browser treats it as terminal: the person is told to try again, which means another 2 GiB upload\" is wrong. The page's own copy says the file already reached private storage and finishing it does not send it again, and the page retries by itself three times before asking.",
+    "\"At 2 GiB the wall is finalization\" is wrong. It held only as far as the FIRST attempt of each run, and the driver stopped there, which is not where the product stops. Followed through on 20 September at 13:23, the same file finalized with a 200 at 340.6 seconds and was admitted for preparation (journeys/vcf-2gib-retries.json)."
+  ],
+  "howItEnded": {
+    "run": "vcf-2gib-retries, 20 September 2026",
+    "attemptsThatReachedTheRoute": [
+      { "seconds": 33.1, "status": 503, "retryAfter": "60" },
+      { "seconds": 206.3, "status": 503, "retryAfter": "60" },
+      { "seconds": 340.6, "status": 200, "retryAfter": null }
+    ],
+    "refusedInsideTheLease": "Seven further attempts answered 404 while the previous one still held its 60-second lease, which is the deliberate refusal that stops two requests driving one finalization.",
+    "result": "genome_files holds 2,147,483,121 bytes as vcf, the bytes were sent once, and /process admitted the file (202) with job d3431bef-96fd-4dbe-9b21-b0d23630aade."
+  }
+}

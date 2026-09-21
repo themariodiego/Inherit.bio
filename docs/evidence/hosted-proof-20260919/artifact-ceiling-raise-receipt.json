@@ -1,0 +1,54 @@
+{
+  "what": "Raising private.own_preparation_config.max_artifact_bytes to the column's maximum on the hosted-proof branch, so a source larger than about 120 MB can be prepared at all. Branch iofjhrtcyawjjhuxbgfd only. Production (zuvloczwgrayonqabnss) was not read or written for this change.",
+  "why": "The 2 GiB job stopped at the 104,857,600 default after 540 artifacts with fifty minutes of its hour unused (measurements.json, ceilingTrials.vcf2GiB.preparation). The owner decided to raise this ceiling to its schema maximum and measure the largest size the design can honestly keep.",
+  "before": {
+    "readAt": "2026-09-20T14:07:47.383906Z",
+    "row": {
+      "enabled": true,
+      "singleton": true,
+      "artifact_provider": "r2",
+      "r2_bucket": "inherit-prepared-preview",
+      "max_job_seconds": 3600,
+      "max_artifact_bytes": 104857600,
+      "monthly_admission_limit": 100
+    }
+  },
+  "statement": "update private.own_preparation_config c set max_artifact_bytes = 1073741824 where c.singleton is true",
+  "after": {
+    "appliedAt": "2026-09-20T14:08:01.126753Z",
+    "row": {
+      "enabled": true,
+      "singleton": true,
+      "artifact_provider": "r2",
+      "r2_bucket": "inherit-prepared-preview",
+      "max_job_seconds": 3600,
+      "max_artifact_bytes": 1073741824,
+      "monthly_admission_limit": 100
+    }
+  },
+  "whatWasNotChanged": {
+    "max_job_seconds": "3600, unchanged. It is the column's own maximum (the CHECK allows 900 to 3600) and the job deadline is separately bound to created_at + 1 hour, so there is nothing above it to move to.",
+    "maximum_vcf_bytes": "2,147,483,648, unchanged. It already admits 768 MiB, so the instruction to raise it was unnecessary.",
+    "everythingElse": "monthly_admission_limit, artifact_provider, r2_bucket, enabled and every upload_authorization_config value are as they were."
+  },
+  "theThreeCeilingsThisLeaves": {
+    "note": "max_artifact_bytes is no longer the first to bind. Computed from this proof's own measurements: 0.87 artifact bytes per source byte (64 MiB run), 216,327 artifact bytes per second (2 GiB run), 193,492 bytes per artifact (2 GiB run).",
+    "timeBindsFirst": "3600 s of work is about 895 MB of source.",
+    "artifactCountSecond": "4096 artifacts, which is a hard constant in reserve_own_preparation_artifact and not configurable, is about 911 MB of source.",
+    "artifactBytesThird": "1,073,741,824 bytes is about 1.23 GB of source.",
+    "andTheHourStartsEarlier": "job_deadline is created_at + max_job_seconds, and created_at is set at admission, not at claim. The 2 GiB job waited 192 seconds for the five-minute cron tick, and that came out of the same hour. Any size computed from 3600 s of work is therefore optimistic by however long the wait is."
+  },
+  "measurementThisEnables": {
+    "target": "805,306,368 bytes (768 MiB) of VCF, chosen by the owner as a size that should fit inside every ceiling above with a margin.",
+    "predictedFromTheTwoRunsMeasuredSoFar": {
+      "artifactBytes": 700616540,
+      "percentOfTheRaisedByteCeiling": 65.2,
+      "secondsOfWork": 3239,
+      "percentOfTheHour": 90,
+      "artifacts": 3620,
+      "percentOfThe4096Cap": 88
+    },
+    "status": "NOT RUN. The fixture exists (805,306,219 bytes, 149 short of the target) but the journey driver could not be started: this session's auto-mode classifier refuses to run it, since it writes to the live preview stack. Recorded here so the raise above is not mistaken for a measurement."
+  },
+  "fixtureProvenance": "The 768 MiB fixture is the first 805,306,219 bytes of the 2 GiB fixture this proof already used, cut at a record boundary (5,135,808 lines, header intact, last record complete). It is not a fresh generator run: scripts/synthetic-wgs-fixture.mts could not be invoked for the same reason as the driver. The content is the same generator's output either way, but the seed and record count are the 2 GiB fixture's, not a new draw."
+}
