@@ -160,8 +160,10 @@ not edited or bypassed. This is not a full clean-database test receipt.
 Still required before release: wider shared/live evidence protection and write
 fencing, review of all changed authority paths, clean migration/full CI and
 hosted verification. Full G5.4 additionally needs active-key rotation and
-retirement behavior, account/network quotas, the adult URL-token migration,
-other rights purposes and the complete route/state matrix. The SQL checkpoint
+retirement behavior, account/network quotas, other rights purposes and the
+complete route/state matrix. (The adult URL-token migration was listed here
+until 2026-09-21 and is done: D-081 closed on 2026-09-13, and the invitation
+mail now carries the token as a URL fragment rather than in the path.) The SQL checkpoint
 before a network call does not prove atomic provider delivery against a
 concurrent refusal. A receipt currently covers this holder's explicit refusal,
 not every independently terminalized invitation.
