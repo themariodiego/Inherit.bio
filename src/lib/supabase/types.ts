@@ -7682,6 +7682,18 @@ export type Database = {
         Args: { p_session_hash: string; p_nonce: string }
         Returns: undefined
       }
+      reserve_embryo_ingest_chunk_v1: {
+        Args: {
+          p_byte_count: number
+          p_fragments: Json
+          p_maximum_line_bytes: number
+          p_record_count: number
+          p_sequence: number
+          p_session_id: string
+          p_sha256: string
+        }
+        Returns: Json
+      }
       expire_invitation_refusal_receipts_v1: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -7761,6 +7773,10 @@ export type Database = {
           template_id: string
           template_payload: Json
         }[]
+      }
+      commit_embryo_ingest_chunk_v1: {
+        Args: { p_sequence: number; p_session_id: string; p_sha256: string }
+        Returns: Json
       }
       complete_account_deletion_storage_batch_v1: {
         Args: {
