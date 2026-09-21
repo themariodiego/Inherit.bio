@@ -19,6 +19,58 @@ acknowledged, and only then a file. The register binds the ingest session
 (`canonical-source-publication-v1`). None of the routes, the migration's
 RPCs, the sanitiser or the worker exists yet (design §10, part E0).
 
+**That last sentence was true on 4 September and has been wrong since the
+5th.** Measured against the Inherit project's live catalogue on 21 September
+2026, and against `supabase/migrations/` in the same pass: the E0 **database
+layer is built and deployed**. Every ingest table exists with row-level
+security on — `embryo_ingest_sessions` (33 columns), `embryo_ingest_chunks`,
+`embryo_ingest_fragments`, `embryo_ingest_unwinds`,
+`embryo_ingest_delete_objects`, `embryo_fragment_handle_maps`,
+`embryo_mapping_challenges` and `embryo_operation_nonces` — and so do the
+RPCs that drive them: `create_embryo_ingest_session_v1`,
+`reserve_embryo_ingest_chunk_v1`, `commit_embryo_ingest_chunk_v1`,
+`freeze_embryo_ingest_session_v1`, `mark_embryo_ingest_failure_v1`,
+`finalize_embryo_cohort_ingest_v1`, `prepare_embryo_ingest_unwind_v1`,
+`bind_embryo_fragment_object_v1`, `consume_embryo_operation_nonce_v1` and the
+public `authorize_embryo_ingest_request_v1`. Two of this ADR's own
+sanitisation rules are enforced in the database as triggers:
+`reject_embryo_demographics` and `embryo_forbidden_columns_guard`. They
+arrived in `20260905191141_embryo_ingest_chunk_reservations.sql`,
+`20260905192551_embryo_ingest_session_lifecycle.sql` and
+`20260905202656_embryo_ingest_http_authorization.sql` — **one day after this
+ADR was written** — and nothing came back to amend the sentence above.
+Repository and production agree; this is a stale document, not schema drift.
+
+**What is genuinely missing, measured the same day**, and it is smaller than
+the paragraph above implies:
+
+1. **The three ingest routes.** `docs/route-register.json` registers
+   `api.embryo-ingest-mapping` (`/api/embryo-ingest/[session]/mapping`),
+   `api.embryo-ingest-chunk` (`.../chunks/[sequence]`) and
+   `api.embryo-ingest-complete` (`.../complete`). `src/app/api/` has no
+   `embryo-ingest` directory. The library layer they would consume already
+   exists and is unit-tested: `src/lib/embryos/ingest-session.ts`,
+   `ingest-http.ts`, `ingest-binding.ts`, `ingest-lines.ts`,
+   `vcf-transport.ts`, `table-transport.ts`, `source-labels.ts`,
+   `projection.ts` and `qc-policy.ts`.
+2. **The `split_cohort_vcf` executor.** The job *kind* is registered — it is
+   in the `worker_jobs` kind list at
+   `20260831224034_worker_jobs_v2.sql:124`, and
+   `supabase/tests/job_timing_privacy.sql` proves its timing disclosure — but
+   nothing executes it. `src/app/api/jobs/` ships five routes (`retention`,
+   `annotation-refresh`, `mail`, `research-refresh`, `research-publish`) and
+   none of them is for ingest. A registered kind with no executor is a job
+   that can be enqueued and never run.
+3. **The browser sanitiser**, and the `EMBRYO_INGEST_AVAILABLE` flag, which
+   is `false` at `src/copy/embryos/upload.ts:33` and pinned false by
+   `src/lib/embryos/upload-flow.test.ts:155` and
+   `src/copy/embryos/embryos.test.ts:243`. E2 steps 3–5 sit behind it.
+
+Recorded because the cost of the stale sentence is a session spent building
+eight RPCs that are already deployed, and because the corrected scope changes
+what the remaining work is: two surfaces and a flag, on top of a data layer
+that is finished.
+
 ## Decision
 
 1. **Ordinal identity over laboratory labels.** An embryo is `Embryo n` by
