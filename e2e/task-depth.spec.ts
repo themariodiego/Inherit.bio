@@ -121,15 +121,28 @@ test("task depth T8 costs three counted actions, which is exactly its registered
     "actions spent reaching /settings/data from /overview",
   ).toBeLessThanOrEqual(REACHABILITY.fromAnyAuthenticatedPageMaxActions);
 
-  // The floor is only real if the short path is refused. `danger-zone.tsx`
-  // disables the control until the exact phrase is present, so two actions
-  // cannot destroy anything — this asserts that rather than assuming it.
+  // The floor is only real if the short path is refused, so this asserts that
+  // the typed confirmation is what refuses it.
+  //
+  // Asserting `toBeDisabled()` first would prove nothing: `danger-zone.tsx`
+  // also disables the control while its deletion state is still loading
+  // (`disabled={confirm !== "delete my genome" || busy || !state}`, and
+  // `state` starts null behind a fetch), so a disabled control early in the
+  // page's life says only that the fetch had not landed. Typing first and
+  // waiting for `toBeEnabled()` establishes that the state HAS arrived; only
+  // then does clearing the field and watching it refuse again attribute the
+  // refusal to the missing phrase and nothing else.
+  //
+  // None of this moves the count: a fill dispatches neither `click` nor
+  // `submit`, which is why the typed confirmation is a requirement in the
+  // register rather than one of the actions it counts.
   const destroy = page.getByTestId("delete-account");
-  await expect(destroy, "the destructive control before the typed confirmation").toBeDisabled();
-
-  // The typed confirmation. It is a requirement, not a counted action: a fill
-  // dispatches neither `click` nor `submit`.
-  await page.getByLabel(/Type/).fill("delete my genome");
+  const confirmation = page.getByLabel(/Type/);
+  await confirmation.fill("delete my genome");
+  await expect(destroy, "with the typed confirmation, once the state has loaded").toBeEnabled();
+  await confirmation.fill("");
+  await expect(destroy, "the same control with the confirmation cleared").toBeDisabled();
+  await confirmation.fill("delete my genome");
   await expect(destroy, "the destructive control after the typed confirmation").toBeEnabled();
 
   // 3. The destructive action itself.
