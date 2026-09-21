@@ -108,8 +108,38 @@ one is built, one is buildable and one is not:
   server-stored, so a server can mint a token bound to it. What it needs is
   two new members: `EmbryoOperation` has no ingest operation and
   `EmbryoOperationTargetKind` has no ingest-session target, and both unions
-  are closed. That is an extension, not a redesign.
+  are closed.
 - **The chunk nonce is neither**, and decision 9 below records why.
+
+**"An extension, not a redesign" was still too easy, corrected the same day.**
+Two things it missed, both found by reading the schema before starting the
+chunk route rather than during it.
+
+First, the unions are not the only closed set.
+`public.embryo_operation_nonces.target_kind` carries a CHECK constraint over
+`account`, `cohort_draft`, `cohort`, `embryo`, `rights_session` and `form`, so
+an ingest-session target needs a **migration** as well as the two TypeScript
+members. (`operation` does not: it is regex-constrained to `^[a-z_]{3,40}$`.)
+Worth noting in passing that the database already allows `form`, which the
+TypeScript union does not — the two sets have been out of step in the other
+direction the whole time.
+
+Second, and it matters more: **for the chunk route nothing would consume the
+token anyway.** `verifyEmbryoOperation` checks the sealed envelope — signature,
+expiry, and an exact match on account, session, operation and target — but
+one-time-ness comes from `consume_embryo_operation_nonce_v1` recording the
+hash, and that is called by the cohort lifecycle and the invitation guards,
+never by `reserve_embryo_ingest_chunk_v1` or
+`commit_embryo_ingest_chunk_v1`, neither of which takes a nonce at all. The
+four shipped embryo routes are one-time because the RPC each one calls
+consumes the token it passes; the chunk route has no such RPC.
+
+So the register's `X-Inherit-CSRF` "bound to the upload session" is buildable
+on the chunk route as a **session-bound token with a ten-minute lifetime** —
+which is real cross-site protection and worth having — but not as a *one-time*
+one, without either a nonce parameter on both chunk RPCs or a separate
+consume call that would not share their transaction. That is a smaller version
+of decision 9's problem and belongs to the same owner decision.
 
 **And the mapping route needs more than a token, which the paragraph above
 this one also got wrong.** The Context says what remains is "three routes
