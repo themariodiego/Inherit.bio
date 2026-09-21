@@ -575,3 +575,73 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     }
   });
 });
+
+/**
+ * Every `<form>` that names where it posts, as `file action`.
+ *
+ * A form action is a live surface in the plainest sense: a browser submits to
+ * it without any of this repository's code running first, so it is held to the
+ * register like any other. The eight forms that carry no `action` are
+ * submitted by a client handler through `fetch`, which the endpoint checks
+ * above already cover.
+ *
+ * Two shapes exist. A literal is checked against the register directly. An
+ * expression is accepted only when it calls `route(`, the typed helper in
+ * `src/lib/primary-routes.ts` whose first argument is a `RouteId` - so the
+ * register is what resolves it and TypeScript refuses an id not in it. Any
+ * other expression is reported rather than assumed, because a static reader
+ * cannot tell where it points.
+ */
+function formActions(): { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] {
+  const found: { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] = [];
+  for (const file of codeFiles().filter((name) => name.endsWith(".tsx"))) {
+    const source = readFileSync(file, "utf8");
+    for (const match of source.matchAll(/<form\b[^>]*?\saction=(?:"([^"]*)"|\{([^}]*)\})/g)) {
+      const where = file.split(path.sep).join("/");
+      if (match[1] !== undefined) {
+        found.push({ file: where, action: match[1], resolved: "literal" });
+        continue;
+      }
+      const expression = (match[2] ?? "").trim();
+      found.push({
+        file: where,
+        action: expression,
+        resolved: /\broute\s*\(/.test(expression) ? "helper" : "unresolvable",
+      });
+    }
+  }
+  return found.sort((left, right) => `${left.file} ${left.action}`.localeCompare(`${right.file} ${right.action}`));
+}
+
+describe("every form posts somewhere the register describes", () => {
+  const actions = formActions();
+  const registeredPaths = new Set(register().flatMap(concretePaths));
+  const recordedPaths = new Set(ledger.builtButNotRegistered.map((known) => known.path));
+
+  it("finds the forms that name a target, so a passing run is not an empty scan", () => {
+    expect(actions.length).toBeGreaterThanOrEqual(5);
+    expect(actions.some((form) => form.resolved === "literal")).toBe(true);
+    expect(actions.some((form) => form.resolved === "helper")).toBe(true);
+  });
+
+  it("points every literal action at a registered route, or at a recorded one", () => {
+    const stray = actions
+      .filter((form) => form.resolved === "literal")
+      .filter((form) => !registeredPaths.has(form.action) && !recordedPaths.has(form.action))
+      .map((form) => `${form.file} ${form.action}`);
+    expect(stray).toEqual([]);
+  });
+
+  it("records the bare /api/withdraw the legacy forms still post to", () => {
+    // Not registered and deliberately alive: D-081 keeps it until the last
+    // token mailed before 2026-09-13 expires. The ledger is what makes that a
+    // decision rather than an oversight, so this asserts the pairing directly.
+    expect(actions.some((form) => form.action === "/api/withdraw")).toBe(true);
+    expect(registeredPaths.has("/api/withdraw")).toBe(false);
+    expect(recordedPaths.has("/api/withdraw")).toBe(true);
+  });
+
+  it("accepts a computed action only when the register is what resolves it", () => {
+    expect(actions.filter((form) => form.resolved === "unresolvable")).toEqual([]);
+  });
+});
