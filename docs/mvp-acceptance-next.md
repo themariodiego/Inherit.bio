@@ -281,6 +281,133 @@ The four asks in "What this means" become five, and one of them splits:
 
 Nothing here moves a verdict. The count is 38 YES / 27 NO, unchanged.
 
+## The six rows this inventory never classified · 21 September 2026
+
+"What blocks each of the 27 remaining rows", the inventory near the top of this
+file, blocks **21** of them: six under A, six under B, two under C, four under D, two
+under E and one under F. The closing arithmetic adds those up — "6 need a human
+act, 8 need product slices nobody has started, 4 need an environment or a budget
+this work does not have, and 2 are backlogs", plus G2.4 — and reaches 21 while
+saying 27. **Six rows are named nowhere in it**: G1.7, G1.12, G2.2, G5.1b, G5.6
+and G8.5.
+
+Each of the six does carry a measured, dated blocker — in its own row in
+`docs/acceptance-matrix.md`, which is current. The gap is this document's, not
+the matrix's. Closing it here matters because this is the document a planner
+reads to decide what to spend a session on, and two of the six describe traps
+that cost a session if they are rediscovered rather than read.
+
+**None of the six is engineering-reachable today**, so the conclusion in
+"What this means" survives, as corrected by "The path corrected" above — G2.4
+really is the only row with an engineering half that can be built and proven in
+CI now. What does not survive is the arithmetic, and the
+impression that 27 open rows are 27 independent problems.
+
+### Three of the six are one blocker, not three
+
+G1.7, G1.12 and G2.2 are all held by the same thing and nothing else: the
+(route, state) ratchet, `UNPROVEN_ROUTE_STATE_PAIRS` in `scripts/route-gate.ts`.
+
+- **G2.2** is that ratchet by definition — "every route declares and tests every
+  required state".
+- **G1.12** passes its other four checks; its own text puts the row on "its
+  second half", the state matrix.
+- **G1.7** says so outright: "This row stays NO on state alone … That is now the
+  single thing between this row and YES." Its origin audit already covers every
+  one of the register's 62 kept pages in both themes, and its own text records
+  the auth dimension as confirmed green on the CI run it names.
+
+All three therefore move together, on one piece of work, or not at all.
+
+### What the ratchet's remaining 11 pairs are
+
+Computed 21 September from `docs/route-register.json` and the ledger's
+`provenRouteStates`, then confirmed against the gate's own pass line on `main`,
+which reads `141 of 152 route states proven by 301 browser tests`. That is
+**11 unproven**, the constant `scripts/route-gate.ts` holds, and the gate exits
+0, so G1.12's other four checks — 43 endpoint method contracts, 10 registered
+redirects, 107 route kinds, 4 declared storage buckets — all pass. The 11 are
+not scattered across the product. They are:
+
+| Route | Unproven states |
+| --- | --- |
+| `/embryos` | `not-covered`, `partial-coverage` |
+| `/embryos/[embryoId]` | `complete`, `not-covered`, `partial-coverage` |
+| `/embryos/compare` | `complete`, `not-covered`, `partial-coverage` |
+| `/embryos/upload` | `complete` |
+| `/family/portrait/[pairId]` | `complete`, `partial-coverage` |
+
+Nine embryo pairs and two Portrait pairs — and G2.2's evidence establishes both
+groups as **unconstructible rather than untested**:
+
+- The **nine embryo pairs** each need `complete`, `partial-coverage` or
+  `not-covered` on an embryo surface, and no embryo file path exists until the
+  ingest slice lands. That is group B's blocker exactly.
+- The **two Portrait pairs look like fixture work and are not.** A Portrait
+  finding is decided over pathogenic or likely pathogenic classified positions
+  (`GeneCoverage.known`, `src/lib/family/portrait.ts:335`); `ref_variants` is
+  derived by `scripts/seed.ts` from `data/templates/*.json`; and those 16 files
+  carry no classification value of any kind — re-walked 21 September, zero
+  `classification`, `acmg`, `significance` or `pathogenic` field names across
+  all 16. So no synthetic pair can land on a P/LP position, and the
+  no-classified-positions sentence is the only outcome any fixture can reach.
+  These two are blocked behind **carrier status**, which G7.4 lists as not
+  shipped. **Do not spend a session building a fixture that cannot classify.**
+
+**The 11 was re-checked for scanner blindness, not assumed.** The ratchet reads
+test *titles* statically, so a title built by interpolation resolves at run time
+to something it never holds — the trap G1.12 records, measured then at 9 of 161
+titles. Re-measured 21 September with the gate's own scan: **16 of 301** titles
+interpolate, and **none of the 16** pairs an embryo or Portrait path with
+`complete`, `partial-coverage` or `not-covered`. The `axe: ${route} (${theme})`
+family interpolates a route but carries no state token at all, and the rest name
+neither. So no remaining pair is secretly driven and merely invisible: the 11 is
+a real product gap, in full.
+
+So the three rows belong in **group B**, alongside G2.1, G2.6, G4.2, G4.5, G5.9
+and G7.4 — but on **two** unbuilt capabilities rather than one. Embryo ingest
+makes 9 of the 11 constructible and carrier status the other 2; neither alone
+lets any of the three rows flip, because a row needs every pair proven. Writing
+the tests is then ordinary work, but it cannot start before the capability it
+drives exists. So the three move together or not at all.
+
+### The other three
+
+| Row | Where it belongs | What it waits on |
+| --- | --- | --- |
+| **G5.1b** | **A** (human) | A permitted actor blocked by an unpermitted subject cannot be constructed. `INHERIT_TEST_JURISDICTION` is binary and global, and a real `permitted` decision reads as `unreviewed` without a signed review object, which `realJurisdictions` has none of. Blocked behind G5.5, exactly as G5.1a is. Not a missing test. |
+| **G5.6** | **B/C** | `/api/subjects/[id]/export` is not a small composition: the register binds it to `largeExportDeliveryContract`, needing a session-bound one-time export nonce with a minting surface and signing key that are deliberately unbuilt, plus `workerExecutionBindings.export-generation`. Two of its three policy cases sit behind `claimed_bound` (no embryo ingest path) and the future-person claim path (G5.4). |
+| **G8.5** | **A/B, and one clock** | Its remainder is four different kinds of blocked, and none is a session's engineering: `/api/withdraw` is D-081 and is deleted when the last pre-13-September token expires — a clock, not a change. `api.account-delete`'s undeclared GET is **authority**: the brief must describe the operation-nonce mint before the register, pinned to `briefSha256`, can declare it. `api.export`'s missing POST is the same unbuilt export slice as G5.6. `rights.withdraw`'s kind divergence is real engineering, and its own closing records the better shape as the larger change. The five storage-bucket divergences and form verification are the row's other named halves and are being worked separately. The one entry that is genuinely finished is `unregisteredServerActions`, whose closing reads "Nothing. This row is not a defect and is not waiting on anything." |
+
+### One row group E under-describes, while this is being corrected
+
+Group E calls G1.13b "the igv reflow remainder", which names one of its three
+open findings. `docs/accessibility-divergence.json` carries all three, all on
+`/genome/[subject]/data/browser`, and the other two are the ones with a
+blocker: both `keyboardTraversal` entries record
+`blocker: third party - the focus order inside the widget is igv.js 3.8.5's`,
+and both closings give the same remedy - **upstream, a fork, or a
+replacement**. That is a product decision about a third-party dependency, not
+a backlog anyone can work through.
+
+The reflow finding is the reverse, and its entry says so:
+`blocker: none - a defect with an unidentified cause, not a decision waiting
+on anyone`. Its cause has no box of its own, so every geometric reader in the
+sweep comes back empty; the sweep now bisects for it by removal instead, and
+the answer arrives with the next browser run. So G1.13b is better read as one
+instrumented defect plus **two third-party blockers**, and it does not flip on
+the reflow finding alone.
+
+### What this changes
+
+The count of open rows does not move: 27 before, 27 after, and the matrix stays
+**38 YES / 27 NO**. What moves is the shape of the remainder. Adding the six:
+**7 rows need a human act** (A plus G5.1b), **13 need unbuilt product slices**
+(B's six, C's two, the three ratchet rows, G5.6 and most of G8.5), **4 need an
+environment or a budget**, **2 are backlogs**, and **1** — G2.4 — has an
+engineering half. The fastest way to move the count is unchanged, and now it is
+arithmetic over all 27 rather than over 21 of them.
+
 ## Resumption handoff · 18 September 2026
 
 Acceptance is **38/65**, counted from the YES/NO column (G4.8 on 20 September; G8.3, G8.2, G8.6, G4.1 and G5.7 on 19 September with PR #146; G2.3 and G7.1 on 18 September, evening). G5.3a closed on CI run
