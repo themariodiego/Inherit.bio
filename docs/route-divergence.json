@@ -30,6 +30,15 @@
       "closing": "Delete this directory, the bare POST /api/withdraw beside it, and both of these rows together, once the last token mailed before 2026-09-13 has expired \u2014 30 days by invitation.pending-30d. e2e/adult-subject-invitation.spec.ts keeps one test on this path until then, so the overlap is proven rather than assumed, and that test goes in the same commit."
     }
   ],
+  "unregisteredServerActionsNote": "A server action is a live mutation surface that the route register does not describe: Next.js exposes it at a generated endpoint the App Router never shows, so none of the route checks above can see it and a second one could appear without anything noticing. G8.5 asks that every live surface match its register, so the surface is held as a ledger instead, compared in both directions by scripts/route-register-correspondence.test.ts. One exists today and it is unregistered on purpose, with the reason written in the file itself. Adding another fails until it is recorded here; deleting this one fails as a stale row.",
+  "unregisteredServerActions": [
+    {
+      "file": "src/app/(app)/embryos/acknowledge.ts",
+      "export": "acknowledgeEmbryoGate",
+      "why": "The Embryo domain's Tier-2 acknowledgement (design \u00a71.5). Its own header states the reasoning: \u0022A server function rather than a route: it is reachable only from this domain's own pages and needs no register row, and Next.js checks the request origin before it runs.\u0022 It writes one httpOnly, Secure, SameSite=Lax cookie whose value is a keyed digest of the account id and the current auth session id, with no Max-Age; it writes nothing to the database and nothing to device storage, and a new auth session cannot verify it. So it mutates no durable state and carries no authority a route would have to gate.",
+      "closing": "Nothing. This row is not a defect and is not waiting on anything \u2014 it records a deliberate choice so that the NEXT server action has to be argued for rather than merely added. If one is ever given durable writes or authority of its own, it belongs in the register as an endpoint instead of in this list."
+    }
+  ],
   "methodDivergence": [
     {
       "routeId": "api.account-delete",
