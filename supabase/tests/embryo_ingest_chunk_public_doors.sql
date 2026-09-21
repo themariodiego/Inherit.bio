@@ -77,12 +77,37 @@ select is((select expected_next_sequence from public.embryo_ingest_sessions
 select ok((select declared_capacity_bytes from public.embryo_ingest_sessions
   where id=(select session from ingest)) >= 1024,
   'the mint declared a capacity the reservation below fits inside');
-select ok((select embryos from ingest) >= 1, 'the cohort has an ordinal to bind a fragment to');
+select ok((select embryos from ingest) >= 1, 'the cohort has an ordinal a fragment could bind to');
 
+-- The fragment path is closed, and not by either door. embryo_ingest_sessions
+-- declares source_format and reference_build nullable (20260905192551:12-13);
+-- private.bind_embryo_fragment_object_v1, the before-insert trigger on
+-- embryo_ingest_fragments, refuses unless both are set (20260905203457:25-28);
+-- and no migration, route or worker writes either one. So a reservation
+-- carrying even a single fragment cannot succeed today, whichever door calls
+-- it. The first attempt at this file assumed otherwise and failed in CI on
+-- exactly this trigger. Asserted rather than stepped around, so the day a
+-- writer exists these three lines fail and the fuller proof is restored.
+select ok((select source_format from public.embryo_ingest_sessions
+  where id=(select session from ingest)) is null,
+  'the mint leaves source_format unset, because nothing writes it');
+select ok((select reference_build from public.embryo_ingest_sessions
+  where id=(select session from ingest)) is null,
+  'the mint leaves reference_build unset, because nothing writes it');
+select throws_ok(format($fragment$select public.reserve_embryo_ingest_chunk_v1(
+  %L::uuid, 0, %L, 1024, 10, 200, jsonb_build_array(jsonb_build_object(
+  'ordinal',0,'bytes',512,'lines',5,'sha256',%L)))$fragment$,
+  (select session from ingest), repeat('a',64), repeat('b',64)),
+  '55000','ingest object binding unavailable',
+  'a fragment cannot bind while source_format and reference_build have no writer');
+
+-- Delegation without a fragment, which the reservation accepts: an empty array
+-- is a well-formed array, its length is under the cohort ordinal count, and the
+-- per-fragment loop never runs, so no row reaches the trigger. The receipt row,
+-- its state transition and the session's sequence are still written only by the
+-- private transaction, which is what these doors are being held to.
 create temporary table reserved as select public.reserve_embryo_ingest_chunk_v1(
-  (select session from ingest), 0, repeat('a',64), 1024, 10, 200,
-  jsonb_build_array(jsonb_build_object(
-    'ordinal',0,'bytes',512,'lines',5,'sha256',repeat('b',64)))) as body;
+  (select session from ingest), 0, repeat('a',64), 1024, 10, 200, '[]'::jsonb) as body;
 select is((select body->>'status' from reserved), 'reserved',
   'the reservation door reserves');
 select is((select content_sha256 from public.embryo_ingest_chunks
