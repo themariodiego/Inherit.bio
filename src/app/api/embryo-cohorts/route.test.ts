@@ -42,6 +42,8 @@ vi.mock("@/lib/supabase/admin", () => ({
 // `originDenied` resolves this deployment's own origin, and `app-origin.ts`
 // refuses to guess one. Stubbed before the route is imported.
 vi.stubEnv("NEXT_PUBLIC_APP_URL", ORIGIN);
+// The route guards on `embryo_analysis`, which only resolves under TEST-LOCAL.
+vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
 
 const { POST } = await import("./route");
 
@@ -201,6 +203,48 @@ describe("POST /api/embryo-cohorts", () => {
     delete (broken as Record<string, unknown>).cookieValue;
     mocks.result = { cohort: cohort(), ingest: broken };
     await expect(POST(post(BODY))).rejects.toThrow();
+  });
+
+  /**
+   * The flag has exactly one canonical reader and it compares against "1".
+   * An inlined `=== "true"` would send `false` under TEST-LOCAL and the
+   * transaction would refuse every call — a route dead on arrival that no
+   * mocked-RPC test would notice.
+   */
+  it("passes the test-jurisdiction flag the way its one canonical reader reads it", async () => {
+    await POST(post(BODY));
+    expect(mocks.rpc[0][1].p_test_jurisdiction).toBe(true);
+  });
+
+  /**
+   * The minted session's origin must be derived exactly as every later ingest
+   * request derives it, because `authorize_embryo_ingest_request_v1` matches
+   * them for equality. Reading it off the request URL instead of the `origin`
+   * header would mint a session no chunk request could authorize against.
+   */
+  it("mints the session with the origin header, not the request URL", async () => {
+    await POST(post(BODY));
+    expect(mocks.rpc[0][1].p_origin).toBe(ORIGIN);
+  });
+
+  it("refuses when there is no origin header to mint the session with", async () => {
+    const request = new Request(`${ORIGIN}/api/embryo-cohorts`, {
+      method: "POST",
+      headers: { "sec-fetch-site": "same-origin", "content-type": "application/json" },
+      body: JSON.stringify(BODY),
+    });
+    const response = await POST(request);
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(mocks.rpc).toEqual([]);
+  });
+
+  /** The register's route-scope guard, refusing before the database is asked. */
+  it("refuses outside TEST-LOCAL before reaching the transaction", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+    const response = await POST(post(BODY));
+    expect(response.status).toBe(403);
+    expect(mocks.rpc).toEqual([]);
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
   });
 
   it("returns the database's refusal rather than inventing one", async () => {

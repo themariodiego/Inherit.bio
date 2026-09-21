@@ -1,9 +1,11 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
 import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/embryos/cohort-create";
-import { originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { jurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
 import { ingestCookie } from "@/lib/embryos/ingest-session";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
+import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -44,6 +46,21 @@ export async function POST(request: Request) {
   if (!account) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
+  // The register puts an `embryo_analysis` guard at route scope. Without it
+  // the refusal would be whatever `rpcErrorResponse` makes of the private
+  // transaction's 42501, instead of the registered 403 and its copy.
+  const unavailable = jurisdictionDenied();
+  if (unavailable) return unavailable;
+
+  // The origin the session is minted with must be derived the same way every
+  // later ingest request derives it, because `authorize_embryo_ingest_request_v1`
+  // matches them for equality. `ingestRequestOrigin` reads the `origin` header
+  // and requires it to equal the request URL's origin and to match the pattern
+  // the RPC itself enforces; `new URL(request.url).origin` does neither, and
+  // behind a proxy the two can differ — which would mint a session that no
+  // chunk request could ever authorize against.
+  const origin = ingestRequestOrigin(request);
+  if (!origin) return notFound();
 
   // The register answers unknown, missing, invalid, stale and ambiguous alike
   // with resource-not-found-v1: a finalize that failed for any of those
@@ -66,8 +83,11 @@ export async function POST(request: Request) {
     p_insurance_ack_id: parsed.data.insuranceAcknowledgementId,
     p_charter_ack_id: parsed.data.futurePersonCharterAcknowledgementId,
     p_token_nonce: claims.nonce,
-    p_origin: new URL(request.url).origin,
-    p_test_jurisdiction: process.env.INHERIT_TEST_JURISDICTION === "true",
+    p_origin: origin,
+    // `isTestJurisdictionEnabled` is the one reader of this flag, and it
+    // compares against "1". An inlined `=== "true"` here would send `false`
+    // under TEST-LOCAL and the transaction would refuse every call.
+    p_test_jurisdiction: isTestJurisdictionEnabled(),
   });
   if (error) return rpcErrorResponse(error);
 
