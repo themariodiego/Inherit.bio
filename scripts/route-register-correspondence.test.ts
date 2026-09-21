@@ -139,6 +139,7 @@ const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as {
   permissiveDynamicSegment: { routeId: string; path: string; file: string }[];
   kindDivergence: { routeId: string; path: string; file: string; declaredKind: string; builtKind: string }[];
   storageBucketDivergence: { bucket: string; direction: string }[];
+  unregisteredServerActions: { file: string; export: string; why: string; closing: string }[];
 };
 
 describe("the route register and the App Router describe the same surface", () => {
@@ -572,6 +573,57 @@ describe("the register's storage prefixes and the buckets the code addresses agr
         expect(`${known.id} ${evidence.file} ${readFileSync(evidence.file, "utf8").includes(evidence.literal)}`)
           .toBe(`${known.id} ${evidence.file} true`);
       }
+    }
+  });
+});
+
+/**
+ * Every module that declares a server action, by the directive that makes one.
+ *
+ * A server action is a live mutation surface the route register cannot
+ * describe: Next.js exposes it at a generated endpoint that never appears in
+ * the App Router tree, so `builtRoutes()` above cannot see it and none of the
+ * route checks apply to it. That is the gap this closes.
+ *
+ * The match is deliberately generous - the directive anywhere in a shipped
+ * module, whichever quotes it uses, top-of-file or inline inside a function.
+ * An inline one is precisely the case a top-of-file check would miss, and a
+ * false positive costs one ledger row while a false negative loses a mutation
+ * entry point.
+ */
+function serverActionModules(): string[] {
+  return codeFiles()
+    .filter((file) => /(^|[^\w])["']use server["']/.test(readFileSync(file, "utf8")))
+    .map((file) => file.split(path.sep).join("/"))
+    .sort();
+}
+
+describe("every server action is a recorded surface", () => {
+  const found = serverActionModules();
+  const recorded = ledger.unregisteredServerActions ?? [];
+
+  it("finds the walker's own subject, so a passing run is not an empty scan", () => {
+    // If this ever legitimately reaches zero, the ledger empties in the same
+    // change and the two assertions below fail first, which is the point.
+    expect(found.length).toBeGreaterThan(0);
+    expect(found).toContain("src/app/(app)/embryos/acknowledge.ts");
+  });
+
+  it("records every server action that exists", () => {
+    expect(found.filter((file) => !recorded.some((known) => known.file === file))).toEqual([]);
+  });
+
+  it("keeps no row for a server action that is gone", () => {
+    expect(recorded.map((known) => known.file).filter((file) => !found.includes(file))).toEqual([]);
+  });
+
+  it("names the export it records, and says why it needs no register row", () => {
+    for (const known of recorded) {
+      const source = readFileSync(known.file, "utf8");
+      expect(source).toContain(`export async function ${known.export}`);
+      // A row that does not argue its case is a row that was merely added.
+      expect(known.why.length).toBeGreaterThan(120);
+      expect(known.closing.length).toBeGreaterThan(20);
     }
   });
 });
