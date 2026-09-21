@@ -94,7 +94,20 @@ export function ClaimBlock({
       data-density-primary-claim={densityPrimaryClaim ? "true" : undefined}
       aria-label={ariaLabel}
       tabIndex={scrollable ? 0 : undefined}
-      className={cn("rounded-2xl border border-line bg-card p-4 text-ink", className)}
+      className={cn("rounded-2xl border border-line bg-card p-4 text-ink",
+        // A scrolling block has to be the containing block for its own
+        // absolutely positioned descendants, or it does not clip them and
+        // they widen the document instead of scrolling inside it. G1.13b's
+        // last reflow finding was exactly that: the genotype figure's
+        // `sr-only` label (`figure.tsx`) is `position: absolute` under
+        // Tailwind, so this `overflow-x-auto` section - `position: static`
+        // until now - clipped the 593px table correctly and did not clip the
+        // 1px label sitting at its static position inside it, carrying
+        // `/genome/[subject]/data/browser` to 446px in a 320px viewport.
+        // Only the scrolling variant takes this: an ordinary claim block is
+        // not a clipper and must not silently become one.
+        scrollable && "relative",
+        className)}
     >
       {renderFigures ? (
         renderFigures(nodes)

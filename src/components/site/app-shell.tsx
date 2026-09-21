@@ -69,13 +69,29 @@ export function AppShell({
             2026-09-14 measurement found all eight authenticated mobile
             surfaces rendering 16px against it (D-119). Raising it everywhere
             failed the OTHER rule, which is measured at 320px: the extra gutter
-            narrowed `/genome/[subject]/data/browser` by 16px and pushed
-            igv.js's own overflow from the 446 CSS px recorded in
-            docs/accessibility-divergence.json to 454. Full-bleeding the widget
-            was tried and did not move it, so the overflow is not the widget's
-            width. ADR-0029 settles the collision - when accessibility and
-            density conflict the accessibility rule wins - and here nothing has
-            to lose, because the two rules are measured at different viewports.
+            narrowed `/genome/[subject]/data/browser` by 16px and pushed that
+            page's overflow from 446 CSS px to 454. ADR-0029 settles the
+            collision - when accessibility and density conflict the
+            accessibility rule wins - and here nothing has to lose, because the
+            two rules are measured at different viewports.
+
+            CORRECTED 2026-09-21: this comment called the 446px "igv.js's own
+            overflow", and it was not. The sweep named it - `widest: span "Your
+            two letters at this spot"` - and it is the genotype figure's
+            `sr-only` label, which Tailwind makes `position: absolute`, sitting
+            un-clipped at its static position inside the 593px results table
+            because the `overflow-x-auto` claim block around it was
+            `position: static`. The note above had the evidence already:
+            full-bleeding the widget was tried and did not move it, which is
+            exactly what you would expect of an overflow the widget does not
+            cause. The scrolling claim block is `relative` now and clips it, so
+            the page no longer overflows at 320px at all and
+            docs/accessibility-divergence.json records no reflow route.
+
+            WHAT THAT DOES NOT SETTLE: whether the 320px carve-out below can go
+            now that the overflow it was protecting is gone. That is a
+            measurement at 320px with the gutter raised everywhere, not an
+            inference from this fix, and it has not been taken.
             The header matches so the account controls stay in line. */}
         <main
           id="main"
