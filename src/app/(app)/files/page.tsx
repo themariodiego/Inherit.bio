@@ -28,7 +28,7 @@ export default async function UploadsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="page-stack mx-auto max-w-4xl space-y-8">
       <AutoRefresh active={inFlight} />
       <div>
         <p className="eyebrow mb-2">Ingestion</p>
@@ -89,7 +89,7 @@ export default async function UploadsPage() {
                     : ""}
                 </p>
                 {f.sha256 ? (
-                  <p className="mt-0.5 font-mono text-[10px] text-ink-muted">
+                  <p className="mt-0.5 font-mono text-xs text-ink-muted">
                     sha256 {f.sha256.slice(0, 32)}…
                   </p>
                 ) : null}

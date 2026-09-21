@@ -112,7 +112,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
     // cannot name the embryo; it renders the register's copy under the
     // domain heading.
     return (
-      <div data-surface="standard" className="mx-auto max-w-4xl space-y-8">
+      <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
         <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: DETAIL_SECTION_LABEL }]} />
         <header className="space-y-3">
           <h1 className="display text-3xl">{DETAIL_SECTION_LABEL}</h1>
@@ -254,7 +254,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
   }
 
   return (
-    <div data-surface="standard" className="mx-auto max-w-4xl space-y-8">
+    <div data-surface="standard" className="page-stack mx-auto max-w-4xl space-y-8">
       <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: embryo.displayLabel }]} />
       <SubjectBar subject={subject} fileCount={null} viewerAccountId={user.id} />
       <header className="space-y-3">

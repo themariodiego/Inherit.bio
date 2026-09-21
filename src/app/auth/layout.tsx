@@ -20,14 +20,14 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-6 py-12 md:py-20">
       <header>
         <Wordmark />
       </header>
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-sm rounded-2xl border border-line bg-card p-6 shadow-sm focus:outline-none"
+        className="auth-form-surface w-full max-w-md focus:outline-none"
       >
         {children}
       </main>

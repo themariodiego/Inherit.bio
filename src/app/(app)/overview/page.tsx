@@ -281,7 +281,7 @@ export default async function OverviewPage() {
     <div
       data-density-primary-content
       data-surface="hub"
-      className="mx-auto max-w-6xl space-y-16 md:space-y-20 lg:space-y-24"
+      className="page-stack mx-auto max-w-6xl space-y-16 md:space-y-20 lg:space-y-24"
     >
       <header className="space-y-3">
         <h1 className="display text-4xl">{OVERVIEW_H1}</h1>

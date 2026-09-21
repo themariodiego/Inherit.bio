@@ -238,7 +238,7 @@ export default async function ReportsPage(
   const definitionId = `layer-${activeLayer}-definition`;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="page-stack mx-auto max-w-5xl space-y-8">
       <Breadcrumbs
         items={[
           { label: domain.label, href: domain.href },

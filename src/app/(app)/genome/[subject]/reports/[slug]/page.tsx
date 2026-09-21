@@ -326,7 +326,7 @@ export default async function ReportDetailPage(
   const context = await loadReport(subjectSegment, slug, sourceParam);
   if (context.kind === "not-found") notFound();
   if (context.kind === "shared-unavailable") {
-    return <section role="status" className="mx-auto max-w-prose space-y-4">
+    return <section role="status" className="page-stack mx-auto max-w-prose space-y-4">
       <h1 className="display text-3xl">Saved result unavailable</h1>
       <p>This saved result is missing the source details needed to show it.</p>
       <Link className="underline" href={route("family.person", { person: subjectSegment })}>Back to shared results</Link>
@@ -504,7 +504,7 @@ export default async function ReportDetailPage(
     <article
       data-surface="reading"
       data-density-primary-content="true"
-      className="mx-auto max-w-[44rem] space-y-8"
+      className="page-stack mx-auto max-w-[44rem] space-y-8"
     >
       <Breadcrumbs
         items={[

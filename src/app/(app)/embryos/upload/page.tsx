@@ -28,7 +28,7 @@ export default async function EmbryoUploadPage() {
   const { decision } = viewer;
 
   return (
-    <div data-surface="flow" className="mx-auto max-w-3xl space-y-8">
+    <div data-surface="flow" className="page-stack mx-auto max-w-3xl space-y-8">
       <Breadcrumbs items={[{ label: EMBRYOS_H1, href: route("embryos.index") }, { label: UPLOAD_H1 }]} />
       <header className="space-y-3">
         <h1 className="display text-3xl">{UPLOAD_H1}</h1>

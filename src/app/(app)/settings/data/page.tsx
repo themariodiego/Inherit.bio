@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Data settings" };
 
 export default function DataSettingsPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="page-stack mx-auto max-w-2xl space-y-8">
       <header className="space-y-2"><p className="eyebrow">Settings</p><h1 className="display text-3xl">Your data</h1></header>
       <section className="rounded-2xl border border-line bg-card p-5">
         <h2 className="font-medium">Export everything</h2>

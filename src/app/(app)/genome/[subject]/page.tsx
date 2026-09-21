@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
@@ -101,22 +102,19 @@ export default async function GenomePage(
   ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="page-stack mx-auto max-w-5xl space-y-8">
       <Breadcrumbs items={[{ label: domain.label, href: domain.href }, { label: displayLabel }]} />
       <SubjectBar subject={subject} fileCount={fileCount} viewerAccountId={user.id} />
       <h1 className="display text-3xl">{domain.label}</h1>
       {preparing ? (
         <p role="status" className="max-w-prose text-sm leading-relaxed text-ink">{HUB_PREPARING}</p>
       ) : null}
-      <section className="grid gap-4 sm:grid-cols-3" aria-label="Genome tools">
+      <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (
-          <article key={tile.href} className="flex flex-col rounded-2xl border border-line bg-card p-5">
-            <h2 className="display text-2xl">{tile.title}</h2>
+          <Link key={tile.href} href={tile.href} aria-label={`Open ${tile.title}`} className="link-surface flex flex-col rounded-2xl border border-line bg-card p-6">
+            <h2 className="flex items-center justify-between gap-4 text-lg font-semibold">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow size-5 shrink-0 text-forest" /></h2>
             <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
-            <Button asChild variant="outline" className="mt-5">
-              <Link href={tile.href}>Open {tile.title}</Link>
-            </Button>
-          </article>
+          </Link>
         ))}
       </section>
       {mine ? (

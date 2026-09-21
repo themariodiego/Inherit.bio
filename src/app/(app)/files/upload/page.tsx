@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Add a file" };
 
 export default function FileUploadPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="page-stack mx-auto max-w-3xl space-y-8">
       <header className="space-y-3">
         <p className="eyebrow">Files</p>
         <h1 className="display text-3xl">Add your genome file</h1>
