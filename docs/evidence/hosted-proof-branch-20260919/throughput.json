@@ -11,14 +11,41 @@
  "marginalBasis":"(67108990 - 856536) source bytes over (315 - 78) seconds, the two largest runs",
  "impliedFixedOverheadSeconds":75,
  "impliedFixedOverheadBasis":"both large runs solve to the same ~75 s when time = overhead + source/279546; the 547-byte run solves to ~31 s, so the overhead is a range rather than a constant",
- "extrapolatedSourceAtMaxJobSeconds":"(3600 - 75) * 279546 = approximately 985 MB",
- "artifactBytesAtThatSource":"approximately 870 MB at the 0.8665 ratio measured at 64 MiB, which is under the 1 GiB schema maximum",
- "whichCeilingBinds":"the clock, not the artifact budget"},
+ "extrapolatedSourceAtMaxJobSeconds":"(3600 - 75) * 279546 = approximately 985 MB if the job is claimed instantly, approximately 902 MB if it waits a full five-minute cron tick: job_deadline is created_at + max_job_seconds and created_at is stamped at admission, not at claim (20260908233418_own_preparation_checkpoints.sql lines 5 and 40-43), so the wait comes out of the job's own hour",
+ "artifactBytesAtThatSource":"approximately 870 MB at the 0.8665 ratio measured at 64 MiB, which is under the 1073741824 schema maximum for max_artifact_bytes",
+ "artifactCountCapAtThatSource":"the separate 4096-row artifact_count cap (20260908164616_own_preparation_job_authority.sql:28, refused in the same condition as the byte ceiling at 20260908233337_own_prepared_r2_provider.sql:129) lands at approximately 1.50 GB on the 64 MiB run's 317753 bytes per artifact, but at approximately 915 MB on the 2 GiB run's 193492 bytes per artifact; artifacts got smaller as the source grew, so this series cannot fix its position",
+ "whichCeilingBinds":"not settled, and the two tightest overlap. On the 64 MiB artifact profile the clock binds throughout (985 MB against 1.50 GB and 1.24 GB). On the 2 GiB profile the count cap at 915 MB falls inside the clock's own 902-985 MB range, so a job claimed on its first tick is stopped by the artifact count and one that waits a full tick is stopped by the clock. All three sit at or under about 1.5 GB either way, so no ceiling near 2 GiB is supportable and raising max_artifact_bytes alone buys nothing: it is the third-loosest of the three.",
+ "correction":"an earlier reading of this file asserted 'the clock, not the artifact budget'. That compared the clock against max_artifact_bytes only and never against the 4096-row artifact_count cap. Withdrawn 21 September 2026; see README.md 'Correction'."},
 "doesNotEstablish":[
  "A ceiling. The largest file actually prepared is 67,108,990 bytes (64 MiB). Reaching ~1 GB is a 15x extrapolation from three points, not a measurement, and owner decision 30 asks for the largest honestly supportable size.",
- "Anything about gVCF. All three runs are VCF. A gVCF's block structure gives it a different variant-to-byte profile (D-128), so its ceiling does not follow from this series.",
+ "A gVCF ceiling. All three surviving rows are typed vcf, which is narrower than 'nothing about gVCF': a 4 MiB gVCF was prepared end to end on this same branch on 20 September and then withdrawn, and a completed withdrawal takes the job row with it, so it cannot appear in this query (docs/evidence/hosted-proof-20260919/journeys/gvcf-4mib.json, PR #147). What does not follow from this series is a gVCF ceiling: its block structure gives it a different variant-to-byte profile (D-128). The far end is settled separately: 8 GiB never reaches Storage, refused 413 by Cloudflare at Supabase's 5 GB standard-upload limit.",
  "Pure processing time. `seconds` runs from created_at, which is enqueue, to the last artifact acknowledgement, so it includes waiting for the cron wake. Every figure here is an upper bound on processing time and a lower bound on throughput.",
  "Anything about production. Production has preparation disabled, at max_artifact_bytes 104,857,600 and max_job_seconds 900 — both below the branch's — and holds zero jobs.",
  "Monthly capacity. The cap is 100 per calendar month and nothing here approached it."],
 "openQuestion":"own_preparation_monthly_admissions reads 8 for September 2026 while only 3 jobs exist on the branch. Admissions are counted when a job is admitted, so five admissions have no surviving job. That is defensible if the cap is meant to limit attempts, and wrong if a person who deletes a file and retries should not burn quota. It is recorded as a question, not a defect: which of the two the cap means has not been decided.",
-"note":"frozen_reason is absent on this branch: the 31(a) migration was applied to the Inherit project only, so nothing here exercises the artifact-budget refusal."}
+"note":"frozen_reason is absent on this branch because the 31(a) migration was applied to the Inherit project only. The refusal itself is not absent, and an earlier wording of this note saying 'nothing here exercises the artifact-budget refusal' was wrong: the branch's 2 GiB job raised artifact_limit_or_sequence on 20 September at 13:34:53, stopping at 104485654 of the then-current 104857600, which is 371946 bytes short of one artifact of its own average size. What 31(a) adds is the recorded reason and the immediate fail, not the stop.",
+"outerSizesMeasuredOnThisBranchButNotInThisQuery":{
+ "source":"docs/evidence/hosted-proof-20260919/STATUS.md and journeys/, PR #147",
+ "vcf2GiB":"stored and admitted, never prepared: finalization answered 503 unavailable with Retry-After 60 then 200 at 340.6 s with the bytes sent once; preparation wrote 540 artifacts and 104485654 bytes in 483 seconds and stopped at the artifact ceiling with fifty minutes of its hour unused. At 0.87 artifact bytes per source byte a 2 GiB VCF needs about 1.86 GB of artifacts against a column maximum of 1073741824, so no setting of max_artifact_bytes admits it.",
+ "gvcf8GiB":"cannot reach Storage at all. Issuance admits it (201) but the single POST is cut with no HTTP response; without a browser the same file is refused 413 by Cloudflare. Boundary probed: 5242880000 bytes accepted, 5368708096 refused at once.",
+ "capRefusal":"429 preparation_capacity_reached past a limit set to the month's count: file kept, no job row created, count unmoved.",
+ "cleanup":"the frozen 2 GiB job's 540 cleanup entries drained at the schema's sixteen-per-page cap, finishing 1 h 47 m past cleanup_deadline, which is therefore not a stop condition on this stack. The database was left with no cleanup rows, no artifact rows and no job row; the file stayed uploaded."},
+"productionHeadroom":{
+ "readAt":"2026-09-21, read-only from zuvloczwgrayonqabnss",
+ "preparationConfig":{"enabled":false,"artifactProvider":"supabase","r2Bucket":null,"maxJobSeconds":900,"maxArtifactBytes":104857600,"monthlyAdmissionLimit":100},
+ "admissionConfig":{"maximumVcfBytes":25165824,"maximumGvcfBytes":null,"maximumArrayBytes":25165824,"maximumAccountBytes":134217728,"maximumActiveUploads":2},
+ "impliedCeilingsAtProductionValues":{
+  "maxArtifactBytes104857600":"approximately 121 MB of source, and this is the one that binds",
+  "maxJobSeconds900":"approximately 147 MB after a full five-minute tick, approximately 231 MB on an instant claim",
+  "artifactCount4096":"approximately 915 MB, far away"},
+ "sixtyFourMiBWasMeasuredAtProductionsOwnBudget":"the 20 September 64 MiB run was made at 12:45, before the branch raised max_artifact_bytes at 14:08, so it ran at 104857600 -- production's exact value -- and wrote 58148752 bytes, 55 percent of it. Its 315 seconds from admission to last artifact is 35 percent of production's 900-second deadline, and peak sampled container memory was 617.4 MiB. It needs the standard-2 container the run used; the same file died repeatedly on standard-1.",
+ "limitsOnReadingItThatWay":[
+  "The artifact-to-source ratio is strongly size-dependent (47.8 at 547 bytes, 2.68 at 836 KiB, 0.87 at 64 MiB), so the ~121 MB figure describes files of roughly 64 MiB and up and overstates the headroom for a spread of smaller ones.",
+  "Nothing here is a gVCF result. The 4 MiB gVCF journey passed but no large gVCF was prepared, and its block structure gives it a different profile (D-128), so production's null gVCF ceiling does not follow from the VCF proof.",
+  "One run per size, one branch, one fixture generator.",
+  "Preparation is disabled in production, so none of this is active."],
+ "whatTheOwed768MiBRunWouldSettle":"only a ceiling above ~121 MB, which needs max_artifact_bytes and max_job_seconds raised together. It answers how far between ~121 MB and ~900 MB the path goes, not whether 2 GiB can work, which is settled no at any column setting."},
+"stillBlocked":{
+ "run":"768 MiB, the measurement the 21 September reading calls owed",
+ "needs":["INHERIT_PREVIEW_SUPABASE_SERVICE_ROLE_KEY","INHERIT_PREVIEW_UPLOAD_SIGNING_JWK","INHERIT_PREVIEW_VERCEL_BYPASS_TOKEN","BYOK_ENCRYPTION_KEY on the Vercel Preview target"],
+ "note":"PR #147's session held all four and still could not start the run: its auto-mode classifier refused to drive the live preview stack. The run is owed by a session holding both the variables and the permission to drive them; no production ceiling moves until it exists."}}
