@@ -671,16 +671,16 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
   const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
 
-  it("reads the real contract: eight ceilinged tasks, two of them measured", async () => {
+  it("reads the real contract: eight ceilinged tasks, three of them measured", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // T8 and T4 are measured by `e2e/task-depth.spec.ts`. Of the six left, T1,
-    // T2 and T3 are test work on built surfaces; T7 is bound to an embryo file
+    // T8, T4 and T2 are measured by `e2e/task-depth.spec.ts`. Of the five left,
+    // T1 and T3 are test work on built surfaces; T7 is bound to an embryo file
     // no ingest path can produce; T6 waits on its withheld-variant scoping; and
     // T9 cannot be settled by measuring at all, because its register ceiling and
     // its binding count different units (docs/route-divergence.json).
-    expect(result.taskDepthMeasuredCount).toBe(2);
+    expect(result.taskDepthMeasuredCount).toBe(3);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -764,7 +764,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 5 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 4 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -779,7 +779,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T1; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 5 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 4 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 

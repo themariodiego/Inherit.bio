@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { NAV_LABELS, NAV_LANDMARK_LABEL } from "@/copy/navigation";
 import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family";
@@ -11,6 +12,7 @@ import {
   PATH_B_LINK,
 } from "@/copy/family/invite";
 import { createConfirmedUser, signIn } from "./helpers";
+import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 
 /**
  * Task depth, measured rather than asserted.
@@ -68,10 +70,21 @@ const USER = { email: `task-depth-${randomUUID()}@e2e.local`, password: "e2e-tas
  * T4 depend on staying first forever.
  */
 const INVITER = { email: `task-depth-t4-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+const READER = { email: `task-depth-t2-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+
+/** The 168-marker synthetic panel, describing no real person. */
+const AIMS_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
+/** The five labels this surface is allowed to print, from the release itself. */
+const REGION_LABELS: string[] = (
+  JSON.parse(fs.readFileSync("data/ref/regions/regions.json", "utf8")) as {
+    regions: { display_name: string }[];
+  }
+).regions.map((region) => region.display_name);
 
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
   await createConfirmedUser(INVITER.email, INVITER.password);
+  await createConfirmedUser(READER.email, READER.password);
 });
 
 /** Installs the counter on this document and on every one that follows it. */
@@ -98,6 +111,79 @@ async function countedActions(page: Page): Promise<number> {
   const raw = await page.evaluate((key) => window.sessionStorage.getItem(key), COUNTER_KEY);
   return Number(raw ?? "0");
 }
+
+/**
+ * T2 — "find where your ancestors came from and name one specific region."
+ *
+ * Ceiling 3, and the shipped path costs 2: the primary navigation to My
+ * Genome, then the Ancestry card. No floor, and none is wanted — nothing about
+ * reading your own result should be made deliberately hard.
+ *
+ * What the participant has to be able to say is a REGION LABEL, and which
+ * labels exist is not this file's opinion. `data/ref/regions/regions.json` is
+ * the release, and the five `display_name`s are read out of it at run time.
+ * That matters more here than anywhere else on this surface: four of the five
+ * 1000 Genomes superpopulation names a reader might expect — African, Admixed
+ * American, East Asian, South Asian — are on
+ * `data/ref/regions/label-denylist.json`, which the product enforces precisely
+ * so it never prints a demonym. A test that asserted one of those would be
+ * demanding the product fail its own rule.
+ *
+ * Setting the account up is three real steps and none of them is the task:
+ * a consented upload, the preparation that follows it, and the SEPARATE
+ * explicit ancestry choice, because a prepared file does not by itself produce
+ * an ancestry result and no annotated flag may stand in for that journal.
+ * Counting starts after all of it, back at /overview, where a participant
+ * would begin.
+ */
+test("task depth T2 costs two counted actions, inside its registered ceiling", async ({
+  page,
+}) => {
+  expect(CONTRACT.countedEvents, "the events this instrument listens for").toEqual(["click", "submit"]);
+  const ceiling = CONTRACT.ceilings.T2;
+  expect(ceiling, "T2 carries a ceiling").toBeGreaterThan(0);
+  expect(CONTRACT.floors.T2, "T2 carries no floor").toBeUndefined();
+  expect(REGION_LABELS, "the five regions of the shipped panel").toHaveLength(5);
+
+  await signIn(page, READER.email, READER.password);
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), AIMS_FIXTURE), {
+    fileType: "vcf",
+  });
+  await generateOwnFileWithChosenReports(page, fileId, ["ancestry"]);
+
+  await page.goto("/overview");
+  await expect(page.locator("main h1")).toBeVisible();
+
+  // None of the setup above is the task, so counting starts here.
+  await startCounting(page);
+
+  // 1. My Genome, from the primary navigation.
+  await page
+    .getByRole("navigation", { name: NAV_LANDMARK_LABEL })
+    .getByRole("link", { name: NAV_LABELS["my-genome"], exact: true })
+    .click();
+  await page.waitForURL((url) => url.pathname === "/genome/me");
+
+  // 2. The ancestry card. Its link text is "Open " plus the card title, which
+  // is how every card on that page is built.
+  await page.getByRole("link", { name: "Open Ancestry", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/genome/me/ancestry");
+
+  // The answer is on the page, and it is one of the release's own five labels.
+  const named = page.locator('[data-slot="region-row"]:not([hidden]) [data-slot="region-name"]');
+  await expect(named.first()).toBeVisible();
+  const shown = await named.allInnerTexts();
+  expect(shown.length, "a region the participant could name").toBeGreaterThan(0);
+  expect(
+    shown.filter((label) => !REGION_LABELS.includes(label.trim())),
+    "every rendered region label comes from data/ref/regions/regions.json",
+  ).toEqual([]);
+
+  const spent = await countedActions(page);
+  expect(spent, `T2 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
+  // Recorded because the measurement is the point: one action of headroom.
+  expect(spent, "the measured depth of the shipped path").toBe(2);
+});
 
 /**
  * T4 — "you have a friend's DNA file and their written permission; may you
