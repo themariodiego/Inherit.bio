@@ -57,6 +57,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  */
 
 const APP = "src/app";
+const SOURCE = "src";
 const REGISTER = "docs/route-register.json";
 const LEDGER = "docs/route-divergence.json";
 const BRIEF = "docs/inherit-v2-brief.md";
@@ -825,6 +826,7 @@ interface RegisterEntry {
   /** Which G2.2 exception lets a Family or Embryo route waive consent-required. */
   consentRequiredException?: { kind?: string; carriedBy?: string };
   requestContract?: unknown;
+  methodRequestContracts?: unknown;
   parameterContract?: unknown;
 }
 
@@ -883,6 +885,9 @@ export interface RouteGateResult {
   /** Tasks the register puts an action ceiling on, and how many are measured. */
   taskDepthCeilingCount: number;
   taskDepthMeasuredCount: number;
+  /** Headers the register makes mandatory, and how many the product reads. */
+  requiredHeaderCount: number;
+  readRequiredHeaderCount: number;
   /** Routes the baseline commit served, each held to its registered disposition. */
   preExistingRouteCount: number;
   builtRouteCount: number;
@@ -1078,6 +1083,67 @@ function browserTestTitles(directory: string): string[] {
   return titles;
 }
 
+/**
+ * Which of these header names any module under `src/` so much as mentions.
+ *
+ * A header the register makes mandatory is a promise to the caller, and the
+ * only way to keep it is for some module to read the thing. The match is
+ * deliberately generous — case-insensitive, anywhere in the file — because a
+ * false "read" costs nothing here while a false "unread" would force a ledger
+ * row for a header the product really does enforce. What it catches is the
+ * absolute case: a header name that appears nowhere in the product at all.
+ */
+/**
+ * Every header the register makes mandatory on a route, by name.
+ *
+ * The register says this two ways and both have to be read, or the check
+ * covers a quarter of what it claims to. `requiredHeaders` is a map of header
+ * name to a description of its binding, and only the two chunk routes use it.
+ * `requiredHeader` is a single string on twelve other routes, and it is prose:
+ * the name with the binding hyphenated onto it, as in
+ * `X-Inherit-Operation-Nonce-from-the-confirmation-page`. The name is the part
+ * before `-bound-` or `-from-`, which resolves all twelve.
+ *
+ * A suffix nobody has used yet would leave its description attached and the
+ * header would read as unread, which costs one ledger row. That is the safe
+ * direction: the opposite mistake loses a mandatory header from the count.
+ */
+function declaredHeaderNames(entry: RegisterEntry): string[] {
+  const contracts = [
+    entry.requestContract,
+    ...Object.values((entry.methodRequestContracts ?? {}) as Record<string, unknown>),
+  ];
+  const names: string[] = [];
+  for (const contract of contracts) {
+    const shape = contract as { requiredHeaders?: Record<string, unknown>; requiredHeader?: unknown } | undefined;
+    names.push(...Object.keys(shape?.requiredHeaders ?? {}));
+    if (typeof shape?.requiredHeader === "string") {
+      names.push(shape.requiredHeader.split(/-bound-|-from-/)[0]);
+    }
+  }
+  return [...new Set(names)];
+}
+
+function headerNamesReadUnderSource(repositoryRoot: string, candidates: string[]): Set<string> {
+  const wanted = candidates.map((name) => name.toLowerCase());
+  const seen = new Set<string>();
+  const walk = (current: string) => {
+    if (seen.size === wanted.length) return;
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(ts|tsx|js|jsx)$/.test(entry.name)) continue;
+      const source = readFileSync(full, "utf8").toLowerCase();
+      for (const name of wanted) if (source.includes(name)) seen.add(name);
+    }
+  };
+  walk(path.join(repositoryRoot, SOURCE));
+  return seen;
+}
+
 /** Both directions at once: what is present, against what is recorded. */
 function compareLedger(
   label: string,
@@ -1263,6 +1329,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     kindDivergence?: { routeId: string; path: string; declaredKind: string; builtKind: string }[];
     storageBucketDivergence?: { bucket: string; direction: string }[];
     unhashableAttestationFields?: { routeId: string; fields: string[] }[];
+    unreadRequiredHeaders?: { routeId: string; header: string }[];
     provenRouteStates?: string[];
     taskDepthCeilingDivergence?: { taskId: string; registerCeiling: number; boundMaxActions: number }[];
   };
@@ -1448,6 +1515,52 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     }
   }
 
+  // 4d. Required headers nothing reads. A header the register marks required
+  // is part of the contract a caller is held to, so one that no module under
+  // `src/` so much as names is a promise with no keeper. Sixteen declarations
+  // across fourteen routes resolve to three names, and they are not all in the
+  // same state.
+  //
+  // `X-Inherit-CSRF` is real: `src/lib/embryos/operation-token.ts` mints and
+  // verifies it, and sixteen modules name it.
+  //
+  // `X-Inherit-Chunk-Nonce` is not, and reading the deployed functions on
+  // 21 September 2026 established that it cannot be built as described. The
+  // register binds it to "session, sequence, declared content-length and chunk
+  // sha256". The repository's only nonce primitive,
+  // `private.consume_embryo_operation_nonce_v1(nonce, account, session,
+  // operation, target_kind, target_id uuid)`, has no parameter that can carry
+  // a sequence, a byte count or a content hash, and the sealed envelope in
+  // `operation-token.ts` carries those same six fields and no more. Three of
+  // the four bindings are therefore inexpressible. The fourth is worse than
+  // inexpressible: a token bound to the chunk's sha256 can only be minted once
+  // the browser holds the bytes, so minting it needs a prior round trip
+  // carrying that hash - and that round trip is
+  // `reserve_embryo_ingest_chunk_v1`, the very call the token would protect.
+  // ADR 0020 decision 9 records what binds those four values today instead.
+  //
+  // Recorded rather than deleted, exactly as 4b records the attestation
+  // fields: the register goes on saying what it wants, and the ledger says why
+  // nothing serves it and what serving it would take. Both directions, so a
+  // third unread header fails until it is recorded, and the day one is really
+  // read, its stale row fails too.
+  const requiredHeaders: { routeId: string; header: string }[] = [];
+  for (const entry of register.routes) {
+    for (const header of declaredHeaderNames(entry)) {
+      requiredHeaders.push({ routeId: entry.id, header });
+    }
+  }
+  const requiredHeaderNames = [...new Set(requiredHeaders.map((required) => required.header))];
+  const readHeaderNames = headerNamesReadUnderSource(repositoryRoot, requiredHeaderNames);
+  compareLedger(
+    "unread required header",
+    requiredHeaders
+      .filter((required) => !readHeaderNames.has(required.header.toLowerCase()))
+      .map((required) => `${required.routeId} ${required.header}`),
+    (ledger.unreadRequiredHeaders ?? []).map((known) => `${known.routeId} ${known.header}`),
+    failures,
+  );
+
   // 5. The (route, state) ratchet.
   failures.push(...notApplicableFailures(register));
   const required = new Set<string>();
@@ -1604,11 +1717,32 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   if (createdBucketNames.size < 2) failures.push(`migrations create ${createdBucketNames.size} storage buckets, expected over 2`);
   if (migrationFiles.length < 50) failures.push(`migration walker found ${migrationFiles.length} files, expected over 50`);
   if (titles.length < 100) failures.push(`browser test walker found ${titles.length} titles, expected over 100`);
+  if (requiredHeaderNames.length < 2) {
+    failures.push(`required header check found ${requiredHeaderNames.length} declared header names, expected at least 2`);
+  }
+  // The register says this two ways and the singular one carries twelve of the
+  // sixteen declarations. This floor is what fails if that half stops being
+  // read - the names floor above would not, because the two chunk routes alone
+  // still yield two names.
+  if (requiredHeaders.length < 8) {
+    failures.push(
+      `required header check found ${requiredHeaders.length} declared headers across all routes, ` +
+        `expected at least 8`,
+    );
+  }
+  if (readHeaderNames.size < 1) {
+    failures.push(
+      `required header check found ${readHeaderNames.size} of ${requiredHeaderNames.length} declared header ` +
+        `names read under ${SOURCE}/, expected at least 1`,
+    );
+  }
 
   return {
     failures,
     taskDepthCeilingCount: taskDepth.ceilingCount,
     taskDepthMeasuredCount: taskDepth.measuredCount,
+    requiredHeaderCount: requiredHeaderNames.length,
+    readRequiredHeaderCount: readHeaderNames.size,
     preExistingRouteCount,
     builtRouteCount: built.length,
     matchedEndpointCount,
@@ -1638,7 +1772,8 @@ async function main() {
       `${result.preExistingRouteCount} pre-existing routes with a verified disposition, ` +
       `${result.declaredBucketCount} declared ` +
       `storage buckets, ${result.taskDepthMeasuredCount} of ${result.taskDepthCeilingCount} task-depth ` +
-      `ceilings measured, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
+      `ceilings measured, ${result.readRequiredHeaderCount} of ${result.requiredHeaderCount} required headers ` +
+      `read by the product, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
       `by ${result.browserTestTitleCount} browser tests ` +
       `(${result.unresolvableTitleCount} of them built by interpolation, which this static ` +
       `reader cannot resolve and does not guess at)`,
