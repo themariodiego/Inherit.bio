@@ -66,10 +66,28 @@ the paragraph above implies:
    `src/lib/embryos/upload-flow.test.ts:155` and
    `src/copy/embryos/embryos.test.ts:243`. E2 steps 3–5 sit behind it.
 
+**Two primitives these routes need are also already built, and are easy to
+mistake for ones that are not.** The chunk contract requires an
+`X-Inherit-CSRF` token bound to the upload session and a one-time chunk
+nonce, and the mapping contract requires a one-time mapping-inspection nonce.
+`src/lib/embryos/operation-token.ts` mints and verifies exactly these —
+`CSRF_HEADER`, `OPERATION_HEADER`, `mintEmbryoOperation`,
+`readEmbryoOperation`, `verifyEmbryoOperation`, with the sealed envelope
+under its own digest context so a family token never reads as an embryo one —
+and four shipped routes already consume it: `record-key-cards`,
+`embryos/[id]/disposition`, `cohorts/[id]/restrict` and
+`invitations/accept`. This is **not** the unbuilt token `docs/acceptance-matrix.md`
+records against `/api/browse/region`, which has no minting presentation;
+the embryo domain has its own and it is in production use. The header rule
+the mapping route enforces is built too: `src/lib/genome/parsers/pgt-table.ts`
+already reports the header cells that name a sex, gender or karyotype column,
+which is the refusal this ADR's §10 requires before any row, audit log or
+object write.
+
 Recorded because the cost of the stale sentence is a session spent building
 eight RPCs that are already deployed, and because the corrected scope changes
-what the remaining work is: two surfaces and a flag, on top of a data layer
-that is finished.
+what the remaining work is: three routes wiring a substrate that is finished
+and tested, one job executor, and a flag.
 
 ## Decision
 
