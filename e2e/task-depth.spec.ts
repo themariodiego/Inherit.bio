@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { NAV_LABELS, NAV_LANDMARK_LABEL } from "@/copy/navigation";
 import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family";
 import { REGIONAL_COMBINED_NAME } from "@/lib/ancestry/regional-regions";
+import { LAYER_LABELS } from "@/copy/reports/strings";
 import {
   ATTESTATION_LABEL,
   INVITE_H1,
@@ -96,11 +97,30 @@ const VARIANTS = { email: `task-depth-t3-${randomUUID()}@e2e.local`, password: "
  */
 /** Covers rs7903146, the TCF7L2 position T1's report is about. */
 const ESTIMATES_FIXTURE = "e2e/fixtures/density-source-grch38.vcf";
-/** Covers rs9923231, the VKORC1 position T3's report is about. */
-const VARIANTS_FIXTURE = "e2e/fixtures/medicines-grch38.vcf";
-
 /** The 168-marker synthetic panel, describing no real person. */
 const AIMS_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
+
+/**
+ * T3's file, and the second correction of it.
+ *
+ * The first correction reached for `medicines-grch38.vcf` on the strength of
+ * its name. Measured afterwards, before CI had to say so: that file carries
+ * all ELEVEN bound positions, one line each, and so does
+ * `density-source-grch38.vcf` — they are this suite's two "everything is
+ * covered" panels. Either would have inverted T3, whose entire subject is a
+ * position the file does NOT carry, and the test would have gone green while
+ * measuring the opposite task.
+ *
+ * The binding already held the answer and was not read.
+ * `scripts/comprehension/bindings.json` names two fixtures for T3 and records
+ * all eleven rsIDs `covered: false` against both; one of them is the AIMS
+ * panel above, which prepares. So T3 now reads the bound fixture instead of a
+ * guessed one, checked two ways — by rsID and by (chromosome, GRCh38
+ * position), because an rsID-less line at the right coordinate would cover
+ * the report just the same. Zero of eleven on either reading.
+ */
+const VARIANTS_FIXTURE = AIMS_FIXTURE;
+
 /**
  * The labels this surface is allowed to print, from the release itself.
  *
@@ -174,11 +194,21 @@ async function countedActions(page: Page): Promise<number> {
  * else to `reports.polygenic` — so this account grants the polygenic purpose
  * and nothing else.
  *
- * That single grant is also what keeps the path at two. With one permitted
- * layer the group tabs do not render at all (`nonEmptyLayers.length > 1`), so
- * the estimate library is what the page opens on. An account holding both
- * purposes would pay one more action to switch groups, and this file says so
- * rather than quietly measuring the easier case.
+ * WHAT KEEPS THE PATH AT TWO, and it is not that grant — the first attempt
+ * said it was, and CI disproved it. Measured from the page itself: on your
+ * OWN record the report list sets `allowedLayers` to every layer
+ * unconditionally, because `grantedLayers()` is consulted only for a
+ * relative's record. So the group tabs render whenever the published library
+ * holds templates in both layers, which it always does (eleven
+ * `variant_call`, every other template an `estimate`), and they are on this
+ * page for every account that ever opens it. A purpose you have not granted
+ * withholds the RESULTS inside a layer; it does not remove the layer.
+ *
+ * T1 crosses no tab for a different and weaker reason: with no `?layer=` in
+ * the URL, `activeLayer` resolves to `estimate` ahead of the taxonomy order,
+ * and all three bound slugs are estimates. That is a default, not a
+ * structural guarantee, which is why the assertion below pins the current
+ * group rather than the absence of the tabs.
  *
  * The binding names three type 2 diabetes slugs rather than one, on purpose:
  * all three are covered by this fixture, and grading on which one a
@@ -210,11 +240,17 @@ test("task depth T1 costs two counted actions, inside its registered ceiling", a
   await page.getByRole("link", { name: "Reports", exact: true }).first().click();
   await page.waitForURL((url) => url.pathname === "/genome/me/reports");
 
-  // One permitted layer means no group tabs to cross first.
+  // The group tabs ARE here, for the reason the note above gives, and T1
+  // crosses none of them because the library opens on the group its three
+  // bound slugs live in. Pinning which group is current — rather than
+  // asserting that no tabs exist — is what keeps the 2 below a measurement:
+  // if that default ever moves, this fails first and names why.
+  const groups = page.getByRole("navigation", { name: "Report groups" });
+  await expect(groups, "both layers are published, so the tabs render").toHaveCount(1);
   await expect(
-    page.getByRole("navigation", { name: "Report groups" }),
-    "a single granted purpose leaves one layer, so no tabs",
-  ).toHaveCount(0);
+    groups.getByRole("link", { name: LAYER_LABELS.estimate, exact: true }),
+    "the library opens on the estimate group, so T1 crosses no tab",
+  ).toHaveAttribute("aria-current", "page");
 
   // 2. The report itself. A card link's accessible name is its title and its
   // evidence label, so the title is matched at the start.
@@ -231,18 +267,46 @@ test("task depth T1 costs two counted actions, inside its registered ceiling", a
  * T3 — "find something Inherit could not check in your file, and say what that
  * means."
  *
- * Ceiling 3, path 2, and the fixture is the point: the eleven bound slugs are
- * one-position pharmacogenomic reports and NONE of their positions is in this
- * file. The task is not to find a result, it is to find the absence of one and
- * understand it, so a fixture that covered them would destroy the task.
+ * Ceiling 3, and the shipped path costs **3**: the Overview entry box, the
+ * group tab, then the report. That is ON the ceiling, not inside it, and
+ * recording it is the point of measuring at all. The first attempt asserted 2
+ * on reasoning that turned out to be wrong; CI measured the product instead,
+ * and the product's number is what stands here.
+ *
+ * The fixture is half the task: the eleven bound slugs are one-position
+ * pharmacogenomic reports and NONE of their positions is in this file — see
+ * `VARIANTS_FIXTURE` above for how that was established, and for the fixture
+ * this test reached for first, which covered all eleven. The task is not to
+ * find a result, it is to find the absence of one and understand it, so a
+ * fixture that covered them would destroy it.
  *
  * `vkorc1-rs9923231-one-position` carries `layer: "variant_call"` explicitly,
  * which by the same one-line mapping is the `reports.monogenic` purpose — the
- * mirror of T1 and the reason these two are measured together. Granting only
- * that purpose again leaves one permitted layer, so the page opens on the
- * specific-variants library with no tabs to cross.
+ * mirror of T1 and the reason these two are measured together. It is also
+ * exactly why T3 costs one action more than T1: the library opens on the
+ * `estimate` group for every account, a `variant_call` report is not in that
+ * group, and the tab has to be crossed to reach one.
+ *
+ * THERE IS NO CHEAPER PATH, and that was checked rather than assumed. The
+ * grant does not remove the tabs (T1's note says why). None of Overview's
+ * nine entry boxes carries a `?layer=`, so none lands in the right group.
+ * And the starter reading list cannot short-cut it from Overview either, on
+ * two independent grounds: it takes only COVERED reports, and a not-covered
+ * report is the whole premise here; and ADR 0021 bars the Medicines category
+ * from that list outright, so no one-position report can appear in it even
+ * when a file does cover one.
+ *
+ * So every one-position report on this surface sits three actions deep
+ * against a ceiling of three. It passes, with no margin at all: one more
+ * step anywhere on that path — a consent interstitial, a reveal gate if any
+ * of these templates ever earns one, a "Show all" boundary if Medicines ever
+ * exceeds twelve cards — puts the shipped product over its own registered
+ * ceiling. Neither of the two gates that could already do that is armed
+ * today: `isGatedTemplate` is false for all eleven (the category is not one
+ * of the three gated ones and no interpretation text asks for clinical
+ * confirmation), and eleven cards is under the twelve-card boundary.
  */
-test("task depth T3 costs two counted actions, inside its registered ceiling", async ({
+test("task depth T3 costs three counted actions, exactly its registered ceiling", async ({
   page,
 }) => {
   const ceiling = CONTRACT.ceilings.T3;
@@ -263,19 +327,38 @@ test("task depth T3 costs two counted actions, inside its registered ceiling", a
   // 1. The same Overview entry box.
   await page.getByRole("link", { name: "Reports", exact: true }).first().click();
   await page.waitForURL((url) => url.pathname === "/genome/me/reports");
-  await expect(
-    page.getByRole("navigation", { name: "Report groups" }),
-    "a single granted purpose leaves one layer, so no tabs",
-  ).toHaveCount(0);
 
-  // 2. A one-position report whose position this file does not carry.
+  // 2. The group tab, and the reason T3 is not T1. The library opened on the
+  // estimate group — asserted, not assumed — and no one-position report is in
+  // it, so this action cannot be avoided from here.
+  const groups = page.getByRole("navigation", { name: "Report groups" });
+  await expect(
+    groups.getByRole("link", { name: LAYER_LABELS.estimate, exact: true }),
+    "the library opens on the estimate group, which holds no one-position report",
+  ).toHaveAttribute("aria-current", "page");
+  await groups.getByRole("link", { name: LAYER_LABELS.variant_call, exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/genome/me/reports"
+    && url.searchParams.get("layer") === "variant_call");
+
+  // 3. A one-position report whose position this file does not carry.
   await page.getByRole("link", { name: /^Warfarin, one position · VKORC1,/ }).click();
   await page.waitForURL((url) => url.pathname === "/genome/me/reports/vkorc1-rs9923231-one-position");
   await expect(page.locator("main h1")).toBeVisible();
 
+  // The task's success condition, and the guard on the fixture mistake this
+  // test already made once: T3 is supposed to arrive at an ABSENCE. A file
+  // that covered this position would leave the journey three actions long
+  // and measuring a different task entirely, so the state is asserted here
+  // rather than inferred from the fixture's name.
+  await expect(
+    page.locator('[data-outcome="not-covered"]').first(),
+    "T3 is a not-covered task and this is the state it must land in",
+  ).toBeVisible();
+
   const spent = await countedActions(page);
   expect(spent, `T3 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
-  expect(spent, "the measured depth of the shipped path").toBe(2);
+  // Three: on the ceiling, not inside it. The measurement, not a target.
+  expect(spent, "the measured depth of the shipped path").toBe(3);
 });
 
 /**
