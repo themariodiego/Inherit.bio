@@ -68,10 +68,33 @@ pnpm dev
 ```
 
 Open http://localhost:3000, sign up (the verification email is in Mailpit
-at http://127.0.0.1:54324), and upload a sample:
-`data/samples/synthetic_23andme.txt` (synthetic person) or
-`data/samples/HG001_GRCh38_chr20-22.vcf.gz` (public GIAB reference
-material).
+at http://127.0.0.1:54324), and upload
+`data/samples/synthetic-pipeline-grch38.vcf.gz`.
+
+`data/samples/` holds three files and only that one is a first-run sample.
+The other two are here for reasons that are not this, and both used to be
+offered on this line:
+
+- **`synthetic_23andme.txt` is refused at preparation today**, with a 422.
+  850 of its 2135 positions do not lift to GRCh38, which is past the 5% the
+  liftover contract allows — defect D-133. Until that is fixed it is input for
+  the unit tests that read it, not for a first run.
+- **`HG001_GRCh38_chr20-22.vcf.gz` is a historical artifact.** It is consented,
+  openly published GIAB reference material, and `data/samples/PROVENANCE.md`
+  records that no current browser or pipeline test uses it as genetic input,
+  that the synthetic pipeline fixture replaced its active parser role on
+  15 September 2026, and that current tests exclude public benchmark genotypes
+  as inputs. Offering it here asked a reader to start with real reference
+  material the repository had already stopped using.
+
+The one above is synthetic, describes no person, and is GRCh38, so the
+liftover step that refuses the array sample does not apply to it. It carries
+120,073 records with 73 of the catalogue's 146 rsIDs present and 73 absent, so
+a first run shows both a covered result and an honest not-covered one.
+`src/lib/genome/pipeline-integration.test.ts` drives it through the parser and
+report resolution and asserts both outcomes. **What no test does yet is upload
+any of the three through the browser**, so this recommendation rests on that
+integration test and on the file's build, not on a proven end-to-end run.
 
 ### Local LLM copilot (the privacy-preferred setup)
 
