@@ -5,7 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { NAV_LABELS, NAV_LANDMARK_LABEL } from "@/copy/navigation";
 import { ADD_ANOTHER_ADULT_BUTTON } from "@/copy/family";
 import { REGIONAL_COMBINED_NAME } from "@/lib/ancestry/regional-regions";
-import { LAYER_LABELS } from "@/copy/reports/strings";
+import { LAYER_LABELS, SHOW_ALL_REPORTS } from "@/copy/reports/strings";
+import { CATEGORY_TAXONOMY } from "@/lib/genome/taxonomy";
 import {
   ATTESTATION_LABEL,
   INVITE_H1,
@@ -122,6 +123,13 @@ const AIMS_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
 const VARIANTS_FIXTURE = AIMS_FIXTURE;
 
 /**
+ * The library section T1's three bound slugs land in, read from the taxonomy
+ * rather than retyped. The id is the stable machine key; the heading a reader
+ * sees is the product's own label for it.
+ */
+const T1_SECTION = CATEGORY_TAXONOMY.find(category => category.id === "food-drink-metabolism")!.label;
+
+/**
  * The labels this surface is allowed to print, from the release itself.
  *
  * The first attempt read `data/ref/regions/regions.json` and CI named the
@@ -182,10 +190,33 @@ async function countedActions(page: Page): Promise<number> {
 /**
  * T1 — "find what your DNA file says about your chance of type 2 diabetes."
  *
- * Ceiling 3, path 2: the Overview entry box straight to the report library,
- * then the report. Going by the primary navigation instead would cost three
- * and sit exactly on the ceiling, which is worth knowing and is not what a
- * participant starting at Overview would do.
+ * Ceiling 3, and the shipped path costs **3**: the Overview entry box, the
+ * section's "Show all", then the report. That is ON the ceiling, not inside
+ * it, and it took a third CI round to find because the first two never
+ * reached the card.
+ *
+ * WHY THE CARD IS NOT THERE, counted rather than assumed. The library caps a
+ * category section at `CARDS_BEFORE_SHOW_ALL` = 12 and renders the rest only
+ * behind a control - `g.cards.slice(0, CARDS_BEFORE_SHOW_ALL)`, so cards past
+ * the twelfth are not hidden, they are absent from the DOM, which is exactly
+ * the "waiting for locator" timeout CI reported. And the section is bigger
+ * than its legacy category: `LEGACY_CATEGORY_DEFAULTS` maps BOTH
+ * `gastrointestinal` and `metabolic-obesity` onto `food-drink-metabolism`, so
+ * one rendered section holds 20 cards. `getPublishedTemplates` orders by
+ * legacy category then title, and "gastrointestinal" sorts before
+ * "metabolic-obesity", so positions 1-10 are gastrointestinal, 11-12 are the
+ * two "Body weight tendency" cards, and ALL THREE bound type 2 diabetes slugs
+ * sit at 18, 19 and 20 - every one of them past the boundary. Counting the
+ * legacy category alone said 10 of 12 and was the wrong arithmetic.
+ *
+ * THERE IS A TWO-ACTION PATH AND IT IS NOT THE ONE RECORDED. The library's
+ * search box filters live on `onChange` with no submit, so typing "diabetes"
+ * floats the card into view for **zero** counted events, and the contract
+ * would score that journey 2. It is not recorded, because the contract counts
+ * a pointer activation or a keystroke SUBMISSION, and scoring eight keystrokes
+ * as nothing would flatter the product by exactly the collapse the pinned
+ * event set exists to prevent. The pointer path is the honest measurement and
+ * it is the one that can breach the ceiling, so it is the one asserted.
  *
  * WHICH PURPOSE, read rather than guessed. The three bound slugs live in
  * `data/templates/metabolic-obesity.json` and carry no `layer`, and a template
@@ -215,7 +246,7 @@ async function countedActions(page: Page): Promise<number> {
  * participant happened to open would grade navigation luck. Reaching any of
  * them is the success condition, so this reaches the first.
  */
-test("task depth T1 costs two counted actions, inside its registered ceiling", async ({
+test("task depth T1 costs three counted actions, exactly its registered ceiling", async ({
   page,
 }) => {
   expect(CONTRACT.countedEvents, "the events this instrument listens for").toEqual(["click", "submit"]);
@@ -252,7 +283,20 @@ test("task depth T1 costs two counted actions, inside its registered ceiling", a
     "the library opens on the estimate group, so T1 crosses no tab",
   ).toHaveAttribute("aria-current", "page");
 
-  // 2. The report itself. A card link's accessible name is its title and its
+  // 2. The section's "Show all". Its three bound slugs are the 18th, 19th and
+  // 20th cards of a 20-card section that renders twelve, so none of them is in
+  // the document until this is clicked - see the note above. Asserting the
+  // control is there before clicking it keeps the reason legible: if the
+  // section ever fits under the boundary this fails here, naming the cap,
+  // rather than leaving a stale 3 that nothing re-derives.
+  const section = page.getByRole("region", { name: T1_SECTION });
+  const showAll = section.getByRole("button", { name: new RegExp(`^${SHOW_ALL_REPORTS}\\b`) });
+  await expect(showAll,
+    `${T1_SECTION} holds more cards than it renders, so the bound reports are behind this control`)
+    .toBeVisible();
+  await showAll.click();
+
+  // 3. The report itself. A card link's accessible name is its title and its
   // evidence label, so the title is matched at the start.
   await page.getByRole("link", { name: /^Type 2 diabetes · TCF7L2,/ }).click();
   await page.waitForURL((url) => /^\/genome\/me\/reports\/type-2-diabetes-/.test(url.pathname));
@@ -260,7 +304,8 @@ test("task depth T1 costs two counted actions, inside its registered ceiling", a
 
   const spent = await countedActions(page);
   expect(spent, `T1 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
-  expect(spent, "the measured depth of the shipped path").toBe(2);
+  // Three: on the ceiling, not inside it. The measurement, not a target.
+  expect(spent, "the measured depth of the shipped path").toBe(3);
 });
 
 /**
