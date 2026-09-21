@@ -673,9 +673,10 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
     expect(result.taskDepthCeilingCount).toBe(8);
-    // Six are test work on built surfaces; T6 and T7 are bound to embryo files
-    // that no ingest path can produce, so this number cannot reach zero here.
-    expect(result.taskDepthMeasuredCount).toBe(0);
+    // T8 is measured by `e2e/task-depth.spec.ts`. Five more are test work on
+    // built surfaces; T6 and T7 are bound to embryo files that no ingest path
+    // can produce, so this number cannot reach eight here.
+    expect(result.taskDepthMeasuredCount).toBe(1);
   });
 
   it("fails when a ceiling names a task nothing binds", async () => {
@@ -759,7 +760,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 7 of 8 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 6 of 8 ceilinged tasks are measured by no browser test",
     );
   });
 
@@ -767,7 +768,7 @@ describe("the route gate holds the task-depth contract to the tasks it names", (
     const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T4; } });
     const { failures } = await runRouteGate(root);
     expect(failures.join("\n")).toContain(
-      "task depth ratchet: 7 of 7 ceilinged tasks are measured by no browser test",
+      "task depth ratchet: 6 of 7 ceilinged tasks are measured by no browser test",
     );
   });
 
