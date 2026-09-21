@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           Privacy <span className="accent">policy.</span>
         </>
       }
-      effectiveDate="2026-08-28"
+      effectiveDate="2026-09-21"
       intro={
         <>
           <p>
@@ -99,12 +99,15 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                The hosted service uses two infrastructure providers as data
-                processors. <strong>Supabase</strong> handles the database and
-                file storage, including your genome files and derived variants.
-                <strong>Vercel</strong> hosts the app. Each provider works only
-                on our instructions under a data processing agreement. Neither
-                may use your data for its own purposes.
+                The hosted service uses three infrastructure providers as
+                data processors. <strong>Supabase</strong> handles the database
+                and file storage, including your genome files and derived
+                variants. <strong>Vercel</strong> hosts the app.{" "}
+                <strong>Cloudflare</strong> runs the preparation step for large
+                genome files and stores the prepared pieces it produces;
+                preparing a file means reading it. Each provider works only on
+                our instructions under a data processing agreement. None of
+                them may use your data for its own purposes.
               </p>
               <p>
                 If you prefer that no company — including us — hold your
