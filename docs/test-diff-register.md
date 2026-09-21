@@ -195,6 +195,42 @@ Behaviour is unchanged. This closes the hazard half of G2.4 only. The row stays
 **NO** on both of its own halves: task depth is still uninstrumented, and four
 of the nine boxes still do not arrive where the box says — which the row calls
 deliberate and defensible, and which is a decision rather than a defect.
+## The reflow sweep can name an out-of-flow cause, and keeps what it finds · 20 September 2026
+
+`e2e/a11y.spec.ts`'s 320 CSS px reflow probe measures
+`/genome/[subject]/data/browser` at 446px on every run and the ledger still
+records its cause as unidentified. Two defects in the measurement, not in the
+page, explain that. Both are fixed here; no verdict changes and no route's
+recorded width moves.
+
+**It misfiled out-of-flow boxes.** The walk that decided whether an element
+was clipped treated any ancestor with a computed `overflow-x` other than
+`visible` as clipping. That is true of an in-flow child and false of an
+out-of-flow one: a `position: fixed` box is laid out against the viewport, so
+such an ancestor does not clip it unless the ancestor establishes a containing
+block for fixed descendants (a transform, perspective, filter, backdrop-filter,
+a `will-change` naming one of those, or a `contain` of paint, layout, strict or
+content), and an `absolute` box skips every `static` ancestor the same way. A
+node that really was escaping therefore landed in `caught`, `widest` came back
+empty, and the report had nothing to name — exactly the symptom recorded
+against this route.
+
+**It threw the diagnosis away.** For a route in the ledger the assertion
+compares two numbers and returns, and an assertion that passes never prints its
+message, so the probe's whole result was discarded on every green run. It is
+now attached to the test as JSON, so each run carries what it found.
+
+The probe also reports what has no element to name: the computed `min-width`
+and `width` of the root and the body, and any `::before` or `::after` on the
+nodes already in hand that carries a width, an out-of-flow position or a right
+margin. Both are bounded to nodes the sweep already walked, so neither costs a
+second pass of the document.
+
+Nothing here can make the sweep pass something it should fail: the added fields
+are diagnostic, the pass or fail is still `scrollWidth` against the ledger's
+exact recorded width, and the ledger is unchanged. The two `min-width:220px`
+rules in igv 3.8.5's injected styles remain candidates, not a diagnosis; this
+change exists so the next run names the element instead of guessing at it.
 
 ## The image copies what the worker imports, and a wake outlives its container · 20 September 2026
 

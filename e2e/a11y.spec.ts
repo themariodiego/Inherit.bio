@@ -841,6 +841,13 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
         const root = document.documentElement;
         if (root.scrollWidth <= root.clientWidth) return null;
         const limit = root.clientWidth;
+        // The properties that make an element the containing block of its
+        // `fixed` descendants, and of `absolute` ones through a `static`
+        // ancestor. Kept in one place so the walk below reads as the rule.
+        const holdsOutOfFlow = (style: CSSStyleDeclaration) =>
+          style.transform !== "none" || style.perspective !== "none" || style.filter !== "none"
+          || style.backdropFilter !== "none" || /transform|perspective|filter/.test(style.willChange)
+          || /paint|layout|strict|content/.test(style.contain);
         const wide: Element[] = [];
         const caught: Element[] = [];
         for (const element of document.querySelectorAll("*")) {
@@ -850,11 +857,24 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
           // page; content pushed past the left edge is unreachable, but it is
           // not something the reader can scroll to.
           if (rect.right <= limit) continue;
+          // An overflow-x other than `visible` clips an IN-FLOW child, but an
+          // out-of-flow box is only clipped by an ancestor that is also in its
+          // containing-block chain. A `fixed` box is laid out against the
+          // viewport, so an `overflow-x: hidden` ancestor does not clip it at
+          // all unless that ancestor establishes a containing block for fixed
+          // descendants; an `absolute` box skips every `static` ancestor the
+          // same way. Reading the walk without that rule files a node that
+          // really is escaping as one that was caught, and then `widest` comes
+          // back empty with nothing to name — which is what this sweep
+          // reported on the variant browser.
+          const own = getComputedStyle(element);
           let clipped = false;
           for (let parent = element.parentElement; parent && parent !== root; parent = parent.parentElement) {
-            // Any computed overflow-x but `visible` clips or scrolls its
-            // child, so the child cannot be what widened the page.
-            if (getComputedStyle(parent).overflowX !== "visible") { clipped = true; break; }
+            const style = getComputedStyle(parent);
+            if (style.overflowX === "visible") continue;
+            if (own.position === "fixed" && !holdsOutOfFlow(style)) continue;
+            if (own.position === "absolute" && style.position === "static" && !holdsOutOfFlow(style)) continue;
+            clipped = true; break;
           }
           if (clipped) { caught.push(element); continue; }
           wide.push(element);
@@ -894,6 +914,23 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
             `${probe.describe(element)} holds ${element.scrollWidth}px in a ${element.clientWidth}px box`),
           scrollWidth: root.scrollWidth,
           clientWidth: root.clientWidth,
+          // Width with no element of its own to name: a floor set on the root
+          // or the body, and pseudo-elements, which `querySelectorAll` cannot
+          // return. Bounded to the nodes already in hand plus the two roots,
+          // so this costs no second walk of the document.
+          floors: [root, document.body].filter(Boolean).map(element => {
+            const style = getComputedStyle(element);
+            return `${probe.describe(element)} min-width ${style.minWidth}, width ${style.width}`;
+          }),
+          pseudo: [root, document.body, ...caught, ...wide].slice(0, 40).flatMap(element =>
+            (["::before", "::after"] as const).flatMap(part => {
+              const style = getComputedStyle(element, part);
+              if (style.content === "none") return [];
+              const offEdge = style.position === "fixed" || style.position === "absolute";
+              if (style.width === "auto" && !offEdge && style.marginRight === "0px") return [];
+              return [`${probe.describe(element)}${part} width ${style.width}`
+                + `, position ${style.position}, right ${style.right}, margin-right ${style.marginRight}`];
+            })).slice(0, 8),
           // Empty when nothing has a box past the edge — a margin, a
           // pseudo-element or a fixed-width table can widen the document with
           // no element of its own to name — so the two lengths are reported
@@ -909,6 +946,16 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
       // rather than sliding in under the first.
       const recorded = reflowLedger().find(known => known.route === route);
       if (recorded) {
+        // The probe gathers its whole diagnosis for this route and the
+        // assertion below then compares two numbers, so on a passing run every
+        // word of it was discarded: an assertion that passes never prints its
+        // message. That is why the ledger says this route's cause is
+        // unidentified while the sweep measures it on every run. Attach it, so
+        // each run carries what it found without changing any verdict.
+        if (overflow) {
+          await test.info().attach(`reflow${route.replace(/[^a-z0-9]+/gi, "-")}`,
+            { body: JSON.stringify(overflow, null, 2), contentType: "application/json" });
+        }
         expect.soft(overflow?.scrollWidth ?? 0,
           `${route} is recorded at ${recorded.scrollWidth} CSS px; a wider page is a regression, `
           + `and one that reflows must leave ${ACCESSIBILITY_LEDGER}`)
