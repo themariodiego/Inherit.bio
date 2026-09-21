@@ -257,6 +257,57 @@ the two outer sizes are now measured rather than extrapolated:
   cleanup drained all 540 entries — at sixteen per tick, finishing 1 h 47 m
   past its own `cleanup_deadline`, which is not a stop condition on this stack.
 
+### What production's own settings support, read 21 September 2026
+
+Read-only from the Inherit project the same day this correction was written.
+Preparation is **disabled** in production, so none of the below is active; these
+are the values a raise would start from.
+
+| | Production today |
+| --- | --- |
+| `own_preparation_config` | `enabled` false, provider `supabase`, no R2 bucket, `max_job_seconds` **900**, `max_artifact_bytes` **104,857,600**, monthly admissions 100 |
+| `upload_authorization_config` | VCF **25,165,824** (24 MiB), gVCF **null**, array 25,165,824, per account 134,217,728, 2 active uploads |
+
+Putting production's own numbers through the measured rate, its three ceilings
+land far apart, and the byte budget is the one that binds:
+
+| Limit, at production's current value | Implied source ceiling |
+| --- | --- |
+| `max_artifact_bytes` 104,857,600 | **~121 MB** — binds first |
+| `max_job_seconds` 900 | ~147 MB after a full tick, ~231 MB on an instant claim |
+| `artifact_count` 4096 | ~915 MB — far away |
+
+**So production's binding ceiling is about 121 MB of source, roughly five times
+the 24 MiB it currently admits.**
+
+**And 64 MiB is already proven at production's own artifact budget.** The
+20 September 64 MiB run was made at 12:45, before the branch raised
+`max_artifact_bytes` at 14:08, so it ran at **104,857,600 — production's exact
+value** — and wrote 58,148,752 bytes, **55% of it**. Its 315 seconds from
+admission to last artifact is **35% of production's 900-second deadline**. Peak
+sampled container memory was 617.4 MiB.
+
+A VCF ceiling of 64 MiB therefore needs no new measurement: it is the largest
+size with a direct end-to-end proof, and that proof was taken inside both of
+production's current limits. What it does need is the container the run used —
+`standard-2`. The same file died repeatedly on `standard-1`, and that was a
+container death, not slowness.
+
+**Three limits on reading it that way.** The artifact-to-source ratio is
+strongly size-dependent — 47.8 at 547 bytes, 2.68 at 836 KiB, 0.87 at 64 MiB —
+so the ~121 MB figure describes files of roughly 64 MiB and up and overstates
+the headroom for a spread of smaller ones. Nothing here is a gVCF result: the
+4 MiB gVCF journey passed but no large gVCF was prepared, and its block
+structure gives it a different profile (D-128), so production's null gVCF
+ceiling does not follow from the VCF proof. And it remains one run per size,
+on one branch, from one fixture generator.
+
+**What the owed 768 MiB run would actually settle.** Only a ceiling *above*
+~121 MB, which needs `max_artifact_bytes` and `max_job_seconds` raised
+together. The question it answers is how far between ~121 MB and ~900 MB the
+path really goes — not whether 2 GiB can work, which is settled no at any
+column setting.
+
 ### What still blocks the remaining ceiling run
 
 Not a judgement call — an access boundary. The 768 MiB run needs the preview
