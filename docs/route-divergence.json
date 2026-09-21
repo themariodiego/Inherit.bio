@@ -347,5 +347,16 @@
       ],
       "served": "jurisdictionCode"
     }
+  ],
+  "taskDepthCeilingDivergenceNote": "navigationContract.taskDepthActions and scripts/comprehension/bindings.json both take their action ceilings from docs/inherit-v2-brief.md, and the brief gives T9 two different numbers in two different sentences. The task-depth rule classes T9 as a consent task and caps it at 6 actions; T9's own task statement ends 'Maximum 8 actions.' The register transcribed the rule, the bindings transcribed the statement, and each is faithful to what it read. Resolving it means deciding which brief sentence governs, which is an owner decision and not a gate's to make, so the disagreement is recorded here and scripts/route-gate.ts holds it in both directions: a new ceiling disagreement fails, and changing either number without updating this entry fails too. Until it is settled a protocol run graded against the bindings would pass a participant at 8 actions on a task the register caps at 6, on the accountless rights journey \u2014 the one path a person with no account has to find and delete what is held about them.",
+  "taskDepthCeilingDivergence": [
+    {
+      "taskId": "T9",
+      "registerCeiling": 6,
+      "boundMaxActions": 8,
+      "registerSource": "docs/inherit-v2-brief.md task-depth rule: 'consent tasks T4, T9 <= 6'",
+      "bindingsSource": "docs/inherit-v2-brief.md T9 task statement: 'Maximum 8 actions.'",
+      "closing": "An owner decision on which brief sentence governs, then one edit to the brief and one to whichever derived file was following the losing sentence."
+    }
   ]
 }
