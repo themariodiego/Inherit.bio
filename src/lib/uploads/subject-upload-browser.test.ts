@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { finishStagedUpload, prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const uploadId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -117,6 +118,37 @@ describe("preparing an already finalized file", () => {
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("browser-to-Storage own-subject upload", () => {
+  it.each([null, undefined, {
+    maximumArrayBytes: 52_428_800, maximumVcfBytes: 2_147_483_648,
+    maximumGvcfBytes: 8_589_934_592, maximumAccountBytes: 10_000_000_000,
+    maximumActiveUploads: 2, activeUploads: 0, reservedBytes: 0,
+  }])("names the transport limit before reading or sending an oversized file (%j)", async limits => {
+    // Size metadata is enough for refusal; allocate no multi-gigabyte fixture.
+    const source = file();
+    Object.defineProperty(source, "size", { value: 8_589_933_057 });
+    const slice = vi.spyOn(source, "slice");
+    const stream = vi.spyOn(source, "stream");
+    const progress = vi.fn();
+    await expect(uploadSubjectFile(source, subjectId, progress, limits))
+      .rejects.toMatchObject({ code: "too_large", limitBytes: SINGLE_REQUEST_MAXIMUM_BYTES });
+    expect(slice).not.toHaveBeenCalled();
+    expect(stream).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(requests).toHaveLength(0);
+    expect(progress.mock.calls).toEqual([[{ step: "checking", pct: 0 }]]);
+  });
+
+  it("preserves a Storage 413 as a size refusal without inventing its limit or finalizing", async () => {
+    vi.spyOn(FakeXHR.prototype, "send").mockImplementation(function (this: FakeXHR) {
+      this.status = 413;
+      this.onload?.();
+    });
+    await expect(uploadSubjectFile(file(), subjectId, vi.fn()))
+      .rejects.toMatchObject({ code: "too_large", limitBytes: undefined });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(requests).toHaveLength(1);
+  });
+
   it("sends a closed hash declaration, uses only its restricted bearer, and finalizes without a body", async () => {
     const progress = vi.fn(); const source = file();
     expect(await uploadSubjectFile(source, subjectId, progress)).toEqual(completed);

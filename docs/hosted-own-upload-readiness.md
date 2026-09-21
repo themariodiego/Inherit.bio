@@ -24,16 +24,30 @@ will keep, not what one request may carry, so raising it does not move this.
 below describe the hosted-proof branch as it stood on 20 September. `main`
 already carries the fix, in commit `ff947a6` "Never offer a ceiling one
 request cannot carry": `SINGLE_REQUEST_MAXIMUM_BYTES` in
-`src/lib/uploads/subject-upload-contract.ts` is **5,242,880,000** — exactly the
+`src/lib/uploads/subject-upload-transport.ts` is **5,242,880,000** — exactly the
 largest size the probe below proved a single request accepts —
 `uploadCeilingBytes` returns `Math.min(configuredCeilingBytes(...),
-SINGLE_REQUEST_MAXIMUM_BYTES)` so no configured ceiling can exceed it, and
+SINGLE_REQUEST_MAXIMUM_BYTES)` so the offered stored-byte ceiling cannot exceed it, and
 `issueSubjectUpload` refuses an oversized declaration with `413 too_large`
 **before any durable row exists**. So the 8 GiB lease of half one can no longer
 be issued, and the five-and-a-half-minute silence of half two can no longer be
 reached by an over-ceiling file. The two halves are kept as written because
 they are what was measured, and because the reasoning is what the constant
 rests on: delete the measurement and the constant looks arbitrary.
+
+**Disclosure and early-refusal follow-up, 22 September 2026.** The upload
+page now names the gVCF ceiling separately when it differs from VCF and uses
+the smaller of each configured ceiling and the single-request cap. Equal
+VCF/gVCF ceilings retain the combined sentence. The shared cap lives beside
+the browser upload code, with the measurement and its limits cited there.
+The browser refuses a file above that cap before reading its contents, even
+when deployment limits are unavailable; the refusal names the size. A Storage
+413 that does reach the browser also becomes a size refusal, without guessing
+an unknown lower limit. The issuance route retains its refusal before a
+durable upload row or bearer exists. This changes no database ceiling or
+preparation budget, and does not establish preparation capacity at the upload
+cap. Local verification and the skipped 768 MiB run are recorded in
+`docs/evidence/hosted-proof-20260919/follow-up-20260922.json`.
 
 **Half one: the configuration admits what cannot arrive.** With
 `maximum_gvcf_bytes` set to 8 GiB on the branch, `issue_own_storage_upload_v1`

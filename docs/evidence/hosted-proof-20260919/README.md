@@ -57,6 +57,7 @@ worked out separately, in `docs/evidence/hosted-proof-branch-20260919/`.
 | `ceiling-finalization-logs.json` | What the branch's edge log says happened inside finalization at 2 GiB, and the claims it corrects. |
 | `upload-transport-limit.json` | Where one Storage POST stops being accepted, measured directly, and what that means for the gVCF ceiling. |
 | `artifact-ceiling-raise-receipt.json` | Raising `max_artifact_bytes` to the schema maximum on the branch, and the three ceilings that leaves. |
+| `follow-up-20260922.json` | Repository fixes and local regression checks, the finalization wording proposal, and why the 768 MiB hosted measurement was skipped. No new hosted measurement. |
 
 ## What is proved
 

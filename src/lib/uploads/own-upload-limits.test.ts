@@ -4,8 +4,9 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 import { readOwnUploadLimits } from "./own-upload-limits";
 import { configuredCeilingBytes, ownUploadLimitsSchema, remainingAccountBytes,
-  SINGLE_REQUEST_MAXIMUM_BYTES, uploadCeilingBytes,
+  uploadCeilingBytes,
   SUBJECT_UPLOAD_FORMATS, type OwnUploadLimits } from "./subject-upload-contract";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 
 const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";

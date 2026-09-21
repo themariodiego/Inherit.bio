@@ -1,6 +1,7 @@
 "use client";
 
 import { createSHA256 } from "hash-wasm";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { route } from "../primary-routes";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
@@ -91,6 +92,12 @@ async function responseFailure(response: Response): Promise<never> {
 export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
   limits?: OwnUploadLimits | null) {
   onProgress({ step: "checking", pct: 0 });
+  // This upload-path bound is known even when deployment limits could not be
+  // read. Refuse before hashing or sending bytes; an edge 413 may otherwise
+  // arrive only as a closed connection minutes into the single POST.
+  if (file.size > SINGLE_REQUEST_MAXIMUM_BYTES) {
+    throw new BrowserUploadError("too_large", SINGLE_REQUEST_MAXIMUM_BYTES);
+  }
   const head = new Uint8Array(await file.slice(0, 262144).arrayBuffer());
   const sniffed = await sniffFileV2(head);
   if (sniffed.kind === "pdf") throw new BrowserUploadError("pdf_not_data");
@@ -143,7 +150,13 @@ export async function uploadSubjectFile(file: File, subjectId: string, onProgres
     xhr.setRequestHeader("x-upsert", "false");
     const refuse = () => reject(new BrowserUploadError("unavailable"));
     xhr.onerror = refuse; xhr.ontimeout = refuse; xhr.onabort = refuse;
-    xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : refuse();
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      // A lower deployment or edge limit may still refuse this request. Name
+      // size without guessing that limit or exposing the provider's body.
+      else if (xhr.status === 413) reject(new BrowserUploadError("too_large"));
+      else refuse();
+    };
     xhr.upload.onprogress = event => {
       if (event.lengthComputable) onProgress({ step: "uploading", pct: Math.round(event.loaded / event.total * 100) });
     };
