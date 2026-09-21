@@ -1,0 +1,24 @@
+{"kind":"prepared-path throughput measured on the hosted-proof preview branch","readAt":"2026-09-21T05:10:58.372271+00:00","project":"iofjhrtcyawjjhuxbgfd",
+"branchConfig":{"enabled":true,"artifactProvider":"r2","bucket":"inherit-prepared-preview","maxArtifactBytes":1073741824,"maxJobSeconds":3600},
+"productionConfigForContrast":{"enabled":false,"artifactProvider":"supabase","maxArtifactBytes":104857600,"maxJobSeconds":900},
+"runs":[
+ {"created":"2026-09-19T04:19:50.349932+00:00","fileType":"vcf","build":"GRCh38","sourceBytes":547,"variantCount":3,"artifactCount":14,"artifactBytes":26160,"seconds":31,"artifactBytesPerSourceByte":47.8245,"sourceBytesPerSecond":18,"state":"published","attempts":1},
+ {"created":"2026-09-20T09:49:24.808263+00:00","fileType":"vcf","build":"GRCh38","sourceBytes":856536,"variantCount":27170,"artifactCount":18,"artifactBytes":2291605,"seconds":78,"artifactBytesPerSourceByte":2.6754,"sourceBytesPerSecond":11021,"state":"published","attempts":1},
+ {"created":"2026-09-20T12:39:47.265718+00:00","fileType":"vcf","build":"GRCh38","sourceBytes":67108990,"variantCount":431548,"artifactCount":183,"artifactBytes":58148752,"seconds":315,"artifactBytesPerSourceByte":0.8665,"sourceBytesPerSecond":213284,"state":"published","attempts":1}],
+"totals":{"jobs":3,"allPublished":true,"anyFrozen":false,"maxAttempts":1,"manifests":3,"artifacts":37,"monthlyAdmissionsSeptember":8},
+"derived":{
+ "marginalSourceBytesPerSecond":279546,
+ "marginalBasis":"(67108990 - 856536) source bytes over (315 - 78) seconds, the two largest runs",
+ "impliedFixedOverheadSeconds":75,
+ "impliedFixedOverheadBasis":"both large runs solve to the same ~75 s when time = overhead + source/279546; the 547-byte run solves to ~31 s, so the overhead is a range rather than a constant",
+ "extrapolatedSourceAtMaxJobSeconds":"(3600 - 75) * 279546 = approximately 985 MB",
+ "artifactBytesAtThatSource":"approximately 870 MB at the 0.8665 ratio measured at 64 MiB, which is under the 1 GiB schema maximum",
+ "whichCeilingBinds":"the clock, not the artifact budget"},
+"doesNotEstablish":[
+ "A ceiling. The largest file actually prepared is 67,108,990 bytes (64 MiB). Reaching ~1 GB is a 15x extrapolation from three points, not a measurement, and owner decision 30 asks for the largest honestly supportable size.",
+ "Anything about gVCF. All three runs are VCF. A gVCF's block structure gives it a different variant-to-byte profile (D-128), so its ceiling does not follow from this series.",
+ "Pure processing time. `seconds` runs from created_at, which is enqueue, to the last artifact acknowledgement, so it includes waiting for the cron wake. Every figure here is an upper bound on processing time and a lower bound on throughput.",
+ "Anything about production. Production has preparation disabled, at max_artifact_bytes 104,857,600 and max_job_seconds 900 — both below the branch's — and holds zero jobs.",
+ "Monthly capacity. The cap is 100 per calendar month and nothing here approached it."],
+"openQuestion":"own_preparation_monthly_admissions reads 8 for September 2026 while only 3 jobs exist on the branch. Admissions are counted when a job is admitted, so five admissions have no surviving job. That is defensible if the cap is meant to limit attempts, and wrong if a person who deletes a file and retries should not burn quota. It is recorded as a question, not a defect: which of the two the cap means has not been decided.",
+"note":"frozen_reason is absent on this branch: the 31(a) migration was applied to the Inherit project only, so nothing here exercises the artifact-budget refusal."}
