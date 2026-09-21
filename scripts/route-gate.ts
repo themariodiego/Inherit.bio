@@ -35,6 +35,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *     has a handler to answer 410. What a request actually gets is
  *     `e2e/route-dispositions.spec.ts`.
  *
+ *  7. The register's task-depth contract is read, and every task it puts a
+ *     ceiling on is bound, coherent and either measured or counted as
+ *     unmeasured. `navigationContract.taskDepthActions` carries the brief's
+ *     rule that a three-click path to irreversible destruction is itself a
+ *     defect, and until 2026-09-21 nothing read it: neither `taskDepthActions`
+ *     nor `countedEvents` appeared anywhere in `src/`, `e2e/` or `scripts/`.
+ *     A ceiling nothing enforces is the same shape of defect as the region
+ *     read in the first paragraph — a register clause with real safety
+ *     content and no reader.
+ *
  * Checks 1 to 3 compare against `docs/route-divergence.json` in both
  * directions: an unlisted divergence fails, and a listed one that no longer
  * exists fails too, so fixing a divergence forces the ledger to be updated
@@ -53,6 +63,7 @@ const BRIEF = "docs/inherit-v2-brief.md";
 const DISPOSITIONS = "docs/route-dispositions.json";
 const MIGRATIONS = "supabase/migrations";
 const BROWSER_TESTS = "e2e";
+const TASK_BINDINGS = "scripts/comprehension/bindings.json";
 
 /**
  * The unproven half of the register's state matrix. This is a ratchet: it
@@ -588,6 +599,207 @@ const BROWSER_TESTS = "e2e";
  */
 const UNPROVEN_ROUTE_STATE_PAIRS = 11;
 
+/**
+ * The register's task-depth ceilings, unmeasured. This is a ratchet in the
+ * same sense as the one above: it fails when a measurement is added and it
+ * fails when one is lost, so instrumenting a task has to lower this number in
+ * the same change, and a new ceiling arrives here rather than silently
+ * unmeasured.
+ *
+ * The contract is `navigationContract.taskDepthActions`, which is the brief's
+ * task-depth rule in machine-readable form: user actions are pointer
+ * activations plus keystroke submissions, counted by instrumenting `click` and
+ * `submit`; read-only tasks T1, T2, T3, T6 and T7 take at most 3; the consent
+ * tasks T4 and T9 at most 6; and T8, which deletes everything, carries a
+ * ceiling of 6 and a **floor** of 3 including one typed confirmation, because
+ * a three-click path to irreversible destruction is itself a defect.
+ *
+ * A task is measured when a browser test title says so, in the same way a
+ * (route, state) pair is proven by a title: `taskDepthProves` looks for
+ * `task depth T<n>` in the title, which is a convention a spec opts into
+ * rather than a string this reader guesses at.
+ *
+ * 2026-09-21: 8 of 8, because nothing measured any of them. Six are test work
+ * on surfaces that are built — T1, T2, T3 and T8 from `participant-a`, T4 from
+ * the upload-other-adult path, T9 from the accountless rights path. The other
+ * two are not: T6 and T7 are bound to `participant-c`, whose two embryo files
+ * `scripts/comprehension/bindings.json` names, and both carry
+ * `requiresCapability: embryo_analysis`. No embryo file path exists until the
+ * ingest slice lands, and the owner's decision of 18 September 2026 forbids a
+ * fixture-only seed path, so those two cannot be measured here at all. They
+ * are counted anyway rather than waived: an unmeasurable ceiling is still an
+ * unmeasured one, and waiving it would hide the dependency.
+ */
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 8;
+
+/** The register's task-depth contract, as much of it as this gate reads. */
+interface TaskDepthContract {
+  countedEvents?: string[];
+  ceilings?: Record<string, number>;
+  floors?: Record<string, number>;
+  requirements?: Record<string, string[]>;
+  confirmationSteps?: { id?: string; excludedFromCeilings?: boolean; countsTowardFloors?: boolean }[];
+}
+
+/** One comprehension task, as `scripts/comprehension/bindings.json` binds it. */
+interface BoundTask {
+  id?: string;
+  account?: string;
+  routes?: string[];
+  maxActions?: number;
+  requiresCapability?: string;
+}
+
+/**
+ * The two events the brief counts. Pinned here because widening the set
+ * silently changes every measurement taken against it: a contract that counted
+ * `change` as well would let a task satisfy a ceiling of 3 while asking for
+ * six interactions, which is the collapse Part B item 9 forbids.
+ */
+const COUNTED_EVENTS = ["click", "submit"] as const;
+
+/** Does this browser test title say it measured that task's depth? */
+function taskDepthProves(title: string, taskId: string): boolean {
+  return new RegExp(String.raw`\btask depth ${taskId}\b`, "i").test(title);
+}
+
+/**
+ * The task-depth contract, read against the tasks it puts ceilings on.
+ *
+ * A ceiling is only worth something if the task it names is bound to an
+ * account, a surface and a success condition — otherwise there is nothing to
+ * count actions against — so the ceilinged ids are resolved against
+ * `scripts/comprehension/bindings.json`, which G3.2 maintains for exactly that
+ * purpose, and the routes those bindings name are resolved against the
+ * register. Four coherence checks follow from the brief's own wording, and the
+ * fifth is the ratchet.
+ */
+function checkTaskDepthContract(
+  repositoryRoot: string,
+  registeredPaths: Set<string>,
+  contract: TaskDepthContract | undefined,
+  recordedDivergence: { taskId: string; registerCeiling: number; boundMaxActions: number }[],
+  titles: string[],
+  failures: string[],
+): { ceilingCount: number; measuredCount: number } {
+  if (!contract || Object.keys(contract.ceilings ?? {}).length === 0) {
+    failures.push(
+      `task depth: ${REGISTER} navigationContract.taskDepthActions carries no ceilings. An absent ` +
+        `contract must fail here rather than read as a product with nothing to enforce.`,
+    );
+    return { ceilingCount: 0, measuredCount: 0 };
+  }
+  const ceilings = contract.ceilings ?? {};
+  const floors = contract.floors ?? {};
+  const requirements = contract.requirements ?? {};
+
+  // The events the count is made of. Widening this set silently changes every
+  // measurement taken against every ceiling, so it is compared rather than read.
+  const counted = [...(contract.countedEvents ?? [])].sort();
+  if (counted.join(",") !== [...COUNTED_EVENTS].sort().join(",")) {
+    failures.push(
+      `task depth: countedEvents is [${counted.join(", ")}] and the brief counts ` +
+        `[${COUNTED_EVENTS.join(", ")}]. Changing what an action is changes every ceiling below it.`,
+    );
+  }
+
+  let tasks: BoundTask[] = [];
+  try {
+    tasks = (JSON.parse(readFileSync(path.join(repositoryRoot, TASK_BINDINGS), "utf8")) as {
+      tasks?: BoundTask[];
+    }).tasks ?? [];
+  } catch {
+    failures.push(
+      `task depth: ${TASK_BINDINGS} could not be read, so no ceiling can be resolved to a task.`,
+    );
+    return { ceilingCount: Object.keys(ceilings).length, measuredCount: 0 };
+  }
+  const bound = new Map(tasks.filter((task) => task.id).map((task) => [task.id as string, task]));
+
+  const divergence: string[] = [];
+  for (const [taskId, ceiling] of Object.entries(ceilings)) {
+    const task = bound.get(taskId);
+    if (!task) {
+      failures.push(
+        `task depth: ${taskId} carries a ceiling of ${ceiling} and is bound nowhere in ` +
+          `${TASK_BINDINGS}. A ceiling on a task with no account, surface or success condition ` +
+          `cannot be measured against anything.`,
+      );
+      continue;
+    }
+    for (const route of task.routes ?? []) {
+      if (!registeredPaths.has(route)) {
+        failures.push(
+          `task depth: ${taskId} is bound to ${route}, which ${REGISTER} does not register. A task ` +
+            `cannot be counted across a surface the register does not describe.`,
+        );
+      }
+    }
+    // The second authority. `bindings.json` carries its own per-task
+    // `maxActions`, taken from the brief's task statements, while the register
+    // takes the brief's task-depth rule. Where the two brief sentences
+    // disagree, so do these files, and the disagreement is recorded rather
+    // than resolved here: picking one would settle a contradiction in the
+    // brief, which this gate has no authority to do.
+    if (typeof task.maxActions === "number" && task.maxActions !== ceiling) {
+      divergence.push(`${taskId} register ${ceiling} bindings ${task.maxActions}`);
+    }
+  }
+  compareLedger(
+    "task depth ceiling",
+    divergence,
+    recordedDivergence.map(
+      (entry) => `${entry.taskId} register ${entry.registerCeiling} bindings ${entry.boundMaxActions}`,
+    ),
+    failures,
+  );
+
+  for (const [taskId, floor] of Object.entries(floors)) {
+    const ceiling = ceilings[taskId];
+    if (ceiling === undefined) {
+      failures.push(
+        `task depth: ${taskId} carries a floor of ${floor} and no ceiling. A floor alone bounds ` +
+          `nothing above it.`,
+      );
+      continue;
+    }
+    if (floor > ceiling) {
+      failures.push(
+        `task depth: ${taskId} has a floor of ${floor} above its ceiling of ${ceiling}, which no ` +
+          `journey can satisfy.`,
+      );
+    }
+  }
+  // A typed confirmation is the thing that makes the floor mean something: it
+  // is the step a person cannot perform by reflex. Requiring one on a task
+  // with no floor leaves the three-click path the brief calls a defect open.
+  for (const [taskId, required] of Object.entries(requirements)) {
+    if (!required.includes("typed-confirmation")) continue;
+    if (floors[taskId] === undefined) {
+      failures.push(
+        `task depth: ${taskId} requires a typed confirmation and carries no floor, so nothing stops ` +
+          `the short path to it.`,
+      );
+    }
+  }
+
+  const ceilingIds = Object.keys(ceilings);
+  const measured = ceilingIds.filter((taskId) =>
+    titles.some((title) => taskDepthProves(title, taskId)),
+  );
+  const uninstrumented = ceilingIds.length - measured.length;
+  if (uninstrumented !== UNINSTRUMENTED_TASK_DEPTH_TASKS) {
+    failures.push(
+      `task depth ratchet: ${uninstrumented} of ${ceilingIds.length} ceilinged tasks are measured by ` +
+        `no browser test, and UNINSTRUMENTED_TASK_DEPTH_TASKS in scripts/route-gate.ts says ` +
+        `${UNINSTRUMENTED_TASK_DEPTH_TASKS}. Measuring a task means lowering that number in the same ` +
+        `change; a rise means a measurement was lost.`,
+    );
+  }
+  return { ceilingCount: ceilingIds.length, measuredCount: measured.length };
+}
+
+
 /** Everything the App Router will serve from a `route.ts`. */
 const HTTP_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
 
@@ -660,6 +872,9 @@ interface BuiltRoute {
 
 export interface RouteGateResult {
   failures: string[];
+  /** Tasks the register puts an action ceiling on, and how many are measured. */
+  taskDepthCeilingCount: number;
+  taskDepthMeasuredCount: number;
   /** Routes the baseline commit served, each held to its registered disposition. */
   preExistingRouteCount: number;
   builtRouteCount: number;
@@ -1007,6 +1222,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     stateIds?: string[];
     stateDefinitions?: Record<string, { means?: string; readings?: { reading?: string; where?: string }[] }>;
     storagePrefixes: { id: string; bucket: string }[];
+    navigationContract?: { taskDepthActions?: TaskDepthContract };
   };
 
   // The register says it is derived from the brief and pinned to it, and a
@@ -1040,6 +1256,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     storageBucketDivergence?: { bucket: string; direction: string }[];
     unhashableAttestationFields?: { routeId: string; fields: string[] }[];
     provenRouteStates?: string[];
+    taskDepthCeilingDivergence?: { taskId: string; registerCeiling: number; boundMaxActions: number }[];
   };
 
   const built = builtRoutes(repositoryRoot);
@@ -1360,6 +1577,16 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
     failures.push(`${DISPOSITIONS} lists ${preExistingRouteCount} pre-existing routes, expected at least 30`);
   }
 
+  // 7. The register's task-depth ceilings, against the tasks they name.
+  const taskDepth = checkTaskDepthContract(
+    repositoryRoot,
+    new Set(register.routes.map((entry) => entry.path)),
+    register.navigationContract?.taskDepthActions,
+    ledger.taskDepthCeilingDivergence ?? [],
+    titles,
+    failures,
+  );
+
   // Floor guards. A walker that silently found nothing must not read as a
   // clean product, so each input is required to be roughly the size it is.
   if (built.length < 100) failures.push(`route walker found ${built.length} built routes, expected over 100`);
@@ -1372,6 +1599,8 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
 
   return {
     failures,
+    taskDepthCeilingCount: taskDepth.ceilingCount,
+    taskDepthMeasuredCount: taskDepth.measuredCount,
     preExistingRouteCount,
     builtRouteCount: built.length,
     matchedEndpointCount,
@@ -1400,7 +1629,8 @@ async function main() {
       `${result.registeredRedirectCount} registered redirects, ${result.checkedKindCount} route kinds, ` +
       `${result.preExistingRouteCount} pre-existing routes with a verified disposition, ` +
       `${result.declaredBucketCount} declared ` +
-      `storage buckets, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
+      `storage buckets, ${result.taskDepthMeasuredCount} of ${result.taskDepthCeilingCount} task-depth ` +
+      `ceilings measured, ${result.provenStateCount} of ${result.requiredStateCount} route states proven ` +
       `by ${result.browserTestTitleCount} browser tests ` +
       `(${result.unresolvableTitleCount} of them built by interpolation, which this static ` +
       `reader cannot resolve and does not guess at)`,

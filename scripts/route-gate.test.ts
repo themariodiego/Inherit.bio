@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +25,9 @@ interface Overrides {
   register?: (register: Record<string, unknown>) => void;
   ledger?: (ledger: Record<string, unknown>) => void;
   dispositions?: (ledger: Record<string, unknown>) => void;
+  taskBindings?: (bindings: Record<string, unknown>) => void;
+  /** A spec added to a real copy of `e2e/`, for the task-depth ratchet. */
+  extraSpec?: string;
   nextConfig?: string;
 }
 
@@ -36,7 +39,21 @@ function plant(overrides: Overrides): string {
   mkdirSync(path.join(root, "src"));
   mkdirSync(path.join(root, "supabase"));
   symlinkSync(path.join(REPOSITORY_ROOT, "src/app"), path.join(root, "src/app"));
-  symlinkSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"));
+  // `e2e` is symlinked so the title floor guard sees its true size. A test
+  // that needs one extra title copies it instead, because a spec cannot be
+  // added inside a symlink to the real directory.
+  if (overrides.extraSpec === undefined) {
+    symlinkSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"));
+  } else {
+    cpSync(path.join(REPOSITORY_ROOT, "e2e"), path.join(root, "e2e"), { recursive: true });
+    writeFileSync(path.join(root, "e2e/planted.spec.ts"), overrides.extraSpec);
+  }
+  mkdirSync(path.join(root, "scripts/comprehension"), { recursive: true });
+  const taskBindings = JSON.parse(
+    readFileSync(path.join(REPOSITORY_ROOT, "scripts/comprehension/bindings.json"), "utf8"),
+  );
+  overrides.taskBindings?.(taskBindings);
+  writeFileSync(path.join(root, "scripts/comprehension/bindings.json"), JSON.stringify(taskBindings));
   symlinkSync(path.join(REPOSITORY_ROOT, "supabase/migrations"), path.join(root, "supabase/migrations"));
 
   const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8"));
@@ -629,5 +646,136 @@ describe("the corrections table agrees with the register it claims to be counted
     expect(document).toContain(`| **Genuinely open** | **${unproven}** |`);
     expect(document).toContain(`### And of the ${unproven} that are open,`);
     expect(document).toContain("Nothing in this number is a register correction any more.");
+  });
+});
+
+/**
+ * `navigationContract.taskDepthActions` carries the brief's rule that a
+ * three-click path to irreversible destruction is itself a defect, and until
+ * 2026-09-21 nothing read it — `taskDepthActions` and `countedEvents` appeared
+ * nowhere in `src/`, `e2e/` or `scripts/`. These cases plant a defect for each
+ * thing the gate now checks, on a repository that is real except for the one
+ * file under test, because a check nobody has watched fail is not a check.
+ */
+describe("the route gate holds the task-depth contract to the tasks it names", () => {
+  type TaskDepth = {
+    countedEvents?: string[];
+    ceilings?: Record<string, number>;
+    floors?: Record<string, number>;
+    requirements?: Record<string, string[]>;
+  };
+  type BoundTask = { id: string; routes?: string[]; maxActions?: number };
+  const depthOf = (register: Record<string, unknown>) =>
+    (register.navigationContract as { taskDepthActions: TaskDepth }).taskDepthActions;
+  const tasksOf = (bindings: Record<string, unknown>) => bindings.tasks as BoundTask[];
+
+  it("reads the real contract: eight ceilinged tasks, none of them measured yet", async () => {
+    const result = await runRouteGate(REPOSITORY_ROOT);
+    expect(result.failures).toEqual([]);
+    expect(result.taskDepthCeilingCount).toBe(8);
+    // Six are test work on built surfaces; T6 and T7 are bound to embryo files
+    // that no ingest path can produce, so this number cannot reach zero here.
+    expect(result.taskDepthMeasuredCount).toBe(0);
+  });
+
+  it("fails when a ceiling names a task nothing binds", async () => {
+    const root = plant({ register: (register) => { depthOf(register).ceilings!.T11 = 3; } });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "task depth: T11 carries a ceiling of 3 and is bound nowhere in scripts/comprehension/bindings.json",
+    );
+  });
+
+  it("fails when a ceilinged task is bound to a route the register does not carry", async () => {
+    const root = plant({
+      taskBindings: (bindings) => {
+        tasksOf(bindings).find((task) => task.id === "T1")!.routes = ["/genome/[subject]/not-a-route"];
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "task depth: T1 is bound to /genome/[subject]/not-a-route, which docs/route-register.json does not register",
+    );
+  });
+
+  /**
+   * The live one. The brief gives T9 two ceilings in two sentences — the
+   * task-depth rule caps consent tasks at 6, T9's own statement says "Maximum
+   * 8 actions" — so the register and the bindings disagree while each is
+   * faithful to what it read. The ledger records it; these two cases hold the
+   * record in both directions, so it can be neither forgotten nor left stale.
+   */
+  it("fails when a ceiling disagreement is not recorded in the ledger", async () => {
+    const root = plant({
+      taskBindings: (bindings) => { tasksOf(bindings).find((task) => task.id === "T1")!.maxActions = 5; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "task depth ceiling: not recorded in docs/route-divergence.json: T1 register 3 bindings 5",
+    );
+  });
+
+  it("fails when the ledger records a ceiling disagreement that no longer exists", async () => {
+    const root = plant({
+      taskBindings: (bindings) => { tasksOf(bindings).find((task) => task.id === "T9")!.maxActions = 6; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "task depth ceiling: recorded in docs/route-divergence.json but no longer present: " +
+        "T9 register 6 bindings 8",
+    );
+  });
+
+  it("fails when a floor sits above the ceiling it shares a task with", async () => {
+    const root = plant({ register: (register) => { depthOf(register).floors!.T8 = 9; } });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "task depth: T8 has a floor of 9 above its ceiling of 6, which no journey can satisfy.",
+    );
+  });
+
+  it("fails when a typed confirmation is required on a task with no floor", async () => {
+    const root = plant({ register: (register) => { delete depthOf(register).floors!.T8; } });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "task depth: T8 requires a typed confirmation and carries no floor, so nothing stops the short path to it.",
+    );
+  });
+
+  it("fails when the counted events widen, because that changes every ceiling below them", async () => {
+    const root = plant({
+      register: (register) => { depthOf(register).countedEvents = ["click", "submit", "change"]; },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "task depth: countedEvents is [change, click, submit] and the brief counts [click, submit]",
+    );
+  });
+
+  it("fails when a task gains a measurement without the ratchet coming down", async () => {
+    const root = plant({
+      extraSpec: 'import { test } from "@playwright/test";\n'
+        + 'test("task depth T1 stays within its registered ceiling", async () => {});\n',
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "task depth ratchet: 7 of 8 ceilinged tasks are measured by no browser test",
+    );
+  });
+
+  it("fails when a ceiling disappears without the ratchet coming down", async () => {
+    const root = plant({ register: (register) => { delete depthOf(register).ceilings!.T4; } });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "task depth ratchet: 7 of 7 ceilinged tasks are measured by no browser test",
+    );
+  });
+
+  it("fails on an empty contract rather than reading it as nothing to enforce", async () => {
+    const root = plant({ register: (register) => { depthOf(register).ceilings = {}; } });
+    const { failures } = await runRouteGate(root);
+    expect(failures.join("\n")).toContain(
+      "navigationContract.taskDepthActions carries no ceilings",
+    );
   });
 });
