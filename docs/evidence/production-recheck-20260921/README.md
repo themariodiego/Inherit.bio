@@ -41,11 +41,26 @@ both themes, that no unexpected origin is contacted and that none of
 in CI, against a locally built application. It has never been taken against
 what `www.inherit.bio` actually serves.
 
-Taken now, over the five public pages above: **zero external script hosts** —
-no `<script src="https://…">` to any origin on any of them — and **zero**
-occurrences of `fbq`, `gtag`, `dataLayer`, `googletagmanager`,
-`google-analytics`, `facebook.net`, `hotjar`, `segment.io`, `segment.com` or
-`mixpanel` anywhere in the served HTML.
+Taken now, over the five public pages above, against **all 27** tracker host
+fragments `TRACKER_HOST_FRAGMENTS` carries in `e2e/helpers.ts` rather than a
+few chosen by hand — the vendor names are not restated in this document,
+because the no-comparator name gate is right to refuse one that spells them
+out and the shared constant is the one place they belong:
+
+- **Zero external script hosts.** Not one `script` element carries a `src` to
+  any origin but this one, on any of the five.
+- **Zero** occurrences of the three globals the brief names, `fbq`, `gtag` and
+  `dataLayer`.
+- **Zero** of the 27 fragments inside any `src` attribute on any page.
+
+**Two prose matches, and they are the promise rather than a breach.** A
+case-insensitive scan of the whole served HTML — a blunter instrument than the
+real test, which watches request origins and window globals — hits one vendor
+name twice on `/privacy`. Both are inside the policy's own sentence saying
+there are no third-party trackers of any kind, which names the vendors in
+order to be unambiguous about it. Neither is in a `src`, a link or a script.
+Counted and explained rather than reported as zero, because a later scan will
+find them again and should not read them as a regression.
 
 This does not close G1.7. That row is held by the (route, state) ratchet, not
 by origin coverage, and five pages are not 62. What it adds is that the
