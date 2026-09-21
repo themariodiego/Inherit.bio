@@ -71,6 +71,11 @@ const USER = { email: `task-depth-${randomUUID()}@e2e.local`, password: "e2e-tas
  */
 const INVITER = { email: `task-depth-t4-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 const READER = { email: `task-depth-t2-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+const ESTIMATES = { email: `task-depth-t1-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+const VARIANTS = { email: `task-depth-t3-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
+
+/** A synthetic consumer array covering the three bound type 2 diabetes positions. */
+const ARRAY_FIXTURE = "data/samples/synthetic_23andme.txt";
 
 /** The 168-marker synthetic panel, describing no real person. */
 const AIMS_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
@@ -85,6 +90,8 @@ test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
   await createConfirmedUser(INVITER.email, INVITER.password);
   await createConfirmedUser(READER.email, READER.password);
+  await createConfirmedUser(ESTIMATES.email, ESTIMATES.password);
+  await createConfirmedUser(VARIANTS.email, VARIANTS.password);
 });
 
 /** Installs the counter on this document and on every one that follows it. */
@@ -111,6 +118,125 @@ async function countedActions(page: Page): Promise<number> {
   const raw = await page.evaluate((key) => window.sessionStorage.getItem(key), COUNTER_KEY);
   return Number(raw ?? "0");
 }
+
+/**
+ * T1 — "find what your DNA file says about your chance of type 2 diabetes."
+ *
+ * Ceiling 3, path 2: the Overview entry box straight to the report library,
+ * then the report. Going by the primary navigation instead would cost three
+ * and sit exactly on the ceiling, which is worth knowing and is not what a
+ * participant starting at Overview would do.
+ *
+ * WHICH PURPOSE, read rather than guessed. The three bound slugs live in
+ * `data/templates/metabolic-obesity.json` and carry no `layer`, and a template
+ * without one is an `estimate` (`scripts/seed.ts`). The reports page maps layer
+ * to purpose in one line — `variant_call` to `reports.monogenic`, everything
+ * else to `reports.polygenic` — so this account grants the polygenic purpose
+ * and nothing else.
+ *
+ * That single grant is also what keeps the path at two. With one permitted
+ * layer the group tabs do not render at all (`nonEmptyLayers.length > 1`), so
+ * the estimate library is what the page opens on. An account holding both
+ * purposes would pay one more action to switch groups, and this file says so
+ * rather than quietly measuring the easier case.
+ *
+ * The binding names three type 2 diabetes slugs rather than one, on purpose:
+ * all three are covered by this fixture, and grading on which one a
+ * participant happened to open would grade navigation luck. Reaching any of
+ * them is the success condition, so this reaches the first.
+ */
+test("task depth T1 costs two counted actions, inside its registered ceiling", async ({
+  page,
+}) => {
+  expect(CONTRACT.countedEvents, "the events this instrument listens for").toEqual(["click", "submit"]);
+  const ceiling = CONTRACT.ceilings.T1;
+  expect(ceiling, "T1 carries a ceiling").toBeGreaterThan(0);
+  expect(CONTRACT.floors.T1, "T1 carries no floor").toBeUndefined();
+
+  await signIn(page, ESTIMATES.email, ESTIMATES.password);
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), ARRAY_FIXTURE), {
+    fileType: "array_23andme",
+  });
+  await generateOwnFileWithChosenReports(page, fileId, ["reports.polygenic"]);
+
+  await page.goto("/overview");
+  await expect(page.locator("main h1")).toBeVisible();
+
+  // None of the setup above is the task, so counting starts here.
+  await startCounting(page);
+
+  // 1. The Overview entry box. Its accessible name is the box label, through
+  // aria-labelledby, and its href is the report library.
+  await page.getByRole("link", { name: "Reports", exact: true }).first().click();
+  await page.waitForURL((url) => url.pathname === "/genome/me/reports");
+
+  // One permitted layer means no group tabs to cross first.
+  await expect(
+    page.getByRole("navigation", { name: "Report groups" }),
+    "a single granted purpose leaves one layer, so no tabs",
+  ).toHaveCount(0);
+
+  // 2. The report itself. A card link's accessible name is its title and its
+  // evidence label, so the title is matched at the start.
+  await page.getByRole("link", { name: /^Type 2 diabetes · TCF7L2,/ }).click();
+  await page.waitForURL((url) => /^\/genome\/me\/reports\/type-2-diabetes-/.test(url.pathname));
+  await expect(page.locator("main h1")).toBeVisible();
+
+  const spent = await countedActions(page);
+  expect(spent, `T1 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
+  expect(spent, "the measured depth of the shipped path").toBe(2);
+});
+
+/**
+ * T3 — "find something Inherit could not check in your file, and say what that
+ * means."
+ *
+ * Ceiling 3, path 2, and the fixture is the point: the eleven bound slugs are
+ * one-position pharmacogenomic reports and NONE of their positions is in this
+ * file. The task is not to find a result, it is to find the absence of one and
+ * understand it, so a fixture that covered them would destroy the task.
+ *
+ * `vkorc1-rs9923231-one-position` carries `layer: "variant_call"` explicitly,
+ * which by the same one-line mapping is the `reports.monogenic` purpose — the
+ * mirror of T1 and the reason these two are measured together. Granting only
+ * that purpose again leaves one permitted layer, so the page opens on the
+ * specific-variants library with no tabs to cross.
+ */
+test("task depth T3 costs two counted actions, inside its registered ceiling", async ({
+  page,
+}) => {
+  const ceiling = CONTRACT.ceilings.T3;
+  expect(ceiling, "T3 carries a ceiling").toBeGreaterThan(0);
+  expect(CONTRACT.floors.T3, "T3 carries no floor").toBeUndefined();
+
+  await signIn(page, VARIANTS.email, VARIANTS.password);
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), ARRAY_FIXTURE), {
+    fileType: "array_23andme",
+  });
+  await generateOwnFileWithChosenReports(page, fileId, ["reports.monogenic"]);
+
+  await page.goto("/overview");
+  await expect(page.locator("main h1")).toBeVisible();
+
+  await startCounting(page);
+
+  // 1. The same Overview entry box.
+  await page.getByRole("link", { name: "Reports", exact: true }).first().click();
+  await page.waitForURL((url) => url.pathname === "/genome/me/reports");
+  await expect(
+    page.getByRole("navigation", { name: "Report groups" }),
+    "a single granted purpose leaves one layer, so no tabs",
+  ).toHaveCount(0);
+
+  // 2. A one-position report whose position this file does not carry.
+  await page.getByRole("link", { name: /^Warfarin, one position · VKORC1,/ }).click();
+  await page.waitForURL((url) => url.pathname === "/genome/me/reports/vkorc1-rs9923231-one-position");
+  await expect(page.locator("main h1")).toBeVisible();
+
+  const spent = await countedActions(page);
+  expect(spent, `T3 must not cost more than ${ceiling} actions`).toBeLessThanOrEqual(ceiling);
+  expect(spent, "the measured depth of the shipped path").toBe(2);
+});
 
 /**
  * T2 — "find where your ancestors came from and name one specific region."
