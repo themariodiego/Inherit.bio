@@ -185,6 +185,22 @@ and tested, one job executor, and a flag.
    consumer; the only callers of it are the cohort lifecycle and the
    invitation guards.
 
+   **The intent was real, and the repository contradicts itself about it.**
+   Recorded because the evidence cuts both ways and a later reading will find
+   it: `src/lib/embryos/ingest-http.ts:106` tells a caller to invoke
+   `readIngestChunk` "only after live authority and **the two operation
+   tokens** have passed", which is the clearest sign that someone did intend a
+   second token on the chunk path. But `src/lib/embryos/guards.ts:14`, the
+   module holding "the checks every embryo route runs before it reads a body
+   ... in one place so the order and the answers cannot drift between routes",
+   describes **"the one operation token per request"** - and that is the
+   convention all four shipped embryo routes follow, through `csrfOperation`.
+   So the second token exists in one comment, on an unbuilt path, and was
+   never reconciled with the shipped convention beside it or expressed in any
+   primitive. That is what "an intent the design never reached" looks like
+   from the inside, and the ingest-http sentence should be corrected by
+   whichever change settles this.
+
    **All four bindings are enforced structurally, on every call.**
    `public.embryo_ingest_chunks` has `(session_id, sequence)` as its primary
    key. `sequence` must equal `embryo_ingest_sessions.expected_next_sequence`
