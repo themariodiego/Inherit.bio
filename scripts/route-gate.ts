@@ -639,7 +639,7 @@ const UNPROVEN_ROUTE_STATE_PAIRS = 11;
  * brief cares most about: the floor is the only number in the register that
  * exists to stop a journey being made too easy.
  */
-const UNINSTRUMENTED_TASK_DEPTH_TASKS = 7;
+const UNINSTRUMENTED_TASK_DEPTH_TASKS = 3;
 
 /** The register's task-depth contract, as much of it as this gate reads. */
 interface TaskDepthContract {
