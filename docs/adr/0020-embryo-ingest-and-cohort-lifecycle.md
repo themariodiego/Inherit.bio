@@ -96,6 +96,32 @@ one is built, one is buildable and one is not:
   are closed. That is an extension, not a redesign.
 - **The chunk nonce is neither**, and decision 9 below records why.
 
+**And the mapping route needs more than a token, which the paragraph above
+this one also got wrong.** The Context says what remains is "three routes
+wiring a substrate that is finished and tested". That holds for the chunk and
+complete routes. It does not hold for `api.embryo-ingest-mapping`: its
+challenge store, `public.embryo_mapping_challenges`, **has no writer**.
+Checked on 21 September - no function in any migration carries `challenge` in
+its name, and no `insert` into that table exists anywhere in `supabase/` or
+`src/`. The table is created by
+`20260831224126_reference_registries_and_constraints.sql`, given a retention
+order by `20260831224119_retention_dispositions.sql`, and deleted from by
+`20260905203457_embryo_ingest_unwind_runtime.sql`. Created, retained, purged,
+never populated.
+
+A route could write it directly through the admin client - four routes already
+do that for other tables (`jobs/research-refresh`, `jobs/research-publish`,
+`files/[id]/process`), so it is within the house pattern and this is a genuine
+choice rather than a blocked path. But the register asks the mapping route to
+"store only a CSPRNG challenge-id hash, random revision, column count and
+expiry and zeroize the submitted copy", to "rotate the challenge and nonce in
+every nonterminal branch", and to dispatch the attemptFailure unwind "before
+any session due-target or fragment delete". Those are transactional
+invariants, and every other ingest write in this schema is a `security
+definer` function for exactly that reason. So the mapping route is one new
+database object plus two union members, not wiring, and it should be built
+after the chunk and complete routes rather than first.
+
 The header rule
 the mapping route enforces is built too: `src/lib/genome/parsers/pgt-table.ts`
 already reports the header cells that name a sex, gender or karyotype column,
