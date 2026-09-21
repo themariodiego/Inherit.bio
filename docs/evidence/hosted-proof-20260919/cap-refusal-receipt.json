@@ -1,0 +1,21 @@
+{
+  "what": "The database-enforced monthly admission cap refusing the admission past its limit, on the branch only.",
+  "project": "iofjhrtcyawjjhuxbgfd",
+  "before": { "at": "2026-09-20T12:11:11Z", "monthly_admission_limit": 100, "admitted_this_month": 6 },
+  "statementUnderTest": "update private.own_preparation_config set monthly_admission_limit = (the month's admitted count) where singleton;",
+  "limitDuringTest": 6,
+  "journey": {
+    "fixture": "e2e/fixtures/tiny-grch38.vcf",
+    "uploadAndFinalize": "upload-session 201, Storage POST 200, finalize 200 in 3.0 s: the file is kept",
+    "processResponse": { "status": 429, "body": { "error": "preparation_capacity_reached" } },
+    "pageText": "Inherit has reached this month's limit for full-genome files. Your file is kept; try again from the first of next month.",
+    "secondsFromFinalizeToRefusal": 0.29
+  },
+  "after": {
+    "at": "2026-09-20T12:30:53Z",
+    "monthly_admission_limit": 100,
+    "admitted_this_month": 6,
+    "jobRowsForTheRefusedFile": 0,
+    "note": "The refusal happens before any job exists and consumes no admission: the month's count is unchanged and the limit is back at 100."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "what": "Where a single Supabase Storage POST stops being accepted on the preview branch, measured directly rather than inferred, on 20 September 2026. This is the transport the product uses for every upload.",
+  "whyItMatters": "The owner's gVCF ceiling is 8 GiB. Issuance grants a lease for a file that size, and the bytes then cannot arrive.",
+  "whatTheProductSends": "src/lib/uploads/subject-upload-browser.ts sends the file as ONE XMLHttpRequest POST to /storage/v1/object/genomes/<stagingKey>, which is Supabase's standard upload. The product implements neither resumable (TUS) nor S3 multipart.",
+  "documented": "Supabase's own documentation: standard uploads can transfer up to 5 GB; resumable and S3 uploads support up to 50 GB. The project's global file size limit (9 GB here) governs what Storage will keep, not what one request may carry.",
+  "inTheBrowser": {
+    "fixtureBytes": 8589933057,
+    "attempts": 2,
+    "leaseIssued": 201,
+    "result": "net::ERR_CONNECTION_CLOSED after 328.2 s and 320.1 s, no HTTP response, and no entry for the request in the branch's edge log.",
+    "whatThePersonSees": "The page's own progress stops at 'Uploading to private storage… 25%' about twenty seconds in and never moves again; five and a half minutes later the upload is reported as failed, with no mention of size. The browser keeps sending after the edge has already refused, so the 413 never reaches it.",
+    "receipt": "journeys/gvcf-8gib-cutoff.json"
+  },
+  "sentDirectly": {
+    "how": "One streamed POST of the same file to the same endpoint with the service-role key and no browser, through the same egress path, so the browser is out of the question.",
+    "status": 413,
+    "bytesSentBeforeTheRefusal": 983040,
+    "secondsToRefusal": 0.53,
+    "body": "413 Payload Too Large, served by Cloudflare, so the refusal is made at the edge in front of Storage on the declared Content-Length."
+  },
+  "whereTheRefusalStarts": {
+    "accepted": [
+      { "bytes": 5000000000, "observed": "no refusal; the transfer began and was aborted on purpose after 8 s having sent 796,983,296 bytes" },
+      { "bytes": 5000000001, "observed": "no refusal; aborted after 4 s having sent 382,402,560 bytes" },
+      { "bytes": 5242880000, "observed": "no refusal; aborted after 4 s having sent 283,508,736 bytes" }
+    ],
+    "refused413": [5368708096, 5368709119, 5368709120, 5368709121, 6000000000],
+    "reading": "The boundary lies between 5,242,880,000 bytes and 5,368,708,096 bytes, which is the documented 5 GB. Every accepted probe was aborted deliberately within seconds; none of them left an object in the bucket, which was checked afterwards.",
+    "note": "The probe bodies were sparse zero files, so nothing about their content reached the bucket, and no fixture or personal data was involved."
+  },
+  "consequence": "A gVCF ceiling above about 5 GB cannot be met by this product until the uploader gains a resumable or multipart path. Setting the ceiling higher only moves the failure later: the lease is granted, the person waits out the whole transfer, and the refusal that does arrive says nothing about size."
+}

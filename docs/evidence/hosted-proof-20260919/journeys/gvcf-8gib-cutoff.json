@@ -1,0 +1,95 @@
+{
+  "label": "gvcf-8gib-cutoff",
+  "fixture": "gvcf-8gib.g.vcf",
+  "sizeBytes": 8589933057,
+  "startedAt": "2026-09-20T13:18:42.571Z",
+  "events": [
+    {
+      "at": "2026-09-20T13:18:42.969Z",
+      "what": "user_created",
+      "detail": {
+        "accountId": "7f7a7379-2a9f-4b09-b02b-b7a7f4d14395"
+      }
+    },
+    {
+      "at": "2026-09-20T13:19:15.065Z",
+      "what": "signed_in",
+      "detail": {
+        "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"
+      }
+    },
+    {
+      "at": "2026-09-20T13:19:16.089Z",
+      "what": "account_completed",
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "at": "2026-09-20T13:19:17.148Z",
+      "what": "insurance_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T13:19:18.205Z",
+      "what": "own_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T13:19:18.212Z",
+      "what": "consent_complete"
+    },
+    {
+      "at": "2026-09-20T13:20:09.731Z",
+      "what": "file_selected",
+      "detail": {
+        "reacted": true
+      }
+    },
+    {
+      "at": "2026-09-20T13:20:10.023Z",
+      "what": "upload_session",
+      "detail": {
+        "status": 201,
+        "declaredFormat": "gVCF",
+        "sizeBytes": 8589933057,
+        "sha256Matches": true,
+        "hashSeconds": 0.292
+      }
+    },
+    {
+      "at": "2026-09-20T13:25:30.217Z",
+      "what": "storage_post_cut_off",
+      "detail": {
+        "failure": "net::ERR_CONNECTION_CLOSED after 320.1s",
+        "lastProgress": "Uploading to private storage\u2026 25%",
+        "lastProgressAt": "2026-09-20T13:20:30.113Z",
+        "sizeBytes": 8589933057
+      }
+    },
+    {
+      "at": "2026-09-20T13:25:30.218Z",
+      "what": "failed",
+      "detail": "storage POST cut off: net::ERR_CONNECTION_CLOSED after 320.1s; page last showed \"Uploading to private storage\u2026 25%\""
+    }
+  ],
+  "accountId": "7f7a7379-2a9f-4b09-b02b-b7a7f4d14395",
+  "fixtureSha256": "ea3649a14c515422c44cb6b045f768dfa696994a2a4dcc4b5a5bcdf0c9cdd724",
+  "processResponses": [],
+  "stagingKey": "18176f29-0b73-4c4c-a128-3774cd55925f",
+  "uploadId": "c4671a4a-20af-49ec-8b6c-7649903419e1",
+  "uploadCutOff": {
+    "failure": "net::ERR_CONNECTION_CLOSED after 320.1s",
+    "lastProgress": "Uploading to private storage\u2026 25%",
+    "lastProgressAt": "2026-09-20T13:20:30.113Z",
+    "sizeBytes": 8589933057
+  },
+  "savedAt": "2026-09-20T13:25:30.281Z",
+  "outcome": "failed",
+  "error": "storage POST cut off: net::ERR_CONNECTION_CLOSED after 320.1s; page last showed \"Uploading to private storage\u2026 25%\"",
+  "pageErrors": []
+}

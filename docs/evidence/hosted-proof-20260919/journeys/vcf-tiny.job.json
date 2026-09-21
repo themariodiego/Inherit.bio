@@ -1,0 +1,28 @@
+{
+  "readAt": "2026-09-19T08:05:00Z",
+  "source": "private.own_preparation_jobs, own_preparation_artifacts, own_prepared_manifests on the branch",
+  "job_id": "9a86edb7-e334-4f7a-b020-f0a9477e5d68",
+  "file_id": "2ab05420-167c-4481-b335-83aeba8eb559",
+  "fixture": "e2e/fixtures/tiny-grch38.vcf (547 bytes)",
+  "created_at": "2026-09-19T04:19:50.349932Z",
+  "claimed_by": "the preview container at the 04:20:00 cron tick (claim_expires_at 04:25:07.612 = claim + 5 minutes, so the claim was at 04:20:07.6)",
+  "first_artifact_ack": "2026-09-19T04:20:13.429999Z",
+  "last_artifact_ack": "2026-09-19T04:20:21.194684Z",
+  "published_at": "2026-09-19T04:20:21.682743Z",
+  "state": "published",
+  "attempts": 1,
+  "container_wakes_for_this_job": 1,
+  "artifacts_reserved": 14,
+  "reserved_bytes": 26160,
+  "artifacts_acknowledged_final": 8,
+  "final_artifact_bytes": 18712,
+  "provider": "r2 / inherit-prepared-preview",
+  "summary": {"variantCount": 3, "observedCallCount": 4, "rsidPointerCount": 7, "sourceBuild": "GRCh38"},
+  "durations_seconds": {
+    "enqueue_to_claim": 17.3,
+    "claim_to_published": 14.1,
+    "enqueue_to_published": 31.3,
+    "finalize_to_page_prepared": 35.1
+  },
+  "peak_memory": "not exposed by the platform through the connected tools (Workers observability is off by configuration)"
+}

@@ -1,5 +1,72 @@
 # Hosted own-upload rollout prerequisites
 
+## Defect: a ceiling the configuration accepts and the transport cannot carry · 13:45 UTC, 20 September 2026
+
+Measured on the hosted preview stack (Supabase branch `hosted-proof`, the
+Vercel Preview of `claude/hosted-proof-20260919`, the preview gateway and
+container Workers). Synthetic fixtures only. Evidence and receipts:
+`docs/evidence/hosted-proof-20260919/`, in particular
+`upload-transport-limit.json` and `measurements.json`.
+
+**The boundary the table below is missing.** Every ceiling in that table is
+one the product sets. This one is not: the uploader sends a file as ONE
+`XMLHttpRequest` POST to `/storage/v1/object/genomes/<key>`
+(`src/lib/uploads/subject-upload-browser.ts`), which is Supabase's standard
+upload, documented as carrying at most 5 GB; resumable (TUS) and S3 multipart
+carry up to 50 GB and the product implements neither. Measured directly, with
+the service-role key and no browser: 5,242,880,000 bytes is accepted and
+begins transferring, and 5,368,708,096 bytes and above are answered **413
+Payload Too Large after about a megabyte, by Cloudflare**, on the declared
+`Content-Length`. The project's global file size limit governs what Storage
+will keep, not what one request may carry, so raising it does not move this.
+
+**Fixed on `main` before this record landed, 21 September 2026.** Both halves
+below describe the hosted-proof branch as it stood on 20 September. `main`
+already carries the fix, in commit `ff947a6` "Never offer a ceiling one
+request cannot carry": `SINGLE_REQUEST_MAXIMUM_BYTES` in
+`src/lib/uploads/subject-upload-contract.ts` is **5,242,880,000** — exactly the
+largest size the probe below proved a single request accepts —
+`uploadCeilingBytes` returns `Math.min(configuredCeilingBytes(...),
+SINGLE_REQUEST_MAXIMUM_BYTES)` so no configured ceiling can exceed it, and
+`issueSubjectUpload` refuses an oversized declaration with `413 too_large`
+**before any durable row exists**. So the 8 GiB lease of half one can no longer
+be issued, and the five-and-a-half-minute silence of half two can no longer be
+reached by an over-ceiling file. The two halves are kept as written because
+they are what was measured, and because the reasoning is what the constant
+rests on: delete the measurement and the constant looks arbitrary.
+
+**Half one: the configuration admits what cannot arrive.** With
+`maximum_gvcf_bytes` set to 8 GiB on the branch, `issue_own_storage_upload_v1`
+answered 201 for an 8,589,933,057-byte gVCF. Nothing between
+`upload_authorization_config` and the uploader compares the ceiling against
+what the transport can carry, so the lease is granted for a file that can
+never be stored.
+
+**Half two: the person is told nothing useful, slowly.** The browser does not
+surface the 413 — it keeps sending until the connection is reset — so the two
+attempts ended with `net::ERR_CONNECTION_CLOSED` after 328.2 s and 320.1 s,
+with no HTTP response and no entry in the project's edge log. The page's own
+progress stopped at "Uploading to private storage… 25%" twenty seconds in and
+never moved again. After five and a half minutes the person is given the
+generic wording, which never mentions a size. A refusal that is available in
+the first megabyte is delivered as a five-minute silence.
+
+**What this does not say.** It does not say the 5 GB boundary is exactly
+5,368,709,120: it lies between 5,242,880,000 (accepted) and 5,368,708,096
+(refused), which is the documented 5 GB. Every accepted probe was aborted
+within seconds, left no object, and used sparse zero bytes, not fixtures.
+
+**Related, and already predicted here.** The artifact-payload row of the table
+below predicted on 9 September that `max_artifact_bytes` refuses a whole
+genome first. That is now observed rather than projected: a 2 GiB VCF was
+uploaded, finalized and admitted on the preview stack, and its job stopped
+after 540 artifacts and 104,485,654 bytes — 371,946 short of the
+104,857,600 default — with fifty minutes of its hour unused, and was never
+retried, because a new claim must start at checkpoint revision 0 and
+`claim_next_own_preparation_work_v1` does not hand back a job whose claim has
+lapsed. The job sits `claimed` until its deadline and the person waits the
+full hour.
+
 ## Every ceiling between today and an ordinary WGS result · 9 September 2026
 
 Read from the code at `691ea28`, with the exact constraint that enforces each.

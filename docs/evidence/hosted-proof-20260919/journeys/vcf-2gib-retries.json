@@ -1,0 +1,393 @@
+{
+  "label": "vcf-2gib-retries",
+  "fixture": "vcf-2gib.vcf",
+  "sizeBytes": 2147483121,
+  "startedAt": "2026-09-20T13:16:20.854Z",
+  "events": [
+    {
+      "at": "2026-09-20T13:16:21.257Z",
+      "what": "user_created",
+      "detail": {
+        "accountId": "8c075b24-288b-4aac-9b19-8a6c42dfa17c"
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:32.033Z",
+      "what": "signed_in",
+      "detail": {
+        "url": "https://inherit-git-claude-hosted-proof-20260919-mariodiego.vercel.app/overview"
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:33.945Z",
+      "what": "account_completed",
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:35.148Z",
+      "what": "insurance_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:36.207Z",
+      "what": "own_consent",
+      "detail": {
+        "status": 201
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:36.215Z",
+      "what": "consent_complete"
+    },
+    {
+      "at": "2026-09-20T13:16:44.666Z",
+      "what": "file_selected",
+      "detail": {
+        "reacted": true
+      }
+    },
+    {
+      "at": "2026-09-20T13:16:52.478Z",
+      "what": "upload_session",
+      "detail": {
+        "status": 201,
+        "declaredFormat": "VCF",
+        "sizeBytes": 2147483121,
+        "sha256Matches": true,
+        "hashSeconds": 7.812
+      }
+    },
+    {
+      "at": "2026-09-20T13:17:57.557Z",
+      "what": "storage_post",
+      "detail": {
+        "status": 200,
+        "seconds": 65.077,
+        "mbps": 31.46992067078944,
+        "contentType": "application/octet-stream"
+      }
+    },
+    {
+      "at": "2026-09-20T13:18:30.629Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 503,
+        "retryAfter": "60",
+        "body": {
+          "error": "unavailable"
+        }
+      }
+    },
+    {
+      "at": "2026-09-20T13:21:23.899Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 503,
+        "retryAfter": "60",
+        "body": {
+          "error": "unavailable"
+        }
+      }
+    },
+    {
+      "at": "2026-09-20T13:21:34.080Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:21:34.080Z",
+        "click": 1,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:21:46.149Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:21:46.149Z",
+        "click": 2,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:21:58.209Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:21:58.209Z",
+        "click": 3,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:22:10.280Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:22:10.280Z",
+        "click": 4,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:22:22.345Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:22:22.345Z",
+        "click": 5,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:22:34.409Z",
+      "what": "retry_clicked",
+      "detail": {
+        "at": "2026-09-20T13:22:34.409Z",
+        "click": 6,
+        "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:38.140Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 200,
+        "retryAfter": null,
+        "body": {
+          "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7",
+          "status": "finalized_ready_for_processing",
+          "analysisState": "ready_for_processing",
+          "next": {
+            "routeId": "api.file-process",
+            "operation": "process"
+          }
+        }
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:38.141Z",
+      "what": "finalized",
+      "detail": {
+        "status": 200,
+        "seconds": 340.584,
+        "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7"
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.142Z",
+      "what": "admitted",
+      "detail": {
+        "processResponses": [
+          {
+            "status": 202,
+            "body": {
+              "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7",
+              "jobId": "d3431bef-96fd-4dbe-9b21-b0d23630aade",
+              "status": "preparing",
+              "analysisState": "not_generated"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.154Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.154Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "what": "finalize_attempt",
+      "detail": {
+        "status": 404,
+        "retryAfter": null,
+        "body": null
+      }
+    }
+  ],
+  "accountId": "8c075b24-288b-4aac-9b19-8a6c42dfa17c",
+  "fixtureSha256": "679a34ada0e8717aac9e1354450aec4a08a5e47d8a951ed932d59aee17dd7ca9",
+  "processResponses": [
+    {
+      "at": "2026-09-20T13:23:38.651Z",
+      "status": 202,
+      "body": {
+        "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7",
+        "jobId": "d3431bef-96fd-4dbe-9b21-b0d23630aade",
+        "status": "preparing",
+        "analysisState": "not_generated"
+      }
+    }
+  ],
+  "stagingKey": "ef61ae23-d37e-48be-a572-c1798d35a3f6",
+  "uploadId": "a1e66298-8897-4c0f-b530-b053edd93d0d",
+  "finalizeAttempts": [
+    {
+      "at": "2026-09-20T13:18:30.629Z",
+      "status": 503,
+      "body": {
+        "error": "unavailable"
+      },
+      "retryAfter": "60",
+      "seconds": 33.072
+    },
+    {
+      "at": "2026-09-20T13:21:23.899Z",
+      "status": 503,
+      "body": {
+        "error": "unavailable"
+      },
+      "retryAfter": "60",
+      "seconds": 206.342
+    },
+    {
+      "at": "2026-09-20T13:23:38.140Z",
+      "status": 200,
+      "body": {
+        "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7",
+        "status": "finalized_ready_for_processing",
+        "analysisState": "ready_for_processing",
+        "next": {
+          "routeId": "api.file-process",
+          "operation": "process"
+        }
+      },
+      "retryAfter": null,
+      "seconds": 340.583
+    },
+    {
+      "at": "2026-09-20T13:23:39.154Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.597
+    },
+    {
+      "at": "2026-09-20T13:23:39.154Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.597
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.598
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.598
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.598
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.598
+    },
+    {
+      "at": "2026-09-20T13:23:39.155Z",
+      "status": 404,
+      "body": null,
+      "retryAfter": null,
+      "seconds": 341.598
+    }
+  ],
+  "retryClicks": [
+    {
+      "at": "2026-09-20T13:21:34.080Z",
+      "click": 1,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    },
+    {
+      "at": "2026-09-20T13:21:46.149Z",
+      "click": 2,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    },
+    {
+      "at": "2026-09-20T13:21:58.209Z",
+      "click": 3,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    },
+    {
+      "at": "2026-09-20T13:22:10.280Z",
+      "click": 4,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    },
+    {
+      "at": "2026-09-20T13:22:22.345Z",
+      "click": 5,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    },
+    {
+      "at": "2026-09-20T13:22:34.409Z",
+      "click": 6,
+      "alert": "The upload could not finish. Your existing files are unchanged. Please try again."
+    }
+  ],
+  "fileId": "cb8274dd-8c62-46a6-bf84-5ee90b4ce1f7",
+  "outcome": "stopped-after-enqueue",
+  "finishedAt": "2026-09-20T13:23:39.142Z",
+  "savedAt": "2026-09-20T13:23:39.217Z"
+}

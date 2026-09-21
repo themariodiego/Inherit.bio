@@ -1,0 +1,52 @@
+{
+  "what": "What the withdrawal of the gVCF journey's file (1679524c-e270-4f37-9acb-0782b39a4281) actually establishes, and what it does not.",
+  "withdrawnAt": "2026-09-20T11:30:59Z",
+  "checked": {
+    "deleteResponse": {
+      "status": 204,
+      "seconds": 3.08
+    },
+    "fileRowInList": "gone from /files",
+    "storageListingForTheOriginal": [],
+    "storageDownloadOfTheOriginal": "Object not found",
+    "genomeFilesRow": null
+  },
+  "whatTheStatusCodeCarries": "The delete route answers 204 only after prepare_own_prepared_file_cleanup_v1 reports the prepared graph retired; a cleanup still running answers 202 and the file stays listed. So the 204 is the application's own assertion that the prepared artifacts were retired before the original was removed.",
+  "notChecked": {
+    "tombstoneRowsForThisFile": "The cleanup and its entries are removed with the file row, so after a completed withdrawal the database keeps no per-artifact tombstone record for that file to read back."
+  },
+  "whatATombstoneLooksLike": {
+    "source": "A live entry of cleanup ba360731-e75a-4459-af4d-113981fc5fa3 (the 64 MiB job's published-scratch cleanup, read at 2026-09-20T12:47Z while it was still draining)",
+    "evidence": {
+      "disposition": "payload-tombstoned",
+      "byteCount": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "etag": "d41d8cd98f00b204e9800998ecf8427e",
+      "providerVersion": "7e5f4126c37dacd81077969b8050ac31"
+    },
+    "reading": "The empty-object digest and a provider version: the gateway replaced the payload with an empty object and the writer read it back before acknowledging. This is the mechanism the withdrawal uses, recorded on another file because this file's own entries are gone with it."
+  },
+  "cleanupIsPaced": "That same cleanup had 162 entries and 16 acknowledged four minutes in: scratch retirement is drained by the five-minute cron like any other container work, so a large job's scratch outlives its publication by several wakes.",
+  "ownerCheck": {
+    "why": "Only the bucket itself can answer whether any payload survives.",
+    "steps": "https://dash.cloudflare.com \u2192 R2 \u2192 inherit-prepared-preview \u2192 the object count and, for any object listed, its size. Every prepared payload that has been retired must read 0 bytes; no object may carry payload bytes for a withdrawn file.",
+    "when": "Before the preview stack is torn down (runbook step 6).",
+    "status": "Done at 12:53 UTC on 20 September, see bucketReconciliation above. Worth repeating immediately before teardown, since more journeys have run since."
+  },
+  "bucketReconciliation": {
+    "readBy": "the owner, in the Cloudflare dashboard (no connected tool lists R2 objects)",
+    "at": "2026-09-20T12:53:00Z",
+    "bucket": "inherit-prepared-preview",
+    "zeroByteObjects": 105,
+    "objectsWithPayloadBytes": 238,
+    "finding": "Every object carrying payload bytes matched an artifact row for a file still retained on the branch; none was unaccounted for.",
+    "whatThisEstablishes": "By exclusion, no payload bytes in the bucket belong to the withdrawn file: every non-empty object is accounted for by a retained file's artifact row. Together with the 105 empty objects, that is consistent with retired payloads having been replaced by tombstones.",
+    "whatItDoesNotEstablish": "It is a bucket-wide reconciliation at one moment, not a lookup of the withdrawn file's former keys: those keys are unknowable from the database now, because a completed withdrawal removes the cleanup and its entries along with the file. So the check proves no orphaned payload exists, not that a named key of that file reads zero bytes. It also says nothing about deletion latency: it is a single later snapshot, so it cannot show how long any payload survived the withdrawal, which is what the 60-second derived-deletion rule turns on.",
+    "receipt": "The owner saved withdrawal-residue-20260920.json (the full listing) outside this repository."
+  },
+  "deletionLatency": {
+    "measured": false,
+    "why": "The delete route answered 204 in 3.1 seconds having reported the prepared graph retired, and the bucket reconciled later with nothing unaccounted for. Neither observation times the removal of a named object, so the interval between withdrawal and a payload becoming empty is unmeasured here.",
+    "howItCouldBeMeasured": "Withdraw a prepared file whose artifact keys have been read first, then poll those keys in the bucket until each reads zero bytes."
+  }
+}
