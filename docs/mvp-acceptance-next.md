@@ -96,7 +96,10 @@ sentence contradicts its own later entry and is queued for correction.
 **G2.4** is the only row where engineering can move the needle here, and it has
 two halves:
 
-- **Task depth is genuinely absent** and is buildable: nothing instruments
+- **Task depth is genuinely absent** — re-verified 2026-09-21: the register
+  defines `navigationContract.taskDepthActions` and no reader exists for
+  `taskDepthActions` or `countedEvents` anywhere in `e2e/`, `src/` or
+  `scripts/` — and is buildable: nothing instruments
   `click` and `submit` counts, nothing enumerates T1–T9 against their ceilings
   (≤3 for T1/T2/T3/T6/T7, ≤6 for T4/T9), the T8 floor of three actions including
   one typed confirmation is unverified, and so is the register's enumeration of
@@ -121,7 +124,13 @@ two halves:
   or seven.
 - **Reachability needs a decision, not code.** Four of the nine Overview boxes do
   not arrive where the box says: `family.portrait` goes to the Family landing
-  because no eligible-pair resolution exists, `family.copilot` and
+  (**not** because no eligible-pair resolution exists — corrected 2026-09-21:
+  the Family hub resolves one at `src/app/(family-hub)/family/page.tsx:184`.
+  That read is gated on a live `family.portrait` grant, and the hub rechecks
+  captured authority before any ready state, so resolving a pair id on Overview
+  without carrying that recheck would disclose a pair to someone whose grant was
+  revoked. Closing this needs the authority carried across, not a `pairId`
+  threaded through), `family.copilot` and
   `embryos.copilot` because `COPILOT_GROUP_SCOPES_AVAILABLE` is false, and
   `family.individual-risks` falls back for an account with no adult. The row
   itself calls this "deliberate and defensible" — a blocking state beats a dead
@@ -129,11 +138,13 @@ two halves:
   as the four route-state waivers of 18 September and wants the same kind of
   answer.
 
-There is also **one latent hazard the row names and nothing enforces**:
-`resolveBoxHref`'s `default` returns the Overview route itself, a self-link. It
-is unreachable today only because every box has a static `href` or a `switch`
-case. A tenth box added without a case would link Overview to itself and no test
-would notice. That guard is worth adding whatever is decided about the four.
+There was also **one latent hazard the row named and nothing enforced**:
+`resolveBoxHref`'s `default` returns the Overview route itself, a self-link,
+unreachable only because every box has a static `href` or a `switch` case.
+**That guard now exists** (`src/lib/overview-entry-boxes.test.ts`): it walks the
+committed boxes under four account shapes and fails if any resolves to the
+Overview route, so a tenth box added without a case is caught. The reasoning is
+kept because it explains why the guard is shaped that way.
 
 ## What this means
 
