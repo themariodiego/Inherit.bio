@@ -60,7 +60,7 @@ brief is the intent — reconcile explicitly rather than silently.
 **Stack.** Next.js 16.3.3 (App Router), React 19.2.8, TypeScript 5, Tailwind CSS v4, shadcn-style primitives under
 `src/components/ui`, Supabase (Postgres + Auth + Storage, `@supabase/ssr`), Vercel AI SDK v7 for the copilot,
 Vitest for unit tests, Playwright (+ `@axe-core/playwright`) for E2E, Lighthouse in `scripts/lighthouse-check.ts`,
-`tus-js-client` for resumable direct-to-storage uploads, `igv` for the embedded browser, `zod` v4, `resend` +
+`tus-js-client` is still a dependency but is imported nowhere in `src/`, a leftover of ADR-0001's superseded transport — corrected 2026-09-21; do not reach for it to raise an upload ceiling, because ADR-0016 rejects direct TUS by name, `igv` for the embedded browser, `zod` v4, `resend` +
 `@react-email/components` for mail. Licensed AGPL-3.0. Package manager: pnpm, with a workspace.
 
 **`AGENTS.md` carries a standing warning that must be obeyed:** this Next.js version has breaking changes against
@@ -748,7 +748,7 @@ Verified consumer counts as of this specification:
 - **Merge** `reports/support-panel.tsx` into `EvidencePanel`; `chat/consent-dialog.tsx` into the shared `ConsentDialog`, which serves five consent kinds (cloud model use, another adult's genome, your own embryos, embryos with both genetic parents' permission, research release).
 - **Rename** `reports/sensitive-gate.tsx` → `components/results/result-gate.tsx`.
 
-**Three existing files exceed the 220-line limit and must be decomposed:** `src/components/providers/directory.tsx` (453) splits into a filter panel, a provider row and a data hook; `src/components/uploads/uploader.tsx` (232) splits the TUS transport out of the UI; `src/components/browse/genome-browser.tsx` (320) splits presentation from configuration **but its XHR guard and remote-genome-fetch guard must remain together in a single module**, because they are the mechanism keeping the CI network audit green. `e2e/network-audit.spec.ts` must pass unchanged both before and after that split, and the split is reverted if it does not.
+**Three existing files exceed the 220-line limit and must be decomposed:** `src/components/providers/directory.tsx` (453) splits into a filter panel, a provider row and a data hook; `src/components/uploads/uploader.tsx` is no longer one of them — it is 198 lines, under the limit, and carries no TUS transport to split out (corrected 2026-09-21); `src/components/browse/genome-browser.tsx` (320) splits presentation from configuration **but its XHR guard and remote-genome-fetch guard must remain together in a single module**, because they are the mechanism keeping the CI network audit green. `e2e/network-audit.spec.ts` must pass unchanged both before and after that split, and the split is reverted if it does not.
 
 ---
 
