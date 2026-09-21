@@ -1619,6 +1619,66 @@ Asked as a selectable decision (the surfaces' line; the quoted sentence; both),
 the owner chose the surfaces' line. Both chat panels render it under every
 assistant turn, and `e2e/copilot-redteam.spec.ts` counts it on every response.
 
+## 20. The chunk route's two required headers, and which of three answers to take
+
+`docs/route-register.json` makes two headers required on `api.embryo-ingest-chunk`.
+Neither can be served as written, for different reasons, and the route is
+otherwise ready to build. This is the decision that picks which route gets
+built.
+
+### What the register asks for
+
+- `X-Inherit-CSRF`: "one-time-token-bound-to-the-upload-session".
+- `X-Inherit-Chunk-Nonce`: "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256".
+
+### Why neither is servable
+
+The chunk nonce is the harder one and ADR 0020 decision 9 records it in full:
+three of its four bindings cannot be expressed by
+`private.consume_embryo_operation_nonce_v1`, which has no parameter for a
+sequence, a byte count or a content hash; and the fourth cannot be minted,
+because a token bound to the chunk's sha256 needs a prior round trip carrying
+that hash and that round trip is the reservation the token would protect. All
+four values are already enforced by `public.embryo_ingest_chunks`, with a
+stronger consequence: a retry at an existing sequence whose sha256 differs
+fails the whole session rather than the request.
+
+The CSRF token is the softer one. It could be expressed, after two TypeScript
+union members and a migration widening the `target_kind` CHECK constraint on
+`public.embryo_operation_nonces`. But it could not be made **one-time**:
+one-time-ness comes from the nonce consumer recording the hash, and neither
+chunk RPC takes a nonce or calls it. And what it would defend is already held
+structurally - the ingest session cookie is `SameSite=Strict`, `HttpOnly` and
+`__Host-` prefixed, so a cross-site request carries no cookie and fails
+authorization before anything else runs.
+
+### The three answers
+
+1. **Drop both headers from the register**, and let ADR 0020 decision 9 and
+   the `unreadRequiredHeaders` ledger be the record of why. The route ships
+   with the protections it actually has: the SameSite=Strict cookie, the
+   Origin equality check, the account and auth-session match, the jurisdiction
+   guard, and the chunk table's structural identity rules. **Recommended**, on
+   the grounds that a contract naming a protection nothing provides is worse
+   than one naming the protections that hold.
+2. **Keep `X-Inherit-CSRF` and build it as a bound, expiring token**, dropping
+   only the chunk nonce, and change the register's wording from "one-time" to
+   what it would be. Costs two union members and a migration, and adds defence
+   in depth against a same-origin attacker who could in most cases forge it
+   anyway.
+3. **Extend both chunk RPCs to take and consume a nonce.** Faithful to the
+   register's words, and it means a new nonce primitive that can bind a
+   sequence and a content hash, plus the extra round trip to mint one - which
+   would carry exactly the values the reservation already carries.
+
+### Why this is asked rather than decided
+
+Building the route requires taking one of these, and the register is the
+product's contract. The evidence is in ADR 0020 decision 9 and its
+corrections, in `docs/route-divergence.json` under `unreadRequiredHeaders`,
+and enforced in both directions by `scripts/route-gate.ts` check 4d, which
+reports two of sixteen declared required headers as served by nothing.
+
 ## What happens after signature
 
 1. Apply the signed items to `docs/inherit-v2-brief.md`.
