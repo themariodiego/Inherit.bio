@@ -9,6 +9,24 @@
 -- unreachable from the application since it was written, and the gap stayed
 -- invisible because no route was ever written to hit it.
 --
+-- The gap is wider than this one function, and the shape of it matters to
+-- whoever writes the remaining ingest routes. Read from the live catalogue on
+-- 21 September 2026, the ingest write path divides in three:
+--
+--   * Reachable already: `public.authorize_embryo_ingest_request_v1` and
+--     `public.prepare_embryo_ingest_unwind_v1`. Two, and no more.
+--   * Private, but granted to `service_role`, so a door like this one works:
+--     `create_embryo_ingest_session_v1` (through the wrapper below),
+--     `reserve_embryo_ingest_chunk_v1`, `commit_embryo_ingest_chunk_v1`,
+--     `mark_embryo_ingest_failure_v1` and `consume_embryo_operation_nonce_v1`.
+--     The chunk route will need the reserve and commit pair.
+--   * Private with NO `service_role` grant, so an invoker wrapper would fail
+--     and one must not be written: `freeze_embryo_ingest_session_v1` and
+--     `bind_embryo_fragment_object_v1`. These are internal helpers other
+--     database functions call, and the missing grant is the design saying so.
+--     The completion route therefore does not reach freezing directly, and
+--     whoever builds it should establish how it is meant to — not add a grant.
+--
 -- This is the door, and deliberately nothing else. It adds no check, no
 -- branch and no state: every authority decision — the jurisdiction guard, the
 -- draft lock, the basis-authority case, the acknowledgements, the nonce —
