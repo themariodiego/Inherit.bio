@@ -791,13 +791,60 @@ describe("the route gate refuses a required header nothing reads", () => {
   const rowsOf = (ledger: Record<string, unknown>) =>
     ledger.unreadRequiredHeaders as { routeId: string; header: string }[];
 
-  it("counts the two the register declares and the one the product reads", async () => {
+  it("reads both shapes the register declares a required header in", async () => {
     const result = await runRouteGate(REPOSITORY_ROOT);
     expect(result.failures).toEqual([]);
-    expect(result.requiredHeaderCount).toBe(2);
-    // `X-Inherit-CSRF` is minted and verified in `operation-token.ts`;
-    // `X-Inherit-Chunk-Nonce` is named nowhere outside the register.
-    expect(result.readRequiredHeaderCount).toBe(1);
+    // Sixteen declarations across fourteen routes resolve to three names:
+    // `requiredHeaders` is a map, used by the two chunk routes, and
+    // `requiredHeader` is a single prose string used by twelve others.
+    expect(result.requiredHeaderCount).toBe(3);
+    // `X-Inherit-CSRF` and `X-Inherit-Operation-Nonce` are both minted and
+    // verified in `operation-token.ts`; `X-Inherit-Chunk-Nonce` is named
+    // nowhere outside the register.
+    expect(result.readRequiredHeaderCount).toBe(2);
+  });
+
+  it("resolves a header name out of the prose the singular form carries", async () => {
+    const root = plant({
+      register: (register) => {
+        const route = (register.routes as { id: string; requestContract?: Record<string, unknown> }[])
+          .find((candidate) => candidate.id === "api.embryo-ingest-complete")!;
+        route.requestContract!.requiredHeader = "X-Inherit-Invented-from-the-nowhere-page";
+      },
+    });
+    const { failures } = await runRouteGate(root);
+    // The binding description is stripped and the name alone is reported, so
+    // the ledger row a reader would have to write names a header and not a
+    // sentence.
+    expect(failures.join("\n")).toContain(
+      "unread required header: not recorded in docs/route-divergence.json: " +
+        "api.embryo-ingest-complete X-Inherit-Invented",
+    );
+  });
+
+  /**
+   * Strips one shape of declaration from every route. Two of the twelve
+   * singular declarations sit inside `methodRequestContracts` rather than
+   * `requestContract`, which a planted defect that forgot them would under-
+   * state - as this one did before the gate said 6 where it expected 4.
+   */
+  const strip = (register: Record<string, unknown>, key: "requiredHeader" | "requiredHeaders") => {
+    for (const route of register.routes as {
+      requestContract?: Record<string, unknown>;
+      methodRequestContracts?: Record<string, Record<string, unknown>>;
+    }[]) {
+      delete route.requestContract?.[key];
+      for (const contract of Object.values(route.methodRequestContracts ?? {})) delete contract[key];
+    }
+  };
+
+  it("fails when the singular half of the register stops being read", async () => {
+    const root = plant({ register: (register) => strip(register, "requiredHeader") });
+    const { failures } = await runRouteGate(root);
+    // Four left: the two chunk routes, two headers each.
+    expect(failures.join("\n")).toContain(
+      "required header check found 4 declared headers across all routes, expected at least 8",
+    );
   });
 
   it("fails when a route declares a header nothing reads and nothing records it", async () => {
@@ -860,11 +907,8 @@ describe("the route gate refuses a required header nothing reads", () => {
   it("fails rather than passing when the register declares no required header at all", async () => {
     const root = plant({
       register: (register) => {
-        for (const id of ["api.embryo-ingest-chunk", "api.evidence-chunk"]) {
-          const route = (register.routes as { id: string; requestContract?: Record<string, unknown> }[])
-            .find((candidate) => candidate.id === id)!;
-          delete route.requestContract!.requiredHeaders;
-        }
+        strip(register, "requiredHeader");
+        strip(register, "requiredHeaders");
       },
     });
     const { failures } = await runRouteGate(root);

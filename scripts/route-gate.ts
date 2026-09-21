@@ -818,6 +818,7 @@ interface RegisterEntry {
   /** Which G2.2 exception lets a Family or Embryo route waive consent-required. */
   consentRequiredException?: { kind?: string; carriedBy?: string };
   requestContract?: unknown;
+  methodRequestContracts?: unknown;
   parameterContract?: unknown;
 }
 
@@ -1084,6 +1085,37 @@ function browserTestTitles(directory: string): string[] {
  * row for a header the product really does enforce. What it catches is the
  * absolute case: a header name that appears nowhere in the product at all.
  */
+/**
+ * Every header the register makes mandatory on a route, by name.
+ *
+ * The register says this two ways and both have to be read, or the check
+ * covers a quarter of what it claims to. `requiredHeaders` is a map of header
+ * name to a description of its binding, and only the two chunk routes use it.
+ * `requiredHeader` is a single string on twelve other routes, and it is prose:
+ * the name with the binding hyphenated onto it, as in
+ * `X-Inherit-Operation-Nonce-from-the-confirmation-page`. The name is the part
+ * before `-bound-` or `-from-`, which resolves all twelve.
+ *
+ * A suffix nobody has used yet would leave its description attached and the
+ * header would read as unread, which costs one ledger row. That is the safe
+ * direction: the opposite mistake loses a mandatory header from the count.
+ */
+function declaredHeaderNames(entry: RegisterEntry): string[] {
+  const contracts = [
+    entry.requestContract,
+    ...Object.values((entry.methodRequestContracts ?? {}) as Record<string, unknown>),
+  ];
+  const names: string[] = [];
+  for (const contract of contracts) {
+    const shape = contract as { requiredHeaders?: Record<string, unknown>; requiredHeader?: unknown } | undefined;
+    names.push(...Object.keys(shape?.requiredHeaders ?? {}));
+    if (typeof shape?.requiredHeader === "string") {
+      names.push(shape.requiredHeader.split(/-bound-|-from-/)[0]);
+    }
+  }
+  return [...new Set(names)];
+}
+
 function headerNamesReadUnderSource(repositoryRoot: string, candidates: string[]): Set<string> {
   const wanted = candidates.map((name) => name.toLowerCase());
   const seen = new Set<string>();
@@ -1477,8 +1509,9 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
 
   // 4d. Required headers nothing reads. A header the register marks required
   // is part of the contract a caller is held to, so one that no module under
-  // `src/` so much as names is a promise with no keeper. Two are declared,
-  // both on chunk-upload routes, and they are in opposite states.
+  // `src/` so much as names is a promise with no keeper. Sixteen declarations
+  // across fourteen routes resolve to three names, and they are not all in the
+  // same state.
   //
   // `X-Inherit-CSRF` is real: `src/lib/embryos/operation-token.ts` mints and
   // verifies it, and sixteen modules name it.
@@ -1505,8 +1538,7 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   // read, its stale row fails too.
   const requiredHeaders: { routeId: string; header: string }[] = [];
   for (const entry of register.routes) {
-    const contract = entry.requestContract as { requiredHeaders?: Record<string, unknown> } | undefined;
-    for (const header of Object.keys(contract?.requiredHeaders ?? {})) {
+    for (const header of declaredHeaderNames(entry)) {
       requiredHeaders.push({ routeId: entry.id, header });
     }
   }
@@ -1679,6 +1711,16 @@ export async function runRouteGate(repositoryRoot: string): Promise<RouteGateRes
   if (titles.length < 100) failures.push(`browser test walker found ${titles.length} titles, expected over 100`);
   if (requiredHeaderNames.length < 2) {
     failures.push(`required header check found ${requiredHeaderNames.length} declared header names, expected at least 2`);
+  }
+  // The register says this two ways and the singular one carries twelve of the
+  // sixteen declarations. This floor is what fails if that half stops being
+  // read - the names floor above would not, because the two chunk routes alone
+  // still yield two names.
+  if (requiredHeaders.length < 8) {
+    failures.push(
+      `required header check found ${requiredHeaders.length} declared headers across all routes, ` +
+        `expected at least 8`,
+    );
   }
   if (readHeaderNames.size < 1) {
     failures.push(
