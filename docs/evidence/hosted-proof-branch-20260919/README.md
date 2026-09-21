@@ -320,3 +320,35 @@ run, for a separate reason it recorded: its auto-mode classifier refused to run
 the journey driver against the live preview stack. So the run is owed by a
 session with both the variables and the permission to drive them, and no
 ceiling moves in production until it exists.
+
+## Still running, re-read 21 September 2026 at 17:10 UTC
+
+The section above recorded the branch as `ACTIVE_HEALTHY` and billed by the
+hour. It still is, and the number is worth writing down rather than leaving as
+"since 18 September": read from the branch list on the Inherit project just
+now, `hosted-proof` (`iofjhrtcyawjjhuxbgfd`) was created at 23:56:04 UTC on
+18 September and is `ACTIVE_HEALTHY`, which is **about 65 hours** — just over
+two and a half days — of continuous billing for a branch whose stated purpose
+was one proof.
+
+**Its `status` reads `MIGRATIONS_FAILED`, and that is not what it looks like.**
+The branch was created in the dashboard with no GitHub sync, which this folder
+already records, so Supabase's own migration pipeline had nothing to run and
+reports the failure of a sync that was never configured. The schema on the
+branch was brought up by the manual replay recorded above, which succeeded and
+was verified byte-exact against the parent. Nobody should read that status as
+the replay having failed, or tear the branch down in a hurry because of it.
+
+**Nothing is torn down here, and nothing should be without the owner.** The
+three preconditions this folder already names are unchanged: the ceiling
+measurement is not done, and PR #147 leaves two open owner actions on this same
+branch — reading the container's memory for the 2 GiB preparation, and
+repeating the R2 bucket reconciliation immediately before teardown. Deleting
+the branch would destroy the only stack those two can be taken on, and it is
+the owner's spending decision either way.
+
+What this re-read adds is the cost of waiting, stated plainly so the decision
+is made with it rather than around it: every day the two owner actions stay
+open is another day of branch hours, and the actions are short. The cheap order
+is to take them, then tear down, rather than to tear down and lose them or to
+leave the branch running while they wait.
