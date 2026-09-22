@@ -21,3 +21,16 @@ All three round-1 findings are fixed and verified in a new isolated Chrome/Playw
 Machine-readable browser measurements: `code-round2-results.json`.
 
 No new issues introduced by the fixes were found in the touched code.
+
+## Full CI follow-up
+
+The initial full browser run passed 497/499 tests; two existing tests caught
+the missing native `article` grouping on the My Genome tool cards. The wrapper
+was restored around each full-card link. A bounded independent review confirmed
+that the article restores the original semantics while flex stretching and
+`w-full` preserve the visual layout, focus order, accessible names and destinations.
+
+Both complete assertion sets were then exercised against an existing synthetic
+populated account at 1440/768/390px. They passed at all three widths, with zero
+axe violations and identical link rectangles before and after the correction.
+No test contract was weakened. Full CI is rerun on the correction.

@@ -111,10 +111,12 @@ export default async function GenomePage(
       ) : null}
       <section className="grid gap-4 lg:grid-cols-3" aria-label="Genome tools">
         {tiles.map((tile) => (
-          <Link key={tile.href} href={tile.href} aria-label={`Open ${tile.title}`} className="link-surface flex flex-col rounded-2xl border border-line bg-card p-6">
-            <h2 className="flex items-center justify-between gap-4 text-lg font-semibold">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow size-5 shrink-0 text-forest" /></h2>
-            <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
-          </Link>
+          <article key={tile.href} className="flex">
+            <Link href={tile.href} aria-label={`Open ${tile.title}`} className="link-surface flex w-full flex-col rounded-2xl border border-line bg-card p-6">
+              <h2 className="flex items-center justify-between gap-4 text-lg font-semibold">{tile.title}<ArrowUpRight aria-hidden="true" className="link-arrow size-5 shrink-0 text-forest" /></h2>
+              <p className="mt-2 flex-1 text-base leading-relaxed text-ink-muted">{tile.copy}</p>
+            </Link>
+          </article>
         ))}
       </section>
       {mine ? (

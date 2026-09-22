@@ -102,7 +102,11 @@ submitted; activation end-to-end is not claimed by this rendering review.
 - Repository/history secret gate passed.
 - Browser discovery found 499 tests in 76 files, including the new provider
   decision-order and enlarged-text/short-viewport navigation regressions.
-- Final standard production-browser and CI results are recorded on the PR.
+- The first full CI browser run passed 497/499 tests. Both failures identified
+  missing native article grouping on the My Genome tool cards. The article
+  wrappers were restored without changing the links or visual design. Both
+  original assertion sets then passed at 1440/768/390px, with zero axe violations
+  and identical before/after card geometry. The full CI rerun is recorded on the PR.
 
 ## Representative captures
 
