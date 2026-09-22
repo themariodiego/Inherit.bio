@@ -15,6 +15,7 @@ import { labelIgvControls } from "./igv-accessibility";
 import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
 import { enhanceIgvPopovers } from "./igv-popovers";
+import { loadIgvReference } from "./igv-reference";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
@@ -28,79 +29,11 @@ interface RegionVariant {
   genotype: string;
 }
 
-// igv.js over the user's own data, privacy-preserving by construction:
-// the genome is a first-party chromsizes-only reference (no sequence host),
-// and the only data fetch is our own RLS-scoped region API. No third-party
-// origin is contacted — verified by the E2E network audit (which loads this
-// page and asserts the full set of request origins is first-party only).
-//
-// Keeping that claim true takes two mechanisms, because igv.js phones home
-// in two independent places (node_modules/igv/dist/igv.esm.js, v3.8.5):
-//
-// 1. `loadDefaultGenomes: false` in the createBrowser config — the
-//    documented option that stops GenomeUtils.initializeGenomes from
-//    fetching https://igv.org/genomes/genomes3.json (guarded by
-//    `config.loadDefaultGenomes !== false` in the dist).
-// 2. The XHR guard below — igv's transport (igvxhr) resolves EVERY string
-//    URL it loads through `convert()`, which lazily fetches
-//    https://igv.org/data/url_mappings.tsv the first time any URL (even our
-//    own /genomes/hg38.chrom.sizes) is loaded. No config option disables
-//    that, and igvxhr uses XMLHttpRequest, not fetch, so a fetch wrapper
-//    would not intercept it.
-
-/**
- * Fails any cross-origin XMLHttpRequest locally, before a connection is
- * opened. igv.js is the only XHR user in this app (the app itself uses
- * fetch), and every URL igv legitimately needs here is same-origin (the
- * chromsizes reference and the region API). igv treats the synthetic error
- * exactly like a network failure: its `convert()` url_mappings lookup is
- * wrapped in try/catch and proceeds with the unmapped URL, so rendering is
- * unaffected — the request simply never leaves the browser.
- */
-let xhrGuardInstalled = false;
-function installFirstPartyXhrGuard() {
-  if (xhrGuardInstalled || typeof window === "undefined") return;
-  xhrGuardInstalled = true;
-
-  const blocked = new WeakSet<XMLHttpRequest>();
-  const proto = XMLHttpRequest.prototype;
-  const originalOpen = proto.open;
-  const originalSend = proto.send;
-
-  proto.open = function (
-    this: XMLHttpRequest,
-    method: string,
-    url: string | URL,
-    async: boolean = true,
-    username?: string | null,
-    password?: string | null,
-  ) {
-    try {
-      const resolved = new URL(String(url), window.location.href);
-      if (resolved.origin === window.location.origin) {
-        blocked.delete(this);
-      } else {
-        blocked.add(this);
-      }
-    } catch {
-      // Malformed URL: let the native open raise its own error.
-    }
-    // Still open (open does not touch the network) so callers can set
-    // headers etc. without an InvalidStateError; send() is what we stop.
-    return originalOpen.call(this, method, url, async, username, password);
-  };
-
-  proto.send = function (
-    this: XMLHttpRequest,
-    body?: Document | XMLHttpRequestBodyInit | null,
-  ) {
-    if (blocked.has(this)) {
-      setTimeout(() => this.dispatchEvent(new ProgressEvent("error")), 0);
-      return;
-    }
-    return originalSend.call(this, body);
-  };
-}
+// The viewer receives only inline variant features and a local File containing
+// the public first-party chromosome sizes. Together with loadDefaultGenomes:
+// false this avoids igv's external registry and URL mapping requests. Do not
+// replace that File with a string URL: igv resolves strings externally first.
+// The full browser network audit checks the actual installed library.
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
 
@@ -147,6 +80,7 @@ export function GenomeBrowser({
 
   useEffect(() => {
     let disposed = false;
+    const request = new AbortController();
     let browserRef: unknown = null;
     let disposeInteractions: (() => void) | undefined;
     let disposeScrolling: (() => void) | undefined;
@@ -165,6 +99,7 @@ export function GenomeBrowser({
       const res = await fetch("/api/browse/region", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: request.signal,
         body: JSON.stringify({
           file: fileId, chromosome: chromName, start: locus.start, end: locus.end,
         }),
@@ -175,7 +110,8 @@ export function GenomeBrowser({
       const { variants } = (await res.json()) as { variants: RegionVariant[] };
       if (disposed) return;
 
-      installFirstPartyXhrGuard();
+      const referenceFile = await loadIgvReference(request.signal);
+      if (disposed) return;
 
       // Import igv's ESM build by subpath: the package's `browser` field
       // points at the UMD build, whose AMD-or-global dispatch leaves the
@@ -195,6 +131,10 @@ export function GenomeBrowser({
         // Without this, igv fetches its default genome registry from
         // igv.org on startup (see the privacy note above).
         loadDefaultGenomes: false,
+        // Unknown names stay local; the page's own search resolves names.
+        // Do not let location parameters add library tracks or sessions.
+        search: false,
+        queryParametersSupported: false,
         // The navbar keeps locus search and zoom only. Every other control
         // (chromosome picker, SVG export, sample names, multi-select, track
         // labels, centre line, cursor guide) is switched off through the
@@ -213,7 +153,7 @@ export function GenomeBrowser({
           id: "hg38-positions",
           name: "GRCh38 (positions only, no external sequence host)",
           format: "chromsizes",
-          fastaURL: "/genomes/hg38.chrom.sizes",
+          fastaURL: referenceFile,
         },
         locus: `${chromName}:${locus.start}-${locus.end}`,
         tracks: [
@@ -259,6 +199,7 @@ export function GenomeBrowser({
     );
     return () => {
       disposed = true;
+      request.abort();
       disposeInteractions?.();
       disposeScrolling?.();
       disposePopovers?.();
