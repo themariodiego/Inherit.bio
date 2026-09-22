@@ -5,7 +5,8 @@
 cron fires every five minutes; the `scheduled` handler wakes the one Durable
 Object named `preparation-worker`; that object starts its container if it is
 not already running and otherwise does nothing. The container runs one
-preparation attempt and one cleanup page (`scripts/prepared-worker.run.mts`),
+bounded cleanup drain, then at most one preparation attempt when SQL reports no
+eligible cleanup (`scripts/prepared-worker.run.mts`),
 then exits. ADR-0030 records the decision, the alternatives and the limits.
 
 Nothing here decides whether a job runs. The container is the same process an

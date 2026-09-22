@@ -11,6 +11,21 @@ optimization and also pass on the baseline implementation; the reproducible
 synthetic paired benchmark records the performance evidence separately in
 `docs/evidence/prepared-merge-buffered-heads-20260922.md`.
 
+## Drain existing scratch before new preparation · 22 September 2026
+
+`cleanup-integration.test.ts` adds serial multi-page progress and stop-boundary
+coverage for scratch cleanup. It keeps the existing owner/account single-page
+assertions. `own-preparation-worker-loop.test.ts` changes the asserted order to
+cleanup before preparation, because the former order lets a new hour-long job
+delay existing scratch cleanup. The same preparation, shutdown, coded-error and
+operator-withdrawal assertions remain; new cases forbid preparation after
+bounded, failed, unresolved, cancelled or zero-progress cleanup and allow it
+after a later drain observes no eligible claim. No test is skipped or removed.
+
+The new aggregate drain has a 150-second envelope and 256-page ceiling. Existing
+16-entry pages, 25-second operations, 30-second claims and immutable deletion
+deadlines are unchanged. Unit tests do not prove hosted deadline compliance.
+
 ## A focus precondition that does not depend on window focus · 21 September 2026
 
 `e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the

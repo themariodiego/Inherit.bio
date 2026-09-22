@@ -5,7 +5,7 @@ vi.mock("../supabase/admin", () => ({ createAdminClient: m.admin }));
 vi.mock("../genome/prepared-source/cleanup-integration", () => ({ drainPreparedScratch: m.cleanup }));
 import { runOwnPreparationWorkerLoop } from "./own-preparation-worker-loop";
 beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("INHERIT_PREPARED_WGS_ENABLED", "true");
-  m.prepare.mockResolvedValue({ status: "idle" }); m.cleanup.mockResolvedValue({ processed: 0, failed: 0 }); m.admin.mockReturnValue({}); });
+  m.prepare.mockResolvedValue({ status: "idle" }); m.cleanup.mockResolvedValue({ processed: 0, failed: 0, stop: "idle" }); m.admin.mockReturnValue({}); });
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 const args = () => ({ signal: new AbortController().signal, emit: vi.fn(), maximumIterations: 1 });
 describe("operator preparation worker loop", () => {
@@ -14,26 +14,26 @@ describe("operator preparation worker loop", () => {
     await expect(runOwnPreparationWorkerLoop(args())).rejects.toMatchObject({ code: "worker_disabled" });
     expect(m.prepare).not.toHaveBeenCalled(); expect(m.admin).not.toHaveBeenCalled();
   });
-  it("awaits one preparation then one cleanup page and emits only coded outcomes", async () => {
+  it("drains cleanup before one preparation and emits only coded outcomes", async () => {
     const order: string[] = [], o = args();
     m.prepare.mockImplementation(async () => { order.push("prepare"); return { status: "prepared", fileId: "synthetic sensitive identity" }; });
-    m.cleanup.mockImplementation(async () => { order.push("cleanup"); return { processed: 16, failed: 0 }; });
+    m.cleanup.mockImplementation(async () => { order.push("cleanup"); return { processed: 16, failed: 0, stop: "idle" }; });
     expect(await runOwnPreparationWorkerLoop(o)).toEqual({ status: "limit", hadFailure: false });
-    expect(order).toEqual(["prepare", "cleanup"]);
-    expect(o.emit.mock.calls).toEqual([["preparation_prepared"], ["cleanup_progress"]]);
+    expect(order).toEqual(["cleanup", "prepare"]);
+    expect(o.emit.mock.calls).toEqual([["cleanup_progress"], ["preparation_prepared"]]);
     expect(m.cleanup).toHaveBeenCalledTimes(1);
   });
-  it("still drains cleanup after preparation failure without exposing exception text", async () => {
+  it("drains cleanup before a failed preparation without restarting it or exposing exception text", async () => {
     const o = args(); m.prepare.mockRejectedValue(new Error("synthetic provider secret text"));
     expect(await runOwnPreparationWorkerLoop(o)).toMatchObject({ hadFailure: true });
-    expect(o.emit.mock.calls).toEqual([["preparation_failed"], ["cleanup_idle"]]);
+    expect(o.emit.mock.calls).toEqual([["cleanup_idle"], ["preparation_failed"]]); expect(m.prepare).toHaveBeenCalledTimes(1);
   });
   it.each(["throw", "flag"])("reports cleanup %s failure without claiming completion", async mode => {
     const o = args();
     if (mode === "throw") m.cleanup.mockRejectedValue(new Error("private detail"));
     else m.cleanup.mockResolvedValue({ processed: 5, failed: 1 });
     expect(await runOwnPreparationWorkerLoop(o)).toMatchObject({ hadFailure: true });
-    expect(o.emit).toHaveBeenLastCalledWith("cleanup_failed");
+    expect(o.emit).toHaveBeenLastCalledWith("cleanup_failed"); expect(m.prepare).not.toHaveBeenCalled();
   });
   it("idle polling waits five seconds rather than repeatedly claiming", async () => {
     vi.useFakeTimers(); const o = { ...args(), maximumIterations: 2 };
@@ -59,14 +59,44 @@ describe("operator preparation worker loop", () => {
     const controller = new AbortController(), emit = vi.fn();
     m.prepare.mockImplementation(async ({ signal }) => { expect(signal).toBe(controller.signal); controller.abort(); throw new Error("aborted"); });
     expect(await runOwnPreparationWorkerLoop({ signal: controller.signal, emit })).toEqual({ status: "stopped", hadFailure: false });
-    expect(m.cleanup).not.toHaveBeenCalled(); expect(emit.mock.calls).toEqual([["worker_stopped"]]);
+    expect(m.cleanup).toHaveBeenCalledTimes(1); expect(emit.mock.calls).toEqual([["cleanup_idle"], ["worker_stopped"]]);
   });
   it("stops before a next job when operator flag is withdrawn", async () => {
     const o = { ...args(), maximumIterations: 2 };
     m.prepare.mockResolvedValue({ status: "prepared" });
-    m.cleanup.mockImplementation(async () => { vi.stubEnv("INHERIT_PREPARED_WGS_ENABLED", "false"); return { processed: 0, failed: 0 }; });
+    m.cleanup.mockImplementation(async () => { vi.stubEnv("INHERIT_PREPARED_WGS_ENABLED", "false"); return { processed: 0, failed: 0, stop: "idle" }; });
     await expect(runOwnPreparationWorkerLoop(o)).rejects.toMatchObject({ code: "worker_disabled" });
-    expect(m.prepare).toHaveBeenCalledTimes(1);
+    expect(m.prepare).not.toHaveBeenCalled();
+  });
+  it.each(["bounded", "no_progress", "unresolved", "failed", "cancelled"])("does not admit new preparation after cleanup stops %s", async stop => {
+    const o = args(); m.cleanup.mockResolvedValue({ processed: 16, failed: Number(stop === "failed" || stop === "unresolved"), stop });
+    await runOwnPreparationWorkerLoop(o);
+    expect(m.cleanup).toHaveBeenCalledTimes(1); expect(m.prepare).not.toHaveBeenCalled();
+    expect(o.emit.mock.calls.some(([event]) => event.startsWith("preparation_"))).toBe(false);
+  });
+  it("does not report an idle cleanup when a zero-progress page defers preparation", async () => {
+    const o = args(); m.cleanup.mockResolvedValue({ processed: 0, failed: 0, stop: "no_progress" });
+    expect(await runOwnPreparationWorkerLoop(o)).toEqual({ status: "limit", hadFailure: false });
+    expect(o.emit.mock.calls).toEqual([["cleanup_deferred"]]); expect(m.prepare).not.toHaveBeenCalled();
+  });
+  it("uses a later iteration's current cleanup eligibility before admitting one new job", async () => {
+    vi.useFakeTimers(); const o = { ...args(), maximumIterations: 2 };
+    m.cleanup.mockResolvedValueOnce({ processed: 4096, failed: 0, stop: "bounded" })
+      .mockResolvedValueOnce({ processed: 17, failed: 0, stop: "idle" });
+    m.prepare.mockResolvedValue({ status: "prepared" });
+    const work = runOwnPreparationWorkerLoop(o);
+    await vi.advanceTimersByTimeAsync(4_999); expect(m.prepare).not.toHaveBeenCalled(); expect(m.cleanup).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1); await work;
+    expect(m.cleanup).toHaveBeenCalledTimes(2); expect(m.prepare).toHaveBeenCalledTimes(1);
+  });
+  it("passes shutdown to active cleanup and never claims preparation afterward", async () => {
+    const controller = new AbortController(), emit = vi.fn();
+    m.cleanup.mockImplementation(async (_admin, signal) => {
+      expect(signal).toBe(controller.signal); controller.abort(); return { processed: 3, failed: 0, stop: "cancelled" };
+    });
+    expect(await runOwnPreparationWorkerLoop({ signal: controller.signal, emit, maximumIterations: 1 })).toEqual({ status: "stopped", hadFailure: false });
+    expect(m.prepare).not.toHaveBeenCalled(); expect(m.cleanup).toHaveBeenCalledTimes(1);
+    expect(emit.mock.calls).toEqual([["worker_stopped"]]);
   });
   it.each([0, -1, 1.5, 1001, Number.NaN])("refuses unbounded invalid iteration option %s", async maximumIterations => {
     await expect(runOwnPreparationWorkerLoop({ ...args(), maximumIterations })).rejects.toMatchObject({ code: "invalid_options" });
