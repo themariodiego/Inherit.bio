@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   BROWSER_EMPTY_REGION,
   BROWSER_FAILED,
@@ -9,8 +9,10 @@ import {
   BROWSER_LOADING,
   IGV_CONTROL_LABELS,
   TRACK_NAME,
+  TRACK_TEXT_CAPTION,
 } from "@/copy/genome/data";
-import { chromToName } from "@/lib/genome/types";
+import { chromToName, type VariantRecord } from "@/lib/genome/types";
+import { formatLocus } from "@/lib/genome/locus";
 import { labelIgvControls } from "./igv-accessibility";
 import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
@@ -18,18 +20,11 @@ import { enhanceIgvPopovers } from "./igv-popovers";
 import { loadIgvReference } from "./igv-reference";
 import { createIgvBrowser } from "./igv-lifecycle";
 import { configureIgvNavigation } from "./igv-navigation";
+import { createLoadedTrack, observeTrackText, type TrackTextSnapshot } from "./igv-track-data";
+import { TrackTextAlternative } from "./track-text-alternative";
 
 /** Ties the region to the sentence naming its escape key. */
 const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
-
-interface RegionVariant {
-  rsid: number | null;
-  chrom: number;
-  pos: number;
-  ref: string | null;
-  alt: string | null;
-  genotype: string;
-}
 
 // The viewer receives only inline variant features and a local File containing
 // the public first-party chromosome sizes. Together with loadDefaultGenomes:
@@ -42,12 +37,15 @@ const CREATE_BROWSER_TIMEOUT_MS = 30_000;
 export function GenomeBrowser({
   fileId,
   locus,
+  subjectId,
 }: {
   fileId: string;
+  subjectId: string;
   locus: { chrom: number; start: number; end: number };
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const escapedRef = useRef<HTMLDivElement>(null);
+  const captionId = useId();
   // Outcome keyed by the mounted region: while the key doesn't match the
   // current props the browser is (re)initializing, so "loading" is derived
   // rather than reset via setState inside the effect.
@@ -60,6 +58,10 @@ export function GenomeBrowser({
   const current = outcome && outcome.key === regionKey ? outcome : null;
   const status = current?.status ?? "loading";
   const variantCount = current?.variantCount ?? null;
+  const [trackText, setTrackText] = useState<{
+    key: string; truncated: boolean; snapshot: TrackTextSnapshot;
+  } | null>(null);
+  const text = trackText?.key === regionKey ? trackText : null;
 
   useEffect(() => {
     let disposed = false;
@@ -67,6 +69,7 @@ export function GenomeBrowser({
     let disposeInteractions: (() => void) | undefined;
     let disposeScrolling: (() => void) | undefined;
     let disposePopovers: (() => void) | undefined;
+    let disposeText: (() => void) | undefined;
     const key = `${fileId}:${locus.chrom}:${locus.start}-${locus.end}`;
 
     async function mount() {
@@ -89,8 +92,9 @@ export function GenomeBrowser({
       if (!res.ok) {
         throw new Error(`region API responded ${res.status}`);
       }
-      const { variants } = (await res.json()) as { variants: RegionVariant[] };
+      const { variants, truncated } = (await res.json()) as { variants: VariantRecord[]; truncated: boolean };
       if (disposed) return;
+      const loaded = createLoadedTrack(variants);
 
       const referenceFile = await loadIgvReference(request.signal);
       if (disposed) return;
@@ -140,17 +144,13 @@ export function GenomeBrowser({
         locus: `${chromName}:${locus.start}-${locus.end}`,
         tracks: [
           {
+            id: "inherit-loaded-calls",
             name: TRACK_NAME,
             type: "annotation",
             format: "bed",
             displayMode: "EXPANDED",
             color: "#2E5C45",
-            features: variants.map((v) => ({
-              chr: chromName,
-              start: v.pos - 1,
-              end: v.pos,
-              name: `${v.rsid ? `rs${v.rsid} ` : ""}${v.genotype}${v.ref && v.alt ? ` (${v.ref}→${v.alt})` : ""}`,
-            })),
+            features: loaded.features,
           },
         ],
       };
@@ -163,14 +163,19 @@ export function GenomeBrowser({
       disposeInteractions = enhanceIgvInteractions(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvInteractions>[2]);
       disposeScrolling = enhanceIgvTrackScrolling(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvTrackScrolling>[2]);
       disposePopovers = enhanceIgvPopovers(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvPopovers>[2]);
+      disposeText = observeTrackText(browser as Parameters<typeof observeTrackText>[0], "inherit-loaded-calls",
+        { chromosome: chromName, start: locus.start, end: locus.end, rows: loaded.rows }, snapshot => {
+          if (!disposed) setTrackText({ key, truncated, snapshot });
+        });
       return variants.length;
     }
 
     function release() {
+      disposeText?.();
       disposeInteractions?.();
       disposeScrolling?.();
       disposePopovers?.();
-      disposeInteractions = disposeScrolling = disposePopovers = undefined;
+      disposeText = disposeInteractions = disposeScrolling = disposePopovers = undefined;
       request.abort();
     }
 
@@ -244,7 +249,8 @@ export function GenomeBrowser({
   }
 
   return (
-    <div>
+    <figure data-slot="genome-track-figure" aria-labelledby={captionId} className="space-y-3">
+      <figcaption id={captionId} className="text-sm font-medium">{TRACK_TEXT_CAPTION}</figcaption>
       {/* Before the region in reading order, so a keyboard reader meets the
           escape before the thing it escapes; `aria-describedby` on the region
           repeats it on entry for a reader who arrives by Tab. */}
@@ -293,11 +299,15 @@ export function GenomeBrowser({
       <div ref={escapedRef} tabIndex={-1}>
         <span className="sr-only">{BROWSER_KEYBOARD_ESCAPED}</span>
       </div>
-      {status === "ready" && variantCount === 0 ? (
+      <TrackTextAlternative subjectId={subjectId} loadedRange={formatLocus(locus)}
+        truncated={text?.truncated ?? false}
+        snapshot={text?.snapshot ?? { status: "loading", views: [] }} />
+      {status === "ready" && variantCount === 0 && text?.snapshot.status === "ready"
+        && text.snapshot.views.every(view => !view.outsideLoadedRange) ? (
         <p className="mt-2 max-w-prose rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink-muted">
           {BROWSER_EMPTY_REGION}
         </p>
       ) : null}
-    </div>
+    </figure>
   );
 }

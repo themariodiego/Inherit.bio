@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { assertNoThirdParty, AXE_VIEWPORTS, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { installKeyboardAudit, tabThrough, escapeLeavesTheTrap, type TabExit } from "./keyboard-traversal";
+import { auditTextAlternatives } from "./text-alternatives";
 import { NOT_FOUND_HEADING } from "../src/copy/not-found";
 
 // A16 — axe accessibility checks over key surfaces in BOTH themes, plus
@@ -1497,115 +1498,31 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     expect(Object.keys(VISIT), "the ancestry route this test names is still the registered one")
       .toContain(ANCESTRY_ROUTE);
     let figures = 0;
+    let genomeCanvases = 0;
     let mapSeen = false;
     const visited = await sweepPages(page, async ({ route }) => {
-      const found = await page.evaluate(() => {
-        const probe = window.__g113b;
-        if (!probe) throw new Error("element probe not installed");
-        const candidates = new Set<Element>();
-        // `<figure>` is the container this design gives a chart, so it is the
-        // rule rather than a list of known charts: a new one is measured the
-        // day it renders.
-        for (const figure of document.querySelectorAll("figure")) candidates.add(figure);
-        for (const graphic of document.querySelectorAll("svg,canvas")) {
-          if (graphic.closest('[aria-hidden="true"]')) continue;
-          // A graphic announced as content is a picture of something; an
-          // unnamed icon beside a word is not, and demanding a table of every
-          // chevron would measure nothing.
-          const named = graphic.hasAttribute("aria-label") || graphic.hasAttribute("aria-labelledby")
-            || graphic.getAttribute("role") === "img" || graphic.querySelector(":scope > title") !== null;
-          if (!named) continue;
-          candidates.add(graphic.closest("figure") ?? graphic);
-        }
-        const findings: string[] = [];
-        const disclosures: { index: number; name: string }[] = [];
-        let checked = 0;
-        for (const candidate of candidates) {
-          if (!probe.rendered(candidate)) continue;
-          checked++;
-          const name = probe.describe(candidate);
-          // The text half: a caption or an accessible name.
-          if (!(candidate.querySelector("figcaption") !== null
-            || candidate.hasAttribute("aria-label") || candidate.hasAttribute("aria-labelledby")
-            || candidate.querySelector("svg[aria-label],svg[aria-labelledby],svg > title") !== null)) {
-            findings.push(`${name}: no caption and no accessible name`);
-          }
-          // What the picture exposes to a reader: a part that is focusable,
-          // named or given a role. The grey ancestry map exposes none — every
-          // region is aria-hidden and nothing is focusable — so it is a
-          // picture of nothing and has nothing for a list to restate.
-          const parts = [...candidate.querySelectorAll(
-            '[tabindex]:not([tabindex="-1"]),[role="button"],[role="img"],[role="graphics-symbol"],[aria-label]')]
-            .filter(part => part.closest('[aria-hidden="true"]') === null)
-            .filter(part => part.tagName.toLowerCase() !== "svg" && part.tagName.toLowerCase() !== "canvas");
-          // Where an equivalent may live: inside the figure, on the far end of
-          // its own aria-describedby/aria-details, or beside it in the
-          // container that holds them both. Navigation is not an equivalent.
-          const scope: Element[] = [candidate];
-          if (candidate.parentElement) scope.push(candidate.parentElement);
-          for (const attribute of ["aria-describedby", "aria-details"]) {
-            for (const id of (candidate.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean)) {
-              const target = document.getElementById(id);
-              if (target) scope.push(target);
-            }
-          }
-          let equivalent: Element | null = null;
-          for (const region of scope) {
-            for (const list of region.querySelectorAll("table,ul,ol,dl")) {
-              if (list.closest('[aria-hidden="true"]') || list.closest("nav,header,footer")) continue;
-              equivalent = list;
-              break;
-            }
-            if (equivalent) break;
-          }
-          if (parts.length > 0 && !equivalent) {
-            findings.push(`${name}: ${parts.length} parts of the picture are exposed`
-              + ` (${probe.describe(parts[0])}…) and no list or table restates them`);
-          }
-          if (parts.length === 0 && !equivalent) {
-            // The words BESIDE the picture, never its own caption: a caption
-            // names a figure, and a figure that states nothing has to be
-            // answered by a sentence that says so ("we could not read enough
-            // of your file"), which is a different piece of text.
-            let beside = "";
-            const container = candidate.parentElement;
-            if (container) {
-              const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-              for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-                if (candidate.contains(node)) continue;
-                beside += node.nodeValue ?? "";
-              }
-            }
-            if (!/[a-z]{2,}/i.test(beside)) findings.push(`${name}: no list, no table and no sentence beside it`);
-          }
-          if (equivalent) {
-            const details = equivalent.closest("details");
-            if (details && !details.open) {
-              const summary = details.querySelector(":scope > summary");
-              if (!summary) {
-                findings.push(`${name}: its list is inside a closed <details> with no <summary>, so no keyboard opens it`);
-              } else {
-                summary.setAttribute("data-g113b-disclosure", String(disclosures.length));
-                disclosures.push({ index: disclosures.length, name });
-              }
-            } else if (!probe.rendered(equivalent)) {
-              findings.push(`${name}: ${probe.describe(equivalent)} is in the DOM but is not rendered`);
-            }
-          }
-        }
-        return { checked, findings, disclosures };
-      });
+      const found = await page.evaluate(auditTextAlternatives);
+      genomeCanvases += found.genomeCanvases;
       figures += found.checked;
       expect.soft(found.findings,
         `${route}: every chart needs an equivalent list and text`).toEqual([]);
       for (const disclosure of found.disclosures) {
         const summary = page.locator(`[data-g113b-disclosure="${disclosure.index}"]`);
+        await expect.soft(summary,
+          `${route}: the disclosure for ${disclosure.name} is rendered`).toBeVisible();
         await summary.focus();
         await page.keyboard.press("Enter");
         expect.soft(
           await summary.evaluate(element =>
             element.parentElement instanceof HTMLDetailsElement && element.parentElement.open),
           `${route}: the list behind ${disclosure.name} opens without a pointer`).toBe(true);
+      }
+      if (found.disclosures.length) {
+        const opened = await page.evaluate(auditTextAlternatives);
+        expect.soft(opened.findings,
+          `${route}: opening a disclosure must expose its actual text equivalent`).toEqual([]);
+        expect.soft(opened.disclosures,
+          `${route}: no equivalent remains behind a closed disclosure`).toEqual([]);
       }
       if (route !== ANCESTRY_ROUTE) return;
       mapSeen = true;
@@ -1640,5 +1557,8 @@ test.describe("G1.13b: the accessibility measurements axe cannot make", () => {
     // sweep has seen at least it.
     expect(figures, "the sweep found charts to check rather than none").toBeGreaterThan(0);
     expect(mapSeen, "the sweep reached the ancestry map's own route").toBe(true);
+    expect(genomeCanvases,
+      "the text-alternative sweep inspected the real genome canvases inside their shadow root")
+      .toBeGreaterThan(0);
   });
 });

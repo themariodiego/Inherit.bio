@@ -165,6 +165,44 @@ test("/genome/[subject]/data/browser complete: an rsID search answers from the f
   expect(interactives.length, interactives.join(" | ")).toBeLessThanOrEqual(12);
 });
 
+test("the current track has an open source-matched text alternative after native position changes", async ({ page }) => {
+  await signIn(page, USER.email, USER.password);
+  const requests: string[] = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname === "/api/browse/region") requests.push(request.method());
+  });
+  const response = page.waitForResponse(response => new URL(response.url()).pathname === "/api/browse/region");
+  await page.goto(`${BROWSER}?q=rs762551`);
+  const { variants } = await (await response).json() as {
+    variants: { chrom: number; pos: number; rsid: number | null; genotype: string }[];
+  };
+  const alternative = page.locator('[data-slot="genome-track-alternative"]');
+  await expect(alternative).toHaveAttribute("data-track-status", "ready");
+  expect(variants).toHaveLength(1);
+  const source = variants[0];
+  await expect(alternative.locator('[data-track-feature]')).toHaveAttribute("data-track-feature", `${source.chrom}:${source.pos}:0`);
+  await expect(alternative.locator('[data-track-feature]')).toContainText(`rs${source.rsid}`);
+  await expect(alternative.locator('[data-track-feature]')).toContainText(`chr${source.chrom}:${source.pos}`);
+  await expect(alternative.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText(source.genotype);
+  const subject = await page.locator('[data-subject-bar]').getAttribute('data-subject-id');
+  await expect(alternative.locator('[data-claim-block]')).toHaveAttribute('data-subject-id', subject!);
+  await expect(alternative.locator('details, [hidden], button, input, [tabindex]')).toHaveCount(0);
+  await expect(page.locator('#results tbody tr')).toHaveCount(1);
+
+  const search = page.getByRole('textbox', { name: 'Search by position', exact: true });
+  await search.fill('chr1:100-1000'); await search.press('Enter');
+  await expect(alternative.locator('[data-track-range]')).toHaveText('chr1:100-1,000');
+  await expect(alternative).toHaveAttribute('data-track-status', 'ready');
+  await expect(alternative.locator('[data-track-feature]')).toHaveCount(0);
+  await expect(alternative).toContainText('No calls were loaded for those positions.');
+  await expect(alternative).not.toContainText('Your file has no variants');
+
+  await search.fill(REGION_RANGE); await search.press('Enter');
+  await expect(alternative.locator('[data-track-feature]')).toHaveCount(1);
+  await expect(alternative.locator('[data-figure-kind="genotype"] [data-slot="figure-value"]')).toHaveText(source.genotype);
+  expect(requests).toEqual(['POST']);
+});
+
 test("a synthetic overlapping-region response can be scrolled with the keyboard", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
   // UI interaction fixture only: no source/preparation or capacity claim is
