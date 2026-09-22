@@ -2159,3 +2159,60 @@ extractor or legal statement is removed or relaxed.
   fixture hit an existing consistency constraint; an explicit constraint-refusal
   assertion remains, and the stale-source probe changes both revision fields
   coherently before requiring the same member-gate refusal. No guard is bypassed.
+
+## Comprehension conductor instrument checks · 22 September 2026
+
+The local conductor is an authored instrument check, not a qualifying participant
+run. It accepts only synthetic browser/inference adapters and returns
+`qualifyingEvidence: false`. No G3 acceptance row changes. No paid request,
+provider change, real participant session, human review or production build run
+was performed for this slice.
+
+- `conductor.test.ts` exercises all thirty personas on all ten tasks, the exact
+  seeded thirty independent regradings, distinct browser/process identities,
+  immutable input pins, separate participant and blind-grader payloads, actual
+  adapter-reported completion/action counts, separate entry counts, bounded
+  turns, partial traces, cap refusal, input drift and detector-snapshot use.
+  Full dry-run assertions use authored replies; a clean instrument assessment
+  is never reported as measured comprehension.
+- `conductor-call.test.ts` checks durable reservation and attempt recording
+  before adapter acquisition, separate retry IDs, maximum accounting for unknown
+  outcomes, unchanged shared cap across reopen, incomplete/oversized usage,
+  persistence refusal, unresolved acquisition, late-handle disposal and refusal
+  to retry alongside an unclosed process. Changed settings are refused before
+  any reservation or adapter acquisition.
+- `run-history.test.ts` checks chronological replay, explicit revision closure,
+  refusal to bypass the three-failed-revision stop, intervening failures,
+  incomplete runs, identity/slot reuse, pinned retry limits, admitted resource
+  identities and immutable history snapshots.
+- `conductor-resource.test.ts` checks that late browser acquisition, failed
+  browser closure and failed process closure persist an unresolved-resource
+  stop. Finishing or closing the journal retains its lock; actual disk replay
+  refuses the next run, and late disposal cannot clear the stop.
+- `instrument-journal.test.ts` checks exclusive ownership, exact approval on
+  reopen, corrupt history, protected storage outside Git, symlink refusal and
+  actual local owner-process death after a durable reservation. The killed test
+  process made no provider call; its full reservation and both locks remained.
+- The existing persona, binding, budget and assessment assertions are preserved.
+  The previously authored persona bank and its twenty-eight tests are included
+  unchanged. Assessment now optionally consumes the conductor's pinned pattern
+  snapshot; its default detector and all thresholds are unchanged.
+- The rubric contradiction allowing completion/action metadata into grading is
+  removed. Both graders receive only unchanged shared rubric instructions, the
+  exact relevant task section and the verbatim answer. Every task criterion is
+  retained, and the full source plus selection version are pinned.
+
+Validation: 98 tests passed across nine comprehension suites using Node 22 and
+pnpm 10.33.0; changed TypeScript lint and targeted strict TypeScript passed;
+`gate:readability` passed with 2681 blocks. Test caches/configuration and raw
+instrument journals were local temporary files outside Git. No existing E2E
+assertion, timeout, retry policy, density or route/task ratchet was changed.
+The newly authored full 300-session durability cases have a 60-second test
+limit; existing test timeouts are unchanged.
+
+Qualifying execution remains blocked by the required published inference-identity
+policy, externally enforced process isolation, the production build under the
+test jurisdiction, actual bound T6/T7/T9/T10 fixtures, verified provider token/cost
+bounds and corresponding live evidence. The scaffold's adapter declarations do
+not clear those prerequisites, and no raw test answer enters the qualifying
+comprehension-run directory.
