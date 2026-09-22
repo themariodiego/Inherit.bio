@@ -16,6 +16,7 @@ import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
 import { enhanceIgvPopovers } from "./igv-popovers";
 import { loadIgvReference } from "./igv-reference";
+import { createIgvBrowser } from "./igv-lifecycle";
 import { configureIgvNavigation } from "./igv-navigation";
 
 /** Ties the region to the sentence naming its escape key. */
@@ -37,25 +38,6 @@ interface RegionVariant {
 // The full browser network audit checks the actual installed library.
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error(`igv.createBrowser timed out after ${ms}ms`)),
-      ms,
-    );
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
 
 export function GenomeBrowser({
   fileId,
@@ -82,7 +64,6 @@ export function GenomeBrowser({
   useEffect(() => {
     let disposed = false;
     const request = new AbortController();
-    let browserRef: unknown = null;
     let disposeInteractions: (() => void) | undefined;
     let disposeScrolling: (() => void) | undefined;
     let disposePopovers: (() => void) | undefined;
@@ -119,13 +100,13 @@ export function GenomeBrowser({
       // bundled module namespace empty (no createBrowser anywhere).
       interface IgvApi {
         createBrowser(el: HTMLElement, config: unknown): Promise<unknown>;
+        removeBrowser(browser: unknown): void;
       }
       const igvModule = (await import("igv/dist/igv.esm.js")) as unknown as {
         default?: IgvApi;
       } & IgvApi;
       const igv = igvModule.default ?? igvModule;
       if (disposed) return;
-      el.innerHTML = "";
       // igv's TS types don't model the chromsizes reference format or
       // inline `features` arrays; both are supported at runtime.
       const config = {
@@ -173,20 +154,26 @@ export function GenomeBrowser({
           },
         ],
       };
-      browserRef = await withTimeout(
-        igv.createBrowser(el, config),
-        CREATE_BROWSER_TIMEOUT_MS,
+      const { browser, element } = await createIgvBrowser(
+        igv, el, config, request.signal, CREATE_BROWSER_TIMEOUT_MS,
       );
       if (disposed) return;
-      configureIgvNavigation(browserRef as Parameters<typeof configureIgvNavigation>[0]);
-      labelIgvControls(el, IGV_CONTROL_LABELS);
-      disposeInteractions = enhanceIgvInteractions(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvInteractions>[2]);
-      disposeScrolling = enhanceIgvTrackScrolling(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvTrackScrolling>[2]);
-      disposePopovers = enhanceIgvPopovers(el, IGV_CONTROL_LABELS, browserRef as Parameters<typeof enhanceIgvPopovers>[2]);
+      configureIgvNavigation(browser as Parameters<typeof configureIgvNavigation>[0]);
+      labelIgvControls(element, IGV_CONTROL_LABELS);
+      disposeInteractions = enhanceIgvInteractions(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvInteractions>[2]);
+      disposeScrolling = enhanceIgvTrackScrolling(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvTrackScrolling>[2]);
+      disposePopovers = enhanceIgvPopovers(element, IGV_CONTROL_LABELS, browser as Parameters<typeof enhanceIgvPopovers>[2]);
       return variants.length;
     }
 
-    const el = containerRef.current;
+    function release() {
+      disposeInteractions?.();
+      disposeScrolling?.();
+      disposePopovers?.();
+      disposeInteractions = disposeScrolling = disposePopovers = undefined;
+      request.abort();
+    }
+
     mount().then(
       (count) => {
         if (!disposed && count !== undefined) {
@@ -194,6 +181,7 @@ export function GenomeBrowser({
         }
       },
       () => {
+        release();
         if (!disposed) {
           setOutcome({ key, status: "error", variantCount: null });
         }
@@ -201,11 +189,7 @@ export function GenomeBrowser({
     );
     return () => {
       disposed = true;
-      request.abort();
-      disposeInteractions?.();
-      disposeScrolling?.();
-      disposePopovers?.();
-      if (browserRef && el) el.innerHTML = "";
+      release();
     };
   }, [fileId, locus.chrom, locus.start, locus.end]);
 
@@ -268,7 +252,7 @@ export function GenomeBrowser({
         {BROWSER_KEYBOARD_ESCAPE}
       </p>
       <div className="relative">
-        {/* igv owns this element's DOM (we clear it before handing it over),
+        {/* Each igv instance owns a child host and its shadow tree here,
             so React must never render children into it — states render as
             siblings/overlays instead. */}
         <div
