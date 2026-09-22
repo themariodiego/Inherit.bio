@@ -59,7 +59,7 @@ describe("owned isolated CI runtime lifecycle", () => {
     const creation = state.commands.find(command => command[1] === "create")!;
     expect(creation).toContain("--read-only"); expect(creation).toContain("--cap-drop=ALL");
     expect(creation).toContain("--cap-add=NET_ADMIN"); expect(creation).toContain("--security-opt=no-new-privileges");
-    expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:3103:3103", "127.0.0.1:8130:8130"]);
+    expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:3103:3103", "127.0.0.1:3104:3104", "127.0.0.1:8130:8130"]);
     expect(creation.join(" ")).not.toMatch(/--privileged|docker\.sock|--network=host|--env/);
     const values = (flag: string) => creation.flatMap((value, index) => value === flag ? [creation[index + 1]] : []);
     expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10"]);

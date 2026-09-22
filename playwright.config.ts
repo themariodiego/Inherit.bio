@@ -1,7 +1,7 @@
 import { localE2eProject } from "./scripts/local-e2e-project";
 import { defineConfig, devices } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./scripts/local-storage-browser-config";
-import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT } from "./scripts/ci-browser-config";
+import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT, PREPARED_APP_PORT, PREPARED_APP_ENV } from "./scripts/ci-browser-config";
 
 // E2E runs against a production build served locally, backed by the local
 // Supabase stack (pnpm supabase start) — real PostgREST, real storage, real
@@ -16,7 +16,9 @@ import { LOCAL_MODEL_ENV, LOCAL_MODEL_PORT } from "./scripts/ci-browser-config";
 // fourth server, on LOCAL_MODEL_PORT, is the one app that attests the
 // local-model path (G4.8): the `copilot-local` project runs the red-team suite
 // against it, and nothing else runs there.
-// Playwright starts the servers in order, so the latter three reuse the build.
+// Isolated CI adds a prepared-source server on PREPARED_APP_PORT. Its SQL
+// gate is enabled only inside that guarded journey; other variants keep it off.
+// Playwright starts servers in order; every later server reuses the same build.
 const PORT = 3100;
 const OFF_PORT = 3101;
 const PAUSE_PORT = 3102;
@@ -24,6 +26,7 @@ const isolatedCi = process.env.CI && process.env.INHERIT_CI_BROWSER_RUNTIME === 
 if (process.env.CI && !process.argv.includes("--list") && !isolatedCi) {
   throw new Error("Standard CI must pass isolated runtime preflight through pnpm e2e");
 }
+const includePreparedJourney = Boolean(isolatedCi) || process.argv.includes("--list");
 const ciServer = (port: number) => `corepack pnpm exec tsx scripts/ci-browser/server.mts host ${port}`;
 const providerProxy = process.env.INHERIT_LOCAL_BROWSER_STORAGE_PROXY;
 const signer = process.env.INHERIT_UPLOAD_SIGNING_JWK;
@@ -32,6 +35,8 @@ if (!process.argv.includes("--list") && (!providerProxy || !signer)) {
   throw new Error("Run pnpm e2e through the real local Storage provider bootstrap");
 }
 const NO_JURISDICTION = /\.nojurisdiction\.spec\.ts$/;
+/** Actual object preparation is exercised only in the isolated CI project. */
+const PREPARED_JOURNEY = /own-prepared-genome-journey\.spec\.ts$/;
 /** The G4.8 red-team suite, which runs only against the local-model variant. */
 const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$/;
 /**
@@ -80,7 +85,7 @@ export default defineConfig({
     launchOptions: providerProxy ? { args: chromiumStorageProxyArgs(providerProxy) } : {},
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL] },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: [NO_JURISDICTION, DENSITY, COPILOT_LOCAL, PREPARED_JOURNEY] },
     {
       name: "jurisdiction-off",
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${OFF_PORT}` },
@@ -91,6 +96,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${LOCAL_MODEL_PORT}` },
       testMatch: COPILOT_LOCAL,
     },
+    ...(includePreparedJourney ? [{
+      name: "prepared-source",
+      use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${PREPARED_APP_PORT}` },
+      testMatch: PREPARED_JOURNEY,
+    }] : []),
     // Every setting the baseline capture fixed, fixed the same way. Ink
     // coverage is a pixel measurement: a different scale factor, colour scheme
     // or locale changes it, and a comparison across that difference measures
@@ -173,5 +183,20 @@ export default defineConfig({
         ...LOCAL_MODEL_ENV,
       },
     },
+    ...(isolatedCi ? [{
+      // This gate belongs only to the prepared journey. Its test additionally
+      // requires the isolated CI identity before changing any database config.
+      command: ciServer(PREPARED_APP_PORT),
+      url: `http://localhost:${PREPARED_APP_PORT}/auth/sign-in`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        ...SERVER_ENV,
+        NEXT_PUBLIC_SITE_URL: `http://localhost:${PREPARED_APP_PORT}`,
+        NEXT_PUBLIC_APP_URL: `http://localhost:${PREPARED_APP_PORT}`,
+        INHERIT_TEST_JURISDICTION: "1",
+        ...PREPARED_APP_ENV,
+      },
+    }] : []),
   ],
 });
