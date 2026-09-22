@@ -1,0 +1,670 @@
+{
+  "observedAt": "2026-09-22T15:27:37.708Z",
+  "baselineCommit": "a2399df4cb05a8d324d175f659dc6c1e6e5a43a2",
+  "node": "v22.17.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "warmupIterations": 1,
+  "measuredPairs": 3,
+  "records": 144001,
+  "storedBytes": 674683,
+  "decodedBytes": 5249916,
+  "results": [
+    {
+      "iteration": 0,
+      "mode": "baseline",
+      "seconds": 43.742253209,
+      "cpuSeconds": 50.011232,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.19835591699999996
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.925123667
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.28529475
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.685129792
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 9.185082875
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 17.894194042
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 21.8629035
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 24.298079917
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 33.94479425
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 36.92121374999999
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 38.459051458999994
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 38.642510917
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 43.741262167
+        }
+      ]
+    },
+    {
+      "iteration": 0,
+      "mode": "candidate",
+      "seconds": 41.032415125,
+      "cpuSeconds": 46.262456,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.1514223750000019
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.412607582999997
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 6.628173583000003
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.029241374999998
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 15.696245583000003
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 15.696994250000003
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 19.655055207999997
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 22.025838000000004
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 31.573860916999998
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 34.551050833
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 36.293214958
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 36.458788291999994
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 41.031453500000005
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "mode": "candidate",
+      "seconds": 40.421322459,
+      "cpuSeconds": 45.568585,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.1500563750000001
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.3192232920000095
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 6.643530875000011
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.031200125000003
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 15.56564787500001
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 15.56644816700001
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 19.398248542
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 21.787801792
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 31.322094542000006
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 34.237880583999996
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 35.76993025
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 35.944289583999996
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 40.42037895900001
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "mode": "baseline",
+      "seconds": 42.792524791999995,
+      "cpuSeconds": 48.21474,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.14602512500000012
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.4771872079999886
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 6.747760292000006
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.137125374999989
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 8.647282791999999
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 17.27702074999998
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 21.47508562499999
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 23.801555624999995
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 33.60343408299998
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 36.57960566699998
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 38.125377708
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 38.288314624999984
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 42.791593167
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "mode": "baseline",
+      "seconds": 42.386858624999995,
+      "cpuSeconds": 47.482014,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.16603691699999035
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.3820852090000115
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 6.622819916999986
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 6.998795249999995
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 8.698049834000004
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 17.376130834000012
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 21.230721625000005
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 23.56735149999999
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 33.097987874999994
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 36.237184000000006
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 37.765122000000005
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 37.92656533400002
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 42.385648959000015
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "mode": "candidate",
+      "seconds": 42.79684758399998,
+      "cpuSeconds": 48.079866,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.1507624589999905
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.4891555839999926
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.1862904999999735
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.564458166999975
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 16.19618304199999
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 16.196991916999977
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 20.251376666999974
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 22.68795345899998
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 32.804666459
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 35.953573166999995
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 37.598979583999984
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 37.76523999999999
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 42.795596749999994
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "mode": "candidate",
+      "seconds": 43.922928125000006,
+      "cpuSeconds": 49.301445,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.15136766699998408
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.5831501669999852
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.284364792000008
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.706774000000005
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 17.077667457999983
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 17.078426166999996
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 21.411600874999973
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 23.948310957999986
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 34.19717345799997
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 37.420238125000004
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 39.06568395800001
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 39.24145545799998
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 43.921981707999976
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "mode": "baseline",
+      "seconds": 63.682096582999975,
+      "cpuSeconds": 71.772823,
+      "artifactReads": 93,
+      "readBytes": 16769110,
+      "sourceContainerReads": 12,
+      "sourceContainerReadBytes": 1231551,
+      "artifactCount": 92,
+      "artifactBytes": 13987890,
+      "initialSourceRuns": 10,
+      "artifactsSha256": "9b701dd5d58938323b09cf205978c5c75ebfbf65f13f931bc656457ec60ad9fc",
+      "resultSha256": "9cc7a63fb147d32681de327303bbdef74cd36c9d69d98ef027d9e947d48ed19f",
+      "phases": [
+        {
+          "phase": "source-scan",
+          "generation": 0,
+          "seconds": 0.16262187500001163
+        },
+        {
+          "phase": "source-runs",
+          "generation": 0,
+          "seconds": 3.788903249999974
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.354683707999997
+        },
+        {
+          "phase": "source-merge",
+          "generation": 1,
+          "seconds": 7.770796791
+        },
+        {
+          "phase": "source-merge",
+          "generation": 2,
+          "seconds": 9.402826165999985
+        },
+        {
+          "phase": "canonical-runs",
+          "generation": 0,
+          "seconds": 19.386358707999985
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 24.387655333
+        },
+        {
+          "phase": "canonical-merge",
+          "generation": 1,
+          "seconds": 27.78428220800002
+        },
+        {
+          "phase": "canonical-materialization",
+          "generation": 0,
+          "seconds": 45.26837949999998
+        },
+        {
+          "phase": "rsid-runs",
+          "generation": 0,
+          "seconds": 51.35920362500002
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 54.213213374999995
+        },
+        {
+          "phase": "rsid-merge",
+          "generation": 1,
+          "seconds": 54.523282750000014
+        },
+        {
+          "phase": "publication-preflight",
+          "generation": 0,
+          "seconds": 63.68069558300002
+        }
+      ]
+    }
+  ]
+}
