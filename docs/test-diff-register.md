@@ -1,5 +1,28 @@
 # Test diff register
 
+## An empty-upload diagnostic preserves uncertain outcomes · 22 September 2026
+
+The new `scripts/resumable-upload` suites exercise a diagnostic runner, not an
+application upload implementation. They refuse other projects, accounts,
+sessions, grants and provider locations before the relevant request; limit the
+sequence to one issuance and six provider requests; and prohibit file bodies,
+PATCH, finalization and retries. Response bodies, bearer tokens and provider
+Locations cannot enter its strict receipt schema.
+
+The failure cases cover a lost creation response, malformed Location, rejected
+offset reads, response-body stalls, persistence failure and uncertain cleanup.
+Issuance and creation intent must be durable before their requests. Atomic
+receipt replacement preserves the previous complete snapshot on a failed
+write; the validated app upload UUID permits exact read-only reconciliation.
+The final two request slots and thirty seconds remain available for empty
+termination. A termination acknowledgement never asserts physical erasure.
+
+Tests use synthetic credentials, injected responses and private temporary
+files. They make no hosted requests and cannot establish provider authority,
+physical cleanup or large-file capacity. The separate measured preview receipt
+records the earlier zero-byte authority failure; the reusable harness has not
+been run against that preview. No existing test or timeout changes.
+
 ## A focus precondition that does not depend on window focus · 21 September 2026
 
 `e2e/search.spec.ts`'s `openWithShortcut` establishes that focus sits on the

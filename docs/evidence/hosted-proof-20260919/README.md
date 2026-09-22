@@ -43,6 +43,16 @@ these are not measurements of current draft PR deployments. Memory collection,
 final R2 reconciliation, teardown and production activation remain owner actions.
 The proposed next steps are in `docs/large-file-upload-proposal.md`.
 
+The owner subsequently approved that proposal's first provider-contract proof.
+An empty TUS upload declared 512 bytes and sent zero source bytes. The public
+anonymous bearer could read its offset and declared length when supplied the
+provider URL. The live upload bearer terminated it with 204, followed by HEAD
+404; physical fragment cleanup was not established. Its app retention phase
+was still pending past its two-hour deadline. See
+`journeys/resumable-empty-authority-20260922.json` and
+[`docs/resumable-upload-contract.md`](../../resumable-upload-contract.md).
+These findings block direct TUS activation; no capacity increase was tested.
+
 The same attempt also missed its fixed cleanup deadline. At 15:02:23.265684 UTC,
 read-only preview SQL still showed cleanup pending, with 192 of 2,065 entries
 acknowledged over 12 claims. The deadline was 15:01:56.889531 UTC. The full gzip
