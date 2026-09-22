@@ -78,23 +78,11 @@ const ESTIMATES = { email: `task-depth-t1-${randomUUID()}@e2e.local`, password: 
 const VARIANTS = { email: `task-depth-t3-${randomUUID()}@e2e.local`, password: "e2e-task-depth-pw" };
 
 /**
- * Both report journeys upload a GRCh38 VCF carrying the exact bound position,
- * and the first attempt did not.
- *
- * It used `data/samples/synthetic_23andme.txt`, which looks like the obvious
- * array fixture and cannot be prepared. Measured after CI refused it: the file
- * parses perfectly — 2135 records, 0 skipped, build read as GRCh37 from its own
- * header — and then **850 of those 2135 positions fail to lift to GRCh38, a
- * 39.8% loss** against the 0.05 `maximumUnmappedFraction` that
- * `policyContracts.genome-liftover-v1` sets. So normalization refuses with
- * `liftover_loss` and `/api/files/[id]/process` answers 422. That is the
- * contract working, not a fault: the generator invents most of its GRCh37
- * coordinates, and the chain has nothing to map them onto. Every array upload
- * that does pass in this suite declares build 38 and is never lifted.
- *
- * Recorded here rather than silently swapped, so the next reading does not
- * spend a session on an array fixture that the prepared path is right to
- * reject.
+ * These measured task-depth journeys retain their GRCh38 VCF fixtures. The
+ * original array lost 850 of 2,135 invented coordinates at liftover (D-133).
+ * Its repaired generator and independent upload/report journey now live in
+ * scripts/generate-synthetic-sample.test.ts and e2e/synthetic-array.spec.ts.
+ * No fixture substitution changes the existing action measurements below.
  */
 /** Covers rs7903146, the TCF7L2 position T1's report is about. */
 const ESTIMATES_FIXTURE = "e2e/fixtures/density-source-grch38.vcf";

@@ -1,159 +1,108 @@
-// Generates data/samples/synthetic_23andme.txt: a fully synthetic 23andMe v5
-// text file (no real person) whose genotyped positions cover every report
-// template variant plus filler, so uploading it renders 100+ reports.
-//
-// 23andMe files are GRCh37, so this writes GRCh37 positions (obtained by
-// mapping each template's GRCh38 position back through the bundled chain via
-// a GRCh38->GRCh37 lookup built from Ensembl) — exercising the liftover path
-// on upload. Genotypes are chosen deterministically (seeded) per variant to
-// give a mix of homozygous-ref, het, and homozygous-alt so reports show
-// varied interpretations. This file belongs to no one.
+// Reproduce the synthetic array fixture offline. Preserve its original report
+// calls and filler genotypes; repair invented coordinates the bundled chain
+// cannot map. This is a transport fixture, not biological accuracy evidence.
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { chromToName } from "../src/lib/genome/types";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { gunzipSync } from "node:zlib";
+import { buildLiftover } from "../src/lib/genome/liftover";
+import { chromToNumber } from "../src/lib/genome/types";
 
-interface TemplateVariant {
-  rsid: number;
-  chrom: number;
-  pos38: number;
-  ref: string;
-  alt: string;
-}
+interface Call { rsid: number; chrom: string; pos37: number; genotype: string }
+interface Recipe { schemaVersion: number; seed: number; fillerCount: number; calls: Call[]; header: string }
 
-// Deterministic PRNG (mulberry32) — no Math.random, reproducible sample.
 function mulberry32(seed: number) {
-  return function () {
+  return () => {
     seed |= 0;
     seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-// Map GRCh38 -> GRCh37 for our template positions using Ensembl's REST map
-// endpoint at build time; cached to data/ref/grch38_to_37.json so the
-// generator is offline-reproducible after the first run.
-const CACHE = path.join(process.cwd(), "data/ref/grch38_to_37.json");
-
-async function pos37For(
-  variants: TemplateVariant[],
-): Promise<Map<number, { chrom: number; pos: number }>> {
-  const cache: Record<string, { chrom: number; pos: number }> = fs.existsSync(
-    CACHE,
-  )
-    ? JSON.parse(fs.readFileSync(CACHE, "utf8"))
-    : {};
-  let changed = false;
-
-  for (const v of variants) {
-    if (cache[v.rsid]) continue;
-    const chrName = chromToName(v.chrom);
-    const url = `https://rest.ensembl.org/map/human/GRCh38/${chrName}:${v.pos38}..${v.pos38}/GRCh37?content-type=application/json`;
-    try {
-      const res = await fetch(url, { headers: { accept: "application/json" } });
-      if (res.ok) {
-        const json = (await res.json()) as {
-          mappings?: { mapped?: { start?: number; seq_region_name?: string } }[];
-        };
-        const mapped = json.mappings?.[0]?.mapped;
-        if (mapped?.start) {
-          cache[v.rsid] = { chrom: v.chrom, pos: mapped.start };
-          changed = true;
-        }
-      }
-      await new Promise((r) => setTimeout(r, 120));
-    } catch {
-      // leave uncached; falls back to pos38 below
+export function syntheticArray(root: string): { text: string; repaired: number } {
+  const recipe = JSON.parse(fs.readFileSync(path.join(root, "data/samples/synthetic-array-recipe.json"), "utf8")) as Recipe;
+  assert.equal(recipe.schemaVersion, 1);
+  assert.equal(recipe.calls.length, 135);
+  assert.equal(recipe.fillerCount, 2000);
+  const chainBytes = fs.readFileSync(path.join(root, "data/ref/chain/GRCh37_to_GRCh38.chain.gz"));
+  const lift = buildLiftover(chainBytes);
+  const sourceSizes = new Map<number, number>();
+  for (const line of gunzipSync(chainBytes).toString("utf8").split("\n")) {
+    if (!line.startsWith("chain ")) continue;
+    const fields = line.split(/\s+/);
+    const chrom = chromToNumber(fields[2]);
+    if (chrom !== null && fields[4] === "+") sourceSizes.set(chrom, Number(fields[3]));
+  }
+  // Filler must not accidentally cover any catalogue position, including the
+  // eleven deliberately absent medicines positions used by the task bindings.
+  const catalogue = new Set<string>();
+  for (const name of fs.readdirSync(path.join(root, "data/templates")).filter(name => name.endsWith(".json"))) {
+    const templates = JSON.parse(fs.readFileSync(path.join(root, "data/templates", name), "utf8")) as
+      { variants?: { chrom: number; pos38: number }[] }[];
+    for (const template of templates) for (const variant of template.variants ?? []) {
+      catalogue.add(`${variant.chrom}:${variant.pos38}`);
     }
   }
-  if (changed) fs.writeFileSync(CACHE, JSON.stringify(cache, null, 1));
-  const map = new Map<number, { chrom: number; pos: number }>();
-  for (const [rsid, v] of Object.entries(cache)) map.set(Number(rsid), v);
-  return map;
-}
-
-async function main() {
-  const dir = path.join(process.cwd(), "data/templates");
-  const seen = new Set<number>();
-  const variants: TemplateVariant[] = [];
-  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".json"))) {
-    for (const t of JSON.parse(
-      fs.readFileSync(path.join(dir, file), "utf8"),
-    ) as { variants: TemplateVariant[] }[]) {
-      for (const v of t.variants ?? []) {
-        if (!seen.has(v.rsid)) {
-          seen.add(v.rsid);
-          variants.push(v);
-        }
-      }
-    }
-  }
-
-  const pos37 = await pos37For(variants);
-  const rand = mulberry32(20260828);
-
-  const rows: { rsid: string; chrom: string; pos: number; genotype: string }[] =
-    [];
-  for (const v of variants) {
-    const loc = pos37.get(v.rsid) ?? { chrom: v.chrom, pos: v.pos38 };
-    // Weighted genotype: 40% hom-ref, 45% het, 15% hom-alt.
-    const r = rand();
-    const geno =
-      v.chrom === 24 || v.chrom === 25
-        ? r < 0.5
-          ? v.ref
-          : v.alt
-        : r < 0.4
-          ? v.ref + v.ref
-          : r < 0.85
-            ? [v.ref, v.alt].sort().join("")
-            : v.alt + v.alt;
-    rows.push({
-      rsid: `rs${v.rsid}`,
-      chrom: chromToName(loc.chrom),
-      pos: loc.pos,
-      genotype: geno,
-    });
-  }
-
-  // Filler SNPs so the file looks like a real ~genotyped export (still
-  // synthetic). Deterministic positions well away from template variants.
-  const bases = ["A", "C", "G", "T"];
-  for (let i = 0; i < 2000; i++) {
-    const chrom = 1 + Math.floor(rand() * 22);
-    const pos = 1_000_000 + Math.floor(rand() * 200_000_000);
-    const a = bases[Math.floor(rand() * 4)];
-    const b = bases[Math.floor(rand() * 4)];
-    rows.push({
-      rsid: `rs${9_000_000 + i}`,
-      chrom: String(chrom),
-      pos,
-      genotype: [a, b].sort().join(""),
-    });
-  }
-
-  rows.sort((x, y) => {
-    const cx = x.chrom === "X" ? 23 : x.chrom === "Y" ? 24 : x.chrom === "MT" ? 25 : Number(x.chrom);
-    const cy = y.chrom === "X" ? 23 : y.chrom === "Y" ? 24 : y.chrom === "MT" ? 25 : Number(y.chrom);
-    return cx - cy || x.pos - y.pos;
+  const occupied = new Set<string>();
+  const rsids = new Set<number>();
+  const rows = recipe.calls.map(call => {
+    const chrom = chromToNumber(call.chrom);
+    assert(chrom !== null && Number.isSafeInteger(call.pos37) && call.pos37 > 0);
+    assert(/^[ACGT]{2}$/.test(call.genotype));
+    assert(!rsids.has(call.rsid)); rsids.add(call.rsid);
+    assert(lift(chrom, call.pos37), "A fixed synthetic call no longer lifts");
+    const key = `${chrom}:${call.pos37}`;
+    assert(!occupied.has(key)); occupied.add(key);
+    return { ...call };
   });
-
-  const header = `# This data file generated by 23andMe at: Fri Aug 28 12:00:00 2026
-#
-# This is a SYNTHETIC file generated by scripts/generate-synthetic-sample.ts.
-# It belongs to no real person. Build 37 (GRCh37) coordinates.
-#
-# rsid\tchromosome\tposition\tgenotype
-`;
-  const body = rows
-    .map((r) => `${r.rsid}\t${r.chrom}\t${r.pos}\t${r.genotype}`)
-    .join("\n");
-  const out = path.join(process.cwd(), "data/samples/synthetic_23andme.txt");
-  fs.writeFileSync(out, header + body + "\n");
-  console.log(
-    `wrote ${rows.length} rows (${variants.length} template variants, ${pos37.size} lifted to GRCh37) -> ${out}`,
-  );
+  const random = mulberry32(recipe.seed);
+  const repairRandom = mulberry32(recipe.seed ^ 0x4b1d2a39);
+  // The original generator drew one genotype choice per report call before
+  // drawing filler. Keep this stream so every filler genotype stays unchanged.
+  for (let i = 0; i < recipe.calls.length; i++) random();
+  const bases = ["A", "C", "G", "T"];
+  let repaired = 0;
+  for (let i = 0; i < recipe.fillerCount; i++) {
+    const chrom = 1 + Math.floor(random() * 22);
+    let pos37 = 1_000_000 + Math.floor(random() * 200_000_000);
+    const genotype = [bases[Math.floor(random() * 4)], bases[Math.floor(random() * 4)]].sort().join("");
+    const allowed = (position: number) => {
+      const mapped = lift(chrom, position);
+      return mapped !== null && mapped.chrom >= 1 && mapped.chrom <= 22
+        && !catalogue.has(`${mapped.chrom}:${mapped.pos}`) && !occupied.has(`${chrom}:${position}`);
+    };
+    if (!allowed(pos37)) {
+      repaired++;
+      const size = sourceSizes.get(chrom);
+      assert(size && Number.isSafeInteger(size));
+      let attempts = 0;
+      do {
+        assert(++attempts <= 10_000, "No mapped synthetic filler position found");
+        pos37 = 1 + Math.floor(repairRandom() * size);
+      } while (!allowed(pos37));
+    }
+    const rsid = 9_000_000 + i;
+    assert(!rsids.has(rsid)); rsids.add(rsid);
+    occupied.add(`${chrom}:${pos37}`);
+    rows.push({ rsid, chrom: String(chrom), pos37, genotype });
+  }
+  rows.sort((a, b) => chromToNumber(a.chrom)! - chromToNumber(b.chrom)! || a.pos37 - b.pos37);
+  assert(recipe.header.startsWith("#") && recipe.header.endsWith("\n"));
+  return { text: recipe.header + rows.map(row => `rs${row.rsid}\t${row.chrom}\t${row.pos37}\t${row.genotype}`).join("\n") + "\n", repaired };
 }
 
-void main();
+export function generateSyntheticArray(root: string, check: boolean): void {
+  const output = path.join(root, "data/samples/synthetic_23andme.txt");
+  const result = syntheticArray(root);
+  if (check) assert.equal(fs.readFileSync(output, "utf8"), result.text);
+  else fs.writeFileSync(output, result.text);
+  console.log(`Synthetic array ${check ? "verified" : "generated"}: 2135 records, ${result.repaired} repaired filler coordinates`);
+}
+
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  assert(process.argv.slice(2).every(argument => argument === "--check"));
+  generateSyntheticArray(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."), process.argv.includes("--check"));
+}
