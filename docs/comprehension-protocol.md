@@ -123,6 +123,14 @@ eleven medicines templates. Neither of participant-a's two files covers any of
 them. `bindings.test.ts` re-measures this and fails if the set changes size or
 membership.
 
+**T2 uses the current region release.** New participant uploads produce the
+seven-region presentation and may combine Europe, Middle East / North Africa,
+and Central–South Asia when those parts cannot be separated. The binding and
+blind rubric include that combined label. The earlier five-region binding
+pointed at the historical registry and would reject answers the current page
+actually shows. The binding test now compares the same display constants the
+current page uses; the legacy result renderer remains unchanged.
+
 **T7 carries a constraint worth reading before the round.** Measured
 2026-09-11: the My Genome report detail page renders exactly one figure kind —
 `genotype` — and no percentage at all. The only surface in the product that

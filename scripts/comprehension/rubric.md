@@ -89,12 +89,17 @@ a different condition; reporting a result the file does not cover.
 
 ## T2 — "Find where your ancestors came from and name one specific region."
 
-**Pass** when the answer names one of the five regions the ancestry surface
-itself renders.
+**Pass** when the answer names a region rendered by the current ancestry
+surface. Its seven possible labels are Africa, Americas, Central–South Asia,
+East Asia, Europe, Middle East and North Africa, and Oceania. Where the evidence
+cannot separate three regions, the surface instead uses the combined label
+“Europe, Middle East / North Africa, and Central–South Asia”. This is a valid
+region answer too; do not demand a split that the surface withholds.
 
-> "Mostly Europe — about 40-odd percent — with a chunk from South Asia."
+> "It groups Europe, Middle East / North Africa, and Central–South Asia
+> together because it can't tell those parts apart reliably."
 
-Passes: a rendered region label, and the participant found it.
+Passes: the rendered combined region label, with its stated limit.
 
 **Fail**
 

@@ -92,15 +92,18 @@
         }
       ],
       "regionLabels": [
-        "Africa south of the Sahara",
-        "Central America, the Caribbean and the Andes",
-        "East and Southeast Asia",
+        "Africa",
+        "Americas",
+        "Central–South Asia",
+        "East Asia",
         "Europe",
-        "South Asia"
+        "Middle East and North Africa",
+        "Oceania",
+        "Europe, Middle East / North Africa, and Central–South Asia"
       ],
-      "success": "The participant reaches the ancestry surface and names one of the five region labels the surface itself renders, read from data/ref/regions/regions.json. The first draft of this binding named the five 1000 Genomes superpopulation labels instead - African, Admixed American, East Asian, European, South Asian - and every one of those except European is on data/ref/regions/label-denylist.json, which the product enforces precisely so it never shows a demonym. A protocol that asked a participant to find a label the product refuses to print would have failed every participant for the product's own virtue. Naming a country is a fail too: the product does not claim countries, so a participant reporting one has read something into it.",
+      "success": "The participant reaches the ancestry surface and names one region the surface renders. New participant uploads use the seven-region release and its adaptive combined label, read from data/ref/regions/regions-v3.json and src/lib/ancestry/regional-regions.ts. The legacy five-region registry is retained for historical results, not this newly prepared fixture. A country or an unrendered demonym fails: neither is a claim this surface makes.",
       "prohibitedClass": null,
-      "regionSource": "data/ref/regions/regions.json"
+      "regionSource": "data/ref/regions/regions-v3.json"
     },
     {
       "id": "T3",
