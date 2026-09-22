@@ -60,3 +60,17 @@ Changed-file lint, typecheck, the readability gate (2,705 blocks), the claims
 gate and diff checks pass. Playwright discovers all 95 cases across the modified
 genome-data and accessibility specs, including the added real-response identity
 journey. Discovery does not establish an app pass; full-app CI is pending.
+
+The first full CI run, 35752596544 at 25f7f029, passed 5,413 unit cases and
+failed the new resize fixture. Its static text had been captured before the
+native resize event completed, then compared with a later observer snapshot
+(region end 74,750,600 versus 74,750,439). The installed native handler updates
+the reference frames and viewport width before it emits the new locus. A prior
+snapshot can still have `ready` status when `setViewportSize` returns.
+
+The fixture now waits for the actual native viewport to shrink and for its
+range to match the observer. It then checks both the rendered range and exact
+row identities against native `getInViewFeatures()`. All 12 current-track
+native cases pass with that correction. Product code and test timeouts are
+unchanged. The earlier CI run did not reach its database, app build, browser or
+Lighthouse steps; the corrected head still needs their full verification.

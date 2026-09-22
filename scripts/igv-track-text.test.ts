@@ -151,9 +151,29 @@ describe("native current-track text equivalence", () => {
       await input.fill('chr15:74750400-74750600'); await input.press('Enter');
       await page.waitForFunction("window.snapshot?.status === 'ready' && window.snapshot.views[0].rows.length === 1");
       expect((await renderText(page)).views[0].rows[0].rsid).toBe(2);
+      const widthBefore = await page.evaluate<number>(
+        "window.testIgv.trackViews.find(view => view.track.config?.id === 'calls').viewports[0].getWidth()");
       await page.setViewportSize({ width: 390, height: 844 });
-      await ready(page); await renderText(page);
-      expect(await page.locator('[data-track-range]').textContent()).toBe((await ready(page)).views[0].range);
+      // setViewportSize returns before the native resize event has completed.
+      // The prior snapshot can still be ready; wait for the resized native
+      // viewport AND its matching observer result before rendering that result.
+      await page.waitForFunction(width => {
+        const viewport = Reflect.get(window, "testIgv").trackViews
+          .find((view: { track: { config?: { id?: string } } }) => view.track.config?.id === "calls").viewports[0];
+        const snapshot = Reflect.get(window, "snapshot");
+        return viewport.getWidth() < width && snapshot?.status === "ready"
+          && snapshot.views[0].range === viewport.referenceFrame.getLocusString();
+      }, widthBefore);
+      const resized = await renderText(page);
+      const native = await page.evaluate<{ range: string; keys: string[] }>(`(async () => {
+        const view = window.testIgv.trackViews.find(view => view.track.config?.id === 'calls');
+        const features = await view.getInViewFeatures();
+        return { range: view.viewports[0].referenceFrame.getLocusString(),
+          keys: features.map(feature => window.rows.get(feature._f ?? feature).key) };
+      })()`);
+      expect(resized.views[0].range).toBe(native.range);
+      expect(resized.views[0].rows.map(row => row.key)).toEqual(native.keys);
+      expect(await page.locator('[data-track-range]').textContent()).toBe(native.range);
     });
   }, 30_000);
 
