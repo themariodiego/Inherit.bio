@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { configureIgvNavigation } from "../src/components/browse/igv-navigation";
 import { labelIgvControls } from "../src/components/browse/igv-accessibility";
 import { enhanceIgvInteractions } from "../src/components/browse/igv-interactions";
 import { enhanceIgvTrackScrolling } from "../src/components/browse/igv-track-scrolling";
@@ -14,7 +15,9 @@ afterAll(async () => { await browser?.close(); });
 
 async function fixture(width: number, theme: string, run: (page: Page) => Promise<void>) {
   const context = await browser.newContext({ viewport: { width, height: 844 } });
-  const page = await context.newPage(); page.setDefaultTimeout(5_000);
+  const page = await context.newPage();
+  const pageErrors: string[] = [];
+  page.on("pageerror", error => pageErrors.push(error.message)); page.setDefaultTimeout(5_000);
   await page.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.origin !== "http://fixture.invalid") return route.abort();
@@ -45,10 +48,12 @@ async function fixture(width: number, theme: string, run: (page: Page) => Promis
     ` });
     await page.waitForFunction(() => document.body.dataset.ready === "true");
     await page.evaluate(`globalThis.__name = value => value;
+      (${configureIgvNavigation.toString()})(window.testIgv);
       (${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)});
       (${enhanceIgvInteractions.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)}, window.testIgv);
       window.disposeScrolling = (${enhanceIgvTrackScrolling.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)}, window.testIgv);`);
     await run(page);
+    expect(pageErrors).toEqual([]);
   } finally { await context.close(); }
 }
 

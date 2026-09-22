@@ -2247,3 +2247,17 @@ extractor or legal statement is removed or relaxed.
 - The two real-app Escape assertions now inspect the focused control's actual
   shadow root, preserving the requirement that focus has left that tree after
   Escape when each instance lives in its own child host.
+
+## Native navigation option and resize API · 22 September 2026
+
+- The existing false multi-select option was ignored by the installed widget,
+  which the composed first-viewport census caught as 13 controls against 12.
+  Three new native tests cover false, true and absent options through resize;
+  enabled selection must still toggle the actual native track-selection state.
+- Checking uncaught errors reproduced the nonexistent resize method in all
+  fourteen interaction cases. Native interaction, scrolling and popover tests
+  now fail on page errors. The adapter calls the observed instance-bound handler.
+- A pointer-popover test now clicks its synthetic marker's actual reference-frame
+  coordinate after resizing and verifies its name, retaining the dialog, axe and
+  Escape requirements. The old midpoint no longer named that marker after the
+  resize correction. No count, density, route, test or timeout bound changes.

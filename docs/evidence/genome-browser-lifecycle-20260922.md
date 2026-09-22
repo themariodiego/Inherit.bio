@@ -36,7 +36,7 @@ transport responses are explicitly synthetic.
 
 The 30-second initialization timeout, first-party reference, authenticated
 region reads, controls, upload behavior and safety bounds remain unchanged.
-All 66 focused lifecycle, reference, control, scrolling, popover, viewport,
+All 69 focused lifecycle, reference, navigation, control, scrolling, popover, viewport,
 keyboard and copy tests pass; changed-file lint, typecheck and readability pass.
 Full-app CI is still required. This does not implement fresh region queries
 while panning or searching, complete the region pagination/nonce protocol, or
