@@ -9638,7 +9638,7 @@
       },
       "credential": "secure-httpOnly-sameSite-strict-cookie-hash-only-at-rest",
       "originSessionBinding": "authContracts.authenticated-session-v1.authenticatedDerivedCapability",
-      "stateChangingRequest": "exact-Origin-same-origin-fetch-metadata-and-X-Inherit-CSRF-header-bound-to-the-upload-session",
+      "stateChangingRequest": "exact-Origin-same-origin-fetch-metadata-and-X-Inherit-CSRF-header-bound-to-the-upload-session; api.embryo-ingest-chunk-alone-uses-its-policy.requestAuthority-without-an-additional-CSRF-or-chunk-nonce-header",
       "redirectsForbidden": true,
       "rawCredentialBodyLogAnalyticsOrAudit": "forbidden"
     },
@@ -9792,11 +9792,11 @@
       "header": {
         "const": "X-Inherit-CSRF"
       },
-      "requiredFor": "every-state-changing-method-including-a-body-forbidden-route",
+      "requiredFor": "every-state-changing-method-including-a-body-forbidden-route-except-api.embryo-ingest-chunk-as-declared-by-its-policy.requestAuthority",
       "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session",
       "operationNonceIsNotCsrf": true
     },
-    "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce",
+    "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce; only-api.embryo-ingest-chunk-omits-the-CSRF-and-operation-nonce-headers-under-its-policy.requestAuthority",
     "destructiveBindings": [
       {
         "routeId": "api.account-delete",
@@ -16723,11 +16723,7 @@
         "contentEncoding": "forbidden",
         "maximumBodyBytes": "payloadBoundaryContract.ingestChunkMaximumBytes",
         "framing": "uncompressed-UTF-8-complete-logical-lines",
-        "unknownOrInvalid": "embryo-ingest-chunk-v1.invalidChunk",
-        "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-upload-session",
-          "X-Inherit-Chunk-Nonce": "one-time-token-bound-to-session-sequence-declared-content-length-and-chunk-sha256"
-        }
+        "unknownOrInvalid": "embryo-ingest-chunk-v1.invalidChunk"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -16742,7 +16738,8 @@
           "resource-authorization-v1",
           "jurisdiction-v1",
           "embryo-source-and-output-v2"
-        ]
+        ],
+        "requestAuthority": "live-authenticated-account-originating-auth-session-strict-host-only-upload-session-cookie-exact-Origin-shared-same-origin-fetch-metadata-and-jurisdiction-guard-before-reading-bytes; database-reservation-and-commit-bind-session-sequence-actual-byte-count-and-content-hash; identical-retry-is-idempotent-and-changed-hash-fails-the-session"
       },
       "successResponseContract": "embryo-ingest-chunk-v1",
       "disposition": "kept"
