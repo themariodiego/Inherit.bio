@@ -18,7 +18,8 @@ with valid Y call count/rate over a specified assay panel. X uses
 frequencies at the called loci. Both chromosome signals must agree before a
 result can be reported. PLINK documents the need for suitable frequencies,
 marker selection and data-derived thresholds; its generic defaults are not
-an embryo-biopsy validation. [PLINK method](https://www.cog-genomics.org/plink/2.0/basic_stats#check_sex).
+an embryo-biopsy validation. Source: PLINK 2.0 documentation, “Basic statistics,”
+“Sex check,” read 22 September 2026.
 
 GRCh37/38 pseudoautosomal exclusions use the published assembly coordinates.
 The implementation keeps only positions strictly between the two PAR regions
