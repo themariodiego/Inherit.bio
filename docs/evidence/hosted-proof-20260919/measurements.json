@@ -318,5 +318,36 @@
       "outcome": "THE 8 GiB gVCF CEILING CANNOT BE MET BY THE PRODUCT AS BUILT. Not a throughput projection and not a container limit: the file cannot reach Storage at all through the one transport the uploader has. A gVCF ceiling above about 5 GB needs resumable or S3 multipart uploads first.",
       "alsoWorthFixing": "Nothing tells the person why. The browser never surfaces the 413 (it keeps sending until the connection is reset), so a person who picks an 8 GiB file waits five and a half minutes and is then given the generic 'could not finish' wording, with no mention of a size."
     }
+  },
+  "followUp20260922": {
+    "status": "768 MiB candidate tried; neither plain nor compressed journey completed",
+    "receipts": [
+      "journeys/vcf-768mib-upload-failed-20260922.json",
+      "journeys/vcfgz-768mib-deadline-20260922.json"
+    ],
+    "plainSourceBytes": 805306509,
+    "plainOutcome": "Transfer failed before a stored file or preparation job. No HTTP status or exact network error was captured.",
+    "compressedStoredBytes": 161905161,
+    "compressedDecodedBytes": 805306509,
+    "compressedOutcome": "Uploaded in 139.296 s and finalized first attempt in 64.717 s; one preparation claim did not publish before its admission-based 3600-second deadline.",
+    "partialWorkAtDeadline": {
+      "reservedArtifactCount": 2065,
+      "reservedArtifactBytes": 820317668,
+      "acknowledgedArtifactCount": 2064,
+      "acknowledgedArtifactBytes": 820301367,
+      "unacknowledgedReservationCount": 1,
+      "unacknowledgedReservationBytes": 16301,
+      "acknowledgedArtifactBytesPerDecodedSourceByte": 1.018620063,
+      "acknowledgedArtifactBytesPerStoredSourceByte": 5.066554778,
+      "remainingTimeSeconds": 0,
+      "remainingArtifactReservations": 2031,
+      "remainingReservedArtifactBytes": 253424156,
+      "meaning": "These are measured partial totals and unused budgets at the deadline, not final artifact ratios or headroom for a successful journey. A reservation does not prove a provider write; acknowledgment is the worker/database receipt, not final R2 reconciliation."
+    },
+    "largestCompletedPlainVcfBytes": 67108990,
+    "currentConclusion": "Do not promise 768 MiB, 2 GiB VCF or 8 GiB gVCF capacity from these measurements. The earlier 64 MiB throughput and 0.87 artifact ratio projections do not establish larger capacity; partial acknowledged bytes already exceeded 1.0186 per decoded byte in this run. Time was exhausted while count and byte budgets remained. No final ratio or publication margin exists for this failed run.",
+    "historicalScope": "The earlier recommendation and projections above describe the 19-20 September observations. This dated follow-up supersedes any suggestion there that time is not a relevant constraint or that nothing between 64 MiB and 2 GiB has been tried. The earlier credential-gated skip remains an accurate historical record; credentials became available for this later attempt.",
+    "boundsChanged": false,
+    "productionTouched": false
   }
 }

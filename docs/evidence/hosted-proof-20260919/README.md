@@ -9,6 +9,49 @@ Production (`zuvloczwgrayonqabnss`, `www.inherit.bio`) was read twice for
 comparison and never written. `STATUS.md` is the live record; this file is
 the ordered account. Times are UTC.
 
+## Capacity follow-up · 22 September 2026
+
+The earlier credential-gated skip in `follow-up-20260922.json` is historical.
+Preview credentials were recovered through the owner's signed-in provider tools
+and verified before a fresh synthetic test. No limits or deployment settings
+were changed, and production was not written.
+
+A fresh plain VCF of **805,306,509 bytes** failed during transfer after the page
+reached 82%. No stored file or preparation job existed afterward; no HTTP status
+or exact network error was captured. This is not a measured storage-size ceiling.
+See `journeys/vcf-768mib-upload-failed-20260922.json`.
+
+A gzip copy of the same records, **161,905,161 stored bytes**, uploaded in
+**139.296 seconds** and finalized on its first attempt in **64.717 seconds**.
+Preparation did **not publish before its one-hour deadline**. The queue used
+0.570831 seconds of that hour. At the deadline, 2,065 artifact reservations
+accounted for 820,317,668 bytes; 2,064 were acknowledged, totaling 820,301,367
+bytes. The last checkpoint was canonical materialization. No report was rendered.
+See `journeys/vcfgz-768mib-deadline-20260922.json` for timestamps, partial ratios,
+remaining budgets, the browser polling interruption and its corrected reading.
+
+The measured partial ratio is **1.018620063 artifact bytes per decoded byte**
+(**5.066554778 per stored byte**). It is not a final ratio: no manifest was
+published. The 2,031 unused artifact reservations and 253,424,156 unused bytes
+are balances at failure, not successful completion margins. The plain-file
+transfer failure and the compressed preparation deadline are separate findings.
+
+**The largest completed plain VCF in this hosted record remains 67,108,990
+bytes (64 MiB).** Neither this fixture nor the older rate projection establishes
+a universal size guarantee. The old preview deployment is named in both receipts;
+these are not measurements of current draft PR deployments. Memory collection,
+final R2 reconciliation, teardown and production activation remain owner actions.
+The proposed next steps are in `docs/large-file-upload-proposal.md`.
+
+The same attempt also missed its fixed cleanup deadline. At 15:02:23.265684 UTC,
+read-only preview SQL still showed cleanup pending, with 192 of 2,065 entries
+acknowledged over 12 claims. The deadline was 15:01:56.889531 UTC. The full gzip
+receipt preserves this later observation alongside the earlier snapshots.
+The deployed worker was unchanged; draft PR #196's serial cleanup drain had
+not been deployed. This is a database observation, not final R2 reconciliation
+or a later completion time. No cleanup was forced and no bound was changed.
+
+
 ## How this folder reached main · 21 September 2026
 
 This evidence was produced on branch `claude/hosted-proof-20260919` (pull
@@ -57,6 +100,7 @@ worked out separately, in `docs/evidence/hosted-proof-branch-20260919/`.
 | `ceiling-finalization-logs.json` | What the branch's edge log says happened inside finalization at 2 GiB, and the claims it corrects. |
 | `upload-transport-limit.json` | Where one Storage POST stops being accepted, measured directly, and what that means for the gVCF ceiling. |
 | `artifact-ceiling-raise-receipt.json` | Raising `max_artifact_bytes` to the schema maximum on the branch, and the three ceilings that leaves. |
+| `follow-up-20260922.json` | Repository fixes and local regression checks, the finalization wording proposal, and why the first 768 MiB attempt was skipped. Historical; the later hosted outcomes are recorded above. |
 
 ## What is proved
 

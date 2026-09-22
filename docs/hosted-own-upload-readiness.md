@@ -1,5 +1,24 @@
 # Hosted own-upload rollout prerequisites
 
+## Capacity test · 22 September 2026
+
+The fresh 768 MiB synthetic VCF did not complete a hosted journey. Its plain
+805,306,509-byte transfer failed before storage completion. Gzip reduced those
+same records to 161,905,161 stored bytes and completed upload and finalization,
+but preparation reached its unchanged one-hour deadline before publication.
+There were 2,065 reservations for 820,317,668 bytes, including one unacknowledged
+16,301-byte reservation. Count and byte limits remained available; time did not.
+No report was rendered and no final artifact ratio or completion margin exists.
+
+The largest completed plain VCF in this record remains 67,108,990 bytes. The
+older throughput projection is not proof that 768 MiB fits. Full receipts and
+the corrected browser-observer reading are in
+`docs/evidence/hosted-proof-20260919/journeys/vcf-768mib-upload-failed-20260922.json`
+and `vcfgz-768mib-deadline-20260922.json` in that same folder. Credentials were
+available for this later run; the earlier skipped check remains historical.
+`docs/large-file-upload-proposal.md` separates the proposed transfer work from
+preparation optimization. No bounds, deployment or production settings changed.
+
 ## Defect: a ceiling the configuration accepts and the transport cannot carry · 13:45 UTC, 20 September 2026
 
 Measured on the hosted preview stack (Supabase branch `hosted-proof`, the
@@ -24,16 +43,30 @@ will keep, not what one request may carry, so raising it does not move this.
 below describe the hosted-proof branch as it stood on 20 September. `main`
 already carries the fix, in commit `ff947a6` "Never offer a ceiling one
 request cannot carry": `SINGLE_REQUEST_MAXIMUM_BYTES` in
-`src/lib/uploads/subject-upload-contract.ts` is **5,242,880,000** — exactly the
+`src/lib/uploads/subject-upload-transport.ts` is **5,242,880,000** — exactly the
 largest size the probe below proved a single request accepts —
 `uploadCeilingBytes` returns `Math.min(configuredCeilingBytes(...),
-SINGLE_REQUEST_MAXIMUM_BYTES)` so no configured ceiling can exceed it, and
+SINGLE_REQUEST_MAXIMUM_BYTES)` so the offered stored-byte ceiling cannot exceed it, and
 `issueSubjectUpload` refuses an oversized declaration with `413 too_large`
 **before any durable row exists**. So the 8 GiB lease of half one can no longer
 be issued, and the five-and-a-half-minute silence of half two can no longer be
 reached by an over-ceiling file. The two halves are kept as written because
 they are what was measured, and because the reasoning is what the constant
 rests on: delete the measurement and the constant looks arbitrary.
+
+**Disclosure and early-refusal follow-up, 22 September 2026.** The upload
+page now names the gVCF ceiling separately when it differs from VCF and uses
+the smaller of each configured ceiling and the single-request cap. Equal
+VCF/gVCF ceilings retain the combined sentence. The shared cap lives beside
+the browser upload code, with the measurement and its limits cited there.
+The browser refuses a file above that cap before reading its contents, even
+when deployment limits are unavailable; the refusal names the size. A Storage
+413 that does reach the browser also becomes a size refusal, without guessing
+an unknown lower limit. The issuance route retains its refusal before a
+durable upload row or bearer exists. This changes no database ceiling or
+preparation budget, and does not establish preparation capacity at the upload
+cap. Local verification and the earlier credential-gated skip are recorded in
+`docs/evidence/hosted-proof-20260919/follow-up-20260922.json`.
 
 **Half one: the configuration admits what cannot arrive.** With
 `maximum_gvcf_bytes` set to 8 GiB on the branch, `issue_own_storage_upload_v1`

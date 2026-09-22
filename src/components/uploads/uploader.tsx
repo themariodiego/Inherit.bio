@@ -10,7 +10,7 @@ import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { megabytesOf } from "@/lib/genome/ingest-limits";
 import { route } from "@/lib/primary-routes";
-import { remainingAccountBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
+import { remainingAccountBytes, uploadCeilingBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { BrowserPreparationError, BrowserUploadError, finishStagedUpload, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 import { AUTO_FINISH_DELAYS_MS } from "@/lib/uploads/finish-retry-policy";
 import { MAXIMUM_LOCAL_ZIP_BYTES } from "@/lib/uploads/own-upload-zip";
@@ -164,7 +164,11 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null }:
           {OWN_UPLOAD_COPY.zipStatement(megabytesOf(MAXIMUM_LOCAL_ZIP_BYTES))}
         </p>
         {limits ? <p className="mt-2 max-w-md text-sm text-ink-muted">
-          {OWN_UPLOAD_COPY.limitStatement(megabytesOf(limits.maximumArrayBytes), megabytesOf(limits.maximumVcfBytes))}
+          {OWN_UPLOAD_COPY.limitStatement(
+            megabytesOf(uploadCeilingBytes("consumer-array-text-v1", limits)),
+            megabytesOf(uploadCeilingBytes("VCF", limits)),
+            megabytesOf(uploadCeilingBytes("gVCF", limits)),
+          )}
         </p> : null}
       </div>
       <Button onClick={() => inputRef.current?.click()} disabled={disabled || busy}>Choose file</Button>

@@ -24,15 +24,17 @@ export const OWN_UPLOAD_COPY = {
    * ceiling, an account with no room left, and a small compressed file whose
    * unpacked contents are too big are three different problems, and only the
    * first is fixed by choosing a smaller file. Every number is the
-   * deployment's live ceiling read at request time, never a compiled-in
-   * figure, and none of these sentences promises a future limit.
+   * deployment's live ceiling capped by what the upload path can carry,
+   * and none of these sentences promises a future limit.
    */
-  limitStatement: (arrayMegabytes: number, vcfMegabytes: number) =>
-    (arrayMegabytes === vcfMegabytes
+  limitStatement: (arrayMegabytes: number, vcfMegabytes: number, gvcfMegabytes = vcfMegabytes) =>
+    (gvcfMegabytes !== vcfMegabytes
+      ? `We can take genotype table files up to ${arrayMegabytes} MB. We can take VCF files up to ${vcfMegabytes} MB, and gVCF files up to ${gvcfMegabytes} MB.`
+      : arrayMegabytes === vcfMegabytes
       ? `We can take files up to ${arrayMegabytes} MB.`
       : `We can take genotype table files up to ${arrayMegabytes} MB, and VCF or gVCF files up to ${vcfMegabytes} MB.`)
     + " A compressed file is measured after it is unpacked, so the unpacked size has to fit as well.",
-  tooLarge: (megabytes: number) => `This file is bigger than the ${megabytes} MB we can take for this kind of file.`,
+  tooLarge: (megabytes: number) => `This file is bigger than the ${megabytes} MB limit for this upload.`,
   tooLargeUnknownLimit: "This file is bigger than we can take right now. Your saved files have not changed.",
   accountFull: (megabytes: number) =>
     `This file does not fit in the ${megabytes} MB your account can still hold. Delete a file you no longer need, then try again.`,

@@ -5,7 +5,8 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 import { issueSubjectUpload } from "./subject-upload-issuance";
-import { declaredSubjectFormat, directUploadReceipt, SINGLE_REQUEST_MAXIMUM_BYTES, SUBJECT_UPLOAD_FORMATS, uploadSessionBody } from "./subject-upload-contract";
+import { declaredSubjectFormat, directUploadReceipt, SUBJECT_UPLOAD_FORMATS, uploadSessionBody } from "./subject-upload-contract";
+import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 
 const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -226,6 +227,17 @@ describe("naming the limit that actually refused an upload", () => {
     expect(response.status).toBe(201);
     expect(mocks.rpc).toHaveBeenCalledWith("issue_own_storage_upload_v1", expect.objectContaining({
       p_size_bytes: SINGLE_REQUEST_MAXIMUM_BYTES }));
+  });
+  it.each(SUBJECT_UPLOAD_FORMATS)("refuses an over-transport declaration for %s even if SQL would authorize it", async declaredFormat => {
+    // Model an over-configured issuer that would grant the proof's 8 GiB lease.
+    // Neither its acceptance nor an absent signer may bypass the request cap.
+    const sizeBytes = 8_589_933_057;
+    mocks.rpc.mockResolvedValue({ data: { ...authorization, maximumBytes: sizeBytes }, error: null });
+    vi.stubEnv("INHERIT_UPLOAD_SIGNING_JWK", "");
+    const response = await issueSubjectUpload(request({ ...body, declaredFormat, sizeBytes }));
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "too_large" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("reports a file past its own format ceiling as too large", async () => {
     refuse("file_too_large", { ...limits, maximumVcfBytes: 100 });
