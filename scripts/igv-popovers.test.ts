@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { configureIgvNavigation } from "../src/components/browse/igv-navigation";
 import { labelIgvControls } from "../src/components/browse/igv-accessibility";
 import { enhanceIgvInteractions } from "../src/components/browse/igv-interactions";
 import { enhanceIgvPopovers } from "../src/components/browse/igv-popovers";
@@ -15,6 +16,8 @@ afterAll(async () => { await browser?.close(); });
 async function fixture(width: number, theme: string, run: (page: Page) => Promise<void>) {
   const context = await browser.newContext({ viewport: { width, height: 844 } });
   const page = await context.newPage();
+  const pageErrors: string[] = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
   page.setDefaultTimeout(5_000);
   await page.route("**/*", route => {
     const url = new URL(route.request().url());
@@ -42,10 +45,12 @@ async function fixture(width: number, theme: string, run: (page: Page) => Promis
     ` });
     await page.waitForFunction(() => document.body.dataset.ready === "true");
     await page.evaluate(`globalThis.__name = value => value;
+      (${configureIgvNavigation.toString()})(window.testIgv);
       (${labelIgvControls.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)});
       window.disposeInteractions = (${enhanceIgvInteractions.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)}, window.testIgv);
       window.disposePopovers = (${enhanceIgvPopovers.toString()})(document.querySelector("#widget"), ${JSON.stringify(IGV_CONTROL_LABELS)}, window.testIgv);`);
     await run(page);
+    expect(pageErrors).toEqual([]);
   } finally { await context.close(); }
 }
 
@@ -140,9 +145,18 @@ describe("installed genome widget transient surfaces", () => {
         expect(await track.evaluate(focused)).toBe(true);
       }
       const bounds = (await track.boundingBox())!;
-      await track.click({ position: { x: bounds.width / 2, y: 15 } });
+      // Resizing preserves the start and scale, so the synthetic position
+      // need not remain at the viewport midpoint. Click its actual canvas
+      // coordinate through the pointer, never the popup callback.
+      const x = await page.evaluate<number>(`(() => {
+        const frame = window.testIgv.trackViews.find(view => view.track.type === "annotation").viewports[0].referenceFrame;
+        return (74750500.5 - frame.start) / frame.bpPerPixel;
+      })()`);
+      expect(x).toBeGreaterThan(0); expect(x).toBeLessThan(bounds.width);
+      await track.click({ position: { x, y: 15 } });
       const details = page.getByRole("dialog", { name: "Position details", exact: true });
       await details.waitFor(); await audit(page);
+      expect(await details.textContent()).toContain("Synthetic A/G");
       await page.keyboard.press("Escape"); await details.waitFor({ state: "hidden" });
       expect(await track.evaluate(focused)).toBe(true);
     });

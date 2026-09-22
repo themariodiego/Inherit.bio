@@ -32,7 +32,13 @@ asserts that the document was retained, and sends another synthetic file
 through real Storage, finalization and preparation. Its existing origin and
 tracker assertions remain, and also cover that second upload.
 
-The 58 focused reference, widget, control-count, keyboard and copy checks pass.
+The original 58 focused reference, widget, control-count, keyboard and copy checks passed.
+The subsequent full-app run passed 493 browser cases but found 13 first-viewport
+controls against the unchanged ceiling of 12; nine serial successors did not run.
+The installed widget ignored its false multi-select option. The inherited adapter
+now applies that option through native visibility, and calls the actual native
+resize handler. Three native option cases and uncaught-error assertions cover
+the corrections. The combined 61 focused tests pass.
 Complete app execution remains required in CI.
 No upload transport, file-size ceiling, preparation budget, route ratchet or
 density threshold changes. This does not prove large-file capacity, resolve
