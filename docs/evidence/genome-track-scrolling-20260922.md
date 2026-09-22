@@ -18,14 +18,19 @@ Cleanup removes the adapter and restores the original thumb.
 Seven installed-library Chromium cases pass: both endpoints, arrow movement,
 pointer movement, external viewer updates, resizing and focus return. The main
 journey runs at 320, 390 and 1280 pixels in both themes and requires zero WCAG
-2.1 A/AA axe violations, normal tab order and no document overflow. The existing
-32 widget, keyboard and copy cases remain intact; the additional plain word
+2.2 AA and best-practice axe checks as well as the earlier A/AA rules, normal
+tab order and no document overflow. The existing 34 widget, keyboard and copy
+cases remain intact; the additional plain word
 `scroll` is registered without changing any readability threshold.
 
 The new full-app browser case deliberately supplies an overlapping synthetic
 region response after the ordinary signed-in setup. It asserts the native
 control's endpoints, the actual canvas movement and Escape back to the page.
-It proves UI wiring only and still requires CI execution. Existing upload,
+The first full CI run exposed the inherited track-settings hit-target and menu
+focus defects. Their correction is included here: the resized columns now
+reserve their actual width, and the settings journey follows the real height
+action before the name action. All 41 targeted cases pass after that correction.
+The new full-app run is pending; this case proves UI wiring only. Existing upload,
 preparation, report and region tests keep their real responses.
 
 G1.13b remains NO. Canvas context menus and track-label popovers still need

@@ -2162,6 +2162,14 @@ extractor or legal statement is removed or relaxed.
 
 ## Genome widget settings and keyboard controls · 22 September 2026
 
+- The first full CI run exposed overlapping drag/gear targets and an incorrect
+  first-menu-item assumption. Two additional native cases check real pointer
+  hit testing inside a padded host while resizing through 320/390/1280 pixels
+  in both themes. Native axe coverage now uses the complete app tag set,
+  including WCAG 2.2 AA and best-practice rules. The app journey asserts the
+  actual first height action, then ArrowDown and focus on the name action;
+  every edit, cancel and focus-return assertion remains.
+
 - `scripts/igv-interactions.test.ts` adds actual installed-library Chromium
   checks for track settings, dialogs, colors, ordering, display modes and
   removal, with normal tab traversal, mobile reflow, target size and axe checks.
@@ -2173,6 +2181,11 @@ extractor or legal statement is removed or relaxed.
   inventory and verification limits. G1.13b remains NO.
 
 ## Native genome track scrolling · 22 September 2026
+
+- The correction for the inherited track-settings CI failures is included.
+  The scrolling cases also use the full app axe rule tags, including WCAG 2.2 AA
+  and best practice. All 41 widget, scrolling, keyboard and copy cases pass;
+  the full-app run on the corrected head remains required.
 
 - `scripts/igv-track-scrolling.test.ts` adds seven installed-library Chromium
   checks for keyboard and pointer endpoints, real content movement, resize,

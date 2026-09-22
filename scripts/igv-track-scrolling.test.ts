@@ -73,7 +73,7 @@ describe("installed genome widget vertical scrolling", () => {
         expect(await page.evaluate("window.track.viewports[0].getContentTop()")).toBe(0);
         await page.evaluate("window.track.scrollByPixels(50)");
         expect(await slider.inputValue()).toBe("50");
-        const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+        const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"]).analyze();
         expect(results.violations.map(item => item.id)).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await page.evaluate(installKeyboardAudit);
